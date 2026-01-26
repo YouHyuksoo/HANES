@@ -1,0 +1,219 @@
+/**
+ * @file src/index.css
+ * @description HANES MES 글로벌 스타일 - 디자인 시스템 CSS 변수
+ *
+ * 초보자 가이드:
+ * 1. **CSS 변수**: :root에 라이트 모드, .dark에 다크 모드 정의
+ * 2. **oklch 색상**: 더 정확한 색상 표현을 위한 최신 색상 형식
+ * 3. **폰트**: Outfit(UI), Inter(데이터 그리드)
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   Light Mode (기본)
+   ======================================== */
+:root {
+  /* 배경 */
+  --background: oklch(0.98 0.001 247);
+  --surface: oklch(1.00 0 0);
+
+  /* 주요 색상 */
+  --primary: oklch(0.55 0.2 250);
+  --primary-hover: oklch(0.50 0.22 250);
+  --secondary: oklch(0.70 0.10 280);
+  --accent: #f59e0b;
+
+  /* 텍스트 */
+  --text: oklch(0.16 0.03 281);
+  --text-muted: oklch(0.45 0.02 260);
+
+  /* 테두리 */
+  --border: oklch(0.90 0.01 260);
+
+  /* 상태 색상 */
+  --success: oklch(0.65 0.20 145);
+  --warning: oklch(0.75 0.18 85);
+  --error: oklch(0.60 0.25 25);
+
+  /* 레이아웃 */
+  --radius: 0.5rem;
+  --sidebar-width: 260px;
+  --header-height: 64px;
+}
+
+/* ========================================
+   Dark Mode
+   ======================================== */
+.dark {
+  /* 배경 */
+  --background: oklch(0.16 0.03 281);
+  --surface: oklch(0.22 0.04 281);
+
+  /* 주요 색상 */
+  --primary: #137fec;
+  --primary-hover: #1a8fff;
+  --secondary: oklch(0.55 0.12 280);
+  --accent: #f59e0b;
+
+  /* 텍스트 */
+  --text: oklch(0.95 0.01 260);
+  --text-muted: oklch(0.65 0.02 260);
+
+  /* 테두리 */
+  --border: oklch(0.30 0.03 280);
+
+  /* 상태 색상 */
+  --success: oklch(0.70 0.20 145);
+  --warning: oklch(0.80 0.18 85);
+  --error: oklch(0.65 0.25 25);
+}
+
+/* ========================================
+   Base Styles
+   ======================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   Typography
+   ======================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; }
+
+/* ========================================
+   Scrollbar Styles
+   ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ========================================
+   Focus & Selection
+   ======================================== */
+::selection {
+  background-color: var(--primary);
+  color: white;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   Utility Classes
+   ======================================== */
+.font-data {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Card Glass Effect (Dark Mode) */
+.dark .glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Ripple Effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.ripple:active::after {
+  width: 200px;
+  height: 200px;
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-slide-up { animation: slideUp 0.3s ease-out; }
+.animate-slide-down { animation: slideDown 0.3s ease-out; }
+.animate-spin { animation: spin 1s linear infinite; }

@@ -1,0 +1,182 @@
+/**
+ * @file src/pages/inspection/EquipPage.tsx
+ * @description 검사기연동 페이지 - 검사기 상태 모니터링, 연결 상태 표시
+ *
+ * 초보자 가이드:
+ * 1. **검사기 카드**: 각 검사기의 실시간 상태 표시
+ * 2. **연결 상태**: CONNECTED(연결), DISCONNECTED(끊김), ERROR(오류)
+ * 3. **통신 로그**: 최근 수신 데이터 로그 표시
+ */
+import { useState, useMemo } from 'react';
+import { ColumnDef } from '@tanstack/react-table';
+import {
+  RefreshCw, Wifi, WifiOff, AlertTriangle,
+  Cpu, Power, Clock,
+} from 'lucide-react';
+import { Card, CardHeader, CardContent, Button, Select } from '@/components/ui';
+import DataGrid from '@/components/data-grid/DataGrid';
+
+// ========================================
+// 타입 정의
+// ========================================
+type ConnectionStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
+type CommType = 'MQTT' | 'SERIAL' | 'TCP';
+
+interface InspectorEquip {
+  id: string;
+  equipCode: string;
+  equipName: string;
+  commType: CommType;
+  status: ConnectionStatus;
+  ipAddress?: string;
+  port?: string;
+  lastDataAt: string;
+  todayCount: number;
+  passRate: number;
+}
+
+interface CommLog {
+  id: string;
+  timestamp: string;
+  equipCode: string;
+  direction: 'RX' | 'TX';
+  message: string;
+  status: 'OK' | 'ERROR';
+}
+
+// ========================================
+// Mock 데이터
+// ========================================
+const mockEquipments: InspectorEquip[] = [
+  { id: '1', equipCode: 'INSP-01', equipName: '통전검사기 1호', commType: 'MQTT', status: 'CONNECTED', ipAddress: '192.168.1.101', port: '1883', lastDataAt: '2024-01-15 09:15:32', todayCount: 156, passRate: 94.2 },
+  { id: '2', equipCode: 'INSP-02', equipName: '통전검사기 2호', commType: 'SERIAL', status: 'CONNECTED', port: 'COM3', lastDataAt: '2024-01-15 09:15:28', todayCount: 142, passRate: 96.5 },
+  { id: '3', equipCode: 'INSP-03', equipName: '통전검사기 3호', commType: 'TCP', status: 'DISCONNECTED', ipAddress: '192.168.1.103', port: '5000', lastDataAt: '2024-01-15 08:45:10', todayCount: 89, passRate: 91.0 },
+  { id: '4', equipCode: 'INSP-04', equipName: '통전검사기 4호', commType: 'MQTT', status: 'ERROR', ipAddress: '192.168.1.104', port: '1883', lastDataAt: '2024-01-15 07:30:00', todayCount: 45, passRate: 88.9 },
+];
+
+const mockLogs: CommLog[] = [
+  { id: '1', timestamp: '2024-01-15 09:15:32', equipCode: 'INSP-01', direction: 'RX', message: 'RESULT:PASS,SN:SN-2024011500156,V:12.1,I:0.52', status: 'OK' },
+  { id: '2', timestamp: '2024-01-15 09:15:28', equipCode: 'INSP-02', direction: 'RX', message: 'RESULT:PASS,SN:SN-2024011500142,V:12.0,I:0.51', status: 'OK' },
+  { id: '3', timestamp: '2024-01-15 09:15:15', equipCode: 'INSP-01', direction: 'TX', message: 'ACK:OK', status: 'OK' },
+  { id: '4', timestamp: '2024-01-15 09:14:55', equipCode: 'INSP-04', direction: 'RX', message: 'CONNECTION_TIMEOUT', status: 'ERROR' },
+  { id: '5', timestamp: '2024-01-15 09:14:30', equipCode: 'INSP-02', direction: 'RX', message: 'RESULT:FAIL,SN:SN-2024011500141,ERR:E001', status: 'OK' },
+];
+
+const statusOptions = [
+  { value: '', label: '전체 상태' },
+  { value: 'CONNECTED', label: '연결됨' },
+  { value: 'DISCONNECTED', label: '연결끊김' },
+  { value: 'ERROR', label: '오류' },
+];
+
+// ========================================
+// 상태 배지 컴포넌트
+// ========================================
+function StatusBadge({ status }: { status: ConnectionStatus }) {
+  const config = {
+    CONNECTED: { icon: Wifi, label: '연결됨', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+    DISCONNECTED: { icon: WifiOff, label: '연결끊김', className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+    ERROR: { icon: AlertTriangle, label: '오류', className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+  };
+  const { icon: Icon, label, className } = config[status];
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${className}`}>
+      <Icon className="w-3 h-3" />{label}
+    </span>
+  );
+}
+
+// ========================================
+// 검사기 카드 컴포넌트
+// ========================================
+function EquipCard({ equip }: { equip: InspectorEquip }) {
+  const borderColor = equip.status === 'CONNECTED' ? 'border-green-500' : equip.status === 'ERROR' ? 'border-red-500' : 'border-gray-400';
+
+  return (
+    <Card className={`border-l-4 ${borderColor}`}>
+      <CardContent>
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <h3 className="font-semibold text-text">{equip.equipName}</h3>
+            <p className="text-sm text-text-muted">{equip.equipCode}</p>
+          </div>
+          <StatusBadge status={equip.status} />
+        </div>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-text-muted">통신방식</span><span className="text-text font-medium">{equip.commType}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">주소</span><span className="text-text font-mono">{equip.ipAddress || equip.port}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">마지막 수신</span><span className="text-text">{equip.lastDataAt.split(' ')[1]}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">금일 검사</span><span className="text-text font-bold">{equip.todayCount}건</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">합격률</span><span className={`font-bold ${equip.passRate >= 95 ? 'text-green-500' : 'text-yellow-500'}`}>{equip.passRate}%</span></div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ========================================
+// 메인 컴포넌트
+// ========================================
+function EquipPage() {
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const filteredEquipments = useMemo(() => {
+    if (!statusFilter) return mockEquipments;
+    return mockEquipments.filter((e) => e.status === statusFilter);
+  }, [statusFilter]);
+
+  const stats = useMemo(() => ({
+    total: mockEquipments.length,
+    connected: mockEquipments.filter((e) => e.status === 'CONNECTED').length,
+    disconnected: mockEquipments.filter((e) => e.status === 'DISCONNECTED').length,
+    error: mockEquipments.filter((e) => e.status === 'ERROR').length,
+  }), []);
+
+  const logColumns = useMemo<ColumnDef<CommLog>[]>(() => [
+    { accessorKey: 'timestamp', header: '시간', size: 150 },
+    { accessorKey: 'equipCode', header: '검사기', size: 90 },
+    { accessorKey: 'direction', header: '방향', size: 60, cell: ({ getValue }) => <span className={getValue() === 'RX' ? 'text-blue-500' : 'text-orange-500'}>{getValue() as string}</span> },
+    { accessorKey: 'message', header: '메시지', size: 350, cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span> },
+    { accessorKey: 'status', header: '상태', size: 70, cell: ({ getValue }) => <span className={getValue() === 'OK' ? 'text-green-500' : 'text-red-500'}>{getValue() as string}</span> },
+  ], []);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />검사기연동</h1>
+          <p className="text-text-muted mt-1">통전검사기 연결 상태를 모니터링합니다.</p>
+        </div>
+        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Power className="w-5 h-5 text-text-muted" /><span className="text-text-muted text-sm">전체 검사기</span></div><div className="text-2xl font-bold text-text mt-1">{stats.total}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Wifi className="w-5 h-5 text-green-500" /><span className="text-text-muted text-sm">연결됨</span></div><div className="text-2xl font-bold text-green-500 mt-1">{stats.connected}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><WifiOff className="w-5 h-5 text-gray-500" /><span className="text-text-muted text-sm">연결끊김</span></div><div className="text-2xl font-bold text-gray-500 mt-1">{stats.disconnected}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /><span className="text-text-muted text-sm">오류</span></div><div className="text-2xl font-bold text-red-500 mt-1">{stats.error}대</div></CardContent></Card>
+      </div>
+
+      <Card padding="sm">
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-text">필터</span>
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {filteredEquipments.map((equip) => <EquipCard key={equip.id} equip={equip} />)}
+      </div>
+
+      <Card>
+        <CardHeader title="통신 로그" subtitle="최근 수신/전송 데이터" action={<div className="flex items-center gap-1 text-sm text-text-muted"><Clock className="w-4 h-4" />실시간</div>} />
+        <CardContent><DataGrid data={mockLogs} columns={logColumns} pageSize={5} /></CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default EquipPage;
