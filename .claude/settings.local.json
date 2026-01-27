@@ -6,7 +6,11 @@
       "mcp__plugin_supabase_supabase__list_tables",
       "mcp__plugin_supabase_supabase__list_migrations",
       "Bash(pnpm:*)",
-      "Bash(npx prisma db pull:*)"
+      "Bash(npx prisma db pull:*)",
+      "Bash(find:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(timeout:*)",
+      "Bash(npx nest build)"
     ]
   }
 }
