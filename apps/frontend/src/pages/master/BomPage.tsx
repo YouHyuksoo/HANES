@@ -3,7 +3,7 @@
  * @description BOM 관리 페이지
  */
 import { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, Search, ChevronRight, Package } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, ChevronRight, Package, Layers } from 'lucide-react';
 import { Card, CardHeader, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -103,7 +103,7 @@ function BomPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text">BOM 관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Layers className="w-7 h-7 text-primary" />BOM 관리</h1>
           <p className="text-text-muted mt-1">제품별 자재 구성(Bill of Materials)을 관리합니다.</p>
         </div>
         <Button size="sm" onClick={() => { setEditingBom(null); setIsModalOpen(true); }}>

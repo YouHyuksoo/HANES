@@ -24,7 +24,6 @@ import {
   UpdateProdResultDto,
   ProdResultQueryDto,
   CompleteProdResultDto,
-  PROD_RESULT_STATUS,
 } from '../dto/prod-result.dto';
 
 @Injectable()
@@ -236,7 +235,7 @@ export class ProdResultService {
         startTime: dto.startTime ? new Date(dto.startTime) : new Date(),
         endTime: dto.endTime ? new Date(dto.endTime) : null,
         cycleTime: dto.cycleTime,
-        status: PROD_RESULT_STATUS.RUNNING,
+        status: 'RUNNING',
         remark: dto.remark,
       },
       include: {
@@ -270,7 +269,7 @@ export class ProdResultService {
     const prodResult = await this.findById(id);
 
     // DONE 상태에서는 일부 필드만 수정 가능
-    if (prodResult.status === PROD_RESULT_STATUS.DONE) {
+    if (prodResult.status === 'DONE') {
       if (dto.jobOrderId || dto.equipId || dto.workerId || dto.startTime) {
         throw new BadRequestException(`완료된 실적의 핵심 정보는 수정할 수 없습니다.`);
       }
@@ -333,7 +332,7 @@ export class ProdResultService {
   async complete(id: string, dto: CompleteProdResultDto) {
     const prodResult = await this.findById(id);
 
-    if (prodResult.status !== PROD_RESULT_STATUS.RUNNING) {
+    if (prodResult.status !== 'RUNNING') {
       throw new BadRequestException(
         `현재 상태(${prodResult.status})에서는 완료할 수 없습니다. RUNNING 상태여야 합니다.`,
       );
@@ -342,7 +341,7 @@ export class ProdResultService {
     return this.prisma.prodResult.update({
       where: { id },
       data: {
-        status: PROD_RESULT_STATUS.DONE,
+        status: 'DONE',
         endTime: dto.endTime ? new Date(dto.endTime) : new Date(),
         ...(dto.goodQty !== undefined && { goodQty: dto.goodQty }),
         ...(dto.defectQty !== undefined && { defectQty: dto.defectQty }),
@@ -365,14 +364,14 @@ export class ProdResultService {
   async cancel(id: string, remark?: string) {
     const prodResult = await this.findById(id);
 
-    if (prodResult.status === PROD_RESULT_STATUS.CANCELED) {
+    if (prodResult.status === 'CANCELED') {
       throw new BadRequestException(`이미 취소된 실적입니다.`);
     }
 
     return this.prisma.prodResult.update({
       where: { id },
       data: {
-        status: PROD_RESULT_STATUS.CANCELED,
+        status: 'CANCELED',
         ...(remark && { remark }),
       },
     });
@@ -385,7 +384,7 @@ export class ProdResultService {
    */
   async getSummaryByJobOrder(jobOrderId: string) {
     const summary = await this.prisma.prodResult.aggregate({
-      where: { jobOrderId, deletedAt: null, status: { not: PROD_RESULT_STATUS.CANCELED } },
+      where: { jobOrderId, deletedAt: null, status: { not: 'CANCELED' } },
       _sum: {
         goodQty: true,
         defectQty: true,
@@ -418,7 +417,7 @@ export class ProdResultService {
     const where: any = {
       equipId,
       deletedAt: null,
-      status: { not: PROD_RESULT_STATUS.CANCELED },
+      status: { not: 'CANCELED' },
     };
 
     if (dateFrom || dateTo) {
@@ -462,7 +461,7 @@ export class ProdResultService {
     const where: any = {
       workerId,
       deletedAt: null,
-      status: { not: PROD_RESULT_STATUS.CANCELED },
+      status: { not: 'CANCELED' },
     };
 
     if (dateFrom || dateTo) {
@@ -506,7 +505,7 @@ export class ProdResultService {
     const results = await this.prisma.prodResult.findMany({
       where: {
         deletedAt: null,
-        status: { not: PROD_RESULT_STATUS.CANCELED },
+        status: { not: 'CANCELED' },
         startTime: {
           gte: new Date(dateFrom),
           lte: new Date(dateTo),

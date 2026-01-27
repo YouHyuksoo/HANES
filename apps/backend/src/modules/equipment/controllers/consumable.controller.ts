@@ -47,8 +47,8 @@ import {
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
-  CONSUMABLE_CATEGORIES,
 } from '../dto/consumable.dto';
+import { CONSUMABLE_CATEGORY_VALUES } from '@hanes/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('설비관리 - 소모품(금형/지그/공구)')
@@ -87,7 +87,7 @@ export class ConsumableController {
 
   @Get('category/:category')
   @ApiOperation({ summary: '카테고리별 소모품 목록 조회' })
-  @ApiParam({ name: 'category', description: '카테고리', enum: CONSUMABLE_CATEGORIES })
+  @ApiParam({ name: 'category', description: '카테고리', enum: CONSUMABLE_CATEGORY_VALUES })
   async findByCategory(@Param('category') category: string) {
     const data = await this.consumableService.findByCategory(category);
     return ResponseUtil.success(data);

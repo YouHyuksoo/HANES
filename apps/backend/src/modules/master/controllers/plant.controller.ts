@@ -6,8 +6,9 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { PlantService } from '../services/plant.service';
-import { CreatePlantDto, UpdatePlantDto, PlantQueryDto, PLANT_TYPES } from '../dto/plant.dto';
+import { CreatePlantDto, UpdatePlantDto, PlantQueryDto } from '../dto/plant.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { PLANT_TYPE_VALUES } from '@hanes/shared';
 
 @ApiTags('기준정보 - 공장/라인')
 @Controller('master/plants')
@@ -23,7 +24,7 @@ export class PlantController {
 
   @Get('types/:type')
   @ApiOperation({ summary: '타입별 목록 조회' })
-  @ApiParam({ name: 'type', enum: PLANT_TYPES })
+  @ApiParam({ name: 'type', enum: PLANT_TYPE_VALUES })
   async findByType(@Param('type') type: string) {
     const data = await this.plantService.findByType(type);
     return ResponseUtil.success(data);

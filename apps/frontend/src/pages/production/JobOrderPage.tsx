@@ -23,9 +23,10 @@ import {
   Eye,
   ClipboardList
 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { useComCodeOptions } from '@/hooks/useComCode';
 
 /** 작업지시 상태 타입 */
 type JobOrderStatus = 'WAITING' | 'RUNNING' | 'DONE';
@@ -120,22 +121,11 @@ const mockJobOrders: JobOrder[] = [
   },
 ];
 
-/** 상태 필터 옵션 */
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'WAITING', label: '대기' },
-  { value: 'RUNNING', label: '진행중' },
-  { value: 'DONE', label: '완료' },
-];
-
-/** 상태별 스타일 매핑 */
-const statusStyles: Record<JobOrderStatus, { label: string; color: string }> = {
-  WAITING: { label: '대기', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
-  RUNNING: { label: '진행중', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-  DONE: { label: '완료', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-};
-
 function JobOrderPage() {
+  /** 상태 필터 옵션 (DB 공통코드 기반) */
+  const comCodeStatusOptions = useComCodeOptions('JOB_ORDER_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+
   // 필터 상태
   const [statusFilter, setStatusFilter] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -243,12 +233,7 @@ function JobOrderPage() {
         size: 80,
         cell: ({ getValue }) => {
           const status = getValue() as JobOrderStatus;
-          const style = statusStyles[status];
-          return (
-            <span className={`px-2 py-1 text-xs rounded-full ${style.color}`}>
-              {style.label}
-            </span>
-          );
+          return <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={status} />;
         },
       },
       {
@@ -306,7 +291,7 @@ function JobOrderPage() {
       {/* 페이지 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2">
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardList className="w-7 h-7 text-primary" />
             작업지시 관리
           </h1>
@@ -414,19 +399,19 @@ function JobOrderPage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
                 <span className="text-sm text-text-muted">계획수량</span>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                <p className="text-lg font-bold leading-tight text-blue-600 dark:text-blue-400">
                   {selectedOrder.planQty.toLocaleString()}
                 </p>
               </div>
               <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
                 <span className="text-sm text-text-muted">실적수량</span>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <p className="text-lg font-bold leading-tight text-green-600 dark:text-green-400">
                   {selectedOrder.prodQty.toLocaleString()}
                 </p>
               </div>
               <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center">
                 <span className="text-sm text-text-muted">진행률</span>
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <p className="text-lg font-bold leading-tight text-purple-600 dark:text-purple-400">
                   {getProgress(selectedOrder)}%
                 </p>
               </div>
@@ -437,9 +422,7 @@ function JobOrderPage() {
               <div>
                 <span className="text-sm text-text-muted">상태</span>
                 <p>
-                  <span className={`px-2 py-1 text-xs rounded-full ${statusStyles[selectedOrder.status].color}`}>
-                    {statusStyles[selectedOrder.status].label}
-                  </span>
+                  <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedOrder.status} />
                 </p>
               </div>
               <div>
@@ -474,7 +457,7 @@ function JobOrderPage() {
               )}
               {selectedOrder.status === 'RUNNING' && (
                 <>
-                  <Button variant="outline" onClick={() => handleStatusChange(selectedOrder.id, 'WAITING')}>
+                  <Button variant="secondary" onClick={() => handleStatusChange(selectedOrder.id, 'WAITING')}>
                     <Pause className="w-4 h-4 mr-1" /> 일시 정지
                   </Button>
                   <Button onClick={() => handleStatusChange(selectedOrder.id, 'DONE')}>

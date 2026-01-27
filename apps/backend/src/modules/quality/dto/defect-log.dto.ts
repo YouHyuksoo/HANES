@@ -25,29 +25,10 @@ import {
   Min,
   Max,
   MaxLength,
-  IsEnum,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-/**
- * 불량 상태 enum
- */
-export enum DefectStatus {
-  WAIT = 'WAIT',       // 대기
-  REPAIR = 'REPAIR',   // 수리중
-  REWORK = 'REWORK',   // 재작업
-  SCRAP = 'SCRAP',     // 폐기
-  DONE = 'DONE',       // 완료
-}
-
-/**
- * 수리 결과 enum
- */
-export enum RepairResult {
-  PASS = 'PASS',   // 수리 성공
-  FAIL = 'FAIL',   // 수리 실패
-  SCRAP = 'SCRAP', // 폐기 처리
-}
+import { DEFECT_LOG_STATUS_VALUES, REPAIR_RESULT_VALUES } from '@hanes/shared';
 
 /**
  * 불량로그 생성 DTO
@@ -78,11 +59,11 @@ export class CreateDefectLogDto {
   @ApiPropertyOptional({
     description: '상태',
     default: 'WAIT',
-    enum: DefectStatus,
+    enum: [...DEFECT_LOG_STATUS_VALUES],
   })
   @IsOptional()
-  @IsEnum(DefectStatus)
-  status?: DefectStatus;
+  @IsIn([...DEFECT_LOG_STATUS_VALUES])
+  status?: string;
 
   @ApiPropertyOptional({ description: '불량 원인', maxLength: 500 })
   @IsOptional()
@@ -113,11 +94,11 @@ export class UpdateDefectLogDto extends PartialType(CreateDefectLogDto) {}
 export class ChangeDefectStatusDto {
   @ApiProperty({
     description: '변경할 상태',
-    enum: DefectStatus,
+    enum: [...DEFECT_LOG_STATUS_VALUES],
     example: 'REPAIR',
   })
-  @IsEnum(DefectStatus)
-  status: DefectStatus;
+  @IsIn([...DEFECT_LOG_STATUS_VALUES])
+  status: string;
 
   @ApiPropertyOptional({ description: '비고/사유', maxLength: 500 })
   @IsOptional()
@@ -155,10 +136,10 @@ export class DefectLogQueryDto {
   @IsString()
   defectCode?: string;
 
-  @ApiPropertyOptional({ description: '상태로 필터링', enum: DefectStatus })
+  @ApiPropertyOptional({ description: '상태로 필터링', enum: [...DEFECT_LOG_STATUS_VALUES] })
   @IsOptional()
-  @IsEnum(DefectStatus)
-  status?: DefectStatus;
+  @IsIn([...DEFECT_LOG_STATUS_VALUES])
+  status?: string;
 
   @ApiPropertyOptional({ description: '발생 시작 날짜 (ISO 8601)' })
   @IsOptional()
@@ -210,11 +191,11 @@ export class CreateRepairLogDto {
 
   @ApiPropertyOptional({
     description: '수리 결과',
-    enum: RepairResult,
+    enum: [...REPAIR_RESULT_VALUES],
   })
   @IsOptional()
-  @IsEnum(RepairResult)
-  result?: RepairResult;
+  @IsIn([...REPAIR_RESULT_VALUES])
+  result?: string;
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
@@ -247,8 +228,8 @@ export class DefectTypeStatsDto {
  * 불량 상태별 통계 응답 DTO
  */
 export class DefectStatusStatsDto {
-  @ApiProperty({ description: '상태', enum: DefectStatus })
-  status: DefectStatus;
+  @ApiProperty({ description: '상태', enum: [...DEFECT_LOG_STATUS_VALUES] })
+  status: string;
 
   @ApiProperty({ description: '건수' })
   count: number;

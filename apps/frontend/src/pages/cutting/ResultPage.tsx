@@ -8,8 +8,8 @@
  * 3. **LOT 추적**: 어떤 릴에서 절단되었는지 추적 가능
  */
 import { useState, useMemo } from 'react';
-import { Search, RefreshCw, Download, Calendar, Scissors, Package, Clock } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select } from '@/components/ui';
+import { Search, RefreshCw, Download, Calendar, Scissors, Package, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { CuttingResult } from './types';
@@ -73,7 +73,7 @@ function ResultPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Scissors className="w-7 h-7 text-primary" />절단 작업실적</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Scissors className="w-7 h-7 text-primary" />절단 작업실적</h1>
           <p className="text-text-muted mt-1">절단 작업 실적을 조회합니다.</p>
         </div>
         <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
@@ -81,10 +81,10 @@ function ResultPage() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><Package className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div><div><p className="text-sm text-text-muted">총 생산</p><p className="text-xl font-bold text-text">{stats.totalQty.toLocaleString()}</p></div></div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg"><Package className="w-5 h-5 text-green-600 dark:text-green-400" /></div><div><p className="text-sm text-text-muted">양품</p><p className="text-xl font-bold text-green-600">{stats.totalGood.toLocaleString()}</p></div></div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg"><Package className="w-5 h-5 text-red-600 dark:text-red-400" /></div><div><p className="text-sm text-text-muted">불량</p><p className="text-xl font-bold text-red-600">{stats.totalDefect.toLocaleString()}</p></div></div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg"><Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" /></div><div><p className="text-sm text-text-muted">불량률</p><p className="text-xl font-bold text-purple-600">{stats.defectRate}%</p></div></div></CardContent></Card>
+        <StatCard label="총 생산" value={stats.totalQty} icon={Package} color="blue" />
+        <StatCard label="양품" value={stats.totalGood} icon={CheckCircle} color="green" />
+        <StatCard label="불량" value={stats.totalDefect} icon={XCircle} color="red" />
+        <StatCard label="불량률" value={`${stats.defectRate}%`} icon={Clock} color="purple" />
       </div>
 
       <Card>

@@ -1,13 +1,11 @@
 /**
  * @file src/common/guards/jwt-auth.guard.ts
- * @description JWT 인증 가드 (기본 구조)
+ * @description 인증 가드 - Bearer 토큰(userId)으로 사용자 확인
  *
  * 초보자 가이드:
- * 1. **목적**: JWT 토큰 기반 인증 검증
+ * 1. **목적**: Bearer 토큰(userId)을 DB에서 검증
  * 2. **사용법**: 컨트롤러나 메서드에 @UseGuards(JwtAuthGuard) 데코레이터 적용
- * 3. **확장**: Supabase Auth 연동 시 실제 검증 로직 구현 필요
- *
- * TODO: Supabase Auth 연동 후 실제 JWT 검증 로직 구현
+ * 3. **토큰**: userId를 그대로 토큰으로 사용 (JWT 라이브러리 없음)
  */
 
 import {
@@ -18,6 +16,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * 인증된 사용자 정보 인터페이스
@@ -39,6 +38,8 @@ export interface AuthenticatedRequest extends Request {
 export class JwtAuthGuard implements CanActivate {
   private readonly logger = new Logger(JwtAuthGuard.name);
 
+  constructor(private readonly prisma: PrismaService) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractTokenFromHeader(request);
@@ -48,24 +49,27 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      // TODO: Supabase Auth로 토큰 검증
-      // const supabase = createClient(...)
-      // const { data: { user }, error } = await supabase.auth.getUser(token)
+      // DB에서 userId로 사용자 조회
+      const user = await this.prisma.user.findUnique({
+        where: { id: token },
+        select: { id: true, email: true, role: true, status: true },
+      });
 
-      // 임시: 토큰이 존재하면 통과 (개발용)
-      // 실제 구현 시 아래 주석 해제 및 수정
-      const user: AuthenticatedUser = {
-        id: 'temp-user-id',
-        email: 'temp@example.com',
-        role: 'user',
-      };
+      if (!user || user.status !== 'ACTIVE') {
+        throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+      }
 
       // 요청 객체에 사용자 정보 추가
-      (request as AuthenticatedRequest).user = user;
+      (request as AuthenticatedRequest).user = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      };
 
       this.logger.debug(`User authenticated: ${user.email}`);
       return true;
     } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
       this.logger.warn(`Authentication failed: ${(error as Error).message}`);
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }

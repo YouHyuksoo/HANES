@@ -9,7 +9,7 @@
  */
 import { useState, useMemo } from 'react';
 import { Search, RefreshCw, Download, Calendar, Hammer, Package, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { CrimpingResult, CHApprovalStatus, chApprovalStyles } from './types';
@@ -91,7 +91,7 @@ function ResultPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Hammer className="w-7 h-7 text-primary" />압착 작업실적</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Hammer className="w-7 h-7 text-primary" />압착 작업실적</h1>
           <p className="text-text-muted mt-1">압착 작업 실적 및 C/H 승인 현황을 조회합니다.</p>
         </div>
         <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
@@ -99,10 +99,10 @@ function ResultPage() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg"><Package className="w-5 h-5 text-green-600 dark:text-green-400" /></div><div><p className="text-sm text-text-muted">양품</p><p className="text-xl font-bold text-green-600">{stats.totalGood.toLocaleString()}</p></div></div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg"><Package className="w-5 h-5 text-red-600 dark:text-red-400" /></div><div><p className="text-sm text-text-muted">불량</p><p className="text-xl font-bold text-red-600">{stats.totalDefect.toLocaleString()}</p></div></div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg"><Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" /></div><div><p className="text-sm text-text-muted">C/H 승인대기</p><p className="text-xl font-bold text-yellow-600">{stats.pendingCount}건</p></div></div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-3"><div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div><div><p className="text-sm text-text-muted">총 실적</p><p className="text-xl font-bold text-blue-600">{filteredResults.length}건</p></div></div></CardContent></Card>
+        <StatCard label="양품" value={stats.totalGood} icon={CheckCircle} color="green" />
+        <StatCard label="불량" value={stats.totalDefect} icon={XCircle} color="red" />
+        <StatCard label="C/H 승인대기" value={`${stats.pendingCount}건`} icon={Clock} color="yellow" />
+        <StatCard label="총 실적" value={`${filteredResults.length}건`} icon={Package} color="blue" />
       </div>
 
       <Card>
@@ -141,7 +141,7 @@ function ResultPage() {
               <p className="text-3xl font-bold text-primary">{selectedResult.crimpHeightActual.toFixed(2)} mm</p>
             </div>
             <div className="flex justify-center gap-3 pt-2">
-              <Button variant="outline" onClick={() => handleApproval('REJECTED')} className="flex-1">
+              <Button variant="secondary" onClick={() => handleApproval('REJECTED')} className="flex-1">
                 <XCircle className="w-4 h-4 mr-1 text-red-500" />반려
               </Button>
               <Button onClick={() => handleApproval('APPROVED')} className="flex-1">

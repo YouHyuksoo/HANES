@@ -16,25 +16,24 @@ import { forwardRef, HTMLAttributes } from 'react';
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'glass';
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  hover?: boolean;
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className = '', variant = 'default', padding = 'md', children, ...props }, ref) => {
-    const baseStyles = `
-      rounded-[var(--radius)]
-      border border-border
-      animate-fade-in
-    `;
+  ({ className = '', variant = 'default', padding = 'lg', hover = false, children, ...props }, ref) => {
+    const baseStyles = 'rounded-2xl border border-border transition-all duration-200 animate-fade-in';
 
     const variantStyles = {
-      default: 'bg-surface',
-      glass: 'bg-surface/80 backdrop-blur-md dark:bg-surface/50',
+      default: 'bg-card',
+      glass: 'bg-card/80 backdrop-blur-md dark:bg-card/50',
     };
+
+    const hoverStyles = hover ? 'hover:shadow-lg hover:border-primary/50' : '';
 
     const paddingStyles = {
       none: '',
-      sm: 'p-3',
-      md: 'p-5',
+      sm: 'px-4 py-3',
+      md: 'p-6',
       lg: 'p-8',
     };
 
@@ -44,6 +43,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         className={`
           ${baseStyles}
           ${variantStyles[variant]}
+          ${hoverStyles}
           ${paddingStyles[padding]}
           ${className}
         `}
@@ -60,8 +60,8 @@ Card.displayName = 'Card';
 // ========================================
 // Card Header
 // ========================================
-export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
-  title?: string;
+export interface CardHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+  title?: React.ReactNode;
   subtitle?: string;
   action?: React.ReactNode;
 }
@@ -73,15 +73,14 @@ const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
         ref={ref}
         className={`
           flex items-center justify-between
-          pb-4 mb-4
-          border-b border-border
+          mb-4
           ${className}
         `}
         {...props}
       >
         <div>
-          {title && <h3 className="text-lg font-semibold text-text">{title}</h3>}
-          {subtitle && <p className="text-sm text-text-muted mt-1">{subtitle}</p>}
+          {title && <h3 className="text-lg font-semibold text-foreground">{title}</h3>}
+          {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
           {children}
         </div>
         {action && <div>{action}</div>}
@@ -115,12 +114,7 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     return (
       <div
         ref={ref}
-        className={`
-          flex items-center justify-end gap-3
-          pt-4 mt-4
-          border-t border-border
-          ${className}
-        `}
+        className={`mt-4 ${className}`}
         {...props}
       >
         {children}

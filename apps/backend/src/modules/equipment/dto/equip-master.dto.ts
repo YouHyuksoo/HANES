@@ -31,36 +31,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-/**
- * 설비 상태 enum
- */
-export const EQUIP_STATUS = ['NORMAL', 'MAINT', 'STOP'] as const;
-export type EquipStatus = (typeof EQUIP_STATUS)[number];
-
-/**
- * 통신 방식 enum
- */
-export const COMM_TYPES = ['MQTT', 'SERIAL', 'TCP', 'OPC_UA', 'MODBUS'] as const;
-export type CommType = (typeof COMM_TYPES)[number];
-
-/**
- * 설비 유형 (와이어 하네스 공정 기준)
- */
-export const EQUIP_TYPES = [
-  'AUTO_CRIMP',    // 자동압착기
-  'SINGLE_CUT',    // 단선절단기
-  'MULTI_CUT',     // 다선절단기
-  'TWIST',         // 트위스트기
-  'SOLDER',        // 솔더링기
-  'HOUSING',       // 하우징삽입기
-  'TESTER',        // 통전검사기
-  'LABEL_PRINTER', // 라벨프린터
-  'INSPECTION',    // 검사장비
-  'PACKING',       // 포장장비
-  'OTHER',         // 기타
-] as const;
-export type EquipType = (typeof EQUIP_TYPES)[number];
+import { EQUIP_STATUS_VALUES, COMM_TYPE_VALUES, EQUIP_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
 
 /**
  * 설비마스터 생성 DTO
@@ -78,12 +49,12 @@ export class CreateEquipMasterDto {
 
   @ApiPropertyOptional({
     description: '설비 유형',
-    enum: EQUIP_TYPES,
+    enum: EQUIP_TYPE_VALUES,
     example: 'AUTO_CRIMP',
   })
   @IsOptional()
   @IsString()
-  @IsIn(EQUIP_TYPES)
+  @IsIn([...EQUIP_TYPE_VALUES])
   equipType?: string;
 
   @ApiPropertyOptional({ description: '모델명', maxLength: 100 })
@@ -120,12 +91,12 @@ export class CreateEquipMasterDto {
 
   @ApiPropertyOptional({
     description: '통신 방식',
-    enum: COMM_TYPES,
+    enum: COMM_TYPE_VALUES,
     example: 'TCP',
   })
   @IsOptional()
   @IsString()
-  @IsIn(COMM_TYPES)
+  @IsIn([...COMM_TYPE_VALUES])
   commType?: string;
 
   @ApiPropertyOptional({
@@ -142,18 +113,18 @@ export class CreateEquipMasterDto {
 
   @ApiPropertyOptional({
     description: '설비 상태',
-    enum: EQUIP_STATUS,
+    enum: EQUIP_STATUS_VALUES,
     default: 'NORMAL',
   })
   @IsOptional()
   @IsString()
-  @IsIn(EQUIP_STATUS)
+  @IsIn([...EQUIP_STATUS_VALUES])
   status?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -168,11 +139,11 @@ export class UpdateEquipMasterDto extends PartialType(CreateEquipMasterDto) {}
 export class ChangeEquipStatusDto {
   @ApiProperty({
     description: '변경할 상태',
-    enum: EQUIP_STATUS,
+    enum: EQUIP_STATUS_VALUES,
     example: 'MAINT',
   })
   @IsString()
-  @IsIn(EQUIP_STATUS)
+  @IsIn([...EQUIP_STATUS_VALUES])
   status: string;
 
   @ApiPropertyOptional({ description: '변경 사유', maxLength: 500 })
@@ -201,10 +172,10 @@ export class EquipMasterQueryDto {
   @Max(100)
   limit?: number = 20;
 
-  @ApiPropertyOptional({ description: '설비 유형', enum: EQUIP_TYPES })
+  @ApiPropertyOptional({ description: '설비 유형', enum: EQUIP_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(EQUIP_TYPES)
+  @IsIn([...EQUIP_TYPE_VALUES])
   equipType?: string;
 
   @ApiPropertyOptional({ description: '라인 코드' })
@@ -212,16 +183,16 @@ export class EquipMasterQueryDto {
   @IsString()
   lineCode?: string;
 
-  @ApiPropertyOptional({ description: '상태', enum: EQUIP_STATUS })
+  @ApiPropertyOptional({ description: '상태', enum: EQUIP_STATUS_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(EQUIP_STATUS)
+  @IsIn([...EQUIP_STATUS_VALUES])
   status?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '검색어 (코드, 이름, 모델명)' })

@@ -27,17 +27,9 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { BOX_STATUS_VALUES } from '@hanes/shared';
 
-/**
- * 박스 상태 enum
- */
-export const BOX_STATUS = {
-  OPEN: 'OPEN',
-  CLOSED: 'CLOSED',
-  SHIPPED: 'SHIPPED',
-} as const;
-
-export type BoxStatus = (typeof BOX_STATUS)[keyof typeof BOX_STATUS];
+export type BoxStatus = typeof BOX_STATUS_VALUES[number];
 
 /**
  * 박스 생성 DTO
@@ -75,11 +67,11 @@ export class UpdateBoxDto extends PartialType(CreateBoxDto) {
 
   @ApiPropertyOptional({
     description: '상태',
-    enum: Object.values(BOX_STATUS),
+    enum: [...BOX_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(BOX_STATUS))
+  @IsIn([...BOX_STATUS_VALUES])
   status?: BoxStatus;
 }
 
@@ -119,11 +111,11 @@ export class BoxQueryDto {
 
   @ApiPropertyOptional({
     description: '상태 필터',
-    enum: Object.values(BOX_STATUS),
+    enum: [...BOX_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(BOX_STATUS))
+  @IsIn([...BOX_STATUS_VALUES])
   status?: BoxStatus;
 
   @ApiPropertyOptional({ description: '팔레트 미할당 박스만', default: false })

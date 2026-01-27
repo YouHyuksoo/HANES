@@ -131,7 +131,7 @@ function EquipMasterPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />설비마스터</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />설비마스터</h1>
           <p className="text-text-muted mt-1">설비 기준정보와 통신설정을 관리합니다.</p>
         </div>
         <div className="flex gap-2">

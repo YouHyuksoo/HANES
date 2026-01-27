@@ -9,10 +9,11 @@
  */
 import { useState, useMemo } from 'react';
 import { Play, CheckCircle, Search, RefreshCw, Download, Eye, Hammer, Settings2 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import { ColumnDef } from '@tanstack/react-table';
-import { CrimpingOrder, CrimpingOrderStatus, Mold, orderStatusStyles, moldStatusStyles } from './types';
+import { CrimpingOrder, CrimpingOrderStatus, Mold, moldStatusStyles } from './types';
 
 // Mock 데이터
 const mockOrders: CrimpingOrder[] = [
@@ -28,14 +29,9 @@ const mockMolds: Mold[] = [
   { id: '3', moldCode: 'MD-003', moldName: '312형 금형 C', terminalCode: 'T-003', terminalName: '312형 단자', currentShots: 95000, expectedLife: 100000, status: 'REPLACE', lastMaintDate: '2024-11-15', nextMaintDate: '2024-12-15', location: '창고' },
 ];
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'WAITING', label: '대기' },
-  { value: 'RUNNING', label: '진행중' },
-  { value: 'DONE', label: '완료' },
-];
-
 function OrderPage() {
+  const comCodeStatusOptions = useComCodeOptions('JOB_ORDER_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
   const [statusFilter, setStatusFilter] = useState('');
   const [searchText, setSearchText] = useState('');
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -76,7 +72,7 @@ function OrderPage() {
     { accessorKey: 'planQty', header: '계획', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'prodQty', header: '실적', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'equipCode', header: '설비', size: 80 },
-    { accessorKey: 'status', header: '상태', size: 80, cell: ({ getValue }) => { const s = getValue() as CrimpingOrderStatus; return <span className={`px-2 py-1 text-xs rounded-full ${orderStatusStyles[s].color}`}>{orderStatusStyles[s].label}</span>; } },
+    { accessorKey: 'status', header: '상태', size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
     { id: 'actions', header: '관리', size: 100,
       cell: ({ row }) => (
         <div className="flex gap-1">
@@ -93,7 +89,7 @@ function OrderPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Hammer className="w-7 h-7 text-primary" />압착 작업지시</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Hammer className="w-7 h-7 text-primary" />압착 작업지시</h1>
           <p className="text-text-muted mt-1">터미널 압착 작업을 지시하고 관리합니다.</p>
         </div>
         <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>

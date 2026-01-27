@@ -10,11 +10,11 @@
 import { useState, useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import {
-  RefreshCw, Search, Package, ArrowRight, Clock, CheckCircle,
-  PlayCircle,
+  RefreshCw, Search, Package, ArrowRight, Clock, Play, CheckCircle,
 } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Select, Modal } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, Modal, ComCodeBadge, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { useComCodeOptions } from '@/hooks/useComCode';
 
 // ========================================
 // 타입 정의
@@ -47,42 +47,18 @@ const mockSemiProducts: SemiProduct[] = [
   { id: '6', semiCode: 'SEMI-006', partName: '접지선 Assy', workOrderNo: 'WO-2024-0115-003', qty: 90, currentProcess: 'CUTTING', status: 'WAITING', createdAt: '2024-01-15 09:30', updatedAt: '2024-01-15 09:30', lotNo: 'LOT-20240115-006' },
 ];
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'WAITING', label: '대기' },
-  { value: 'IN_PROGRESS', label: '진행중' },
-  { value: 'COMPLETED', label: '완료' },
-];
-
-const processOptions = [
-  { value: '', label: '전체 공정' },
-  { value: 'CUTTING', label: '절단' },
-  { value: 'CRIMPING', label: '압착' },
-  { value: 'ASSEMBLY', label: '조립' },
-  { value: 'INSPECTION', label: '검사' },
-];
-
-const statusConfig: Record<SemiStatus, { label: string; color: string; icon: typeof Clock }> = {
-  WAITING: { label: '대기', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: Clock },
-  IN_PROGRESS: { label: '진행중', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', icon: PlayCircle },
-  COMPLETED: { label: '완료', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', icon: CheckCircle },
-  MOVED: { label: '이동완료', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', icon: ArrowRight },
-};
-
 const processLabels: Record<ProcessType, string> = { CUTTING: '절단', CRIMPING: '압착', ASSEMBLY: '조립', INSPECTION: '검사' };
-
-// ========================================
-// 상태 배지 컴포넌트
-// ========================================
-function StatusBadge({ status }: { status: SemiStatus }) {
-  const { label, color, icon: Icon } = statusConfig[status];
-  return <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${color}`}><Icon className="w-3 h-3" />{label}</span>;
-}
 
 // ========================================
 // 메인 컴포넌트
 // ========================================
 function SemiProductPage() {
+  /** 상태/공정 필터 옵션 (DB 공통코드 기반) */
+  const comCodeStatusOptions = useComCodeOptions('SEMI_PRODUCT_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+  const comCodeProcessOptions = useComCodeOptions('PROCESS_TYPE');
+  const processOptions = [{ value: '', label: '전체 공정' }, ...comCodeProcessOptions];
+
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [processFilter, setProcessFilter] = useState('');
@@ -111,13 +87,13 @@ function SemiProductPage() {
     { accessorKey: 'workOrderNo', header: '작업지시번호', size: 150 },
     { accessorKey: 'qty', header: '수량', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'currentProcess', header: '현재공정', size: 80, cell: ({ getValue }) => <span className="px-2 py-1 text-xs rounded bg-surface text-text">{processLabels[getValue() as ProcessType]}</span> },
-    { accessorKey: 'status', header: '상태', size: 90, cell: ({ getValue }) => <StatusBadge status={getValue() as SemiStatus} /> },
+    { accessorKey: 'status', header: '상태', size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="SEMI_PRODUCT_STATUS" code={getValue() as string} /> },
     { accessorKey: 'lotNo', header: 'LOT번호', size: 150, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
     { accessorKey: 'updatedAt', header: '최종수정', size: 130 },
     { id: 'actions', header: '관리', size: 80, cell: ({ row }) => (
-      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSelectedItem(row.original); setIsMoveModalOpen(true); }} disabled={row.original.status !== 'COMPLETED'}>
-        <ArrowRight className="w-4 h-4" />
-      </Button>
+      <button onClick={(e) => { e.stopPropagation(); setSelectedItem(row.original); setIsMoveModalOpen(true); }} className="p-1 hover:bg-surface rounded" title="공정이동" disabled={row.original.status !== 'COMPLETED'}>
+        <ArrowRight className={`w-4 h-4 ${row.original.status === 'COMPLETED' ? 'text-primary' : 'text-text-muted opacity-50'}`} />
+      </button>
     )},
   ], []);
 
@@ -131,21 +107,20 @@ function SemiProductPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />반제품관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />반제품관리</h1>
           <p className="text-text-muted mt-1">반제품 현황과 공정 이동을 관리합니다.</p>
         </div>
         <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">전체</div><div className="text-2xl font-bold text-text mt-1">{stats.total}건</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">대기</div><div className="text-2xl font-bold text-gray-500 mt-1">{stats.waiting}건</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">진행중</div><div className="text-2xl font-bold text-blue-500 mt-1">{stats.inProgress}건</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">완료</div><div className="text-2xl font-bold text-green-500 mt-1">{stats.completed}건</div></CardContent></Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="전체" value={`${stats.total}건`} icon={Package} color="blue" />
+        <StatCard label="대기" value={`${stats.waiting}건`} icon={Clock} color="gray" />
+        <StatCard label="진행중" value={`${stats.inProgress}건`} icon={Play} color="orange" />
+        <StatCard label="완료" value={`${stats.completed}건`} icon={CheckCircle} color="green" />
       </div>
 
       <Card>
-        <CardHeader title="반제품 목록" subtitle={`총 ${filteredData.length}건`} />
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]"><Input placeholder="코드 또는 품명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>

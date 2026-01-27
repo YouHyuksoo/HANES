@@ -11,6 +11,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, IsIn, IsDateString, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ISSUE_TYPE_VALUES } from '@hanes/shared';
 
 export class IssueItemDto {
   @ApiProperty({ description: 'LOT ID' })
@@ -34,10 +35,10 @@ export class CreateMatIssueDto {
   @IsString()
   warehouseCode?: string;
 
-  @ApiPropertyOptional({ description: '출고 유형', enum: ['PROD', 'SUBCON', 'SAMPLE', 'ADJ'] })
+  @ApiPropertyOptional({ description: '출고 유형', enum: ISSUE_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['PROD', 'SUBCON', 'SAMPLE', 'ADJ'])
+  @IsIn([...ISSUE_TYPE_VALUES])
   issueType?: string;
 
   @ApiProperty({ description: '출고 품목 목록', type: [IssueItemDto] })
@@ -83,10 +84,10 @@ export class MatIssueQueryDto {
   @IsString()
   lotId?: string;
 
-  @ApiPropertyOptional({ description: '출고 유형', enum: ['PROD', 'SUBCON', 'SAMPLE', 'ADJ'] })
+  @ApiPropertyOptional({ description: '출고 유형', enum: ISSUE_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['PROD', 'SUBCON', 'SAMPLE', 'ADJ'])
+  @IsIn([...ISSUE_TYPE_VALUES])
   issueType?: string;
 
   @ApiPropertyOptional({ description: '출고일 시작' })

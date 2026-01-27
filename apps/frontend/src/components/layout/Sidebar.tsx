@@ -3,7 +3,7 @@
  * @description 사이드바 네비게이션 컴포넌트
  *
  * 초보자 가이드:
- * 1. **메뉴 구조**: 대시보드 -> 8대 공정 -> 기준정보 순서
+ * 1. **메뉴 구조**: 대시보드 -> 기준정보 -> 8대 공정 순서
  * 2. **하위 메뉴**: 클릭 시 펼침/접힘
  * 3. **활성 상태**: 현재 페이지 하이라이트
  */
@@ -22,6 +22,12 @@ import {
   Database,
   ChevronDown,
   ChevronRight,
+  FileBox,
+  Cog,
+  Building2,
+  ArrowLeftRight,
+  Warehouse,
+  UserCog,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -38,6 +44,28 @@ const menuItems: MenuItem[] = [
     label: '대시보드',
     path: '/',
     icon: LayoutDashboard,
+  },
+  {
+    id: 'master',
+    label: '기준정보',
+    icon: Database,
+    children: [
+      { id: 'mst-part', label: '품목마스터', path: '/master/part' },
+      { id: 'mst-bom', label: 'BOM관리', path: '/master/bom' },
+      { id: 'mst-equip', label: '설비마스터', path: '/master/equip' },
+      { id: 'mst-code', label: '코드관리', path: '/master/code' },
+    ],
+  },
+  {
+    id: 'inventory',
+    label: '재고관리',
+    icon: Warehouse,
+    children: [
+      { id: 'inv-warehouse', label: '창고관리', path: '/inventory/warehouse' },
+      { id: 'inv-stock', label: '재고현황', path: '/inventory/stock' },
+      { id: 'inv-transaction', label: '수불이력', path: '/inventory/transaction' },
+      { id: 'inv-lot', label: 'LOT관리', path: '/inventory/lot' },
+    ],
   },
   {
     id: 'material',
@@ -93,7 +121,7 @@ const menuItems: MenuItem[] = [
     icon: Shield,
     children: [
       { id: 'qc-defect', label: '불량관리', path: '/quality/defect' },
-      { id: 'qc-repair', label: '수리관리', path: '/quality/repair' },
+      { id: 'qc-inspect', label: '검사관리', path: '/quality/inspect' },
       { id: 'qc-trace', label: '추적성조회', path: '/quality/trace' },
     ],
   },
@@ -117,14 +145,51 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: 'master',
-    label: '기준정보',
-    icon: Database,
+    id: 'customs',
+    label: '보세관리',
+    icon: FileBox,
     children: [
-      { id: 'mst-part', label: '품목마스터', path: '/master/part' },
-      { id: 'mst-bom', label: 'BOM관리', path: '/master/bom' },
-      { id: 'mst-equip', label: '설비마스터', path: '/master/equip' },
-      { id: 'mst-code', label: '코드관리', path: '/master/code' },
+      { id: 'cust-entry', label: '수입신고', path: '/customs/entry' },
+      { id: 'cust-stock', label: '보세재고', path: '/customs/stock' },
+      { id: 'cust-usage', label: '사용신고', path: '/customs/usage' },
+    ],
+  },
+  {
+    id: 'consumables',
+    label: '소모품관리',
+    icon: Cog,
+    children: [
+      { id: 'cons-master', label: '소모품마스터', path: '/consumables/master' },
+      { id: 'cons-log', label: '입출고이력', path: '/consumables/log' },
+      { id: 'cons-life', label: '수명현황', path: '/consumables/life' },
+    ],
+  },
+  {
+    id: 'outsourcing',
+    label: '외주관리',
+    icon: Building2,
+    children: [
+      { id: 'out-vendor', label: '외주처관리', path: '/outsourcing/vendor' },
+      { id: 'out-order', label: '외주발주', path: '/outsourcing/order' },
+      { id: 'out-receive', label: '외주입고', path: '/outsourcing/receive' },
+    ],
+  },
+  {
+    id: 'interface',
+    label: '인터페이스',
+    icon: ArrowLeftRight,
+    children: [
+      { id: 'if-dashboard', label: 'ERP연동현황', path: '/interface/dashboard' },
+      { id: 'if-log', label: '전송이력', path: '/interface/log' },
+      { id: 'if-manual', label: '수동전송', path: '/interface/manual' },
+    ],
+  },
+  {
+    id: 'system',
+    label: '시스템관리',
+    icon: UserCog,
+    children: [
+      { id: 'sys-user', label: '사용자관리', path: '/system/users' },
     ],
   },
 ];

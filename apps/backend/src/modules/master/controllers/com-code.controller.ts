@@ -48,6 +48,16 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 export class ComCodeController {
   constructor(private readonly comCodeService: ComCodeService) {}
 
+  // ===== 전체 활성 코드 일괄 조회 =====
+
+  @Get('all-active')
+  @ApiOperation({ summary: '전체 활성 공통코드 일괄 조회', description: 'groupCode별 그룹핑된 전체 활성 코드 반환 (프론트엔드 초기 로딩용)' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async findAllActive() {
+    const data = await this.comCodeService.findAllActive();
+    return ResponseUtil.success(data);
+  }
+
   // ===== 그룹 코드 =====
 
   @Get('groups')

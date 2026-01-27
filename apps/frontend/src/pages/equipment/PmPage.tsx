@@ -9,8 +9,8 @@
  */
 import { useState, useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Plus, RefreshCw, Search, Wrench, RotateCcw, Package } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Plus, RefreshCw, Search, Wrench, RotateCcw, Package, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Card, CardHeader, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ConsumablePart, PartStatus, PartCategory, categoryLabels } from './types';
 import { PartStatusBadge, partStatusConfig } from './components/PartStatusBadge';
@@ -76,7 +76,7 @@ function PmPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Wrench className="w-7 h-7 text-primary" />예방보전</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Wrench className="w-7 h-7 text-primary" />예방보전</h1>
           <p className="text-text-muted mt-1">소모품 수명을 관리하고 적시 교체를 지원합니다.</p>
         </div>
         <div className="flex gap-2">
@@ -85,17 +85,16 @@ function PmPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">전체 소모품</div><div className="text-2xl font-bold text-text mt-1">{stats.total}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">정상</div><div className="text-2xl font-bold text-green-500 mt-1">{stats.ok}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">경고</div><div className="text-2xl font-bold text-yellow-500 mt-1">{stats.warning}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">교체필요</div><div className="text-2xl font-bold text-red-500 mt-1">{stats.replace}</div></CardContent></Card>
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label="전체 소모품" value={stats.total} icon={Wrench} color="blue" />
+        <StatCard label="정상" value={stats.ok} icon={CheckCircle} color="green" />
+        <StatCard label="경고" value={stats.warning} icon={AlertTriangle} color="yellow" />
+        <StatCard label="교체필요" value={stats.replace} icon={XCircle} color="red" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader title="소모품 목록" subtitle={`총 ${filteredParts.length}건`} />
             <CardContent>
               <div className="flex flex-wrap gap-4 mb-4">
                 <div className="flex-1 min-w-[200px]"><Input placeholder="코드, 명칭 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>

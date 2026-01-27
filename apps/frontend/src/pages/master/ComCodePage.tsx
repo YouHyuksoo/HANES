@@ -3,7 +3,7 @@
  * @description 공통코드 관리 페이지
  */
 import { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, RefreshCw, Settings } from 'lucide-react';
 import { Card, CardHeader, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -83,7 +83,7 @@ function ComCodePage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text">공통코드 관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Settings className="w-7 h-7 text-primary" />공통코드 관리</h1>
           <p className="text-text-muted mt-1">시스템 전반에서 사용하는 코드를 관리합니다.</p>
         </div>
         <div className="flex gap-2">

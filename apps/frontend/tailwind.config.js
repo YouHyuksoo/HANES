@@ -13,6 +13,17 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
+  safelist: [
+    // ComCode 배지에서 DB로 불러오는 동적 Tailwind 색상 클래스 보호
+    {
+      pattern: /^bg-(gray|red|yellow|green|blue|purple|orange|teal|cyan)-(100|700|900|300)$/,
+      variants: ['dark'],
+    },
+    {
+      pattern: /^text-(gray|red|yellow|green|blue|purple|orange|teal|cyan)-(100|700|900|300)$/,
+      variants: ['dark'],
+    },
+  ],
   theme: {
     extend: {
       colors: {

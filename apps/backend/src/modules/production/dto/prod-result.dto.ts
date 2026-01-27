@@ -26,17 +26,9 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PROD_RESULT_STATUS_VALUES } from '@hanes/shared';
 
-/**
- * 생산실적 상태 enum
- */
-export const PROD_RESULT_STATUS = {
-  RUNNING: 'RUNNING',
-  DONE: 'DONE',
-  CANCELED: 'CANCELED',
-} as const;
-
-export type ProdResultStatus = (typeof PROD_RESULT_STATUS)[keyof typeof PROD_RESULT_STATUS];
+export type ProdResultStatus = typeof PROD_RESULT_STATUS_VALUES[number];
 
 /**
  * 생산실적 생성 DTO
@@ -109,11 +101,11 @@ export class CreateProdResultDto {
 export class UpdateProdResultDto extends PartialType(CreateProdResultDto) {
   @ApiPropertyOptional({
     description: '상태',
-    enum: Object.values(PROD_RESULT_STATUS),
+    enum: [...PROD_RESULT_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(PROD_RESULT_STATUS))
+  @IsIn([...PROD_RESULT_STATUS_VALUES])
   status?: ProdResultStatus;
 }
 
@@ -163,11 +155,11 @@ export class ProdResultQueryDto {
 
   @ApiPropertyOptional({
     description: '상태 필터',
-    enum: Object.values(PROD_RESULT_STATUS),
+    enum: [...PROD_RESULT_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(PROD_RESULT_STATUS))
+  @IsIn([...PROD_RESULT_STATUS_VALUES])
   status?: ProdResultStatus;
 
   @ApiPropertyOptional({ description: '시작 시간 (ISO 8601)' })

@@ -3,7 +3,7 @@
  * @description 품목 마스터 관리 페이지
  */
 import { useState, useMemo } from 'react';
-import { Plus, Edit2, Trash2, Search, RefreshCw, Download } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, RefreshCw, Download, Package } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -105,7 +105,7 @@ function PartPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text">품목 마스터</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />품목 마스터</h1>
           <p className="text-text-muted mt-1">원자재, 반제품, 완제품 품목 정보를 관리합니다.</p>
         </div>
         <div className="flex gap-2">

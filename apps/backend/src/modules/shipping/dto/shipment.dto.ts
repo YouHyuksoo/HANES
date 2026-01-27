@@ -29,19 +29,9 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { SHIPMENT_STATUS_VALUES, USE_YN_VALUES } from '@hanes/shared';
 
-/**
- * 출하 상태 enum
- */
-export const SHIPMENT_STATUS = {
-  PREPARING: 'PREPARING',
-  LOADED: 'LOADED',
-  SHIPPED: 'SHIPPED',
-  DELIVERED: 'DELIVERED',
-  CANCELED: 'CANCELED',
-} as const;
-
-export type ShipmentStatus = (typeof SHIPMENT_STATUS)[keyof typeof SHIPMENT_STATUS];
+export type ShipmentStatus = typeof SHIPMENT_STATUS_VALUES[number];
 
 /**
  * 출하 생성 DTO
@@ -94,11 +84,11 @@ export class CreateShipmentDto {
 export class UpdateShipmentDto extends PartialType(CreateShipmentDto) {
   @ApiPropertyOptional({
     description: '상태',
-    enum: Object.values(SHIPMENT_STATUS),
+    enum: [...SHIPMENT_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(SHIPMENT_STATUS))
+  @IsIn([...SHIPMENT_STATUS_VALUES])
   status?: ShipmentStatus;
 }
 
@@ -133,11 +123,11 @@ export class ShipmentQueryDto {
 
   @ApiPropertyOptional({
     description: '상태 필터',
-    enum: Object.values(SHIPMENT_STATUS),
+    enum: [...SHIPMENT_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(SHIPMENT_STATUS))
+  @IsIn([...SHIPMENT_STATUS_VALUES])
   status?: ShipmentStatus;
 
   @ApiPropertyOptional({ description: '출하일 시작 (YYYY-MM-DD)' })
@@ -150,10 +140,10 @@ export class ShipmentQueryDto {
   @IsDateString()
   shipDateTo?: string;
 
-  @ApiPropertyOptional({ description: 'ERP 동기화 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: 'ERP 동기화 여부', enum: [...USE_YN_VALUES] })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   erpSyncYn?: string;
 }
 
@@ -185,11 +175,11 @@ export class UnloadPalletsDto {
 export class ChangeShipmentStatusDto {
   @ApiProperty({
     description: '변경할 상태',
-    enum: Object.values(SHIPMENT_STATUS),
+    enum: [...SHIPMENT_STATUS_VALUES],
     example: 'SHIPPED',
   })
   @IsString()
-  @IsIn(Object.values(SHIPMENT_STATUS))
+  @IsIn([...SHIPMENT_STATUS_VALUES])
   status: ShipmentStatus;
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
@@ -203,9 +193,9 @@ export class ChangeShipmentStatusDto {
  * ERP 동기화 플래그 변경 DTO
  */
 export class UpdateErpSyncDto {
-  @ApiProperty({ description: 'ERP 동기화 여부', enum: ['Y', 'N'], example: 'Y' })
+  @ApiProperty({ description: 'ERP 동기화 여부', enum: [...USE_YN_VALUES], example: 'Y' })
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   erpSyncYn: string;
 }
 

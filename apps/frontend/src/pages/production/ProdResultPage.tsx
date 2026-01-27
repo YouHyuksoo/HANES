@@ -20,9 +20,11 @@ import {
   Calendar,
   Factory,
   Package,
-  Clock
+  Clock,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -331,7 +333,7 @@ function ProdResultPage() {
       {/* 페이지 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2">
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Factory className="w-7 h-7 text-primary" />
             생산실적 조회
           </h1>
@@ -348,65 +350,11 @@ function ProdResultPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card padding="sm">
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm text-text-muted">총 생산</p>
-                <p className="text-xl font-bold text-text">{stats.totalQty.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card padding="sm">
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Package className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-sm text-text-muted">양품</p>
-                <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                  {stats.totalGood.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card padding="sm">
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <Package className="w-5 h-5 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <p className="text-sm text-text-muted">불량 (불량률)</p>
-                <p className="text-xl font-bold text-red-600 dark:text-red-400">
-                  {stats.totalDefect.toLocaleString()} ({stats.avgDefectRate}%)
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card padding="sm">
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-sm text-text-muted">총 작업시간</p>
-                <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                  {stats.totalHours}시간
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label="총 생산" value={stats.totalQty.toLocaleString()} icon={Package} color="blue" />
+        <StatCard label="양품" value={stats.totalGood.toLocaleString()} icon={CheckCircle} color="green" />
+        <StatCard label="불량 (불량률)" value={`${stats.totalDefect.toLocaleString()} (${stats.avgDefectRate}%)`} icon={XCircle} color="red" />
+        <StatCard label="총 작업시간" value={`${stats.totalHours}시간`} icon={Clock} color="purple" />
       </div>
 
       {/* 메인 카드 */}

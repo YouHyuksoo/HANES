@@ -48,6 +48,14 @@ DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[N]-[REGION].pool
 
 ---
 
+## UI 규칙
+
+- **`alert()`, `confirm()`, `prompt()` 사용 금지** — 브라우저 네이티브 다이얼로그 대신 반드시 Modal/ConfirmModal 컴포넌트 사용
+- 성공/실패/경고 메시지는 모두 Modal 또는 toast로 표시
+- 통계 카드는 반드시 공통 `StatCard` 컴포넌트(`@/components/ui`) 사용
+
+---
+
 ## Prisma 작업 순서
 
 ```bash

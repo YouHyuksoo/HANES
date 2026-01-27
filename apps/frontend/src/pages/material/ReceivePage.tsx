@@ -12,7 +12,9 @@ import { Package, Plus, Search, RefreshCw, ClipboardCheck, CheckCircle, XCircle,
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { ReceiveStatusBadge, StatCard } from './components';
+import { useComCodeOptions } from '@/hooks/useComCode';
+import { ReceiveStatusBadge } from './components';
+import { StatCard } from '@/components/ui';
 import type { ReceiveStatus } from './components';
 
 /** 입하 자재 인터페이스 */
@@ -46,15 +48,9 @@ const supplierOptions = [
   { value: '삼성커넥터', label: '삼성커넥터' },
 ];
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'PENDING', label: '입하대기' },
-  { value: 'IQC_IN_PROGRESS', label: 'IQC진행' },
-  { value: 'PASSED', label: '합격' },
-  { value: 'FAILED', label: '불합격' },
-];
-
 function ReceivePage() {
+  const comCodeOptions = useComCodeOptions('RECEIVE_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
   const [statusFilter, setStatusFilter] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -94,7 +90,7 @@ function ReceivePage() {
     { id: 'actions', header: 'IQC', size: 80, cell: ({ row }) => {
       const receive = row.original;
       const canIqc = receive.status === 'PENDING' || receive.status === 'IQC_IN_PROGRESS';
-      return (<Button variant="ghost" size="sm" disabled={!canIqc} onClick={() => { setSelectedReceive(receive); setIsIqcModalOpen(true); }}><ClipboardCheck className="w-4 h-4" /></Button>);
+      return (<button className="p-1 hover:bg-surface rounded" title="IQC 검사" disabled={!canIqc} onClick={() => { setSelectedReceive(receive); setIsIqcModalOpen(true); }}><ClipboardCheck className={`w-4 h-4 ${canIqc ? 'text-primary' : 'text-text-muted opacity-50'}`} /></button>);
     }},
   ], []);
 
@@ -102,13 +98,13 @@ function ReceivePage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />입하/IQC 관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />입하/IQC 관리</h1>
           <p className="text-text-muted mt-1">자재 입고 및 수입검사를 관리합니다.</p>
         </div>
         <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> 입하 등록</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label="입하대기" value={stats.pending} icon={Clock} color="gray" />
         <StatCard label="IQC진행" value={stats.inProgress} icon={ClipboardCheck} color="blue" />
         <StatCard label="합격" value={stats.passed} icon={CheckCircle} color="green" />
@@ -146,7 +142,7 @@ function ReceivePage() {
               <p className="text-sm text-text-muted">LOT: <span className="font-medium text-text">{selectedReceive.lotNo}</span></p>
               <p className="text-sm text-text-muted">수량: <span className="font-medium text-text">{selectedReceive.quantity.toLocaleString()}</span></p>
             </div>
-            <div className="flex gap-2"><Button className="flex-1" variant="outline" onClick={() => handleIqcResult('FAILED')}><XCircle className="w-4 h-4 mr-1 text-red-500" /> 불합격</Button><Button className="flex-1" onClick={() => handleIqcResult('PASSED')}><CheckCircle className="w-4 h-4 mr-1" /> 합격</Button></div>
+            <div className="flex gap-2"><Button className="flex-1" variant="secondary" onClick={() => handleIqcResult('FAILED')}><XCircle className="w-4 h-4 mr-1 text-red-500" /> 불합격</Button><Button className="flex-1" onClick={() => handleIqcResult('PASSED')}><CheckCircle className="w-4 h-4 mr-1" /> 합격</Button></div>
           </div>
         )}
       </Modal>

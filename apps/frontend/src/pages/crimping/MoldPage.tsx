@@ -8,8 +8,8 @@
  * 3. **수명 프로그래스바**: 현재타수/기대수명 비율로 교체 시기 판단
  */
 import { useState, useMemo } from 'react';
-import { Plus, Search, RefreshCw, RotateCcw, Settings2, Package } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Plus, Search, RefreshCw, RotateCcw, Settings2, Package, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Card, CardHeader, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { Mold, MoldStatus, moldStatusStyles } from './types';
@@ -117,7 +117,7 @@ function MoldPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Settings2 className="w-7 h-7 text-primary" />금형관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Settings2 className="w-7 h-7 text-primary" />금형관리</h1>
           <p className="text-text-muted mt-1">금형 타수 및 수명을 관리합니다.</p>
         </div>
         <div className="flex gap-2">
@@ -126,19 +126,17 @@ function MoldPage() {
         </div>
       </div>
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-5 gap-4">
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">전체</div><div className="text-2xl font-bold text-text mt-1">{stats.total}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">정상</div><div className="text-2xl font-bold text-green-500 mt-1">{stats.ok}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">경고</div><div className="text-2xl font-bold text-yellow-500 mt-1">{stats.warning}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">교체필요</div><div className="text-2xl font-bold text-red-500 mt-1">{stats.replace}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">정비중</div><div className="text-2xl font-bold text-purple-500 mt-1">{stats.maint}</div></CardContent></Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <StatCard label="전체" value={stats.total} icon={Settings2} color="blue" />
+        <StatCard label="정상" value={stats.ok} icon={CheckCircle} color="green" />
+        <StatCard label="경고" value={stats.warning} icon={AlertTriangle} color="yellow" />
+        <StatCard label="교체필요" value={stats.replace} icon={XCircle} color="red" />
+        <StatCard label="정비중" value={stats.maint} icon={RotateCcw} color="purple" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader title="금형 목록" subtitle={`총 ${filteredMolds.length}건`} />
             <CardContent>
               <div className="flex flex-wrap gap-4 mb-4">
                 <div className="flex-1 min-w-[200px]">

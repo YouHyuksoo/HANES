@@ -10,10 +10,10 @@
 import { useState, useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import {
-  RefreshCw, Filter, Calendar, CheckCircle, XCircle,
+  RefreshCw, Calendar, CheckCircle, XCircle,
   TrendingUp, Activity, Cpu, Search,
 } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 
 // ========================================
@@ -119,37 +119,37 @@ function ResultPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />통전검사 실적</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />통전검사 실적</h1>
           <p className="text-text-muted mt-1">통전검사 결과와 합격률을 확인합니다.</p>
         </div>
         <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Activity className="w-5 h-5 text-text-muted" /><span className="text-text-muted text-sm">총 검사</span></div><div className="text-2xl font-bold text-text mt-1">{stats.total}건</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-500" /><span className="text-text-muted text-sm">합격률</span></div><div className="text-2xl font-bold text-green-500 mt-1">{stats.passRate}%</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-500" /><span className="text-text-muted text-sm">합격</span></div><div className="text-2xl font-bold text-green-500 mt-1">{stats.passed}건</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><XCircle className="w-5 h-5 text-red-500" /><span className="text-text-muted text-sm">불합격</span></div><div className="text-2xl font-bold text-red-500 mt-1">{stats.failed}건</div></CardContent></Card>
+        <StatCard label="총 검사" value={`${stats.total}건`} icon={Activity} color="blue" />
+        <StatCard label="합격률" value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
+        <StatCard label="합격" value={`${stats.passed}건`} icon={CheckCircle} color="green" />
+        <StatCard label="불합격" value={`${stats.failed}건`} icon={XCircle} color="red" />
       </div>
 
-      <Card padding="sm">
+      <Card>
         <CardContent>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex items-center gap-2"><Filter className="w-4 h-4 text-text-muted" /><span className="text-sm font-medium text-text">필터</span></div>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} />
-            <span className="text-text-muted">~</span>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-            <Input placeholder="시리얼번호 검색" value={searchSerial} onChange={(e) => setSearchSerial(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="flex-1 min-w-[200px]">
+              <Input placeholder="시리얼번호 검색..." value={searchSerial} onChange={(e) => setSearchSerial(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-text-muted" />
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
+              <span className="text-text-muted">~</span>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
+            </div>
             <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder="결과" />
             <Select options={equipOptions} value={equipFilter} onChange={setEquipFilter} placeholder="검사기" />
-            <Button variant="ghost" size="sm" onClick={() => { setDateFrom(''); setDateTo(''); setSearchSerial(''); setResultFilter(''); setEquipFilter(''); }}>초기화</Button>
+            <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
+          <DataGrid data={filteredData} columns={columns} pageSize={10} />
         </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader title="검사 결과 목록" subtitle={`총 ${filteredData.length}건`} />
-        <CardContent><DataGrid data={filteredData} columns={columns} pageSize={10} /></CardContent>
       </Card>
     </div>
   );

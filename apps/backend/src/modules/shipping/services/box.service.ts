@@ -29,7 +29,6 @@ import {
   BoxQueryDto,
   AddSerialToBoxDto,
   AssignBoxToPalletDto,
-  BOX_STATUS,
   BoxStatus,
 } from '../dto/box.dto';
 
@@ -159,7 +158,7 @@ export class BoxService {
         partId: dto.partId,
         qty: dto.qty,
         serialList: dto.serialList ?? [],
-        status: BOX_STATUS.OPEN,
+        status: 'OPEN',
       },
       include: {
         part: {
@@ -180,7 +179,7 @@ export class BoxService {
     const box = await this.findById(id);
 
     // SHIPPED 상태에서는 수정 불가
-    if (box.status === BOX_STATUS.SHIPPED) {
+    if (box.status === 'SHIPPED') {
       throw new BadRequestException('출하된 박스는 수정할 수 없습니다.');
     }
 
@@ -217,7 +216,7 @@ export class BoxService {
     const box = await this.findById(id);
 
     // SHIPPED 상태에서는 삭제 불가
-    if (box.status === BOX_STATUS.SHIPPED) {
+    if (box.status === 'SHIPPED') {
       throw new BadRequestException('출하된 박스는 삭제할 수 없습니다.');
     }
 
@@ -241,7 +240,7 @@ export class BoxService {
     const box = await this.findById(id);
 
     // OPEN 상태에서만 시리얼 추가 가능
-    if (box.status !== BOX_STATUS.OPEN) {
+    if (box.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${box.status})에서는 시리얼을 추가할 수 없습니다. OPEN 상태여야 합니다.`);
     }
 
@@ -283,7 +282,7 @@ export class BoxService {
     const box = await this.findById(id);
 
     // OPEN 상태에서만 시리얼 제거 가능
-    if (box.status !== BOX_STATUS.OPEN) {
+    if (box.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${box.status})에서는 시리얼을 제거할 수 없습니다. OPEN 상태여야 합니다.`);
     }
 
@@ -326,7 +325,7 @@ export class BoxService {
   async closeBox(id: string) {
     const box = await this.findById(id);
 
-    if (box.status !== BOX_STATUS.OPEN) {
+    if (box.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${box.status})에서는 박스를 닫을 수 없습니다. OPEN 상태여야 합니다.`);
     }
 
@@ -338,7 +337,7 @@ export class BoxService {
     return this.prisma.boxMaster.update({
       where: { id },
       data: {
-        status: BOX_STATUS.CLOSED,
+        status: 'CLOSED',
         closeTime: new Date(),
       },
       include: {
@@ -359,7 +358,7 @@ export class BoxService {
   async reopenBox(id: string) {
     const box = await this.findById(id);
 
-    if (box.status !== BOX_STATUS.CLOSED) {
+    if (box.status !== 'CLOSED') {
       throw new BadRequestException(`현재 상태(${box.status})에서는 박스를 다시 열 수 없습니다. CLOSED 상태여야 합니다.`);
     }
 
@@ -371,7 +370,7 @@ export class BoxService {
     return this.prisma.boxMaster.update({
       where: { id },
       data: {
-        status: BOX_STATUS.OPEN,
+        status: 'OPEN',
         closeTime: null,
       },
       include: {
@@ -395,7 +394,7 @@ export class BoxService {
     const box = await this.findById(id);
 
     // CLOSED 상태에서만 팔레트 할당 가능
-    if (box.status !== BOX_STATUS.CLOSED) {
+    if (box.status !== 'CLOSED') {
       throw new BadRequestException(`현재 상태(${box.status})에서는 팔레트에 할당할 수 없습니다. CLOSED 상태여야 합니다.`);
     }
 
@@ -570,7 +569,7 @@ export class BoxService {
     return this.prisma.boxMaster.findMany({
       where: {
         palletId: null,
-        status: BOX_STATUS.CLOSED,
+        status: 'CLOSED',
         deletedAt: null,
       },
       include: {

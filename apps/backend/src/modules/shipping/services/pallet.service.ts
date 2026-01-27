@@ -29,10 +29,8 @@ import {
   AddBoxToPalletDto,
   RemoveBoxFromPalletDto,
   AssignPalletToShipmentDto,
-  PALLET_STATUS,
   PalletStatus,
 } from '../dto/pallet.dto';
-import { BOX_STATUS } from '../dto/box.dto';
 
 @Injectable()
 export class PalletService {
@@ -180,7 +178,7 @@ export class PalletService {
         palletNo: dto.palletNo,
         boxCount: 0,
         totalQty: 0,
-        status: PALLET_STATUS.OPEN,
+        status: 'OPEN',
       },
     });
   }
@@ -192,7 +190,7 @@ export class PalletService {
     const pallet = await this.findById(id);
 
     // SHIPPED 상태에서는 수정 불가
-    if (pallet.status === PALLET_STATUS.SHIPPED) {
+    if (pallet.status === 'SHIPPED') {
       throw new BadRequestException('출하된 팔레트는 수정할 수 없습니다.');
     }
 
@@ -220,7 +218,7 @@ export class PalletService {
     const pallet = await this.findById(id);
 
     // SHIPPED 상태에서는 삭제 불가
-    if (pallet.status === PALLET_STATUS.SHIPPED) {
+    if (pallet.status === 'SHIPPED') {
       throw new BadRequestException('출하된 팔레트는 삭제할 수 없습니다.');
     }
 
@@ -249,7 +247,7 @@ export class PalletService {
     const pallet = await this.findById(id);
 
     // OPEN 상태에서만 박스 추가 가능
-    if (pallet.status !== PALLET_STATUS.OPEN) {
+    if (pallet.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 박스를 추가할 수 없습니다. OPEN 상태여야 합니다.`);
     }
 
@@ -268,7 +266,7 @@ export class PalletService {
     }
 
     // 박스 상태 확인
-    const invalidBoxes = boxes.filter(b => b.status !== BOX_STATUS.CLOSED);
+    const invalidBoxes = boxes.filter(b => b.status !== 'CLOSED');
     if (invalidBoxes.length > 0) {
       throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${invalidBoxes.map(b => b.boxNo).join(', ')}`);
     }
@@ -325,7 +323,7 @@ export class PalletService {
     const pallet = await this.findById(id);
 
     // OPEN 상태에서만 박스 제거 가능
-    if (pallet.status !== PALLET_STATUS.OPEN) {
+    if (pallet.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 박스를 제거할 수 없습니다. OPEN 상태여야 합니다.`);
     }
 
@@ -391,7 +389,7 @@ export class PalletService {
   async closePallet(id: string) {
     const pallet = await this.findById(id);
 
-    if (pallet.status !== PALLET_STATUS.OPEN) {
+    if (pallet.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 팔레트를 닫을 수 없습니다. OPEN 상태여야 합니다.`);
     }
 
@@ -403,7 +401,7 @@ export class PalletService {
     return this.prisma.palletMaster.update({
       where: { id },
       data: {
-        status: PALLET_STATUS.CLOSED,
+        status: 'CLOSED',
         closeTime: new Date(),
       },
       include: {
@@ -425,7 +423,7 @@ export class PalletService {
   async reopenPallet(id: string) {
     const pallet = await this.findById(id);
 
-    if (pallet.status !== PALLET_STATUS.CLOSED) {
+    if (pallet.status !== 'CLOSED') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 팔레트를 다시 열 수 없습니다. CLOSED 상태여야 합니다.`);
     }
 
@@ -437,7 +435,7 @@ export class PalletService {
     return this.prisma.palletMaster.update({
       where: { id },
       data: {
-        status: PALLET_STATUS.OPEN,
+        status: 'OPEN',
         closeTime: null,
       },
       include: {
@@ -462,7 +460,7 @@ export class PalletService {
     const pallet = await this.findById(id);
 
     // CLOSED 상태에서만 출하 할당 가능
-    if (pallet.status !== PALLET_STATUS.CLOSED) {
+    if (pallet.status !== 'CLOSED') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 출하에 할당할 수 없습니다. CLOSED 상태여야 합니다.`);
     }
 
@@ -491,7 +489,7 @@ export class PalletService {
         where: { id },
         data: {
           shipmentId: dto.shipmentId,
-          status: PALLET_STATUS.LOADED,
+          status: 'LOADED',
         },
         include: {
           shipment: {
@@ -563,7 +561,7 @@ export class PalletService {
         where: { id },
         data: {
           shipmentId: null,
-          status: PALLET_STATUS.CLOSED,
+          status: 'CLOSED',
         },
         include: {
           boxes: {
@@ -630,7 +628,7 @@ export class PalletService {
     return this.prisma.palletMaster.findMany({
       where: {
         shipmentId: null,
-        status: PALLET_STATUS.CLOSED,
+        status: 'CLOSED',
         deletedAt: null,
       },
       include: {

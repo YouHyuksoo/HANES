@@ -13,6 +13,9 @@ export * from './api';
 // Enum 타입
 export * from './enums';
 
+// 공통코드 타입
+export * from './com-code';
+
 // 추적성 타입
 export * from './traceability';
 

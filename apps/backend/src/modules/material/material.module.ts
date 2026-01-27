@@ -15,8 +15,10 @@ import { MatStockController } from './controllers/mat-stock.controller';
 import { MatStockService } from './services/mat-stock.service';
 import { MatIssueController } from './controllers/mat-issue.controller';
 import { MatIssueService } from './services/mat-issue.service';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
+  imports: [InventoryModule],
   controllers: [
     MatLotController,
     MatStockController,

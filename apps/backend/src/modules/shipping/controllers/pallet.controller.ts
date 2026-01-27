@@ -49,7 +49,6 @@ import {
   AddBoxToPalletDto,
   RemoveBoxFromPalletDto,
   AssignPalletToShipmentDto,
-  PALLET_STATUS,
 } from '../dto/pallet.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 

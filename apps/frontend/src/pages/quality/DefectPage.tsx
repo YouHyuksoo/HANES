@@ -13,15 +13,18 @@ import { ColumnDef } from '@tanstack/react-table';
 import {
   Plus,
   RefreshCw,
-  Filter,
   AlertTriangle,
   Wrench,
   CheckCircle,
+  XCircle,
   Trash2,
   Calendar,
+  Clock,
+  Search,
 } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { useComCodeOptions } from '@/hooks/useComCode';
 
 // ========================================
 // 타입 정의
@@ -118,56 +121,14 @@ const defectTypes = [
   { value: 'D004', label: '외관 불량' },
 ];
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'PENDING', label: '수리대기' },
-  { value: 'REPAIRING', label: '수리중' },
-  { value: 'COMPLETED', label: '완료' },
-  { value: 'SCRAPPED', label: '폐기' },
-];
-
-// ========================================
-// 상태 배지 컴포넌트
-// ========================================
-function StatusBadge({ status }: { status: DefectStatus }) {
-  const config = {
-    PENDING: {
-      icon: AlertTriangle,
-      label: '수리대기',
-      className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-    },
-    REPAIRING: {
-      icon: Wrench,
-      label: '수리중',
-      className: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-    },
-    COMPLETED: {
-      icon: CheckCircle,
-      label: '완료',
-      className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-    },
-    SCRAPPED: {
-      icon: Trash2,
-      label: '폐기',
-      className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-    },
-  };
-
-  const { icon: Icon, label, className } = config[status];
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${className}`}>
-      <Icon className="w-3 h-3" />
-      {label}
-    </span>
-  );
-}
-
 // ========================================
 // 메인 컴포넌트
 // ========================================
 function DefectPage() {
+  const comCodeStatusOptions = useComCodeOptions('DEFECT_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
   // 상태 관리
+  const [searchText, setSearchText] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [defectType, setDefectType] = useState('');
@@ -181,9 +142,10 @@ function DefectPage() {
     return mockDefects.filter((defect) => {
       if (defectType && defect.defectCode !== defectType) return false;
       if (statusFilter && defect.status !== statusFilter) return false;
+      if (searchText && !defect.workOrderNo.toLowerCase().includes(searchText.toLowerCase()) && !defect.defectName.toLowerCase().includes(searchText.toLowerCase())) return false;
       return true;
     });
-  }, [defectType, statusFilter]);
+  }, [defectType, statusFilter, searchText]);
 
   // 통계 계산
   const stats = useMemo(() => {
@@ -245,7 +207,7 @@ function DefectPage() {
         accessorKey: 'status',
         header: '상태',
         size: 100,
-        cell: ({ getValue }) => <StatusBadge status={getValue() as DefectStatus} />,
+        cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_STATUS" code={getValue() as string} />,
       },
       {
         accessorKey: 'operator',
@@ -257,16 +219,15 @@ function DefectPage() {
         header: '관리',
         size: 100,
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            className="p-1 hover:bg-surface rounded text-xs text-primary"
             onClick={() => {
               setSelectedDefect(row.original);
               setIsStatusModalOpen(true);
             }}
           >
             상태변경
-          </Button>
+          </button>
         ),
       },
     ],
@@ -278,7 +239,7 @@ function DefectPage() {
       {/* 페이지 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text">불량관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><AlertTriangle className="w-7 h-7 text-primary" />불량관리</h1>
           <p className="text-text-muted mt-1">불량 발생 현황을 관리하고 수리 상태를 추적합니다.</p>
         </div>
         <div className="flex gap-2">
@@ -292,96 +253,31 @@ function DefectPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card padding="sm">
-          <CardContent>
-            <div className="text-text-muted text-sm">전체 건수</div>
-            <div className="text-2xl font-bold text-text mt-1">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card padding="sm">
-          <CardContent>
-            <div className="text-text-muted text-sm">수리대기</div>
-            <div className="text-2xl font-bold text-yellow-500 mt-1">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        <Card padding="sm">
-          <CardContent>
-            <div className="text-text-muted text-sm">수리중</div>
-            <div className="text-2xl font-bold text-blue-500 mt-1">{stats.repairing}</div>
-          </CardContent>
-        </Card>
-        <Card padding="sm">
-          <CardContent>
-            <div className="text-text-muted text-sm">완료</div>
-            <div className="text-2xl font-bold text-green-500 mt-1">{stats.completed}</div>
-          </CardContent>
-        </Card>
-        <Card padding="sm">
-          <CardContent>
-            <div className="text-text-muted text-sm">총 불량수량</div>
-            <div className="text-2xl font-bold text-red-500 mt-1">{stats.totalQty}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <StatCard label="전체 건수" value={stats.total} icon={AlertTriangle} color="blue" />
+        <StatCard label="수리대기" value={stats.pending} icon={Clock} color="yellow" />
+        <StatCard label="수리중" value={stats.repairing} icon={Wrench} color="blue" />
+        <StatCard label="완료" value={stats.completed} icon={CheckCircle} color="green" />
+        <StatCard label="총 불량수량" value={stats.totalQty} icon={XCircle} color="red" />
       </div>
 
-      {/* 필터 영역 */}
-      <Card padding="sm">
-        <CardContent>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-text-muted" />
-              <span className="text-sm font-medium text-text">필터</span>
-            </div>
-            <Input
-              type="date"
-              placeholder="시작일"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              leftIcon={<Calendar className="w-4 h-4" />}
-            />
-            <span className="text-text-muted">~</span>
-            <Input
-              type="date"
-              placeholder="종료일"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-            <Select
-              options={defectTypes}
-              value={defectType}
-              onChange={setDefectType}
-              placeholder="불량유형"
-            />
-            <Select
-              options={statusOptions}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              placeholder="상태"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setDateFrom('');
-                setDateTo('');
-                setDefectType('');
-                setStatusFilter('');
-              }}
-            >
-              초기화
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 데이터 그리드 */}
+      {/* 필터 + 데이터 그리드 */}
       <Card>
-        <CardHeader
-          title="불량 목록"
-          subtitle={`총 ${filteredDefects.length}건`}
-        />
         <CardContent>
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="flex-1 min-w-[200px]">
+              <Input placeholder="작업지시, 불량명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-text-muted" />
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
+              <span className="text-text-muted">~</span>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
+            </div>
+            <Select options={defectTypes} value={defectType} onChange={setDefectType} placeholder="불량유형" />
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
+          </div>
           <DataGrid
             data={filteredDefects}
             columns={columns}
@@ -447,14 +343,14 @@ function DefectPage() {
                 {selectedDefect.defectName} / 수량: {selectedDefect.quantity}개
               </div>
               <div className="mt-2">
-                <StatusBadge status={selectedDefect.status} />
+                <ComCodeBadge groupCode="DEFECT_STATUS" code={selectedDefect.status} />
               </div>
             </div>
 
             <div className="text-sm font-medium text-text mb-2">변경할 상태 선택</div>
             <div className="grid grid-cols-2 gap-2">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => handleStatusChange('PENDING')}
                 disabled={selectedDefect.status === 'PENDING'}
               >
@@ -462,7 +358,7 @@ function DefectPage() {
                 수리대기
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => handleStatusChange('REPAIRING')}
                 disabled={selectedDefect.status === 'REPAIRING'}
               >
@@ -470,7 +366,7 @@ function DefectPage() {
                 수리중
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => handleStatusChange('COMPLETED')}
                 disabled={selectedDefect.status === 'COMPLETED'}
               >
@@ -478,7 +374,7 @@ function DefectPage() {
                 완료
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={() => handleStatusChange('SCRAPPED')}
                 disabled={selectedDefect.status === 'SCRAPPED'}
               >

@@ -20,6 +20,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import configuration from './config/configuration';
 
 // 기능 모듈
+import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/user/user.module';
 import { MasterModule } from './modules/master/master.module';
 import { MaterialModule } from './modules/material/material.module';
 import { ProductionModule } from './modules/production/production.module';
@@ -27,6 +29,10 @@ import { QualityModule } from './modules/quality/quality.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { InterfaceModule } from './modules/interface/interface.module';
+import { CustomsModule } from './modules/customs/customs.module';
+import { ConsumablesModule } from './modules/consumables/consumables.module';
+import { OutsourcingModule } from './modules/outsourcing/outsourcing.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
   imports: [
@@ -42,8 +48,17 @@ import { InterfaceModule } from './modules/interface/interface.module';
 
     // ===== 기능 모듈 =====
 
+    // 인증 (로그인/회원가입)
+    AuthModule,
+
+    // 사용자관리
+    UserModule,
+
     // 기준정보 관리 (공통코드, 품목, 거래처, 공정 등)
     MasterModule,
+
+    // 재고관리 (창고, 재고, 수불 - 공통 인프라)
+    InventoryModule,
 
     // 자재관리 (입고, 출고, 재고, LOT 추적)
     MaterialModule,
@@ -62,6 +77,15 @@ import { InterfaceModule } from './modules/interface/interface.module';
 
     // ERP 인터페이스 (데이터 연동)
     InterfaceModule,
+
+    // 보세관리 (수입신고, 보세자재, 사용신고)
+    CustomsModule,
+
+    // 소모품관리 (금형, 지그, 공구)
+    ConsumablesModule,
+
+    // 외주관리 (외주발주, 출고, 입고)
+    OutsourcingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

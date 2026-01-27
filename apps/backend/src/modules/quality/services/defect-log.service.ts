@@ -26,7 +26,6 @@ import {
   DefectLogQueryDto,
   ChangeDefectStatusDto,
   CreateRepairLogDto,
-  DefectStatus,
   DefectTypeStatsDto,
   DefectStatusStatsDto,
 } from '../dto/defect-log.dto';
@@ -191,7 +190,7 @@ export class DefectLogService {
           defectCode: dto.defectCode,
           defectName: dto.defectName,
           qty: dto.qty ?? 1,
-          status: dto.status ?? DefectStatus.WAIT,
+          status: dto.status ?? 'WAIT',
           cause: dto.cause,
           occurTime: dto.occurTime ? new Date(dto.occurTime) : new Date(),
           imageUrl: dto.imageUrl,
@@ -286,7 +285,7 @@ export class DefectLogService {
     const existing = await this.findById(id);
 
     // 상태 변경 유효성 검사
-    this.validateStatusChange(existing.status as DefectStatus, dto.status);
+    this.validateStatusChange(existing.status, dto.status);
 
     return this.prisma.defectLog.update({
       where: { id },
@@ -297,13 +296,13 @@ export class DefectLogService {
   /**
    * 상태 변경 유효성 검사
    */
-  private validateStatusChange(currentStatus: DefectStatus, newStatus: DefectStatus) {
-    const validTransitions: Record<DefectStatus, DefectStatus[]> = {
-      [DefectStatus.WAIT]: [DefectStatus.REPAIR, DefectStatus.REWORK, DefectStatus.SCRAP],
-      [DefectStatus.REPAIR]: [DefectStatus.DONE, DefectStatus.SCRAP, DefectStatus.WAIT],
-      [DefectStatus.REWORK]: [DefectStatus.DONE, DefectStatus.SCRAP, DefectStatus.WAIT],
-      [DefectStatus.SCRAP]: [], // 폐기 후 변경 불가
-      [DefectStatus.DONE]: [], // 완료 후 변경 불가
+  private validateStatusChange(currentStatus: string, newStatus: string) {
+    const validTransitions: Record<string, string[]> = {
+      'WAIT': ['REPAIR', 'REWORK', 'SCRAP'],
+      'REPAIR': ['DONE', 'SCRAP', 'WAIT'],
+      'REWORK': ['DONE', 'SCRAP', 'WAIT'],
+      'SCRAP': [], // 폐기 후 변경 불가
+      'DONE': [], // 완료 후 변경 불가
     };
 
     if (!validTransitions[currentStatus]?.includes(newStatus)) {
@@ -345,13 +344,13 @@ export class DefectLogService {
 
     // 수리 결과에 따라 불량 상태 자동 변경
     if (dto.result) {
-      let newStatus: DefectStatus;
+      let newStatus: string;
       switch (dto.result) {
         case 'PASS':
-          newStatus = DefectStatus.DONE;
+          newStatus = 'DONE';
           break;
         case 'SCRAP':
-          newStatus = DefectStatus.SCRAP;
+          newStatus = 'SCRAP';
           break;
         default:
           // FAIL인 경우 상태 유지
@@ -454,7 +453,7 @@ export class DefectLogService {
     });
 
     return grouped.map((g) => ({
-      status: g.status as DefectStatus,
+      status: g.status,
       count: g._count.status,
       totalQty: g._sum.qty ?? 0,
     }));
@@ -506,7 +505,7 @@ export class DefectLogService {
     return this.prisma.defectLog.findMany({
       where: {
         deletedAt: null,
-        status: { in: [DefectStatus.WAIT, DefectStatus.REPAIR, DefectStatus.REWORK] },
+        status: { in: ['WAIT', 'REPAIR', 'REWORK'] },
       },
       orderBy: { occurTime: 'asc' },
       include: {

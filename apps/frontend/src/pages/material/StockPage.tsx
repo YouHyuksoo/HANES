@@ -12,7 +12,7 @@ import { Warehouse, Search, RefreshCw, Package, AlertTriangle, TrendingUp, Boxes
 import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { StatCard } from './components';
+import { StatCard } from '@/components/ui';
 
 /** 재고 인터페이스 */
 interface Stock {
@@ -112,13 +112,13 @@ function StockPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Warehouse className="w-7 h-7 text-primary" />재고현황</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Warehouse className="w-7 h-7 text-primary" />재고현황</h1>
           <p className="text-text-muted mt-1">창고별 자재 재고 현황을 조회합니다.</p>
         </div>
         <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" /> 새로고침</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label="총 품목수" value={stats.totalItems} icon={Package} color="blue" />
         <StatCard label="총 재고수량" value={stats.totalQuantity} icon={Boxes} color="purple" />
         <StatCard label="안전재고 미달" value={stats.belowSafety} icon={AlertTriangle} color="red" />

@@ -33,9 +33,10 @@ import { PalletController } from './controllers/pallet.controller';
 import { PalletService } from './services/pallet.service';
 import { ShipmentController } from './controllers/shipment.controller';
 import { ShipmentService } from './services/shipment.service';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
-  imports: [],
+  imports: [InventoryModule],
   controllers: [
     BoxController,
     PalletController,

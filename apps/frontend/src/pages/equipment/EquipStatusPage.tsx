@@ -10,8 +10,9 @@
 import { useState, useMemo } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, RefreshCw, Search, Settings, CheckCircle, AlertTriangle, XCircle, Edit, Monitor } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import { Equipment, EquipStatus, EquipType, equipTypeLabels } from './types';
 import { EquipmentStatusBadge, statusConfig } from './components/EquipmentStatusBadge';
 
@@ -33,11 +34,9 @@ const equipTypeOptions = [
 const lineOptions = [
   { value: '', label: '전체 라인' }, { value: 'L1', label: 'L1' }, { value: 'L2', label: 'L2' }, { value: 'L3', label: 'L3' }, { value: 'L4', label: 'L4' },
 ];
-const statusOptions = [
-  { value: '', label: '전체 상태' }, { value: 'NORMAL', label: '정상' }, { value: 'MAINT', label: '점검' }, { value: 'STOP', label: '정지' },
-];
-
 function EquipStatusPage() {
+  const comCodeOptions = useComCodeOptions('EQUIP_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [lineFilter, setLineFilter] = useState('');
@@ -86,7 +85,7 @@ function EquipStatusPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />설비 가동현황</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />설비 가동현황</h1>
           <p className="text-text-muted mt-1">설비의 상태를 모니터링하고 관리합니다.</p>
         </div>
         <div className="flex gap-2">
@@ -95,15 +94,14 @@ function EquipStatusPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">전체 설비</div><div className="text-2xl font-bold text-text mt-1">{stats.total}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">정상 가동</div><div className="text-2xl font-bold text-green-500 mt-1">{stats.normal}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">점검중</div><div className="text-2xl font-bold text-yellow-500 mt-1">{stats.maint}</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="text-text-muted text-sm">정지</div><div className="text-2xl font-bold text-red-500 mt-1">{stats.stop}</div></CardContent></Card>
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label="전체 설비" value={stats.total} icon={Monitor} color="blue" />
+        <StatCard label="정상 가동" value={stats.normal} icon={CheckCircle} color="green" />
+        <StatCard label="점검중" value={stats.maint} icon={AlertTriangle} color="yellow" />
+        <StatCard label="정지" value={stats.stop} icon={XCircle} color="red" />
       </div>
 
       <Card>
-        <CardHeader title="설비 목록" subtitle={`총 ${filteredEquipments.length}대`} />
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]"><Input placeholder="설비코드, 설비명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
@@ -145,9 +143,9 @@ function EquipStatusPage() {
             </div>
             <div className="text-sm font-medium text-text mb-2">변경할 상태 선택</div>
             <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" onClick={() => handleStatusChange('NORMAL')} disabled={selectedEquip.status === 'NORMAL'}><CheckCircle className="w-4 h-4 mr-1 text-green-500" />정상</Button>
-              <Button variant="outline" onClick={() => handleStatusChange('MAINT')} disabled={selectedEquip.status === 'MAINT'}><AlertTriangle className="w-4 h-4 mr-1 text-yellow-500" />점검</Button>
-              <Button variant="outline" onClick={() => handleStatusChange('STOP')} disabled={selectedEquip.status === 'STOP'}><XCircle className="w-4 h-4 mr-1 text-red-500" />정지</Button>
+              <Button variant="secondary" onClick={() => handleStatusChange('NORMAL')} disabled={selectedEquip.status === 'NORMAL'}><CheckCircle className="w-4 h-4 mr-1 text-green-500" />정상</Button>
+              <Button variant="secondary" onClick={() => handleStatusChange('MAINT')} disabled={selectedEquip.status === 'MAINT'}><AlertTriangle className="w-4 h-4 mr-1 text-yellow-500" />점검</Button>
+              <Button variant="secondary" onClick={() => handleStatusChange('STOP')} disabled={selectedEquip.status === 'STOP'}><XCircle className="w-4 h-4 mr-1 text-red-500" />정지</Button>
             </div>
           </div>
         )}

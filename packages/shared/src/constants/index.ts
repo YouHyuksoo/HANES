@@ -99,3 +99,6 @@ export * from './status';
 
 // 공정 상수
 export * from './process';
+
+// 공통코드 값 상수
+export * from './com-code-values';

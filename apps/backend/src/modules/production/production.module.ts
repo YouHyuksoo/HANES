@@ -25,9 +25,10 @@ import { JobOrderController } from './controllers/job-order.controller';
 import { JobOrderService } from './services/job-order.service';
 import { ProdResultController } from './controllers/prod-result.controller';
 import { ProdResultService } from './services/prod-result.service';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
-  imports: [],
+  imports: [InventoryModule],
   controllers: [
     JobOrderController,
     ProdResultController,

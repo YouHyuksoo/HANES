@@ -12,7 +12,9 @@ import { ArrowRightFromLine, Plus, Search, RefreshCw, Clock, Play, CheckCircle, 
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { IssueStatusBadge, StatCard } from './components';
+import { useComCodeOptions } from '@/hooks/useComCode';
+import { IssueStatusBadge } from './components';
+import { StatCard } from '@/components/ui';
 import type { IssueStatus } from './components';
 
 /** 출고 인터페이스 */
@@ -48,14 +50,9 @@ const workOrderOptions = [
   { value: 'WO-2025-0125-002', label: 'WO-2025-0125-002' },
 ];
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'PENDING', label: '대기' },
-  { value: 'IN_PROGRESS', label: '진행중' },
-  { value: 'COMPLETED', label: '완료' },
-];
-
 function IssuePage() {
+  const comCodeOptions = useComCodeOptions('ISSUE_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
   const [statusFilter, setStatusFilter] = useState('');
   const [workOrderFilter, setWorkOrderFilter] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -96,7 +93,7 @@ function IssuePage() {
     { id: 'actions', header: '출고', size: 80, cell: ({ row }) => {
       const issue = row.original;
       const canIssue = issue.status !== 'COMPLETED';
-      return (<Button variant="ghost" size="sm" disabled={!canIssue} onClick={() => { setSelectedIssue(issue); setIsIssueModalOpen(true); }}><Play className="w-4 h-4" /></Button>);
+      return (<button className="p-1 hover:bg-surface rounded" title="출고처리" disabled={!canIssue} onClick={() => { setSelectedIssue(issue); setIsIssueModalOpen(true); }}><Play className={`w-4 h-4 ${canIssue ? 'text-primary' : 'text-text-muted opacity-50'}`} /></button>);
     }},
   ], []);
 
@@ -104,13 +101,13 @@ function IssuePage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><ArrowRightFromLine className="w-7 h-7 text-primary" />출고관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ArrowRightFromLine className="w-7 h-7 text-primary" />출고관리</h1>
           <p className="text-text-muted mt-1">작업지시에 따른 자재 출고를 관리합니다.</p>
         </div>
         <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> 출고 등록</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label="대기" value={stats.pending} icon={Clock} color="yellow" />
         <StatCard label="진행중" value={stats.inProgress} icon={Play} color="blue" />
         <StatCard label="완료" value={stats.completed} icon={CheckCircle} color="green" />

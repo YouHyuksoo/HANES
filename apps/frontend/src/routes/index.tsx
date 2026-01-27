@@ -4,6 +4,8 @@
  */
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
+import PrivateRoute from '@/components/layout/PrivateRoute';
+import LoginPage from '@/pages/auth/LoginPage';
 
 // Pages
 import DashboardPage from '@/pages/dashboard/DashboardPage';
@@ -16,14 +18,35 @@ import { EquipStatusPage, PmPage } from '@/pages/equipment';
 import { PackPage, PalletPage, ShipmentPage } from '@/pages/shipping';
 import { ReceivePage, StockPage, IssuePage } from '@/pages/material';
 import { ResultPage as InspectionResultPage, EquipPage as InspectionEquipPage } from '@/pages/inspection';
+// 신규 메뉴
+import { CustomsEntryPage, CustomsStockPage, CustomsUsagePage } from '@/pages/customs';
+import { ConsumableMasterPage, ConsumableLogPage, ConsumableLifePage } from '@/pages/consumables';
+import { VendorPage, SubconOrderPage, SubconReceivePage } from '@/pages/outsourcing';
+import { InterfaceDashboardPage, InterfaceLogPage, InterfaceManualPage } from '@/pages/interface';
+// 재고관리
+import { WarehousePage, InventoryStockPage, TransactionPage, LotPage } from '@/pages/inventory';
+// 시스템관리
+import { UserPage } from '@/pages/system';
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* MainLayout을 공통 레이아웃으로 사용 */}
-      <Route element={<MainLayout />}>
-        {/* 대시보드 */}
-        <Route path="/" element={<DashboardPage />} />
+      {/* 로그인 페이지 (레이아웃 없음) */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* 인증 필요 영역 - MainLayout 적용 */}
+      <Route element={<PrivateRoute />}>
+        <Route element={<MainLayout />}>
+          {/* 대시보드 */}
+          <Route path="/" element={<DashboardPage />} />
+
+        {/* 재고관리 (신규 - ERP 표준) */}
+        <Route path="/inventory">
+          <Route path="warehouse" element={<WarehousePage />} />
+          <Route path="stock" element={<InventoryStockPage />} />
+          <Route path="transaction" element={<TransactionPage />} />
+          <Route path="lot" element={<LotPage />} />
+        </Route>
 
         {/* 자재관리 */}
         <Route path="/material">
@@ -86,8 +109,42 @@ function AppRoutes() {
           <Route path="equip" element={<EquipMasterPage />} />
         </Route>
 
+        {/* 보세관리 */}
+        <Route path="/customs">
+          <Route path="entry" element={<CustomsEntryPage />} />
+          <Route path="stock" element={<CustomsStockPage />} />
+          <Route path="usage" element={<CustomsUsagePage />} />
+        </Route>
+
+        {/* 소모품관리 */}
+        <Route path="/consumables">
+          <Route path="master" element={<ConsumableMasterPage />} />
+          <Route path="log" element={<ConsumableLogPage />} />
+          <Route path="life" element={<ConsumableLifePage />} />
+        </Route>
+
+        {/* 외주관리 */}
+        <Route path="/outsourcing">
+          <Route path="vendor" element={<VendorPage />} />
+          <Route path="order" element={<SubconOrderPage />} />
+          <Route path="receive" element={<SubconReceivePage />} />
+        </Route>
+
+        {/* 인터페이스관리 */}
+        <Route path="/interface">
+          <Route path="dashboard" element={<InterfaceDashboardPage />} />
+          <Route path="log" element={<InterfaceLogPage />} />
+          <Route path="manual" element={<InterfaceManualPage />} />
+        </Route>
+
+        {/* 시스템관리 */}
+        <Route path="/system">
+          <Route path="users" element={<UserPage />} />
+        </Route>
+
         {/* 404 - 알 수 없는 경로는 대시보드로 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Route>
     </Routes>
   );

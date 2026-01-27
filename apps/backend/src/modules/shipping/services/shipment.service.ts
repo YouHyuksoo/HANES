@@ -32,11 +32,8 @@ import {
   ChangeShipmentStatusDto,
   UpdateErpSyncDto,
   ShipmentStatsQueryDto,
-  SHIPMENT_STATUS,
   ShipmentStatus,
 } from '../dto/shipment.dto';
-import { PALLET_STATUS } from '../dto/pallet.dto';
-import { BOX_STATUS } from '../dto/box.dto';
 
 @Injectable()
 export class ShipmentService {
@@ -195,7 +192,7 @@ export class ShipmentService {
         palletCount: 0,
         boxCount: 0,
         totalQty: 0,
-        status: SHIPMENT_STATUS.PREPARING,
+        status: 'PREPARING',
         erpSyncYn: 'N',
       },
     });
@@ -208,7 +205,7 @@ export class ShipmentService {
     const shipment = await this.findById(id);
 
     // SHIPPED 또는 DELIVERED 상태에서는 수정 불가
-    if (shipment.status === SHIPMENT_STATUS.SHIPPED || shipment.status === SHIPMENT_STATUS.DELIVERED) {
+    if (shipment.status === 'SHIPPED' || shipment.status === 'DELIVERED') {
       throw new BadRequestException('출하 완료된 건은 수정할 수 없습니다.');
     }
 
@@ -244,7 +241,7 @@ export class ShipmentService {
     const shipment = await this.findById(id);
 
     // SHIPPED 또는 DELIVERED 상태에서는 삭제 불가
-    if (shipment.status === SHIPMENT_STATUS.SHIPPED || shipment.status === SHIPMENT_STATUS.DELIVERED) {
+    if (shipment.status === 'SHIPPED' || shipment.status === 'DELIVERED') {
       throw new BadRequestException('출하 완료된 건은 삭제할 수 없습니다.');
     }
 
@@ -268,7 +265,7 @@ export class ShipmentService {
     const shipment = await this.findById(id);
 
     // PREPARING 상태에서만 팔레트 적재 가능
-    if (shipment.status !== SHIPMENT_STATUS.PREPARING) {
+    if (shipment.status !== 'PREPARING') {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 팔레트를 적재할 수 없습니다. PREPARING 상태여야 합니다.`);
     }
 
@@ -287,7 +284,7 @@ export class ShipmentService {
     }
 
     // 팔레트 상태 확인
-    const invalidPallets = pallets.filter(p => p.status !== PALLET_STATUS.CLOSED);
+    const invalidPallets = pallets.filter(p => p.status !== 'CLOSED');
     if (invalidPallets.length > 0) {
       throw new BadRequestException(`CLOSED 상태가 아닌 팔레트가 있습니다: ${invalidPallets.map(p => p.palletNo).join(', ')}`);
     }
@@ -305,7 +302,7 @@ export class ShipmentService {
         where: { id: { in: dto.palletIds } },
         data: {
           shipmentId: id,
-          status: PALLET_STATUS.LOADED,
+          status: 'LOADED',
         },
       });
 
@@ -346,7 +343,7 @@ export class ShipmentService {
     const shipment = await this.findById(id);
 
     // PREPARING 상태에서만 팔레트 하차 가능
-    if (shipment.status !== SHIPMENT_STATUS.PREPARING) {
+    if (shipment.status !== 'PREPARING') {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 팔레트를 하차할 수 없습니다. PREPARING 상태여야 합니다.`);
     }
 
@@ -372,7 +369,7 @@ export class ShipmentService {
         where: { id: { in: dto.palletIds } },
         data: {
           shipmentId: null,
-          status: PALLET_STATUS.CLOSED,
+          status: 'CLOSED',
         },
       });
 
@@ -414,7 +411,7 @@ export class ShipmentService {
   async markAsLoaded(id: string) {
     const shipment = await this.findById(id);
 
-    if (shipment.status !== SHIPMENT_STATUS.PREPARING) {
+    if (shipment.status !== 'PREPARING') {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 적재완료 처리할 수 없습니다. PREPARING 상태여야 합니다.`);
     }
 
@@ -424,7 +421,7 @@ export class ShipmentService {
 
     return this.prisma.shipmentLog.update({
       where: { id },
-      data: { status: SHIPMENT_STATUS.LOADED },
+      data: { status: 'LOADED' },
       include: {
         pallets: {
           where: { deletedAt: null },
@@ -445,7 +442,7 @@ export class ShipmentService {
   async markAsShipped(id: string) {
     const shipment = await this.findById(id);
 
-    if (shipment.status !== SHIPMENT_STATUS.LOADED) {
+    if (shipment.status !== 'LOADED') {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 출하 처리할 수 없습니다. LOADED 상태여야 합니다.`);
     }
 
@@ -454,7 +451,7 @@ export class ShipmentService {
       // 팔레트 상태 업데이트
       await tx.palletMaster.updateMany({
         where: { shipmentId: id, deletedAt: null },
-        data: { status: PALLET_STATUS.SHIPPED },
+        data: { status: 'SHIPPED' },
       });
 
       // 박스 상태 업데이트
@@ -466,14 +463,14 @@ export class ShipmentService {
       const palletIds = pallets.map(p => p.id);
       await tx.boxMaster.updateMany({
         where: { palletId: { in: palletIds }, deletedAt: null },
-        data: { status: BOX_STATUS.SHIPPED },
+        data: { status: 'SHIPPED' },
       });
 
       // 출하 상태 업데이트
       return tx.shipmentLog.update({
         where: { id },
         data: {
-          status: SHIPMENT_STATUS.SHIPPED,
+          status: 'SHIPPED',
           shipTime: new Date(),
         },
         include: {
@@ -498,13 +495,13 @@ export class ShipmentService {
   async markAsDelivered(id: string) {
     const shipment = await this.findById(id);
 
-    if (shipment.status !== SHIPMENT_STATUS.SHIPPED) {
+    if (shipment.status !== 'SHIPPED') {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 배송완료 처리할 수 없습니다. SHIPPED 상태여야 합니다.`);
     }
 
     return this.prisma.shipmentLog.update({
       where: { id },
-      data: { status: SHIPMENT_STATUS.DELIVERED },
+      data: { status: 'DELIVERED' },
       include: {
         pallets: {
           where: { deletedAt: null },
@@ -525,7 +522,7 @@ export class ShipmentService {
   async cancel(id: string, remark?: string) {
     const shipment = await this.findById(id);
 
-    if (shipment.status !== SHIPMENT_STATUS.PREPARING && shipment.status !== SHIPMENT_STATUS.LOADED) {
+    if (shipment.status !== 'PREPARING' && shipment.status !== 'LOADED') {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 취소할 수 없습니다. PREPARING 또는 LOADED 상태여야 합니다.`);
     }
 
@@ -536,7 +533,7 @@ export class ShipmentService {
         where: { shipmentId: id, deletedAt: null },
         data: {
           shipmentId: null,
-          status: PALLET_STATUS.CLOSED,
+          status: 'CLOSED',
         },
       });
 
@@ -544,7 +541,7 @@ export class ShipmentService {
       return tx.shipmentLog.update({
         where: { id },
         data: {
-          status: SHIPMENT_STATUS.CANCELED,
+          status: 'CANCELED',
           palletCount: 0,
           boxCount: 0,
           totalQty: 0,
@@ -601,7 +598,7 @@ export class ShipmentService {
     return this.prisma.shipmentLog.findMany({
       where: {
         erpSyncYn: 'N',
-        status: { in: [SHIPMENT_STATUS.SHIPPED, SHIPMENT_STATUS.DELIVERED] },
+        status: { in: ['SHIPPED', 'DELIVERED'] },
         deletedAt: null,
       },
       include: {
@@ -644,7 +641,7 @@ export class ShipmentService {
           gte: new Date(startDate),
           lte: new Date(endDate),
         },
-        status: { in: [SHIPMENT_STATUS.SHIPPED, SHIPMENT_STATUS.DELIVERED] },
+        status: { in: ['SHIPPED', 'DELIVERED'] },
         ...(customer && { customer: { contains: customer, mode: 'insensitive' as const } }),
       },
       select: {
@@ -718,7 +715,7 @@ export class ShipmentService {
           gte: new Date(startDate),
           lte: new Date(endDate),
         },
-        status: { in: [SHIPMENT_STATUS.SHIPPED, SHIPMENT_STATUS.DELIVERED] },
+        status: { in: ['SHIPPED', 'DELIVERED'] },
       },
       select: {
         customer: true,

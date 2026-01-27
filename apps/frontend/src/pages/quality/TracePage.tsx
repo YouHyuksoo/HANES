@@ -398,7 +398,7 @@ function TracePage() {
       {/* 페이지 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text">추적성조회</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><History className="w-7 h-7 text-primary" />추적성조회</h1>
           <p className="text-text-muted mt-1">시리얼번호 또는 LOT번호로 4M 이력을 조회합니다.</p>
         </div>
       </div>
@@ -420,7 +420,7 @@ function TracePage() {
             <Button onClick={handleSearch}>
               <Search className="w-4 h-4 mr-1" /> 조회
             </Button>
-            <Button variant="ghost" onClick={handleExampleSearch}>
+            <Button variant="secondary" onClick={handleExampleSearch}>
               예시 조회
             </Button>
           </div>

@@ -6,8 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export const PART_TYPES = ['RAW', 'WIP', 'FG'] as const;
+import { PART_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
 
 export class CreatePartDto {
   @ApiProperty({ description: '품목 코드', example: 'P-001' })
@@ -20,9 +19,9 @@ export class CreatePartDto {
   @MaxLength(200)
   partName: string;
 
-  @ApiProperty({ description: '품목 유형', enum: PART_TYPES })
+  @ApiProperty({ description: '품목 유형', enum: PART_TYPE_VALUES })
   @IsString()
-  @IsIn(PART_TYPES)
+  @IsIn([...PART_TYPE_VALUES])
   partType: string;
 
   @ApiPropertyOptional({ description: '규격' })
@@ -67,10 +66,10 @@ export class CreatePartDto {
   @Min(0)
   safetyStock?: number;
 
-  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -92,10 +91,10 @@ export class PartQueryDto {
   @Max(100)
   limit?: number = 10;
 
-  @ApiPropertyOptional({ enum: PART_TYPES })
+  @ApiPropertyOptional({ enum: PART_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(PART_TYPES)
+  @IsIn([...PART_TYPE_VALUES])
   partType?: string;
 
   @ApiPropertyOptional()
@@ -108,9 +107,9 @@ export class PartQueryDto {
   @IsString()
   customer?: string;
 
-  @ApiPropertyOptional({ enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }

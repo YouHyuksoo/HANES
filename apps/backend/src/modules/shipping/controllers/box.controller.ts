@@ -48,7 +48,6 @@ import {
   BoxQueryDto,
   AddSerialToBoxDto,
   AssignBoxToPalletDto,
-  BOX_STATUS,
 } from '../dto/box.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 

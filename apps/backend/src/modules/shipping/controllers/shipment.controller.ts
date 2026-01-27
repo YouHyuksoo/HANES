@@ -57,7 +57,6 @@ import {
   ChangeShipmentStatusDto,
   UpdateErpSyncDto,
   ShipmentStatsQueryDto,
-  SHIPMENT_STATUS,
 } from '../dto/shipment.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 

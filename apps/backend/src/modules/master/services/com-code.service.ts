@@ -32,6 +32,55 @@ export class ComCodeService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * 전체 활성 코드를 groupCode별 그룹핑하여 반환
+   * 프론트엔드에서 한 번의 호출로 모든 공통코드를 로드할 때 사용
+   */
+  async findAllActive(): Promise<Record<string, Array<{
+    detailCode: string;
+    codeName: string;
+    codeDesc: string | null;
+    sortOrder: number;
+    attr1: string | null;
+    attr2: string | null;
+    attr3: string | null;
+  }>>> {
+    const codes = await this.prisma.comCode.findMany({
+      where: { useYn: 'Y' },
+      orderBy: [{ groupCode: 'asc' }, { sortOrder: 'asc' }],
+      select: {
+        groupCode: true,
+        detailCode: true,
+        codeName: true,
+        codeDesc: true,
+        sortOrder: true,
+        attr1: true,
+        attr2: true,
+        attr3: true,
+      },
+    });
+
+    const grouped: Record<string, Array<{
+      detailCode: string;
+      codeName: string;
+      codeDesc: string | null;
+      sortOrder: number;
+      attr1: string | null;
+      attr2: string | null;
+      attr3: string | null;
+    }>> = {};
+
+    for (const code of codes) {
+      const { groupCode, ...rest } = code;
+      if (!grouped[groupCode]) {
+        grouped[groupCode] = [];
+      }
+      grouped[groupCode].push(rest);
+    }
+
+    return grouped;
+  }
+
+  /**
    * 그룹 코드 목록 조회 (중복 제거)
    */
   async findAllGroups() {

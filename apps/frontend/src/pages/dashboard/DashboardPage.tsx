@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
+  LayoutDashboard,
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -35,26 +36,26 @@ function KpiCard({ title, value, unit, change, icon: Icon, color }: KpiCardProps
   const isNegative = change && change < 0;
 
   return (
-    <Card className="relative overflow-hidden">
+    <Card padding="sm" className="relative overflow-hidden">
       <CardContent>
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-text-muted mb-1">{title}</p>
+            <p className="text-xs text-text-muted">{title}</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-text">{value}</span>
-              {unit && <span className="text-sm text-text-muted">{unit}</span>}
+              <span className="text-lg font-bold text-text leading-tight">{value}</span>
+              {unit && <span className="text-xs text-text-muted">{unit}</span>}
             </div>
             {change !== undefined && (
               <div
                 className={`
-                  flex items-center gap-1 mt-2 text-sm
+                  flex items-center gap-1 mt-1 text-xs
                   ${isPositive ? 'text-success' : ''}
                   ${isNegative ? 'text-error' : ''}
                   ${!isPositive && !isNegative ? 'text-text-muted' : ''}
                 `}
               >
-                {isPositive && <TrendingUp className="w-4 h-4" />}
-                {isNegative && <TrendingDown className="w-4 h-4" />}
+                {isPositive && <TrendingUp className="w-3 h-3" />}
+                {isNegative && <TrendingDown className="w-3 h-3" />}
                 <span>
                   {isPositive && '+'}
                   {change}% 전일 대비
@@ -62,13 +63,8 @@ function KpiCard({ title, value, unit, change, icon: Icon, color }: KpiCardProps
               </div>
             )}
           </div>
-          <div
-            className={`
-              p-3 rounded-lg
-              ${color}
-            `}
-          >
-            <Icon className="w-6 h-6 text-white" />
+          <div className={`p-2 rounded-md ${color}`}>
+            <Icon className="w-5 h-5 text-white" />
           </div>
         </div>
       </CardContent>
@@ -206,7 +202,7 @@ function DashboardPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text">대시보드</h1>
+        <h1 className="text-xl font-bold text-text flex items-center gap-2"><LayoutDashboard className="w-7 h-7 text-primary" />대시보드</h1>
         <p className="text-text-muted mt-1">실시간 생산 현황을 한눈에 확인하세요.</p>
       </div>
 

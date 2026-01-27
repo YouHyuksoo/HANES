@@ -6,6 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsDateString, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IQC_STATUS_VALUES, MAT_LOT_STATUS_VALUES } from '@hanes/shared';
 
 export class CreateMatLotDto {
   @ApiProperty({ description: 'LOT 번호', example: 'LOT-20260126-001' })
@@ -62,16 +63,16 @@ export class CreateMatLotDto {
   @MaxLength(50)
   poNo?: string;
 
-  @ApiPropertyOptional({ description: 'IQC 상태', enum: ['PENDING', 'PASS', 'FAIL', 'HOLD'] })
+  @ApiPropertyOptional({ description: 'IQC 상태', enum: IQC_STATUS_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['PENDING', 'PASS', 'FAIL', 'HOLD'])
+  @IsIn([...IQC_STATUS_VALUES])
   iqcStatus?: string;
 
-  @ApiPropertyOptional({ description: 'LOT 상태', enum: ['NORMAL', 'HOLD', 'DEPLETED'] })
+  @ApiPropertyOptional({ description: 'LOT 상태', enum: MAT_LOT_STATUS_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['NORMAL', 'HOLD', 'DEPLETED'])
+  @IsIn([...MAT_LOT_STATUS_VALUES])
   status?: string;
 }
 
@@ -108,15 +109,15 @@ export class MatLotQueryDto {
   @IsString()
   vendor?: string;
 
-  @ApiPropertyOptional({ enum: ['PENDING', 'PASS', 'FAIL', 'HOLD'] })
+  @ApiPropertyOptional({ enum: IQC_STATUS_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['PENDING', 'PASS', 'FAIL', 'HOLD'])
+  @IsIn([...IQC_STATUS_VALUES])
   iqcStatus?: string;
 
-  @ApiPropertyOptional({ enum: ['NORMAL', 'HOLD', 'DEPLETED'] })
+  @ApiPropertyOptional({ enum: MAT_LOT_STATUS_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['NORMAL', 'HOLD', 'DEPLETED'])
+  @IsIn([...MAT_LOT_STATUS_VALUES])
   status?: string;
 }

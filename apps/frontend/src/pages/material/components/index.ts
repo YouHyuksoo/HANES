@@ -5,4 +5,3 @@
 
 export { ReceiveStatusBadge, IssueStatusBadge } from './StatusBadge';
 export type { ReceiveStatus, IssueStatus } from './StatusBadge';
-export { StatCard } from './StatCard';

@@ -6,9 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-
-export const PLANT_TYPES = ['PLANT', 'SHOP', 'LINE', 'CELL'] as const;
-export type PlantType = (typeof PLANT_TYPES)[number];
+import { PLANT_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
 
 export class CreatePlantDto {
   @ApiProperty({ description: '공장 코드', example: 'P001' })
@@ -39,10 +37,10 @@ export class CreatePlantDto {
   @MaxLength(100)
   plantName: string;
 
-  @ApiPropertyOptional({ description: '타입', enum: PLANT_TYPES })
+  @ApiPropertyOptional({ description: '타입', enum: PLANT_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(PLANT_TYPES)
+  @IsIn([...PLANT_TYPE_VALUES])
   plantType?: string;
 
   @ApiPropertyOptional({ description: '상위 위치 ID' })
@@ -56,10 +54,10 @@ export class CreatePlantDto {
   @Min(0)
   sortOrder?: number;
 
-  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -81,10 +79,10 @@ export class PlantQueryDto {
   @Max(100)
   limit?: number = 10;
 
-  @ApiPropertyOptional({ enum: PLANT_TYPES })
+  @ApiPropertyOptional({ enum: PLANT_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(PLANT_TYPES)
+  @IsIn([...PLANT_TYPE_VALUES])
   plantType?: string;
 
   @ApiPropertyOptional()
@@ -92,10 +90,10 @@ export class PlantQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional()

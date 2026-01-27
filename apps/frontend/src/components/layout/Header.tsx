@@ -8,8 +8,10 @@
  * 3. **사용자 메뉴**: 드롭다운 형태로 프로필/로그아웃
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuthStore } from '@/stores/authStore';
 import Input from '@/components/ui/Input';
 
 interface HeaderProps {
@@ -18,7 +20,15 @@ interface HeaderProps {
 
 function Header({ onMenuToggle }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = () => {
+    setShowUserMenu(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <header
@@ -99,7 +109,7 @@ function Header({ onMenuToggle }: HeaderProps) {
               <User className="w-4 h-4 text-primary" />
             </div>
             <span className="hidden sm:block text-sm font-medium text-text">
-              관리자
+              {user?.name || user?.email || '사용자'}
             </span>
           </button>
 
@@ -140,6 +150,7 @@ function Header({ onMenuToggle }: HeaderProps) {
                 </button>
                 <hr className="my-1 border-border" />
                 <button
+                  onClick={handleLogout}
                   className="
                     w-full px-4 py-2 text-left text-sm
                     text-error hover:bg-background

@@ -25,19 +25,9 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { JOB_ORDER_STATUS_VALUES, USE_YN_VALUES } from '@hanes/shared';
 
-/**
- * 작업지시 상태 enum
- */
-export const JOB_ORDER_STATUS = {
-  WAITING: 'WAITING',
-  RUNNING: 'RUNNING',
-  PAUSED: 'PAUSED',
-  DONE: 'DONE',
-  CANCELED: 'CANCELED',
-} as const;
-
-export type JobOrderStatus = (typeof JOB_ORDER_STATUS)[keyof typeof JOB_ORDER_STATUS];
+export type JobOrderStatus = typeof JOB_ORDER_STATUS_VALUES[number];
 
 /**
  * 작업지시 생성 DTO
@@ -100,11 +90,11 @@ export class UpdateJobOrderDto extends PartialType(CreateJobOrderDto) {
 
   @ApiPropertyOptional({
     description: '상태',
-    enum: Object.values(JOB_ORDER_STATUS),
+    enum: [...JOB_ORDER_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(JOB_ORDER_STATUS))
+  @IsIn([...JOB_ORDER_STATUS_VALUES])
   status?: JobOrderStatus;
 }
 
@@ -114,11 +104,11 @@ export class UpdateJobOrderDto extends PartialType(CreateJobOrderDto) {
 export class ChangeJobOrderStatusDto {
   @ApiProperty({
     description: '변경할 상태',
-    enum: Object.values(JOB_ORDER_STATUS),
+    enum: [...JOB_ORDER_STATUS_VALUES],
     example: 'RUNNING',
   })
   @IsString()
-  @IsIn(Object.values(JOB_ORDER_STATUS))
+  @IsIn([...JOB_ORDER_STATUS_VALUES])
   status: JobOrderStatus;
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
@@ -164,11 +154,11 @@ export class JobOrderQueryDto {
 
   @ApiPropertyOptional({
     description: '상태 필터',
-    enum: Object.values(JOB_ORDER_STATUS),
+    enum: [...JOB_ORDER_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(JOB_ORDER_STATUS))
+  @IsIn([...JOB_ORDER_STATUS_VALUES])
   status?: JobOrderStatus;
 
   @ApiPropertyOptional({ description: '계획일 시작 (YYYY-MM-DD)' })
@@ -181,10 +171,10 @@ export class JobOrderQueryDto {
   @IsDateString()
   planDateTo?: string;
 
-  @ApiPropertyOptional({ description: 'ERP 동기화 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: 'ERP 동기화 여부', enum: [...USE_YN_VALUES] })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   erpSyncYn?: string;
 }
 
@@ -192,8 +182,8 @@ export class JobOrderQueryDto {
  * ERP 동기화 플래그 변경 DTO
  */
 export class UpdateErpSyncDto {
-  @ApiProperty({ description: 'ERP 동기화 여부', enum: ['Y', 'N'], example: 'Y' })
+  @ApiProperty({ description: 'ERP 동기화 여부', enum: [...USE_YN_VALUES], example: 'Y' })
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   erpSyncYn: string;
 }

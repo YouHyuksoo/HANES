@@ -10,9 +10,11 @@
 import { useState, useMemo } from 'react';
 import { Package, Plus, Search, RefreshCw, XCircle, CheckCircle, Lock, Truck } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { BoxStatusBadge, StatCard } from './components';
+import { StatCard } from '@/components/ui';
+import { BoxStatusBadge } from './components';
 import type { BoxStatus } from './components';
 
 /** 박스 인터페이스 */
@@ -43,14 +45,9 @@ const partOptions = [
   { value: 'H-003', label: 'H-003 (도어 하네스 C)' },
 ];
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'OPEN', label: 'OPEN (진행중)' },
-  { value: 'CLOSED', label: 'CLOSED (포장완료)' },
-  { value: 'SHIPPED', label: 'SHIPPED (출하)' },
-];
-
 function PackPage() {
+  const comCodeOptions = useComCodeOptions('BOX_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
   const [statusFilter, setStatusFilter] = useState('');
   const [partFilter, setPartFilter] = useState('');
   const [searchText, setSearchText] = useState('');
@@ -91,8 +88,8 @@ function PackPage() {
       const box = row.original;
       return (
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" disabled={box.status !== 'OPEN'} onClick={() => { setSelectedBox(box); setIsSerialModalOpen(true); }}><Plus className="w-4 h-4" /></Button>
-          <Button variant="ghost" size="sm" disabled={box.status !== 'OPEN'} onClick={() => handleCloseBox(box)}><Lock className="w-4 h-4" /></Button>
+          <button className="p-1 hover:bg-surface rounded" title="시리얼추가" disabled={box.status !== 'OPEN'} onClick={() => { setSelectedBox(box); setIsSerialModalOpen(true); }}><Plus className={`w-4 h-4 ${box.status === 'OPEN' ? 'text-primary' : 'text-text-muted opacity-50'}`} /></button>
+          <button className="p-1 hover:bg-surface rounded" title="박스닫기" disabled={box.status !== 'OPEN'} onClick={() => handleCloseBox(box)}><Lock className={`w-4 h-4 ${box.status === 'OPEN' ? 'text-primary' : 'text-text-muted opacity-50'}`} /></button>
         </div>
       );
     }},
@@ -102,13 +99,13 @@ function PackPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />포장관리</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />포장관리</h1>
           <p className="text-text-muted mt-1">박스 단위로 제품을 포장합니다.</p>
         </div>
         <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> 박스 생성</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label="진행중" value={stats.open} icon={Package} color="blue" />
         <StatCard label="포장완료" value={stats.closed} icon={CheckCircle} color="green" />
         <StatCard label="출하" value={stats.shipped} icon={Truck} color="purple" />

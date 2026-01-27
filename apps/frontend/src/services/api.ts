@@ -40,8 +40,10 @@ api.interceptors.response.use(
     // 401 Unauthorized - 로그인 페이지로 리다이렉트
     if (error.response?.status === 401) {
       localStorage.removeItem('hanes-token');
-      // 로그인 페이지로 이동 (필요시)
-      // window.location.href = '/login';
+      // 로그인 페이지가 아닐 때만 리다이렉트
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
 
     // 403 Forbidden - 권한 없음

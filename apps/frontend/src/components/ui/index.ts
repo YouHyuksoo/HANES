@@ -20,3 +20,9 @@ export type { ModalProps, ConfirmModalProps } from './Modal';
 
 export { default as Select } from './Select';
 export type { SelectProps, SelectOption } from './Select';
+
+export { default as ComCodeBadge, ComCodeBadgeDirect } from './ComCodeBadge';
+export type { ComCodeBadgeProps } from './ComCodeBadge';
+
+export { default as StatCard } from './StatCard';
+export type { StatCardProps } from './StatCard';

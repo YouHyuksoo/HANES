@@ -39,9 +39,8 @@ import {
   UpdateEquipMasterDto,
   EquipMasterQueryDto,
   ChangeEquipStatusDto,
-  EQUIP_TYPES,
-  EQUIP_STATUS,
 } from '../dto/equip-master.dto';
+import { EQUIP_TYPE_VALUES, EQUIP_STATUS_VALUES } from '@hanes/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('설비관리 - 설비마스터')
@@ -79,7 +78,7 @@ export class EquipMasterController {
 
   @Get('type/:equipType')
   @ApiOperation({ summary: '설비 유형별 목록 조회' })
-  @ApiParam({ name: 'equipType', description: '설비 유형', enum: EQUIP_TYPES })
+  @ApiParam({ name: 'equipType', description: '설비 유형', enum: EQUIP_TYPE_VALUES })
   async findByType(@Param('equipType') equipType: string) {
     const data = await this.equipMasterService.findByType(equipType);
     return ResponseUtil.success(data);
@@ -87,7 +86,7 @@ export class EquipMasterController {
 
   @Get('status/:status')
   @ApiOperation({ summary: '설비 상태별 목록 조회' })
-  @ApiParam({ name: 'status', description: '설비 상태', enum: EQUIP_STATUS })
+  @ApiParam({ name: 'status', description: '설비 상태', enum: EQUIP_STATUS_VALUES })
   async findByStatus(@Param('status') status: string) {
     const data = await this.equipMasterService.findByStatus(status);
     return ResponseUtil.success(data);

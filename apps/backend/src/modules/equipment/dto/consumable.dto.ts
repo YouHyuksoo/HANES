@@ -36,24 +36,7 @@ import {
   IsDecimal,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-
-/**
- * 소모품 카테고리 enum
- */
-export const CONSUMABLE_CATEGORIES = ['MOLD', 'JIG', 'TOOL'] as const;
-export type ConsumableCategory = (typeof CONSUMABLE_CATEGORIES)[number];
-
-/**
- * 소모품 상태 enum
- */
-export const CONSUMABLE_STATUS = ['NORMAL', 'WARNING', 'REPLACE'] as const;
-export type ConsumableStatus = (typeof CONSUMABLE_STATUS)[number];
-
-/**
- * 소모품 로그 유형 enum
- */
-export const CONSUMABLE_LOG_TYPES = ['IN', 'OUT', 'RETURN', 'REPAIR', 'SCRAP'] as const;
-export type ConsumableLogType = (typeof CONSUMABLE_LOG_TYPES)[number];
+import { CONSUMABLE_CATEGORY_VALUES, CONSUMABLE_STATUS_VALUES, CONSUMABLE_LOG_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
 
 /**
  * 소모품마스터 생성 DTO
@@ -71,12 +54,12 @@ export class CreateConsumableDto {
 
   @ApiPropertyOptional({
     description: '카테고리',
-    enum: CONSUMABLE_CATEGORIES,
+    enum: CONSUMABLE_CATEGORY_VALUES,
     example: 'MOLD',
   })
   @IsOptional()
   @IsString()
-  @IsIn(CONSUMABLE_CATEGORIES)
+  @IsIn([...CONSUMABLE_CATEGORY_VALUES])
   category?: string;
 
   @ApiPropertyOptional({ description: '기대 수명 (타수)', example: 100000, minimum: 0 })
@@ -131,18 +114,18 @@ export class CreateConsumableDto {
 
   @ApiPropertyOptional({
     description: '상태',
-    enum: CONSUMABLE_STATUS,
+    enum: CONSUMABLE_STATUS_VALUES,
     default: 'NORMAL',
   })
   @IsOptional()
   @IsString()
-  @IsIn(CONSUMABLE_STATUS)
+  @IsIn([...CONSUMABLE_STATUS_VALUES])
   status?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -170,16 +153,16 @@ export class ConsumableQueryDto {
   @Max(100)
   limit?: number = 20;
 
-  @ApiPropertyOptional({ description: '카테고리', enum: CONSUMABLE_CATEGORIES })
+  @ApiPropertyOptional({ description: '카테고리', enum: CONSUMABLE_CATEGORY_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(CONSUMABLE_CATEGORIES)
+  @IsIn([...CONSUMABLE_CATEGORY_VALUES])
   category?: string;
 
-  @ApiPropertyOptional({ description: '상태', enum: CONSUMABLE_STATUS })
+  @ApiPropertyOptional({ description: '상태', enum: CONSUMABLE_STATUS_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(CONSUMABLE_STATUS)
+  @IsIn([...CONSUMABLE_STATUS_VALUES])
   status?: string;
 
   @ApiPropertyOptional({ description: '공급업체' })
@@ -187,10 +170,10 @@ export class ConsumableQueryDto {
   @IsString()
   vendor?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '검색어 (코드, 이름)' })
@@ -214,11 +197,11 @@ export class CreateConsumableLogDto {
 
   @ApiProperty({
     description: '로그 유형',
-    enum: CONSUMABLE_LOG_TYPES,
+    enum: CONSUMABLE_LOG_TYPE_VALUES,
     example: 'OUT',
   })
   @IsString()
-  @IsIn(CONSUMABLE_LOG_TYPES)
+  @IsIn([...CONSUMABLE_LOG_TYPE_VALUES])
   logType: string;
 
   @ApiPropertyOptional({ description: '수량', default: 1, minimum: 1 })
@@ -296,10 +279,10 @@ export class ConsumableLogQueryDto {
   @IsString()
   consumableId?: string;
 
-  @ApiPropertyOptional({ description: '로그 유형', enum: CONSUMABLE_LOG_TYPES })
+  @ApiPropertyOptional({ description: '로그 유형', enum: CONSUMABLE_LOG_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(CONSUMABLE_LOG_TYPES)
+  @IsIn([...CONSUMABLE_LOG_TYPE_VALUES])
   logType?: string;
 
   @ApiPropertyOptional({ description: '시작 날짜 (ISO 8601)' })

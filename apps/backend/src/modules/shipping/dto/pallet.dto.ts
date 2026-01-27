@@ -26,18 +26,9 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PALLET_STATUS_VALUES } from '@hanes/shared';
 
-/**
- * 팔레트 상태 enum
- */
-export const PALLET_STATUS = {
-  OPEN: 'OPEN',
-  CLOSED: 'CLOSED',
-  LOADED: 'LOADED',
-  SHIPPED: 'SHIPPED',
-} as const;
-
-export type PalletStatus = (typeof PALLET_STATUS)[keyof typeof PALLET_STATUS];
+export type PalletStatus = typeof PALLET_STATUS_VALUES[number];
 
 /**
  * 팔레트 생성 DTO
@@ -60,11 +51,11 @@ export class UpdatePalletDto {
 
   @ApiPropertyOptional({
     description: '상태',
-    enum: Object.values(PALLET_STATUS),
+    enum: [...PALLET_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(PALLET_STATUS))
+  @IsIn([...PALLET_STATUS_VALUES])
   status?: PalletStatus;
 }
 
@@ -99,11 +90,11 @@ export class PalletQueryDto {
 
   @ApiPropertyOptional({
     description: '상태 필터',
-    enum: Object.values(PALLET_STATUS),
+    enum: [...PALLET_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
-  @IsIn(Object.values(PALLET_STATUS))
+  @IsIn([...PALLET_STATUS_VALUES])
   status?: PalletStatus;
 
   @ApiPropertyOptional({ description: '출하 미할당 팔레트만', default: false })

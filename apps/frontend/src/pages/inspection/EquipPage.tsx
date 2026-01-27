@@ -13,8 +13,9 @@ import {
   RefreshCw, Wifi, WifiOff, AlertTriangle,
   Cpu, Power, Clock,
 } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Select } from '@/components/ui';
+import { Card, CardHeader, CardContent, Button, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { useComCodeOptions } from '@/hooks/useComCode';
 
 // ========================================
 // 타입 정의
@@ -62,30 +63,6 @@ const mockLogs: CommLog[] = [
   { id: '5', timestamp: '2024-01-15 09:14:30', equipCode: 'INSP-02', direction: 'RX', message: 'RESULT:FAIL,SN:SN-2024011500141,ERR:E001', status: 'OK' },
 ];
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'CONNECTED', label: '연결됨' },
-  { value: 'DISCONNECTED', label: '연결끊김' },
-  { value: 'ERROR', label: '오류' },
-];
-
-// ========================================
-// 상태 배지 컴포넌트
-// ========================================
-function StatusBadge({ status }: { status: ConnectionStatus }) {
-  const config = {
-    CONNECTED: { icon: Wifi, label: '연결됨', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-    DISCONNECTED: { icon: WifiOff, label: '연결끊김', className: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
-    ERROR: { icon: AlertTriangle, label: '오류', className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
-  };
-  const { icon: Icon, label, className } = config[status];
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${className}`}>
-      <Icon className="w-3 h-3" />{label}
-    </span>
-  );
-}
 
 // ========================================
 // 검사기 카드 컴포넌트
@@ -101,7 +78,7 @@ function EquipCard({ equip }: { equip: InspectorEquip }) {
             <h3 className="font-semibold text-text">{equip.equipName}</h3>
             <p className="text-sm text-text-muted">{equip.equipCode}</p>
           </div>
-          <StatusBadge status={equip.status} />
+          <ComCodeBadge groupCode="CONNECTION_STATUS" code={equip.status} />
         </div>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between"><span className="text-text-muted">통신방식</span><span className="text-text font-medium">{equip.commType}</span></div>
@@ -119,6 +96,8 @@ function EquipCard({ equip }: { equip: InspectorEquip }) {
 // 메인 컴포넌트
 // ========================================
 function EquipPage() {
+  const comCodeStatusOptions = useComCodeOptions('CONNECTION_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
   const [statusFilter, setStatusFilter] = useState('');
 
   const filteredEquipments = useMemo(() => {
@@ -145,17 +124,17 @@ function EquipPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />검사기연동</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />검사기연동</h1>
           <p className="text-text-muted mt-1">통전검사기 연결 상태를 모니터링합니다.</p>
         </div>
         <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Power className="w-5 h-5 text-text-muted" /><span className="text-text-muted text-sm">전체 검사기</span></div><div className="text-2xl font-bold text-text mt-1">{stats.total}대</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Wifi className="w-5 h-5 text-green-500" /><span className="text-text-muted text-sm">연결됨</span></div><div className="text-2xl font-bold text-green-500 mt-1">{stats.connected}대</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><WifiOff className="w-5 h-5 text-gray-500" /><span className="text-text-muted text-sm">연결끊김</span></div><div className="text-2xl font-bold text-gray-500 mt-1">{stats.disconnected}대</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /><span className="text-text-muted text-sm">오류</span></div><div className="text-2xl font-bold text-red-500 mt-1">{stats.error}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Power className="w-5 h-5 text-text-muted" /><span className="text-text-muted text-sm">전체 검사기</span></div><div className="text-lg font-bold leading-tight text-text mt-1">{stats.total}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Wifi className="w-5 h-5 text-green-500" /><span className="text-text-muted text-sm">연결됨</span></div><div className="text-lg font-bold leading-tight text-green-500 mt-1">{stats.connected}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><WifiOff className="w-5 h-5 text-gray-500" /><span className="text-text-muted text-sm">연결끊김</span></div><div className="text-lg font-bold leading-tight text-gray-500 mt-1">{stats.disconnected}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /><span className="text-text-muted text-sm">오류</span></div><div className="text-lg font-bold leading-tight text-red-500 mt-1">{stats.error}대</div></CardContent></Card>
       </div>
 
       <Card padding="sm">

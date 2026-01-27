@@ -17,12 +17,6 @@ export {
   UpdateEquipMasterDto,
   EquipMasterQueryDto,
   ChangeEquipStatusDto,
-  EQUIP_STATUS,
-  EQUIP_TYPES,
-  COMM_TYPES,
-  type EquipStatus,
-  type EquipType,
-  type CommType,
 } from './dto/equip-master.dto';
 
 export {
@@ -33,13 +27,31 @@ export {
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
-  CONSUMABLE_CATEGORIES,
-  CONSUMABLE_STATUS,
-  CONSUMABLE_LOG_TYPES,
-  type ConsumableCategory,
-  type ConsumableStatus,
-  type ConsumableLogType,
 } from './dto/consumable.dto';
+
+// Constants and Types from @hanes/shared
+export {
+  EQUIP_STATUS_VALUES,
+  EQUIP_TYPE_VALUES,
+  COMM_TYPE_VALUES,
+  CONSUMABLE_CATEGORY_VALUES,
+  CONSUMABLE_STATUS_VALUES,
+  CONSUMABLE_LOG_TYPE_VALUES,
+  type EquipStatusValue,
+  type EquipTypeValue,
+  type CommTypeValue,
+  type ConsumableCategoryValue,
+  type ConsumableStatusValue,
+  type ConsumableLogTypeValue,
+} from '@hanes/shared';
+
+// Type aliases for backward compatibility
+export type EquipStatus = import('@hanes/shared').EquipStatusValue;
+export type EquipType = import('@hanes/shared').EquipTypeValue;
+export type CommType = import('@hanes/shared').CommTypeValue;
+export type ConsumableCategory = import('@hanes/shared').ConsumableCategoryValue;
+export type ConsumableStatus = import('@hanes/shared').ConsumableStatusValue;
+export type ConsumableLogType = import('@hanes/shared').ConsumableLogTypeValue;
 
 // Services
 export { EquipMasterService } from './services/equip-master.service';

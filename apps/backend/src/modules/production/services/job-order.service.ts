@@ -28,7 +28,6 @@ import {
   JobOrderQueryDto,
   ChangeJobOrderStatusDto,
   UpdateErpSyncDto,
-  JOB_ORDER_STATUS,
   JobOrderStatus,
 } from '../dto/job-order.dto';
 
@@ -167,7 +166,7 @@ export class JobOrderService {
         planDate: dto.planDate ? new Date(dto.planDate) : null,
         priority: dto.priority ?? 5,
         remark: dto.remark,
-        status: JOB_ORDER_STATUS.WAITING,
+        status: 'WAITING',
         erpSyncYn: 'N',
       },
       include: {
@@ -189,7 +188,7 @@ export class JobOrderService {
     const jobOrder = await this.findById(id);
 
     // DONE 또는 CANCELED 상태에서는 수정 불가
-    if (jobOrder.status === JOB_ORDER_STATUS.DONE || jobOrder.status === JOB_ORDER_STATUS.CANCELED) {
+    if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
       throw new BadRequestException(`완료되거나 취소된 작업지시는 수정할 수 없습니다.`);
     }
 
@@ -224,7 +223,7 @@ export class JobOrderService {
     const jobOrder = await this.findById(id);
 
     // RUNNING 상태에서는 삭제 불가
-    if (jobOrder.status === JOB_ORDER_STATUS.RUNNING) {
+    if (jobOrder.status === 'RUNNING') {
       throw new BadRequestException(`진행 중인 작업지시는 삭제할 수 없습니다.`);
     }
 
@@ -243,8 +242,8 @@ export class JobOrderService {
     const jobOrder = await this.findById(id);
 
     if (
-      jobOrder.status !== JOB_ORDER_STATUS.WAITING &&
-      jobOrder.status !== JOB_ORDER_STATUS.PAUSED
+      jobOrder.status !== 'WAITING' &&
+      jobOrder.status !== 'PAUSED'
     ) {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 시작할 수 없습니다. WAITING 또는 PAUSED 상태여야 합니다.`,
@@ -252,7 +251,7 @@ export class JobOrderService {
     }
 
     const updateData: any = {
-      status: JOB_ORDER_STATUS.RUNNING,
+      status: 'RUNNING',
     };
 
     // 최초 시작인 경우 시작 시간 설정
@@ -281,7 +280,7 @@ export class JobOrderService {
   async pause(id: string) {
     const jobOrder = await this.findById(id);
 
-    if (jobOrder.status !== JOB_ORDER_STATUS.RUNNING) {
+    if (jobOrder.status !== 'RUNNING') {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 일시정지할 수 없습니다. RUNNING 상태여야 합니다.`,
       );
@@ -289,7 +288,7 @@ export class JobOrderService {
 
     return this.prisma.jobOrder.update({
       where: { id },
-      data: { status: JOB_ORDER_STATUS.PAUSED },
+      data: { status: 'PAUSED' },
       include: {
         part: {
           select: {
@@ -309,8 +308,8 @@ export class JobOrderService {
     const jobOrder = await this.findById(id);
 
     if (
-      jobOrder.status !== JOB_ORDER_STATUS.RUNNING &&
-      jobOrder.status !== JOB_ORDER_STATUS.PAUSED
+      jobOrder.status !== 'RUNNING' &&
+      jobOrder.status !== 'PAUSED'
     ) {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 완료할 수 없습니다. RUNNING 또는 PAUSED 상태여야 합니다.`,
@@ -329,7 +328,7 @@ export class JobOrderService {
     return this.prisma.jobOrder.update({
       where: { id },
       data: {
-        status: JOB_ORDER_STATUS.DONE,
+        status: 'DONE',
         endTime: new Date(),
         goodQty: summary._sum.goodQty ?? 0,
         defectQty: summary._sum.defectQty ?? 0,
@@ -353,8 +352,8 @@ export class JobOrderService {
     const jobOrder = await this.findById(id);
 
     if (
-      jobOrder.status !== JOB_ORDER_STATUS.WAITING &&
-      jobOrder.status !== JOB_ORDER_STATUS.PAUSED
+      jobOrder.status !== 'WAITING' &&
+      jobOrder.status !== 'PAUSED'
     ) {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 취소할 수 없습니다. WAITING 또는 PAUSED 상태여야 합니다.`,
@@ -364,7 +363,7 @@ export class JobOrderService {
     return this.prisma.jobOrder.update({
       where: { id },
       data: {
-        status: JOB_ORDER_STATUS.CANCELED,
+        status: 'CANCELED',
         endTime: new Date(),
         ...(remark && { remark }),
       },
@@ -425,7 +424,7 @@ export class JobOrderService {
     return this.prisma.jobOrder.findMany({
       where: {
         erpSyncYn: 'N',
-        status: JOB_ORDER_STATUS.DONE,
+        status: 'DONE',
         deletedAt: null,
       },
       include: {

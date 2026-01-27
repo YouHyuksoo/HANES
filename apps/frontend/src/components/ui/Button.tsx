@@ -36,52 +36,48 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // 기본 스타일
     const baseStyles = `
       inline-flex items-center justify-center gap-2
-      font-medium rounded-[var(--radius)]
+      font-bold rounded-lg
       transition-all duration-200 ease-in-out
       focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-      disabled:opacity-50 disabled:cursor-not-allowed
-      ripple
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none
     `;
 
     // variant 스타일
     const variantStyles = {
       primary: `
         bg-primary text-white
-        hover:bg-primary-hover
+        shadow-lg shadow-primary/25
+        hover:bg-primary-hover hover:-translate-y-0.5
         focus-visible:ring-primary
-        active:scale-[0.98]
       `,
       secondary: `
-        bg-secondary text-white
-        hover:opacity-90
-        focus-visible:ring-secondary
-        active:scale-[0.98]
+        bg-card border border-border text-foreground
+        hover:bg-card-hover
+        focus-visible:ring-primary
       `,
       outline: `
-        border-2 border-primary text-primary
-        bg-transparent
-        hover:bg-primary hover:text-white
+        bg-transparent border border-border text-foreground
+        hover:bg-card-hover hover:border-border-hover
         focus-visible:ring-primary
       `,
       ghost: `
-        bg-transparent text-text
-        hover:bg-surface
-        dark:hover:bg-white/10
+        bg-transparent text-foreground
+        hover:bg-black/5 dark:hover:bg-white/5
         focus-visible:ring-primary
       `,
       danger: `
         bg-error text-white
-        hover:opacity-90
+        shadow-lg shadow-error/25
+        hover:opacity-90 hover:-translate-y-0.5
         focus-visible:ring-error
-        active:scale-[0.98]
       `,
     };
 
     // size 스타일
     const sizeStyles = {
-      sm: 'h-8 px-3 text-sm',
-      md: 'h-10 px-4 text-sm',
-      lg: 'h-12 px-6 text-base',
+      sm: 'h-9 px-4 text-sm',
+      md: 'h-10 px-6 text-sm',
+      lg: 'h-12 px-8 text-base',
     };
 
     return (

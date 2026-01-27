@@ -10,9 +10,11 @@
 import { useState, useMemo } from 'react';
 import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Calendar, Upload, ArrowRight } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { ShipmentStatusBadge, StatCard } from './components';
+import { StatCard } from '@/components/ui';
+import { ShipmentStatusBadge } from './components';
 import type { ShipmentStatus } from './components';
 
 interface Shipment { id: string; shipmentNo: string; shipDate: string; customerCode: string; customerName: string; palletCount: number; boxCount: number; totalQty: number; status: ShipmentStatus; vehicleNo: string; driverName: string; destination: string; createdAt: string; }
@@ -25,9 +27,10 @@ const mockShipments: Shipment[] = [
 ];
 
 const customerOptions = [{ value: '', label: '전체 고객사' }, { value: 'CUST-001', label: '현대자동차' }, { value: 'CUST-002', label: '기아자동차' }, { value: 'CUST-003', label: 'GM코리아' }];
-const statusOptions = [{ value: '', label: '전체 상태' }, { value: 'PREPARING', label: 'PREPARING (준비중)' }, { value: 'LOADED', label: 'LOADED (적재완료)' }, { value: 'SHIPPED', label: 'SHIPPED (출하완료)' }, { value: 'DELIVERED', label: 'DELIVERED (배송완료)' }];
 
 function ShipmentPage() {
+  const comCodeOptions = useComCodeOptions('SHIPMENT_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
   const [statusFilter, setStatusFilter] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -54,17 +57,17 @@ function ShipmentPage() {
     { accessorKey: 'totalQty', header: '총수량', size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'status', header: '상태', size: 100, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
     { accessorKey: 'vehicleNo', header: '차량번호', size: 100 },
-    { id: 'actions', header: '작업', size: 140, cell: ({ row }) => (<div className="flex gap-1"><Button variant="ghost" size="sm" disabled={row.original.status === 'DELIVERED'} onClick={() => handleStatusChange(row.original)} title="상태 변경"><ArrowRight className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => handleSyncERP(row.original)} title="ERP 동기화"><Upload className="w-4 h-4" /></Button></div>) },
+    { id: 'actions', header: '작업', size: 140, cell: ({ row }) => (<div className="flex gap-1"><button className="p-1 hover:bg-surface rounded" title="상태 변경" disabled={row.original.status === 'DELIVERED'} onClick={() => handleStatusChange(row.original)}><ArrowRight className={`w-4 h-4 ${row.original.status === 'DELIVERED' ? 'text-text-muted opacity-50' : 'text-primary'}`} /></button><button className="p-1 hover:bg-surface rounded" title="ERP 동기화" onClick={() => handleSyncERP(row.original)}><Upload className="w-4 h-4 text-primary" /></button></div>) },
   ], []);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold text-text flex items-center gap-2"><Truck className="w-7 h-7 text-primary" />출하확정</h1><p className="text-text-muted mt-1">팔레트를 출하로 확정하고 배송을 관리합니다.</p></div>
+        <div><h1 className="text-xl font-bold text-text flex items-center gap-2"><Truck className="w-7 h-7 text-primary" />출하확정</h1><p className="text-text-muted mt-1">팔레트를 출하로 확정하고 배송을 관리합니다.</p></div>
         <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> 출하 생성</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label="준비중" value={stats.preparing} icon={Clock} color="yellow" />
         <StatCard label="적재완료" value={stats.loaded} icon={Package} color="blue" />
         <StatCard label="출하완료" value={stats.shipped} icon={Truck} color="green" />
@@ -110,9 +113,9 @@ function ShipmentPage() {
               <div className="col-span-2"><p className="text-sm text-text-muted">배송지</p><p className="font-medium text-text">{selectedShipment.destination}</p></div>
             </div>
             <div className="grid grid-cols-3 gap-4 p-4 bg-background rounded-lg">
-              <div className="text-center"><p className="text-2xl font-bold text-primary">{selectedShipment.palletCount}</p><p className="text-sm text-text-muted">팔레트</p></div>
-              <div className="text-center"><p className="text-2xl font-bold text-primary">{selectedShipment.boxCount}</p><p className="text-sm text-text-muted">박스</p></div>
-              <div className="text-center"><p className="text-2xl font-bold text-primary">{selectedShipment.totalQty.toLocaleString()}</p><p className="text-sm text-text-muted">총수량</p></div>
+              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.palletCount}</p><p className="text-sm text-text-muted">팔레트</p></div>
+              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.boxCount}</p><p className="text-sm text-text-muted">박스</p></div>
+              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.totalQty.toLocaleString()}</p><p className="text-sm text-text-muted">총수량</p></div>
             </div>
             <div className="flex justify-end"><Button variant="secondary" onClick={() => setIsDetailModalOpen(false)}>닫기</Button></div>
           </div>

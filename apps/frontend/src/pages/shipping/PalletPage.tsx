@@ -10,9 +10,11 @@
 import { useState, useMemo } from 'react';
 import { Layers, Plus, Search, RefreshCw, Lock, Truck, Package, CheckCircle, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { PalletStatusBadge, StatCard } from './components';
+import { StatCard } from '@/components/ui';
+import { PalletStatusBadge } from './components';
 import type { PalletStatus } from './components';
 
 interface PalletBox { boxNo: string; partName: string; quantity: number; }
@@ -26,9 +28,10 @@ const mockPallets: Pallet[] = [
 ];
 
 const availableBoxes = [{ boxNo: 'BOX-20250126-011', partName: '메인 하네스 A', quantity: 50 }, { boxNo: 'BOX-20250126-012', partName: '서브 하네스 B', quantity: 80 }, { boxNo: 'BOX-20250126-013', partName: '도어 하네스 C', quantity: 60 }];
-const statusOptions = [{ value: '', label: '전체 상태' }, { value: 'OPEN', label: 'OPEN (진행중)' }, { value: 'CLOSED', label: 'CLOSED (적재완료)' }, { value: 'LOADED', label: 'LOADED (차량적재)' }, { value: 'SHIPPED', label: 'SHIPPED (출하)' }];
 
 function PalletPage() {
+  const comCodeOptions = useComCodeOptions('PALLET_STATUS');
+  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
   const [statusFilter, setStatusFilter] = useState('');
   const [searchText, setSearchText] = useState('');
   const [selectedPallet, setSelectedPallet] = useState<Pallet | null>(null);
@@ -53,18 +56,18 @@ function PalletPage() {
     { accessorKey: 'createdAt', header: '생성일시', size: 140 },
     { id: 'actions', header: '작업', size: 120, cell: ({ row }) => {
       const pallet = row.original;
-      return (<div className="flex gap-1"><Button variant="ghost" size="sm" disabled={pallet.status !== 'OPEN'} onClick={() => { setSelectedPallet(pallet); setIsAssignModalOpen(true); }}><Plus className="w-4 h-4" /></Button><Button variant="ghost" size="sm" disabled={pallet.status !== 'OPEN'} onClick={() => handleClosePallet(pallet)}><Lock className="w-4 h-4" /></Button></div>);
+      return (<div className="flex gap-1"><button className="p-1 hover:bg-surface rounded" title="박스할당" disabled={pallet.status !== 'OPEN'} onClick={() => { setSelectedPallet(pallet); setIsAssignModalOpen(true); }}><Plus className={`w-4 h-4 ${pallet.status === 'OPEN' ? 'text-primary' : 'text-text-muted opacity-50'}`} /></button><button className="p-1 hover:bg-surface rounded" title="팔레트닫기" disabled={pallet.status !== 'OPEN'} onClick={() => handleClosePallet(pallet)}><Lock className={`w-4 h-4 ${pallet.status === 'OPEN' ? 'text-primary' : 'text-text-muted opacity-50'}`} /></button></div>);
     }},
   ], []);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <div><h1 className="text-2xl font-bold text-text flex items-center gap-2"><Layers className="w-7 h-7 text-primary" />팔레트적재</h1><p className="text-text-muted mt-1">박스를 팔레트에 적재하여 출하를 준비합니다.</p></div>
+        <div><h1 className="text-xl font-bold text-text flex items-center gap-2"><Layers className="w-7 h-7 text-primary" />팔레트적재</h1><p className="text-text-muted mt-1">박스를 팔레트에 적재하여 출하를 준비합니다.</p></div>
         <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> 팔레트 생성</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label="진행중" value={stats.open} icon={Layers} color="blue" />
         <StatCard label="적재완료" value={stats.closed} icon={CheckCircle} color="green" />
         <StatCard label="차량적재" value={stats.loaded} icon={Truck} color="orange" />
