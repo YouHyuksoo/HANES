@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/ui/Select.tsx
  * @description 셀렉트박스 컴포넌트

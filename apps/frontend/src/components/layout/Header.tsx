@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/layout/Header.tsx
  * @description 상단 헤더 컴포넌트 - 로고, 검색, 사용자 정보, 테마 토글
@@ -7,12 +9,12 @@
  * 2. **테마 토글**: 다크/라이트 모드 전환 버튼
  * 3. **사용자 메뉴**: 드롭다운 형태로 프로필/로그아웃
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu } from 'lucide-react';
-import { useTheme } from '@/hooks/useTheme';
-import { useAuthStore } from '@/stores/authStore';
-import Input from '@/components/ui/Input';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
+import { useAuthStore } from "@/stores/authStore";
+import Input from "@/components/ui/Input";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -21,13 +23,13 @@ interface HeaderProps {
 function Header({ onMenuToggle }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = () => {
     setShowUserMenu(false);
     logout();
-    navigate('/login', { replace: true });
+    router.replace("/login");
   };
 
   return (
@@ -87,7 +89,7 @@ function Header({ onMenuToggle }: HeaderProps) {
         <button
           onClick={toggleTheme}
           className="p-2 rounded-md hover:bg-background transition-colors"
-          aria-label={isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}
+          aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
         >
           {isDark ? (
             <Sun className="w-5 h-5 text-accent" />
@@ -109,7 +111,7 @@ function Header({ onMenuToggle }: HeaderProps) {
               <User className="w-4 h-4 text-primary" />
             </div>
             <span className="hidden sm:block text-sm font-medium text-text">
-              {user?.name || user?.email || '사용자'}
+              {user?.name || user?.email || "사용자"}
             </span>
           </button>
 

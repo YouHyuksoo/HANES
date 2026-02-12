@@ -86,6 +86,14 @@ export class ConsumablesController {
     return ResponseUtil.success(data);
   }
 
+  @Get('stock-status')
+  @ApiOperation({ summary: '소모품 재고 현황' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getStockStatus(@Query() query: ConsumableQueryDto) {
+    const result = await this.consumablesService.getStockStatus(query);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
   @Get('logs')
   @ApiOperation({ summary: '입출고 이력 목록' })
   @ApiResponse({ status: 200, description: '조회 성공' })

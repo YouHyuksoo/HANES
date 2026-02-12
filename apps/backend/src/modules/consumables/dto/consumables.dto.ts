@@ -130,7 +130,7 @@ export class CreateConsumableLogDto {
   @IsString()
   consumableId: string;
 
-  @ApiProperty({ description: '이력 유형', enum: ['IN', 'OUT', 'RETURN', 'REPAIR', 'SCRAP'] })
+  @ApiProperty({ description: '이력 유형', enum: ['IN', 'IN_RETURN', 'OUT', 'OUT_RETURN'] })
   @IsString()
   logType: string;
 
@@ -149,6 +149,54 @@ export class CreateConsumableLogDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  // 입고 전용 필드
+  @ApiPropertyOptional({ description: '공급업체코드' })
+  @IsOptional()
+  @IsString()
+  vendorCode?: string;
+
+  @ApiPropertyOptional({ description: '공급업체명' })
+  @IsOptional()
+  @IsString()
+  vendorName?: string;
+
+  @ApiPropertyOptional({ description: '단가' })
+  @IsOptional()
+  @IsNumber()
+  unitPrice?: number;
+
+  @ApiPropertyOptional({ description: '입고구분', enum: ['NEW', 'REPLACEMENT'] })
+  @IsOptional()
+  @IsString()
+  incomingType?: string;
+
+  // 출고 전용 필드
+  @ApiPropertyOptional({ description: '출고부서' })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiPropertyOptional({ description: '라인 ID' })
+  @IsOptional()
+  @IsString()
+  lineId?: string;
+
+  @ApiPropertyOptional({ description: '설비 ID' })
+  @IsOptional()
+  @IsString()
+  equipmentId?: string;
+
+  @ApiPropertyOptional({ description: '출고사유', enum: ['PRODUCTION', 'REPAIR', 'OTHER'] })
+  @IsOptional()
+  @IsString()
+  issueReason?: string;
+
+  // 반품 공통 필드
+  @ApiPropertyOptional({ description: '반품사유' })
+  @IsOptional()
+  @IsString()
+  returnReason?: string;
 }
 
 export class ConsumableLogQueryDto {
@@ -176,6 +224,11 @@ export class ConsumableLogQueryDto {
   @IsOptional()
   @IsString()
   logType?: string;
+
+  @ApiPropertyOptional({ description: '이력 유형 그룹', enum: ['RECEIVING', 'ISSUING'] })
+  @IsOptional()
+  @IsString()
+  logTypeGroup?: string;
 
   @ApiPropertyOptional({ description: '시작일' })
   @IsOptional()

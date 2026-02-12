@@ -511,11 +511,11 @@ export class ConsumableService {
 
     return {
       total: totalCount,
-      byStatus: statusStats.map((s) => ({
+      byStatus: statusStats.map((s: any) => ({
         status: s.status,
         count: s._count.status,
       })),
-      byCategory: categoryStats.map((c) => ({
+      byCategory: categoryStats.map((c: any) => ({
         category: c.category ?? 'UNKNOWN',
         count: c._count.category,
       })),

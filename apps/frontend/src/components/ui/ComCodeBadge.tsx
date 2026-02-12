@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/ui/ComCodeBadge.tsx
  * @description DB 기반 공통코드 상태 배지 컴포넌트

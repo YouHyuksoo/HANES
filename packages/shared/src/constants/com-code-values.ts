@@ -156,8 +156,20 @@ export const CONSUMABLE_STATUS_VALUES = ['NORMAL', 'WARNING', 'REPLACE'] as cons
 export type ConsumableStatusValue = typeof CONSUMABLE_STATUS_VALUES[number];
 
 // ===== 소모품 이력 유형 =====
-export const CONSUMABLE_LOG_TYPE_VALUES = ['IN', 'OUT', 'RETURN', 'REPAIR', 'SCRAP'] as const;
+export const CONSUMABLE_LOG_TYPE_VALUES = ['IN', 'IN_RETURN', 'OUT', 'OUT_RETURN'] as const;
 export type ConsumableLogTypeValue = typeof CONSUMABLE_LOG_TYPE_VALUES[number];
+
+// ===== 소모품 이력 유형 그룹 =====
+export const CONSUMABLE_LOG_TYPE_GROUP_VALUES = ['RECEIVING', 'ISSUING'] as const;
+export type ConsumableLogTypeGroupValue = typeof CONSUMABLE_LOG_TYPE_GROUP_VALUES[number];
+
+// ===== 소모품 입고 구분 =====
+export const INCOMING_TYPE_VALUES = ['NEW', 'REPLACEMENT'] as const;
+export type IncomingTypeValue = typeof INCOMING_TYPE_VALUES[number];
+
+// ===== 소모품 출고 사유 =====
+export const ISSUE_REASON_VALUES = ['PRODUCTION', 'REPAIR', 'OTHER'] as const;
+export type IssueReasonValue = typeof ISSUE_REASON_VALUES[number];
 
 // ===== 통관 입항 상태 =====
 export const CUSTOMS_ENTRY_STATUS_VALUES = ['PENDING', 'CLEARED', 'RELEASED'] as const;
@@ -170,6 +182,10 @@ export type CustomsLotStatusValue = typeof CUSTOMS_LOT_STATUS_VALUES[number];
 // ===== 사용보고서 상태 =====
 export const USAGE_REPORT_STATUS_VALUES = ['DRAFT', 'REPORTED', 'CONFIRMED'] as const;
 export type UsageReportStatusValue = typeof USAGE_REPORT_STATUS_VALUES[number];
+
+// ===== 거래처 유형 =====
+export const PARTNER_TYPE_VALUES = ['SUPPLIER', 'CUSTOMER'] as const;
+export type PartnerTypeValue = typeof PARTNER_TYPE_VALUES[number];
 
 // ===== 협력사 유형 =====
 export const VENDOR_TYPE_VALUES = ['SUBCON', 'SUPPLIER'] as const;

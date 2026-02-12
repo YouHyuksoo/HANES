@@ -264,7 +264,7 @@ export class CustomsService {
     const reportNo = `USG${today}${String(count + 1).padStart(4, '0')}`;
 
     // 트랜잭션으로 사용신고 생성 및 LOT 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const report = await tx.customsUsageReport.create({
         data: {
           reportNo,

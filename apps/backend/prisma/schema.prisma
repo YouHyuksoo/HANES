@@ -178,7 +178,9 @@ model ConsumableMaster {
   name          String                              // 소모품명
   category      String?                             // 카테고리 (MOLD, JIG, TOOL)
   expectedLife  Int?      @map("expected_life")     // 기대 수명 (타수)
-  currentCount  Int       @default(0) @map("current_count")  // 현재 사용 횟수
+  currentCount  Int       @default(0) @map("current_count")  // 현재 사용 횟수 (타수)
+  stockQty      Int       @default(0) @map("stock_qty")      // 현재고 수량
+  safetyStock   Int       @default(0) @map("safety_stock")   // 안전재고
   warningCount  Int?      @map("warning_count")     // 경고 임계치
   location      String?                             // 보관 위치
   lastReplace   DateTime? @map("last_replace") @db.Timestamptz(6)  // 최근 교체일
@@ -203,11 +205,26 @@ model ConsumableMaster {
 model ConsumableLog {
   id            String    @id @default(cuid())
   consumableId  String    @map("consumable_id")     // 소모품 ID
-  logType       String    @map("log_type")          // 이력 유형 (IN, OUT, RETURN, REPAIR, SCRAP)
+  logType       String    @map("log_type")          // 이력 유형 (IN, IN_RETURN, OUT, OUT_RETURN)
   qty           Int       @default(1)               // 수량
   workerId      String?   @map("worker_id")         // 작업자 ID
   remark        String?                             // 비고
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // 입고 전용 필드
+  vendorCode    String?   @map("vendor_code")       // 공급업체코드
+  vendorName    String?   @map("vendor_name")       // 공급업체명
+  unitPrice     Decimal?  @map("unit_price") @db.Decimal(12, 2) // 단가
+  incomingType  String?   @map("incoming_type")     // 입고구분 (NEW, REPLACEMENT)
+
+  // 출고 전용 필드
+  department    String?                             // 출고부서
+  lineId        String?   @map("line_id")           // 라인
+  equipmentId   String?   @map("equipment_id")      // 설비
+  issueReason   String?   @map("issue_reason")      // 출고사유 (PRODUCTION, REPAIR, OTHER)
+
+  // 반품 공통 필드
+  returnReason  String?   @map("return_reason")     // 반품사유
 
   // Relations
   consumable    ConsumableMaster @relation(fields: [consumableId], references: [id])
@@ -216,6 +233,29 @@ model ConsumableLog {
   @@index([consumableId])
   @@index([logType])
   @@map("consumable_logs")
+}
+
+/// 거래처마스터 테이블 - 공급상/고객 관리
+model PartnerMaster {
+  id            String    @id @default(cuid())
+  partnerCode   String    @unique @map("partner_code")     // 거래처 코드
+  partnerName   String    @map("partner_name")             // 거래처명
+  partnerType   String    @map("partner_type")             // 유형 (SUPPLIER, CUSTOMER)
+  bizNo         String?   @map("biz_no")                   // 사업자번호
+  ceoName       String?   @map("ceo_name")                 // 대표자명
+  address       String?                                    // 주소
+  tel           String?                                    // 전화번호
+  fax           String?                                    // 팩스번호
+  email         String?                                    // 이메일
+  contactPerson String?   @map("contact_person")           // 담당자명
+  remark        String?                                    // 비고
+  useYn         String    @default("Y") @map("use_yn")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@index([partnerType])
+  @@map("partner_masters")
 }
 
 /// 체번룰마스터 테이블 - Lot/Box/Pallet 번호 생성 규칙

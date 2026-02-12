@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/charts/BarChart.tsx
  * @description SVG 기반 바 차트 - 공정별 실적, 비교 시각화

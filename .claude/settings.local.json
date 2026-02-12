@@ -10,7 +10,16 @@
       "Bash(find:*)",
       "Bash(npx ts-node:*)",
       "Bash(timeout:*)",
-      "Bash(npx nest build)"
+      "Bash(npx nest build)",
+      "Bash(npx nest start)",
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(del appsfrontendsrcpagesmaterialIssuePage.tsx)",
+      "Bash(while read file)",
+      "Bash(do)",
+      "Bash(if ! head -5:*)",
+      "Bash(npx next build)",
+      "Bash(echo:*)"
     ]
   }
 }

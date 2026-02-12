@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/charts/PieChart.tsx
  * @description SVG 기반 파이 차트 - 불량 유형별 비율 시각화

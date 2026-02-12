@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/charts/LineChart.tsx
  * @description SVG 기반 라인 차트 - 생산 추이, 트렌드 시각화

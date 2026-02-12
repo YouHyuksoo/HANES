@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/ui/Input.tsx
  * @description 입력 필드 컴포넌트 - 텍스트, 숫자, 검색 등

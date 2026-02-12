@@ -1,17 +1,12 @@
 /**
  * @file src/types/index.ts
  * @description 전역 타입 정의
- *
- * 초보자 가이드:
- * 1. **공통 타입**: API 응답, 페이지네이션 등
- * 2. **도메인 타입**: 각 모듈별 엔티티 타입
  */
 
 // ========================================
 // 공통 타입
 // ========================================
 
-/** API 응답 기본 구조 */
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -19,15 +14,13 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-/** 페이지네이션 요청 */
 export interface PaginationParams {
   page: number;
   limit: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
-/** 페이지네이션 응답 */
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -50,13 +43,12 @@ export interface User {
   isActive: boolean;
 }
 
-export type UserRole = 'admin' | 'manager' | 'operator' | 'viewer';
+export type UserRole = "admin" | "manager" | "operator" | "viewer";
 
 // ========================================
 // 생산 관련 타입
 // ========================================
 
-/** 작업지시 */
 export interface JobOrder {
   id: string;
   orderNo: string;
@@ -73,13 +65,12 @@ export interface JobOrder {
 }
 
 export type JobOrderStatus =
-  | 'planned'
-  | 'released'
-  | 'in_progress'
-  | 'completed'
-  | 'canceled';
+  | "planned"
+  | "released"
+  | "in_progress"
+  | "completed"
+  | "canceled";
 
-/** 생산실적 */
 export interface ProductionResult {
   id: string;
   jobOrderId: string;
@@ -96,7 +87,6 @@ export interface ProductionResult {
 // 자재 관련 타입
 // ========================================
 
-/** 자재 LOT */
 export interface MaterialLot {
   id: string;
   lotNo: string;
@@ -111,30 +101,28 @@ export interface MaterialLot {
 }
 
 export type MaterialStatus =
-  | 'received'
-  | 'iqc_pending'
-  | 'iqc_pass'
-  | 'iqc_fail'
-  | 'in_use'
-  | 'depleted';
+  | "received"
+  | "iqc_pending"
+  | "iqc_pass"
+  | "iqc_fail"
+  | "in_use"
+  | "depleted";
 
 // ========================================
 // 품질 관련 타입
 // ========================================
 
-/** 검사 결과 */
 export interface InspectionResult {
   id: string;
   serialNo: string;
   productionResultId: string;
   inspectType: string;
-  result: 'pass' | 'fail';
+  result: "pass" | "fail";
   errorCode?: string;
   inspectedAt: string;
   inspectorId: string;
 }
 
-/** 불량 로그 */
 export interface DefectLog {
   id: string;
   serialNo?: string;
@@ -148,17 +136,16 @@ export interface DefectLog {
 }
 
 export type DefectStatus =
-  | 'detected'
-  | 'analyzing'
-  | 'repair_pending'
-  | 'repaired'
-  | 'scrapped';
+  | "detected"
+  | "analyzing"
+  | "repair_pending"
+  | "repaired"
+  | "scrapped";
 
 // ========================================
 // 설비 관련 타입
 // ========================================
 
-/** 설비 마스터 */
 export interface Equipment {
   id: string;
   equipCode: string;
@@ -167,15 +154,15 @@ export interface Equipment {
   lineCode: string;
   status: EquipmentStatus;
   ipAddress?: string;
-  commType?: 'mqtt' | 'serial' | 'manual';
+  commType?: "mqtt" | "serial" | "manual";
 }
 
 export type EquipmentStatus =
-  | 'running'
-  | 'idle'
-  | 'maintenance'
-  | 'breakdown'
-  | 'offline';
+  | "running"
+  | "idle"
+  | "maintenance"
+  | "breakdown"
+  | "offline";
 
 // ========================================
 // 메뉴/네비게이션 타입

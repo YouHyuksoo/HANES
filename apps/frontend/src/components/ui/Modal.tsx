@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/ui/Modal.tsx
  * @description 모달 다이얼로그 컴포넌트

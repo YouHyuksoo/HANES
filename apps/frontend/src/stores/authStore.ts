@@ -8,9 +8,9 @@
  * 3. **logout**: 토큰+사용자 제거 → 로그인 페이지 이동
  * 4. **fetchMe**: GET /auth/me → 토큰 유효성 검증 및 사용자 갱신
  */
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { api } from '@/services/api';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { api } from "@/services/api";
 
 export interface AuthUser {
   id: string;
@@ -51,11 +51,10 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
-          const res = await api.post('/auth/login', { email, password });
+          const res = await api.post("/auth/login", { email, password });
           const { token, user } = res.data;
 
-          // localStorage에 토큰 저장 (api interceptor에서 사용)
-          localStorage.setItem('hanes-token', token);
+          localStorage.setItem("hanes-token", token);
 
           set({
             user,
@@ -72,10 +71,10 @@ export const useAuthStore = create<AuthState>()(
       register: async (data) => {
         set({ isLoading: true });
         try {
-          const res = await api.post('/auth/register', data);
+          const res = await api.post("/auth/register", data);
           const { token, user } = res.data;
 
-          localStorage.setItem('hanes-token', token);
+          localStorage.setItem("hanes-token", token);
 
           set({
             user,
@@ -90,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem('hanes-token');
+        localStorage.removeItem("hanes-token");
         set({
           user: null,
           token: null,
@@ -106,14 +105,13 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          const res = await api.get('/auth/me');
+          const res = await api.get("/auth/me");
           set({
             user: res.data,
             isAuthenticated: true,
           });
         } catch {
-          // 토큰 만료/무효 → 로그아웃 처리
-          localStorage.removeItem('hanes-token');
+          localStorage.removeItem("hanes-token");
           set({
             user: null,
             token: null,
@@ -123,12 +121,12 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'hanes-auth',
+      name: "hanes-auth",
       partialize: (state) => ({
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
-    }
-  )
+    },
+  ),
 );

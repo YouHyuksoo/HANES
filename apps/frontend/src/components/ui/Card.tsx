@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/ui/Card.tsx
  * @description 카드 컴포넌트 - 콘텐츠 컨테이너

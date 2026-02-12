@@ -37,11 +37,13 @@ export const MENU_ITEMS: MenuItem[] = [
     labelVi: 'Quản lý vật tư',
     icon: 'Package',
     children: [
-      { key: 'material-receipt', label: '자재입고', icon: 'PackagePlus', path: '/material/receipt' },
-      { key: 'material-issue', label: '자재출고', icon: 'PackageMinus', path: '/material/issue' },
+      { key: 'material-arrival', label: '입하관리', icon: 'PackageCheck', path: '/material/arrival' },
+      { key: 'material-iqc', label: '수입검사(IQC)', icon: 'PackageSearch', path: '/material/iqc' },
+      { key: 'material-receive', label: '입고관리', icon: 'PackagePlus', path: '/material/receive' },
+      { key: 'material-request', label: '출고요청', icon: 'ClipboardList', path: '/material/request' },
+      { key: 'material-issue', label: '출고관리', icon: 'PackageMinus', path: '/material/issue' },
       { key: 'material-stock', label: '재고현황', icon: 'Boxes', path: '/material/stock' },
       { key: 'material-lot', label: 'LOT관리', icon: 'QrCode', path: '/material/lot' },
-      { key: 'material-adjust', label: '재고조정', icon: 'ClipboardEdit', path: '/material/adjust' },
     ],
   },
   {
@@ -121,9 +123,11 @@ export const MENU_ITEMS: MenuItem[] = [
     labelVi: 'Quản lý vật tư tiêu hao',
     icon: 'Wrench',
     children: [
-      { key: 'consumables-blade', label: '날관리', icon: 'Slice', path: '/consumables/blade' },
-      { key: 'consumables-applicator', label: '어플리케이터', icon: 'Cpu', path: '/consumables/applicator' },
+      { key: 'consumables-master', label: '소모품마스터', icon: 'Database', path: '/consumables/master' },
+      { key: 'consumables-receiving', label: '입고관리', icon: 'PackagePlus', path: '/consumables/receiving' },
+      { key: 'consumables-issuing', label: '출고관리', icon: 'PackageMinus', path: '/consumables/issuing' },
       { key: 'consumables-stock', label: '재고현황', icon: 'Boxes', path: '/consumables/stock' },
+      { key: 'consumables-life', label: '수명현황', icon: 'Activity', path: '/consumables/life' },
     ],
   },
   {

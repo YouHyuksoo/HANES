@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/ui/Button.tsx
  * @description 프리미엄 버튼 컴포넌트 - 다크/라이트 모드 대응

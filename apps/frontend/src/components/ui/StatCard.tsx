@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/ui/StatCard.tsx
  * @description 공통 통계 카드 컴포넌트 - 페이지 상단 요약 정보 표시용

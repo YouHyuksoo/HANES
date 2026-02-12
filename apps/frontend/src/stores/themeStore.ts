@@ -7,10 +7,10 @@
  * 2. **useThemeStore**: 컴포넌트에서 훅처럼 사용
  * 3. **toggleTheme**: 라이트/다크 모드 전환
  */
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export type Theme = 'light' | 'dark';
+export type Theme = "light" | "dark";
 
 interface ThemeState {
   theme: Theme;
@@ -21,17 +21,17 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
-      theme: 'light',
+      theme: "light",
 
       setTheme: (theme: Theme) => set({ theme }),
 
       toggleTheme: () =>
         set((state) => ({
-          theme: state.theme === 'light' ? 'dark' : 'light',
+          theme: state.theme === "light" ? "dark" : "light",
         })),
     }),
     {
-      name: 'hanes-theme', // localStorage 키 이름
-    }
-  )
+      name: "hanes-theme",
+    },
+  ),
 );

@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * @file src/components/data-grid/DataGrid.tsx
  * @description TanStack Table v8 기반 데이터 그리드 컴포넌트

@@ -17,6 +17,8 @@ import { PartController } from './controllers/part.controller';
 import { PartService } from './services/part.service';
 import { BomController } from './controllers/bom.controller';
 import { BomService } from './services/bom.service';
+import { PartnerController } from './controllers/partner.controller';
+import { PartnerService } from './services/partner.service';
 
 @Module({
   controllers: [
@@ -24,18 +26,21 @@ import { BomService } from './services/bom.service';
     PlantController,
     PartController,
     BomController,
+    PartnerController,
   ],
   providers: [
     ComCodeService,
     PlantService,
     PartService,
     BomService,
+    PartnerService,
   ],
   exports: [
     ComCodeService,
     PlantService,
     PartService,
     BomService,
+    PartnerService,
   ],
 })
 export class MasterModule {}

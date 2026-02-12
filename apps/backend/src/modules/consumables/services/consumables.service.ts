@@ -151,11 +151,20 @@ export class ConsumablesService {
 
   async findAllLogs(query: ConsumableLogQueryDto) {
     const { page = 1, limit = 10, consumableId, logType, startDate, endDate } = query;
+    const logTypeGroup = (query as any).logTypeGroup as string | undefined;
     const skip = (page - 1) * limit;
+
+    // logTypeGroup에 따른 logType 필터
+    let logTypeFilter: any = logType ? { logType } : {};
+    if (logTypeGroup === 'RECEIVING') {
+      logTypeFilter = { logType: { in: ['IN', 'IN_RETURN'] } };
+    } else if (logTypeGroup === 'ISSUING') {
+      logTypeFilter = { logType: { in: ['OUT', 'OUT_RETURN'] } };
+    }
 
     const where = {
       ...(consumableId && { consumableId }),
-      ...(logType && { logType }),
+      ...logTypeFilter,
       ...(startDate && endDate && {
         createdAt: {
           gte: new Date(startDate),
@@ -193,17 +202,95 @@ export class ConsumablesService {
   }
 
   async createLog(dto: CreateConsumableLogDto) {
-    await this.findById(dto.consumableId);
+    const consumable = await this.findById(dto.consumableId);
+    const qty = dto.qty ?? 1;
 
-    return this.prisma.consumableLog.create({
-      data: {
-        consumableId: dto.consumableId,
-        logType: dto.logType,
-        qty: dto.qty ?? 1,
-        workerId: dto.workerId,
-        remark: dto.remark,
-      },
-    });
+    // 재고 증감량 계산: IN/OUT_RETURN → +, OUT/IN_RETURN → -
+    const stockDelta =
+      dto.logType === 'IN' || dto.logType === 'OUT_RETURN' ? qty : -qty;
+
+    // 출고/입고반품 시 재고 부족 검증
+    if (stockDelta < 0 && consumable.stockQty + stockDelta < 0) {
+      throw new ConflictException(
+        `재고 부족: 현재고 ${consumable.stockQty}, 요청 ${qty}`,
+      );
+    }
+
+    // 트랜잭션: 이력 생성 + 재고 갱신을 원자적으로 처리
+    const [log] = await this.prisma.$transaction([
+      this.prisma.consumableLog.create({
+        data: {
+          consumableId: dto.consumableId,
+          logType: dto.logType,
+          qty,
+          workerId: dto.workerId,
+          remark: dto.remark,
+          // 입고 전용 필드
+          vendorCode: dto.vendorCode,
+          vendorName: dto.vendorName,
+          unitPrice: dto.unitPrice,
+          incomingType: dto.incomingType,
+          // 출고 전용 필드
+          department: dto.department,
+          lineId: dto.lineId,
+          equipmentId: dto.equipmentId,
+          issueReason: dto.issueReason,
+          // 반품 공통 필드
+          returnReason: dto.returnReason,
+        },
+      }),
+      this.prisma.consumableMaster.update({
+        where: { id: dto.consumableId },
+        data: { stockQty: { increment: stockDelta } },
+      }),
+    ]);
+
+    return log;
+  }
+
+  // ============================================================================
+  // 재고 현황
+  // ============================================================================
+
+  async getStockStatus(query: ConsumableQueryDto) {
+    const { page = 1, limit = 10, category, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      deletedAt: null,
+      useYn: 'Y' as const,
+      ...(category && { category }),
+      ...(search && {
+        OR: [
+          { consumableCode: { contains: search, mode: 'insensitive' as const } },
+          { name: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.consumableMaster.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          consumableCode: true,
+          name: true,
+          category: true,
+          stockQty: true,
+          safetyStock: true,
+          unitPrice: true,
+          location: true,
+          vendor: true,
+          status: true,
+        },
+        orderBy: { consumableCode: 'asc' },
+      }),
+      this.prisma.consumableMaster.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   // ============================================================================
@@ -277,7 +364,7 @@ export class ConsumablesService {
       total,
       warning,
       replace,
-      byCategory: byCategory.map((c) => ({
+      byCategory: byCategory.map((c: any) => ({
         category: c.category,
         count: c._count.category,
       })),
@@ -317,7 +404,7 @@ export class ConsumablesService {
       },
     });
 
-    return consumables.map((c) => ({
+    return consumables.map((c: any) => ({
       ...c,
       lifePercentage: c.expectedLife ? Math.round((c.currentCount / c.expectedLife) * 100) : 0,
       remainingLife: c.expectedLife ? c.expectedLife - c.currentCount : null,
