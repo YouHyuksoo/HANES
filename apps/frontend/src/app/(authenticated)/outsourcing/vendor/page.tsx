@@ -5,6 +5,7 @@
  * @description 외주처 관리 페이지
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, RefreshCw, Search, Building2 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -66,12 +67,13 @@ const mockData: Vendor[] = [
   },
 ];
 
-const vendorTypeLabels: Record<string, string> = {
-  SUBCON: '외주',
-  SUPPLIER: '공급',
-};
-
 function VendorPage() {
+  const { t } = useTranslation();
+
+  const vendorTypeLabels: Record<string, string> = {
+    SUBCON: t('outsourcing.vendor.typeSubcon'),
+    SUPPLIER: t('outsourcing.vendor.typeSupplier'),
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Vendor | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,11 +89,11 @@ function VendorPage() {
 
   const columns = useMemo<ColumnDef<Vendor>[]>(
     () => [
-      { accessorKey: 'vendorCode', header: '업체코드', size: 100 },
-      { accessorKey: 'vendorName', header: '업체명', size: 150 },
+      { accessorKey: 'vendorCode', header: t('outsourcing.vendor.vendorCode'), size: 100 },
+      { accessorKey: 'vendorName', header: t('outsourcing.vendor.vendorName'), size: 150 },
       {
         accessorKey: 'vendorType',
-        header: '유형',
+        header: t('outsourcing.vendor.type'),
         size: 70,
         cell: ({ getValue }) => {
           const type = getValue() as string;
@@ -106,14 +108,14 @@ function VendorPage() {
           );
         },
       },
-      { accessorKey: 'bizNo', header: '사업자번호', size: 120 },
-      { accessorKey: 'ceoName', header: '대표자', size: 80 },
-      { accessorKey: 'contactPerson', header: '담당자', size: 80 },
-      { accessorKey: 'tel', header: '전화번호', size: 120 },
-      { accessorKey: 'address', header: '주소', size: 180 },
+      { accessorKey: 'bizNo', header: t('outsourcing.vendor.bizNo'), size: 120 },
+      { accessorKey: 'ceoName', header: t('outsourcing.vendor.ceoName'), size: 80 },
+      { accessorKey: 'contactPerson', header: t('outsourcing.vendor.contactPerson'), size: 80 },
+      { accessorKey: 'tel', header: t('outsourcing.vendor.tel'), size: 120 },
+      { accessorKey: 'address', header: t('outsourcing.vendor.address'), size: 180 },
       {
         accessorKey: 'useYn',
-        header: '사용',
+        header: t('outsourcing.vendor.useYn'),
         size: 60,
         cell: ({ getValue }) => (
           <span className={getValue() === 'Y' ? 'text-green-600' : 'text-gray-400'}>
@@ -123,7 +125,7 @@ function VendorPage() {
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.manage'),
         size: 70,
         cell: ({ row }) => (
           <button
@@ -135,37 +137,37 @@ function VendorPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Building2 className="w-7 h-7 text-primary" />외주처 관리</h1>
-          <p className="text-text-muted mt-1">외주 협력업체 정보를 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Building2 className="w-7 h-7 text-primary" />{t('outsourcing.vendor.title')}</h1>
+          <p className="text-text-muted mt-1">{t('outsourcing.vendor.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => { setSelectedItem(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> 업체 등록
+            <Plus className="w-4 h-4 mr-1" /> {t('outsourcing.vendor.register')}
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="전체 업체" value={mockData.length} icon={Building2} color="blue" />
-        <StatCard label="외주업체" value={mockData.filter((d) => d.vendorType === 'SUBCON').length} icon={Building2} color="blue" />
-        <StatCard label="공급업체" value={mockData.filter((d) => d.vendorType === 'SUPPLIER').length} icon={Building2} color="green" />
+        <StatCard label={t('outsourcing.vendor.totalVendors')} value={mockData.length} icon={Building2} color="blue" />
+        <StatCard label={t('outsourcing.vendor.typeSubcon')} value={mockData.filter((d) => d.vendorType === 'SUBCON').length} icon={Building2} color="blue" />
+        <StatCard label={t('outsourcing.vendor.typeSupplier')} value={mockData.filter((d) => d.vendorType === 'SUPPLIER').length} icon={Building2} color="green" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="업체코드, 업체명 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('outsourcing.vendor.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
@@ -177,32 +179,32 @@ function VendorPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={selectedItem ? '외주처 수정' : '외주처 등록'}
+        title={selectedItem ? t('outsourcing.vendor.editVendor') : t('outsourcing.vendor.register')}
         size="lg"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Input label="업체코드" placeholder="VND-001" defaultValue={selectedItem?.vendorCode} fullWidth />
+          <Input label={t('outsourcing.vendor.vendorCode')} placeholder="VND-001" defaultValue={selectedItem?.vendorCode} fullWidth />
           <Select
-            label="업체유형"
+            label={t('outsourcing.vendor.type')}
             options={[
-              { value: 'SUBCON', label: '외주' },
-              { value: 'SUPPLIER', label: '공급' },
+              { value: 'SUBCON', label: t('outsourcing.vendor.typeSubcon') },
+              { value: 'SUPPLIER', label: t('outsourcing.vendor.typeSupplier') },
             ]}
             defaultValue={selectedItem?.vendorType || 'SUBCON'}
             fullWidth
           />
-          <Input label="업체명" placeholder="(주)하네스파트너" defaultValue={selectedItem?.vendorName} fullWidth className="col-span-2" />
-          <Input label="사업자번호" placeholder="123-45-67890" defaultValue={selectedItem?.bizNo} fullWidth />
-          <Input label="대표자" placeholder="김대표" defaultValue={selectedItem?.ceoName} fullWidth />
-          <Input label="전화번호" placeholder="02-1234-5678" defaultValue={selectedItem?.tel} fullWidth />
-          <Input label="팩스번호" placeholder="02-1234-5679" fullWidth />
-          <Input label="이메일" placeholder="contact@example.com" defaultValue={selectedItem?.email} fullWidth />
-          <Input label="담당자" placeholder="이담당" defaultValue={selectedItem?.contactPerson} fullWidth />
-          <Input label="주소" placeholder="경기도 안산시 단원구" defaultValue={selectedItem?.address} fullWidth className="col-span-2" />
+          <Input label={t('outsourcing.vendor.vendorName')} placeholder="(주)하네스파트너" defaultValue={selectedItem?.vendorName} fullWidth className="col-span-2" />
+          <Input label={t('outsourcing.vendor.bizNo')} placeholder="123-45-67890" defaultValue={selectedItem?.bizNo} fullWidth />
+          <Input label={t('outsourcing.vendor.ceoName')} placeholder="김대표" defaultValue={selectedItem?.ceoName} fullWidth />
+          <Input label={t('outsourcing.vendor.tel')} placeholder="02-1234-5678" defaultValue={selectedItem?.tel} fullWidth />
+          <Input label={t('outsourcing.vendor.fax')} placeholder="02-1234-5679" fullWidth />
+          <Input label={t('outsourcing.vendor.email')} placeholder="contact@example.com" defaultValue={selectedItem?.email} fullWidth />
+          <Input label={t('outsourcing.vendor.contactPerson')} placeholder="이담당" defaultValue={selectedItem?.contactPerson} fullWidth />
+          <Input label={t('outsourcing.vendor.address')} placeholder="경기도 안산시 단원구" defaultValue={selectedItem?.address} fullWidth className="col-span-2" />
         </div>
         <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-          <Button>{selectedItem ? '수정' : '등록'}</Button>
+          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+          <Button>{selectedItem ? t('common.edit') : t('common.register')}</Button>
         </div>
       </Modal>
     </div>

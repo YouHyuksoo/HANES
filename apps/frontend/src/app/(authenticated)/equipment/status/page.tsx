@@ -10,6 +10,7 @@
  * 3. **상태 변경**: 설비 상태를 직접 변경 가능
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, RefreshCw, Search, Settings, CheckCircle, AlertTriangle, XCircle, Edit, Monitor } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
@@ -29,16 +30,19 @@ const mockEquipments: Equipment[] = [
   { id: '7', equipCode: 'INS-002', equipName: '검사기 2호', equipType: 'INSPECTION', lineName: 'L4', status: 'MAINT', ipAddress: '192.168.1.402' },
 ];
 
-const equipTypeOptions = [
-  { value: '', label: '전체 유형' }, { value: 'CUTTING', label: '절단' },
-  { value: 'CRIMPING', label: '압착' }, { value: 'ASSEMBLY', label: '조립' }, { value: 'INSPECTION', label: '검사' },
-];
-const lineOptions = [
-  { value: '', label: '전체 라인' }, { value: 'L1', label: 'L1' }, { value: 'L2', label: 'L2' }, { value: 'L3', label: 'L3' }, { value: 'L4', label: 'L4' },
-];
 function EquipStatusPage() {
+  const { t } = useTranslation();
+
+  const equipTypeOptions = useMemo(() => [
+    { value: '', label: t('equipment.status.allTypes') }, { value: 'CUTTING', label: t('equipment.status.cutting') },
+    { value: 'CRIMPING', label: t('equipment.status.crimping') }, { value: 'ASSEMBLY', label: t('equipment.status.assembly') }, { value: 'INSPECTION', label: t('equipment.status.inspection') },
+  ], [t]);
+  const lineOptions = useMemo(() => [
+    { value: '', label: t('equipment.status.allLines') }, { value: 'L1', label: 'L1' }, { value: 'L2', label: 'L2' }, { value: 'L3', label: 'L3' }, { value: 'L4', label: 'L4' },
+  ], [t]);
+
   const comCodeOptions = useComCodeOptions('EQUIP_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
+  const statusOptions = useMemo(() => [{ value: '', label: t('common.allStatus') }, ...comCodeOptions], [t, comCodeOptions]);
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [lineFilter, setLineFilter] = useState('');
@@ -66,88 +70,88 @@ function EquipStatusPage() {
   };
 
   const columns = useMemo<ColumnDef<Equipment>[]>(() => [
-    { accessorKey: 'equipCode', header: '설비코드', size: 100 },
-    { accessorKey: 'equipName', header: '설비명', size: 120 },
-    { accessorKey: 'equipType', header: '유형', size: 80, cell: ({ getValue }) => equipTypeLabels[getValue() as EquipType] },
-    { accessorKey: 'lineName', header: '라인', size: 60 },
-    { accessorKey: 'status', header: '상태', size: 80, cell: ({ getValue }) => <EquipmentStatusBadge status={getValue() as EquipStatus} /> },
-    { accessorKey: 'ipAddress', header: 'IP주소', size: 130 },
+    { accessorKey: 'equipCode', header: t('equipment.status.equipCode'), size: 100 },
+    { accessorKey: 'equipName', header: t('equipment.status.equipName'), size: 120 },
+    { accessorKey: 'equipType', header: t('equipment.status.type'), size: 80, cell: ({ getValue }) => equipTypeLabels[getValue() as EquipType] },
+    { accessorKey: 'lineName', header: t('equipment.status.line'), size: 60 },
+    { accessorKey: 'status', header: t('common.status'), size: 80, cell: ({ getValue }) => <EquipmentStatusBadge status={getValue() as EquipStatus} /> },
+    { accessorKey: 'ipAddress', header: t('equipment.status.ipAddress'), size: 130 },
     {
-      id: 'actions', header: '관리', size: 100,
+      id: 'actions', header: t('common.manage'), size: 100,
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); setSelectedEquip(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded" title="수정"><Edit className="w-4 h-4 text-text-muted" /></button>
-          <button onClick={(e) => { e.stopPropagation(); setSelectedEquip(row.original); setIsStatusModalOpen(true); }} className="p-1 hover:bg-surface rounded" title="상태변경"><Settings className="w-4 h-4 text-text-muted" /></button>
+          <button onClick={(e) => { e.stopPropagation(); setSelectedEquip(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded" title={t('common.edit')}><Edit className="w-4 h-4 text-text-muted" /></button>
+          <button onClick={(e) => { e.stopPropagation(); setSelectedEquip(row.original); setIsStatusModalOpen(true); }} className="p-1 hover:bg-surface rounded" title={t('equipment.status.changeStatus')}><Settings className="w-4 h-4 text-text-muted" /></button>
         </div>
       ),
     },
-  ], []);
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />설비 가동현황</h1>
-          <p className="text-text-muted mt-1">설비의 상태를 모니터링하고 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />{t('equipment.status.title')}</h1>
+          <p className="text-text-muted mt-1">{t('equipment.status.description')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
-          <Button size="sm" onClick={() => { setSelectedEquip(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />설비 등록</Button>
+          <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
+          <Button size="sm" onClick={() => { setSelectedEquip(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('equipment.status.register')}</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="전체 설비" value={stats.total} icon={Monitor} color="blue" />
-        <StatCard label="정상 가동" value={stats.normal} icon={CheckCircle} color="green" />
-        <StatCard label="점검중" value={stats.maint} icon={AlertTriangle} color="yellow" />
-        <StatCard label="정지" value={stats.stop} icon={XCircle} color="red" />
+        <StatCard label={t('equipment.status.totalEquipment')} value={stats.total} icon={Monitor} color="blue" />
+        <StatCard label={t('equipment.status.normalOp')} value={stats.normal} icon={CheckCircle} color="green" />
+        <StatCard label={t('equipment.status.maintenance')} value={stats.maint} icon={AlertTriangle} color="yellow" />
+        <StatCard label={t('equipment.status.stopped')} value={stats.stop} icon={XCircle} color="red" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]"><Input placeholder="설비코드, 설비명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-            <Select options={equipTypeOptions} value={typeFilter} onChange={setTypeFilter} placeholder="유형" />
-            <Select options={lineOptions} value={lineFilter} onChange={setLineFilter} placeholder="라인" />
-            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <div className="flex-1 min-w-[200px]"><Input placeholder={t('equipment.status.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+            <Select options={equipTypeOptions} value={typeFilter} onChange={setTypeFilter} placeholder={t('equipment.status.type')} />
+            <Select options={lineOptions} value={lineFilter} onChange={setLineFilter} placeholder={t('equipment.status.line')} />
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t('common.status')} />
           </div>
           <DataGrid data={filteredEquipments} columns={columns} pageSize={10} onRowClick={(row) => { setSelectedEquip(row); setIsStatusModalOpen(true); }} />
         </CardContent>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedEquip ? '설비 수정' : '설비 등록'} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedEquip ? t('equipment.status.editEquip') : t('equipment.status.register')} size="md">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="설비코드" placeholder="CUT-001" defaultValue={selectedEquip?.equipCode} fullWidth />
-            <Input label="설비명" placeholder="절단기 1호" defaultValue={selectedEquip?.equipName} fullWidth />
+            <Input label={t('equipment.status.equipCode')} placeholder="CUT-001" defaultValue={selectedEquip?.equipCode} fullWidth />
+            <Input label={t('equipment.status.equipName')} placeholder={t('equipment.status.equipNamePlaceholder')} defaultValue={selectedEquip?.equipName} fullWidth />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label="유형" options={equipTypeOptions.filter(o => o.value)} value={selectedEquip?.equipType || ''} fullWidth />
-            <Select label="라인" options={lineOptions.filter(o => o.value)} value={selectedEquip?.lineName || ''} fullWidth />
+            <Select label={t('equipment.status.type')} options={equipTypeOptions.filter(o => o.value)} value={selectedEquip?.equipType || ''} fullWidth />
+            <Select label={t('equipment.status.line')} options={lineOptions.filter(o => o.value)} value={selectedEquip?.lineName || ''} fullWidth />
           </div>
-          <Input label="IP주소" placeholder="192.168.1.xxx" defaultValue={selectedEquip?.ipAddress} fullWidth />
-          <Input label="비고" placeholder="비고 입력" defaultValue={selectedEquip?.remark} fullWidth />
+          <Input label={t('equipment.status.ipAddress')} placeholder="192.168.1.xxx" defaultValue={selectedEquip?.ipAddress} fullWidth />
+          <Input label={t('common.remark')} placeholder={t('common.remarkPlaceholder')} defaultValue={selectedEquip?.remark} fullWidth />
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-            <Button onClick={() => setIsModalOpen(false)}>{selectedEquip ? '수정' : '등록'}</Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={() => setIsModalOpen(false)}>{selectedEquip ? t('common.edit') : t('common.register')}</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal isOpen={isStatusModalOpen} onClose={() => { setIsStatusModalOpen(false); setSelectedEquip(null); }} title="상태 변경" size="sm">
+      <Modal isOpen={isStatusModalOpen} onClose={() => { setIsStatusModalOpen(false); setSelectedEquip(null); }} title={t('equipment.status.changeStatus')} size="sm">
         {selectedEquip && (
           <div className="space-y-4">
             <div className="p-4 bg-background rounded-lg">
-              <div className="text-sm text-text-muted">선택된 설비</div>
+              <div className="text-sm text-text-muted">{t('equipment.status.selectedEquip')}</div>
               <div className="text-lg font-semibold text-text mt-1">{selectedEquip.equipName}</div>
               <div className="text-sm text-text-muted mt-1">{selectedEquip.equipCode}</div>
               <div className="mt-2"><span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${statusConfig[selectedEquip.status].color}`}>{statusConfig[selectedEquip.status].label}</span></div>
             </div>
-            <div className="text-sm font-medium text-text mb-2">변경할 상태 선택</div>
+            <div className="text-sm font-medium text-text mb-2">{t('equipment.status.selectStatus')}</div>
             <div className="grid grid-cols-3 gap-2">
-              <Button variant="secondary" onClick={() => handleStatusChange('NORMAL')} disabled={selectedEquip.status === 'NORMAL'}><CheckCircle className="w-4 h-4 mr-1 text-green-500" />정상</Button>
-              <Button variant="secondary" onClick={() => handleStatusChange('MAINT')} disabled={selectedEquip.status === 'MAINT'}><AlertTriangle className="w-4 h-4 mr-1 text-yellow-500" />점검</Button>
-              <Button variant="secondary" onClick={() => handleStatusChange('STOP')} disabled={selectedEquip.status === 'STOP'}><XCircle className="w-4 h-4 mr-1 text-red-500" />정지</Button>
+              <Button variant="secondary" onClick={() => handleStatusChange('NORMAL')} disabled={selectedEquip.status === 'NORMAL'}><CheckCircle className="w-4 h-4 mr-1 text-green-500" />{t('equipment.status.normal')}</Button>
+              <Button variant="secondary" onClick={() => handleStatusChange('MAINT')} disabled={selectedEquip.status === 'MAINT'}><AlertTriangle className="w-4 h-4 mr-1 text-yellow-500" />{t('equipment.status.maint')}</Button>
+              <Button variant="secondary" onClick={() => handleStatusChange('STOP')} disabled={selectedEquip.status === 'STOP'}><XCircle className="w-4 h-4 mr-1 text-red-500" />{t('equipment.status.stop')}</Button>
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@
  * @file src/pages/material/arrival/components/ArrivalModal.tsx
  * @description 입하 등록 모달 컴포넌트
  */
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { Button, Input, Modal, Select } from '@/components/ui';
 import type { ArrivalCreateForm } from '@/hooks/material/useArrivalData';
@@ -18,32 +19,33 @@ interface ArrivalModalProps {
 }
 
 export default function ArrivalModal({ isOpen, onClose, form, setForm, onSubmit }: ArrivalModalProps) {
+  const { t } = useTranslation();
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="입하 등록" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('material.arrival.modalTitle')} size="md">
       <div className="space-y-4">
         <Select
-          label="공급업체"
+          label={t('material.col.supplier')}
           options={supplierOptions.slice(1)}
           value={form.supplier}
           onChange={(v) => setForm((prev) => ({ ...prev, supplier: v }))}
           fullWidth
         />
         <Input
-          label="품목코드"
-          placeholder="품목코드 입력"
+          label={t('common.partCode')}
+          placeholder={t('material.arrival.partCodePlaceholder')}
           value={form.partCode}
           onChange={(e) => setForm((prev) => ({ ...prev, partCode: e.target.value }))}
           fullWidth
         />
         <Input
-          label="LOT번호"
-          placeholder="LOT번호 입력 (자동생성 가능)"
+          label={t('material.col.lotNo')}
+          placeholder={t('material.arrival.lotNoPlaceholder')}
           value={form.lotNo}
           onChange={(e) => setForm((prev) => ({ ...prev, lotNo: e.target.value }))}
           fullWidth
         />
         <Input
-          label="수량"
+          label={t('common.quantity')}
           type="number"
           placeholder="0"
           value={form.quantity}
@@ -51,18 +53,18 @@ export default function ArrivalModal({ isOpen, onClose, form, setForm, onSubmit 
           fullWidth
         />
         <Input
-          label="비고"
-          placeholder="비고 입력"
+          label={t('common.remark')}
+          placeholder={t('material.arrival.remarkPlaceholder')}
           value={form.remark}
           onChange={(e) => setForm((prev) => ({ ...prev, remark: e.target.value }))}
           fullWidth
         />
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
           <Button variant="secondary" onClick={onClose}>
-            취소
+            {t('common.cancel')}
           </Button>
           <Button onClick={onSubmit}>
-            <Plus className="w-4 h-4 mr-1" /> 등록
+            <Plus className="w-4 h-4 mr-1" /> {t('common.register')}
           </Button>
         </div>
       </div>

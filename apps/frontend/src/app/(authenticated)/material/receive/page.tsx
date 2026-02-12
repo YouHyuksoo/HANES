@@ -9,6 +9,7 @@
  * 2. **프로세스**: IQC합격 → 창고/위치 선택 → 입고확정 → 재고 증가
  * 3. **상태**: PASSED(입고대기) → STOCKED(입고완료)
  */
+import { useTranslation } from 'react-i18next';
 import { PackagePlus, Search, RefreshCw, Clock, CheckCircle, Package, Hash } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import ReceivingTable from '@/components/material/ReceivingTable';
@@ -16,6 +17,7 @@ import ReceivingConfirmModal from '@/components/material/ReceivingConfirmModal';
 import { useReceivingData, statusFilterOptions } from '@/hooks/material/useReceivingData';
 
 export default function ReceivingPage() {
+  const { t } = useTranslation();
   const {
     filteredItems,
     stats,
@@ -35,21 +37,21 @@ export default function ReceivingPage() {
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <PackagePlus className="w-7 h-7 text-primary" />
-            입고관리
+            {t('material.receive.title')}
           </h1>
-          <p className="text-text-muted mt-1">IQC 합격 자재의 입고확정 및 재고 반영을 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('material.receive.description')}</p>
         </div>
         <Button variant="secondary" size="sm">
-          <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+          <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
         </Button>
       </div>
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="입고대기(합격)" value={stats.pendingCount} icon={Clock} color="yellow" />
-        <StatCard label="대기수량" value={stats.pendingQty} icon={Package} color="blue" />
-        <StatCard label="금일 입고건수" value={stats.todayStockedCount} icon={CheckCircle} color="green" />
-        <StatCard label="금일 입고수량" value={stats.todayStockedQty} icon={Hash} color="purple" />
+        <StatCard label={t('material.receive.stats.pendingCount')} value={stats.pendingCount} icon={Clock} color="yellow" />
+        <StatCard label={t('material.receive.stats.pendingQty')} value={stats.pendingQty} icon={Package} color="blue" />
+        <StatCard label={t('material.receive.stats.todayStockedCount')} value={stats.todayStockedCount} icon={CheckCircle} color="green" />
+        <StatCard label={t('material.receive.stats.todayStockedQty')} value={stats.todayStockedQty} icon={Hash} color="purple" />
       </div>
 
       {/* 필터 + 테이블 */}
@@ -58,7 +60,7 @@ export default function ReceivingPage() {
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
               <Input
-                placeholder="입하번호, 품목명, LOT번호 검색..."
+                placeholder={t('material.receive.searchPlaceholder')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />}

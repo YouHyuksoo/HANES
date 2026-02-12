@@ -26,7 +26,7 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PALLET_STATUS_VALUES } from '@hanes/shared';
+import { PALLET_STATUS_VALUES } from '@harness/shared';
 
 export type PalletStatus = typeof PALLET_STATUS_VALUES[number];
 

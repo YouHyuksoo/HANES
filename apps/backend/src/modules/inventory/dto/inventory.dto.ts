@@ -4,7 +4,7 @@
  */
 import { IsString, IsOptional, IsNumber, IsIn, IsDate, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { WAREHOUSE_TYPE_DTO_VALUES, TRANSACTION_TYPE_VALUES, REF_TYPE_VALUES } from '@hanes/shared';
+import { WAREHOUSE_TYPE_DTO_VALUES, TRANSACTION_TYPE_VALUES, REF_TYPE_VALUES } from '@harness/shared';
 
 // ============================================================================
 // 창고 마스터 DTO

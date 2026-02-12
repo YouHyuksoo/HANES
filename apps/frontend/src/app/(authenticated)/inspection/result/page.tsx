@@ -10,6 +10,7 @@
  * 3. **필터링**: 날짜, 결과, 검사기 필터
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   RefreshCw, Calendar, CheckCircle, XCircle,
@@ -50,39 +51,39 @@ const mockInspections: InspectRecord[] = [
   { id: 'INS-008', inspectedAt: '2024-01-15 09:09:05', serialNo: 'SN-2024011500008', result: 'FAIL', errorCode: 'E003', errorDesc: '3번 핀 쇼트', workOrderNo: 'WO-2024-0115-004', equipmentNo: 'INSP-02', voltage: 12.1, current: 2.10 },
 ];
 
-const resultOptions = [
-  { value: '', label: '전체 결과' },
-  { value: 'PASS', label: '합격' },
-  { value: 'FAIL', label: '불합격' },
-];
-
-const equipOptions = [
-  { value: '', label: '전체 검사기' },
-  { value: 'INSP-01', label: 'INSP-01' },
-  { value: 'INSP-02', label: 'INSP-02' },
-];
-
-// ========================================
-// 결과 배지 컴포넌트
-// ========================================
-function ResultBadge({ result }: { result: InspectResult }) {
-  const config = {
-    PASS: { icon: CheckCircle, label: '합격', className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-    FAIL: { icon: XCircle, label: '불합격', className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
-  };
-  const { icon: Icon, label, className } = config[result];
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${className}`}>
-      <Icon className="w-3 h-3" />{label}
-    </span>
-  );
-}
-
 // ========================================
 // 메인 컴포넌트
 // ========================================
 function ResultPage() {
+  const { t } = useTranslation();
+
+  const resultOptions = useMemo(() => [
+    { value: '', label: t('inspection.result.allResults') },
+    { value: 'PASS', label: t('inspection.result.pass') },
+    { value: 'FAIL', label: t('inspection.result.fail') },
+  ], [t]);
+
+  const equipOptions = useMemo(() => [
+    { value: '', label: t('inspection.result.allEquipments') },
+    { value: 'INSP-01', label: 'INSP-01' },
+    { value: 'INSP-02', label: 'INSP-02' },
+  ], [t]);
+
+  const ResultBadge = useMemo(() => {
+    const Badge = ({ result }: { result: InspectResult }) => {
+      const config = {
+        PASS: { icon: CheckCircle, label: t('inspection.result.pass'), className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+        FAIL: { icon: XCircle, label: t('inspection.result.fail'), className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+      };
+      const { icon: Icon, label, className } = config[result];
+      return (
+        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${className}`}>
+          <Icon className="w-3 h-3" />{label}
+        </span>
+      );
+    };
+    return Badge;
+  }, [t]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [resultFilter, setResultFilter] = useState('');
@@ -107,38 +108,38 @@ function ResultPage() {
   }, [filteredData]);
 
   const columns = useMemo<ColumnDef<InspectRecord>[]>(() => [
-    { accessorKey: 'inspectedAt', header: '검사시간', size: 150 },
-    { accessorKey: 'serialNo', header: '시리얼번호', size: 170, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'result', header: '결과', size: 80, cell: ({ getValue }) => <ResultBadge result={getValue() as InspectResult} /> },
-    { accessorKey: 'errorCode', header: '에러코드', size: 80, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
-    { accessorKey: 'errorDesc', header: '에러내용', size: 150, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
-    { accessorKey: 'voltage', header: '전압(V)', size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(1)}</span> },
-    { accessorKey: 'current', header: '전류(A)', size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(2)}</span> },
-    { accessorKey: 'equipmentNo', header: '검사기', size: 90 },
-  ], []);
+    { accessorKey: 'inspectedAt', header: t('inspection.result.inspectedAt'), size: 150 },
+    { accessorKey: 'serialNo', header: t('inspection.result.serialNo'), size: 170, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
+    { accessorKey: 'result', header: t('inspection.result.resultCol'), size: 80, cell: ({ getValue }) => <ResultBadge result={getValue() as InspectResult} /> },
+    { accessorKey: 'errorCode', header: t('inspection.result.errorCode'), size: 80, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
+    { accessorKey: 'errorDesc', header: t('inspection.result.errorDesc'), size: 150, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
+    { accessorKey: 'voltage', header: t('inspection.result.voltage'), size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(1)}</span> },
+    { accessorKey: 'current', header: t('inspection.result.current'), size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(2)}</span> },
+    { accessorKey: 'equipmentNo', header: t('inspection.result.equipmentNo'), size: 90 },
+  ], [t, ResultBadge]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />통전검사 실적</h1>
-          <p className="text-text-muted mt-1">통전검사 결과와 합격률을 확인합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />{t('inspection.result.title')}</h1>
+          <p className="text-text-muted mt-1">{t('inspection.result.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
+        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="총 검사" value={`${stats.total}건`} icon={Activity} color="blue" />
-        <StatCard label="합격률" value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
-        <StatCard label="합격" value={`${stats.passed}건`} icon={CheckCircle} color="green" />
-        <StatCard label="불합격" value={`${stats.failed}건`} icon={XCircle} color="red" />
+        <StatCard label={t('inspection.result.totalInspections')} value={`${stats.total}${t('common.count')}`} icon={Activity} color="blue" />
+        <StatCard label={t('inspection.result.passRate')} value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
+        <StatCard label={t('inspection.result.pass')} value={`${stats.passed}${t('common.count')}`} icon={CheckCircle} color="green" />
+        <StatCard label={t('inspection.result.fail')} value={`${stats.failed}${t('common.count')}`} icon={XCircle} color="red" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="시리얼번호 검색..." value={searchSerial} onChange={(e) => setSearchSerial(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('inspection.result.searchPlaceholder')} value={searchSerial} onChange={(e) => setSearchSerial(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-text-muted" />
@@ -146,8 +147,8 @@ function ResultPage() {
               <span className="text-text-muted">~</span>
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
             </div>
-            <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder="결과" />
-            <Select options={equipOptions} value={equipFilter} onChange={setEquipFilter} placeholder="검사기" />
+            <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder={t('inspection.result.resultCol')} />
+            <Select options={equipOptions} value={equipFilter} onChange={setEquipFilter} placeholder={t('inspection.result.equipmentNo')} />
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid data={filteredData} columns={columns} pageSize={10} />

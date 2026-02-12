@@ -1,5 +1,5 @@
 {
-  "name": "@hanes/frontend",
+  "name": "@harness/frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@hanes/shared": "workspace:*",
+    "@harness/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-table": "^8.20.6",
     "axios": "^1.7.9",

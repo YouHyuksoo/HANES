@@ -11,7 +11,8 @@
  * 4. **반려**: 재고 부족 등의 사유로 요청 반려
  * 5. **상태 흐름**: REQUESTED → APPROVED → IN_PROGRESS → COMPLETED / REJECTED
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowRightFromLine, Search, RefreshCw, Clock, CheckCircle, Play, Package } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import IssueTable from '@/components/material/IssueTable';
@@ -19,16 +20,17 @@ import IssueProcessModal from '@/components/material/IssueProcessModal';
 import { useIssueData } from '@/hooks/material/useIssueData';
 import type { IssueRecord } from '@/hooks/material/useIssueData';
 
-const statusOptions = [
-  { value: '', label: '전체 상태' },
-  { value: 'REQUESTED', label: '요청' },
-  { value: 'APPROVED', label: '승인' },
-  { value: 'IN_PROGRESS', label: '출고중' },
-  { value: 'COMPLETED', label: '완료' },
-  { value: 'REJECTED', label: '반려' },
-];
-
 function IssuePage() {
+  const { t } = useTranslation();
+
+  const statusOptions = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'REQUESTED', label: t('material.issue.status.requested') },
+    { value: 'APPROVED', label: t('material.issue.status.approved') },
+    { value: 'IN_PROGRESS', label: t('material.issue.status.inProgress') },
+    { value: 'COMPLETED', label: t('material.issue.status.completed') },
+    { value: 'REJECTED', label: t('material.issue.status.rejected') },
+  ], [t]);
   const {
     filteredRecords,
     stats,
@@ -61,18 +63,18 @@ function IssuePage() {
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ArrowRightFromLine className="w-7 h-7 text-primary" />
-            출고관리
+            {t('material.issue.title')}
           </h1>
-          <p className="text-text-muted mt-1">출고 요청을 승인하고 자재 출고를 처리합니다.</p>
+          <p className="text-text-muted mt-1">{t('material.issue.description')}</p>
         </div>
       </div>
 
       {/* 통계카드 */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="요청대기" value={stats.requested} icon={Clock} color="yellow" />
-        <StatCard label="승인완료" value={stats.approved} icon={CheckCircle} color="blue" />
-        <StatCard label="출고진행" value={stats.inProgress} icon={Play} color="purple" />
-        <StatCard label="출고완료" value={stats.completed} icon={Package} color="green" />
+        <StatCard label={t('material.issue.stats.requested')} value={stats.requested} icon={Clock} color="yellow" />
+        <StatCard label={t('material.issue.stats.approved')} value={stats.approved} icon={CheckCircle} color="blue" />
+        <StatCard label={t('material.issue.stats.inProgress')} value={stats.inProgress} icon={Play} color="purple" />
+        <StatCard label={t('material.issue.stats.completed')} value={stats.completed} icon={Package} color="green" />
       </div>
 
       {/* 필터 + 테이블 */}
@@ -81,7 +83,7 @@ function IssuePage() {
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
               <Input
-                placeholder="요청번호, 품목명, 작업지시 검색..."
+                placeholder={t('material.issue.searchPlaceholder')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />}

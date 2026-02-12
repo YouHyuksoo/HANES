@@ -5,6 +5,7 @@
  * @description 수불 이력 페이지 - 입고/출고/이동/취소 내역 조회 및 처리
  */
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { History, RefreshCw, Search, Download, XCircle, ArrowDownToLine, ArrowUpFromLine, CalendarCheck, Calendar } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -36,28 +37,6 @@ interface TransactionData {
   cancelRef?: { transNo: string };
 }
 
-const TRANS_TYPES = [
-  { value: '', label: '전체' },
-  { value: 'MAT_IN', label: '원자재 입고' },
-  { value: 'MAT_IN_CANCEL', label: '원자재 입고취소' },
-  { value: 'MAT_OUT', label: '원자재 출고' },
-  { value: 'MAT_OUT_CANCEL', label: '원자재 출고취소' },
-  { value: 'WIP_IN', label: '반제품 입고' },
-  { value: 'WIP_OUT', label: '반제품 출고' },
-  { value: 'FG_IN', label: '완제품 입고' },
-  { value: 'FG_OUT', label: '완제품 출고' },
-  { value: 'SUBCON_IN', label: '외주 입고' },
-  { value: 'SUBCON_OUT', label: '외주 지급' },
-  { value: 'TRANSFER', label: '창고이동' },
-  { value: 'ADJ_PLUS', label: '재고조정(+)' },
-  { value: 'ADJ_MINUS', label: '재고조정(-)' },
-  { value: 'SCRAP', label: '폐기' },
-];
-
-const getTransTypeLabel = (type: string) => {
-  return TRANS_TYPES.find(t => t.value === type)?.label || type;
-};
-
 const getTransTypeColor = (type: string) => {
   const isCancel = type.includes('CANCEL');
   const isIn = type.includes('IN') || type.includes('PLUS');
@@ -71,12 +50,35 @@ const getTransTypeColor = (type: string) => {
 };
 
 export default function TransactionPage() {
+  const { t } = useTranslation();
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [loading, setLoading] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedTrans, setSelectedTrans] = useState<TransactionData | null>(null);
   const [cancelRemark, setCancelRemark] = useState('');
-  const [alertModal, setAlertModal] = useState({ open: false, title: '알림', message: '' });
+  const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
+
+  const TRANS_TYPES = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'MAT_IN', label: t('inventory.transaction.matIn') },
+    { value: 'MAT_IN_CANCEL', label: t('inventory.transaction.matInCancel') },
+    { value: 'MAT_OUT', label: t('inventory.transaction.matOut') },
+    { value: 'MAT_OUT_CANCEL', label: t('inventory.transaction.matOutCancel') },
+    { value: 'WIP_IN', label: t('inventory.transaction.wipIn') },
+    { value: 'WIP_OUT', label: t('inventory.transaction.wipOut') },
+    { value: 'FG_IN', label: t('inventory.transaction.fgIn') },
+    { value: 'FG_OUT', label: t('inventory.transaction.fgOut') },
+    { value: 'SUBCON_IN', label: t('inventory.transaction.subconIn') },
+    { value: 'SUBCON_OUT', label: t('inventory.transaction.subconOut') },
+    { value: 'TRANSFER', label: t('inventory.transaction.transfer') },
+    { value: 'ADJ_PLUS', label: t('inventory.transaction.adjPlus') },
+    { value: 'ADJ_MINUS', label: t('inventory.transaction.adjMinus') },
+    { value: 'SCRAP', label: t('inventory.transaction.scrap') },
+  ], [t]);
+
+  const getTransTypeLabel = (type: string) => {
+    return TRANS_TYPES.find(tt => tt.value === type)?.label || type;
+  };
 
   // 필터
   const [filters, setFilters] = useState({
@@ -95,7 +97,8 @@ export default function TransactionPage() {
       params.append('limit', '200');
 
       const res = await api.get(`/inventory/transactions?${params.toString()}`);
-      setTransactions(res.data);
+      const result = res.data?.data ?? res.data;
+      setTransactions(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('수불 이력 조회 실패:', error);
     } finally {
@@ -109,11 +112,11 @@ export default function TransactionPage() {
 
   const handleCancelClick = (trans: TransactionData) => {
     if (trans.status === 'CANCELED') {
-      setAlertModal({ open: true, title: '알림', message: '이미 취소된 트랜잭션입니다.' });
+      setAlertModal({ open: true, title: t('common.confirm'), message: t('inventory.transaction.alreadyCanceled') });
       return;
     }
     if (trans.transType.includes('CANCEL')) {
-      setAlertModal({ open: true, title: '알림', message: '취소 트랜잭션은 다시 취소할 수 없습니다.' });
+      setAlertModal({ open: true, title: t('common.confirm'), message: t('inventory.transaction.cannotCancelCancel') });
       return;
     }
     setSelectedTrans(trans);
@@ -130,22 +133,22 @@ export default function TransactionPage() {
       });
       setCancelModalOpen(false);
       fetchTransactions();
-      setAlertModal({ open: true, title: '완료', message: '취소 처리가 완료되었습니다.' });
+      setAlertModal({ open: true, title: t('common.confirm'), message: t('inventory.transaction.cancelComplete') });
     } catch (error) {
       console.error('트랜잭션 취소 실패:', error);
-      setAlertModal({ open: true, title: '오류', message: '취소 처리 중 오류가 발생했습니다.' });
+      setAlertModal({ open: true, title: t('common.error'), message: t('inventory.transaction.cancelFailed') });
     }
   };
 
   const columns: ColumnDef<TransactionData>[] = useMemo(() => [
     {
       accessorKey: 'transNo',
-      header: '트랜잭션번호',
+      header: t('inventory.transaction.transNo'),
       size: 160,
     },
     {
       accessorKey: 'transType',
-      header: '유형',
+      header: t('inventory.transaction.transType'),
       size: 130,
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${getTransTypeColor(row.original.transType)}`}>
@@ -155,43 +158,43 @@ export default function TransactionPage() {
     },
     {
       accessorKey: 'transDate',
-      header: '일시',
+      header: t('inventory.transaction.transDate'),
       size: 150,
       cell: ({ row }) => new Date(row.original.transDate).toLocaleString(),
     },
     {
       accessorKey: 'fromWarehouse',
-      header: '출고창고',
+      header: t('inventory.transaction.fromWarehouse'),
       size: 100,
       cell: ({ row }) => row.original.fromWarehouse?.warehouseCode || '-',
     },
     {
       accessorKey: 'toWarehouse',
-      header: '입고창고',
+      header: t('inventory.transaction.toWarehouse'),
       size: 100,
       cell: ({ row }) => row.original.toWarehouse?.warehouseCode || '-',
     },
     {
       accessorKey: 'partCode',
-      header: '품목코드',
+      header: t('inventory.transaction.partCode'),
       size: 120,
       cell: ({ row }) => row.original.part.partCode,
     },
     {
       accessorKey: 'partName',
-      header: '품목명',
+      header: t('inventory.transaction.partName'),
       size: 150,
       cell: ({ row }) => row.original.part.partName,
     },
     {
       accessorKey: 'lotNo',
-      header: 'LOT',
+      header: t('inventory.transaction.lot'),
       size: 140,
       cell: ({ row }) => row.original.lot?.lotNo || '-',
     },
     {
       accessorKey: 'qty',
-      header: '수량',
+      header: t('inventory.transaction.qty'),
       size: 100,
       cell: ({ row }) => (
         <span className={row.original.qty < 0 ? 'text-red-600 font-semibold' : 'text-blue-600 font-semibold'}>
@@ -201,7 +204,7 @@ export default function TransactionPage() {
     },
     {
       accessorKey: 'status',
-      header: '상태',
+      header: t('inventory.transaction.status'),
       size: 80,
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs ${
@@ -209,19 +212,19 @@ export default function TransactionPage() {
           row.original.status === 'CANCELED' ? 'bg-red-100 text-red-800' :
           'bg-gray-100 text-gray-800'
         }`}>
-          {row.original.status === 'DONE' ? '완료' : row.original.status === 'CANCELED' ? '취소' : row.original.status}
+          {row.original.status === 'DONE' ? t('inventory.transaction.statusDone') : row.original.status === 'CANCELED' ? t('inventory.transaction.statusCanceled') : row.original.status}
         </span>
       ),
     },
     {
       accessorKey: 'cancelRef',
-      header: '원본',
+      header: t('inventory.transaction.original'),
       size: 130,
       cell: ({ row }) => row.original.cancelRef?.transNo || '-',
     },
     {
       accessorKey: 'remark',
-      header: '비고',
+      header: t('inventory.transaction.remark'),
       size: 150,
     },
     {
@@ -230,50 +233,50 @@ export default function TransactionPage() {
       size: 80,
       cell: ({ row }) => (
         row.original.status === 'DONE' && !row.original.transType.includes('CANCEL') && (
-          <button onClick={() => handleCancelClick(row.original)} className="p-1 hover:bg-surface rounded" title="취소">
+          <button onClick={() => handleCancelClick(row.original)} className="p-1 hover:bg-surface rounded" title={t('common.cancel')}>
             <XCircle className="w-4 h-4 text-red-500" />
           </button>
         )
       ),
     },
-  ], []);
+  ], [t]);
 
   // 통계 계산
-  const todayTransactions = transactions.filter(t =>
-    new Date(t.transDate).toDateString() === new Date().toDateString()
+  const todayTransactions = transactions.filter(tr =>
+    new Date(tr.transDate).toDateString() === new Date().toDateString()
   );
-  const totalIn = transactions.filter(t => t.qty > 0 && t.status === 'DONE').reduce((sum, t) => sum + t.qty, 0);
-  const totalOut = transactions.filter(t => t.qty < 0 && t.status === 'DONE').reduce((sum, t) => sum + Math.abs(t.qty), 0);
+  const totalIn = transactions.filter(tr => tr.qty > 0 && tr.status === 'DONE').reduce((sum, tr) => sum + tr.qty, 0);
+  const totalOut = transactions.filter(tr => tr.qty < 0 && tr.status === 'DONE').reduce((sum, tr) => sum + Math.abs(tr.qty), 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <History className="w-7 h-7 text-primary" />수불 이력
+            <History className="w-7 h-7 text-primary" />{t('inventory.transaction.title')}
           </h1>
-          <p className="text-text-muted mt-1">입고/출고/이동/취소 트랜잭션 이력을 조회하고 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('inventory.transaction.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
-          <Button variant="secondary" size="sm" onClick={fetchTransactions}><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
+          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
+          <Button variant="secondary" size="sm" onClick={fetchTransactions}><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="총 트랜잭션" value={transactions.length} icon={History} color="blue" />
-        <StatCard label="오늘 처리" value={todayTransactions.length} icon={CalendarCheck} color="purple" />
-        <StatCard label="총 입고" value={`+${totalIn.toLocaleString()}`} icon={ArrowDownToLine} color="green" />
-        <StatCard label="총 출고" value={`-${totalOut.toLocaleString()}`} icon={ArrowUpFromLine} color="red" />
+        <StatCard label={t('inventory.transaction.totalTrans')} value={transactions.length} icon={History} color="blue" />
+        <StatCard label={t('inventory.transaction.todayProcess')} value={todayTransactions.length} icon={CalendarCheck} color="purple" />
+        <StatCard label={t('inventory.transaction.totalIn')} value={`+${totalIn.toLocaleString()}`} icon={ArrowDownToLine} color="green" />
+        <StatCard label={t('inventory.transaction.totalOut')} value={`-${totalOut.toLocaleString()}`} icon={ArrowUpFromLine} color="red" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="트랜잭션번호 검색..." leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('inventory.transaction.searchTransNo')} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={TRANS_TYPES} value={filters.transType} onChange={(v) => setFilters({ ...filters, transType: v })} placeholder="유형" />
+            <Select options={TRANS_TYPES} value={filters.transType} onChange={(v) => setFilters({ ...filters, transType: v })} placeholder={t('inventory.transaction.transType')} />
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-text-muted" />
               <Input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} className="w-36" />
@@ -287,7 +290,7 @@ export default function TransactionPage() {
             columns={columns}
             isLoading={loading}
             pageSize={10}
-            emptyMessage="수불 이력이 없습니다."
+            emptyMessage={t('inventory.transaction.emptyMessage')}
           />
         </CardContent>
       </Card>
@@ -296,49 +299,49 @@ export default function TransactionPage() {
       <Modal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
-        title="트랜잭션 취소"
+        title={t('inventory.transaction.cancelTitle')}
       >
         {selectedTrans && (
           <div className="space-y-4">
             <p className="text-sm text-text-muted">
-              이 작업은 되돌릴 수 없습니다. 취소 이력이 생성되고 재고가 복구됩니다.
+              {t('inventory.transaction.cancelWarning')}
             </p>
             <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">트랜잭션 번호:</span>
+                <span className="text-gray-500">{t('inventory.transaction.transNo')}:</span>
                 <span className="font-medium">{selectedTrans.transNo}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">유형:</span>
+                <span className="text-gray-500">{t('inventory.transaction.transType')}:</span>
                 <span className={`px-2 py-0.5 rounded text-xs ${getTransTypeColor(selectedTrans.transType)}`}>
                   {getTransTypeLabel(selectedTrans.transType)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">품목:</span>
+                <span className="text-gray-500">{t('inventory.transaction.part')}:</span>
                 <span>{selectedTrans.part.partName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">수량:</span>
+                <span className="text-gray-500">{t('inventory.transaction.qty')}:</span>
                 <span className={selectedTrans.qty > 0 ? 'text-blue-600' : 'text-red-600'}>
                   {selectedTrans.qty > 0 ? '+' : ''}{selectedTrans.qty.toLocaleString()}
                 </span>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">취소 사유</label>
+              <label className="block text-sm font-medium mb-1">{t('inventory.transaction.cancelReason')}</label>
               <Input
                 value={cancelRemark}
                 onChange={(e) => setCancelRemark(e.target.value)}
-                placeholder="취소 사유를 입력하세요"
+                placeholder={t('inventory.transaction.cancelReasonPlaceholder')}
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setCancelModalOpen(false)}>
-                닫기
+                {t('common.close')}
               </Button>
               <Button onClick={handleCancelConfirm}>
-                <XCircle className="w-4 h-4 mr-1" />취소 처리
+                <XCircle className="w-4 h-4 mr-1" />{t('inventory.transaction.cancelProcess')}
               </Button>
             </div>
           </div>
@@ -349,7 +352,7 @@ export default function TransactionPage() {
       <Modal isOpen={alertModal.open} onClose={() => setAlertModal({ ...alertModal, open: false })} title={alertModal.title} size="sm">
         <p className="text-text">{alertModal.message}</p>
         <div className="flex justify-end pt-4">
-          <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>확인</Button>
+          <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>{t('common.confirm')}</Button>
         </div>
       </Modal>
     </div>

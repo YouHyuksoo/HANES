@@ -5,6 +5,7 @@
  * @description 출고 이력 테이블 컴포넌트
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import type { IssuingLog } from '@/hooks/consumables/useIssuingData';
@@ -14,30 +15,32 @@ const logTypeColors: Record<string, string> = {
   OUT_RETURN: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
 };
 
-const logTypeLabels: Record<string, string> = {
-  OUT: '출고',
-  OUT_RETURN: '출고반품',
-};
-
-const issueReasonLabels: Record<string, string> = {
-  PRODUCTION: '생산투입',
-  REPAIR: '수리',
-  OTHER: '기타',
-};
-
 interface IssuingTableProps {
   data: IssuingLog[];
 }
 
 function IssuingTable({ data }: IssuingTableProps) {
+  const { t } = useTranslation();
+
+  const logTypeLabels: Record<string, string> = {
+    OUT: t('consumables.issuing.typeOut'),
+    OUT_RETURN: t('consumables.issuing.typeOutReturn'),
+  };
+
+  const issueReasonLabels: Record<string, string> = {
+    PRODUCTION: t('consumables.issuing.reasonProduction'),
+    REPAIR: t('consumables.issuing.reasonRepair'),
+    OTHER: t('consumables.issuing.reasonOther'),
+  };
+
   const columns = useMemo<ColumnDef<IssuingLog>[]>(
     () => [
-      { accessorKey: 'createdAt', header: '일시', size: 140 },
-      { accessorKey: 'consumableCode', header: '소모품코드', size: 110 },
-      { accessorKey: 'consumableName', header: '소모품명', size: 140 },
+      { accessorKey: 'createdAt', header: t('consumables.comp.dateTime'), size: 140 },
+      { accessorKey: 'consumableCode', header: t('consumables.comp.consumableCode'), size: 110 },
+      { accessorKey: 'consumableName', header: t('consumables.comp.consumableName'), size: 140 },
       {
         accessorKey: 'logType',
-        header: '유형',
+        header: t('consumables.comp.logType'),
         size: 90,
         cell: ({ getValue }) => {
           const type = getValue() as string;
@@ -50,7 +53,7 @@ function IssuingTable({ data }: IssuingTableProps) {
       },
       {
         accessorKey: 'qty',
-        header: '수량',
+        header: t('common.quantity'),
         size: 70,
         cell: ({ row }) => {
           const isReturn = row.original.logType === 'OUT_RETURN';
@@ -63,25 +66,25 @@ function IssuingTable({ data }: IssuingTableProps) {
       },
       {
         accessorKey: 'department',
-        header: '출고부서',
+        header: t('consumables.comp.department'),
         size: 100,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'lineId',
-        header: '라인',
+        header: t('consumables.comp.line'),
         size: 90,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'equipmentId',
-        header: '설비',
+        header: t('consumables.comp.equipment'),
         size: 90,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'issueReason',
-        header: '출고사유',
+        header: t('consumables.comp.issueReason'),
         size: 90,
         cell: ({ getValue }) => {
           const val = getValue() as string | null;
@@ -90,12 +93,12 @@ function IssuingTable({ data }: IssuingTableProps) {
       },
       {
         accessorKey: 'remark',
-        header: '비고',
+        header: t('common.remark'),
         size: 160,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
     ],
-    []
+    [t]
   );
 
   return <DataGrid data={data} columns={columns} pageSize={10} />;

@@ -14,6 +14,7 @@
  * - 상태 변경 버튼으로 작업 진행 상태 관리
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Play,
   Pause,
@@ -124,9 +125,11 @@ const mockJobOrders: JobOrder[] = [
 ];
 
 function JobOrderPage() {
+  const { t } = useTranslation();
+
   /** 상태 필터 옵션 (DB 공통코드 기반) */
   const comCodeStatusOptions = useComCodeOptions('JOB_ORDER_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+  const statusOptions = useMemo(() => [{ value: '', label: t('common.allStatus') }, ...comCodeStatusOptions], [t, comCodeStatusOptions]);
 
   // 필터 상태
   const [statusFilter, setStatusFilter] = useState('');
@@ -175,44 +178,44 @@ function JobOrderPage() {
     () => [
       {
         accessorKey: 'orderNo',
-        header: '작업지시번호',
+        header: t('production.order.orderNo'),
         size: 150
       },
       {
         accessorKey: 'orderDate',
-        header: '지시일자',
+        header: t('production.order.orderDate'),
         size: 100
       },
       {
         accessorKey: 'partCode',
-        header: '품목코드',
+        header: t('production.order.partCode'),
         size: 100
       },
       {
         accessorKey: 'partName',
-        header: '품목명',
+        header: t('production.order.partName'),
         size: 150
       },
       {
         accessorKey: 'lineName',
-        header: '라인',
+        header: t('production.order.line'),
         size: 100
       },
       {
         accessorKey: 'planQty',
-        header: '계획수량',
+        header: t('production.order.planQty'),
         size: 80,
         cell: ({ getValue }) => (getValue() as number).toLocaleString()
       },
       {
         accessorKey: 'prodQty',
-        header: '실적수량',
+        header: t('production.order.prodQty'),
         size: 80,
         cell: ({ getValue }) => (getValue() as number).toLocaleString()
       },
       {
         id: 'progress',
-        header: '진행률',
+        header: t('production.order.progress'),
         size: 120,
         cell: ({ row }) => {
           const progress = getProgress(row.original);
@@ -231,7 +234,7 @@ function JobOrderPage() {
       },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('common.status'),
         size: 80,
         cell: ({ getValue }) => {
           const status = getValue() as JobOrderStatus;
@@ -240,7 +243,7 @@ function JobOrderPage() {
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.manage'),
         size: 120,
         cell: ({ row }) => {
           const order = row.original;
@@ -249,7 +252,7 @@ function JobOrderPage() {
               <button
                 onClick={(e) => { e.stopPropagation(); handleOpenDetail(order); }}
                 className="p-1 hover:bg-surface rounded"
-                title="상세보기"
+                title={t('common.detail')}
               >
                 <Eye className="w-4 h-4 text-text-muted" />
               </button>
@@ -257,7 +260,7 @@ function JobOrderPage() {
                 <button
                   onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, 'RUNNING'); }}
                   className="p-1 hover:bg-surface rounded"
-                  title="작업시작"
+                  title={t('production.order.startWork')}
                 >
                   <Play className="w-4 h-4 text-green-500" />
                 </button>
@@ -267,14 +270,14 @@ function JobOrderPage() {
                   <button
                     onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, 'WAITING'); }}
                     className="p-1 hover:bg-surface rounded"
-                    title="일시정지"
+                    title={t('production.order.pauseWork')}
                   >
                     <Pause className="w-4 h-4 text-yellow-500" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, 'DONE'); }}
                     className="p-1 hover:bg-surface rounded"
-                    title="작업완료"
+                    title={t('production.order.completeWork')}
                   >
                     <CheckCircle className="w-4 h-4 text-blue-500" />
                   </button>
@@ -285,7 +288,7 @@ function JobOrderPage() {
         },
       },
     ],
-    []
+    [t]
   );
 
   return (
@@ -295,13 +298,13 @@ function JobOrderPage() {
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardList className="w-7 h-7 text-primary" />
-            작업지시 관리
+            {t('production.order.title')}
           </h1>
-          <p className="text-text-muted mt-1">생산 작업지시를 조회하고 상태를 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('production.order.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <Download className="w-4 h-4 mr-1" /> 엑셀 다운로드
+            <Download className="w-4 h-4 mr-1" /> {t('common.excel')}
           </Button>
         </div>
       </div>
@@ -313,7 +316,7 @@ function JobOrderPage() {
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
               <Input
-                placeholder="작업지시번호, 품목코드, 품목명 검색..."
+                placeholder={t('production.order.searchPlaceholder')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />}
@@ -325,7 +328,7 @@ function JobOrderPage() {
                 options={statusOptions}
                 value={statusFilter}
                 onChange={setStatusFilter}
-                placeholder="상태"
+                placeholder={t('common.status')}
                 fullWidth
               />
             </div>
@@ -364,7 +367,7 @@ function JobOrderPage() {
       <Modal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        title="작업지시 상세"
+        title={t('production.order.detailTitle')}
         size="lg"
       >
         {selectedOrder && (
@@ -372,27 +375,27 @@ function JobOrderPage() {
             {/* 기본 정보 */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-background rounded-lg">
               <div>
-                <span className="text-sm text-text-muted">작업지시번호</span>
+                <span className="text-sm text-text-muted">{t('production.order.orderNo')}</span>
                 <p className="font-semibold text-text">{selectedOrder.orderNo}</p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">지시일자</span>
+                <span className="text-sm text-text-muted">{t('production.order.orderDate')}</span>
                 <p className="font-semibold text-text">{selectedOrder.orderDate}</p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">품목코드</span>
+                <span className="text-sm text-text-muted">{t('production.order.partCode')}</span>
                 <p className="font-semibold text-text">{selectedOrder.partCode}</p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">품목명</span>
+                <span className="text-sm text-text-muted">{t('production.order.partName')}</span>
                 <p className="font-semibold text-text">{selectedOrder.partName}</p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">라인</span>
+                <span className="text-sm text-text-muted">{t('production.order.line')}</span>
                 <p className="font-semibold text-text">{selectedOrder.lineName}</p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">공정</span>
+                <span className="text-sm text-text-muted">{t('production.order.process')}</span>
                 <p className="font-semibold text-text">{selectedOrder.processName}</p>
               </div>
             </div>
@@ -400,19 +403,19 @@ function JobOrderPage() {
             {/* 수량 정보 */}
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
-                <span className="text-sm text-text-muted">계획수량</span>
+                <span className="text-sm text-text-muted">{t('production.order.planQty')}</span>
                 <p className="text-lg font-bold leading-tight text-blue-600 dark:text-blue-400">
                   {selectedOrder.planQty.toLocaleString()}
                 </p>
               </div>
               <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
-                <span className="text-sm text-text-muted">실적수량</span>
+                <span className="text-sm text-text-muted">{t('production.order.prodQty')}</span>
                 <p className="text-lg font-bold leading-tight text-green-600 dark:text-green-400">
                   {selectedOrder.prodQty.toLocaleString()}
                 </p>
               </div>
               <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center">
-                <span className="text-sm text-text-muted">진행률</span>
+                <span className="text-sm text-text-muted">{t('production.order.progress')}</span>
                 <p className="text-lg font-bold leading-tight text-purple-600 dark:text-purple-400">
                   {getProgress(selectedOrder)}%
                 </p>
@@ -422,26 +425,26 @@ function JobOrderPage() {
             {/* 작업 정보 */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-background rounded-lg">
               <div>
-                <span className="text-sm text-text-muted">상태</span>
+                <span className="text-sm text-text-muted">{t('common.status')}</span>
                 <p>
                   <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedOrder.status} />
                 </p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">작업자</span>
+                <span className="text-sm text-text-muted">{t('production.order.worker')}</span>
                 <p className="font-semibold text-text">{selectedOrder.worker || '-'}</p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">시작시간</span>
+                <span className="text-sm text-text-muted">{t('production.order.startTime')}</span>
                 <p className="font-semibold text-text">{selectedOrder.startTime || '-'}</p>
               </div>
               <div>
-                <span className="text-sm text-text-muted">종료시간</span>
+                <span className="text-sm text-text-muted">{t('production.order.endTime')}</span>
                 <p className="font-semibold text-text">{selectedOrder.endTime || '-'}</p>
               </div>
               {selectedOrder.remark && (
                 <div className="col-span-2">
-                  <span className="text-sm text-text-muted">비고</span>
+                  <span className="text-sm text-text-muted">{t('common.remark')}</span>
                   <p className="font-semibold text-text">{selectedOrder.remark}</p>
                 </div>
               )}
@@ -450,20 +453,20 @@ function JobOrderPage() {
             {/* 액션 버튼 */}
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
               <Button variant="secondary" onClick={() => setIsDetailModalOpen(false)}>
-                닫기
+                {t('common.close')}
               </Button>
               {selectedOrder.status === 'WAITING' && (
                 <Button onClick={() => handleStatusChange(selectedOrder.id, 'RUNNING')}>
-                  <Play className="w-4 h-4 mr-1" /> 작업 시작
+                  <Play className="w-4 h-4 mr-1" /> {t('production.order.startWork')}
                 </Button>
               )}
               {selectedOrder.status === 'RUNNING' && (
                 <>
                   <Button variant="secondary" onClick={() => handleStatusChange(selectedOrder.id, 'WAITING')}>
-                    <Pause className="w-4 h-4 mr-1" /> 일시 정지
+                    <Pause className="w-4 h-4 mr-1" /> {t('production.order.pauseWork')}
                   </Button>
                   <Button onClick={() => handleStatusChange(selectedOrder.id, 'DONE')}>
-                    <CheckCircle className="w-4 h-4 mr-1" /> 작업 완료
+                    <CheckCircle className="w-4 h-4 mr-1" /> {t('production.order.completeWork')}
                   </Button>
                 </>
               )}

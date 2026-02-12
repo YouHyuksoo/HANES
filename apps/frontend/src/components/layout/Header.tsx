@@ -11,16 +11,19 @@
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import Input from "@/components/ui/Input";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
 }
 
 function Header({ onMenuToggle }: HeaderProps) {
+  const { t } = useTranslation();
   const { isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuthStore();
   const router = useRouter();
@@ -48,7 +51,7 @@ function Header({ onMenuToggle }: HeaderProps) {
         <button
           onClick={onMenuToggle}
           className="p-2 rounded-md lg:hidden hover:bg-background transition-colors"
-          aria-label="메뉴 열기"
+          aria-label={t('header.openMenu')}
         >
           <Menu className="w-5 h-5 text-text" />
         </button>
@@ -59,7 +62,7 @@ function Header({ onMenuToggle }: HeaderProps) {
             <span className="text-white font-bold text-sm">H</span>
           </div>
           <span className="font-semibold text-lg text-text hidden sm:block">
-            HANES MES
+            HARNESS MES
           </span>
         </div>
       </div>
@@ -67,7 +70,7 @@ function Header({ onMenuToggle }: HeaderProps) {
       {/* Center Section - Search */}
       <div className="hidden md:flex flex-1 max-w-md mx-8">
         <Input
-          placeholder="검색 (Ctrl+K)"
+          placeholder={t('header.searchPlaceholder')}
           leftIcon={<Search className="w-4 h-4" />}
           fullWidth
           className="bg-background"
@@ -79,7 +82,7 @@ function Header({ onMenuToggle }: HeaderProps) {
         {/* 알림 */}
         <button
           className="relative p-2 rounded-md hover:bg-background transition-colors"
-          aria-label="알림"
+          aria-label={t('header.notifications')}
         >
           <Bell className="w-5 h-5 text-text-muted" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
@@ -89,7 +92,7 @@ function Header({ onMenuToggle }: HeaderProps) {
         <button
           onClick={toggleTheme}
           className="p-2 rounded-md hover:bg-background transition-colors"
-          aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
+          aria-label={isDark ? t('header.switchToLight') : t('header.switchToDark')}
         >
           {isDark ? (
             <Sun className="w-5 h-5 text-accent" />
@@ -97,6 +100,9 @@ function Header({ onMenuToggle }: HeaderProps) {
             <Moon className="w-5 h-5 text-text-muted" />
           )}
         </button>
+
+        {/* 언어 전환 */}
+        <LanguageSwitcher />
 
         {/* 사용자 메뉴 */}
         <div className="relative">
@@ -111,7 +117,7 @@ function Header({ onMenuToggle }: HeaderProps) {
               <User className="w-4 h-4 text-primary" />
             </div>
             <span className="hidden sm:block text-sm font-medium text-text">
-              {user?.name || user?.email || "사용자"}
+              {user?.name || user?.email || t('common.user')}
             </span>
           </button>
 
@@ -138,7 +144,7 @@ function Header({ onMenuToggle }: HeaderProps) {
                   "
                 >
                   <User className="w-4 h-4" />
-                  프로필
+                  {t('header.profile')}
                 </button>
                 <button
                   className="
@@ -148,7 +154,7 @@ function Header({ onMenuToggle }: HeaderProps) {
                   "
                 >
                   <Settings className="w-4 h-4" />
-                  설정
+                  {t('header.settings')}
                 </button>
                 <hr className="my-1 border-border" />
                 <button
@@ -160,7 +166,7 @@ function Header({ onMenuToggle }: HeaderProps) {
                   "
                 >
                   <LogOut className="w-4 h-4" />
-                  로그아웃
+                  {t('header.logout')}
                 </button>
               </div>
             </>

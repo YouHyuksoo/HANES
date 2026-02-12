@@ -21,7 +21,7 @@ export const api = axios.create({
 // 요청 인터셉터 - 토큰 추가
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("hanes-token");
+    const token = localStorage.getItem("harness-token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -37,7 +37,7 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("hanes-token");
+      localStorage.removeItem("harness-token");
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }

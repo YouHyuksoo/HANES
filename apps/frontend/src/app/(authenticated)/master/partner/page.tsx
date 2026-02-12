@@ -10,6 +10,7 @@
  * 3. **CRUD**: 추가/수정은 Modal, 삭제는 소프트삭제
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, Search, RefreshCw, Download, Building2 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -40,22 +41,23 @@ const mockPartners: Partner[] = [
   { id: '6', partnerCode: 'CUS-003', partnerName: 'GM코리아', partnerType: 'CUSTOMER', bizNo: '678-90-12345', ceoName: '카허카젬', address: '인천시 부평구', tel: '032-567-8901', useYn: 'N' },
 ];
 
-const partnerTypeOptions = [
-  { value: '', label: '전체' },
-  { value: 'SUPPLIER', label: '공급상' },
-  { value: 'CUSTOMER', label: '고객' },
-];
-
-const partnerTypeFormOptions = [
-  { value: 'SUPPLIER', label: '공급상' },
-  { value: 'CUSTOMER', label: '고객' },
-];
-
 function PartnerPage() {
+  const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+
+  const partnerTypeOptions = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'SUPPLIER', label: t('master.partner.supplier') },
+    { value: 'CUSTOMER', label: t('master.partner.customer') },
+  ], [t]);
+
+  const partnerTypeFormOptions = useMemo(() => [
+    { value: 'SUPPLIER', label: t('master.partner.supplier') },
+    { value: 'CUSTOMER', label: t('master.partner.customer') },
+  ], [t]);
 
   const filteredPartners = useMemo(() => {
     return mockPartners.filter((p) => {
@@ -72,29 +74,29 @@ function PartnerPage() {
 
   const columns = useMemo<ColumnDef<Partner>[]>(
     () => [
-      { accessorKey: 'partnerCode', header: '거래처코드', size: 120 },
-      { accessorKey: 'partnerName', header: '거래처명', size: 150 },
+      { accessorKey: 'partnerCode', header: t('master.partner.partnerCode'), size: 120 },
+      { accessorKey: 'partnerName', header: t('master.partner.partnerName'), size: 150 },
       {
         accessorKey: 'partnerType',
-        header: '유형',
+        header: t('master.partner.type'),
         size: 80,
         cell: ({ getValue }) => {
           const typeMap: Record<string, { label: string; color: string }> = {
-            SUPPLIER: { label: '공급상', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-            CUSTOMER: { label: '고객', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+            SUPPLIER: { label: t('master.partner.supplier'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+            CUSTOMER: { label: t('master.partner.customer'), color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
           };
-          const t = typeMap[getValue() as string] || { label: getValue(), color: 'bg-gray-100 text-gray-700' };
-          return <span className={`px-2 py-1 text-xs rounded-full ${t.color}`}>{t.label}</span>;
+          const typeInfo = typeMap[getValue() as string] || { label: getValue(), color: 'bg-gray-100 text-gray-700' };
+          return <span className={`px-2 py-1 text-xs rounded-full ${typeInfo.color}`}>{typeInfo.label}</span>;
         },
       },
-      { accessorKey: 'bizNo', header: '사업자번호', size: 130 },
-      { accessorKey: 'ceoName', header: '대표자', size: 90 },
-      { accessorKey: 'tel', header: '전화번호', size: 130 },
-      { accessorKey: 'contactPerson', header: '담당자', size: 90 },
-      { accessorKey: 'email', header: '이메일', size: 180 },
+      { accessorKey: 'bizNo', header: t('master.partner.bizNo'), size: 130 },
+      { accessorKey: 'ceoName', header: t('master.partner.ceoName'), size: 90 },
+      { accessorKey: 'tel', header: t('master.partner.tel'), size: 130 },
+      { accessorKey: 'contactPerson', header: t('master.partner.contactPerson'), size: 90 },
+      { accessorKey: 'email', header: t('master.partner.email'), size: 180 },
       {
         accessorKey: 'useYn',
-        header: '사용',
+        header: t('master.partner.use'),
         size: 60,
         cell: ({ getValue }) => (
           <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -102,7 +104,7 @@ function PartnerPage() {
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.actions'),
         size: 80,
         cell: ({ row }) => (
           <div className="flex gap-1">
@@ -119,7 +121,7 @@ function PartnerPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
@@ -127,16 +129,16 @@ function PartnerPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Building2 className="w-7 h-7 text-primary" />거래처 관리
+            <Building2 className="w-7 h-7 text-primary" />{t('master.partner.title')}
           </h1>
-          <p className="text-text-muted mt-1">공급상 및 고객 거래처 정보를 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('master.partner.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <Download className="w-4 h-4 mr-1" /> 엑셀 다운로드
+            <Download className="w-4 h-4 mr-1" /> {t('common.excel')}
           </Button>
           <Button size="sm" onClick={() => { setEditingPartner(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> 거래처 추가
+            <Plus className="w-4 h-4 mr-1" /> {t('master.partner.addPartner')}
           </Button>
         </div>
       </div>
@@ -146,7 +148,7 @@ function PartnerPage() {
           <div className="flex gap-4 mb-4">
             <div className="flex-1">
               <Input
-                placeholder="거래처코드, 거래처명, 사업자번호, 담당자로 검색..."
+                placeholder={t('master.partner.searchPlaceholder')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />}
@@ -158,7 +160,7 @@ function PartnerPage() {
                 options={partnerTypeOptions}
                 value={typeFilter}
                 onChange={setTypeFilter}
-                placeholder="거래처 유형"
+                placeholder={t('master.partner.type')}
                 fullWidth
               />
             </div>
@@ -180,37 +182,37 @@ function PartnerPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingPartner ? '거래처 수정' : '거래처 추가'}
+        title={editingPartner ? t('master.partner.editPartner') : t('master.partner.addPartner')}
         size="lg"
       >
         <div className="grid grid-cols-2 gap-4">
-          <Input label="거래처코드" placeholder="SUP-001" defaultValue={editingPartner?.partnerCode} fullWidth />
+          <Input label={t('master.partner.partnerCode')} placeholder="SUP-001" defaultValue={editingPartner?.partnerCode} fullWidth />
           <Select
-            label="거래처유형"
+            label={t('master.partner.type')}
             options={partnerTypeFormOptions}
             value={editingPartner?.partnerType || 'SUPPLIER'}
             onChange={() => {}}
             fullWidth
           />
           <div className="col-span-2">
-            <Input label="거래처명" placeholder="대한전선" defaultValue={editingPartner?.partnerName} fullWidth />
+            <Input label={t('master.partner.partnerName')} placeholder={t('master.partner.partnerName')} defaultValue={editingPartner?.partnerName} fullWidth />
           </div>
-          <Input label="사업자번호" placeholder="123-45-67890" defaultValue={editingPartner?.bizNo} fullWidth />
-          <Input label="대표자명" placeholder="홍길동" defaultValue={editingPartner?.ceoName} fullWidth />
+          <Input label={t('master.partner.bizNo')} placeholder="123-45-67890" defaultValue={editingPartner?.bizNo} fullWidth />
+          <Input label={t('master.partner.ceoName')} placeholder={t('master.partner.ceoName')} defaultValue={editingPartner?.ceoName} fullWidth />
           <div className="col-span-2">
-            <Input label="주소" placeholder="서울시 강남구..." defaultValue={editingPartner?.address} fullWidth />
+            <Input label={t('master.partner.address')} placeholder={t('master.partner.addressPlaceholder')} defaultValue={editingPartner?.address} fullWidth />
           </div>
-          <Input label="전화번호" placeholder="02-1234-5678" defaultValue={editingPartner?.tel} fullWidth />
-          <Input label="팩스번호" placeholder="02-1234-5679" defaultValue={editingPartner?.fax} fullWidth />
-          <Input label="이메일" placeholder="contact@company.com" defaultValue={editingPartner?.email} fullWidth />
-          <Input label="담당자명" placeholder="김담당" defaultValue={editingPartner?.contactPerson} fullWidth />
+          <Input label={t('master.partner.tel')} placeholder="02-1234-5678" defaultValue={editingPartner?.tel} fullWidth />
+          <Input label={t('master.partner.fax')} placeholder="02-1234-5679" defaultValue={editingPartner?.fax} fullWidth />
+          <Input label={t('master.partner.email')} placeholder="contact@company.com" defaultValue={editingPartner?.email} fullWidth />
+          <Input label={t('master.partner.contactPerson')} placeholder={t('master.partner.contactPerson')} defaultValue={editingPartner?.contactPerson} fullWidth />
           <div className="col-span-2">
-            <Input label="비고" placeholder="메모" defaultValue={editingPartner?.remark} fullWidth />
+            <Input label={t('master.partner.remark')} placeholder={t('master.partner.remarkPlaceholder')} defaultValue={editingPartner?.remark} fullWidth />
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-          <Button>{editingPartner ? '수정' : '추가'}</Button>
+          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+          <Button>{editingPartner ? t('common.edit') : t('common.add')}</Button>
         </div>
       </Modal>
     </div>

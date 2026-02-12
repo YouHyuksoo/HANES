@@ -1,7 +1,7 @@
 {
-  "name": "@hanes/backend",
+  "name": "@harness/backend",
   "version": "0.1.0",
-  "description": "HANES MES Backend API Server",
+  "description": "HARNESS MES Backend API Server",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -30,7 +30,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.0.3",
-    "@hanes/shared": "workspace:*",
+    "@harness/shared": "workspace:*",
     "@prisma/client": "^6.3.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",

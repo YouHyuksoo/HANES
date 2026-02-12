@@ -48,7 +48,7 @@ import {
   IncreaseCountDto,
   RegisterReplacementDto,
 } from '../dto/consumable.dto';
-import { CONSUMABLE_CATEGORY_VALUES } from '@hanes/shared';
+import { CONSUMABLE_CATEGORY_VALUES } from '@harness/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('설비관리 - 소모품(금형/지그/공구)')

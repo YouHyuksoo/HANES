@@ -8,7 +8,7 @@ import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { PartService } from '../services/part.service';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
-import { PART_TYPE_VALUES } from '@hanes/shared';
+import { PART_TYPE_VALUES } from '@harness/shared';
 
 @ApiTags('기준정보 - 품목마스터')
 @Controller('master/parts')

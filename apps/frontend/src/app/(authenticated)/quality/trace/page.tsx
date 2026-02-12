@@ -10,6 +10,7 @@
  * 3. **타임라인**: 공정별 이력을 시간순으로 표시
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Search,
   User,
@@ -230,12 +231,12 @@ function TimelineItemComponent({ item, isLast }: { item: TimelineItem; isLast: b
 // ========================================
 // 4M 탭 컴포넌트
 // ========================================
-function FourMSection({ data, activeTab, setActiveTab }: { data: FourMData; activeTab: string; setActiveTab: (tab: string) => void }) {
+function FourMSection({ data, activeTab, setActiveTab, t }: { data: FourMData; activeTab: string; setActiveTab: (tab: string) => void; t: (key: string) => string }) {
   const tabs = [
-    { id: 'man', label: 'Man (작업자)', icon: User },
-    { id: 'machine', label: 'Machine (설비)', icon: Settings },
-    { id: 'material', label: 'Material (자재)', icon: Package },
-    { id: 'method', label: 'Method (공법)', icon: FileText },
+    { id: 'man', label: t('quality.trace.man'), icon: User },
+    { id: 'machine', label: t('quality.trace.machine'), icon: Settings },
+    { id: 'material', label: t('quality.trace.material'), icon: Package },
+    { id: 'method', label: t('quality.trace.method'), icon: FileText },
   ];
 
   return (
@@ -306,11 +307,11 @@ function FourMSection({ data, activeTab, setActiveTab }: { data: FourMData; acti
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">자재코드</th>
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">자재명</th>
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">LOT번호</th>
-                  <th className="text-right py-2 px-3 text-text-muted font-medium">사용량</th>
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">공급처</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.materialCode')}</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.materialName')}</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.lotNo')}</th>
+                  <th className="text-right py-2 px-3 text-text-muted font-medium">{t('quality.trace.usedQty')}</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.supplier')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -333,11 +334,11 @@ function FourMSection({ data, activeTab, setActiveTab }: { data: FourMData; acti
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">공정</th>
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">검사항목</th>
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">스펙</th>
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">실측값</th>
-                  <th className="text-center py-2 px-3 text-text-muted font-medium">결과</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.processCol')}</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.inspectItem')}</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.spec')}</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t('quality.trace.actualValue')}</th>
+                  <th className="text-center py-2 px-3 text-text-muted font-medium">{t('quality.trace.resultCol')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -371,6 +372,8 @@ function FourMSection({ data, activeTab, setActiveTab }: { data: FourMData; acti
 // 메인 컴포넌트
 // ========================================
 function TracePage() {
+  const { t } = useTranslation();
+
   // 상태 관리
   const [searchValue, setSearchValue] = useState('');
   const [searchedSerial, setSearchedSerial] = useState<string | null>(null);
@@ -400,8 +403,8 @@ function TracePage() {
       {/* 페이지 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><History className="w-7 h-7 text-primary" />추적성조회</h1>
-          <p className="text-text-muted mt-1">시리얼번호 또는 LOT번호로 4M 이력을 조회합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><History className="w-7 h-7 text-primary" />{t('quality.trace.title')}</h1>
+          <p className="text-text-muted mt-1">{t('quality.trace.description')}</p>
         </div>
       </div>
 
@@ -411,7 +414,7 @@ function TracePage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <Input
-                placeholder="시리얼번호 또는 LOT번호를 입력하세요"
+                placeholder={t('quality.trace.searchPlaceholder')}
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -420,17 +423,17 @@ function TracePage() {
               />
             </div>
             <Button onClick={handleSearch}>
-              <Search className="w-4 h-4 mr-1" /> 조회
+              <Search className="w-4 h-4 mr-1" /> {t('common.search')}
             </Button>
             <Button variant="secondary" onClick={handleExampleSearch}>
-              예시 조회
+              {t('quality.trace.exampleSearch')}
             </Button>
           </div>
 
           {/* 최근 검색 */}
           <div className="mt-4 flex items-center gap-2 text-sm">
             <History className="w-4 h-4 text-text-muted" />
-            <span className="text-text-muted">최근 검색:</span>
+            <span className="text-text-muted">{t('quality.trace.recentSearch')}:</span>
             <button
               onClick={() => {
                 setSearchValue('SN-2024011500001');
@@ -450,7 +453,7 @@ function TracePage() {
           <CardContent>
             <div className="text-center py-12">
               <Search className="w-12 h-12 text-text-muted mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-text mb-2">검색 결과가 없습니다</h3>
+              <h3 className="text-lg font-medium text-text mb-2">{t('quality.trace.noResults')}</h3>
               <p className="text-text-muted">
                 "{searchedSerial}"에 대한 이력을 찾을 수 없습니다.
               </p>
@@ -465,33 +468,33 @@ function TracePage() {
           {/* 제품 정보 */}
           <Card>
             <CardHeader
-              title="제품 정보"
-              subtitle="조회된 제품의 기본 정보입니다"
+              title={t('quality.trace.productInfo')}
+              subtitle={t('quality.trace.productInfoSubtitle')}
             />
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
-                  <div className="text-sm text-text-muted mb-1">시리얼번호</div>
+                  <div className="text-sm text-text-muted mb-1">{t('quality.trace.serialNo')}</div>
                   <div className="font-mono font-semibold text-primary">{traceData.serialNo}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-text-muted mb-1">LOT번호</div>
+                  <div className="text-sm text-text-muted mb-1">{t('quality.trace.lotNo')}</div>
                   <div className="font-mono text-text">{traceData.lotNo}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-text-muted mb-1">품번</div>
+                  <div className="text-sm text-text-muted mb-1">{t('quality.trace.partNo')}</div>
                   <div className="text-text">{traceData.partNo}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-text-muted mb-1">품명</div>
+                  <div className="text-sm text-text-muted mb-1">{t('quality.trace.partName')}</div>
                   <div className="text-text">{traceData.partName}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-text-muted mb-1">작업지시번호</div>
+                  <div className="text-sm text-text-muted mb-1">{t('quality.trace.workOrderNo')}</div>
                   <div className="text-text">{traceData.workOrderNo}</div>
                 </div>
                 <div>
-                  <div className="text-sm text-text-muted mb-1">생산일자</div>
+                  <div className="text-sm text-text-muted mb-1">{t('quality.trace.productionDate')}</div>
                   <div className="text-text">{traceData.productionDate}</div>
                 </div>
               </div>
@@ -502,12 +505,12 @@ function TracePage() {
             {/* 공정 타임라인 */}
             <Card>
               <CardHeader
-                title="공정 타임라인"
-                subtitle="제조 공정별 이력"
+                title={t('quality.trace.processTimeline')}
+                subtitle={t('quality.trace.processTimelineSubtitle')}
                 action={
                   <div className="flex items-center gap-1 text-xs text-text-muted">
                     <Clock className="w-4 h-4" />
-                    총 {traceData.timeline.length}개 공정
+                    {t('quality.trace.totalProcesses', { count: traceData.timeline.length })}
                   </div>
                 }
               />
@@ -527,12 +530,12 @@ function TracePage() {
             {/* 4M 정보 */}
             <Card>
               <CardHeader
-                title="4M 이력"
+                title={t('quality.trace.fourMHistory')}
                 subtitle="Man, Machine, Material, Method"
                 action={
                   <div className="flex items-center gap-1 text-xs text-text-muted">
                     <Layers className="w-4 h-4" />
-                    상세 정보
+                    {t('quality.trace.detailInfo')}
                   </div>
                 }
               />
@@ -541,6 +544,7 @@ function TracePage() {
                   data={traceData.fourM}
                   activeTab={activeTab}
                   setActiveTab={setActiveTab}
+                  t={t}
                 />
               </CardContent>
             </Card>
@@ -556,29 +560,29 @@ function TracePage() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-medium text-text mb-2">시리얼번호 또는 LOT번호를 입력하세요</h3>
+              <h3 className="text-lg font-medium text-text mb-2">{t('quality.trace.enterSerialOrLot')}</h3>
               <p className="text-text-muted mb-4">
-                제품의 전체 제조 이력과 4M 정보를 확인할 수 있습니다.
+                {t('quality.trace.canCheckHistory')}
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm">
                 <div className="flex items-center gap-2 text-text-muted">
                   <User className="w-4 h-4" />
-                  <span>Man (작업자)</span>
+                  <span>{t('quality.trace.man')}</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-text-muted" />
                 <div className="flex items-center gap-2 text-text-muted">
                   <Settings className="w-4 h-4" />
-                  <span>Machine (설비)</span>
+                  <span>{t('quality.trace.machine')}</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-text-muted" />
                 <div className="flex items-center gap-2 text-text-muted">
                   <Package className="w-4 h-4" />
-                  <span>Material (자재)</span>
+                  <span>{t('quality.trace.material')}</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-text-muted" />
                 <div className="flex items-center gap-2 text-text-muted">
                   <FileText className="w-4 h-4" />
-                  <span>Method (공법)</span>
+                  <span>{t('quality.trace.method')}</span>
                 </div>
               </div>
             </div>

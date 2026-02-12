@@ -26,7 +26,7 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PROD_RESULT_STATUS_VALUES } from '@hanes/shared';
+import { PROD_RESULT_STATUS_VALUES } from '@harness/shared';
 
 export type ProdResultStatus = typeof PROD_RESULT_STATUS_VALUES[number];
 

@@ -1,4 +1,4 @@
-# HANES MES 페이지 디자인 패턴
+# HARNESS MES 페이지 디자인 패턴
 
 > 기준 페이지: `/master/equip` (EquipMasterPage)
 

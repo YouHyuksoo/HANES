@@ -8,7 +8,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/
 import { PlantService } from '../services/plant.service';
 import { CreatePlantDto, UpdatePlantDto, PlantQueryDto } from '../dto/plant.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
-import { PLANT_TYPE_VALUES } from '@hanes/shared';
+import { PLANT_TYPE_VALUES } from '@harness/shared';
 
 @ApiTags('기준정보 - 공장/라인')
 @Controller('master/plants')

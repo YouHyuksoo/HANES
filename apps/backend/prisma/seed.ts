@@ -23,10 +23,10 @@ async function main() {
 
   // 기본 관리자 계정 시드
   await prisma.user.upsert({
-    where: { email: 'admin@hanes.com' },
+    where: { email: 'admin@harness.com' },
     update: {},
     create: {
-      email: 'admin@hanes.com',
+      email: 'admin@harness.com',
       password: 'admin123',
       name: '관리자',
       empNo: 'ADM001',
@@ -35,7 +35,7 @@ async function main() {
       status: 'ACTIVE',
     },
   });
-  console.log('Admin user seeded: admin@hanes.com / admin123');
+  console.log('Admin user seeded: admin@harness.com / admin123');
 
   console.log('Database seeding completed!');
 }

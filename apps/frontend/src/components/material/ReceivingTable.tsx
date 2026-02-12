@@ -5,6 +5,7 @@
  * @description 입고 대상/이력 테이블 컴포넌트
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PackagePlus } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -18,17 +19,18 @@ interface ReceivingTableProps {
 }
 
 export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps) {
+  const { t } = useTranslation();
   const columns = useMemo<ColumnDef<ReceivingItem>[]>(
     () => [
-      { accessorKey: 'receiveNo', header: '입하번호', size: 160 },
-      { accessorKey: 'arrivalDate', header: '입하일', size: 100 },
-      { accessorKey: 'supplierName', header: '공급업체', size: 100 },
-      { accessorKey: 'partCode', header: '품목코드', size: 110 },
-      { accessorKey: 'partName', header: '품목명', size: 130 },
-      { accessorKey: 'lotNo', header: 'LOT번호', size: 150 },
+      { accessorKey: 'receiveNo', header: t('material.col.arrivalNo'), size: 160 },
+      { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100 },
+      { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100 },
+      { accessorKey: 'partCode', header: t('common.partCode'), size: 110 },
+      { accessorKey: 'partName', header: t('common.partName'), size: 130 },
+      { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150 },
       {
         accessorKey: 'quantity',
-        header: '수량',
+        header: t('common.quantity'),
         size: 100,
         cell: ({ row }) => (
           <span className="font-medium">
@@ -38,24 +40,24 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
       },
       {
         accessorKey: 'iqcPassedAt',
-        header: 'IQC합격일',
+        header: t('material.col.iqcPassedAt'),
         size: 130,
       },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('common.status'),
         size: 100,
         cell: ({ getValue }) => <ReceivingStatusBadge status={getValue() as ReceivingStatus} />,
       },
       {
         accessorKey: 'warehouse',
-        header: '창고',
+        header: t('material.col.warehouse'),
         size: 100,
         cell: ({ getValue }) => <span>{(getValue() as string) || '-'}</span>,
       },
       {
         id: 'actions',
-        header: '입고',
+        header: t('material.col.receiving'),
         size: 70,
         cell: ({ row }) => {
           const item = row.original;
@@ -63,7 +65,7 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
           return (
             <button
               className="p-1 hover:bg-surface rounded"
-              title="입고확정"
+              title={t('material.receive.confirmTitle')}
               disabled={!canConfirm}
               onClick={() => onConfirm(item)}
             >
@@ -75,7 +77,7 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
         },
       },
     ],
-    [onConfirm]
+    [onConfirm, t]
   );
 
   return <DataGrid data={data} columns={columns} pageSize={10} />;

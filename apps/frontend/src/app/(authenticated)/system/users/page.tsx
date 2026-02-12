@@ -10,6 +10,7 @@
  * 3. **ConfirmModal**: 삭제 확인 다이얼로그
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, RefreshCw, Users } from 'lucide-react';
 import { Card, CardHeader, CardContent, Button, Input, Modal, ConfirmModal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -28,32 +29,33 @@ interface User {
   createdAt: string;
 }
 
-const roleOptions = [
-  { value: 'ADMIN', label: '관리자' },
-  { value: 'MANAGER', label: '매니저' },
-  { value: 'OPERATOR', label: '작업자' },
-  { value: 'VIEWER', label: '조회자' },
-];
-
-const statusOptions = [
-  { value: 'ACTIVE', label: '활성' },
-  { value: 'INACTIVE', label: '비활성' },
-];
-
-const roleLabel: Record<string, string> = {
-  ADMIN: '관리자',
-  MANAGER: '매니저',
-  OPERATOR: '작업자',
-  VIEWER: '조회자',
-};
-
 function UserPage() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [search, setSearch] = useState('');
+
+  const roleOptions = useMemo(() => [
+    { value: 'ADMIN', label: t('system.users.roleAdmin') },
+    { value: 'MANAGER', label: t('system.users.roleManager') },
+    { value: 'OPERATOR', label: t('system.users.roleOperator') },
+    { value: 'VIEWER', label: t('system.users.roleViewer') },
+  ], [t]);
+
+  const statusOptions = useMemo(() => [
+    { value: 'ACTIVE', label: t('system.users.statusActive') },
+    { value: 'INACTIVE', label: t('system.users.statusInactive') },
+  ], [t]);
+
+  const roleLabel: Record<string, string> = useMemo(() => ({
+    ADMIN: t('system.users.roleAdmin'),
+    MANAGER: t('system.users.roleManager'),
+    OPERATOR: t('system.users.roleOperator'),
+    VIEWER: t('system.users.roleViewer'),
+  }), [t]);
 
   // 폼 상태
   const [formEmail, setFormEmail] = useState('');
@@ -69,7 +71,8 @@ function UserPage() {
     setLoading(true);
     try {
       const res = await api.get('/users', { params: { search: search || undefined } });
-      setUsers(res.data);
+      const result = res.data?.data ?? res.data;
+      setUsers(Array.isArray(result) ? result : []);
     } catch {
       // 에러 무시
     } finally {
@@ -133,7 +136,7 @@ function UserPage() {
       fetchUsers();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setFormError(error.response?.data?.message || '저장에 실패했습니다.');
+      setFormError(error.response?.data?.message || t('common.saveFailed'));
     }
   };
 
@@ -150,13 +153,13 @@ function UserPage() {
 
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
-      { accessorKey: 'email', header: '이메일', size: 200 },
-      { accessorKey: 'name', header: '이름', size: 100 },
-      { accessorKey: 'empNo', header: '사원번호', size: 100 },
-      { accessorKey: 'dept', header: '부서', size: 100 },
+      { accessorKey: 'email', header: t('system.users.email'), size: 200 },
+      { accessorKey: 'name', header: t('system.users.name'), size: 100 },
+      { accessorKey: 'empNo', header: t('system.users.empNo'), size: 100 },
+      { accessorKey: 'dept', header: t('system.users.dept'), size: 100 },
       {
         accessorKey: 'role',
-        header: '역할',
+        header: t('system.users.role'),
         size: 90,
         cell: ({ getValue }) => {
           const role = getValue() as string;
@@ -175,7 +178,7 @@ function UserPage() {
       },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('system.users.status'),
         size: 80,
         cell: ({ getValue }) => {
           const status = getValue() as string;
@@ -185,14 +188,14 @@ function UserPage() {
                 ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                 : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
             }`}>
-              {status === 'ACTIVE' ? '활성' : '비활성'}
+              {status === 'ACTIVE' ? t('system.users.statusActive') : t('system.users.statusInactive')}
             </span>
           );
         },
       },
       {
         accessorKey: 'lastLogin',
-        header: '최근 로그인',
+        header: t('system.users.lastLogin'),
         size: 150,
         cell: ({ getValue }) => {
           const v = getValue() as string | null;
@@ -201,7 +204,7 @@ function UserPage() {
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.actions'),
         size: 100,
         cell: ({ row }) => (
           <div className="flex gap-1">
@@ -221,7 +224,7 @@ function UserPage() {
         ),
       },
     ],
-    []
+    [t, roleLabel]
   );
 
   return (
@@ -230,30 +233,30 @@ function UserPage() {
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Users className="w-7 h-7 text-primary" />
-            사용자 관리
+            {t('system.users.title')}
           </h1>
-          <p className="text-text-muted mt-1">시스템 사용자를 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('system.users.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Input
-            placeholder="이름/이메일 검색"
+            placeholder={t('system.users.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-48"
           />
           <Button variant="secondary" size="sm" onClick={fetchUsers}>
-            <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
           </Button>
           <Button size="sm" onClick={openCreateModal}>
-            <Plus className="w-4 h-4 mr-1" /> 사용자 추가
+            <Plus className="w-4 h-4 mr-1" /> {t('system.users.addUser')}
           </Button>
         </div>
       </div>
 
       <Card>
         <CardHeader
-          title="사용자 목록"
-          subtitle={`총 ${users.length}명`}
+          title={t('system.users.userList')}
+          subtitle={t('system.users.totalCount', { count: users.length })}
         />
         <CardContent>
           <DataGrid
@@ -261,7 +264,7 @@ function UserPage() {
             columns={columns}
             pageSize={15}
             isLoading={loading}
-            emptyMessage="등록된 사용자가 없습니다."
+            emptyMessage={t('system.users.emptyMessage')}
           />
         </CardContent>
       </Card>
@@ -270,7 +273,7 @@ function UserPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingUser ? '사용자 수정' : '사용자 추가'}
+        title={editingUser ? t('system.users.editUser') : t('system.users.addUser')}
         size="md"
       >
         <div className="space-y-4">
@@ -280,7 +283,7 @@ function UserPage() {
             </div>
           )}
           <Input
-            label="이메일"
+            label={t('system.users.email')}
             type="email"
             value={formEmail}
             onChange={(e) => setFormEmail(e.target.value)}
@@ -289,29 +292,29 @@ function UserPage() {
             required
           />
           <Input
-            label={editingUser ? '비밀번호 (변경 시에만 입력)' : '비밀번호'}
+            label={editingUser ? t('system.users.passwordEdit') : t('system.users.password')}
             type="password"
-            placeholder={editingUser ? '변경하지 않으면 비워두세요' : '4자 이상'}
+            placeholder={editingUser ? t('system.users.passwordEditPlaceholder') : t('auth.passwordPlaceholder')}
             value={formPassword}
             onChange={(e) => setFormPassword(e.target.value)}
             fullWidth
             required={!editingUser}
           />
           <Input
-            label="이름"
+            label={t('system.users.name')}
             value={formName}
             onChange={(e) => setFormName(e.target.value)}
             fullWidth
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="사원번호"
+              label={t('system.users.empNo')}
               value={formEmpNo}
               onChange={(e) => setFormEmpNo(e.target.value)}
               fullWidth
             />
             <Input
-              label="부서"
+              label={t('system.users.dept')}
               value={formDept}
               onChange={(e) => setFormDept(e.target.value)}
               fullWidth
@@ -319,7 +322,7 @@ function UserPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select
-              label="역할"
+              label={t('system.users.role')}
               value={formRole}
               onChange={(value) => setFormRole(value)}
               options={roleOptions}
@@ -327,7 +330,7 @@ function UserPage() {
             />
             {editingUser && (
               <Select
-                label="상태"
+                label={t('system.users.status')}
                 value={formStatus}
                 onChange={(value) => setFormStatus(value)}
                 options={statusOptions}
@@ -337,10 +340,10 @@ function UserPage() {
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              취소
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSubmit}>
-              {editingUser ? '수정' : '추가'}
+              {editingUser ? t('common.edit') : t('common.add')}
             </Button>
           </div>
         </div>
@@ -351,9 +354,9 @@ function UserPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="사용자 삭제"
-        message={`${deleteTarget?.name || deleteTarget?.email} 사용자를 삭제하시겠습니까?`}
-        confirmText="삭제"
+        title={t('system.users.deleteUser')}
+        message={t('system.users.deleteConfirm', { name: deleteTarget?.name || deleteTarget?.email })}
+        confirmText={t('common.delete')}
         variant="danger"
       />
     </div>

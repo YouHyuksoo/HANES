@@ -5,6 +5,7 @@
  * @description 출고반품 모달 컴포넌트
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Modal, Select } from '@/components/ui';
 
 interface IssuingReturnModalProps {
@@ -35,6 +36,7 @@ const consumableOptions = [
 ];
 
 function IssuingReturnModal({ isOpen, onClose, onSubmit }: IssuingReturnModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<ReturnFormValues>(defaultValues);
 
   const handleChange = (field: keyof ReturnFormValues, value: string | number) => {
@@ -53,40 +55,40 @@ function IssuingReturnModal({ isOpen, onClose, onSubmit }: IssuingReturnModalPro
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="출고반품 등록" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('consumables.issuing.returnModalTitle')} size="md">
       <div className="space-y-4">
         <Select
-          label="소모품"
+          label={t('consumables.issuing.consumable')}
           options={consumableOptions}
           value={form.consumableId}
           onChange={(val) => handleChange('consumableId', val)}
           fullWidth
         />
         <Input
-          label="수량"
+          label={t('common.quantity')}
           type="number"
           value={String(form.qty)}
           onChange={(e) => handleChange('qty', Number(e.target.value))}
           fullWidth
         />
         <Input
-          label="반품사유"
+          label={t('consumables.issuing.returnReasonLabel')}
           value={form.returnReason}
           onChange={(e) => handleChange('returnReason', e.target.value)}
-          placeholder="반품사유 입력"
+          placeholder={t('consumables.issuing.returnReasonPlaceholder')}
           fullWidth
         />
         <Input
-          label="비고"
+          label={t('common.remark')}
           value={form.remark}
           onChange={(e) => handleChange('remark', e.target.value)}
-          placeholder="비고 입력"
+          placeholder={t('consumables.issuing.remarkPlaceholder')}
           fullWidth
         />
       </div>
       <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-        <Button variant="secondary" onClick={handleClose}>취소</Button>
-        <Button onClick={handleSubmit}>등록</Button>
+        <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
+        <Button onClick={handleSubmit}>{t('common.register')}</Button>
       </div>
     </Modal>
   );

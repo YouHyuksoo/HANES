@@ -5,6 +5,7 @@
  * @description ERP 인터페이스 이력 조회 페이지
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, Search, Eye, RotateCcw, Download, ArrowDownCircle, ArrowUpCircle, Network } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -93,22 +94,23 @@ const statusColors: Record<string, string> = {
   RETRY: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
 };
 
-const statusLabels: Record<string, string> = {
-  SUCCESS: '성공',
-  FAIL: '실패',
-  PENDING: '대기',
-  RETRY: '재시도',
-};
-
-const messageTypeLabels: Record<string, string> = {
-  JOB_ORDER: '작업지시',
-  PROD_RESULT: '생산실적',
-  BOM_SYNC: 'BOM동기화',
-  PART_SYNC: '품목동기화',
-  STOCK_SYNC: '재고동기화',
-};
-
 function InterfaceLogPage() {
+  const { t } = useTranslation();
+
+  const statusLabels: Record<string, string> = {
+    SUCCESS: t('interface.log.statusSuccess'),
+    FAIL: t('interface.log.statusFail'),
+    PENDING: t('interface.log.statusPending'),
+    RETRY: t('interface.log.statusRetry'),
+  };
+
+  const messageTypeLabels: Record<string, string> = {
+    JOB_ORDER: t('interface.dashboard.msgJobOrder'),
+    PROD_RESULT: t('interface.dashboard.msgProdResult'),
+    BOM_SYNC: t('interface.dashboard.msgBomSync'),
+    PART_SYNC: t('interface.dashboard.msgPartSync'),
+    STOCK_SYNC: t('interface.log.msgStockSync'),
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [directionFilter, setDirectionFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -130,7 +132,7 @@ function InterfaceLogPage() {
     () => [
       {
         accessorKey: 'direction',
-        header: '방향',
+        header: t('interface.log.direction'),
         size: 70,
         cell: ({ getValue }) => {
           const dir = getValue() as string;
@@ -139,12 +141,12 @@ function InterfaceLogPage() {
               {dir === 'IN' ? (
                 <>
                   <ArrowDownCircle className="w-4 h-4 text-blue-500" />
-                  <span className="text-xs">수신</span>
+                  <span className="text-xs">{t('interface.dashboard.inbound')}</span>
                 </>
               ) : (
                 <>
                   <ArrowUpCircle className="w-4 h-4 text-purple-500" />
-                  <span className="text-xs">송신</span>
+                  <span className="text-xs">{t('interface.dashboard.outbound')}</span>
                 </>
               )}
             </div>
@@ -153,14 +155,14 @@ function InterfaceLogPage() {
       },
       {
         accessorKey: 'messageType',
-        header: '메시지유형',
+        header: t('interface.log.messageType'),
         size: 100,
         cell: ({ getValue }) => messageTypeLabels[getValue() as string] || getValue(),
       },
-      { accessorKey: 'interfaceId', header: '인터페이스ID', size: 120 },
+      { accessorKey: 'interfaceId', header: t('interface.log.interfaceId'), size: 120 },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('common.status'),
         size: 80,
         cell: ({ getValue }) => {
           const status = getValue() as string;
@@ -173,7 +175,7 @@ function InterfaceLogPage() {
       },
       {
         accessorKey: 'retryCount',
-        header: '재시도',
+        header: t('interface.log.retryCount'),
         size: 70,
         cell: ({ getValue }) => {
           const count = getValue() as number;
@@ -182,10 +184,10 @@ function InterfaceLogPage() {
           ) : '-';
         },
       },
-      { accessorKey: 'createdAt', header: '생성일시', size: 140 },
+      { accessorKey: 'createdAt', header: t('common.createdAt'), size: 140 },
       {
         accessorKey: 'errorMsg',
-        header: '오류메시지',
+        header: t('interface.log.errorMsg'),
         size: 150,
         cell: ({ getValue }) => {
           const msg = getValue() as string | null;
@@ -196,19 +198,19 @@ function InterfaceLogPage() {
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.manage'),
         size: 100,
         cell: ({ row }) => (
           <div className="flex gap-1">
             <button
               onClick={() => { setSelectedLog(row.original); setIsDetailModalOpen(true); }}
               className="p-1 hover:bg-surface rounded"
-              title="상세보기"
+              title={t('common.detail')}
             >
               <Eye className="w-4 h-4 text-primary" />
             </button>
             {row.original.status === 'FAIL' && (
-              <button className="p-1 hover:bg-surface rounded" title="재시도">
+              <button className="p-1 hover:bg-surface rounded" title={t('interface.log.retry')}>
                 <RotateCcw className="w-4 h-4 text-yellow-500" />
               </button>
             )}
@@ -216,22 +218,22 @@ function InterfaceLogPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Network className="w-7 h-7 text-primary" />인터페이스 이력</h1>
-          <p className="text-text-muted mt-1">ERP 연동 전송 이력을 조회합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Network className="w-7 h-7 text-primary" />{t('interface.log.title')}</h1>
+          <p className="text-text-muted mt-1">{t('interface.log.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <Download className="w-4 h-4 mr-1" /> 엑셀 다운로드
+            <Download className="w-4 h-4 mr-1" /> {t('common.excel')}
           </Button>
           <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
           </Button>
         </div>
       </div>
@@ -240,10 +242,10 @@ function InterfaceLogPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="인터페이스ID, 메시지유형 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('interface.log.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={[{ value: '', label: '전체 방향' }, { value: 'IN', label: '수신 (IN)' }, { value: 'OUT', label: '송신 (OUT)' }]} value={directionFilter} onChange={setDirectionFilter} placeholder="방향" />
-            <Select options={[{ value: '', label: '전체 상태' }, { value: 'SUCCESS', label: '성공' }, { value: 'FAIL', label: '실패' }, { value: 'PENDING', label: '대기' }, { value: 'RETRY', label: '재시도' }]} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <Select options={[{ value: '', label: t('interface.log.allDirections') }, { value: 'IN', label: t('interface.log.directionIn') }, { value: 'OUT', label: t('interface.log.directionOut') }]} value={directionFilter} onChange={setDirectionFilter} placeholder={t('interface.log.direction')} />
+            <Select options={[{ value: '', label: t('common.allStatus') }, { value: 'SUCCESS', label: t('interface.log.statusSuccess') }, { value: 'FAIL', label: t('interface.log.statusFail') }, { value: 'PENDING', label: t('interface.log.statusPending') }, { value: 'RETRY', label: t('interface.log.statusRetry') }]} value={statusFilter} onChange={setStatusFilter} placeholder={t('common.status')} />
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid data={filteredData} columns={columns} pageSize={10} />
@@ -254,65 +256,65 @@ function InterfaceLogPage() {
       <Modal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        title="전송 상세 정보"
+        title={t('interface.log.detailTitle')}
         size="lg"
       >
         {selectedLog && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-text-muted">방향</p>
+                <p className="text-sm text-text-muted">{t('interface.log.direction')}</p>
                 <p className="font-medium text-text flex items-center gap-2">
                   {selectedLog.direction === 'IN' ? (
                     <>
                       <ArrowDownCircle className="w-5 h-5 text-blue-500" />
-                      수신 (ERP → MES)
+                      {t('interface.log.directionInDetail')}
                     </>
                   ) : (
                     <>
                       <ArrowUpCircle className="w-5 h-5 text-purple-500" />
-                      송신 (MES → ERP)
+                      {t('interface.log.directionOutDetail')}
                     </>
                   )}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-text-muted">메시지 유형</p>
+                <p className="text-sm text-text-muted">{t('interface.log.messageType')}</p>
                 <p className="font-medium text-text">{messageTypeLabels[selectedLog.messageType]}</p>
               </div>
               <div>
-                <p className="text-sm text-text-muted">인터페이스 ID</p>
+                <p className="text-sm text-text-muted">{t('interface.log.interfaceId')}</p>
                 <p className="font-medium text-text">{selectedLog.interfaceId}</p>
               </div>
               <div>
-                <p className="text-sm text-text-muted">상태</p>
+                <p className="text-sm text-text-muted">{t('common.status')}</p>
                 <span className={`px-2 py-1 text-xs rounded-full ${statusColors[selectedLog.status]}`}>
                   {statusLabels[selectedLog.status]}
                 </span>
               </div>
               <div>
-                <p className="text-sm text-text-muted">생성일시</p>
+                <p className="text-sm text-text-muted">{t('common.createdAt')}</p>
                 <p className="font-medium text-text">{selectedLog.createdAt}</p>
               </div>
               <div>
-                <p className="text-sm text-text-muted">수신일시</p>
+                <p className="text-sm text-text-muted">{t('interface.log.recvTime')}</p>
                 <p className="font-medium text-text">{selectedLog.recvTime || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-text-muted">재시도 횟수</p>
+                <p className="text-sm text-text-muted">{t('interface.log.retryCount')}</p>
                 <p className="font-medium text-text">{selectedLog.retryCount}회</p>
               </div>
             </div>
 
             {selectedLog.errorMsg && (
               <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                <p className="text-sm font-medium text-red-700 dark:text-red-400">오류 메시지</p>
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">{t('interface.log.errorMsg')}</p>
                 <p className="text-sm text-red-600 dark:text-red-300 mt-1">{selectedLog.errorMsg}</p>
               </div>
             )}
 
             <div className="p-4 bg-surface rounded-lg">
-              <p className="text-sm font-medium text-text mb-2">전문 내용 (Payload)</p>
+              <p className="text-sm font-medium text-text mb-2">{t('interface.log.payload')}</p>
               <pre className="text-xs text-text-muted bg-background p-3 rounded overflow-auto max-h-48">
 {`{
   "interfaceId": "${selectedLog.interfaceId}",
@@ -329,7 +331,7 @@ function InterfaceLogPage() {
             {selectedLog.status === 'FAIL' && (
               <div className="flex justify-end">
                 <Button>
-                  <RotateCcw className="w-4 h-4 mr-1" /> 재시도
+                  <RotateCcw className="w-4 h-4 mr-1" /> {t('interface.log.retry')}
                 </Button>
               </div>
             )}

@@ -47,7 +47,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 /** localStorage 키 */
-const THEME_STORAGE_KEY = "hanes-theme";
+const THEME_STORAGE_KEY = "harness-theme";
 
 /** ThemeProvider Props */
 interface ThemeProviderProps {

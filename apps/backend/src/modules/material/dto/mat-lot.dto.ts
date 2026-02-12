@@ -6,7 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsDateString, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IQC_STATUS_VALUES, MAT_LOT_STATUS_VALUES } from '@hanes/shared';
+import { IQC_STATUS_VALUES, MAT_LOT_STATUS_VALUES } from '@harness/shared';
 
 export class CreateMatLotDto {
   @ApiProperty({ description: 'LOT 번호', example: 'LOT-20260126-001' })

@@ -12,6 +12,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   Package,
@@ -35,171 +36,172 @@ import {
 
 interface MenuItem {
   id: string;
-  label: string;
+  labelKey: string;
   path?: string;
   icon: React.ComponentType<{ className?: string }>;
-  children?: { id: string; label: string; path: string }[];
+  children?: { id: string; labelKey: string; path: string }[];
 }
 
 const menuItems: MenuItem[] = [
   {
     id: "dashboard",
-    label: "대시보드",
-    path: "/",
+    labelKey: "menu.dashboard",
+    path: "/dashboard",
     icon: LayoutDashboard,
   },
   {
     id: "master",
-    label: "기준정보",
+    labelKey: "menu.master",
     icon: Database,
     children: [
-      { id: "mst-part", label: "품목마스터", path: "/master/part" },
-      { id: "mst-bom", label: "BOM관리", path: "/master/bom" },
-      { id: "mst-equip", label: "설비마스터", path: "/master/equip" },
-      { id: "mst-code", label: "코드관리", path: "/master/code" },
-      { id: "mst-partner", label: "거래처관리", path: "/master/partner" },
+      { id: "mst-part", labelKey: "menu.master.part", path: "/master/part" },
+      { id: "mst-bom", labelKey: "menu.master.bom", path: "/master/bom" },
+      { id: "mst-equip", labelKey: "menu.master.equip", path: "/master/equip" },
+      { id: "mst-code", labelKey: "menu.master.code", path: "/master/code" },
+      { id: "mst-partner", labelKey: "menu.master.partner", path: "/master/partner" },
     ],
   },
   {
     id: "inventory",
-    label: "재고관리",
+    labelKey: "menu.inventory",
     icon: Warehouse,
     children: [
-      { id: "inv-warehouse", label: "창고관리", path: "/inventory/warehouse" },
-      { id: "inv-stock", label: "재고현황", path: "/inventory/stock" },
-      { id: "inv-transaction", label: "수불이력", path: "/inventory/transaction" },
-      { id: "inv-lot", label: "LOT관리", path: "/inventory/lot" },
+      { id: "inv-warehouse", labelKey: "menu.inventory.warehouse", path: "/inventory/warehouse" },
+      { id: "inv-stock", labelKey: "menu.inventory.stock", path: "/inventory/stock" },
+      { id: "inv-transaction", labelKey: "menu.inventory.transaction", path: "/inventory/transaction" },
+      { id: "inv-lot", labelKey: "menu.inventory.lot", path: "/inventory/lot" },
     ],
   },
   {
     id: "material",
-    label: "자재관리",
+    labelKey: "menu.material",
     icon: Package,
     children: [
-      { id: "mat-arrival", label: "입하관리", path: "/material/arrival" },
-      { id: "mat-iqc", label: "수입검사(IQC)", path: "/material/iqc" },
-      { id: "mat-receive", label: "입고관리", path: "/material/receive" },
-      { id: "mat-request", label: "출고요청", path: "/material/request" },
-      { id: "mat-issue", label: "출고관리", path: "/material/issue" },
-      { id: "mat-stock", label: "재고현황", path: "/material/stock" },
-      { id: "mat-lot", label: "LOT관리", path: "/material/lot" },
+      { id: "mat-arrival", labelKey: "menu.material.arrival", path: "/material/arrival" },
+      { id: "mat-iqc", labelKey: "menu.material.iqc", path: "/material/iqc" },
+      { id: "mat-receive", labelKey: "menu.material.receive", path: "/material/receive" },
+      { id: "mat-request", labelKey: "menu.material.request", path: "/material/request" },
+      { id: "mat-issue", labelKey: "menu.material.issue", path: "/material/issue" },
+      { id: "mat-stock", labelKey: "menu.material.stock", path: "/material/stock" },
+      { id: "mat-lot", labelKey: "menu.material.lot", path: "/material/lot" },
     ],
   },
   {
     id: "cutting",
-    label: "절단공정",
+    labelKey: "menu.cutting",
     icon: Scissors,
     children: [
-      { id: "cut-order", label: "작업지시", path: "/cutting/order" },
-      { id: "cut-result", label: "작업실적", path: "/cutting/result" },
+      { id: "cut-order", labelKey: "menu.cutting.order", path: "/cutting/order" },
+      { id: "cut-result", labelKey: "menu.cutting.result", path: "/cutting/result" },
     ],
   },
   {
     id: "crimping",
-    label: "압착공정",
+    labelKey: "menu.crimping",
     icon: Plug,
     children: [
-      { id: "crimp-order", label: "작업지시", path: "/crimping/order" },
-      { id: "crimp-result", label: "작업실적", path: "/crimping/result" },
-      { id: "crimp-mold", label: "금형관리", path: "/crimping/mold" },
+      { id: "crimp-order", labelKey: "menu.crimping.order", path: "/crimping/order" },
+      { id: "crimp-result", labelKey: "menu.crimping.result", path: "/crimping/result" },
+      { id: "crimp-mold", labelKey: "menu.crimping.mold", path: "/crimping/mold" },
     ],
   },
   {
     id: "production",
-    label: "생산관리",
+    labelKey: "menu.production",
     icon: Factory,
     children: [
-      { id: "prod-order", label: "작업지시", path: "/production/order" },
-      { id: "prod-result", label: "생산실적", path: "/production/result" },
-      { id: "prod-semi", label: "반제품관리", path: "/production/semi" },
+      { id: "prod-order", labelKey: "menu.production.order", path: "/production/order" },
+      { id: "prod-result", labelKey: "menu.production.result", path: "/production/result" },
+      { id: "prod-semi", labelKey: "menu.production.semi", path: "/production/semi" },
     ],
   },
   {
     id: "inspection",
-    label: "통전검사",
+    labelKey: "menu.inspection",
     icon: ScanLine,
     children: [
-      { id: "insp-result", label: "검사실적", path: "/inspection/result" },
-      { id: "insp-equip", label: "검사기연동", path: "/inspection/equip" },
+      { id: "insp-result", labelKey: "menu.inspection.result", path: "/inspection/result" },
+      { id: "insp-equip", labelKey: "menu.inspection.equip", path: "/inspection/equip" },
     ],
   },
   {
     id: "quality",
-    label: "품질관리",
+    labelKey: "menu.quality",
     icon: Shield,
     children: [
-      { id: "qc-defect", label: "불량관리", path: "/quality/defect" },
-      { id: "qc-inspect", label: "검사관리", path: "/quality/inspect" },
-      { id: "qc-trace", label: "추적성조회", path: "/quality/trace" },
+      { id: "qc-defect", labelKey: "menu.quality.defect", path: "/quality/defect" },
+      { id: "qc-inspect", labelKey: "menu.quality.inspect", path: "/quality/inspect" },
+      { id: "qc-trace", labelKey: "menu.quality.trace", path: "/quality/trace" },
     ],
   },
   {
     id: "equipment",
-    label: "설비관리",
+    labelKey: "menu.equipment",
     icon: Wrench,
     children: [
-      { id: "equip-status", label: "가동현황", path: "/equipment/status" },
-      { id: "equip-pm", label: "예방보전", path: "/equipment/pm" },
+      { id: "equip-status", labelKey: "menu.equipment.status", path: "/equipment/status" },
+      { id: "equip-pm", labelKey: "menu.equipment.pm", path: "/equipment/pm" },
     ],
   },
   {
     id: "shipping",
-    label: "출하관리",
+    labelKey: "menu.shipping",
     icon: Truck,
     children: [
-      { id: "ship-pack", label: "포장관리", path: "/shipping/pack" },
-      { id: "ship-pallet", label: "팔레트적재", path: "/shipping/pallet" },
-      { id: "ship-confirm", label: "출하확정", path: "/shipping/confirm" },
+      { id: "ship-pack", labelKey: "menu.shipping.pack", path: "/shipping/pack" },
+      { id: "ship-pallet", labelKey: "menu.shipping.pallet", path: "/shipping/pallet" },
+      { id: "ship-confirm", labelKey: "menu.shipping.confirm", path: "/shipping/confirm" },
     ],
   },
   {
     id: "customs",
-    label: "보세관리",
+    labelKey: "menu.customs",
     icon: FileBox,
     children: [
-      { id: "cust-entry", label: "수입신고", path: "/customs/entry" },
-      { id: "cust-stock", label: "보세재고", path: "/customs/stock" },
-      { id: "cust-usage", label: "사용신고", path: "/customs/usage" },
+      { id: "cust-entry", labelKey: "menu.customs.entry", path: "/customs/entry" },
+      { id: "cust-stock", labelKey: "menu.customs.stock", path: "/customs/stock" },
+      { id: "cust-usage", labelKey: "menu.customs.usage", path: "/customs/usage" },
     ],
   },
   {
     id: "consumables",
-    label: "소모품관리",
+    labelKey: "menu.consumables",
     icon: Cog,
     children: [
-      { id: "cons-master", label: "소모품마스터", path: "/consumables/master" },
-      { id: "cons-receiving", label: "입고관리", path: "/consumables/receiving" },
-      { id: "cons-issuing", label: "출고관리", path: "/consumables/issuing" },
-      { id: "cons-stock", label: "재고현황", path: "/consumables/stock" },
-      { id: "cons-life", label: "수명현황", path: "/consumables/life" },
+      { id: "cons-master", labelKey: "menu.consumables.master", path: "/consumables/master" },
+      { id: "cons-receiving", labelKey: "menu.consumables.receiving", path: "/consumables/receiving" },
+      { id: "cons-issuing", labelKey: "menu.consumables.issuing", path: "/consumables/issuing" },
+      { id: "cons-stock", labelKey: "menu.consumables.stock", path: "/consumables/stock" },
+      { id: "cons-life", labelKey: "menu.consumables.life", path: "/consumables/life" },
     ],
   },
   {
     id: "outsourcing",
-    label: "외주관리",
+    labelKey: "menu.outsourcing",
     icon: Building2,
     children: [
-      { id: "out-vendor", label: "외주처관리", path: "/outsourcing/vendor" },
-      { id: "out-order", label: "외주발주", path: "/outsourcing/order" },
-      { id: "out-receive", label: "외주입고", path: "/outsourcing/receive" },
+      { id: "out-vendor", labelKey: "menu.outsourcing.vendor", path: "/outsourcing/vendor" },
+      { id: "out-order", labelKey: "menu.outsourcing.order", path: "/outsourcing/order" },
+      { id: "out-receive", labelKey: "menu.outsourcing.receive", path: "/outsourcing/receive" },
     ],
   },
   {
     id: "interface",
-    label: "인터페이스",
+    labelKey: "menu.interface",
     icon: ArrowLeftRight,
     children: [
-      { id: "if-dashboard", label: "ERP연동현황", path: "/interface/dashboard" },
-      { id: "if-log", label: "전송이력", path: "/interface/log" },
-      { id: "if-manual", label: "수동전송", path: "/interface/manual" },
+      { id: "if-dashboard", labelKey: "menu.interface.dashboard", path: "/interface/dashboard" },
+      { id: "if-log", labelKey: "menu.interface.log", path: "/interface/log" },
+      { id: "if-manual", labelKey: "menu.interface.manual", path: "/interface/manual" },
     ],
   },
   {
     id: "system",
-    label: "시스템관리",
+    labelKey: "menu.system",
     icon: UserCog,
     children: [
-      { id: "sys-user", label: "사용자관리", path: "/system/users" },
+      { id: "sys-user", labelKey: "menu.system.users", path: "/system/users" },
+      { id: "sys-comm", labelKey: "menu.system.commConfig", path: "/system/comm-config" },
     ],
   },
 ];
@@ -210,6 +212,7 @@ interface SidebarProps {
 }
 
 function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["dashboard"]);
 
@@ -272,7 +275,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                     `}
                   >
                     <item.icon className="w-5 h-5" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 ) : (
                   /* 하위 메뉴가 있는 경우 */
@@ -293,7 +296,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                     >
                       <div className="flex items-center gap-3">
                         <item.icon className="w-5 h-5" />
-                        {item.label}
+                        {t(item.labelKey)}
                       </div>
                       {expandedMenus.includes(item.id) ? (
                         <ChevronDown className="w-4 h-4" />
@@ -321,7 +324,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 }
                               `}
                             >
-                              {child.label}
+                              {t(child.labelKey)}
                             </Link>
                           </li>
                         ))}

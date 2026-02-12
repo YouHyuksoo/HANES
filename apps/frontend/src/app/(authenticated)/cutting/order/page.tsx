@@ -10,6 +10,7 @@
  * 3. **탈피 길이**: 전선 양 끝의 피복을 벗기는 길이 설정
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play, CheckCircle, Search, RefreshCw, Download, Eye, Scissors, Cable } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -32,8 +33,12 @@ const mockReels: WireReel[] = [
 ];
 
 function OrderPage() {
+  const { t } = useTranslation();
   const comCodeStatusOptions = useComCodeOptions('JOB_ORDER_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+  const statusOptions = useMemo(() => [
+    { value: '', label: t('cutting.order.allStatus') },
+    ...comCodeStatusOptions,
+  ], [t, comCodeStatusOptions]);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchText, setSearchText] = useState('');
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -65,82 +70,80 @@ function OrderPage() {
   };
 
   const columns = useMemo<ColumnDef<CuttingOrder>[]>(() => [
-    { accessorKey: 'orderNo', header: '작업지시번호', size: 140 },
-    { accessorKey: 'orderDate', header: '지시일', size: 100 },
-    { accessorKey: 'wireName', header: '전선명', size: 120 },
-    { accessorKey: 'color', header: '색상', size: 70 },
-    { accessorKey: 'cutLength', header: '절단길이(mm)', size: 100, cell: ({ getValue }) => `${(getValue() as number).toLocaleString()}` },
-    { id: 'strip', header: '탈피(A/B)', size: 90, cell: ({ row }) => `${row.original.stripLengthA}/${row.original.stripLengthB}` },
-    { accessorKey: 'planQty', header: '계획', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'prodQty', header: '실적', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'equipCode', header: '설비', size: 80 },
-    { accessorKey: 'status', header: '상태', size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
-    { id: 'actions', header: '관리', size: 100,
+    { accessorKey: 'orderNo', header: t('cutting.order.orderNo'), size: 140 },
+    { accessorKey: 'orderDate', header: t('cutting.order.orderDate'), size: 100 },
+    { accessorKey: 'wireName', header: t('cutting.order.wireName'), size: 120 },
+    { accessorKey: 'color', header: t('cutting.order.color'), size: 70 },
+    { accessorKey: 'cutLength', header: t('cutting.order.cutLength'), size: 100, cell: ({ getValue }) => `${(getValue() as number).toLocaleString()}` },
+    { id: 'strip', header: t('cutting.order.strip'), size: 90, cell: ({ row }) => `${row.original.stripLengthA}/${row.original.stripLengthB}` },
+    { accessorKey: 'planQty', header: t('cutting.order.plan'), size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'prodQty', header: t('cutting.order.result'), size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'equipCode', header: t('cutting.order.equip'), size: 80 },
+    { accessorKey: 'status', header: t('common.status'), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
+    { id: 'actions', header: t('common.actions'), size: 100,
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsDetailOpen(true); }} className="p-1 hover:bg-surface rounded" title="상세"><Eye className="w-4 h-4 text-text-muted" /></button>
-          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsReelOpen(true); }} className="p-1 hover:bg-surface rounded" title="릴투입"><Cable className="w-4 h-4 text-blue-500" /></button>}
-          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'RUNNING'); }} className="p-1 hover:bg-surface rounded" title="시작"><Play className="w-4 h-4 text-green-500" /></button>}
-          {row.original.status === 'RUNNING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'DONE'); }} className="p-1 hover:bg-surface rounded" title="완료"><CheckCircle className="w-4 h-4 text-blue-500" /></button>}
+          <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsDetailOpen(true); }} className="p-1 hover:bg-surface rounded" title={t('common.detail')}><Eye className="w-4 h-4 text-text-muted" /></button>
+          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsReelOpen(true); }} className="p-1 hover:bg-surface rounded" title={t('cutting.order.reelInput')}><Cable className="w-4 h-4 text-blue-500" /></button>}
+          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'RUNNING'); }} className="p-1 hover:bg-surface rounded"><Play className="w-4 h-4 text-green-500" /></button>}
+          {row.original.status === 'RUNNING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'DONE'); }} className="p-1 hover:bg-surface rounded"><CheckCircle className="w-4 h-4 text-blue-500" /></button>}
         </div>
       ),
     },
-  ], []);
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Scissors className="w-7 h-7 text-primary" />절단 작업지시</h1>
-          <p className="text-text-muted mt-1">전선 절단 작업을 지시하고 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Scissors className="w-7 h-7 text-primary" />{t('cutting.order.title')}</h1>
+          <p className="text-text-muted mt-1">{t('cutting.order.subtitle')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
+        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="지시번호, 전선코드 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('cutting.order.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t('common.status')} />
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid data={filteredOrders} columns={columns} pageSize={10} onRowClick={(row) => { setSelectedOrder(row); setIsDetailOpen(true); }} />
         </CardContent>
       </Card>
 
-      {/* 상세 모달 */}
-      <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title="절단 작업지시 상세" size="md">
+      <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title={t('cutting.order.detailTitle')} size="md">
         {selectedOrder && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 p-4 bg-background rounded-lg">
-              <div><span className="text-sm text-text-muted">작업지시번호</span><p className="font-semibold">{selectedOrder.orderNo}</p></div>
-              <div><span className="text-sm text-text-muted">지시일</span><p className="font-semibold">{selectedOrder.orderDate}</p></div>
-              <div><span className="text-sm text-text-muted">전선명</span><p className="font-semibold">{selectedOrder.wireName}</p></div>
-              <div><span className="text-sm text-text-muted">색상</span><p className="font-semibold">{selectedOrder.color}</p></div>
-              <div><span className="text-sm text-text-muted">절단길이</span><p className="font-semibold">{selectedOrder.cutLength} mm</p></div>
-              <div><span className="text-sm text-text-muted">탈피길이 (A/B)</span><p className="font-semibold">{selectedOrder.stripLengthA} / {selectedOrder.stripLengthB} mm</p></div>
-              <div><span className="text-sm text-text-muted">계획/실적</span><p className="font-semibold">{selectedOrder.planQty.toLocaleString()} / {selectedOrder.prodQty.toLocaleString()}</p></div>
-              <div><span className="text-sm text-text-muted">투입릴</span><p className="font-semibold">{selectedOrder.reelLotNo || '-'}</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.orderNo')}</span><p className="font-semibold">{selectedOrder.orderNo}</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.orderDate')}</span><p className="font-semibold">{selectedOrder.orderDate}</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.wireName')}</span><p className="font-semibold">{selectedOrder.wireName}</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.color')}</span><p className="font-semibold">{selectedOrder.color}</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.cutLength')}</span><p className="font-semibold">{selectedOrder.cutLength} mm</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.stripLength')}</span><p className="font-semibold">{selectedOrder.stripLengthA} / {selectedOrder.stripLengthB} mm</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.planResult')}</span><p className="font-semibold">{selectedOrder.planQty.toLocaleString()} / {selectedOrder.prodQty.toLocaleString()}</p></div>
+              <div><span className="text-sm text-text-muted">{t('cutting.order.inputReel')}</span><p className="font-semibold">{selectedOrder.reelLotNo || '-'}</p></div>
             </div>
-            <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setIsDetailOpen(false)}>닫기</Button></div>
+            <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setIsDetailOpen(false)}>{t('common.close')}</Button></div>
           </div>
         )}
       </Modal>
 
-      {/* 릴 투입 모달 */}
-      <Modal isOpen={isReelOpen} onClose={() => setIsReelOpen(false)} title="전선 릴 투입" size="md">
+      <Modal isOpen={isReelOpen} onClose={() => setIsReelOpen(false)} title={t('cutting.order.reelInput')} size="md">
         <div className="space-y-4">
-          <p className="text-sm text-text-muted">투입할 릴을 선택하세요. (전선: {selectedOrder?.wireName})</p>
+          <p className="text-sm text-text-muted">{t('cutting.order.selectReel')} ({t('cutting.order.wireName')}: {selectedOrder?.wireName})</p>
           {availableReels.length === 0 ? (
-            <div className="p-4 text-center text-text-muted">사용 가능한 릴이 없습니다.</div>
+            <div className="p-4 text-center text-text-muted">{t('cutting.order.noReel')}</div>
           ) : (
             <div className="space-y-2">
               {availableReels.map(reel => (
                 <div key={reel.id} className="p-3 border border-border rounded-lg hover:bg-surface cursor-pointer" onClick={() => handleReelInput(reel.lotNo)}>
                   <div className="flex justify-between"><span className="font-medium">{reel.lotNo}</span><span className="text-sm text-text-muted">{reel.color}</span></div>
-                  <div className="text-sm text-text-muted">잔량: {reel.remainLength}m / {reel.totalLength}m</div>
+                  <div className="text-sm text-text-muted">{t('cutting.order.remain')}: {reel.remainLength}m / {reel.totalLength}m</div>
                 </div>
               ))}
             </div>

@@ -10,6 +10,7 @@
  * 3. **현재고 초과 경고**: 요청수량이 현재고를 넘으면 경고 표시
  */
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Plus, X, AlertTriangle } from 'lucide-react';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import type { StockItem, RequestItem } from '@/hooks/material/useIssueRequestData';
@@ -22,6 +23,7 @@ interface RequestModalProps {
 }
 
 export default function RequestModal({ isOpen, onClose, searchStockItems, workOrderOptions }: RequestModalProps) {
+  const { t } = useTranslation();
   const [workOrderNo, setWorkOrderNo] = useState('');
   const [reason, setReason] = useState('생산투입');
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,10 +31,10 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
   const [requestItems, setRequestItems] = useState<RequestItem[]>([]);
 
   const reasonOptions = [
-    { value: '생산투입', label: '생산투입' },
-    { value: '시작품', label: '시작품' },
-    { value: '샘플', label: '샘플' },
-    { value: '기타', label: '기타' },
+    { value: '생산투입', label: t('material.request.reasonProduction') },
+    { value: '시작품', label: t('material.request.reasonPrototype') },
+    { value: '샘플', label: t('material.request.reasonSample') },
+    { value: '기타', label: t('material.request.reasonOther') },
   ];
 
   const handleSearch = useCallback(() => {
@@ -79,19 +81,19 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
   const canSubmit = workOrderNo && requestItems.length > 0 && requestItems.every((r) => r.requestQty > 0);
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="출고요청" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('material.request.modalTitle')} size="lg">
       <div className="space-y-4">
         {/* 기본 정보 */}
         <div className="grid grid-cols-2 gap-4">
           <Select
-            label="작업지시"
+            label={t('material.col.workOrder')}
             options={workOrderOptions.filter((o) => o.value)}
             value={workOrderNo}
             onChange={setWorkOrderNo}
             fullWidth
           />
           <Select
-            label="요청사유"
+            label={t('material.request.reasonLabel')}
             options={reasonOptions}
             value={reason}
             onChange={setReason}
@@ -101,17 +103,17 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
 
         {/* 품목 검색 */}
         <div>
-          <label className="block text-sm font-medium text-text mb-1">품목 검색</label>
+          <label className="block text-sm font-medium text-text mb-1">{t('material.request.searchLabel')}</label>
           <div className="flex gap-2">
             <Input
-              placeholder="품목코드 또는 품목명 입력..."
+              placeholder={t('material.request.searchPartPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               leftIcon={<Search className="w-4 h-4" />}
               fullWidth
             />
-            <Button variant="secondary" onClick={handleSearch}>검색</Button>
+            <Button variant="secondary" onClick={handleSearch}>{t('common.search')}</Button>
           </div>
         </div>
 
@@ -119,16 +121,16 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
         {searchResults.length > 0 && (
           <div className="border border-border rounded-lg overflow-hidden">
             <div className="bg-background px-3 py-2 text-xs font-medium text-text-muted">
-              검색결과 ({searchResults.length}건)
+              {t('material.request.searchResultCount', { count: searchResults.length })}
             </div>
             <div className="max-h-[160px] overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="bg-background/50">
                   <tr>
-                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">품목코드</th>
-                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">품목명</th>
-                    <th className="text-right px-3 py-1.5 text-text-muted font-medium">현재고</th>
-                    <th className="text-center px-3 py-1.5 text-text-muted font-medium">단위</th>
+                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">{t('common.partCode')}</th>
+                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">{t('common.partName')}</th>
+                    <th className="text-right px-3 py-1.5 text-text-muted font-medium">{t('material.request.currentStock')}</th>
+                    <th className="text-center px-3 py-1.5 text-text-muted font-medium">{t('common.unit')}</th>
                     <th className="text-center px-3 py-1.5 w-12"></th>
                   </tr>
                 </thead>
@@ -146,7 +148,7 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
                             onClick={() => addItem(item)}
                             disabled={alreadyAdded}
                             className={`p-1 rounded ${alreadyAdded ? 'text-text-muted opacity-50' : 'text-primary hover:bg-primary/10'}`}
-                            title={alreadyAdded ? '이미 추가됨' : '요청 목록에 추가'}
+                            title={alreadyAdded ? t('material.request.alreadyAdded') : t('material.request.addToRequest')}
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -164,15 +166,15 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
         {requestItems.length > 0 && (
           <div className="border border-border rounded-lg overflow-hidden">
             <div className="bg-primary/5 px-3 py-2 text-xs font-medium text-primary">
-              요청 품목 ({requestItems.length}건)
+              {t('material.request.requestItemCount', { count: requestItems.length })}
             </div>
             <table className="w-full text-sm">
               <thead className="bg-background/50">
                 <tr>
                   <th className="text-left px-3 py-1.5 text-text-muted font-medium w-8">#</th>
-                  <th className="text-left px-3 py-1.5 text-text-muted font-medium">품목명</th>
-                  <th className="text-right px-3 py-1.5 text-text-muted font-medium">현재고</th>
-                  <th className="text-center px-3 py-1.5 text-text-muted font-medium w-32">요청수량</th>
+                  <th className="text-left px-3 py-1.5 text-text-muted font-medium">{t('common.partName')}</th>
+                  <th className="text-right px-3 py-1.5 text-text-muted font-medium">{t('material.request.currentStock')}</th>
+                  <th className="text-center px-3 py-1.5 text-text-muted font-medium w-32">{t('material.request.requestQtyLabel')}</th>
                   <th className="text-center px-3 py-1.5 w-10"></th>
                 </tr>
               </thead>
@@ -216,9 +218,9 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
 
         {/* 버튼 */}
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
-          <Button variant="secondary" onClick={handleClose}>취소</Button>
+          <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
-            <Plus className="w-4 h-4 mr-1" /> 요청등록
+            <Plus className="w-4 h-4 mr-1" /> {t('material.request.registerRequest')}
           </Button>
         </div>
       </div>

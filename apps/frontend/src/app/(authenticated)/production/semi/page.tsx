@@ -10,6 +10,7 @@
  * 3. **공정 이동**: 다음 공정으로 이동 처리
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   RefreshCw, Search, Package, ArrowRight, Clock, Play, CheckCircle,
@@ -55,11 +56,13 @@ const processLabels: Record<ProcessType, string> = { CUTTING: '절단', CRIMPING
 // 메인 컴포넌트
 // ========================================
 function SemiProductPage() {
+  const { t } = useTranslation();
+
   /** 상태/공정 필터 옵션 (DB 공통코드 기반) */
   const comCodeStatusOptions = useComCodeOptions('SEMI_PRODUCT_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+  const statusOptions = useMemo(() => [{ value: '', label: t('common.allStatus') }, ...comCodeStatusOptions], [t, comCodeStatusOptions]);
   const comCodeProcessOptions = useComCodeOptions('PROCESS_TYPE');
-  const processOptions = [{ value: '', label: '전체 공정' }, ...comCodeProcessOptions];
+  const processOptions = useMemo(() => [{ value: '', label: t('production.semi.allProcesses') }, ...comCodeProcessOptions], [t, comCodeProcessOptions]);
 
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -84,20 +87,20 @@ function SemiProductPage() {
   }), []);
 
   const columns = useMemo<ColumnDef<SemiProduct>[]>(() => [
-    { accessorKey: 'semiCode', header: '반제품코드', size: 110 },
-    { accessorKey: 'partName', header: '품명', size: 140 },
-    { accessorKey: 'workOrderNo', header: '작업지시번호', size: 150 },
-    { accessorKey: 'qty', header: '수량', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'currentProcess', header: '현재공정', size: 80, cell: ({ getValue }) => <span className="px-2 py-1 text-xs rounded bg-surface text-text">{processLabels[getValue() as ProcessType]}</span> },
-    { accessorKey: 'status', header: '상태', size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="SEMI_PRODUCT_STATUS" code={getValue() as string} /> },
-    { accessorKey: 'lotNo', header: 'LOT번호', size: 150, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'updatedAt', header: '최종수정', size: 130 },
-    { id: 'actions', header: '관리', size: 80, cell: ({ row }) => (
-      <button onClick={(e) => { e.stopPropagation(); setSelectedItem(row.original); setIsMoveModalOpen(true); }} className="p-1 hover:bg-surface rounded" title="공정이동" disabled={row.original.status !== 'COMPLETED'}>
+    { accessorKey: 'semiCode', header: t('production.semi.semiCode'), size: 110 },
+    { accessorKey: 'partName', header: t('production.semi.partName'), size: 140 },
+    { accessorKey: 'workOrderNo', header: t('production.semi.workOrderNo'), size: 150 },
+    { accessorKey: 'qty', header: t('production.semi.qty'), size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'currentProcess', header: t('production.semi.currentProcess'), size: 80, cell: ({ getValue }) => <span className="px-2 py-1 text-xs rounded bg-surface text-text">{processLabels[getValue() as ProcessType]}</span> },
+    { accessorKey: 'status', header: t('common.status'), size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="SEMI_PRODUCT_STATUS" code={getValue() as string} /> },
+    { accessorKey: 'lotNo', header: t('production.semi.lotNo'), size: 150, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
+    { accessorKey: 'updatedAt', header: t('production.semi.updatedAt'), size: 130 },
+    { id: 'actions', header: t('common.manage'), size: 80, cell: ({ row }) => (
+      <button onClick={(e) => { e.stopPropagation(); setSelectedItem(row.original); setIsMoveModalOpen(true); }} className="p-1 hover:bg-surface rounded" title={t('production.semi.moveProcess')} disabled={row.original.status !== 'COMPLETED'}>
         <ArrowRight className={`w-4 h-4 ${row.original.status === 'COMPLETED' ? 'text-primary' : 'text-text-muted opacity-50'}`} />
       </button>
     )},
-  ], []);
+  ], [t]);
 
   const handleMove = () => {
     if (selectedItem) console.log(`반제품 ${selectedItem.semiCode} 공정 이동 처리`);
@@ -109,50 +112,50 @@ function SemiProductPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />반제품관리</h1>
-          <p className="text-text-muted mt-1">반제품 현황과 공정 이동을 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />{t('production.semi.title')}</h1>
+          <p className="text-text-muted mt-1">{t('production.semi.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
+        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="전체" value={`${stats.total}건`} icon={Package} color="blue" />
-        <StatCard label="대기" value={`${stats.waiting}건`} icon={Clock} color="gray" />
-        <StatCard label="진행중" value={`${stats.inProgress}건`} icon={Play} color="orange" />
-        <StatCard label="완료" value={`${stats.completed}건`} icon={CheckCircle} color="green" />
+        <StatCard label={t('common.all')} value={`${stats.total}${t('common.count')}`} icon={Package} color="blue" />
+        <StatCard label={t('production.semi.waiting')} value={`${stats.waiting}${t('common.count')}`} icon={Clock} color="gray" />
+        <StatCard label={t('production.semi.inProgress')} value={`${stats.inProgress}${t('common.count')}`} icon={Play} color="orange" />
+        <StatCard label={t('production.semi.completed')} value={`${stats.completed}${t('common.count')}`} icon={CheckCircle} color="green" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]"><Input placeholder="코드 또는 품명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-            <Select options={processOptions} value={processFilter} onChange={setProcessFilter} placeholder="공정" />
-            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <div className="flex-1 min-w-[200px]"><Input placeholder={t('production.semi.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+            <Select options={processOptions} value={processFilter} onChange={setProcessFilter} placeholder={t('production.semi.processCol')} />
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t('common.status')} />
           </div>
           <DataGrid data={filteredData} columns={columns} pageSize={10} />
         </CardContent>
       </Card>
 
-      <Modal isOpen={isMoveModalOpen} onClose={() => setIsMoveModalOpen(false)} title="공정 이동" size="sm">
+      <Modal isOpen={isMoveModalOpen} onClose={() => setIsMoveModalOpen(false)} title={t('production.semi.moveProcess')} size="sm">
         {selectedItem && (
           <div className="space-y-4">
             <div className="p-4 bg-background rounded-lg">
-              <div className="text-sm text-text-muted">선택된 반제품</div>
+              <div className="text-sm text-text-muted">{t('production.semi.selectedSemi')}</div>
               <div className="text-lg font-semibold text-text mt-1">{selectedItem.partName}</div>
-              <div className="text-sm text-text-muted mt-1">{selectedItem.semiCode} | {selectedItem.qty}개</div>
+              <div className="text-sm text-text-muted mt-1">{selectedItem.semiCode} | {selectedItem.qty}{t('common.ea')}</div>
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-text-muted">현재 공정:</span>
+                <span className="text-sm text-text-muted">{t('production.semi.currentProcess')}:</span>
                 <span className="px-2 py-1 text-xs rounded bg-surface text-text">{processLabels[selectedItem.currentProcess]}</span>
               </div>
             </div>
             <div className="flex items-center justify-center gap-2 py-4">
               <span className="px-3 py-2 bg-blue-100 text-blue-700 rounded">{processLabels[selectedItem.currentProcess]}</span>
               <ArrowRight className="w-6 h-6 text-text-muted" />
-              <span className="px-3 py-2 bg-green-100 text-green-700 rounded">다음 공정</span>
+              <span className="px-3 py-2 bg-green-100 text-green-700 rounded">{t('production.semi.nextProcess')}</span>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setIsMoveModalOpen(false)}>취소</Button>
-              <Button onClick={handleMove}><ArrowRight className="w-4 h-4 mr-1" />이동 처리</Button>
+              <Button variant="secondary" onClick={() => setIsMoveModalOpen(false)}>{t('common.cancel')}</Button>
+              <Button onClick={handleMove}><ArrowRight className="w-4 h-4 mr-1" />{t('production.semi.moveAction')}</Button>
             </div>
           </div>
         )}

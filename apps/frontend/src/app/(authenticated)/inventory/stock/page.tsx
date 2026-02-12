@@ -5,6 +5,7 @@
  * @description 재고 현황 페이지 - 창고별/품목별 재고 조회
  */
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Package, RefreshCw, Search, Download, CheckCircle, Layers, Hash } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -37,23 +38,6 @@ interface StockData {
   };
 }
 
-const WAREHOUSE_TYPES = [
-  { value: '', label: '전체' },
-  { value: 'RAW', label: '원자재' },
-  { value: 'WIP', label: '반제품' },
-  { value: 'FG', label: '완제품' },
-  { value: 'FLOOR', label: '공정재공' },
-  { value: 'DEFECT', label: '불량' },
-  { value: 'SCRAP', label: '폐기' },
-];
-
-const PART_TYPES = [
-  { value: '', label: '전체' },
-  { value: 'RAW', label: '원자재' },
-  { value: 'WIP', label: '반제품' },
-  { value: 'FG', label: '완제품' },
-];
-
 const getTypeColor = (type: string) => {
   const colors: Record<string, string> = {
     RAW: 'bg-blue-100 text-blue-800',
@@ -67,8 +51,26 @@ const getTypeColor = (type: string) => {
 };
 
 export default function InventoryStockPage() {
+  const { t } = useTranslation();
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const WAREHOUSE_TYPES = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'RAW', label: t('inventory.stock.raw') },
+    { value: 'WIP', label: t('inventory.stock.wip') },
+    { value: 'FG', label: t('inventory.stock.fg') },
+    { value: 'FLOOR', label: t('inventory.stock.floor') },
+    { value: 'DEFECT', label: t('inventory.stock.defect') },
+    { value: 'SCRAP', label: t('inventory.stock.scrap') },
+  ], [t]);
+
+  const PART_TYPES = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'RAW', label: t('inventory.stock.raw') },
+    { value: 'WIP', label: t('inventory.stock.wip') },
+    { value: 'FG', label: t('inventory.stock.fg') },
+  ], [t]);
 
   // 필터
   const [filters, setFilters] = useState({
@@ -87,7 +89,8 @@ export default function InventoryStockPage() {
       if (filters.includeZero) params.append('includeZero', 'true');
 
       const res = await api.get(`/inventory/stocks?${params.toString()}`);
-      setStocks(res.data);
+      const result = res.data?.data ?? res.data;
+      setStocks(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('재고 조회 실패:', error);
     } finally {
@@ -110,7 +113,7 @@ export default function InventoryStockPage() {
   const columns: ColumnDef<StockData>[] = useMemo(() => [
     {
       accessorKey: 'warehouseType',
-      header: '창고유형',
+      header: t('inventory.stock.warehouseType'),
       size: 100,
       cell: ({ row }) => {
         const type = row.original.warehouse.warehouseType;
@@ -123,49 +126,49 @@ export default function InventoryStockPage() {
     },
     {
       accessorKey: 'warehouseCode',
-      header: '창고코드',
+      header: t('inventory.stock.warehouseCode'),
       size: 120,
       cell: ({ row }) => row.original.warehouse.warehouseCode,
     },
     {
       accessorKey: 'warehouseName',
-      header: '창고명',
+      header: t('inventory.stock.warehouseName'),
       size: 150,
       cell: ({ row }) => row.original.warehouse.warehouseName,
     },
     {
       accessorKey: 'partCode',
-      header: '품목코드',
+      header: t('inventory.stock.partCode'),
       size: 120,
       cell: ({ row }) => row.original.part.partCode,
     },
     {
       accessorKey: 'partName',
-      header: '품목명',
+      header: t('inventory.stock.partName'),
       size: 180,
       cell: ({ row }) => row.original.part.partName,
     },
     {
       accessorKey: 'lotNo',
-      header: 'LOT',
+      header: t('inventory.stock.lot'),
       size: 150,
       cell: ({ row }) => row.original.lot?.lotNo || '-',
     },
     {
       accessorKey: 'qty',
-      header: '현재고',
+      header: t('inventory.stock.currentStock'),
       size: 100,
       cell: ({ row }) => row.original.qty.toLocaleString(),
     },
     {
       accessorKey: 'reservedQty',
-      header: '예약',
+      header: t('inventory.stock.reserved'),
       size: 80,
       cell: ({ row }) => row.original.reservedQty.toLocaleString(),
     },
     {
       accessorKey: 'availableQty',
-      header: '가용',
+      header: t('inventory.stock.available'),
       size: 100,
       cell: ({ row }) => (
         <span className={row.original.availableQty <= 0 ? 'text-red-500 font-semibold' : 'text-green-600 font-semibold'}>
@@ -175,17 +178,17 @@ export default function InventoryStockPage() {
     },
     {
       accessorKey: 'unit',
-      header: '단위',
+      header: t('inventory.stock.unit'),
       size: 60,
       cell: ({ row }) => row.original.part.unit,
     },
     {
       accessorKey: 'lastTransAt',
-      header: '최종수불',
+      header: t('inventory.stock.lastTransaction'),
       size: 150,
       cell: ({ row }) => row.original.lastTransAt ? new Date(row.original.lastTransAt).toLocaleString() : '-',
     },
-  ], []);
+  ], [t]);
 
   // 통계 계산
   const totalStock = stocks.reduce((sum, s) => sum + s.qty, 0);
@@ -198,34 +201,34 @@ export default function InventoryStockPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Package className="w-7 h-7 text-primary" />재고 현황
+            <Package className="w-7 h-7 text-primary" />{t('inventory.stock.title')}
           </h1>
-          <p className="text-text-muted mt-1">창고별/품목별 실시간 재고 현황을 조회합니다.</p>
+          <p className="text-text-muted mt-1">{t('inventory.stock.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
-          <Button variant="secondary" size="sm" onClick={fetchStocks}><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
+          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
+          <Button variant="secondary" size="sm" onClick={fetchStocks}><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="총 재고" value={totalStock} icon={Package} color="blue" />
-        <StatCard label="가용 재고" value={totalAvailable} icon={CheckCircle} color="green" />
-        <StatCard label="품목 수" value={partCount} icon={Layers} color="purple" />
-        <StatCard label="LOT 수" value={lotCount} icon={Hash} color="orange" />
+        <StatCard label={t('inventory.stock.totalStock')} value={totalStock} icon={Package} color="blue" />
+        <StatCard label={t('inventory.stock.availableStock')} value={totalAvailable} icon={CheckCircle} color="green" />
+        <StatCard label={t('inventory.stock.partCount')} value={partCount} icon={Layers} color="purple" />
+        <StatCard label={t('inventory.stock.lotCount')} value={lotCount} icon={Hash} color="orange" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="품목코드 검색..." value={filters.partCode} onChange={(e) => setFilters({ ...filters, partCode: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('inventory.stock.searchPartCode')} value={filters.partCode} onChange={(e) => setFilters({ ...filters, partCode: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={WAREHOUSE_TYPES} value={filters.warehouseType} onChange={(v) => setFilters({ ...filters, warehouseType: v })} placeholder="창고유형" />
-            <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} placeholder="품목유형" />
+            <Select options={WAREHOUSE_TYPES} value={filters.warehouseType} onChange={(v) => setFilters({ ...filters, warehouseType: v })} placeholder={t('inventory.stock.warehouseType')} />
+            <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} placeholder={t('inventory.stock.partType')} />
             <div className="flex items-center gap-2">
               <input type="checkbox" id="includeZero" checked={filters.includeZero} onChange={(e) => setFilters({ ...filters, includeZero: e.target.checked })} />
-              <label htmlFor="includeZero" className="text-sm text-text-muted">재고 0 포함</label>
+              <label htmlFor="includeZero" className="text-sm text-text-muted">{t('common.includeZero')}</label>
             </div>
             <Button variant="secondary" onClick={fetchStocks}><RefreshCw className="w-4 h-4" /></Button>
           </div>
@@ -234,7 +237,7 @@ export default function InventoryStockPage() {
             columns={columns}
             isLoading={loading}
             pageSize={10}
-            emptyMessage="재고 데이터가 없습니다."
+            emptyMessage={t('inventory.stock.emptyMessage')}
           />
         </CardContent>
       </Card>

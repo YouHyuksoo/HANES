@@ -3,7 +3,7 @@
  * @description 공유 타입 정의 모음
  *
  * 초보자 가이드:
- * 1. **사용법**: import { JobOrder, MatLot } from '@hanes/shared/types'
+ * 1. **사용법**: import { JobOrder, MatLot } from '@harness/shared/types'
  * 2. **구조**: 도메인별로 파일 분리 (master, production, material 등)
  */
 

@@ -10,6 +10,7 @@
  * 3. **처리 완료**: 출고 수량이 요청 수량에 도달하면 완료
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle } from 'lucide-react';
 import { Modal, Button, Input } from '@/components/ui';
 import type { IssueRecord } from '@/hooks/material/useIssueData';
@@ -21,6 +22,7 @@ interface IssueProcessModalProps {
 }
 
 export default function IssueProcessModal({ isOpen, onClose, record }: IssueProcessModalProps) {
+  const { t } = useTranslation();
   const [issueQty, setIssueQty] = useState('');
 
   const handleSubmit = () => {
@@ -39,31 +41,31 @@ export default function IssueProcessModal({ isOpen, onClose, record }: IssueProc
   const remaining = record.requestQty - record.issuedQty;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="출고처리" size="sm">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('material.issue.modalTitle')} size="sm">
       <div className="space-y-4">
         <div className="p-3 bg-background rounded-lg space-y-1">
           <p className="text-sm text-text-muted">
-            요청번호: <span className="font-medium text-text">{record.requestNo}</span>
+            {t('material.issue.requestNoLabel')}: <span className="font-medium text-text">{record.requestNo}</span>
           </p>
           <p className="text-sm text-text-muted">
-            작업지시: <span className="font-medium text-primary">{record.workOrderNo}</span>
+            {t('material.issue.workOrderLabel')}: <span className="font-medium text-primary">{record.workOrderNo}</span>
           </p>
           <p className="text-sm text-text-muted">
-            품목: <span className="font-medium text-text">{record.partName} ({record.partCode})</span>
+            {t('material.issue.partLabel')}: <span className="font-medium text-text">{record.partName} ({record.partCode})</span>
           </p>
           <p className="text-sm text-text-muted">
-            요청수량: <span className="font-medium text-text">{record.requestQty.toLocaleString()} {record.unit}</span>
+            {t('material.issue.requestQtyLabel')}: <span className="font-medium text-text">{record.requestQty.toLocaleString()} {record.unit}</span>
           </p>
           <p className="text-sm text-text-muted">
-            기출고: <span className="font-medium text-text">{record.issuedQty.toLocaleString()} {record.unit}</span>
+            {t('material.issue.issuedLabel')}: <span className="font-medium text-text">{record.issuedQty.toLocaleString()} {record.unit}</span>
           </p>
           <p className="text-sm text-text-muted">
-            잔여: <span className="font-bold text-primary">{remaining.toLocaleString()} {record.unit}</span>
+            {t('material.issue.remainingLabel')}: <span className="font-bold text-primary">{remaining.toLocaleString()} {record.unit}</span>
           </p>
         </div>
 
         <Input
-          label="출고수량"
+          label={t('material.issue.issueQtyLabel')}
           type="number"
           placeholder="0"
           value={issueQty}
@@ -71,16 +73,16 @@ export default function IssueProcessModal({ isOpen, onClose, record }: IssueProc
           fullWidth
         />
         {Number(issueQty) > remaining && (
-          <p className="text-xs text-red-500">잔여 수량({remaining.toLocaleString()})을 초과할 수 없습니다.</p>
+          <p className="text-xs text-red-500">{t('material.issue.remainExceedError', { remaining: remaining.toLocaleString() })}</p>
         )}
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
-          <Button variant="secondary" onClick={handleClose}>취소</Button>
+          <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
           <Button
             onClick={handleSubmit}
             disabled={!issueQty || Number(issueQty) <= 0 || Number(issueQty) > remaining}
           >
-            <CheckCircle className="w-4 h-4 mr-1" /> 출고
+            <CheckCircle className="w-4 h-4 mr-1" /> {t('material.issue.issueAction')}
           </Button>
         </div>
       </div>

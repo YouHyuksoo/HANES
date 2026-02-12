@@ -10,6 +10,7 @@
  * 3. **LOT 추적**: 어떤 릴에서 절단되었는지 추적 가능
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Download, Calendar, Scissors, Package, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -24,17 +25,18 @@ const mockResults: CuttingResult[] = [
   { id: '4', resultNo: 'CR-20250124-002', orderNo: 'CT-20250124-002', workDate: '2025-01-24', wireCode: 'W-002', wireName: 'AVS 0.85sq', cutLength: 800, stripLengthA: 4, stripLengthB: 4, goodQty: 1495, defectQty: 5, equipCode: 'CUT-002', workerName: '김절단', reelLotNo: 'REEL-20250120-002', startTime: '13:00', endTime: '18:00' },
 ];
 
-const equipOptions = [
-  { value: '', label: '전체 설비' },
-  { value: 'CUT-001', label: 'CUT-001' },
-  { value: 'CUT-002', label: 'CUT-002' },
-];
-
 function ResultPage() {
+  const { t } = useTranslation();
   const [equipFilter, setEquipFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchText, setSearchText] = useState('');
+
+  const equipOptions = useMemo(() => [
+    { value: '', label: t('cutting.result.allEquip') },
+    { value: 'CUT-001', label: 'CUT-001' },
+    { value: 'CUT-002', label: 'CUT-002' },
+  ], [t]);
 
   const filteredResults = useMemo(() => {
     return mockResults.filter((r) => {
@@ -58,44 +60,43 @@ function ResultPage() {
   }, [filteredResults]);
 
   const columns = useMemo<ColumnDef<CuttingResult>[]>(() => [
-    { accessorKey: 'resultNo', header: '실적번호', size: 140 },
-    { accessorKey: 'workDate', header: '작업일', size: 100 },
-    { accessorKey: 'orderNo', header: '작업지시', size: 140 },
-    { accessorKey: 'wireName', header: '전선명', size: 110 },
-    { accessorKey: 'cutLength', header: '절단(mm)', size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { id: 'strip', header: '탈피(A/B)', size: 90, cell: ({ row }) => `${row.original.stripLengthA}/${row.original.stripLengthB}` },
-    { accessorKey: 'goodQty', header: '양품', size: 70, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'defectQty', header: '불량', size: 70, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'reelLotNo', header: '릴LOT', size: 140 },
-    { accessorKey: 'workerName', header: '작업자', size: 80 },
-    { id: 'time', header: '작업시간', size: 110, cell: ({ row }) => <span className="text-text-muted">{row.original.startTime}~{row.original.endTime}</span> },
-  ], []);
+    { accessorKey: 'resultNo', header: t('cutting.result.resultNo'), size: 140 },
+    { accessorKey: 'workDate', header: t('cutting.result.workDate'), size: 100 },
+    { accessorKey: 'orderNo', header: t('cutting.result.orderNo'), size: 140 },
+    { accessorKey: 'wireName', header: t('cutting.result.wireName'), size: 110 },
+    { accessorKey: 'cutLength', header: t('cutting.result.cutLength'), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { id: 'strip', header: t('cutting.result.strip'), size: 90, cell: ({ row }) => `${row.original.stripLengthA}/${row.original.stripLengthB}` },
+    { accessorKey: 'goodQty', header: t('cutting.result.goodQty'), size: 70, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'defectQty', header: t('cutting.result.defectQty'), size: 70, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'reelLotNo', header: t('cutting.result.reelLot'), size: 140 },
+    { accessorKey: 'workerName', header: t('cutting.result.worker'), size: 80 },
+    { id: 'time', header: t('cutting.result.workTime'), size: 110, cell: ({ row }) => <span className="text-text-muted">{row.original.startTime}~{row.original.endTime}</span> },
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Scissors className="w-7 h-7 text-primary" />절단 작업실적</h1>
-          <p className="text-text-muted mt-1">절단 작업 실적을 조회합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Scissors className="w-7 h-7 text-primary" />{t('cutting.result.title')}</h1>
+          <p className="text-text-muted mt-1">{t('cutting.result.subtitle')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
+        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
       </div>
 
-      {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="총 생산" value={stats.totalQty} icon={Package} color="blue" />
-        <StatCard label="양품" value={stats.totalGood} icon={CheckCircle} color="green" />
-        <StatCard label="불량" value={stats.totalDefect} icon={XCircle} color="red" />
-        <StatCard label="불량률" value={`${stats.defectRate}%`} icon={Clock} color="purple" />
+        <StatCard label={t('cutting.result.totalProd')} value={stats.totalQty} icon={Package} color="blue" />
+        <StatCard label={t('cutting.result.goodQty')} value={stats.totalGood} icon={CheckCircle} color="green" />
+        <StatCard label={t('cutting.result.defectQty')} value={stats.totalDefect} icon={XCircle} color="red" />
+        <StatCard label={t('cutting.result.defectRate')} value={`${stats.defectRate}%`} icon={Clock} color="purple" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="실적번호, 지시번호, 릴LOT 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('cutting.result.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={equipOptions} value={equipFilter} onChange={setEquipFilter} placeholder="설비" />
+            <Select options={equipOptions} value={equipFilter} onChange={setEquipFilter} placeholder={t('cutting.order.equip')} />
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-text-muted" />
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-36" />

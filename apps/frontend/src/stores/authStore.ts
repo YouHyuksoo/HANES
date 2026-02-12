@@ -3,7 +3,7 @@
  * @description Zustand 기반 인증 상태 관리 스토어
  *
  * 초보자 가이드:
- * 1. **persist**: localStorage에 인증 정보 저장 (hanes-auth)
+ * 1. **persist**: localStorage에 인증 정보 저장 (harness-auth)
  * 2. **login**: POST /auth/login → 토큰+사용자 저장
  * 3. **logout**: 토큰+사용자 제거 → 로그인 페이지 이동
  * 4. **fetchMe**: GET /auth/me → 토큰 유효성 검증 및 사용자 갱신
@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
           const res = await api.post("/auth/login", { email, password });
           const { token, user } = res.data;
 
-          localStorage.setItem("hanes-token", token);
+          localStorage.setItem("harness-token", token);
 
           set({
             user,
@@ -74,7 +74,7 @@ export const useAuthStore = create<AuthState>()(
           const res = await api.post("/auth/register", data);
           const { token, user } = res.data;
 
-          localStorage.setItem("hanes-token", token);
+          localStorage.setItem("harness-token", token);
 
           set({
             user,
@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem("hanes-token");
+        localStorage.removeItem("harness-token");
         set({
           user: null,
           token: null,
@@ -111,7 +111,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
           });
         } catch {
-          localStorage.removeItem("hanes-token");
+          localStorage.removeItem("harness-token");
           set({
             user: null,
             token: null,
@@ -121,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "hanes-auth",
+      name: "harness-auth",
       partialize: (state) => ({
         user: state.user,
         token: state.token,

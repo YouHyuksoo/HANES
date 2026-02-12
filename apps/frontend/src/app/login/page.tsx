@@ -11,15 +11,19 @@
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { LogIn, UserPlus, Factory } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { Button, Input } from '@/components/ui';
 import { AxiosError } from 'axios';
+import LoginBranding from './components/LoginBranding';
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
 
 type TabType = 'login' | 'register';
 
 function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { login, register, isLoading } = useAuthStore();
   const [tab, setTab] = useState<TabType>('login');
   const [error, setError] = useState('');
@@ -40,10 +44,10 @@ function LoginPage() {
     setError('');
     try {
       await login(loginEmail, loginPassword);
-      router.replace('/');
+      router.replace('/dashboard');
     } catch (err) {
       const axiosErr = err as AxiosError<{ message: string }>;
-      setError(axiosErr.response?.data?.message || '로그인에 실패했습니다.');
+      setError(axiosErr.response?.data?.message || t('auth.loginFailed'));
     }
   };
 
@@ -58,34 +62,17 @@ function LoginPage() {
         empNo: regEmpNo || undefined,
         dept: regDept || undefined,
       });
-      router.replace('/');
+      router.replace('/dashboard');
     } catch (err) {
       const axiosErr = err as AxiosError<{ message: string }>;
-      setError(axiosErr.response?.data?.message || '회원가입에 실패했습니다.');
+      setError(axiosErr.response?.data?.message || t('auth.registerFailed'));
     }
   };
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* 좌측 - 브랜딩 영역 */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary relative flex-col justify-center items-center p-12">
-        <div className="text-center text-white">
-          <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Factory className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold mb-4">HANES MES</h1>
-          <p className="text-lg text-white/80 max-w-md">
-            Manufacturing Execution System
-          </p>
-          <p className="text-sm text-white/60 mt-2">
-            생산 현장의 실시간 관리 솔루션
-          </p>
-        </div>
-        {/* 배경 장식 */}
-        <div className="absolute top-10 left-10 w-32 h-32 border border-white/10 rounded-full" />
-        <div className="absolute bottom-20 right-10 w-48 h-48 border border-white/10 rounded-full" />
-        <div className="absolute top-1/3 right-20 w-16 h-16 bg-white/5 rounded-lg rotate-45" />
-      </div>
+      {/* 좌측 - 애니메이션 브랜딩 영역 */}
+      <LoginBranding />
 
       {/* 우측 - 폼 영역 */}
       <div className="flex-1 flex items-center justify-center p-8">
@@ -95,11 +82,11 @@ function LoginPage() {
             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mx-auto mb-3">
               <Factory className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-text">HANES MES</h1>
+            <h1 className="text-2xl font-bold text-text">HARNESS MES</h1>
           </div>
 
-          {/* 탭 전환 */}
-          <div className="flex border-b border-border mb-8">
+          {/* 탭 전환 + 언어 선택 */}
+          <div className="flex items-center border-b border-border mb-8">
             <button
               onClick={() => { setTab('login'); setError(''); }}
               className={`flex-1 pb-3 text-sm font-medium border-b-2 transition-colors ${
@@ -109,7 +96,7 @@ function LoginPage() {
               }`}
             >
               <LogIn className="w-4 h-4 inline mr-2" />
-              로그인
+              {t('auth.login')}
             </button>
             <button
               onClick={() => { setTab('register'); setError(''); }}
@@ -120,8 +107,11 @@ function LoginPage() {
               }`}
             >
               <UserPlus className="w-4 h-4 inline mr-2" />
-              회원가입
+              {t('auth.register')}
             </button>
+            <div className="ml-auto pb-2">
+              <LanguageSwitcher />
+            </div>
           </div>
 
           {/* 에러 메시지 */}
@@ -134,22 +124,22 @@ function LoginPage() {
           {/* 로그인 폼 */}
           {tab === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
-              <h2 className="text-xl font-semibold text-text mb-2">로그인</h2>
-              <p className="text-sm text-text-muted mb-6">이메일과 비밀번호를 입력하세요.</p>
+              <h2 className="text-xl font-semibold text-text mb-2">{t('auth.loginTitle')}</h2>
+              <p className="text-sm text-text-muted mb-6">{t('auth.loginDesc')}</p>
 
               <Input
-                label="이메일"
+                label={t('auth.email')}
                 type="email"
-                placeholder="admin@hanes.com"
+                placeholder="admin@harness.com"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 fullWidth
                 required
               />
               <Input
-                label="비밀번호"
+                label={t('auth.password')}
                 type="password"
-                placeholder="비밀번호"
+                placeholder={t('auth.password')}
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 fullWidth
@@ -161,7 +151,7 @@ function LoginPage() {
                 isLoading={isLoading}
                 className="w-full mt-6"
               >
-                로그인
+                {t('auth.login')}
               </Button>
             </form>
           )}
@@ -169,44 +159,44 @@ function LoginPage() {
           {/* 회원가입 폼 */}
           {tab === 'register' && (
             <form onSubmit={handleRegister} className="space-y-4">
-              <h2 className="text-xl font-semibold text-text mb-2">회원가입</h2>
-              <p className="text-sm text-text-muted mb-6">새 계정을 만들어주세요.</p>
+              <h2 className="text-xl font-semibold text-text mb-2">{t('auth.registerTitle')}</h2>
+              <p className="text-sm text-text-muted mb-6">{t('auth.registerDesc')}</p>
 
               <Input
-                label="이메일 *"
+                label={t('auth.emailRequired')}
                 type="email"
-                placeholder="user@hanes.com"
+                placeholder="user@harness.com"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
                 fullWidth
                 required
               />
               <Input
-                label="비밀번호 *"
+                label={t('auth.passwordRequired')}
                 type="password"
-                placeholder="4자 이상"
+                placeholder={t('auth.passwordPlaceholder')}
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
                 fullWidth
                 required
               />
               <Input
-                label="이름"
-                placeholder="홍길동"
+                label={t('auth.name')}
+                placeholder={t('auth.name')}
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
                 fullWidth
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="사원번호"
+                  label={t('auth.empNo')}
                   placeholder="EMP001"
                   value={regEmpNo}
                   onChange={(e) => setRegEmpNo(e.target.value)}
                   fullWidth
                 />
                 <Input
-                  label="부서"
+                  label={t('auth.dept')}
                   placeholder="생산팀"
                   value={regDept}
                   onChange={(e) => setRegDept(e.target.value)}
@@ -219,7 +209,7 @@ function LoginPage() {
                 isLoading={isLoading}
                 className="w-full mt-6"
               >
-                회원가입
+                {t('auth.register')}
               </Button>
             </form>
           )}

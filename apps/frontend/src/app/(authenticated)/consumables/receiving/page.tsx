@@ -10,6 +10,7 @@
  * 3. **통계카드**: 금일 입고건수, 입고금액, 반품건수 표시
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, RefreshCw, Search, ArrowDownCircle, DollarSign, Undo2, PackagePlus } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import ReceivingTable from '@/components/consumables/ReceivingTable';
@@ -18,6 +19,7 @@ import ReceivingReturnModal from '@/components/consumables/ReceivingReturnModal'
 import { useReceivingData } from '@/hooks/consumables/useReceivingData';
 
 function ReceivingPage() {
+  const { t } = useTranslation();
   const [isReceivingModalOpen, setIsReceivingModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const {
@@ -40,28 +42,28 @@ function ReceivingPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <PackagePlus className="w-7 h-7 text-primary" />입고관리
+            <PackagePlus className="w-7 h-7 text-primary" />{t('consumables.receiving.title')}
           </h1>
-          <p className="text-text-muted mt-1">소모품 입고 및 입고반품을 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('consumables.receiving.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={refresh}>
-            <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setIsReturnModalOpen(true)}>
-            <Undo2 className="w-4 h-4 mr-1" /> 입고반품
+            <Undo2 className="w-4 h-4 mr-1" /> {t('consumables.receiving.returnReceiving')}
           </Button>
           <Button size="sm" onClick={() => setIsReceivingModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> 입고등록
+            <Plus className="w-4 h-4 mr-1" /> {t('consumables.receiving.register')}
           </Button>
         </div>
       </div>
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="금일 입고건수" value={todayStats.inCount} icon={ArrowDownCircle} color="green" />
-        <StatCard label="금일 입고금액" value={todayStats.inAmount.toLocaleString() + '원'} icon={DollarSign} color="blue" />
-        <StatCard label="금일 반품건수" value={todayStats.returnCount} icon={Undo2} color="orange" />
+        <StatCard label={t('consumables.receiving.todayInCount')} value={todayStats.inCount} icon={ArrowDownCircle} color="green" />
+        <StatCard label={t('consumables.receiving.todayInAmount')} value={todayStats.inAmount.toLocaleString() + t('common.won')} icon={DollarSign} color="blue" />
+        <StatCard label={t('consumables.receiving.todayReturnCount')} value={todayStats.returnCount} icon={Undo2} color="orange" />
       </div>
 
       {/* 필터 + 테이블 */}
@@ -70,7 +72,7 @@ function ReceivingPage() {
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
               <Input
-                placeholder="소모품코드, 명칭 검색..."
+                placeholder={t('consumables.receiving.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />}
@@ -79,9 +81,9 @@ function ReceivingPage() {
             </div>
             <Select
               options={[
-                { value: '', label: '전체 유형' },
-                { value: 'IN', label: '입고' },
-                { value: 'IN_RETURN', label: '입고반품' },
+                { value: '', label: t('consumables.receiving.allTypes') },
+                { value: 'IN', label: t('consumables.receiving.typeIn') },
+                { value: 'IN_RETURN', label: t('consumables.receiving.typeInReturn') },
               ]}
               value={typeFilter}
               onChange={setTypeFilter}

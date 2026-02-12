@@ -29,7 +29,7 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SHIPMENT_STATUS_VALUES, USE_YN_VALUES } from '@hanes/shared';
+import { SHIPMENT_STATUS_VALUES, USE_YN_VALUES } from '@harness/shared';
 
 export type ShipmentStatus = typeof SHIPMENT_STATUS_VALUES[number];
 

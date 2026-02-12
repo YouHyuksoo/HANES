@@ -6,7 +6,7 @@ import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-vali
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
-  @ApiProperty({ description: '이메일', example: 'admin@hanes.com' })
+  @ApiProperty({ description: '이메일', example: 'admin@harness.com' })
   @IsEmail({}, { message: '올바른 이메일 형식이 아닙니다.' })
   @IsNotEmpty({ message: '이메일을 입력해주세요.' })
   email: string;
@@ -18,7 +18,7 @@ export class LoginDto {
 }
 
 export class RegisterDto {
-  @ApiProperty({ description: '이메일', example: 'user@hanes.com' })
+  @ApiProperty({ description: '이메일', example: 'user@harness.com' })
   @IsEmail({}, { message: '올바른 이메일 형식이 아닙니다.' })
   @IsNotEmpty({ message: '이메일을 입력해주세요.' })
   email: string;

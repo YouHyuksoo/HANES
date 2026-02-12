@@ -29,7 +29,7 @@ export {
   RegisterReplacementDto,
 } from './dto/consumable.dto';
 
-// Constants and Types from @hanes/shared
+// Constants and Types from @harness/shared
 export {
   EQUIP_STATUS_VALUES,
   EQUIP_TYPE_VALUES,
@@ -43,15 +43,15 @@ export {
   type ConsumableCategoryValue,
   type ConsumableStatusValue,
   type ConsumableLogTypeValue,
-} from '@hanes/shared';
+} from '@harness/shared';
 
 // Type aliases for backward compatibility
-export type EquipStatus = import('@hanes/shared').EquipStatusValue;
-export type EquipType = import('@hanes/shared').EquipTypeValue;
-export type CommType = import('@hanes/shared').CommTypeValue;
-export type ConsumableCategory = import('@hanes/shared').ConsumableCategoryValue;
-export type ConsumableStatus = import('@hanes/shared').ConsumableStatusValue;
-export type ConsumableLogType = import('@hanes/shared').ConsumableLogTypeValue;
+export type EquipStatus = import('@harness/shared').EquipStatusValue;
+export type EquipType = import('@harness/shared').EquipTypeValue;
+export type CommType = import('@harness/shared').CommTypeValue;
+export type ConsumableCategory = import('@harness/shared').ConsumableCategoryValue;
+export type ConsumableStatus = import('@harness/shared').ConsumableStatusValue;
+export type ConsumableLogType = import('@harness/shared').ConsumableLogTypeValue;
 
 // Services
 export { EquipMasterService } from './services/equip-master.service';

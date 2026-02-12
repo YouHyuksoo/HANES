@@ -15,8 +15,8 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "HANES MES",
-  description: "HANES Manufacturing Execution System",
+  title: "HARNESS MES",
+  description: "HARNESS Manufacturing Execution System",
 };
 
 export default function RootLayout({

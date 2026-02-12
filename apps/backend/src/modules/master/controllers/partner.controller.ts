@@ -8,7 +8,7 @@ import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { PartnerService } from '../services/partner.service';
 import { CreatePartnerDto, UpdatePartnerDto, PartnerQueryDto } from '../dto/partner.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
-import { PARTNER_TYPE_VALUES } from '@hanes/shared';
+import { PARTNER_TYPE_VALUES } from '@harness/shared';
 
 @ApiTags('기준정보 - 거래처마스터')
 @Controller('master/partners')

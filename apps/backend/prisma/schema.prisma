@@ -1,6 +1,6 @@
 /**
  * @file prisma/schema.prisma
- * @description HANES MES 시스템의 Prisma 데이터베이스 스키마
+ * @description HARNESS MES 시스템의 Prisma 데이터베이스 스키마
  *
  * 초보자 가이드:
  * 1. **스키마 변경 후**: pnpm db:generate 실행 필수
@@ -1047,6 +1047,40 @@ model SubconReceive {
   @@index([orderId])
   @@index([receiveDate])
   @@map("subcon_receives")
+}
+
+/// 통신설정 테이블 - 시리얼/TCP/MQTT/OPC-UA/Modbus 통신 설정 관리
+model CommConfig {
+  id          String    @id @default(cuid())
+  configName  String    @unique @map("config_name")   // 설정 이름 (예: "절단기1호 시리얼")
+  commType    String    @map("comm_type")              // SERIAL, TCP, MQTT, OPC_UA, MODBUS
+  description String?                                  // 설명
+
+  // 공통 연결 정보
+  host        String?                                  // IP/호스트
+  port        Int?                                     // 포트 번호
+
+  // 시리얼 전용
+  portName    String?   @map("port_name")              // COM1, COM2 등
+  baudRate    Int?      @map("baud_rate")              // 9600, 19200, 38400, 57600, 115200
+  dataBits    Int?      @map("data_bits")              // 7, 8
+  stopBits    String?   @map("stop_bits")              // 1, 1.5, 2
+  parity      String?                                  // NONE, EVEN, ODD
+  flowControl String?   @map("flow_control")           // NONE, XONXOFF, RTSCTS
+
+  // 프로토콜별 추가 설정 (JSON)
+  extraConfig Json?     @map("extra_config")
+  // MQTT: { brokerUrl, topic, clientId, qos, username, password }
+  // OPC_UA: { endpointUrl, securityMode, securityPolicy }
+  // MODBUS: { slaveId, registerType, startAddress, length }
+
+  useYn       String    @default("Y") @map("use_yn")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@index([commType])
+  @@map("comm_configs")
 }
 
 /// ERP연동 이력 테이블 - Inbound/Outbound 전문 이력

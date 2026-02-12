@@ -12,6 +12,7 @@
  */
 import { useEffect, useCallback, Fragment } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import Button from './Button';
 
@@ -38,6 +39,8 @@ function Modal({
   closeOnEsc = true,
   footer,
 }: ModalProps) {
+  const { t } = useTranslation();
+
   // ESC 키로 닫기
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -110,7 +113,7 @@ function Modal({
                 <button
                   onClick={onClose}
                   className="p-1 rounded-md text-text-muted hover:text-text hover:bg-background transition-colors"
-                  aria-label="닫기"
+                  aria-label={t('common.close')}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -153,30 +156,35 @@ export function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
-  title = '확인',
+  title,
   message,
-  confirmText = '확인',
-  cancelText = '취소',
+  confirmText,
+  cancelText,
   variant = 'default',
   isLoading = false,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
+  const actualTitle = title ?? t('common.confirm');
+  const actualConfirmText = confirmText ?? t('common.confirm');
+  const actualCancelText = cancelText ?? t('common.cancel');
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={title}
+      title={actualTitle}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={isLoading}>
-            {cancelText}
+            {actualCancelText}
           </Button>
           <Button
             variant={variant === 'danger' ? 'danger' : 'primary'}
             onClick={onConfirm}
             isLoading={isLoading}
           >
-            {confirmText}
+            {actualConfirmText}
           </Button>
         </>
       }

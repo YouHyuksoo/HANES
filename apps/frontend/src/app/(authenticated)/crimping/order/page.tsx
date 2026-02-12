@@ -10,6 +10,7 @@
  * 3. **C/H 기준**: 압착높이 기준값과 허용공차 확인
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play, CheckCircle, Search, RefreshCw, Download, Eye, Hammer, Settings2 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -32,8 +33,12 @@ const mockMolds: Mold[] = [
 ];
 
 function OrderPage() {
+  const { t } = useTranslation();
   const comCodeStatusOptions = useComCodeOptions('JOB_ORDER_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+  const statusOptions = useMemo(() => [
+    { value: '', label: t('crimping.order.allStatus') },
+    ...comCodeStatusOptions,
+  ], [t, comCodeStatusOptions]);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchText, setSearchText] = useState('');
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -65,76 +70,74 @@ function OrderPage() {
   };
 
   const columns = useMemo<ColumnDef<CrimpingOrder>[]>(() => [
-    { accessorKey: 'orderNo', header: '작업지시번호', size: 140 },
-    { accessorKey: 'orderDate', header: '지시일', size: 100 },
-    { accessorKey: 'wireName', header: '전선', size: 130 },
-    { accessorKey: 'terminalName', header: '터미널', size: 100 },
-    { accessorKey: 'moldName', header: '금형', size: 110 },
-    { id: 'ch', header: 'C/H 기준', size: 100, cell: ({ row }) => `${row.original.crimpHeightStd} ±${row.original.crimpHeightTol}` },
-    { accessorKey: 'planQty', header: '계획', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'prodQty', header: '실적', size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'equipCode', header: '설비', size: 80 },
-    { accessorKey: 'status', header: '상태', size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
-    { id: 'actions', header: '관리', size: 100,
+    { accessorKey: 'orderNo', header: t('crimping.order.orderNo'), size: 140 },
+    { accessorKey: 'orderDate', header: t('crimping.order.orderDate'), size: 100 },
+    { accessorKey: 'wireName', header: t('crimping.order.wire'), size: 130 },
+    { accessorKey: 'terminalName', header: t('crimping.order.terminal'), size: 100 },
+    { accessorKey: 'moldName', header: t('crimping.order.mold'), size: 110 },
+    { id: 'ch', header: t('crimping.order.chStandard'), size: 100, cell: ({ row }) => `${row.original.crimpHeightStd} ±${row.original.crimpHeightTol}` },
+    { accessorKey: 'planQty', header: t('crimping.order.plan'), size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'prodQty', header: t('crimping.order.result'), size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'equipCode', header: t('crimping.order.equip'), size: 80 },
+    { accessorKey: 'status', header: t('common.status'), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
+    { id: 'actions', header: t('common.actions'), size: 100,
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsDetailOpen(true); }} className="p-1 hover:bg-surface rounded" title="상세"><Eye className="w-4 h-4 text-text-muted" /></button>
-          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsMoldOpen(true); }} className="p-1 hover:bg-surface rounded" title="금형선택"><Settings2 className="w-4 h-4 text-blue-500" /></button>}
-          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'RUNNING'); }} className="p-1 hover:bg-surface rounded" title="시작"><Play className="w-4 h-4 text-green-500" /></button>}
-          {row.original.status === 'RUNNING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'DONE'); }} className="p-1 hover:bg-surface rounded" title="완료"><CheckCircle className="w-4 h-4 text-blue-500" /></button>}
+          <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsDetailOpen(true); }} className="p-1 hover:bg-surface rounded" title={t('common.detail')}><Eye className="w-4 h-4 text-text-muted" /></button>
+          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); setSelectedOrder(row.original); setIsMoldOpen(true); }} className="p-1 hover:bg-surface rounded" title={t('crimping.order.moldSelect')}><Settings2 className="w-4 h-4 text-blue-500" /></button>}
+          {row.original.status === 'WAITING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'RUNNING'); }} className="p-1 hover:bg-surface rounded"><Play className="w-4 h-4 text-green-500" /></button>}
+          {row.original.status === 'RUNNING' && <button onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original.id, 'DONE'); }} className="p-1 hover:bg-surface rounded"><CheckCircle className="w-4 h-4 text-blue-500" /></button>}
         </div>
       ),
     },
-  ], []);
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Hammer className="w-7 h-7 text-primary" />압착 작업지시</h1>
-          <p className="text-text-muted mt-1">터미널 압착 작업을 지시하고 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Hammer className="w-7 h-7 text-primary" />{t('crimping.order.title')}</h1>
+          <p className="text-text-muted mt-1">{t('crimping.order.subtitle')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
+        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="지시번호, 터미널명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('crimping.order.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t('common.status')} />
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid data={filteredOrders} columns={columns} pageSize={10} onRowClick={(row) => { setSelectedOrder(row); setIsDetailOpen(true); }} />
         </CardContent>
       </Card>
 
-      {/* 상세 모달 */}
-      <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title="압착 작업지시 상세" size="md">
+      <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title={t('crimping.order.detailTitle')} size="md">
         {selectedOrder && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 p-4 bg-background rounded-lg">
-              <div><span className="text-sm text-text-muted">작업지시번호</span><p className="font-semibold">{selectedOrder.orderNo}</p></div>
-              <div><span className="text-sm text-text-muted">지시일</span><p className="font-semibold">{selectedOrder.orderDate}</p></div>
-              <div><span className="text-sm text-text-muted">전선</span><p className="font-semibold">{selectedOrder.wireName}</p></div>
-              <div><span className="text-sm text-text-muted">터미널</span><p className="font-semibold">{selectedOrder.terminalName}</p></div>
-              <div><span className="text-sm text-text-muted">금형</span><p className="font-semibold">{selectedOrder.moldName}</p></div>
-              <div><span className="text-sm text-text-muted">C/H 기준</span><p className="font-semibold">{selectedOrder.crimpHeightStd} ±{selectedOrder.crimpHeightTol} mm</p></div>
-              <div><span className="text-sm text-text-muted">계획/실적</span><p className="font-semibold">{selectedOrder.planQty.toLocaleString()} / {selectedOrder.prodQty.toLocaleString()}</p></div>
-              <div><span className="text-sm text-text-muted">설비</span><p className="font-semibold">{selectedOrder.equipCode}</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.orderNo')}</span><p className="font-semibold">{selectedOrder.orderNo}</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.orderDate')}</span><p className="font-semibold">{selectedOrder.orderDate}</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.wire')}</span><p className="font-semibold">{selectedOrder.wireName}</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.terminal')}</span><p className="font-semibold">{selectedOrder.terminalName}</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.mold')}</span><p className="font-semibold">{selectedOrder.moldName}</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.chStandard')}</span><p className="font-semibold">{selectedOrder.crimpHeightStd} ±{selectedOrder.crimpHeightTol} mm</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.planResult')}</span><p className="font-semibold">{selectedOrder.planQty.toLocaleString()} / {selectedOrder.prodQty.toLocaleString()}</p></div>
+              <div><span className="text-sm text-text-muted">{t('crimping.order.equip')}</span><p className="font-semibold">{selectedOrder.equipCode}</p></div>
             </div>
-            <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setIsDetailOpen(false)}>닫기</Button></div>
+            <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setIsDetailOpen(false)}>{t('common.close')}</Button></div>
           </div>
         )}
       </Modal>
 
-      {/* 금형 선택 모달 */}
-      <Modal isOpen={isMoldOpen} onClose={() => setIsMoldOpen(false)} title="금형 선택" size="md">
+      <Modal isOpen={isMoldOpen} onClose={() => setIsMoldOpen(false)} title={t('crimping.order.moldSelect')} size="md">
         <div className="space-y-4">
-          <p className="text-sm text-text-muted">터미널: {selectedOrder?.terminalName}</p>
+          <p className="text-sm text-text-muted">{t('crimping.order.terminal')}: {selectedOrder?.terminalName}</p>
           {availableMolds.length === 0 ? (
-            <div className="p-4 text-center text-text-muted">사용 가능한 금형이 없습니다.</div>
+            <div className="p-4 text-center text-text-muted">{t('crimping.order.noMold')}</div>
           ) : (
             <div className="space-y-2">
               {availableMolds.map(mold => {
@@ -151,7 +154,7 @@ function OrderPage() {
                       </div>
                       <span className="text-xs text-text-muted">{lifePercent}%</span>
                     </div>
-                    <div className="text-xs text-text-muted mt-1">위치: {mold.location} | 타수: {mold.currentShots.toLocaleString()}</div>
+                    <div className="text-xs text-text-muted mt-1">{t('crimping.mold.location')}: {mold.location} | {t('crimping.mold.currentShots')}: {mold.currentShots.toLocaleString()}</div>
                   </div>
                 );
               })}

@@ -11,7 +11,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, IsIn, IsDateString, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ISSUE_TYPE_VALUES } from '@hanes/shared';
+import { ISSUE_TYPE_VALUES } from '@harness/shared';
 
 export class IssueItemDto {
   @ApiProperty({ description: 'LOT ID' })

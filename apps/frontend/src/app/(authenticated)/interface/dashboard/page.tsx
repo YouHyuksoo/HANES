@@ -5,6 +5,7 @@
  * @description ERP 인터페이스 현황 대시보드
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, ArrowDownCircle, ArrowUpCircle, CheckCircle, XCircle, Clock, Activity } from 'lucide-react';
 import { Card, CardContent, Button, StatCard } from '@/components/ui';
 import { BarChart } from '@/components/charts';
@@ -33,19 +34,20 @@ const statusColors: Record<string, string> = {
   RETRY: 'text-blue-600 dark:text-blue-400',
 };
 
-const directionLabels: Record<string, string> = {
-  IN: '수신',
-  OUT: '송신',
-};
-
-const messageTypeLabels: Record<string, string> = {
-  JOB_ORDER: '작업지시',
-  PROD_RESULT: '생산실적',
-  BOM_SYNC: 'BOM동기화',
-  PART_SYNC: '품목동기화',
-};
-
 function InterfaceDashboardPage() {
+  const { t } = useTranslation();
+
+  const directionLabels: Record<string, string> = {
+    IN: t('interface.dashboard.inbound'),
+    OUT: t('interface.dashboard.outbound'),
+  };
+
+  const messageTypeLabels: Record<string, string> = {
+    JOB_ORDER: t('interface.dashboard.msgJobOrder'),
+    PROD_RESULT: t('interface.dashboard.msgProdResult'),
+    BOM_SYNC: t('interface.dashboard.msgBomSync'),
+    PART_SYNC: t('interface.dashboard.msgPartSync'),
+  };
   const stats = useMemo(() => ({
     total: 1234,
     today: 45,
@@ -70,20 +72,20 @@ function InterfaceDashboardPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />ERP 인터페이스 현황</h1>
-          <p className="text-text-muted mt-1">ERP 연동 상태를 모니터링합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />{t('interface.dashboard.title')}</h1>
+          <p className="text-text-muted mt-1">{t('interface.dashboard.description')}</p>
         </div>
         <Button variant="secondary" size="sm">
-          <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+          <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
         </Button>
       </div>
 
       {/* 주요 지표 */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="오늘 전송" value={stats.today} icon={Activity} color="blue" />
-        <StatCard label="성공" value={stats.success} icon={CheckCircle} color="green" />
-        <StatCard label="실패" value={stats.failed} icon={XCircle} color="red" />
-        <StatCard label="대기중" value={stats.pending} icon={Clock} color="yellow" />
+        <StatCard label={t('interface.dashboard.todayTransfer')} value={stats.today} icon={Activity} color="blue" />
+        <StatCard label={t('interface.dashboard.success')} value={stats.success} icon={CheckCircle} color="green" />
+        <StatCard label={t('interface.dashboard.failed')} value={stats.failed} icon={XCircle} color="red" />
+        <StatCard label={t('interface.dashboard.pending')} value={stats.pending} icon={Clock} color="yellow" />
       </div>
 
       {/* 송수신 현황 */}
@@ -92,7 +94,7 @@ function InterfaceDashboardPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-text-muted">수신 (Inbound)</p>
+                <p className="text-sm text-text-muted">{t('interface.dashboard.inboundLabel')}</p>
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.inbound}</p>
                 <p className="text-xs text-text-muted mt-1">ERP → MES</p>
               </div>
@@ -104,7 +106,7 @@ function InterfaceDashboardPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-text-muted">송신 (Outbound)</p>
+                <p className="text-sm text-text-muted">{t('interface.dashboard.outboundLabel')}</p>
                 <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats.outbound}</p>
                 <p className="text-xs text-text-muted mt-1">MES → ERP</p>
               </div>
@@ -119,7 +121,7 @@ function InterfaceDashboardPage() {
         {/* 일별 추이 */}
         <Card>
           <CardContent>
-            <div className="text-sm font-medium text-text mb-3">일별 전송 추이</div>
+            <div className="text-sm font-medium text-text mb-3">{t('interface.dashboard.dailyTrend')}</div>
             <div className="h-64">
               <BarChart data={chartData} />
             </div>
@@ -129,7 +131,7 @@ function InterfaceDashboardPage() {
         {/* 최근 로그 */}
         <Card>
           <CardContent>
-            <div className="text-sm font-medium text-text mb-3">최근 전송 로그</div>
+            <div className="text-sm font-medium text-text mb-3">{t('interface.dashboard.recentLogs')}</div>
             <div className="space-y-3">
               {recentLogs.map((log) => (
                 <div
@@ -156,7 +158,7 @@ function InterfaceDashboardPage() {
                   </div>
                   <div className="text-right">
                     <span className={`text-sm font-medium ${statusColors[log.status]}`}>
-                      {log.status === 'SUCCESS' ? '성공' : log.status === 'FAIL' ? '실패' : log.status}
+                      {log.status === 'SUCCESS' ? t('interface.dashboard.success') : log.status === 'FAIL' ? t('interface.dashboard.failed') : log.status}
                     </span>
                     <p className="text-xs text-text-muted">{log.createdAt.split(' ')[1]}</p>
                   </div>

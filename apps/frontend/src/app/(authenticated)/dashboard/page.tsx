@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @file src/pages/dashboard/DashboardPage.tsx
+ * @file src/app/(authenticated)/dashboard/page.tsx
  * @description 대시보드 페이지 - 실시간 생산 현황, OEE, 품질 합격률
  *
  * 초보자 가이드:
@@ -10,6 +10,7 @@
  * 3. **반응형**: 그리드 레이아웃으로 화면 크기에 따라 조정
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Factory,
   Package,
@@ -29,11 +30,12 @@ interface KpiCardProps {
   value: string | number;
   unit?: string;
   change?: number;
+  changeLabel?: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 
-function KpiCard({ title, value, unit, change, icon: Icon, color }: KpiCardProps) {
+function KpiCard({ title, value, unit, change, changeLabel, icon: Icon, color }: KpiCardProps) {
   const isPositive = change && change > 0;
   const isNegative = change && change < 0;
 
@@ -60,7 +62,7 @@ function KpiCard({ title, value, unit, change, icon: Icon, color }: KpiCardProps
                 {isNegative && <TrendingDown className="w-3 h-3" />}
                 <span>
                   {isPositive && '+'}
-                  {change}% 전일 대비
+                  {change}% {changeLabel}
                 </span>
               </div>
             )}
@@ -87,6 +89,8 @@ interface RecentProduction {
 }
 
 function DashboardPage() {
+  const { t } = useTranslation();
+
   // 샘플 데이터
   const recentProductions: RecentProduction[] = [
     {
@@ -131,34 +135,41 @@ function DashboardPage() {
     },
   ];
 
+  // 상태 표시 매핑 (데이터 값 -> 번역 키)
+  const statusDisplayMap: Record<string, string> = {
+    '대기': t('dashboard.statusWaiting'),
+    '진행중': t('dashboard.statusInProgress'),
+    '완료': t('dashboard.statusCompleted'),
+  };
+
   // DataGrid 컬럼 정의
   const columns = useMemo<ColumnDef<RecentProduction>[]>(
     () => [
       {
         accessorKey: 'orderNo',
-        header: '작업지시번호',
+        header: t('dashboard.orderNo'),
       },
       {
         accessorKey: 'partName',
-        header: '품목명',
+        header: t('dashboard.partName'),
       },
       {
         accessorKey: 'line',
-        header: '라인',
+        header: t('dashboard.line'),
       },
       {
         accessorKey: 'planQty',
-        header: '계획수량',
+        header: t('dashboard.planQty'),
         cell: ({ getValue }) => getValue<number>().toLocaleString(),
       },
       {
         accessorKey: 'actualQty',
-        header: '실적수량',
+        header: t('dashboard.actualQty'),
         cell: ({ getValue }) => getValue<number>().toLocaleString(),
       },
       {
         accessorKey: 'progress',
-        header: '진행률',
+        header: t('dashboard.progress'),
         cell: ({ getValue }) => {
           const value = getValue<number>();
           return (
@@ -176,7 +187,7 @@ function DashboardPage() {
       },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('dashboard.status'),
         cell: ({ getValue }) => {
           const status = getValue<string>();
           const colorMap: Record<string, string> = {
@@ -191,54 +202,58 @@ function DashboardPage() {
                 ${colorMap[status] || ''}
               `}
             >
-              {status}
+              {statusDisplayMap[status] || status}
             </span>
           );
         },
       },
     ],
-    []
+    [t, statusDisplayMap]
   );
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Page Header */}
       <div>
-        <h1 className="text-xl font-bold text-text flex items-center gap-2"><LayoutDashboard className="w-7 h-7 text-primary" />대시보드</h1>
-        <p className="text-text-muted mt-1">실시간 생산 현황을 한눈에 확인하세요.</p>
+        <h1 className="text-xl font-bold text-text flex items-center gap-2"><LayoutDashboard className="w-7 h-7 text-primary" />{t('dashboard.title')}</h1>
+        <p className="text-text-muted mt-1">{t('dashboard.subtitle')}</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          title="오늘 생산량"
+          title={t('dashboard.todayProduction')}
           value={1247}
           unit="EA"
           change={12.5}
+          changeLabel={t('common.vsYesterday')}
           icon={Factory}
           color="bg-primary"
         />
         <KpiCard
-          title="재고 현황"
+          title={t('dashboard.inventoryStatus')}
           value={8543}
           unit="EA"
           change={-3.2}
+          changeLabel={t('common.vsYesterday')}
           icon={Package}
           color="bg-secondary"
         />
         <KpiCard
-          title="품질 합격률"
+          title={t('dashboard.qualityPassRate')}
           value="98.7"
           unit="%"
           change={0.5}
+          changeLabel={t('common.vsYesterday')}
           icon={Shield}
           color="bg-success"
         />
         <KpiCard
-          title="인터락 발생"
+          title={t('dashboard.interlockOccurrence')}
           value={3}
-          unit="건"
+          unit={t('common.count')}
           change={-50}
+          changeLabel={t('common.vsYesterday')}
           icon={AlertTriangle}
           color="bg-warning"
         />
@@ -247,8 +262,8 @@ function DashboardPage() {
       {/* Recent Production Table */}
       <Card>
         <CardHeader
-          title="최근 작업지시"
-          subtitle="오늘 진행 중인 작업지시 현황입니다."
+          title={t('dashboard.recentOrders')}
+          subtitle={t('dashboard.recentOrdersDesc')}
         />
         <CardContent>
           <DataGrid

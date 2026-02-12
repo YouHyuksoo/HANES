@@ -11,6 +11,7 @@
  * 4. **상태 변경**: 수리대기 -> 수리중 -> 완료/폐기
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   Plus,
@@ -115,20 +116,22 @@ const mockDefects: Defect[] = [
   },
 ];
 
-const defectTypes = [
-  { value: '', label: '전체 유형' },
-  { value: 'D001', label: '피복 손상' },
-  { value: 'D002', label: '압착 불량' },
-  { value: 'D003', label: '통전 불량' },
-  { value: 'D004', label: '외관 불량' },
-];
-
 // ========================================
 // 메인 컴포넌트
 // ========================================
 function DefectPage() {
+  const { t } = useTranslation();
+
+  const defectTypes = useMemo(() => [
+    { value: '', label: t('quality.defect.allTypes') },
+    { value: 'D001', label: t('quality.defect.typeCoating') },
+    { value: 'D002', label: t('quality.defect.typeCrimping') },
+    { value: 'D003', label: t('quality.defect.typeContinuity') },
+    { value: 'D004', label: t('quality.defect.typeAppearance') },
+  ], [t]);
+
   const comCodeStatusOptions = useComCodeOptions('DEFECT_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+  const statusOptions = useMemo(() => [{ value: '', label: t('common.allStatus') }, ...comCodeStatusOptions], [t, comCodeStatusOptions]);
   // 상태 관리
   const [searchText, setSearchText] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -176,12 +179,12 @@ function DefectPage() {
     () => [
       {
         accessorKey: 'occurredAt',
-        header: '발생시간',
+        header: t('quality.defect.occurredAt'),
         size: 140,
       },
       {
         accessorKey: 'workOrderNo',
-        header: '작업지시',
+        header: t('quality.defect.workOrder'),
         size: 160,
         cell: ({ getValue }) => (
           <span className="text-primary font-medium">{getValue() as string}</span>
@@ -189,17 +192,17 @@ function DefectPage() {
       },
       {
         accessorKey: 'defectCode',
-        header: '불량코드',
+        header: t('quality.defect.defectCode'),
         size: 80,
       },
       {
         accessorKey: 'defectName',
-        header: '불량명',
+        header: t('quality.defect.defectName'),
         size: 100,
       },
       {
         accessorKey: 'quantity',
-        header: '수량',
+        header: t('quality.defect.quantity'),
         size: 60,
         cell: ({ getValue }) => (
           <span className="font-mono text-right block">{getValue() as number}</span>
@@ -207,18 +210,18 @@ function DefectPage() {
       },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('common.status'),
         size: 100,
         cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_STATUS" code={getValue() as string} />,
       },
       {
         accessorKey: 'operator',
-        header: '작업자',
+        header: t('quality.defect.operator'),
         size: 80,
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.manage'),
         size: 100,
         cell: ({ row }) => (
           <button
@@ -228,12 +231,12 @@ function DefectPage() {
               setIsStatusModalOpen(true);
             }}
           >
-            상태변경
+            {t('quality.defect.changeStatus')}
           </button>
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
@@ -241,26 +244,26 @@ function DefectPage() {
       {/* 페이지 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><AlertTriangle className="w-7 h-7 text-primary" />불량관리</h1>
-          <p className="text-text-muted mt-1">불량 발생 현황을 관리하고 수리 상태를 추적합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><AlertTriangle className="w-7 h-7 text-primary" />{t('quality.defect.title')}</h1>
+          <p className="text-text-muted mt-1">{t('quality.defect.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> 불량 등록
+            <Plus className="w-4 h-4 mr-1" /> {t('quality.defect.register')}
           </Button>
         </div>
       </div>
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label="전체 건수" value={stats.total} icon={AlertTriangle} color="blue" />
-        <StatCard label="수리대기" value={stats.pending} icon={Clock} color="yellow" />
-        <StatCard label="수리중" value={stats.repairing} icon={Wrench} color="blue" />
-        <StatCard label="완료" value={stats.completed} icon={CheckCircle} color="green" />
-        <StatCard label="총 불량수량" value={stats.totalQty} icon={XCircle} color="red" />
+        <StatCard label={t('quality.defect.totalCount')} value={stats.total} icon={AlertTriangle} color="blue" />
+        <StatCard label={t('quality.defect.pending')} value={stats.pending} icon={Clock} color="yellow" />
+        <StatCard label={t('quality.defect.repairing')} value={stats.repairing} icon={Wrench} color="blue" />
+        <StatCard label={t('quality.defect.completedStat')} value={stats.completed} icon={CheckCircle} color="green" />
+        <StatCard label={t('quality.defect.totalDefectQty')} value={stats.totalQty} icon={XCircle} color="red" />
       </div>
 
       {/* 필터 + 데이터 그리드 */}
@@ -268,7 +271,7 @@ function DefectPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="작업지시, 불량명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('quality.defect.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-text-muted" />
@@ -276,8 +279,8 @@ function DefectPage() {
               <span className="text-text-muted">~</span>
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
             </div>
-            <Select options={defectTypes} value={defectType} onChange={setDefectType} placeholder="불량유형" />
-            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <Select options={defectTypes} value={defectType} onChange={setDefectType} placeholder={t('quality.defect.defectType')} />
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t('common.status')} />
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid
@@ -296,32 +299,32 @@ function DefectPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="불량 등록"
+        title={t('quality.defect.register')}
         size="lg"
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="작업지시 번호" placeholder="WO-2024-XXXX" fullWidth />
+            <Input label={t('quality.defect.workOrderNo')} placeholder="WO-2024-XXXX" fullWidth />
             <Select
-              label="불량유형"
+              label={t('quality.defect.defectType')}
               options={defectTypes.filter((d) => d.value !== '')}
               fullWidth
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="품번" placeholder="품번을 입력하세요" fullWidth />
-            <Input label="수량" type="number" placeholder="0" fullWidth />
+            <Input label={t('quality.defect.partNo')} placeholder={t('quality.defect.partNoPlaceholder')} fullWidth />
+            <Input label={t('quality.defect.quantity')} type="number" placeholder="0" fullWidth />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="설비번호" placeholder="설비번호" fullWidth />
-            <Input label="작업자" placeholder="작업자명" fullWidth />
+            <Input label={t('quality.defect.equipmentNo')} placeholder={t('quality.defect.equipmentNo')} fullWidth />
+            <Input label={t('quality.defect.operator')} placeholder={t('quality.defect.operatorPlaceholder')} fullWidth />
           </div>
-          <Input label="비고" placeholder="불량 상세 내용을 입력하세요" fullWidth />
+          <Input label={t('common.remark')} placeholder={t('quality.defect.remarkPlaceholder')} fullWidth />
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              취소
+              {t('common.cancel')}
             </Button>
-            <Button onClick={() => setIsModalOpen(false)}>등록</Button>
+            <Button onClick={() => setIsModalOpen(false)}>{t('common.register')}</Button>
           </div>
         </div>
       </Modal>
@@ -333,23 +336,23 @@ function DefectPage() {
           setIsStatusModalOpen(false);
           setSelectedDefect(null);
         }}
-        title="상태 변경"
+        title={t('quality.defect.changeStatus')}
         size="sm"
       >
         {selectedDefect && (
           <div className="space-y-4">
             <div className="p-4 bg-background rounded-lg">
-              <div className="text-sm text-text-muted">선택된 불량</div>
+              <div className="text-sm text-text-muted">{t('quality.defect.selectedDefect')}</div>
               <div className="text-lg font-semibold text-text mt-1">{selectedDefect.id}</div>
               <div className="text-sm text-text-muted mt-2">
-                {selectedDefect.defectName} / 수량: {selectedDefect.quantity}개
+                {selectedDefect.defectName} / {t('quality.defect.quantity')}: {selectedDefect.quantity}{t('common.ea')}
               </div>
               <div className="mt-2">
                 <ComCodeBadge groupCode="DEFECT_STATUS" code={selectedDefect.status} />
               </div>
             </div>
 
-            <div className="text-sm font-medium text-text mb-2">변경할 상태 선택</div>
+            <div className="text-sm font-medium text-text mb-2">{t('quality.defect.selectStatus')}</div>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="secondary"
@@ -357,7 +360,7 @@ function DefectPage() {
                 disabled={selectedDefect.status === 'PENDING'}
               >
                 <AlertTriangle className="w-4 h-4 mr-1 text-yellow-500" />
-                수리대기
+                {t('quality.defect.pending')}
               </Button>
               <Button
                 variant="secondary"
@@ -365,7 +368,7 @@ function DefectPage() {
                 disabled={selectedDefect.status === 'REPAIRING'}
               >
                 <Wrench className="w-4 h-4 mr-1 text-blue-500" />
-                수리중
+                {t('quality.defect.repairing')}
               </Button>
               <Button
                 variant="secondary"
@@ -373,7 +376,7 @@ function DefectPage() {
                 disabled={selectedDefect.status === 'COMPLETED'}
               >
                 <CheckCircle className="w-4 h-4 mr-1 text-green-500" />
-                완료
+                {t('quality.defect.completedStat')}
               </Button>
               <Button
                 variant="secondary"
@@ -381,7 +384,7 @@ function DefectPage() {
                 disabled={selectedDefect.status === 'SCRAPPED'}
               >
                 <Trash2 className="w-4 h-4 mr-1 text-red-500" />
-                폐기
+                {t('quality.defect.scrapped')}
               </Button>
             </div>
           </div>

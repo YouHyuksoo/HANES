@@ -27,7 +27,7 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BOX_STATUS_VALUES } from '@hanes/shared';
+import { BOX_STATUS_VALUES } from '@harness/shared';
 
 export type BoxStatus = typeof BOX_STATUS_VALUES[number];
 

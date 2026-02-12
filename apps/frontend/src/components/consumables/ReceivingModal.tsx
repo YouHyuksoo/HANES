@@ -5,6 +5,7 @@
  * @description 입고등록 모달 컴포넌트
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Modal, Select } from '@/components/ui';
 
 interface ReceivingModalProps {
@@ -41,6 +42,7 @@ const consumableOptions = [
 ];
 
 function ReceivingModal({ isOpen, onClose, onSubmit }: ReceivingModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<ReceivingFormValues>(defaultValues);
 
   const handleChange = (field: keyof ReceivingFormValues, value: string | number | null) => {
@@ -59,17 +61,17 @@ function ReceivingModal({ isOpen, onClose, onSubmit }: ReceivingModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="입고 등록" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('consumables.receiving.modalTitle')} size="md">
       <div className="space-y-4">
         <Select
-          label="소모품"
+          label={t('consumables.receiving.consumable')}
           options={consumableOptions}
           value={form.consumableId}
           onChange={(val) => handleChange('consumableId', val)}
           fullWidth
         />
         <Input
-          label="수량"
+          label={t('common.quantity')}
           type="number"
           value={String(form.qty)}
           onChange={(e) => handleChange('qty', Number(e.target.value))}
@@ -77,47 +79,47 @@ function ReceivingModal({ isOpen, onClose, onSubmit }: ReceivingModalProps) {
         />
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="공급업체코드"
+            label={t('consumables.receiving.vendorCodeLabel')}
             value={form.vendorCode}
             onChange={(e) => handleChange('vendorCode', e.target.value)}
             fullWidth
           />
           <Input
-            label="공급업체명"
+            label={t('consumables.receiving.vendorNameLabel')}
             value={form.vendorName}
             onChange={(e) => handleChange('vendorName', e.target.value)}
             fullWidth
           />
         </div>
         <Input
-          label="단가"
+          label={t('consumables.receiving.unitPriceLabel')}
           type="number"
           value={form.unitPrice != null ? String(form.unitPrice) : ''}
           onChange={(e) => handleChange('unitPrice', e.target.value ? Number(e.target.value) : null)}
-          placeholder="단가 입력"
+          placeholder={t('consumables.receiving.unitPricePlaceholder')}
           fullWidth
         />
         <Select
-          label="입고구분"
+          label={t('consumables.receiving.incomingTypeLabel')}
           options={[
-            { value: 'NEW', label: '신규' },
-            { value: 'REPLACEMENT', label: '교체' },
+            { value: 'NEW', label: t('consumables.receiving.typeNew') },
+            { value: 'REPLACEMENT', label: t('consumables.receiving.typeReplacement') },
           ]}
           value={form.incomingType}
           onChange={(val) => handleChange('incomingType', val)}
           fullWidth
         />
         <Input
-          label="비고"
+          label={t('common.remark')}
           value={form.remark}
           onChange={(e) => handleChange('remark', e.target.value)}
-          placeholder="비고 입력"
+          placeholder={t('consumables.receiving.remarkPlaceholder')}
           fullWidth
         />
       </div>
       <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-        <Button variant="secondary" onClick={handleClose}>취소</Button>
-        <Button onClick={handleSubmit}>등록</Button>
+        <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
+        <Button onClick={handleSubmit}>{t('common.register')}</Button>
       </div>
     </Modal>
   );

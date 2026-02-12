@@ -5,6 +5,7 @@
  * @description 입고반품 모달 컴포넌트
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Modal, Select } from '@/components/ui';
 
 interface ReceivingReturnModalProps {
@@ -39,6 +40,7 @@ const consumableOptions = [
 ];
 
 function ReceivingReturnModal({ isOpen, onClose, onSubmit }: ReceivingReturnModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<ReturnFormValues>(defaultValues);
 
   const handleChange = (field: keyof ReturnFormValues, value: string | number) => {
@@ -57,17 +59,17 @@ function ReceivingReturnModal({ isOpen, onClose, onSubmit }: ReceivingReturnModa
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="입고반품 등록" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('consumables.receiving.returnModalTitle')} size="md">
       <div className="space-y-4">
         <Select
-          label="소모품"
+          label={t('consumables.receiving.consumable')}
           options={consumableOptions}
           value={form.consumableId}
           onChange={(val) => handleChange('consumableId', val)}
           fullWidth
         />
         <Input
-          label="수량"
+          label={t('common.quantity')}
           type="number"
           value={String(form.qty)}
           onChange={(e) => handleChange('qty', Number(e.target.value))}
@@ -75,36 +77,36 @@ function ReceivingReturnModal({ isOpen, onClose, onSubmit }: ReceivingReturnModa
         />
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="공급업체코드"
+            label={t('consumables.receiving.vendorCodeLabel')}
             value={form.vendorCode}
             onChange={(e) => handleChange('vendorCode', e.target.value)}
             fullWidth
           />
           <Input
-            label="공급업체명"
+            label={t('consumables.receiving.vendorNameLabel')}
             value={form.vendorName}
             onChange={(e) => handleChange('vendorName', e.target.value)}
             fullWidth
           />
         </div>
         <Input
-          label="반품사유"
+          label={t('consumables.receiving.returnReasonLabel')}
           value={form.returnReason}
           onChange={(e) => handleChange('returnReason', e.target.value)}
-          placeholder="반품사유 입력"
+          placeholder={t('consumables.receiving.returnReasonPlaceholder')}
           fullWidth
         />
         <Input
-          label="비고"
+          label={t('common.remark')}
           value={form.remark}
           onChange={(e) => handleChange('remark', e.target.value)}
-          placeholder="비고 입력"
+          placeholder={t('consumables.receiving.remarkPlaceholder')}
           fullWidth
         />
       </div>
       <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-        <Button variant="secondary" onClick={handleClose}>취소</Button>
-        <Button onClick={handleSubmit}>등록</Button>
+        <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
+        <Button onClick={handleSubmit}>{t('common.register')}</Button>
       </div>
     </Modal>
   );

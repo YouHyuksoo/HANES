@@ -1,8 +1,8 @@
 {
-  "name": "hanes-mes",
+  "name": "harness-mes",
   "version": "0.1.0",
   "private": true,
-  "description": "HANES MES - Manufacturing Execution System for Wire Harness Production",
+  "description": "HARNESS MES - Manufacturing Execution System for Wire Harness Production",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",

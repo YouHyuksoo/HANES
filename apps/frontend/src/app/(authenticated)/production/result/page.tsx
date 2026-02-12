@@ -14,6 +14,7 @@
  * - 실적 등록 버튼으로 새 실적 입력
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   Search,
@@ -150,23 +151,24 @@ const mockResults: ProdResult[] = [
   },
 ];
 
-/** 라인 필터 옵션 */
-const lineOptions = [
-  { value: '', label: '전체 라인' },
-  { value: 'L1-조립', label: 'L1-조립' },
-  { value: 'L2-조립', label: 'L2-조립' },
-  { value: 'L3-조립', label: 'L3-조립' },
-];
-
-/** 공정 필터 옵션 */
-const processOptions = [
-  { value: '', label: '전체 공정' },
-  { value: '1차 조립', label: '1차 조립' },
-  { value: '2차 조립', label: '2차 조립' },
-  { value: '특수 조립', label: '특수 조립' },
-];
-
 function ProdResultPage() {
+  const { t } = useTranslation();
+  /** 라인 필터 옵션 */
+  const lineOptions = useMemo(() => [
+    { value: '', label: t('production.result.allLines') },
+    { value: 'L1-조립', label: 'L1-조립' },
+    { value: 'L2-조립', label: 'L2-조립' },
+    { value: 'L3-조립', label: 'L3-조립' },
+  ], [t]);
+
+  /** 공정 필터 옵션 */
+  const processOptions = useMemo(() => [
+    { value: '', label: t('production.result.allProcesses') },
+    { value: '1차 조립', label: '1차 조립' },
+    { value: '2차 조립', label: '2차 조립' },
+    { value: '특수 조립', label: '특수 조립' },
+  ], [t]);
+
   // 필터 상태
   const [lineFilter, setLineFilter] = useState('');
   const [processFilter, setProcessFilter] = useState('');
@@ -250,42 +252,42 @@ function ProdResultPage() {
     () => [
       {
         accessorKey: 'resultNo',
-        header: '실적번호',
+        header: t('production.result.resultNo'),
         size: 150
       },
       {
         accessorKey: 'workDate',
-        header: '작업일자',
+        header: t('production.result.workDate'),
         size: 100
       },
       {
         accessorKey: 'orderNo',
-        header: '작업지시',
+        header: t('production.result.orderNo'),
         size: 150
       },
       {
         accessorKey: 'partName',
-        header: '품목명',
+        header: t('production.result.partName'),
         size: 150
       },
       {
         accessorKey: 'equipName',
-        header: '설비',
+        header: t('production.result.equipment'),
         size: 100
       },
       {
         accessorKey: 'workerName',
-        header: '작업자',
+        header: t('production.result.worker'),
         size: 80
       },
       {
         accessorKey: 'lotNo',
-        header: 'LOT번호',
+        header: t('production.result.lotNo'),
         size: 150
       },
       {
         accessorKey: 'goodQty',
-        header: '양품',
+        header: t('production.result.goodQty'),
         size: 70,
         cell: ({ getValue }) => (
           <span className="text-green-600 dark:text-green-400 font-medium">
@@ -295,7 +297,7 @@ function ProdResultPage() {
       },
       {
         accessorKey: 'defectQty',
-        header: '불량',
+        header: t('production.result.defectQty'),
         size: 70,
         cell: ({ getValue }) => (
           <span className="text-red-600 dark:text-red-400 font-medium">
@@ -305,7 +307,7 @@ function ProdResultPage() {
       },
       {
         id: 'defectRate',
-        header: '불량률',
+        header: t('production.result.defectRate'),
         size: 80,
         cell: ({ row }) => {
           const rate = parseFloat(getDefectRate(row.original));
@@ -318,7 +320,7 @@ function ProdResultPage() {
       },
       {
         id: 'workTime',
-        header: '작업시간',
+        header: t('production.result.workTime'),
         size: 120,
         cell: ({ row }) => (
           <span className="text-text-muted">
@@ -327,7 +329,7 @@ function ProdResultPage() {
         )
       },
     ],
-    []
+    [t]
   );
 
   return (
@@ -337,26 +339,26 @@ function ProdResultPage() {
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Factory className="w-7 h-7 text-primary" />
-            생산실적 조회
+            {t('production.result.title')}
           </h1>
-          <p className="text-text-muted mt-1">생산 작업 실적을 조회하고 등록합니다.</p>
+          <p className="text-text-muted mt-1">{t('production.result.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <Download className="w-4 h-4 mr-1" /> 엑셀 다운로드
+            <Download className="w-4 h-4 mr-1" /> {t('common.excel')}
           </Button>
           <Button size="sm" onClick={() => setIsRegisterModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> 실적 등록
+            <Plus className="w-4 h-4 mr-1" /> {t('production.result.register')}
           </Button>
         </div>
       </div>
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="총 생산" value={stats.totalQty.toLocaleString()} icon={Package} color="blue" />
-        <StatCard label="양품" value={stats.totalGood.toLocaleString()} icon={CheckCircle} color="green" />
-        <StatCard label="불량 (불량률)" value={`${stats.totalDefect.toLocaleString()} (${stats.avgDefectRate}%)`} icon={XCircle} color="red" />
-        <StatCard label="총 작업시간" value={`${stats.totalHours}시간`} icon={Clock} color="purple" />
+        <StatCard label={t('production.result.totalProduction')} value={stats.totalQty.toLocaleString()} icon={Package} color="blue" />
+        <StatCard label={t('production.result.goodQty')} value={stats.totalGood.toLocaleString()} icon={CheckCircle} color="green" />
+        <StatCard label={t('production.result.defectWithRate')} value={`${stats.totalDefect.toLocaleString()} (${stats.avgDefectRate}%)`} icon={XCircle} color="red" />
+        <StatCard label={t('production.result.totalWorkHours')} value={`${stats.totalHours}${t('common.hours')}`} icon={Clock} color="purple" />
       </div>
 
       {/* 메인 카드 */}
@@ -366,7 +368,7 @@ function ProdResultPage() {
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
               <Input
-                placeholder="실적번호, 작업지시, LOT번호 검색..."
+                placeholder={t('production.result.searchPlaceholder')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />}
@@ -378,7 +380,7 @@ function ProdResultPage() {
                 options={lineOptions}
                 value={lineFilter}
                 onChange={setLineFilter}
-                placeholder="라인"
+                placeholder={t('production.result.line')}
                 fullWidth
               />
             </div>
@@ -387,7 +389,7 @@ function ProdResultPage() {
                 options={processOptions}
                 value={processFilter}
                 onChange={setProcessFilter}
-                placeholder="공정"
+                placeholder={t('production.result.processCol')}
                 fullWidth
               />
             </div>
@@ -426,13 +428,13 @@ function ProdResultPage() {
       <Modal
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
-        title="생산실적 등록"
+        title={t('production.result.registerTitle')}
         size="lg"
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Select
-              label="작업지시"
+              label={t('production.result.orderNo')}
               options={[
                 { value: 'JO-20250126-001', label: 'JO-20250126-001 (메인 하네스 A)' },
                 { value: 'JO-20250126-002', label: 'JO-20250126-002 (서브 하네스 B)' },
@@ -444,7 +446,7 @@ function ProdResultPage() {
               fullWidth
             />
             <Select
-              label="설비"
+              label={t('production.result.equipment')}
               options={[
                 { value: 'ASSY-001', label: 'ASSY-001' },
                 { value: 'ASSY-002', label: 'ASSY-002' },
@@ -456,21 +458,21 @@ function ProdResultPage() {
               fullWidth
             />
             <Input
-              label="작업자"
-              placeholder="작업자명"
+              label={t('production.result.worker')}
+              placeholder={t('production.result.workerPlaceholder')}
               value={formData.workerName}
               onChange={(e) => handleFormChange('workerName', e.target.value)}
               fullWidth
             />
             <Input
-              label="LOT번호"
+              label={t('production.result.lotNo')}
               placeholder="LOT-YYYYMMDD-XXX"
               value={formData.lotNo}
               onChange={(e) => handleFormChange('lotNo', e.target.value)}
               fullWidth
             />
             <Input
-              label="양품수량"
+              label={t('production.result.goodQtyLabel')}
               type="number"
               placeholder="0"
               value={formData.goodQty}
@@ -478,7 +480,7 @@ function ProdResultPage() {
               fullWidth
             />
             <Input
-              label="불량수량"
+              label={t('production.result.defectQtyLabel')}
               type="number"
               placeholder="0"
               value={formData.defectQty}
@@ -486,14 +488,14 @@ function ProdResultPage() {
               fullWidth
             />
             <Input
-              label="시작시간"
+              label={t('production.result.startTime')}
               type="time"
               value={formData.startTime}
               onChange={(e) => handleFormChange('startTime', e.target.value)}
               fullWidth
             />
             <Input
-              label="종료시간"
+              label={t('production.result.endTime')}
               type="time"
               value={formData.endTime}
               onChange={(e) => handleFormChange('endTime', e.target.value)}
@@ -501,18 +503,18 @@ function ProdResultPage() {
             />
           </div>
           <Input
-            label="비고"
-            placeholder="특이사항 입력"
+            label={t('common.remark')}
+            placeholder={t('production.result.remarkPlaceholder')}
             value={formData.remark}
             onChange={(e) => handleFormChange('remark', e.target.value)}
             fullWidth
           />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsRegisterModalOpen(false)}>
-              취소
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSubmit}>
-              <Plus className="w-4 h-4 mr-1" /> 등록
+              <Plus className="w-4 h-4 mr-1" /> {t('common.register')}
             </Button>
           </div>
         </div>

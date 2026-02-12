@@ -36,7 +36,7 @@ import {
   IsDecimal,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CONSUMABLE_CATEGORY_VALUES, CONSUMABLE_STATUS_VALUES, CONSUMABLE_LOG_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
+import { CONSUMABLE_CATEGORY_VALUES, CONSUMABLE_STATUS_VALUES, CONSUMABLE_LOG_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 
 /**
  * 소모품마스터 생성 DTO

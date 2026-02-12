@@ -5,6 +5,7 @@
  * @description BOM 관리 페이지
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, Search, ChevronRight, Package, Layers } from 'lucide-react';
 import { Card, CardHeader, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -45,6 +46,7 @@ const mockBomItems: BomItem[] = [
 ];
 
 function BomPage() {
+  const { t } = useTranslation();
   const [selectedParent, setSelectedParent] = useState<ParentPart | null>(mockParents[0]);
   const [searchText, setSearchText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,16 +54,16 @@ function BomPage() {
 
   const columns = useMemo<ColumnDef<BomItem>[]>(
     () => [
-      { accessorKey: 'childPartCode', header: '자품목코드', size: 120 },
-      { accessorKey: 'childPartName', header: '자품목명', size: 180 },
+      { accessorKey: 'childPartCode', header: t('master.bom.childPartCode'), size: 120 },
+      { accessorKey: 'childPartName', header: t('master.bom.childPartName'), size: 180 },
       {
         accessorKey: 'childPartType',
-        header: '유형',
+        header: t('master.bom.type'),
         size: 80,
         cell: ({ getValue }) => {
           const typeMap: Record<string, { label: string; color: string }> = {
-            RAW: { label: '원자재', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-            WIP: { label: '반제품', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
+            RAW: { label: t('inventory.stock.raw'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
+            WIP: { label: t('inventory.stock.wip'), color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
           };
           const type = typeMap[getValue() as string] || { label: getValue(), color: 'bg-gray-100 text-gray-700' };
           return <span className={`px-2 py-1 text-xs rounded-full ${type.color}`}>{type.label}</span>;
@@ -69,14 +71,14 @@ function BomPage() {
       },
       {
         accessorKey: 'qtyPer',
-        header: '소요량',
+        header: t('master.bom.qtyPer'),
         size: 100,
         cell: ({ row }) => `${row.original.qtyPer} ${row.original.unit}`,
       },
-      { accessorKey: 'revision', header: '리비전', size: 80 },
+      { accessorKey: 'revision', header: t('master.bom.revision'), size: 80 },
       {
         accessorKey: 'useYn',
-        header: '사용',
+        header: t('master.bom.use'),
         size: 60,
         cell: ({ getValue }) => (
           <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -84,7 +86,7 @@ function BomPage() {
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.actions'),
         size: 80,
         cell: ({ row }) => (
           <div className="flex gap-1">
@@ -98,18 +100,18 @@ function BomPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Layers className="w-7 h-7 text-primary" />BOM 관리</h1>
-          <p className="text-text-muted mt-1">제품별 자재 구성(Bill of Materials)을 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Layers className="w-7 h-7 text-primary" />{t('master.bom.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.bom.subtitle')}</p>
         </div>
         <Button size="sm" onClick={() => { setEditingBom(null); setIsModalOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1" /> BOM 추가
+          <Plus className="w-4 h-4 mr-1" /> {t('master.bom.addBom')}
         </Button>
       </div>
 
@@ -117,10 +119,10 @@ function BomPage() {
         {/* 부모 품목 목록 */}
         <div className="col-span-4">
           <Card>
-            <CardHeader title="부모 품목" subtitle="BOM을 조회할 품목을 선택하세요" />
+            <CardHeader title={t('master.bom.parentPart')} subtitle={t('master.bom.selectParent')} />
             <CardContent>
               <Input
-                placeholder="품목코드 또는 품목명 검색..."
+                placeholder={t('master.bom.searchPlaceholder')}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />}
@@ -158,15 +160,15 @@ function BomPage() {
         <div className="col-span-8">
           <Card>
             <CardHeader
-              title={selectedParent ? `BOM - ${selectedParent.partCode}` : 'BOM 상세'}
-              subtitle={selectedParent ? `${selectedParent.partName} (${mockBomItems.length}개 자재)` : '부모 품목을 선택하세요'}
+              title={selectedParent ? `${t('master.bom.bomDetail')} - ${selectedParent.partCode}` : t('master.bom.bomDetail')}
+              subtitle={selectedParent ? `${selectedParent.partName} (${mockBomItems.length}${t('master.bom.materialsCount')})` : t('master.bom.selectParent')}
             />
             <CardContent>
               {selectedParent ? (
                 <DataGrid data={mockBomItems} columns={columns} pageSize={10} />
               ) : (
                 <div className="flex items-center justify-center h-64 text-text-muted">
-                  좌측에서 부모 품목을 선택하세요
+                  {t('master.bom.selectParentPrompt')}
                 </div>
               )}
             </CardContent>
@@ -175,20 +177,20 @@ function BomPage() {
       </div>
 
       {/* BOM 추가/수정 모달 */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingBom ? 'BOM 수정' : 'BOM 추가'} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingBom ? t('master.bom.editBom') : t('master.bom.addBom')} size="md">
         <div className="space-y-4">
-          <Input label="부모 품목" value={selectedParent?.partCode || ''} disabled fullWidth />
-          <Input label="자품목 코드" placeholder="자품목을 검색하세요" defaultValue={editingBom?.childPartCode} fullWidth />
+          <Input label={t('master.bom.parentPart')} value={selectedParent?.partCode || ''} disabled fullWidth />
+          <Input label={t('master.bom.childPartCode')} placeholder={t('master.bom.searchChildPlaceholder')} defaultValue={editingBom?.childPartCode} fullWidth />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="소요량" type="number" step="0.01" placeholder="1.0" defaultValue={editingBom?.qtyPer?.toString()} fullWidth />
-            <Input label="단위" placeholder="EA, M, KG" defaultValue={editingBom?.unit || 'EA'} fullWidth />
+            <Input label={t('master.bom.qtyPer')} type="number" step="0.01" placeholder="1.0" defaultValue={editingBom?.qtyPer?.toString()} fullWidth />
+            <Input label={t('master.bom.unitLabel')} placeholder="EA, M, KG" defaultValue={editingBom?.unit || 'EA'} fullWidth />
           </div>
-          <Input label="리비전" placeholder="A" defaultValue={editingBom?.revision || 'A'} fullWidth />
-          <Input label="비고" placeholder="비고 입력" fullWidth />
+          <Input label={t('master.bom.revision')} placeholder="A" defaultValue={editingBom?.revision || 'A'} fullWidth />
+          <Input label={t('master.bom.remark')} placeholder={t('master.bom.remarkPlaceholder')} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-          <Button>{editingBom ? '수정' : '추가'}</Button>
+          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+          <Button>{editingBom ? t('common.edit') : t('common.add')}</Button>
         </div>
       </Modal>
     </div>

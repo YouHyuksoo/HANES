@@ -5,6 +5,7 @@
  * @description 출고등록 모달 컴포넌트
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Modal, Select } from '@/components/ui';
 
 interface IssuingModalProps {
@@ -41,6 +42,7 @@ const consumableOptions = [
 ];
 
 function IssuingModal({ isOpen, onClose, onSubmit }: IssuingModalProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<IssuingFormValues>(defaultValues);
 
   const handleChange = (field: keyof IssuingFormValues, value: string | number) => {
@@ -59,67 +61,67 @@ function IssuingModal({ isOpen, onClose, onSubmit }: IssuingModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="출고 등록" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title={t('consumables.issuing.modalTitle')} size="md">
       <div className="space-y-4">
         <Select
-          label="소모품"
+          label={t('consumables.issuing.consumable')}
           options={consumableOptions}
           value={form.consumableId}
           onChange={(val) => handleChange('consumableId', val)}
           fullWidth
         />
         <Input
-          label="수량"
+          label={t('common.quantity')}
           type="number"
           value={String(form.qty)}
           onChange={(e) => handleChange('qty', Number(e.target.value))}
           fullWidth
         />
         <Input
-          label="출고부서"
+          label={t('consumables.issuing.departmentLabel')}
           value={form.department}
           onChange={(e) => handleChange('department', e.target.value)}
-          placeholder="출고부서 입력"
+          placeholder={t('consumables.issuing.departmentPlaceholder')}
           fullWidth
         />
         <div className="grid grid-cols-2 gap-3">
           <Input
-            label="라인"
+            label={t('consumables.issuing.lineLabel')}
             value={form.lineId}
             onChange={(e) => handleChange('lineId', e.target.value)}
-            placeholder="라인 입력"
+            placeholder={t('consumables.issuing.linePlaceholder')}
             fullWidth
           />
           <Input
-            label="설비"
+            label={t('consumables.issuing.equipmentLabel')}
             value={form.equipmentId}
             onChange={(e) => handleChange('equipmentId', e.target.value)}
-            placeholder="설비 입력"
+            placeholder={t('consumables.issuing.equipmentPlaceholder')}
             fullWidth
           />
         </div>
         <Select
-          label="출고사유"
+          label={t('consumables.issuing.issueReasonLabel')}
           options={[
-            { value: 'PRODUCTION', label: '생산투입' },
-            { value: 'REPAIR', label: '수리' },
-            { value: 'OTHER', label: '기타' },
+            { value: 'PRODUCTION', label: t('consumables.issuing.reasonProduction') },
+            { value: 'REPAIR', label: t('consumables.issuing.reasonRepair') },
+            { value: 'OTHER', label: t('consumables.issuing.reasonOther') },
           ]}
           value={form.issueReason}
           onChange={(val) => handleChange('issueReason', val)}
           fullWidth
         />
         <Input
-          label="비고"
+          label={t('common.remark')}
           value={form.remark}
           onChange={(e) => handleChange('remark', e.target.value)}
-          placeholder="비고 입력"
+          placeholder={t('consumables.issuing.remarkPlaceholder')}
           fullWidth
         />
       </div>
       <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-        <Button variant="secondary" onClick={handleClose}>취소</Button>
-        <Button onClick={handleSubmit}>등록</Button>
+        <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
+        <Button onClick={handleSubmit}>{t('common.register')}</Button>
       </div>
     </Modal>
   );

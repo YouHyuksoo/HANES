@@ -4,7 +4,8 @@
  * @file src/pages/interface/ManualPage.tsx
  * @description ERP 인터페이스 수동 전송 페이지
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send, RefreshCw, ArrowDownCircle, ArrowUpCircle, FileText, Package, Clipboard, Database } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 
@@ -17,53 +18,55 @@ interface TransferOption {
   icon: React.ReactNode;
 }
 
-const inboundOptions: TransferOption[] = [
-  {
-    id: 'job_order',
-    direction: 'IN',
-    type: 'JOB_ORDER',
-    name: '작업지시 수신',
-    description: 'ERP에서 작업지시 데이터를 수신합니다.',
-    icon: <FileText className="w-6 h-6" />,
-  },
-  {
-    id: 'bom_sync',
-    direction: 'IN',
-    type: 'BOM_SYNC',
-    name: 'BOM 동기화',
-    description: 'ERP에서 BOM 정보를 동기화합니다.',
-    icon: <Clipboard className="w-6 h-6" />,
-  },
-  {
-    id: 'part_sync',
-    direction: 'IN',
-    type: 'PART_SYNC',
-    name: '품목 마스터 동기화',
-    description: 'ERP에서 품목 마스터를 동기화합니다.',
-    icon: <Database className="w-6 h-6" />,
-  },
-];
-
-const outboundOptions: TransferOption[] = [
-  {
-    id: 'prod_result',
-    direction: 'OUT',
-    type: 'PROD_RESULT',
-    name: '생산실적 전송',
-    description: 'MES 생산실적을 ERP로 전송합니다.',
-    icon: <Package className="w-6 h-6" />,
-  },
-  {
-    id: 'stock_sync',
-    direction: 'OUT',
-    type: 'STOCK_SYNC',
-    name: '재고 동기화',
-    description: 'MES 재고 정보를 ERP로 전송합니다.',
-    icon: <Database className="w-6 h-6" />,
-  },
-];
-
 function InterfaceManualPage() {
+  const { t } = useTranslation();
+
+  const inboundOptions: TransferOption[] = useMemo(() => [
+    {
+      id: 'job_order',
+      direction: 'IN',
+      type: 'JOB_ORDER',
+      name: t('interface.manual.optJobOrder'),
+      description: t('interface.manual.optJobOrderDesc'),
+      icon: <FileText className="w-6 h-6" />,
+    },
+    {
+      id: 'bom_sync',
+      direction: 'IN',
+      type: 'BOM_SYNC',
+      name: t('interface.manual.optBomSync'),
+      description: t('interface.manual.optBomSyncDesc'),
+      icon: <Clipboard className="w-6 h-6" />,
+    },
+    {
+      id: 'part_sync',
+      direction: 'IN',
+      type: 'PART_SYNC',
+      name: t('interface.manual.optPartSync'),
+      description: t('interface.manual.optPartSyncDesc'),
+      icon: <Database className="w-6 h-6" />,
+    },
+  ], [t]);
+
+  const outboundOptions: TransferOption[] = useMemo(() => [
+    {
+      id: 'prod_result',
+      direction: 'OUT',
+      type: 'PROD_RESULT',
+      name: t('interface.manual.optProdResult'),
+      description: t('interface.manual.optProdResultDesc'),
+      icon: <Package className="w-6 h-6" />,
+    },
+    {
+      id: 'stock_sync',
+      direction: 'OUT',
+      type: 'STOCK_SYNC',
+      name: t('interface.manual.optStockSync'),
+      description: t('interface.manual.optStockSyncDesc'),
+      icon: <Database className="w-6 h-6" />,
+    },
+  ], [t]);
+
   const [selectedOption, setSelectedOption] = useState<TransferOption | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -81,8 +84,8 @@ function InterfaceManualPage() {
     setResult({
       success: Math.random() > 0.2,
       message: Math.random() > 0.2
-        ? `${selectedOption.name} 처리가 완료되었습니다. (3건 처리됨)`
-        : 'ERP 연결 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        ? t('interface.manual.resultSuccess', { name: selectedOption.name, count: 3 })
+        : t('interface.manual.resultError'),
     });
   };
 
@@ -90,11 +93,11 @@ function InterfaceManualPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Send className="w-7 h-7 text-primary" />수동 전송</h1>
-          <p className="text-text-muted mt-1">ERP 연동 데이터를 수동으로 전송합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Send className="w-7 h-7 text-primary" />{t('interface.manual.title')}</h1>
+          <p className="text-text-muted mt-1">{t('interface.manual.description')}</p>
         </div>
         <Button variant="secondary" size="sm">
-          <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+          <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
         </Button>
       </div>
 
@@ -102,8 +105,8 @@ function InterfaceManualPage() {
         {/* Inbound 옵션 */}
         <Card>
           <CardContent>
-            <div className="flex items-center gap-2 mb-1"><ArrowDownCircle className="w-5 h-5 text-blue-500" /><span className="font-medium text-text">수신 (Inbound)</span></div>
-            <p className="text-sm text-text-muted mb-3">ERP → MES 데이터 수신</p>
+            <div className="flex items-center gap-2 mb-1"><ArrowDownCircle className="w-5 h-5 text-blue-500" /><span className="font-medium text-text">{t('interface.manual.inboundSection')}</span></div>
+            <p className="text-sm text-text-muted mb-3">{t('interface.manual.inboundDesc')}</p>
             <div className="space-y-3">
               {inboundOptions.map((option) => (
                 <button
@@ -137,8 +140,8 @@ function InterfaceManualPage() {
         {/* Outbound 옵션 */}
         <Card>
           <CardContent>
-            <div className="flex items-center gap-2 mb-1"><ArrowUpCircle className="w-5 h-5 text-purple-500" /><span className="font-medium text-text">송신 (Outbound)</span></div>
-            <p className="text-sm text-text-muted mb-3">MES → ERP 데이터 전송</p>
+            <div className="flex items-center gap-2 mb-1"><ArrowUpCircle className="w-5 h-5 text-purple-500" /><span className="font-medium text-text">{t('interface.manual.outboundSection')}</span></div>
+            <p className="text-sm text-text-muted mb-3">{t('interface.manual.outboundDesc')}</p>
             <div className="space-y-3">
               {outboundOptions.map((option) => (
                 <button
@@ -174,27 +177,27 @@ function InterfaceManualPage() {
       {selectedOption && (
         <Card>
           <CardContent>
-            <div className="font-medium text-text mb-1">{selectedOption.name} 실행</div>
+            <div className="font-medium text-text mb-1">{t('interface.manual.executeTitle', { name: selectedOption.name })}</div>
             <p className="text-sm text-text-muted mb-4">{selectedOption.description}</p>
             <div className="space-y-4">
               {/* 옵션별 추가 설정 */}
               {selectedOption.type === 'JOB_ORDER' && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="계획일 (시작)" type="date" fullWidth />
-                  <Input label="계획일 (종료)" type="date" fullWidth />
+                  <Input label={t('interface.manual.planDateStart')} type="date" fullWidth />
+                  <Input label={t('interface.manual.planDateEnd')} type="date" fullWidth />
                 </div>
               )}
 
               {selectedOption.type === 'PROD_RESULT' && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="생산일 (시작)" type="date" fullWidth />
-                  <Input label="생산일 (종료)" type="date" fullWidth />
+                  <Input label={t('interface.manual.prodDateStart')} type="date" fullWidth />
+                  <Input label={t('interface.manual.prodDateEnd')} type="date" fullWidth />
                   <Select
-                    label="전송 범위"
+                    label={t('interface.manual.transferScope')}
                     options={[
-                      { value: 'all', label: '전체 미전송 실적' },
-                      { value: 'today', label: '오늘 실적만' },
-                      { value: 'selected', label: '선택 실적만' },
+                      { value: 'all', label: t('interface.manual.scopeAll') },
+                      { value: 'today', label: t('interface.manual.scopeToday') },
+                      { value: 'selected', label: t('interface.manual.scopeSelected') },
                     ]}
                     fullWidth
                   />
@@ -204,8 +207,7 @@ function InterfaceManualPage() {
               {selectedOption.type === 'BOM_SYNC' && (
                 <div className="p-4 bg-surface rounded-lg">
                   <p className="text-sm text-text-muted">
-                    ERP에서 변경된 BOM 정보를 모두 가져옵니다.
-                    기존 BOM과 동일한 경우 업데이트하지 않습니다.
+                    {t('interface.manual.bomSyncInfo')}
                   </p>
                 </div>
               )}
@@ -213,8 +215,7 @@ function InterfaceManualPage() {
               {selectedOption.type === 'PART_SYNC' && (
                 <div className="p-4 bg-surface rounded-lg">
                   <p className="text-sm text-text-muted">
-                    ERP에서 신규/변경된 품목 마스터를 가져옵니다.
-                    기존 품목은 정보가 업데이트됩니다.
+                    {t('interface.manual.partSyncInfo')}
                   </p>
                 </div>
               )}
@@ -239,16 +240,16 @@ function InterfaceManualPage() {
               {/* 실행 버튼 */}
               <div className="flex justify-end gap-2 pt-4 border-t border-border">
                 <Button variant="secondary" onClick={() => setSelectedOption(null)}>
-                  취소
+                  {t('common.cancel')}
                 </Button>
                 <Button onClick={handleTransfer} disabled={isProcessing}>
                   {isProcessing ? (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> 처리중...
+                      <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> {t('interface.manual.processing')}
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 mr-1" /> 전송 실행
+                      <Send className="w-4 h-4 mr-1" /> {t('interface.manual.execute')}
                     </>
                   )}
                 </Button>

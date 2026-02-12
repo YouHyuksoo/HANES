@@ -4,6 +4,8 @@
  * @file src/pages/material/iqc/components/IqcModal.tsx
  * @description IQC 검사결과 등록 모달 컴포넌트
  */
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { Button, Input, Modal, Select } from '@/components/ui';
 import type { IqcItem, IqcResultForm } from '@/hooks/material/useIqcData';
@@ -17,55 +19,56 @@ interface IqcModalProps {
   onSubmit: () => void;
 }
 
-const resultOptions = [
-  { value: '', label: '결과 선택' },
-  { value: 'PASSED', label: '합격' },
-  { value: 'FAILED', label: '불합격' },
-];
-
 export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm, onSubmit }: IqcModalProps) {
+  const { t } = useTranslation();
+  const resultOptions = useMemo(() => [
+    { value: '', label: t('material.iqc.resultSelect') },
+    { value: 'PASSED', label: t('material.iqc.passed') },
+    { value: 'FAILED', label: t('material.iqc.failed') },
+  ], [t]);
+
   if (!selectedItem) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="IQC 검사결과 등록" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('material.iqc.modalTitle')} size="md">
       <div className="space-y-4">
         {/* 입하 정보 표시 */}
         <div className="p-3 bg-background rounded-lg space-y-1">
           <p className="text-sm text-text-muted">
-            입하번호: <span className="font-medium text-text">{selectedItem.receiveNo}</span>
+            {t('material.iqc.arrivalNoLabel')}: <span className="font-medium text-text">{selectedItem.receiveNo}</span>
           </p>
           <p className="text-sm text-text-muted">
-            품목: <span className="font-medium text-text">{selectedItem.partName} ({selectedItem.partCode})</span>
+            {t('material.iqc.partLabel')}: <span className="font-medium text-text">{selectedItem.partName} ({selectedItem.partCode})</span>
           </p>
           <p className="text-sm text-text-muted">
-            LOT: <span className="font-medium text-text">{selectedItem.lotNo}</span>
+            {t('material.iqc.lotLabel')}: <span className="font-medium text-text">{selectedItem.lotNo}</span>
           </p>
           <p className="text-sm text-text-muted">
-            수량: <span className="font-medium text-text">{selectedItem.quantity.toLocaleString()} {selectedItem.unit}</span>
+            {t('material.iqc.quantityLabel')}: <span className="font-medium text-text">{selectedItem.quantity.toLocaleString()} {selectedItem.unit}</span>
           </p>
           <p className="text-sm text-text-muted">
-            공급업체: <span className="font-medium text-text">{selectedItem.supplierName}</span>
+            {t('material.iqc.supplierLabel')}: <span className="font-medium text-text">{selectedItem.supplierName}</span>
           </p>
         </div>
 
         {/* 검사결과 입력 */}
         <Select
-          label="검사결과"
+          label={t('material.iqc.resultLabel')}
           options={resultOptions}
           value={form.result}
           onChange={(v) => setForm((prev) => ({ ...prev, result: v as IqcResultForm['result'] }))}
           fullWidth
         />
         <Input
-          label="검사자"
-          placeholder="검사자명 입력"
+          label={t('material.iqc.inspectorLabel')}
+          placeholder={t('material.iqc.inspectorPlaceholder')}
           value={form.inspector}
           onChange={(e) => setForm((prev) => ({ ...prev, inspector: e.target.value }))}
           fullWidth
         />
         <Input
-          label="비고"
-          placeholder="검사 비고사항"
+          label={t('common.remark')}
+          placeholder={t('material.iqc.remarkPlaceholder')}
           value={form.remark}
           onChange={(e) => setForm((prev) => ({ ...prev, remark: e.target.value }))}
           fullWidth
@@ -81,7 +84,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               onSubmit();
             }}
           >
-            <XCircle className="w-4 h-4 mr-1 text-red-500" /> 불합격
+            <XCircle className="w-4 h-4 mr-1 text-red-500" /> {t('material.iqc.failed')}
           </Button>
           <Button
             className="flex-1"
@@ -90,7 +93,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
               onSubmit();
             }}
           >
-            <CheckCircle className="w-4 h-4 mr-1" /> 합격
+            <CheckCircle className="w-4 h-4 mr-1" /> {t('material.iqc.passed')}
           </Button>
         </div>
       </div>

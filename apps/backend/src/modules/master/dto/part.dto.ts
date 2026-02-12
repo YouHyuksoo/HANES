@@ -6,7 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PART_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
+import { PART_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 
 export class CreatePartDto {
   @ApiProperty({ description: '품목 코드', example: 'P-001' })

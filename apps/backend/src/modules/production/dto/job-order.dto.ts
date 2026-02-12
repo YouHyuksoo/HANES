@@ -25,7 +25,7 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { JOB_ORDER_STATUS_VALUES, USE_YN_VALUES } from '@hanes/shared';
+import { JOB_ORDER_STATUS_VALUES, USE_YN_VALUES } from '@harness/shared';
 
 export type JobOrderStatus = typeof JOB_ORDER_STATUS_VALUES[number];
 

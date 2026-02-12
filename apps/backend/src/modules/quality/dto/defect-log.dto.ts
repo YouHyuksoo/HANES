@@ -28,7 +28,7 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DEFECT_LOG_STATUS_VALUES, REPAIR_RESULT_VALUES } from '@hanes/shared';
+import { DEFECT_LOG_STATUS_VALUES, REPAIR_RESULT_VALUES } from '@harness/shared';
 
 /**
  * 불량로그 생성 DTO

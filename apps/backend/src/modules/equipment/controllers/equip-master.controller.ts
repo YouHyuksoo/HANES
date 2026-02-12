@@ -40,7 +40,7 @@ import {
   EquipMasterQueryDto,
   ChangeEquipStatusDto,
 } from '../dto/equip-master.dto';
-import { EQUIP_TYPE_VALUES, EQUIP_STATUS_VALUES } from '@hanes/shared';
+import { EQUIP_TYPE_VALUES, EQUIP_STATUS_VALUES } from '@harness/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('설비관리 - 설비마스터')

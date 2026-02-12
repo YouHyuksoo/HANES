@@ -6,7 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn, IsEmail } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PARTNER_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
+import { PARTNER_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 
 export class CreatePartnerDto {
   @ApiProperty({ description: '거래처 코드', example: 'SUP-001' })

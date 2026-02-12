@@ -10,6 +10,7 @@
  * 3. **필터**: 날짜, 합격/불합격 필터링
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   RefreshCw,
@@ -142,10 +143,12 @@ const mockInspections: InspectRecord[] = [
 // 메인 컴포넌트
 // ========================================
 function InspectPage() {
+  const { t } = useTranslation();
+
   const comCodeResultOptions = useComCodeOptions('INSPECT_RESULT');
-  const resultOptions = [{ value: '', label: '전체 결과' }, ...comCodeResultOptions];
+  const resultOptions = useMemo(() => [{ value: '', label: t('quality.inspect.allResults') }, ...comCodeResultOptions], [t, comCodeResultOptions]);
   const comCodeTypeOptions = useComCodeOptions('INSPECT_TYPE');
-  const inspectTypeOptions = [{ value: '', label: '전체 검사유형' }, ...comCodeTypeOptions];
+  const inspectTypeOptions = useMemo(() => [{ value: '', label: t('quality.inspect.allTypes') }, ...comCodeTypeOptions], [t, comCodeTypeOptions]);
   // 상태 관리
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -197,12 +200,12 @@ function InspectPage() {
     () => [
       {
         accessorKey: 'inspectedAt',
-        header: '검사시간',
+        header: t('quality.inspect.inspectedAt'),
         size: 150,
       },
       {
         accessorKey: 'serialNo',
-        header: '시리얼번호',
+        header: t('quality.inspect.serialNo'),
         size: 170,
         cell: ({ getValue }) => (
           <span className="font-mono text-sm">{getValue() as string}</span>
@@ -210,19 +213,19 @@ function InspectPage() {
       },
       {
         accessorKey: 'inspectType',
-        header: '검사유형',
+        header: t('quality.inspect.inspectType'),
         size: 100,
         cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_TYPE" code={getValue() as string} />,
       },
       {
         accessorKey: 'result',
-        header: '결과',
+        header: t('quality.inspect.resultCol'),
         size: 80,
         cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_RESULT" code={getValue() as string} />,
       },
       {
         accessorKey: 'errorCode',
-        header: '에러코드',
+        header: t('quality.inspect.errorCode'),
         size: 80,
         cell: ({ getValue }) => {
           const code = getValue() as string | undefined;
@@ -235,7 +238,7 @@ function InspectPage() {
       },
       {
         accessorKey: 'errorDesc',
-        header: '에러내용',
+        header: t('quality.inspect.errorDesc'),
         size: 150,
         cell: ({ getValue }) => {
           const desc = getValue() as string | undefined;
@@ -244,7 +247,7 @@ function InspectPage() {
       },
       {
         accessorKey: 'inspectTime',
-        header: '소요시간',
+        header: t('quality.inspect.inspectTime'),
         size: 80,
         cell: ({ getValue }) => (
           <span className="font-mono">{getValue() as number}초</span>
@@ -252,11 +255,11 @@ function InspectPage() {
       },
       {
         accessorKey: 'equipmentNo',
-        header: '설비',
+        header: t('quality.inspect.equipment'),
         size: 80,
       },
     ],
-    []
+    [t]
   );
 
   return (
@@ -264,27 +267,27 @@ function InspectPage() {
       {/* 페이지 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />검사실적</h1>
-          <p className="text-text-muted mt-1">검사 결과와 합격률 통계를 확인합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />{t('quality.inspect.title')}</h1>
+          <p className="text-text-muted mt-1">{t('quality.inspect.description')}</p>
         </div>
         <Button variant="secondary" size="sm">
-          <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+          <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
         </Button>
       </div>
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label="총 검사" value={`${stats.total}건`} icon={Activity} color="blue" />
-        <StatCard label="합격률" value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
-        <StatCard label="합격" value={`${stats.passed}건`} icon={CheckCircle} color="green" />
-        <StatCard label="불합격" value={`${stats.failed}건`} icon={XCircle} color="red" />
-        <StatCard label="평균 소요" value={`${stats.avgTime}초`} icon={Clock} color="yellow" />
+        <StatCard label={t('quality.inspect.totalInspections')} value={`${stats.total}${t('common.count')}`} icon={Activity} color="blue" />
+        <StatCard label={t('quality.inspect.passRate')} value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
+        <StatCard label={t('quality.inspect.pass')} value={`${stats.passed}${t('common.count')}`} icon={CheckCircle} color="green" />
+        <StatCard label={t('quality.inspect.fail')} value={`${stats.failed}${t('common.count')}`} icon={XCircle} color="red" />
+        <StatCard label={t('quality.inspect.avgTime')} value={`${stats.avgTime}${t('common.seconds')}`} icon={Clock} color="yellow" />
       </div>
 
       {/* 검사유형별 합격률 */}
       <Card>
         <CardContent>
-          <div className="text-sm font-medium text-text mb-3">검사유형별 합격률</div>
+          <div className="text-sm font-medium text-text mb-3">{t('quality.inspect.passRateByType')}</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {(Object.entries(stats.byType) as [InspectType, { total: number; passed: number }][]).map(
               ([type, data]) => {
@@ -317,7 +320,7 @@ function InspectPage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="시리얼번호 검색..." value={searchSerial} onChange={(e) => setSearchSerial(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('quality.inspect.searchPlaceholder')} value={searchSerial} onChange={(e) => setSearchSerial(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-text-muted" />
@@ -325,8 +328,8 @@ function InspectPage() {
               <span className="text-text-muted">~</span>
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
             </div>
-            <Select options={inspectTypeOptions} value={inspectType} onChange={setInspectType} placeholder="검사유형" />
-            <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder="결과" />
+            <Select options={inspectTypeOptions} value={inspectType} onChange={setInspectType} placeholder={t('quality.inspect.inspectType')} />
+            <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder={t('quality.inspect.resultCol')} />
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid

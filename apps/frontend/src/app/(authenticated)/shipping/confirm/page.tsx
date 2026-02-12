@@ -10,6 +10,7 @@
  * 3. **ERP 동기화**: 출하 정보를 ERP 시스템에 전송
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Calendar, Upload, ArrowRight } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -31,8 +32,9 @@ const mockShipments: Shipment[] = [
 const customerOptions = [{ value: '', label: '전체 고객사' }, { value: 'CUST-001', label: '현대자동차' }, { value: 'CUST-002', label: '기아자동차' }, { value: 'CUST-003', label: 'GM코리아' }];
 
 function ShipmentPage() {
+  const { t } = useTranslation();
   const comCodeOptions = useComCodeOptions('SHIPMENT_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeOptions];
+  const statusOptions = [{ value: '', label: t('common.allStatus') }, ...comCodeOptions];
   const [statusFilter, setStatusFilter] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -51,35 +53,35 @@ function ShipmentPage() {
   const handleFormChange = (field: string, value: string) => setCreateForm((prev) => ({ ...prev, [field]: value }));
 
   const columns = useMemo<ColumnDef<Shipment>[]>(() => [
-    { accessorKey: 'shipmentNo', header: '출하번호', size: 160 },
-    { accessorKey: 'shipDate', header: '출하일', size: 100 },
-    { accessorKey: 'customerName', header: '고객사', size: 120 },
-    { accessorKey: 'palletCount', header: '팔레트', size: 80, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: 'boxCount', header: '박스', size: 80, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: 'totalQty', header: '총수량', size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'status', header: '상태', size: 100, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
-    { accessorKey: 'vehicleNo', header: '차량번호', size: 100 },
-    { id: 'actions', header: '작업', size: 140, cell: ({ row }) => (<div className="flex gap-1"><button className="p-1 hover:bg-surface rounded" title="상태 변경" disabled={row.original.status === 'DELIVERED'} onClick={() => handleStatusChange(row.original)}><ArrowRight className={`w-4 h-4 ${row.original.status === 'DELIVERED' ? 'text-text-muted opacity-50' : 'text-primary'}`} /></button><button className="p-1 hover:bg-surface rounded" title="ERP 동기화" onClick={() => handleSyncERP(row.original)}><Upload className="w-4 h-4 text-primary" /></button></div>) },
-  ], []);
+    { accessorKey: 'shipmentNo', header: t('shipping.confirm.shipmentNo'), size: 160 },
+    { accessorKey: 'shipDate', header: t('shipping.confirm.shipDate'), size: 100 },
+    { accessorKey: 'customerName', header: t('shipping.confirm.customer'), size: 120 },
+    { accessorKey: 'palletCount', header: t('shipping.confirm.pallet'), size: 80, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: 'boxCount', header: t('shipping.confirm.box'), size: 80, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: 'totalQty', header: t('common.totalQty'), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'status', header: t('common.status'), size: 100, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
+    { accessorKey: 'vehicleNo', header: t('shipping.confirm.vehicleNo'), size: 100 },
+    { id: 'actions', header: t('common.actions'), size: 140, cell: ({ row }) => (<div className="flex gap-1"><button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.changeStatus')} disabled={row.original.status === 'DELIVERED'} onClick={() => handleStatusChange(row.original)}><ArrowRight className={`w-4 h-4 ${row.original.status === 'DELIVERED' ? 'text-text-muted opacity-50' : 'text-primary'}`} /></button><button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.syncERP')} onClick={() => handleSyncERP(row.original)}><Upload className="w-4 h-4 text-primary" /></button></div>) },
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
-        <div><h1 className="text-xl font-bold text-text flex items-center gap-2"><Truck className="w-7 h-7 text-primary" />출하확정</h1><p className="text-text-muted mt-1">팔레트를 출하로 확정하고 배송을 관리합니다.</p></div>
-        <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> 출하 생성</Button>
+        <div><h1 className="text-xl font-bold text-text flex items-center gap-2"><Truck className="w-7 h-7 text-primary" />{t('shipping.confirm.title')}</h1><p className="text-text-muted mt-1">{t('shipping.confirm.description')}</p></div>
+        <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t('shipping.confirm.createShipment')}</Button>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="준비중" value={stats.preparing} icon={Clock} color="yellow" />
-        <StatCard label="적재완료" value={stats.loaded} icon={Package} color="blue" />
-        <StatCard label="출하완료" value={stats.shipped} icon={Truck} color="green" />
-        <StatCard label="배송완료" value={stats.delivered} icon={CheckCircle} color="purple" />
+        <StatCard label={t('shipping.confirm.statPreparing')} value={stats.preparing} icon={Clock} color="yellow" />
+        <StatCard label={t('shipping.confirm.statLoaded')} value={stats.loaded} icon={Package} color="blue" />
+        <StatCard label={t('shipping.confirm.statShipped')} value={stats.shipped} icon={Truck} color="green" />
+        <StatCard label={t('shipping.confirm.statDelivered')} value={stats.delivered} icon={CheckCircle} color="purple" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]"><Input placeholder="출하번호, 고객사 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+            <div className="flex-1 min-w-[200px]"><Input placeholder={t('shipping.confirm.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
             <div className="w-40"><Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth /></div>
             <div className="w-40"><Select options={customerOptions} value={customerFilter} onChange={setCustomerFilter} fullWidth /></div>
             <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-text-muted" /><Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-36" /></div>
@@ -89,37 +91,37 @@ function ShipmentPage() {
         </CardContent>
       </Card>
 
-      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="출하 생성" size="lg">
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t('shipping.confirm.createShipment')} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="출하일" type="date" value={createForm.shipDate} onChange={(e) => handleFormChange('shipDate', e.target.value)} fullWidth />
-            <Select label="고객사" options={customerOptions.slice(1)} value={createForm.customerCode} onChange={(v) => handleFormChange('customerCode', v)} fullWidth />
-            <Input label="차량번호" placeholder="12가 3456" value={createForm.vehicleNo} onChange={(e) => handleFormChange('vehicleNo', e.target.value)} fullWidth />
-            <Input label="운전자" placeholder="운전자명" value={createForm.driverName} onChange={(e) => handleFormChange('driverName', e.target.value)} fullWidth />
+            <Input label={t('shipping.confirm.shipDate')} type="date" value={createForm.shipDate} onChange={(e) => handleFormChange('shipDate', e.target.value)} fullWidth />
+            <Select label={t('shipping.confirm.customer')} options={customerOptions.slice(1)} value={createForm.customerCode} onChange={(v) => handleFormChange('customerCode', v)} fullWidth />
+            <Input label={t('shipping.confirm.vehicleNo')} placeholder="12가 3456" value={createForm.vehicleNo} onChange={(e) => handleFormChange('vehicleNo', e.target.value)} fullWidth />
+            <Input label={t('shipping.confirm.driver')} placeholder={t('shipping.confirm.driverPlaceholder')} value={createForm.driverName} onChange={(e) => handleFormChange('driverName', e.target.value)} fullWidth />
           </div>
-          <Input label="배송지" placeholder="배송 주소 또는 공장명" value={createForm.destination} onChange={(e) => handleFormChange('destination', e.target.value)} leftIcon={<MapPin className="w-4 h-4" />} fullWidth />
-          <div className="flex justify-end gap-2 pt-4 border-t border-border"><Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>취소</Button><Button onClick={handleCreate}><Plus className="w-4 h-4 mr-1" /> 생성</Button></div>
+          <Input label={t('shipping.confirm.destination')} placeholder={t('shipping.confirm.destinationPlaceholder')} value={createForm.destination} onChange={(e) => handleFormChange('destination', e.target.value)} leftIcon={<MapPin className="w-4 h-4" />} fullWidth />
+          <div className="flex justify-end gap-2 pt-4 border-t border-border"><Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t('common.cancel')}</Button><Button onClick={handleCreate}><Plus className="w-4 h-4 mr-1" /> {t('common.create')}</Button></div>
         </div>
       </Modal>
 
-      <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title="출하 상세" size="md">
+      <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title={t('shipping.confirm.detail')} size="md">
         {selectedShipment && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div><p className="text-sm text-text-muted">출하번호</p><p className="font-medium text-text">{selectedShipment.shipmentNo}</p></div>
-              <div><p className="text-sm text-text-muted">출하일</p><p className="font-medium text-text">{selectedShipment.shipDate}</p></div>
-              <div><p className="text-sm text-text-muted">고객사</p><p className="font-medium text-text">{selectedShipment.customerName}</p></div>
-              <div><p className="text-sm text-text-muted">상태</p><ShipmentStatusBadge status={selectedShipment.status} /></div>
-              <div><p className="text-sm text-text-muted">차량번호</p><p className="font-medium text-text">{selectedShipment.vehicleNo}</p></div>
-              <div><p className="text-sm text-text-muted">운전자</p><p className="font-medium text-text">{selectedShipment.driverName}</p></div>
-              <div className="col-span-2"><p className="text-sm text-text-muted">배송지</p><p className="font-medium text-text">{selectedShipment.destination}</p></div>
+              <div><p className="text-sm text-text-muted">{t('shipping.confirm.shipmentNo')}</p><p className="font-medium text-text">{selectedShipment.shipmentNo}</p></div>
+              <div><p className="text-sm text-text-muted">{t('shipping.confirm.shipDate')}</p><p className="font-medium text-text">{selectedShipment.shipDate}</p></div>
+              <div><p className="text-sm text-text-muted">{t('shipping.confirm.customer')}</p><p className="font-medium text-text">{selectedShipment.customerName}</p></div>
+              <div><p className="text-sm text-text-muted">{t('common.status')}</p><ShipmentStatusBadge status={selectedShipment.status} /></div>
+              <div><p className="text-sm text-text-muted">{t('shipping.confirm.vehicleNo')}</p><p className="font-medium text-text">{selectedShipment.vehicleNo}</p></div>
+              <div><p className="text-sm text-text-muted">{t('shipping.confirm.driver')}</p><p className="font-medium text-text">{selectedShipment.driverName}</p></div>
+              <div className="col-span-2"><p className="text-sm text-text-muted">{t('shipping.confirm.destination')}</p><p className="font-medium text-text">{selectedShipment.destination}</p></div>
             </div>
             <div className="grid grid-cols-3 gap-4 p-4 bg-background rounded-lg">
-              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.palletCount}</p><p className="text-sm text-text-muted">팔레트</p></div>
-              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.boxCount}</p><p className="text-sm text-text-muted">박스</p></div>
-              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.totalQty.toLocaleString()}</p><p className="text-sm text-text-muted">총수량</p></div>
+              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.palletCount}</p><p className="text-sm text-text-muted">{t('shipping.confirm.pallet')}</p></div>
+              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.boxCount}</p><p className="text-sm text-text-muted">{t('shipping.confirm.box')}</p></div>
+              <div className="text-center"><p className="text-lg font-bold leading-tight text-primary">{selectedShipment.totalQty.toLocaleString()}</p><p className="text-sm text-text-muted">{t('common.totalQty')}</p></div>
             </div>
-            <div className="flex justify-end"><Button variant="secondary" onClick={() => setIsDetailModalOpen(false)}>닫기</Button></div>
+            <div className="flex justify-end"><Button variant="secondary" onClick={() => setIsDetailModalOpen(false)}>{t('common.close')}</Button></div>
           </div>
         )}
       </Modal>

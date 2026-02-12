@@ -5,6 +5,7 @@
  * @description 소모품 수명 현황 페이지
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity } from 'lucide-react';
 import { Card, CardContent, Button, StatCard } from '@/components/ui';
 
@@ -90,13 +91,14 @@ const mockData: LifeStatus[] = [
   },
 ];
 
-const categoryLabels: Record<string, string> = {
-  MOLD: '금형',
-  JIG: '지그',
-  TOOL: '공구',
-};
-
 function ConsumableLifePage() {
+  const { t } = useTranslation();
+
+  const categoryLabels: Record<string, string> = {
+    MOLD: t('consumables.master.mold'),
+    JIG: t('consumables.master.jig'),
+    TOOL: t('consumables.master.tool'),
+  };
   const sortedData = useMemo(() => {
     return [...mockData].sort((a, b) => b.lifePercentage - a.lifePercentage);
   }, []);
@@ -130,25 +132,25 @@ function ConsumableLifePage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />수명 현황</h1>
-          <p className="text-text-muted mt-1">소모품의 수명 상태를 모니터링합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />{t('consumables.life.title')}</h1>
+          <p className="text-text-muted mt-1">{t('consumables.life.description')}</p>
         </div>
         <Button variant="secondary" size="sm">
-          <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+          <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
         </Button>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="전체" value={stats.total} icon={Activity} color="blue" />
-        <StatCard label="정상" value={stats.normal} icon={CheckCircle} color="green" />
-        <StatCard label="경고" value={stats.warning} icon={AlertTriangle} color="yellow" />
-        <StatCard label="교체필요" value={stats.replace} icon={XCircle} color="red" />
+        <StatCard label={t('common.all')} value={stats.total} icon={Activity} color="blue" />
+        <StatCard label={t('consumables.master.statusNormal')} value={stats.normal} icon={CheckCircle} color="green" />
+        <StatCard label={t('consumables.master.statusWarning')} value={stats.warning} icon={AlertTriangle} color="yellow" />
+        <StatCard label={t('consumables.master.statusReplace')} value={stats.replace} icon={XCircle} color="red" />
       </div>
 
       {/* 수명 현황 리스트 */}
       <Card>
         <CardContent>
-          <div className="text-sm font-medium text-text mb-3">수명 현황 (사용률 높은 순)</div>
+          <div className="text-sm font-medium text-text mb-3">{t('consumables.life.sortedByUsage')}</div>
           <div className="space-y-4">
             {sortedData.map((item) => (
               <div
@@ -179,7 +181,7 @@ function ConsumableLifePage() {
                       {item.currentCount.toLocaleString()} / {item.expectedLife.toLocaleString()}
                     </div>
                     <p className="text-sm text-text-muted">
-                      잔여: {item.remainingLife > 0 ? item.remainingLife.toLocaleString() : '초과'}
+                      {t('consumables.life.remaining')}: {item.remainingLife > 0 ? item.remainingLife.toLocaleString() : t('consumables.life.exceeded')}
                     </p>
                   </div>
                 </div>
@@ -201,14 +203,14 @@ function ConsumableLifePage() {
                   </span>
                   {item.status === 'REPLACE' && (
                     <Button size="sm" variant="secondary">
-                      <RotateCcw className="w-4 h-4 mr-1" /> 리셋
+                      <RotateCcw className="w-4 h-4 mr-1" /> {t('consumables.life.reset')}
                     </Button>
                   )}
                 </div>
 
                 {item.lastReplaced && (
                   <p className="text-xs text-text-muted mt-2">
-                    최근 교체: {item.lastReplaced}
+                    {t('consumables.life.lastReplaced')}: {item.lastReplaced}
                   </p>
                 )}
               </div>

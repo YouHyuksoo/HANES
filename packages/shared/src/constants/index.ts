@@ -3,7 +3,7 @@
  * @description 공통 상수 정의
  *
  * 초보자 가이드:
- * 1. **사용법**: import { MENU_ITEMS, PROCESS_CODES } from '@hanes/shared/constants'
+ * 1. **사용법**: import { MENU_ITEMS, PROCESS_CODES } from '@harness/shared/constants'
  * 2. **as const**: 타입 추론을 위해 readonly로 정의됨
  */
 

@@ -1,4 +1,4 @@
-# HANES MES 프로젝트 설정
+# HARNESS MES 프로젝트 설정
 
 ## 패키지 매니저
 
@@ -42,7 +42,7 @@ DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[N]-[REGION].pool
 
 ### 4. 현재 프로젝트 정보
 - **Project ID**: `YOUR_PROJECT_REF`
-- **Project Name**: `hanes-mes`
+- **Project Name**: `harness-mes`
 - **Region**: `ap-northeast-2`
 - **Pooler 주소**: `YOUR_POOLER_HOST`
 

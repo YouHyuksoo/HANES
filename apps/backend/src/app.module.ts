@@ -33,6 +33,7 @@ import { CustomsModule } from './modules/customs/customs.module';
 import { ConsumablesModule } from './modules/consumables/consumables.module';
 import { OutsourcingModule } from './modules/outsourcing/outsourcing.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { SystemModule } from './modules/system/system.module';
 
 @Module({
   imports: [
@@ -86,6 +87,9 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 
     // 외주관리 (외주발주, 출고, 입고)
     OutsourcingModule,
+
+    // 시스템관리 (통신설정)
+    SystemModule,
   ],
   controllers: [AppController],
   providers: [AppService],

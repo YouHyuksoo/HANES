@@ -10,6 +10,7 @@
  * 3. **통신 설정**: MQTT, Serial, TCP 통신방식 설정
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   Plus, Edit2, Trash2, Search, RefreshCw, Download, Settings,
@@ -53,48 +54,61 @@ const mockEquipments: EquipMaster[] = [
   { id: '6', equipCode: 'ASM-001', equipName: '조립기 1호', equipType: 'ASSEMBLY', lineName: 'L3', commType: 'NONE', manufacturer: '삼성', model: 'SA-300', useYn: 'Y', remark: '수동 설비' },
 ];
 
-const equipTypeOptions = [
-  { value: '', label: '전체 유형' },
-  { value: 'CUTTING', label: '절단' },
-  { value: 'CRIMPING', label: '압착' },
-  { value: 'ASSEMBLY', label: '조립' },
-  { value: 'INSPECTION', label: '검사' },
-  { value: 'PACKING', label: '포장' },
-];
-
-const commTypeOptions = [
-  { value: 'NONE', label: '없음' },
+const commTypeOptions: { value: string; label: string }[] = [
+  { value: 'NONE', label: 'None' },
   { value: 'TCP', label: 'TCP/IP' },
   { value: 'SERIAL', label: 'Serial' },
   { value: 'MQTT', label: 'MQTT' },
 ];
 
-const lineOptions = [
-  { value: '', label: '전체 라인' },
+const lineOptions: { value: string; label: string }[] = [
+  { value: '', label: '' },
   { value: 'L1', label: 'L1' },
   { value: 'L2', label: 'L2' },
   { value: 'L3', label: 'L3' },
   { value: 'L4', label: 'L4' },
 ];
 
-const equipTypeLabels: Record<EquipType, string> = { CUTTING: '절단', CRIMPING: '압착', ASSEMBLY: '조립', INSPECTION: '검사', PACKING: '포장' };
 const commTypeLabels: Record<CommType, { label: string; color: string }> = {
   MQTT: { label: 'MQTT', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' },
   SERIAL: { label: 'Serial', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
   TCP: { label: 'TCP/IP', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-  NONE: { label: '없음', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+  NONE: { label: 'None', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
 };
 
 // ========================================
 // 메인 컴포넌트
 // ========================================
 function EquipMasterPage() {
+  const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [lineFilter, setLineFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEquip, setEditingEquip] = useState<EquipMaster | null>(null);
   const [formCommType, setFormCommType] = useState<CommType>('NONE');
+
+  const equipTypeOptions = useMemo(() => [
+    { value: '', label: t('master.equip.allTypes') },
+    { value: 'CUTTING', label: t('master.equip.cutting') },
+    { value: 'CRIMPING', label: t('master.equip.crimping') },
+    { value: 'ASSEMBLY', label: t('master.equip.assembly') },
+    { value: 'INSPECTION', label: t('master.equip.inspection') },
+    { value: 'PACKING', label: t('master.equip.packing') },
+  ], [t]);
+
+  const equipTypeLabels = useMemo<Record<EquipType, string>>(() => ({
+    CUTTING: t('master.equip.cutting'),
+    CRIMPING: t('master.equip.crimping'),
+    ASSEMBLY: t('master.equip.assembly'),
+    INSPECTION: t('master.equip.inspection'),
+    PACKING: t('master.equip.packing'),
+  }), [t]);
+
+  const lineFilterOptions = useMemo(() => [
+    { value: '', label: t('master.equip.allLines') },
+    ...lineOptions.filter(o => o.value),
+  ], [t]);
 
   const filteredData = useMemo(() => {
     return mockEquipments.filter((equip) => {
@@ -112,80 +126,80 @@ function EquipMasterPage() {
   };
 
   const columns = useMemo<ColumnDef<EquipMaster>[]>(() => [
-    { accessorKey: 'equipCode', header: '설비코드', size: 100 },
-    { accessorKey: 'equipName', header: '설비명', size: 140 },
-    { accessorKey: 'equipType', header: '유형', size: 70, cell: ({ getValue }) => equipTypeLabels[getValue() as EquipType] },
-    { accessorKey: 'lineName', header: '라인', size: 50 },
-    { accessorKey: 'commType', header: '통신방식', size: 80, cell: ({ getValue }) => { const { label, color } = commTypeLabels[getValue() as CommType]; return <span className={`px-2 py-1 text-xs rounded-full ${color}`}>{label}</span>; }},
-    { accessorKey: 'ipAddress', header: 'IP/포트', size: 140, cell: ({ row }) => { const e = row.original; return e.commType === 'SERIAL' ? <span className="font-mono">{e.port}</span> : e.ipAddress ? <span className="font-mono">{e.ipAddress}:{e.port}</span> : '-'; }},
-    { accessorKey: 'manufacturer', header: '제조사', size: 80 },
-    { accessorKey: 'model', header: '모델', size: 90 },
-    { accessorKey: 'useYn', header: '사용', size: 50, cell: ({ getValue }) => <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} /> },
-    { id: 'actions', header: '관리', size: 80, cell: ({ row }) => (
+    { accessorKey: 'equipCode', header: t('master.equip.equipCode'), size: 100 },
+    { accessorKey: 'equipName', header: t('master.equip.equipName'), size: 140 },
+    { accessorKey: 'equipType', header: t('master.equip.type'), size: 70, cell: ({ getValue }) => equipTypeLabels[getValue() as EquipType] },
+    { accessorKey: 'lineName', header: t('master.equip.line'), size: 50 },
+    { accessorKey: 'commType', header: t('master.equip.commType'), size: 80, cell: ({ getValue }) => { const { label, color } = commTypeLabels[getValue() as CommType]; return <span className={`px-2 py-1 text-xs rounded-full ${color}`}>{label}</span>; }},
+    { accessorKey: 'ipAddress', header: t('master.equip.ipPort'), size: 140, cell: ({ row }) => { const e = row.original; return e.commType === 'SERIAL' ? <span className="font-mono">{e.port}</span> : e.ipAddress ? <span className="font-mono">{e.ipAddress}:{e.port}</span> : '-'; }},
+    { accessorKey: 'manufacturer', header: t('master.equip.manufacturer'), size: 80 },
+    { accessorKey: 'model', header: t('master.equip.model'), size: 90 },
+    { accessorKey: 'useYn', header: t('master.equip.use'), size: 50, cell: ({ getValue }) => <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} /> },
+    { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => openModal(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
         <button className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
-  ], []);
+  ], [t, equipTypeLabels]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />설비마스터</h1>
-          <p className="text-text-muted mt-1">설비 기준정보와 통신설정을 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Monitor className="w-7 h-7 text-primary" />{t('master.equip.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.equip.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀</Button>
-          <Button size="sm" onClick={() => openModal(null)}><Plus className="w-4 h-4 mr-1" />설비 추가</Button>
+          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
+          <Button size="sm" onClick={() => openModal(null)}><Plus className="w-4 h-4 mr-1" />{t('master.equip.addEquip')}</Button>
         </div>
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]"><Input placeholder="설비코드 또는 설비명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-            <Select options={equipTypeOptions} value={typeFilter} onChange={setTypeFilter} placeholder="유형" />
-            <Select options={lineOptions} value={lineFilter} onChange={setLineFilter} placeholder="라인" />
+            <div className="flex-1 min-w-[200px]"><Input placeholder={t('master.equip.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+            <Select options={equipTypeOptions} value={typeFilter} onChange={setTypeFilter} placeholder={t('master.equip.type')} />
+            <Select options={lineFilterOptions} value={lineFilter} onChange={setLineFilter} placeholder={t('master.equip.line')} />
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid data={filteredData} columns={columns} pageSize={10} />
         </CardContent>
       </Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingEquip ? '설비 수정' : '설비 추가'} size="lg">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingEquip ? t('master.equip.editEquip') : t('master.equip.addEquip')} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="설비코드" placeholder="CUT-001" defaultValue={editingEquip?.equipCode} fullWidth />
-            <Input label="설비명" placeholder="절단기 1호" defaultValue={editingEquip?.equipName} fullWidth />
+            <Input label={t('master.equip.equipCode')} placeholder="CUT-001" defaultValue={editingEquip?.equipCode} fullWidth />
+            <Input label={t('master.equip.equipName')} placeholder={t('master.equip.equipName')} defaultValue={editingEquip?.equipName} fullWidth />
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <Select label="유형" options={equipTypeOptions.filter(o => o.value)} value={editingEquip?.equipType || 'CUTTING'} fullWidth />
-            <Select label="라인" options={lineOptions.filter(o => o.value)} value={editingEquip?.lineName || 'L1'} fullWidth />
-            <Select label="통신방식" options={commTypeOptions} value={formCommType} onChange={(v) => setFormCommType(v as CommType)} fullWidth />
+            <Select label={t('master.equip.type')} options={equipTypeOptions.filter(o => o.value)} value={editingEquip?.equipType || 'CUTTING'} fullWidth />
+            <Select label={t('master.equip.line')} options={lineOptions.filter(o => o.value)} value={editingEquip?.lineName || 'L1'} fullWidth />
+            <Select label={t('master.equip.commType')} options={commTypeOptions} value={formCommType} onChange={(v) => setFormCommType(v as CommType)} fullWidth />
           </div>
           {(formCommType === 'TCP' || formCommType === 'MQTT') && (
             <div className="grid grid-cols-2 gap-4 p-4 bg-background rounded-lg">
-              <Input label="IP주소" placeholder="192.168.1.100" defaultValue={editingEquip?.ipAddress} fullWidth leftIcon={<Wifi className="w-4 h-4" />} />
-              <Input label="포트" placeholder={formCommType === 'MQTT' ? '1883' : '5000'} defaultValue={editingEquip?.port} fullWidth />
+              <Input label={t('master.equip.ipAddress')} placeholder="192.168.1.100" defaultValue={editingEquip?.ipAddress} fullWidth leftIcon={<Wifi className="w-4 h-4" />} />
+              <Input label={t('master.equip.port')} placeholder={formCommType === 'MQTT' ? '1883' : '5000'} defaultValue={editingEquip?.port} fullWidth />
               {formCommType === 'MQTT' && <div className="col-span-2"><Input label="MQTT Topic" placeholder="mes/equip/001" defaultValue={editingEquip?.mqttTopic} fullWidth /></div>}
             </div>
           )}
           {formCommType === 'SERIAL' && (
             <div className="grid grid-cols-2 gap-4 p-4 bg-background rounded-lg">
-              <Input label="포트" placeholder="COM3" defaultValue={editingEquip?.port} fullWidth leftIcon={<Settings className="w-4 h-4" />} />
+              <Input label={t('master.equip.port')} placeholder="COM3" defaultValue={editingEquip?.port} fullWidth leftIcon={<Settings className="w-4 h-4" />} />
               <Input label="Baud Rate" placeholder="9600" defaultValue={editingEquip?.baudRate?.toString()} fullWidth />
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
-            <Input label="제조사" placeholder="두산" defaultValue={editingEquip?.manufacturer} fullWidth />
-            <Input label="모델" placeholder="DC-100" defaultValue={editingEquip?.model} fullWidth />
+            <Input label={t('master.equip.manufacturer')} placeholder={t('master.equip.manufacturer')} defaultValue={editingEquip?.manufacturer} fullWidth />
+            <Input label={t('master.equip.model')} placeholder={t('master.equip.model')} defaultValue={editingEquip?.model} fullWidth />
           </div>
-          <Input label="비고" placeholder="비고 입력" defaultValue={editingEquip?.remark} fullWidth />
+          <Input label={t('master.equip.remark')} placeholder={t('master.equip.remarkPlaceholder')} defaultValue={editingEquip?.remark} fullWidth />
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-            <Button onClick={() => setIsModalOpen(false)}>{editingEquip ? '수정' : '추가'}</Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={() => setIsModalOpen(false)}>{editingEquip ? t('common.edit') : t('common.add')}</Button>
           </div>
         </div>
       </Modal>

@@ -10,6 +10,7 @@
  * 3. **통신 로그**: 최근 수신 데이터 로그 표시
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import {
   RefreshCw, Wifi, WifiOff, AlertTriangle,
@@ -69,7 +70,7 @@ const mockLogs: CommLog[] = [
 // ========================================
 // 검사기 카드 컴포넌트
 // ========================================
-function EquipCard({ equip }: { equip: InspectorEquip }) {
+function EquipCard({ equip, t }: { equip: InspectorEquip; t: (key: string) => string }) {
   const borderColor = equip.status === 'CONNECTED' ? 'border-green-500' : equip.status === 'ERROR' ? 'border-red-500' : 'border-gray-400';
 
   return (
@@ -83,11 +84,11 @@ function EquipCard({ equip }: { equip: InspectorEquip }) {
           <ComCodeBadge groupCode="CONNECTION_STATUS" code={equip.status} />
         </div>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-text-muted">통신방식</span><span className="text-text font-medium">{equip.commType}</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">주소</span><span className="text-text font-mono">{equip.ipAddress || equip.port}</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">마지막 수신</span><span className="text-text">{equip.lastDataAt.split(' ')[1]}</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">금일 검사</span><span className="text-text font-bold">{equip.todayCount}건</span></div>
-          <div className="flex justify-between"><span className="text-text-muted">합격률</span><span className={`font-bold ${equip.passRate >= 95 ? 'text-green-500' : 'text-yellow-500'}`}>{equip.passRate}%</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">{t('inspection.equip.commType')}</span><span className="text-text font-medium">{equip.commType}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">{t('inspection.equip.address')}</span><span className="text-text font-mono">{equip.ipAddress || equip.port}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">{t('inspection.equip.lastReceived')}</span><span className="text-text">{equip.lastDataAt.split(' ')[1]}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">{t('inspection.equip.todayCount')}</span><span className="text-text font-bold">{equip.todayCount}{t('common.count')}</span></div>
+          <div className="flex justify-between"><span className="text-text-muted">{t('inspection.equip.passRateLabel')}</span><span className={`font-bold ${equip.passRate >= 95 ? 'text-green-500' : 'text-yellow-500'}`}>{equip.passRate}%</span></div>
         </div>
       </CardContent>
     </Card>
@@ -98,8 +99,10 @@ function EquipCard({ equip }: { equip: InspectorEquip }) {
 // 메인 컴포넌트
 // ========================================
 function EquipPage() {
+  const { t } = useTranslation();
+
   const comCodeStatusOptions = useComCodeOptions('CONNECTION_STATUS');
-  const statusOptions = [{ value: '', label: '전체 상태' }, ...comCodeStatusOptions];
+  const statusOptions = useMemo(() => [{ value: '', label: t('common.allStatus') }, ...comCodeStatusOptions], [t, comCodeStatusOptions]);
   const [statusFilter, setStatusFilter] = useState('');
 
   const filteredEquipments = useMemo(() => {
@@ -115,45 +118,45 @@ function EquipPage() {
   }), []);
 
   const logColumns = useMemo<ColumnDef<CommLog>[]>(() => [
-    { accessorKey: 'timestamp', header: '시간', size: 150 },
-    { accessorKey: 'equipCode', header: '검사기', size: 90 },
-    { accessorKey: 'direction', header: '방향', size: 60, cell: ({ getValue }) => <span className={getValue() === 'RX' ? 'text-blue-500' : 'text-orange-500'}>{getValue() as string}</span> },
-    { accessorKey: 'message', header: '메시지', size: 350, cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span> },
-    { accessorKey: 'status', header: '상태', size: 70, cell: ({ getValue }) => <span className={getValue() === 'OK' ? 'text-green-500' : 'text-red-500'}>{getValue() as string}</span> },
-  ], []);
+    { accessorKey: 'timestamp', header: t('inspection.equip.time'), size: 150 },
+    { accessorKey: 'equipCode', header: t('inspection.equip.inspector'), size: 90 },
+    { accessorKey: 'direction', header: t('inspection.equip.direction'), size: 60, cell: ({ getValue }) => <span className={getValue() === 'RX' ? 'text-blue-500' : 'text-orange-500'}>{getValue() as string}</span> },
+    { accessorKey: 'message', header: t('inspection.equip.message'), size: 350, cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span> },
+    { accessorKey: 'status', header: t('common.status'), size: 70, cell: ({ getValue }) => <span className={getValue() === 'OK' ? 'text-green-500' : 'text-red-500'}>{getValue() as string}</span> },
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />검사기연동</h1>
-          <p className="text-text-muted mt-1">통전검사기 연결 상태를 모니터링합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />{t('inspection.equip.title')}</h1>
+          <p className="text-text-muted mt-1">{t('inspection.equip.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
+        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Power className="w-5 h-5 text-text-muted" /><span className="text-text-muted text-sm">전체 검사기</span></div><div className="text-lg font-bold leading-tight text-text mt-1">{stats.total}대</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Wifi className="w-5 h-5 text-green-500" /><span className="text-text-muted text-sm">연결됨</span></div><div className="text-lg font-bold leading-tight text-green-500 mt-1">{stats.connected}대</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><WifiOff className="w-5 h-5 text-gray-500" /><span className="text-text-muted text-sm">연결끊김</span></div><div className="text-lg font-bold leading-tight text-gray-500 mt-1">{stats.disconnected}대</div></CardContent></Card>
-        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /><span className="text-text-muted text-sm">오류</span></div><div className="text-lg font-bold leading-tight text-red-500 mt-1">{stats.error}대</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Power className="w-5 h-5 text-text-muted" /><span className="text-text-muted text-sm">{t('inspection.equip.totalEquipments')}</span></div><div className="text-lg font-bold leading-tight text-text mt-1">{stats.total}{t('inspection.equip.unit')}</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><Wifi className="w-5 h-5 text-green-500" /><span className="text-text-muted text-sm">{t('inspection.equip.connected')}</span></div><div className="text-lg font-bold leading-tight text-green-500 mt-1">{stats.connected}{t('inspection.equip.unit')}</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><WifiOff className="w-5 h-5 text-gray-500" /><span className="text-text-muted text-sm">{t('inspection.equip.disconnected')}</span></div><div className="text-lg font-bold leading-tight text-gray-500 mt-1">{stats.disconnected}{t('inspection.equip.unit')}</div></CardContent></Card>
+        <Card padding="sm"><CardContent><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-500" /><span className="text-text-muted text-sm">{t('inspection.equip.error')}</span></div><div className="text-lg font-bold leading-tight text-red-500 mt-1">{stats.error}{t('inspection.equip.unit')}</div></CardContent></Card>
       </div>
 
       <Card padding="sm">
         <CardContent>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-text">필터</span>
-            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder="상태" />
+            <span className="text-sm font-medium text-text">{t('common.filter')}</span>
+            <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t('common.status')} />
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filteredEquipments.map((equip) => <EquipCard key={equip.id} equip={equip} />)}
+        {filteredEquipments.map((equip) => <EquipCard key={equip.id} equip={equip} t={t} />)}
       </div>
 
       <Card>
-        <CardHeader title="통신 로그" subtitle="최근 수신/전송 데이터" action={<div className="flex items-center gap-1 text-sm text-text-muted"><Clock className="w-4 h-4" />실시간</div>} />
+        <CardHeader title={t('inspection.equip.commLog')} subtitle={t('inspection.equip.commLogSubtitle')} action={<div className="flex items-center gap-1 text-sm text-text-muted"><Clock className="w-4 h-4" />{t('inspection.equip.realtime')}</div>} />
         <CardContent><DataGrid data={mockLogs} columns={logColumns} pageSize={5} /></CardContent>
       </Card>
     </div>

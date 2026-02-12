@@ -53,7 +53,7 @@ async function bootstrap() {
 
   // Swagger 설정
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('HANES MES API')
+    .setTitle('HARNESS MES API')
     .setDescription('와이어 하네스 제조 실행 시스템 API 문서')
     .setVersion('1.0')
     .addBearerAuth(

@@ -13,6 +13,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAuthStore } from "@/stores/authStore";
 import { useComCodes } from "@/hooks/useComCode";
@@ -48,6 +49,15 @@ function ComCodePrefetch() {
   return null;
 }
 
+/** HTML lang 속성 동기화 */
+function LanguageSync() {
+  const { i18n } = useTranslation();
+  useEffect(() => {
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+  return null;
+}
+
 interface ProvidersProps {
   children: ReactNode;
 }
@@ -72,6 +82,7 @@ export function Providers({ children }: ProvidersProps) {
       <ThemeProvider defaultTheme="system">
         <AuthInitializer />
         <ComCodePrefetch />
+        <LanguageSync />
         {children}
       </ThemeProvider>
     </QueryClientProvider>

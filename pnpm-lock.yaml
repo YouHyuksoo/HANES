@@ -20,7 +20,7 @@ importers:
 
   apps/backend:
     dependencies:
-      '@hanes/shared':
+      '@harness/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@nestjs/common':
@@ -129,7 +129,7 @@ importers:
 
   apps/frontend:
     dependencies:
-      '@hanes/shared':
+      '@harness/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@tanstack/react-query':

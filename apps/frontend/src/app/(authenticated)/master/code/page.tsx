@@ -5,6 +5,7 @@
  * @description 공통코드 관리 페이지
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, RefreshCw, Settings } from 'lucide-react';
 import { Card, CardHeader, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -38,6 +39,7 @@ const mockCodes: ComCode[] = [
 ];
 
 function ComCodePage() {
+  const { t } = useTranslation();
   const [selectedGroup, setSelectedGroup] = useState<string>('PROCESS');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<ComCode | null>(null);
@@ -48,23 +50,23 @@ function ComCodePage() {
 
   const columns = useMemo<ColumnDef<ComCode>[]>(
     () => [
-      { accessorKey: 'detailCode', header: '상세코드', size: 120 },
-      { accessorKey: 'codeName', header: '코드명', size: 150 },
-      { accessorKey: 'codeNameEn', header: '영문명', size: 150 },
-      { accessorKey: 'sortOrder', header: '정렬순서', size: 80 },
+      { accessorKey: 'detailCode', header: t('master.code.detailCode'), size: 120 },
+      { accessorKey: 'codeName', header: t('master.code.codeName'), size: 150 },
+      { accessorKey: 'codeNameEn', header: t('master.code.codeNameEn'), size: 150 },
+      { accessorKey: 'sortOrder', header: t('master.code.sortOrder'), size: 80 },
       {
         accessorKey: 'useYn',
-        header: '사용여부',
+        header: t('master.code.useYn'),
         size: 80,
         cell: ({ getValue }) => (
           <span className={`px-2 py-1 text-xs rounded-full ${getValue() === 'Y' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
-            {getValue() === 'Y' ? '사용' : '미사용'}
+            {getValue() === 'Y' ? t('master.code.inUse') : t('master.code.notInUse')}
           </span>
         ),
       },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.actions'),
         size: 100,
         cell: ({ row }) => (
           <div className="flex gap-1">
@@ -78,22 +80,22 @@ function ComCodePage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Settings className="w-7 h-7 text-primary" />공통코드 관리</h1>
-          <p className="text-text-muted mt-1">시스템 전반에서 사용하는 코드를 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Settings className="w-7 h-7 text-primary" />{t('master.code.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.code.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => { setEditingCode(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> 코드 추가
+            <Plus className="w-4 h-4 mr-1" /> {t('master.code.addCode')}
           </Button>
         </div>
       </div>
@@ -102,7 +104,7 @@ function ComCodePage() {
         {/* 그룹 목록 */}
         <div className="col-span-3">
           <Card>
-            <CardHeader title="그룹 코드" subtitle="코드 그룹을 선택하세요" />
+            <CardHeader title={t('master.code.groupCode')} subtitle={t('master.code.selectGroup')} />
             <CardContent>
               <div className="space-y-1">
                 {mockGroups.map((group) => (
@@ -125,7 +127,7 @@ function ComCodePage() {
         {/* 상세 코드 목록 */}
         <div className="col-span-9">
           <Card>
-            <CardHeader title={`상세 코드 - ${selectedGroup}`} subtitle={`${filteredCodes.length}개의 코드`} />
+            <CardHeader title={`${t('master.code.detailCode')} - ${selectedGroup}`} subtitle={`${filteredCodes.length}${t('master.code.codesCount')}`} />
             <CardContent>
               <DataGrid data={filteredCodes} columns={columns} pageSize={10} />
             </CardContent>
@@ -134,16 +136,16 @@ function ComCodePage() {
       </div>
 
       {/* 코드 추가/수정 모달 */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCode ? '코드 수정' : '코드 추가'} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCode ? t('master.code.editCode') : t('master.code.addCode')} size="md">
         <div className="space-y-4">
-          <Input label="그룹 코드" value={selectedGroup} disabled fullWidth />
-          <Input label="상세 코드" placeholder="예: CUT" defaultValue={editingCode?.detailCode} fullWidth />
-          <Input label="코드명" placeholder="예: 절단" defaultValue={editingCode?.codeName} fullWidth />
-          <Input label="영문명" placeholder="예: Cutting" defaultValue={editingCode?.codeNameEn} fullWidth />
-          <Input label="정렬 순서" type="number" placeholder="1" defaultValue={editingCode?.sortOrder?.toString()} fullWidth />
+          <Input label={t('master.code.groupCode')} value={selectedGroup} disabled fullWidth />
+          <Input label={t('master.code.detailCode')} placeholder={t('master.code.detailCodePlaceholder')} defaultValue={editingCode?.detailCode} fullWidth />
+          <Input label={t('master.code.codeName')} placeholder={t('master.code.codeNamePlaceholder')} defaultValue={editingCode?.codeName} fullWidth />
+          <Input label={t('master.code.codeNameEn')} placeholder={t('master.code.codeNameEnPlaceholder')} defaultValue={editingCode?.codeNameEn} fullWidth />
+          <Input label={t('master.code.sortOrder')} type="number" placeholder="1" defaultValue={editingCode?.sortOrder?.toString()} fullWidth />
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-            <Button>{editingCode ? '수정' : '추가'}</Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button>{editingCode ? t('common.edit') : t('common.add')}</Button>
           </div>
         </div>
       </Modal>

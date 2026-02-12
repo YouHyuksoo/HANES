@@ -31,7 +31,7 @@ export const useThemeStore = create<ThemeState>()(
         })),
     }),
     {
-      name: "hanes-theme",
+      name: "harness-theme",
     },
   ),
 );

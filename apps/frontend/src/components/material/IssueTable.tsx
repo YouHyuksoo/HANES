@@ -11,6 +11,7 @@
  * 4. **COMPLETED/REJECTED**: 조회만 가능
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, Play, XCircle } from 'lucide-react';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -26,32 +27,33 @@ interface IssueTableProps {
 }
 
 export default function IssueTable({ data, onApprove, onReject, onProcess }: IssueTableProps) {
+  const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IssueRecord>[]>(() => [
-    { accessorKey: 'requestNo', header: '요청번호', size: 150 },
-    { accessorKey: 'requestDate', header: '요청일', size: 100 },
+    { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 150 },
+    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100 },
     {
-      accessorKey: 'workOrderNo', header: '작업지시', size: 150,
+      accessorKey: 'workOrderNo', header: t('material.col.workOrder'), size: 150,
       cell: ({ getValue }) => (
         <span className="text-primary font-medium">{getValue() as string}</span>
       ),
     },
-    { accessorKey: 'partCode', header: '품목코드', size: 100 },
-    { accessorKey: 'partName', header: '품목명', size: 120 },
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
+    { accessorKey: 'partName', header: t('common.partName'), size: 120 },
     {
-      accessorKey: 'requestQty', header: '요청수량', size: 90,
+      accessorKey: 'requestQty', header: t('material.col.requestQty'), size: 90,
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
-      accessorKey: 'issuedQty', header: '출고수량', size: 90,
+      accessorKey: 'issuedQty', header: t('material.col.issuedQty'), size: 90,
       cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span>,
     },
     {
-      accessorKey: 'status', header: '상태', size: 90,
+      accessorKey: 'status', header: t('common.status'), size: 90,
       cell: ({ getValue }) => <IssueStatusBadge status={getValue() as IssueStatus} />,
     },
-    { accessorKey: 'requester', header: '요청자', size: 80 },
+    { accessorKey: 'requester', header: t('material.col.requester'), size: 80 },
     {
-      id: 'actions', header: '처리', size: 110,
+      id: 'actions', header: t('material.col.actions'), size: 110,
       cell: ({ row }) => {
         const record = row.original;
         return (
@@ -60,14 +62,14 @@ export default function IssueTable({ data, onApprove, onReject, onProcess }: Iss
               <>
                 <button
                   className="p-1 hover:bg-surface rounded"
-                  title="승인"
+                  title={t('material.issue.approveAction')}
                   onClick={() => onApprove(record)}
                 >
                   <CheckCircle className="w-4 h-4 text-blue-500" />
                 </button>
                 <button
                   className="p-1 hover:bg-surface rounded"
-                  title="반려"
+                  title={t('material.issue.rejectAction')}
                   onClick={() => onReject(record)}
                 >
                   <XCircle className="w-4 h-4 text-red-400" />
@@ -77,7 +79,7 @@ export default function IssueTable({ data, onApprove, onReject, onProcess }: Iss
             {(record.status === 'APPROVED' || record.status === 'IN_PROGRESS') && (
               <button
                 className="p-1 hover:bg-surface rounded"
-                title="출고처리"
+                title={t('material.issue.processAction')}
                 onClick={() => onProcess(record)}
               >
                 <Play className="w-4 h-4 text-primary" />
@@ -87,7 +89,7 @@ export default function IssueTable({ data, onApprove, onReject, onProcess }: Iss
         );
       },
     },
-  ], [onApprove, onReject, onProcess]);
+  ], [onApprove, onReject, onProcess, t]);
 
   return <DataGrid data={data} columns={columns} pageSize={10} />;
 }

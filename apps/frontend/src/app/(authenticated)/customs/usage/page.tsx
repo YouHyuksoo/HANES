@@ -5,6 +5,7 @@
  * @description 보세 자재 사용신고 페이지
  */
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, RefreshCw, Search, Send, CheckCircle, Clock } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -72,13 +73,14 @@ const statusColors: Record<string, string> = {
   CONFIRMED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
 };
 
-const statusLabels: Record<string, string> = {
-  DRAFT: '작성중',
-  REPORTED: '신고완료',
-  CONFIRMED: '확인완료',
-};
-
 function CustomsUsagePage() {
+  const { t } = useTranslation();
+
+  const statusLabels: Record<string, string> = {
+    DRAFT: t('customs.usage.statusDraft'),
+    REPORTED: t('customs.usage.statusReported'),
+    CONFIRMED: t('customs.usage.statusConfirmed'),
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -94,29 +96,29 @@ function CustomsUsagePage() {
 
   const columns = useMemo<ColumnDef<UsageReport>[]>(
     () => [
-      { accessorKey: 'reportNo', header: '신고번호', size: 130 },
-      { accessorKey: 'lotNo', header: 'LOT번호', size: 130 },
-      { accessorKey: 'partCode', header: '품목코드', size: 100 },
-      { accessorKey: 'partName', header: '품목명', size: 140 },
+      { accessorKey: 'reportNo', header: t('customs.usage.reportNo'), size: 130 },
+      { accessorKey: 'lotNo', header: t('customs.stock.lotNo'), size: 130 },
+      { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
+      { accessorKey: 'partName', header: t('common.partName'), size: 140 },
       {
         accessorKey: 'usageQty',
-        header: '사용수량',
+        header: t('customs.usage.usageQty'),
         size: 90,
         cell: ({ getValue }) => (getValue() as number).toLocaleString(),
       },
-      { accessorKey: 'usageDate', header: '사용일시', size: 130 },
+      { accessorKey: 'usageDate', header: t('customs.usage.usageDate'), size: 130 },
       {
         accessorKey: 'reportDate',
-        header: '신고일시',
+        header: t('customs.usage.reportDate'),
         size: 130,
         cell: ({ getValue }) => getValue() || '-',
       },
-      { accessorKey: 'jobOrderNo', header: '작업지시', size: 110,
+      { accessorKey: 'jobOrderNo', header: t('customs.usage.jobOrder'), size: 110,
         cell: ({ getValue }) => getValue() || '-'
       },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('common.status'),
         size: 90,
         cell: ({ getValue }) => {
           const status = getValue() as string;
@@ -127,20 +129,20 @@ function CustomsUsagePage() {
           );
         },
       },
-      { accessorKey: 'workerName', header: '작업자', size: 80 },
+      { accessorKey: 'workerName', header: t('customs.usage.worker'), size: 80 },
       {
         id: 'actions',
-        header: '관리',
+        header: t('common.manage'),
         size: 80,
         cell: ({ row }) => (
           <div className="flex gap-1">
             {row.original.status === 'DRAFT' && (
-              <button className="p-1 hover:bg-surface rounded" title="신고하기">
+              <button className="p-1 hover:bg-surface rounded" title={t('customs.usage.report')}>
                 <Send className="w-4 h-4 text-primary" />
               </button>
             )}
             {row.original.status === 'REPORTED' && (
-              <button className="p-1 hover:bg-surface rounded" title="확인">
+              <button className="p-1 hover:bg-surface rounded" title={t('customs.usage.confirm')}>
                 <CheckCircle className="w-4 h-4 text-green-500" />
               </button>
             )}
@@ -148,7 +150,7 @@ function CustomsUsagePage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   // 통계
@@ -163,31 +165,31 @@ function CustomsUsagePage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Send className="w-7 h-7 text-primary" />사용신고 관리</h1>
-          <p className="text-text-muted mt-1">보세 자재의 생산 투입 시 사용신고를 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Send className="w-7 h-7 text-primary" />{t('customs.usage.title')}</h1>
+          <p className="text-text-muted mt-1">{t('customs.usage.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> 새로고침
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> 사용신고
+            <Plus className="w-4 h-4 mr-1" /> {t('customs.usage.registerUsage')}
           </Button>
         </div>
       </div>
 
       {/* 요약 카드 */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="작성중" value={stats.draft} icon={Clock} color="gray" />
-        <StatCard label="신고완료" value={stats.reported} icon={Send} color="blue" />
-        <StatCard label="확인완료" value={stats.confirmed} icon={CheckCircle} color="green" />
+        <StatCard label={t('customs.usage.statusDraft')} value={stats.draft} icon={Clock} color="gray" />
+        <StatCard label={t('customs.usage.statusReported')} value={stats.reported} icon={Send} color="blue" />
+        <StatCard label={t('customs.usage.statusConfirmed')} value={stats.confirmed} icon={CheckCircle} color="green" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="신고번호, LOT번호, 품목코드 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('customs.usage.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
             <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
@@ -199,32 +201,32 @@ function CustomsUsagePage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="사용신고 등록"
+        title={t('customs.usage.registerUsage')}
         size="md"
       >
         <div className="space-y-4">
           <Select
-            label="보세자재 LOT"
+            label={t('customs.usage.bondedLot')}
             options={[
               { value: 'LOT250125-001', label: 'LOT250125-001 - 전선 AWG22 적색 (잔여: 700)' },
               { value: 'LOT250125-002', label: 'LOT250125-002 - 전선 AWG22 흑색 (잔여: 500)' },
             ]}
             fullWidth
           />
-          <Input label="사용수량" type="number" placeholder="100" fullWidth />
+          <Input label={t('customs.usage.usageQty')} type="number" placeholder="100" fullWidth />
           <Select
-            label="작업지시"
+            label={t('customs.usage.jobOrder')}
             options={[
               { value: 'JO-2025-001', label: 'JO-2025-001 - 하네스 A타입' },
               { value: 'JO-2025-002', label: 'JO-2025-002 - 하네스 B타입' },
             ]}
             fullWidth
           />
-          <Input label="비고" placeholder="비고 입력" fullWidth />
+          <Input label={t('common.remark')} placeholder={t('common.remarkPlaceholder')} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-          <Button>등록 후 신고</Button>
+          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+          <Button>{t('customs.usage.registerAndReport')}</Button>
         </div>
       </Modal>
     </div>

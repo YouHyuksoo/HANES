@@ -10,7 +10,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@hanes/shared"],
+  transpilePackages: ["@harness/shared"],
   async rewrites() {
     return [
       {

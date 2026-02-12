@@ -6,7 +6,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PLANT_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
+import { PLANT_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 
 export class CreatePlantDto {
   @ApiProperty({ description: '공장 코드', example: 'P001' })

@@ -5,6 +5,7 @@
  * @description 입하 목록 테이블 컴포넌트
  */
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ArrivalStatusBadge } from '@/components/material';
@@ -16,17 +17,18 @@ interface ArrivalTableProps {
 }
 
 export default function ArrivalTable({ data }: ArrivalTableProps) {
+  const { t } = useTranslation();
   const columns = useMemo<ColumnDef<ArrivalItem>[]>(
     () => [
-      { accessorKey: 'arrivalNo', header: '입하번호', size: 160 },
-      { accessorKey: 'arrivalDate', header: '입하일', size: 100 },
-      { accessorKey: 'supplierName', header: '공급업체', size: 100 },
-      { accessorKey: 'partCode', header: '품목코드', size: 110 },
-      { accessorKey: 'partName', header: '품목명', size: 130 },
-      { accessorKey: 'lotNo', header: 'LOT번호', size: 150 },
+      { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160 },
+      { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100 },
+      { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100 },
+      { accessorKey: 'partCode', header: t('common.partCode'), size: 110 },
+      { accessorKey: 'partName', header: t('common.partName'), size: 130 },
+      { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150 },
       {
         accessorKey: 'quantity',
-        header: '수량',
+        header: t('common.quantity'),
         size: 100,
         cell: ({ row }) => (
           <span className="font-medium">
@@ -36,7 +38,7 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
       },
       {
         accessorKey: 'status',
-        header: '상태',
+        header: t('common.status'),
         size: 100,
         cell: ({ getValue }) => (
           <ArrivalStatusBadge status={getValue() as ArrivalStatus} />
@@ -44,14 +46,14 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
       },
       {
         accessorKey: 'remark',
-        header: '비고',
+        header: t('common.remark'),
         size: 120,
         cell: ({ getValue }) => (
           <span className="text-text-muted">{(getValue() as string) || '-'}</span>
         ),
       },
     ],
-    []
+    [t]
   );
 
   return <DataGrid data={data} columns={columns} pageSize={10} />;

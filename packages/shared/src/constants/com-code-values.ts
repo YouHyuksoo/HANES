@@ -147,6 +147,22 @@ export type EquipTypeValue = typeof EQUIP_TYPE_VALUES[number];
 export const COMM_TYPE_VALUES = ['MQTT', 'SERIAL', 'TCP', 'OPC_UA', 'MODBUS'] as const;
 export type CommTypeValue = typeof COMM_TYPE_VALUES[number];
 
+// ===== 통신설정 - 시리얼 옵션 =====
+export const BAUD_RATE_VALUES = [9600, 19200, 38400, 57600, 115200] as const;
+export type BaudRateValue = typeof BAUD_RATE_VALUES[number];
+
+export const DATA_BITS_VALUES = [7, 8] as const;
+export type DataBitsValue = typeof DATA_BITS_VALUES[number];
+
+export const STOP_BITS_VALUES = ['1', '1.5', '2'] as const;
+export type StopBitsValue = typeof STOP_BITS_VALUES[number];
+
+export const PARITY_VALUES = ['NONE', 'EVEN', 'ODD'] as const;
+export type ParityValue = typeof PARITY_VALUES[number];
+
+export const FLOW_CONTROL_VALUES = ['NONE', 'XONXOFF', 'RTSCTS'] as const;
+export type FlowControlValue = typeof FLOW_CONTROL_VALUES[number];
+
 // ===== 소모품 카테고리 =====
 export const CONSUMABLE_CATEGORY_VALUES = ['MOLD', 'JIG', 'TOOL'] as const;
 export type ConsumableCategoryValue = typeof CONSUMABLE_CATEGORY_VALUES[number];

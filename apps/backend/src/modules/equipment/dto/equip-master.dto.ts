@@ -31,7 +31,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { EQUIP_STATUS_VALUES, COMM_TYPE_VALUES, EQUIP_TYPE_VALUES, USE_YN_VALUES } from '@hanes/shared';
+import { EQUIP_STATUS_VALUES, COMM_TYPE_VALUES, EQUIP_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 
 /**
  * 설비마스터 생성 DTO

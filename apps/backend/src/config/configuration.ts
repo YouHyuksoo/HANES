@@ -81,7 +81,7 @@ export default (): Configuration => ({
     directUrl: process.env.DIRECT_URL || '',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'hanes-mes-secret-key-change-in-production',
+    secret: process.env.JWT_SECRET || 'harness-mes-secret-key-change-in-production',
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },

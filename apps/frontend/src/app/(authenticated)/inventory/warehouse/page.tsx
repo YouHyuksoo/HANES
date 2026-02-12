@@ -5,6 +5,7 @@
  * @description 창고 관리 페이지 - 창고 마스터 CRUD
  */
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Warehouse, Plus, RefreshCw, Pencil, Trash2, Check, Search } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, ConfirmModal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -25,21 +26,6 @@ interface WarehouseData {
   createdAt: string;
 }
 
-const WAREHOUSE_TYPES = [
-  { value: '', label: '전체' },
-  { value: 'RAW', label: '원자재 창고' },
-  { value: 'WIP', label: '반제품 창고' },
-  { value: 'FG', label: '완제품 창고' },
-  { value: 'FLOOR', label: '공정재공' },
-  { value: 'DEFECT', label: '불량 창고' },
-  { value: 'SCRAP', label: '폐기 창고' },
-  { value: 'SUBCON', label: '외주처' },
-];
-
-const getWarehouseTypeLabel = (type: string) => {
-  return WAREHOUSE_TYPES.find(t => t.value === type)?.label || type;
-};
-
 const getTypeColor = (type: string) => {
   const colors: Record<string, string> = {
     RAW: 'bg-blue-100 text-blue-800',
@@ -54,12 +40,28 @@ const getTypeColor = (type: string) => {
 };
 
 export default function WarehousePage() {
+  const { t } = useTranslation();
   const [warehouses, setWarehouses] = useState<WarehouseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<WarehouseData | null>(null);
   const [filterType, setFilterType] = useState('');
   const [searchText, setSearchText] = useState('');
+
+  const WAREHOUSE_TYPES = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'RAW', label: t('inventory.warehouse.rawWarehouse') },
+    { value: 'WIP', label: t('inventory.warehouse.wipWarehouse') },
+    { value: 'FG', label: t('inventory.warehouse.fgWarehouse') },
+    { value: 'FLOOR', label: t('inventory.warehouse.floorWarehouse') },
+    { value: 'DEFECT', label: t('inventory.warehouse.defectWarehouse') },
+    { value: 'SCRAP', label: t('inventory.warehouse.scrapWarehouse') },
+    { value: 'SUBCON', label: t('inventory.warehouse.subconWarehouse') },
+  ], [t]);
+
+  const getWarehouseTypeLabel = (type: string) => {
+    return WAREHOUSE_TYPES.find(wt => wt.value === type)?.label || type;
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -73,9 +75,9 @@ export default function WarehousePage() {
   });
 
   // 알림/확인 모달 상태
-  const [alertModal, setAlertModal] = useState({ open: false, title: '알림', message: '' });
+  const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({
-    open: false, title: '확인', message: '', onConfirm: () => {},
+    open: false, title: '', message: '', onConfirm: () => {},
   });
 
   const fetchWarehouses = async () => {
@@ -83,7 +85,8 @@ export default function WarehousePage() {
     try {
       const params = filterType ? `?warehouseType=${filterType}` : '';
       const res = await api.get(`/inventory/warehouses${params}`);
-      setWarehouses(res.data);
+      const result = res.data?.data ?? res.data;
+      setWarehouses(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('창고 목록 조회 실패:', error);
     } finally {
@@ -134,15 +137,15 @@ export default function WarehousePage() {
       fetchWarehouses();
     } catch (error) {
       console.error('창고 저장 실패:', error);
-      setAlertModal({ open: true, title: '저장 실패', message: '저장에 실패했습니다.' });
+      setAlertModal({ open: true, title: t('common.error'), message: t('common.saveFailed') });
     }
   };
 
   const handleDelete = (id: string) => {
     setConfirmModal({
       open: true,
-      title: '창고 삭제',
-      message: '정말 삭제하시겠습니까?',
+      title: t('inventory.warehouse.deleteWarehouse'),
+      message: t('inventory.warehouse.deleteConfirm'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, open: false }));
         try {
@@ -150,7 +153,7 @@ export default function WarehousePage() {
           fetchWarehouses();
         } catch (error) {
           console.error('창고 삭제 실패:', error);
-          setAlertModal({ open: true, title: '삭제 실패', message: '삭제에 실패했습니다. 재고가 있는 창고는 삭제할 수 없습니다.' });
+          setAlertModal({ open: true, title: t('common.error'), message: t('inventory.warehouse.deleteFailed') });
         }
       },
     });
@@ -159,17 +162,17 @@ export default function WarehousePage() {
   const handleInitWarehouses = () => {
     setConfirmModal({
       open: true,
-      title: '기본 창고 초기화',
-      message: '기본 창고를 초기화하시겠습니까?',
+      title: t('inventory.warehouse.initWarehouses'),
+      message: t('inventory.warehouse.initConfirm'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, open: false }));
         try {
           await api.post('/inventory/warehouses/init');
           fetchWarehouses();
-          setAlertModal({ open: true, title: '완료', message: '기본 창고가 초기화되었습니다.' });
+          setAlertModal({ open: true, title: t('common.confirm'), message: t('inventory.warehouse.initComplete') });
         } catch (error) {
           console.error('창고 초기화 실패:', error);
-          setAlertModal({ open: true, title: '오류', message: '창고 초기화 중 오류가 발생했습니다.' });
+          setAlertModal({ open: true, title: t('common.error'), message: t('inventory.warehouse.initFailed') });
         }
       },
     });
@@ -178,17 +181,17 @@ export default function WarehousePage() {
   const columns: ColumnDef<WarehouseData>[] = useMemo(() => [
     {
       accessorKey: 'warehouseCode',
-      header: '창고코드',
+      header: t('inventory.warehouse.warehouseCode'),
       size: 120,
     },
     {
       accessorKey: 'warehouseName',
-      header: '창고명',
+      header: t('inventory.warehouse.warehouseName'),
       size: 150,
     },
     {
       accessorKey: 'warehouseType',
-      header: '창고유형',
+      header: t('inventory.warehouse.warehouseType'),
       size: 120,
       cell: ({ getValue }) => {
         const type = getValue() as string;
@@ -201,19 +204,19 @@ export default function WarehousePage() {
     },
     {
       accessorKey: 'lineCode',
-      header: '라인',
+      header: t('inventory.warehouse.line'),
       size: 80,
       cell: ({ getValue }) => getValue() || '-',
     },
     {
       accessorKey: 'processCode',
-      header: '공정',
+      header: t('inventory.warehouse.process'),
       size: 80,
       cell: ({ getValue }) => getValue() || '-',
     },
     {
       accessorKey: 'isDefault',
-      header: '기본',
+      header: t('inventory.warehouse.default'),
       size: 60,
       cell: ({ getValue }) => getValue() ? (
         <Check className="h-4 w-4 text-green-600" />
@@ -221,7 +224,7 @@ export default function WarehousePage() {
     },
     {
       accessorKey: 'useYn',
-      header: '사용',
+      header: t('inventory.warehouse.use'),
       size: 60,
       cell: ({ getValue }) => {
         const useYn = getValue() as string;
@@ -238,16 +241,16 @@ export default function WarehousePage() {
       size: 100,
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={() => handleEdit(row.original)} className="p-1 hover:bg-surface rounded" title="수정">
+          <button onClick={() => handleEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t('common.edit')}>
             <Pencil className="w-4 h-4 text-primary" />
           </button>
-          <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded" title="삭제">
+          <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded" title={t('common.delete')}>
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
         </div>
       ),
     },
-  ], []);
+  ], [t]);
 
   const filteredWarehouses = useMemo(() => {
     if (!searchText) return warehouses;
@@ -262,13 +265,13 @@ export default function WarehousePage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Warehouse className="w-7 h-7 text-primary" />창고 관리
+            <Warehouse className="w-7 h-7 text-primary" />{t('inventory.warehouse.title')}
           </h1>
-          <p className="text-text-muted mt-1">창고 마스터 정보를 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('inventory.warehouse.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={handleInitWarehouses}>기본창고 초기화</Button>
-          <Button size="sm" onClick={handleCreate}><Plus className="w-4 h-4 mr-1" />신규 등록</Button>
+          <Button variant="secondary" size="sm" onClick={handleInitWarehouses}>{t('inventory.warehouse.initWarehouses')}</Button>
+          <Button size="sm" onClick={handleCreate}><Plus className="w-4 h-4 mr-1" />{t('inventory.warehouse.newWarehouse')}</Button>
         </div>
       </div>
 
@@ -276,9 +279,9 @@ export default function WarehousePage() {
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="창고코드, 창고명 검색..." value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('inventory.warehouse.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={WAREHOUSE_TYPES} value={filterType} onChange={(v) => setFilterType(v)} placeholder="창고유형" />
+            <Select options={WAREHOUSE_TYPES} value={filterType} onChange={(v) => setFilterType(v)} placeholder={t('inventory.warehouse.warehouseType')} />
             <Button variant="secondary" onClick={fetchWarehouses}><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid
@@ -286,7 +289,7 @@ export default function WarehousePage() {
             columns={columns}
             isLoading={loading}
             pageSize={10}
-            emptyMessage="등록된 창고가 없습니다."
+            emptyMessage={t('inventory.warehouse.emptyMessage')}
           />
         </CardContent>
       </Card>
@@ -295,7 +298,7 @@ export default function WarehousePage() {
       <Modal isOpen={alertModal.open} onClose={() => setAlertModal({ ...alertModal, open: false })} title={alertModal.title} size="sm">
         <p className="text-text">{alertModal.message}</p>
         <div className="flex justify-end pt-4">
-          <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>확인</Button>
+          <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>{t('common.confirm')}</Button>
         </div>
       </Modal>
 
@@ -313,11 +316,11 @@ export default function WarehousePage() {
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingWarehouse ? '창고 수정' : '창고 등록'}
+        title={editingWarehouse ? t('inventory.warehouse.editWarehouse') : t('inventory.warehouse.addWarehouse')}
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">창고코드</label>
+            <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.warehouseCode')}</label>
             <Input
               value={formData.warehouseCode}
               onChange={(e) => setFormData({ ...formData, warehouseCode: e.target.value })}
@@ -326,25 +329,24 @@ export default function WarehousePage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">창고명</label>
+            <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.warehouseName')}</label>
             <Input
               value={formData.warehouseName}
               onChange={(e) => setFormData({ ...formData, warehouseName: e.target.value })}
-              placeholder="원자재 창고"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">창고유형</label>
+            <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.warehouseType')}</label>
             <Select
               value={formData.warehouseType}
               onChange={(v) => setFormData({ ...formData, warehouseType: v })}
-              options={WAREHOUSE_TYPES.filter(t => t.value !== '')}
+              options={WAREHOUSE_TYPES.filter(wt => wt.value !== '')}
             />
           </div>
           {formData.warehouseType === 'FLOOR' && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">라인코드</label>
+                <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.lineCode')}</label>
                 <Input
                   value={formData.lineCode}
                   onChange={(e) => setFormData({ ...formData, lineCode: e.target.value })}
@@ -352,7 +354,7 @@ export default function WarehousePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">공정코드</label>
+                <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.processCode')}</label>
                 <Input
                   value={formData.processCode}
                   onChange={(e) => setFormData({ ...formData, processCode: e.target.value })}
@@ -368,14 +370,14 @@ export default function WarehousePage() {
               checked={formData.isDefault}
               onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
             />
-            <label htmlFor="isDefault" className="text-sm">기본 창고로 지정</label>
+            <label htmlFor="isDefault" className="text-sm">{t('inventory.warehouse.setDefault')}</label>
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>
-              취소
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleSave}>
-              저장
+              {t('common.save')}
             </Button>
           </div>
         </div>

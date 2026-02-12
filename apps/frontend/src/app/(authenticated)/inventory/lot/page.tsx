@@ -5,6 +5,7 @@
  * @description LOT 관리 페이지 - LOT 추적 및 이력 조회
  */
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tag, Search, RefreshCw, Eye, Layers, CheckCircle, AlertCircle, MinusCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -52,21 +53,6 @@ interface LotDetail extends LotData {
   }>;
 }
 
-const PART_TYPES = [
-  { value: '', label: '전체' },
-  { value: 'RAW', label: '원자재' },
-  { value: 'WIP', label: '반제품' },
-  { value: 'FG', label: '완제품' },
-];
-
-const LOT_STATUS = [
-  { value: '', label: '전체' },
-  { value: 'NORMAL', label: '정상' },
-  { value: 'HOLD', label: '보류' },
-  { value: 'DEPLETED', label: '소진' },
-  { value: 'EXPIRED', label: '만료' },
-];
-
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
     NORMAL: 'bg-green-100 text-green-800',
@@ -86,21 +72,37 @@ const getPartTypeColor = (type: string) => {
   return colors[type] || 'bg-gray-100 text-gray-800';
 };
 
-const getStatusLabel = (status: string) => {
-  return LOT_STATUS.find(s => s.value === status)?.label || status;
-};
-
-const getPartTypeLabel = (type: string) => {
-  return PART_TYPES.find(t => t.value === type)?.label || type;
-};
-
 export default function LotPage() {
+  const { t } = useTranslation();
   const [lots, setLots] = useState<LotData[]>([]);
   const [loading, setLoading] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState<LotDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailTab, setDetailTab] = useState<'info' | 'stock' | 'history'>('info');
+
+  const PART_TYPES = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'RAW', label: t('inventory.stock.raw') },
+    { value: 'WIP', label: t('inventory.stock.wip') },
+    { value: 'FG', label: t('inventory.stock.fg') },
+  ], [t]);
+
+  const LOT_STATUS = useMemo(() => [
+    { value: '', label: t('common.all') },
+    { value: 'NORMAL', label: t('inventory.lot.normal') },
+    { value: 'HOLD', label: t('inventory.lot.hold') },
+    { value: 'DEPLETED', label: t('inventory.lot.depleted') },
+    { value: 'EXPIRED', label: t('inventory.lot.expired') },
+  ], [t]);
+
+  const getStatusLabel = (status: string) => {
+    return LOT_STATUS.find(s => s.value === status)?.label || status;
+  };
+
+  const getPartTypeLabel = (type: string) => {
+    return PART_TYPES.find(pt => pt.value === type)?.label || type;
+  };
 
   // 필터
   const [filters, setFilters] = useState({
@@ -117,7 +119,8 @@ export default function LotPage() {
       if (filters.status) params.append('status', filters.status);
 
       const res = await api.get(`/inventory/lots?${params.toString()}`);
-      setLots(res.data);
+      const result = res.data?.data ?? res.data;
+      setLots(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('LOT 목록 조회 실패:', error);
     } finally {
@@ -135,7 +138,7 @@ export default function LotPage() {
     setDetailTab('info');
     try {
       const res = await api.get(`/inventory/lots/${lot.id}`);
-      setSelectedLot(res.data);
+      setSelectedLot(res.data?.data ?? res.data);
     } catch (error) {
       console.error('LOT 상세 조회 실패:', error);
     } finally {
@@ -146,12 +149,12 @@ export default function LotPage() {
   const columns: ColumnDef<LotData>[] = useMemo(() => [
     {
       accessorKey: 'lotNo',
-      header: 'LOT 번호',
+      header: t('inventory.lot.lotNo'),
       size: 160,
     },
     {
       accessorKey: 'partType',
-      header: '품목유형',
+      header: t('inventory.lot.partType'),
       size: 100,
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${getPartTypeColor(row.original.partType)}`}>
@@ -161,25 +164,25 @@ export default function LotPage() {
     },
     {
       accessorKey: 'partCode',
-      header: '품목코드',
+      header: t('inventory.lot.partCode'),
       size: 120,
       cell: ({ row }) => row.original.part.partCode,
     },
     {
       accessorKey: 'partName',
-      header: '품목명',
+      header: t('inventory.lot.partName'),
       size: 180,
       cell: ({ row }) => row.original.part.partName,
     },
     {
       accessorKey: 'initQty',
-      header: '초기수량',
+      header: t('inventory.lot.initQty'),
       size: 100,
       cell: ({ row }) => row.original.initQty.toLocaleString(),
     },
     {
       accessorKey: 'currentQty',
-      header: '현재수량',
+      header: t('inventory.lot.currentQty'),
       size: 100,
       cell: ({ row }) => (
         <span className={row.original.currentQty <= 0 ? 'text-gray-400' : 'font-semibold'}>
@@ -189,7 +192,7 @@ export default function LotPage() {
     },
     {
       accessorKey: 'usage',
-      header: '사용률',
+      header: t('inventory.lot.usageRate'),
       size: 80,
       cell: ({ row }) => {
         const rate = row.original.initQty > 0
@@ -200,7 +203,7 @@ export default function LotPage() {
     },
     {
       accessorKey: 'status',
-      header: '상태',
+      header: t('inventory.lot.status'),
       size: 80,
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(row.original.status)}`}>
@@ -210,19 +213,19 @@ export default function LotPage() {
     },
     {
       accessorKey: 'vendor',
-      header: '공급처',
+      header: t('inventory.lot.vendor'),
       size: 100,
       cell: ({ row }) => row.original.vendor || '-',
     },
     {
       accessorKey: 'recvDate',
-      header: '입고일',
+      header: t('inventory.lot.recvDate'),
       size: 100,
       cell: ({ row }) => row.original.recvDate ? new Date(row.original.recvDate).toLocaleDateString() : '-',
     },
     {
       accessorKey: 'expireDate',
-      header: '만료일',
+      header: t('inventory.lot.expireDate'),
       size: 100,
       cell: ({ row }) => {
         if (!row.original.expireDate) return '-';
@@ -237,7 +240,7 @@ export default function LotPage() {
     },
     {
       accessorKey: 'parentLot',
-      header: '원LOT',
+      header: t('inventory.lot.parentLot'),
       size: 140,
       cell: ({ row }) => row.original.parentLot?.lotNo || '-',
     },
@@ -246,12 +249,12 @@ export default function LotPage() {
       header: '',
       size: 80,
       cell: ({ row }) => (
-        <button onClick={() => handleViewDetail(row.original)} className="p-1 hover:bg-surface rounded" title="상세">
+        <button onClick={() => handleViewDetail(row.original)} className="p-1 hover:bg-surface rounded" title={t('common.detail')}>
           <Eye className="w-4 h-4 text-primary" />
         </button>
       ),
     },
-  ], []);
+  ], [t]);
 
   // 필터링
   const filteredLots = useMemo(() => {
@@ -271,28 +274,28 @@ export default function LotPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Tag className="w-7 h-7 text-primary" />LOT 관리
+            <Tag className="w-7 h-7 text-primary" />{t('inventory.lot.title')}
           </h1>
-          <p className="text-text-muted mt-1">품목별 LOT 추적 및 이력을 관리합니다.</p>
+          <p className="text-text-muted mt-1">{t('inventory.lot.subtitle')}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchLots}><RefreshCw className="w-4 h-4 mr-1" />새로고침</Button>
+        <Button variant="secondary" size="sm" onClick={fetchLots}><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="총 LOT" value={lots.length} icon={Layers} color="blue" />
-        <StatCard label="정상" value={normalCount} icon={CheckCircle} color="green" />
-        <StatCard label="보류" value={holdCount} icon={AlertCircle} color="yellow" />
-        <StatCard label="소진" value={depletedCount} icon={MinusCircle} color="gray" />
+        <StatCard label={t('inventory.lot.totalLot')} value={lots.length} icon={Layers} color="blue" />
+        <StatCard label={t('inventory.lot.normal')} value={normalCount} icon={CheckCircle} color="green" />
+        <StatCard label={t('inventory.lot.hold')} value={holdCount} icon={AlertCircle} color="yellow" />
+        <StatCard label={t('inventory.lot.depleted')} value={depletedCount} icon={MinusCircle} color="gray" />
       </div>
 
       <Card>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input placeholder="LOT 번호 검색..." value={filters.lotNo} onChange={(e) => setFilters({ ...filters, lotNo: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              <Input placeholder={t('inventory.lot.searchLotNo')} value={filters.lotNo} onChange={(e) => setFilters({ ...filters, lotNo: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
-            <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} placeholder="품목유형" />
-            <Select options={LOT_STATUS} value={filters.status} onChange={(v) => setFilters({ ...filters, status: v })} placeholder="상태" />
+            <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} placeholder={t('inventory.lot.partType')} />
+            <Select options={LOT_STATUS} value={filters.status} onChange={(v) => setFilters({ ...filters, status: v })} placeholder={t('common.status')} />
             <Button variant="secondary" onClick={fetchLots}><RefreshCw className="w-4 h-4" /></Button>
           </div>
           <DataGrid
@@ -300,7 +303,7 @@ export default function LotPage() {
             columns={columns}
             isLoading={loading}
             pageSize={10}
-            emptyMessage="LOT 데이터가 없습니다."
+            emptyMessage={t('inventory.lot.emptyMessage')}
           />
         </CardContent>
       </Card>
@@ -309,11 +312,11 @@ export default function LotPage() {
       <Modal
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
-        title="LOT 상세 정보"
+        title={t('inventory.lot.detailTitle')}
         size="lg"
       >
         {detailLoading ? (
-          <div className="py-8 text-center text-gray-500">로딩 중...</div>
+          <div className="py-8 text-center text-gray-500">{t('common.loading')}</div>
         ) : selectedLot ? (
           <div className="space-y-4">
             {/* 탭 버튼 */}
@@ -324,7 +327,7 @@ export default function LotPage() {
                 }`}
                 onClick={() => setDetailTab('info')}
               >
-                기본정보
+                {t('inventory.lot.tabInfo')}
               </button>
               <button
                 className={`px-4 py-2 text-sm font-medium border-b-2 ${
@@ -332,7 +335,7 @@ export default function LotPage() {
                 }`}
                 onClick={() => setDetailTab('stock')}
               >
-                재고현황
+                {t('inventory.lot.tabStock')}
               </button>
               <button
                 className={`px-4 py-2 text-sm font-medium border-b-2 ${
@@ -340,7 +343,7 @@ export default function LotPage() {
                 }`}
                 onClick={() => setDetailTab('history')}
               >
-                이력
+                {t('inventory.lot.tabHistory')}
               </button>
             </div>
 
@@ -349,25 +352,25 @@ export default function LotPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-2">
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">LOT 번호</span>
+                    <span className="text-gray-500">{t('inventory.lot.lotNo')}</span>
                     <span className="font-medium">{selectedLot.lotNo}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">품목유형</span>
+                    <span className="text-gray-500">{t('inventory.lot.partType')}</span>
                     <span className={`px-2 py-0.5 rounded text-xs ${getPartTypeColor(selectedLot.partType)}`}>
                       {getPartTypeLabel(selectedLot.partType)}
                     </span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">품목코드</span>
+                    <span className="text-gray-500">{t('inventory.lot.partCode')}</span>
                     <span>{selectedLot.part.partCode}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">품목명</span>
+                    <span className="text-gray-500">{t('inventory.lot.partName')}</span>
                     <span>{selectedLot.part.partName}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">상태</span>
+                    <span className="text-gray-500">{t('inventory.lot.status')}</span>
                     <span className={`px-2 py-0.5 rounded text-xs ${getStatusColor(selectedLot.status)}`}>
                       {getStatusLabel(selectedLot.status)}
                     </span>
@@ -375,23 +378,23 @@ export default function LotPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">초기수량</span>
+                    <span className="text-gray-500">{t('inventory.lot.initQty')}</span>
                     <span>{selectedLot.initQty.toLocaleString()} {selectedLot.part.unit}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">현재수량</span>
+                    <span className="text-gray-500">{t('inventory.lot.currentQty')}</span>
                     <span className="font-semibold">{selectedLot.currentQty.toLocaleString()} {selectedLot.part.unit}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">공급처</span>
+                    <span className="text-gray-500">{t('inventory.lot.vendor')}</span>
                     <span>{selectedLot.vendor || '-'}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">입고일</span>
+                    <span className="text-gray-500">{t('inventory.lot.recvDate')}</span>
                     <span>{selectedLot.recvDate ? new Date(selectedLot.recvDate).toLocaleDateString() : '-'}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">만료일</span>
+                    <span className="text-gray-500">{t('inventory.lot.expireDate')}</span>
                     <span>{selectedLot.expireDate ? new Date(selectedLot.expireDate).toLocaleDateString() : '-'}</span>
                   </div>
                 </div>
@@ -412,7 +415,7 @@ export default function LotPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">재고 없음</div>
+                  <div className="text-center py-8 text-gray-500">{t('inventory.lot.noStock')}</div>
                 )}
               </div>
             )}
@@ -438,14 +441,14 @@ export default function LotPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">이력 없음</div>
+                  <div className="text-center py-8 text-gray-500">{t('inventory.lot.noHistory')}</div>
                 )}
               </div>
             )}
 
             <div className="flex justify-end pt-4">
               <Button variant="secondary" onClick={() => setDetailModalOpen(false)}>
-                닫기
+                {t('common.close')}
               </Button>
             </div>
           </div>
