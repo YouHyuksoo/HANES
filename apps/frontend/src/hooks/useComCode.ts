@@ -26,7 +26,7 @@ export interface ComCodeItem {
 export type ComCodeMap = Record<string, ComCodeItem[]>;
 
 const COM_CODE_QUERY_KEY = ["com-codes", "all-active"];
-const COM_CODE_URL = "/v1/master/com-codes/all-active";
+const COM_CODE_URL = "/master/com-codes/all-active";
 
 const DEFAULT_COLOR =
   "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
