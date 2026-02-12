@@ -84,7 +84,7 @@ async function bootstrap() {
   });
 
   // 서버 시작
-  const port = process.env.PORT ?? 3001;
+  const port = process.env.PORT ?? 3003;
   await app.listen(port);
 
   logger.log(`Application is running on: http://localhost:${port}`);
