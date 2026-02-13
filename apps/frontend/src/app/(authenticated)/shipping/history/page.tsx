@@ -31,8 +31,8 @@ interface ShipHistory {
   createdAt: string;
 }
 
-const statusLabels: Record<string, string> = {
-  DRAFT: "작성중", CONFIRMED: "확정", SHIPPING: "출하중", SHIPPED: "출하완료",
+const statusKeys: Record<string, string> = {
+  DRAFT: "shipping.history.statusDraft", CONFIRMED: "shipping.history.statusConfirmed", SHIPPING: "shipping.history.statusShipping", SHIPPED: "shipping.history.statusShipped",
 };
 const statusColors: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
@@ -57,9 +57,9 @@ function ShipHistoryPage() {
   const [dateTo, setDateTo] = useState("");
 
   const statusOptions = [
-    { value: "", label: "전체 상태" },
-    { value: "DRAFT", label: "작성중" }, { value: "CONFIRMED", label: "확정" },
-    { value: "SHIPPING", label: "출하중" }, { value: "SHIPPED", label: "출하완료" },
+    { value: "", label: t("common.allStatus") },
+    { value: "DRAFT", label: t("shipping.history.statusDraft") }, { value: "CONFIRMED", label: t("shipping.history.statusConfirmed") },
+    { value: "SHIPPING", label: t("shipping.history.statusShipping") }, { value: "SHIPPED", label: t("shipping.history.statusShipped") },
   ];
 
   const filteredData = useMemo(() => mockData.filter((item) => {
@@ -78,34 +78,34 @@ function ShipHistoryPage() {
   }), []);
 
   const columns = useMemo<ColumnDef<ShipHistory>[]>(() => [
-    { accessorKey: "shipOrderNo", header: "출하지시번호", size: 160 },
-    { accessorKey: "customerName", header: "고객사", size: 120 },
-    { accessorKey: "dueDate", header: "납기일", size: 100 },
-    { accessorKey: "shipDate", header: "출하일", size: 100 },
-    { accessorKey: "itemCount", header: "품목수", size: 70 },
-    { accessorKey: "totalQty", header: "총수량", size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{statusLabels[s]}</span>; } },
-    { accessorKey: "createdAt", header: "등록일", size: 100 },
+    { accessorKey: "shipOrderNo", header: t("shipping.history.shipOrderNo"), size: 160 },
+    { accessorKey: "customerName", header: t("shipping.history.customer"), size: 120 },
+    { accessorKey: "dueDate", header: t("shipping.history.dueDate"), size: 100 },
+    { accessorKey: "shipDate", header: t("shipping.history.shipDateCol"), size: 100 },
+    { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70 },
+    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{t(statusKeys[s])}</span>; } },
+    { accessorKey: "createdAt", header: t("common.createdAt"), size: 100 },
   ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><History className="w-7 h-7 text-primary" />출하이력조회</h1>
-          <p className="text-text-muted mt-1">출하 이력을 다양한 조건으로 조회합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><History className="w-7 h-7 text-primary" />{t("shipping.history.title")}</h1>
+          <p className="text-text-muted mt-1">{t("shipping.history.subtitle")}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀 다운로드</Button>
+        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t("shipping.history.excelDownload")}</Button>
       </div>
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="전체 건수" value={stats.total} icon={FileText} color="blue" />
-        <StatCard label="출하완료" value={stats.shipped} icon={Truck} color="green" />
-        <StatCard label="확정 대기" value={stats.confirmed} icon={CheckCircle} color="yellow" />
-        <StatCard label="총 출하수량" value={stats.totalQty.toLocaleString()} icon={Archive} color="purple" />
+        <StatCard label={t("shipping.history.statTotal")} value={stats.total} icon={FileText} color="blue" />
+        <StatCard label={t("shipping.history.statusShipped")} value={stats.shipped} icon={Truck} color="green" />
+        <StatCard label={t("shipping.history.statConfirmedWait")} value={stats.confirmed} icon={CheckCircle} color="yellow" />
+        <StatCard label={t("shipping.history.statTotalQty")} value={stats.totalQty.toLocaleString()} icon={Archive} color="purple" />
       </div>
       <Card><CardContent>
         <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder="지시번호 / 고객명 검색" value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1 min-w-[200px]"><Input placeholder={t("shipping.history.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <div className="w-36"><Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth /></div>
           <div className="flex items-center gap-1"><Calendar className="w-4 h-4 text-text-muted" /><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" /></div>
           <span className="text-text-muted self-center">~</span>

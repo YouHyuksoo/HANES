@@ -63,16 +63,16 @@ function IqcItemPage() {
   }), [searchText, partFilter]);
 
   const columns = useMemo<ColumnDef<IqcItem>[]>(() => [
-    { accessorKey: 'partCode', header: '품목코드', size: 100 },
-    { accessorKey: 'partName', header: '품목명', size: 140 },
-    { accessorKey: 'seq', header: '순서', size: 60 },
-    { accessorKey: 'inspectItem', header: '검사항목', size: 140 },
-    { accessorKey: 'spec', header: '규격', size: 150 },
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
+    { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+    { accessorKey: 'seq', header: t('master.iqcItem.seq'), size: 60 },
+    { accessorKey: 'inspectItem', header: t('master.iqcItem.inspectItem'), size: 140 },
+    { accessorKey: 'spec', header: t('master.iqcItem.spec'), size: 150 },
     { accessorKey: 'lsl', header: 'LSL', size: 70, cell: ({ getValue }) => getValue() != null ? getValue() : '-' },
     { accessorKey: 'usl', header: 'USL', size: 70, cell: ({ getValue }) => getValue() != null ? getValue() : '-' },
-    { accessorKey: 'unit', header: '단위', size: 70 },
-    { accessorKey: 'isShelfLife', header: '유수명', size: 70, cell: ({ getValue }) => getValue() ? 'O' : '-' },
-    { accessorKey: 'useYn', header: '사용', size: 60, cell: ({ getValue }) => (
+    { accessorKey: 'unit', header: t('common.unit'), size: 70 },
+    { accessorKey: 'isShelfLife', header: t('master.iqcItem.shelfLife'), size: 70, cell: ({ getValue }) => getValue() ? 'O' : '-' },
+    { accessorKey: 'useYn', header: t('master.iqcItem.use'), size: 60, cell: ({ getValue }) => (
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
     )},
     { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
@@ -87,32 +87,32 @@ function IqcItemPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardCheck className="w-7 h-7 text-primary" />IQC 검사항목</h1>
-          <p className="text-text-muted mt-1">품목별 수입검사 기준을 관리합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardCheck className="w-7 h-7 text-primary" />{t('master.iqcItem.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.iqcItem.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />검사항목 추가</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.iqcItem.addItem')}</Button>
         </div>
       </div>
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="검사항목/품목코드 검색" value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-56"><Select options={partOptions} value={partFilter} onChange={setPartFilter} placeholder="품목선택" fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('master.iqcItem.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="w-56"><Select options={partOptions} value={partFilter} onChange={setPartFilter} placeholder={t('master.iqcItem.partSelect')} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '검사항목 수정' : '검사항목 추가'} size="lg">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.iqcItem.editItem') : t('master.iqcItem.addItem')} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Select label="품목" options={partOptions.filter(o => o.value)} value={editingItem?.partCode || ''} onChange={() => {}} fullWidth />
-          <Input label="순서" type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
-          <div className="col-span-2"><Input label="검사항목" placeholder="외관검사" defaultValue={editingItem?.inspectItem} fullWidth /></div>
-          <div className="col-span-2"><Input label="규격" placeholder="이물/손상 없을것" defaultValue={editingItem?.spec} fullWidth /></div>
+          <Select label={t('common.part')} options={partOptions.filter(o => o.value)} value={editingItem?.partCode || ''} onChange={() => {}} fullWidth />
+          <Input label={t('master.iqcItem.seq')} type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
+          <div className="col-span-2"><Input label={t('master.iqcItem.inspectItem')} placeholder="외관검사" defaultValue={editingItem?.inspectItem} fullWidth /></div>
+          <div className="col-span-2"><Input label={t('master.iqcItem.spec')} placeholder="이물/손상 없을것" defaultValue={editingItem?.spec} fullWidth /></div>
           <Input label="LSL" type="number" placeholder="0.4" defaultValue={editingItem?.lsl?.toString()} fullWidth />
           <Input label="USL" type="number" placeholder="0.6" defaultValue={editingItem?.usl?.toString()} fullWidth />
-          <Input label="단위" placeholder="mm" defaultValue={editingItem?.unit} fullWidth />
-          <Input label="재검사주기(일)" type="number" placeholder="90" defaultValue={editingItem?.retestCycle?.toString()} fullWidth />
+          <Input label={t('common.unit')} placeholder="mm" defaultValue={editingItem?.unit} fullWidth />
+          <Input label={t('master.iqcItem.retestCycle')} type="number" placeholder="90" defaultValue={editingItem?.retestCycle?.toString()} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>

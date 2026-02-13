@@ -50,15 +50,15 @@ function WorkInstructionPage() {
   }), [searchText]);
 
   const columns = useMemo<ColumnDef<WorkInstruction>[]>(() => [
-    { accessorKey: 'partCode', header: '품목코드', size: 100 },
-    { accessorKey: 'partName', header: '품목명', size: 140 },
-    { accessorKey: 'processCode', header: '공정코드', size: 90, cell: ({ getValue }) => getValue() || '-' },
-    { accessorKey: 'title', header: '제목', size: 220 },
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
+    { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+    { accessorKey: 'processCode', header: t('master.workInstruction.processCode'), size: 90, cell: ({ getValue }) => getValue() || '-' },
+    { accessorKey: 'title', header: t('master.workInstruction.docTitle'), size: 220 },
     { accessorKey: 'revision', header: 'Rev', size: 60, cell: ({ getValue }) => (
       <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">{getValue() as string}</span>
     )},
-    { accessorKey: 'updatedAt', header: '수정일', size: 100 },
-    { accessorKey: 'useYn', header: '사용', size: 60, cell: ({ getValue }) => (
+    { accessorKey: 'updatedAt', header: t('master.workInstruction.updatedAt'), size: 100 },
+    { accessorKey: 'useYn', header: t('master.workInstruction.use'), size: 60, cell: ({ getValue }) => (
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
     )},
     { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
@@ -73,31 +73,31 @@ function WorkInstructionPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><FileText className="w-7 h-7 text-primary" />작업지도서</h1>
-          <p className="text-text-muted mt-1">품목/공정별 작업 지침을 관리합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><FileText className="w-7 h-7 text-primary" />{t('master.workInstruction.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.workInstruction.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />지도서 추가</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.workInstruction.addDoc')}</Button>
         </div>
       </div>
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="제목/품목코드/공정코드 검색" value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('master.workInstruction.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '작업지도서 수정' : '작업지도서 추가'} size="lg">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.workInstruction.editDoc') : t('master.workInstruction.addDoc')} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="품목코드" placeholder="H-001" defaultValue={editingItem?.partCode} fullWidth />
-          <Input label="공정코드" placeholder="CUT-01" defaultValue={editingItem?.processCode} fullWidth />
-          <div className="col-span-2"><Input label="제목" placeholder="메인하네스 A 절단 작업지침" defaultValue={editingItem?.title} fullWidth /></div>
-          <Input label="리비전" placeholder="A" defaultValue={editingItem?.revision} fullWidth />
-          <Input label="이미지 URL" placeholder="https://..." defaultValue={editingItem?.imageUrl} fullWidth />
+          <Input label={t('common.partCode')} placeholder="H-001" defaultValue={editingItem?.partCode} fullWidth />
+          <Input label={t('master.workInstruction.processCode')} placeholder="CUT-01" defaultValue={editingItem?.processCode} fullWidth />
+          <div className="col-span-2"><Input label={t('master.workInstruction.docTitle')} placeholder="메인하네스 A 절단 작업지침" defaultValue={editingItem?.title} fullWidth /></div>
+          <Input label={t('master.workInstruction.revision')} placeholder="A" defaultValue={editingItem?.revision} fullWidth />
+          <Input label={t('master.workInstruction.imageUrl')} placeholder="https://..." defaultValue={editingItem?.imageUrl} fullWidth />
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-text mb-1">내용</label>
-            <textarea className="w-full h-32 px-3 py-2 border border-border rounded-lg bg-surface text-text resize-none focus:outline-none focus:ring-2 focus:ring-primary" placeholder="작업 지침 내용을 입력하세요..." />
+            <label className="block text-sm font-medium text-text mb-1">{t('master.workInstruction.content')}</label>
+            <textarea className="w-full h-32 px-3 py-2 border border-border rounded-lg bg-surface text-text resize-none focus:outline-none focus:ring-2 focus:ring-primary" placeholder={t('master.workInstruction.contentPlaceholder')} />
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-6">

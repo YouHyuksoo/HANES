@@ -75,7 +75,7 @@ function ScrapPage() {
       </CardContent></Card>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('material.scrap.register')} size="md">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="LOT ID" placeholder="LOT ID" fullWidth />
+          <Input label={t('material.scrap.lotId')} placeholder={t('material.scrap.lotIdPlaceholder')} fullWidth />
           <Input label={t('material.scrap.warehouse')} placeholder={t('material.scrap.warehouse')} fullWidth />
           <Input label={t('material.scrap.qty')} type="number" placeholder="0" fullWidth />
           <div className="col-span-2"><Input label={t('material.scrap.reason')} placeholder={t('material.scrap.reasonPlaceholder')} fullWidth /></div>

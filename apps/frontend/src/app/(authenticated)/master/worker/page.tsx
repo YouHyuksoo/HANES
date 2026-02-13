@@ -44,9 +44,9 @@ function WorkerPage() {
 
   const deptOptions = useMemo(() => [
     { value: '', label: t('common.all') },
-    { value: '절단팀', label: '절단팀' }, { value: '압착팀', label: '압착팀' },
-    { value: '조립팀', label: '조립팀' }, { value: '품질팀', label: '품질팀' },
-    { value: '포장팀', label: '포장팀' },
+    { value: '절단팀', label: t('master.worker.deptCutting') }, { value: '압착팀', label: t('master.worker.deptCrimping') },
+    { value: '조립팀', label: t('master.worker.deptAssembly') }, { value: '품질팀', label: t('master.worker.deptQuality') },
+    { value: '포장팀', label: t('master.worker.deptPacking') },
   ], [t]);
 
   const filteredData = useMemo(() => mockData.filter(item => {
@@ -57,12 +57,12 @@ function WorkerPage() {
   }), [searchText, deptFilter]);
 
   const columns = useMemo<ColumnDef<Worker>[]>(() => [
-    { accessorKey: 'workerCode', header: '작업자코드', size: 110 },
-    { accessorKey: 'workerName', header: '작업자명', size: 100 },
-    { accessorKey: 'dept', header: '부서', size: 100 },
-    { accessorKey: 'qrCode', header: 'QR코드', size: 110, cell: ({ getValue }) => getValue() || '-' },
-    { accessorKey: 'processNames', header: '담당공정', size: 200 },
-    { accessorKey: 'useYn', header: '사용', size: 60, cell: ({ getValue }) => (
+    { accessorKey: 'workerCode', header: t('master.worker.workerCode'), size: 110 },
+    { accessorKey: 'workerName', header: t('master.worker.workerName'), size: 100 },
+    { accessorKey: 'dept', header: t('master.worker.dept'), size: 100 },
+    { accessorKey: 'qrCode', header: t('master.worker.qrCode'), size: 110, cell: ({ getValue }) => getValue() || '-' },
+    { accessorKey: 'processNames', header: t('master.worker.assignedProcess'), size: 200 },
+    { accessorKey: 'useYn', header: t('master.worker.use'), size: 60, cell: ({ getValue }) => (
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
     )},
     { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
@@ -77,29 +77,29 @@ function WorkerPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Users className="w-7 h-7 text-primary" />작업자관리</h1>
-          <p className="text-text-muted mt-1">현장 작업자 정보를 관리합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Users className="w-7 h-7 text-primary" />{t('master.worker.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.worker.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />작업자 추가</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.worker.addWorker')}</Button>
         </div>
       </div>
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="작업자코드/이름 검색" value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-40"><Select options={deptOptions} value={deptFilter} onChange={setDeptFilter} placeholder="부서" fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('master.worker.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="w-40"><Select options={deptOptions} value={deptFilter} onChange={setDeptFilter} placeholder={t('master.worker.dept')} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '작업자 수정' : '작업자 추가'} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.worker.editWorker') : t('master.worker.addWorker')} size="md">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="작업자코드" placeholder="W-001" defaultValue={editingItem?.workerCode} fullWidth />
-          <Input label="작업자명" placeholder="김작업" defaultValue={editingItem?.workerName} fullWidth />
-          <Input label="부서" placeholder="절단팀" defaultValue={editingItem?.dept} fullWidth />
-          <Input label="QR코드" placeholder="QR-W001" defaultValue={editingItem?.qrCode} fullWidth />
-          <div className="col-span-2"><Input label="담당공정" placeholder="전선절단, 피복탈피" defaultValue={editingItem?.processNames} fullWidth /></div>
+          <Input label={t('master.worker.workerCode')} placeholder="W-001" defaultValue={editingItem?.workerCode} fullWidth />
+          <Input label={t('master.worker.workerName')} placeholder="김작업" defaultValue={editingItem?.workerName} fullWidth />
+          <Input label={t('master.worker.dept')} placeholder="절단팀" defaultValue={editingItem?.dept} fullWidth />
+          <Input label={t('master.worker.qrCode')} placeholder="QR-W001" defaultValue={editingItem?.qrCode} fullWidth />
+          <div className="col-span-2"><Input label={t('master.worker.assignedProcess')} placeholder="전선절단, 피복탈피" defaultValue={editingItem?.processNames} fullWidth /></div>
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>

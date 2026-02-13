@@ -59,61 +59,61 @@ function InputManualPage() {
   };
 
   const columns = useMemo<ColumnDef<ManualResult>[]>(() => [
-    { accessorKey: 'orderNo', header: '작업지시번호', size: 160 },
-    { accessorKey: 'partName', header: '품목명', size: 150 },
-    { accessorKey: 'workerName', header: '작업자', size: 80 },
-    { accessorKey: 'lotNo', header: 'LOT번호', size: 160 },
-    { accessorKey: 'goodQty', header: '양품', size: 80, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'defectQty', header: '불량', size: 80, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'workDate', header: '작업일', size: 100 },
-    { id: 'time', header: '작업시간', size: 130, cell: ({ row }) => <span className="text-text-muted">{row.original.startTime} ~ {row.original.endTime}</span> },
-  ], []);
+    { accessorKey: 'orderNo', header: t('production.inputManual.orderNo'), size: 160 },
+    { accessorKey: 'partName', header: t('production.inputManual.partName'), size: 150 },
+    { accessorKey: 'workerName', header: t('production.inputManual.worker'), size: 80 },
+    { accessorKey: 'lotNo', header: t('production.inputManual.lotNo'), size: 160 },
+    { accessorKey: 'goodQty', header: t('production.inputManual.good'), size: 80, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'defectQty', header: t('production.inputManual.defect'), size: 80, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'workDate', header: t('production.inputManual.workDate'), size: 100 },
+    { id: 'time', header: t('production.inputManual.workTime'), size: 130, cell: ({ row }) => <span className="text-text-muted">{row.original.startTime} ~ {row.original.endTime}</span> },
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><HandMetal className="w-7 h-7 text-primary" />실적입력 (수작업)</h1>
-          <p className="text-text-muted mt-1">수작업 공정의 생산실적을 입력합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><HandMetal className="w-7 h-7 text-primary" />{t('production.inputManual.title')}</h1>
+          <p className="text-text-muted mt-1">{t('production.inputManual.description')}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}><Save className="w-4 h-4 mr-1" />실적 입력</Button>
+        <Button size="sm" onClick={() => setIsModalOpen(true)}><Save className="w-4 h-4 mr-1" />{t('production.inputManual.inputResult')}</Button>
       </div>
 
       {/* 작업지도서 영역 */}
       <Card><CardContent>
-        <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-primary" /><span className="font-semibold text-text">작업지도서</span></div>
-        <div className="p-3 bg-background rounded-lg text-sm text-text-muted">현재 선택된 작업지시의 작업지도서가 이 영역에 표시됩니다. 작업 절차, 주의사항, 품질 기준 등을 확인하세요.</div>
+        <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-primary" /><span className="font-semibold text-text">{t('production.inputManual.workInstruction')}</span></div>
+        <div className="p-3 bg-background rounded-lg text-sm text-text-muted">{t('production.inputManual.workInstructionDesc')}</div>
       </CardContent></Card>
 
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="입력 건수" value={stats.count} icon={Package} color="blue" />
-        <StatCard label="양품 합계" value={stats.totalGood} icon={CheckCircle} color="green" />
-        <StatCard label="불량 합계" value={stats.totalDefect} icon={XCircle} color="red" />
+        <StatCard label={t('production.inputManual.inputCount')} value={stats.count} icon={Package} color="blue" />
+        <StatCard label={t('production.inputManual.goodTotal')} value={stats.totalGood} icon={CheckCircle} color="green" />
+        <StatCard label={t('production.inputManual.defectTotal')} value={stats.totalDefect} icon={XCircle} color="red" />
       </div>
 
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="지시번호, 품목명 검색..." value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('production.inputManual.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="수작업 실적 입력" size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputManual.modalTitle')} size="md">
         <div className="space-y-4">
-          <Select label="작업지시" options={[{ value: 'JO-20250126-001', label: 'JO-20250126-001 (메인 하네스 A)' }, { value: 'JO-20250126-002', label: 'JO-20250126-002 (서브 하네스 B)' }]} value={form.orderNo} onChange={v => setForm(p => ({ ...p, orderNo: v }))} fullWidth />
+          <Select label={t('production.inputManual.workOrder')} options={[{ value: 'JO-20250126-001', label: 'JO-20250126-001 (메인 하네스 A)' }, { value: 'JO-20250126-002', label: 'JO-20250126-002 (서브 하네스 B)' }]} value={form.orderNo} onChange={v => setForm(p => ({ ...p, orderNo: v }))} fullWidth />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="작업자" value={form.workerName} onChange={e => setForm(p => ({ ...p, workerName: e.target.value }))} fullWidth />
-            <Input label="LOT번호" value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
-            <Input label="양품 수량" type="number" value={form.goodQty} onChange={e => setForm(p => ({ ...p, goodQty: e.target.value }))} fullWidth />
-            <Input label="불량 수량" type="number" value={form.defectQty} onChange={e => setForm(p => ({ ...p, defectQty: e.target.value }))} fullWidth />
-            <Input label="시작시간" type="time" value={form.startTime} onChange={e => setForm(p => ({ ...p, startTime: e.target.value }))} fullWidth />
-            <Input label="종료시간" type="time" value={form.endTime} onChange={e => setForm(p => ({ ...p, endTime: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.worker')} value={form.workerName} onChange={e => setForm(p => ({ ...p, workerName: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.goodQty')} type="number" value={form.goodQty} onChange={e => setForm(p => ({ ...p, goodQty: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.defectQty')} type="number" value={form.defectQty} onChange={e => setForm(p => ({ ...p, defectQty: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.startTime')} type="time" value={form.startTime} onChange={e => setForm(p => ({ ...p, startTime: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.endTime')} type="time" value={form.endTime} onChange={e => setForm(p => ({ ...p, endTime: e.target.value }))} fullWidth />
           </div>
-          <Input label="비고" value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
+          <Input label={t('production.inputManual.remark')} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>취소</Button>
-            <Button onClick={handleSubmit}><Save className="w-4 h-4 mr-1" />저장</Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleSubmit}><Save className="w-4 h-4 mr-1" />{t('common.save')}</Button>
           </div>
         </div>
       </Modal>

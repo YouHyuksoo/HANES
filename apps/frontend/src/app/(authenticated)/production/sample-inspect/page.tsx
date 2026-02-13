@@ -48,10 +48,10 @@ function SampleInspectPage() {
   const [endDate, setEndDate] = useState('');
 
   const passOptions = useMemo(() => [
-    { value: '', label: '전체 판정' },
-    { value: 'Y', label: '합격' },
-    { value: 'N', label: '불합격' },
-  ], []);
+    { value: '', label: t('production.sampleInspect.allJudgment') },
+    { value: 'Y', label: t('production.sampleInspect.pass') },
+    { value: 'N', label: t('production.sampleInspect.fail') },
+  ], [t]);
 
   const filteredData = useMemo(() => mockData.filter(item => {
     const matchSearch = !searchText || item.lotNo.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
@@ -69,48 +69,48 @@ function SampleInspectPage() {
   }), []);
 
   const columns = useMemo<ColumnDef<SampleInspect>[]>(() => [
-    { accessorKey: 'inspectDate', header: '검사일', size: 100 },
-    { accessorKey: 'lotNo', header: 'LOT번호', size: 160 },
-    { accessorKey: 'orderNo', header: '작업지시번호', size: 160 },
-    { accessorKey: 'partCode', header: '품목코드', size: 100 },
-    { accessorKey: 'partName', header: '품목명', size: 140 },
-    { accessorKey: 'inspectType', header: '검사유형', size: 90 },
-    { accessorKey: 'sampleQty', header: '검사수', size: 70 },
-    { accessorKey: 'passQty', header: '합격수', size: 70, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{getValue() as number}</span> },
-    { accessorKey: 'failQty', header: '불합격수', size: 70, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400">{getValue() as number}</span> },
+    { accessorKey: 'inspectDate', header: t('production.sampleInspect.inspectDate'), size: 100 },
+    { accessorKey: 'lotNo', header: t('production.sampleInspect.lotNo'), size: 160 },
+    { accessorKey: 'orderNo', header: t('production.sampleInspect.orderNo'), size: 160 },
+    { accessorKey: 'partCode', header: t('production.sampleInspect.partCode'), size: 100 },
+    { accessorKey: 'partName', header: t('production.sampleInspect.partName'), size: 140 },
+    { accessorKey: 'inspectType', header: t('production.sampleInspect.inspectType'), size: 90 },
+    { accessorKey: 'sampleQty', header: t('production.sampleInspect.sampleQty'), size: 70 },
+    { accessorKey: 'passQty', header: t('production.sampleInspect.passQty'), size: 70, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{getValue() as number}</span> },
+    { accessorKey: 'failQty', header: t('production.sampleInspect.failQty'), size: 70, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400">{getValue() as number}</span> },
     {
-      accessorKey: 'passYn', header: '판정', size: 80,
+      accessorKey: 'passYn', header: t('production.sampleInspect.judgment'), size: 80,
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v === 'Y'
-          ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">합격</span>
-          : <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">불합격</span>;
+          ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{t('production.sampleInspect.pass')}</span>
+          : <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{t('production.sampleInspect.fail')}</span>;
       },
     },
-    { accessorKey: 'inspector', header: '검사원', size: 80 },
-    { accessorKey: 'remark', header: '비고', size: 120 },
-  ], []);
+    { accessorKey: 'inspector', header: t('production.sampleInspect.inspector'), size: 80 },
+    { accessorKey: 'remark', header: t('production.sampleInspect.remark'), size: 120 },
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><FlaskConical className="w-7 h-7 text-primary" />샘플검사이력</h1>
-          <p className="text-text-muted mt-1">샘플 검사 결과 이력을 조회합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><FlaskConical className="w-7 h-7 text-primary" />{t('production.sampleInspect.title')}</h1>
+          <p className="text-text-muted mt-1">{t('production.sampleInspect.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀 다운로드</Button>
+        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('production.sampleInspect.excelDownload')}</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="전체 검사" value={stats.total} icon={FlaskConical} color="blue" />
-        <StatCard label="합격" value={stats.pass} icon={CheckCircle} color="green" />
-        <StatCard label="불합격" value={stats.fail} icon={XCircle} color="red" />
-        <StatCard label="합격률" value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
+        <StatCard label={t('production.sampleInspect.totalInspect')} value={stats.total} icon={FlaskConical} color="blue" />
+        <StatCard label={t('production.sampleInspect.pass')} value={stats.pass} icon={CheckCircle} color="green" />
+        <StatCard label={t('production.sampleInspect.fail')} value={stats.fail} icon={XCircle} color="red" />
+        <StatCard label={t('production.sampleInspect.passRate')} value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
       </div>
 
       <Card><CardContent>
         <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder="LOT번호, 품목명 검색..." value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1 min-w-[200px]"><Input placeholder={t('production.sampleInspect.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <div className="w-32"><Select options={passOptions} value={passFilter} onChange={setPassFilter} fullWidth /></div>
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-text-muted" />

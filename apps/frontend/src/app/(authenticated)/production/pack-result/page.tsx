@@ -58,37 +58,37 @@ function PackResultPage() {
   }), []);
 
   const columns = useMemo<ColumnDef<PackResult>[]>(() => [
-    { accessorKey: 'packDate', header: '포장일', size: 100 },
-    { accessorKey: 'boxNo', header: '박스번호', size: 170 },
-    { accessorKey: 'lotNo', header: 'LOT번호', size: 160 },
-    { accessorKey: 'partCode', header: '품목코드', size: 100 },
-    { accessorKey: 'partName', header: '품목명', size: 140 },
-    { accessorKey: 'packQty', header: '포장수량', size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'boxType', header: '박스유형', size: 80 },
-    { accessorKey: 'packer', header: '포장자', size: 80 },
-    { accessorKey: 'destination', header: '납품처', size: 140 },
-    { accessorKey: 'remark', header: '비고', size: 100 },
-  ], []);
+    { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 100 },
+    { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170 },
+    { accessorKey: 'lotNo', header: t('production.packResult.lotNo'), size: 160 },
+    { accessorKey: 'partCode', header: t('production.packResult.partCode'), size: 100 },
+    { accessorKey: 'partName', header: t('production.packResult.partName'), size: 140 },
+    { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'boxType', header: t('production.packResult.boxType'), size: 80 },
+    { accessorKey: 'packer', header: t('production.packResult.packer'), size: 80 },
+    { accessorKey: 'destination', header: t('production.packResult.destination'), size: 140 },
+    { accessorKey: 'remark', header: t('production.packResult.remark'), size: 100 },
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><BoxIcon className="w-7 h-7 text-primary" />포장실적조회</h1>
-          <p className="text-text-muted mt-1">포장 완료된 박스 실적을 조회합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><BoxIcon className="w-7 h-7 text-primary" />{t('production.packResult.title')}</h1>
+          <p className="text-text-muted mt-1">{t('production.packResult.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀 다운로드</Button>
+        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('production.packResult.excelDownload')}</Button>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="총 박스 수" value={stats.totalBox} icon={Package} color="blue" />
-        <StatCard label="포장 총수량" value={stats.totalQty} icon={Layers} color="green" />
-        <StatCard label="납품처" value={`${stats.destinations}곳`} icon={Truck} color="purple" />
+        <StatCard label={t('production.packResult.totalBox')} value={stats.totalBox} icon={Package} color="blue" />
+        <StatCard label={t('production.packResult.totalPackQty')} value={stats.totalQty} icon={Layers} color="green" />
+        <StatCard label={t('production.packResult.destination')} value={`${stats.destinations}${t('production.packResult.places')}`} icon={Truck} color="purple" />
       </div>
 
       <Card><CardContent>
         <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder="박스번호, LOT번호, 품목명 검색..." value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1 min-w-[200px]"><Input placeholder={t('production.packResult.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-text-muted" />
             <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-36" />

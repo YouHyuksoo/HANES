@@ -79,7 +79,7 @@ function ShelfLifePage() {
     { accessorKey: 'remainDays', header: t('material.shelfLife.remainDays'), size: 100, cell: ({ getValue }) => {
       const days = getValue() as number;
       const color = days < 0 ? 'text-red-600' : days <= 30 ? 'text-yellow-600' : 'text-green-600';
-      return <span className={`font-medium ${color}`}>{days}일</span>;
+      return <span className={`font-medium ${color}`}>{days}{t('material.shelfLife.days')}</span>;
     }},
     { accessorKey: 'expiryLabel', header: t('common.status'), size: 100, cell: ({ getValue }) => {
       const label = getValue() as string;

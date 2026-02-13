@@ -73,7 +73,7 @@ function PoPage() {
     { accessorKey: 'orderDate', header: t('material.po.orderDate'), size: 110 },
     { accessorKey: 'dueDate', header: t('material.po.dueDate'), size: 110 },
     { accessorKey: 'itemCount', header: t('material.po.itemCount'), size: 80 },
-    { accessorKey: 'totalAmount', header: t('material.po.totalAmount'), size: 130, cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}원</span> },
+    { accessorKey: 'totalAmount', header: t('material.po.totalAmount'), size: 130, cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}{t('common.won')}</span> },
     { accessorKey: 'status', header: t('common.status'), size: 100, cell: ({ getValue }) => {
       const s = getValue() as string;
       return <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[s] || ''}`}>{s}</span>;
@@ -105,7 +105,7 @@ function PoPage() {
       </CardContent></Card>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('common.edit') : t('common.register')} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="PO No." placeholder="PO-YYYYMMDD-001" fullWidth />
+          <Input label={t('material.po.poNo')} placeholder="PO-YYYYMMDD-001" fullWidth />
           <Input label={t('material.po.partnerName')} placeholder={t('material.po.partnerName')} fullWidth />
           <Input label={t('material.po.orderDate')} type="date" fullWidth />
           <Input label={t('material.po.dueDate')} type="date" fullWidth />

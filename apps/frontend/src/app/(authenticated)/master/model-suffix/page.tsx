@@ -57,14 +57,14 @@ function ModelSuffixPage() {
   }), [searchText, customerFilter]);
 
   const columns = useMemo<ColumnDef<ModelSuffix>[]>(() => [
-    { accessorKey: 'modelCode', header: '모델코드', size: 120 },
-    { accessorKey: 'suffixCode', header: '접미사코드', size: 110, cell: ({ getValue }) => (
+    { accessorKey: 'modelCode', header: t('master.modelSuffix.modelCode'), size: 120 },
+    { accessorKey: 'suffixCode', header: t('master.modelSuffix.suffixCode'), size: 110, cell: ({ getValue }) => (
       <span className="px-2 py-0.5 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 font-mono">{getValue() as string}</span>
     )},
-    { accessorKey: 'suffixName', header: '접미사명', size: 140 },
-    { accessorKey: 'customer', header: '고객사', size: 120, cell: ({ getValue }) => getValue() || '-' },
-    { accessorKey: 'remark', header: '비고', size: 150, cell: ({ getValue }) => getValue() || '-' },
-    { accessorKey: 'useYn', header: '사용', size: 60, cell: ({ getValue }) => (
+    { accessorKey: 'suffixName', header: t('master.modelSuffix.suffixName'), size: 140 },
+    { accessorKey: 'customer', header: t('master.modelSuffix.customer'), size: 120, cell: ({ getValue }) => getValue() || '-' },
+    { accessorKey: 'remark', header: t('common.remark'), size: 150, cell: ({ getValue }) => getValue() || '-' },
+    { accessorKey: 'useYn', header: t('master.modelSuffix.use'), size: 60, cell: ({ getValue }) => (
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
     )},
     { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
@@ -79,29 +79,29 @@ function ModelSuffixPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Tag className="w-7 h-7 text-primary" />모델접미사</h1>
-          <p className="text-text-muted mt-1">모델별 접미사 코드를 관리합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Tag className="w-7 h-7 text-primary" />{t('master.modelSuffix.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.modelSuffix.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />접미사 추가</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.modelSuffix.addSuffix')}</Button>
         </div>
       </div>
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="모델코드/접미사코드/접미사명 검색" value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-40"><Select options={customerOptions} value={customerFilter} onChange={setCustomerFilter} placeholder="고객사" fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('master.modelSuffix.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="w-40"><Select options={customerOptions} value={customerFilter} onChange={setCustomerFilter} placeholder={t('master.modelSuffix.customer')} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '접미사 수정' : '접미사 추가'} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.modelSuffix.editSuffix') : t('master.modelSuffix.addSuffix')} size="md">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="모델코드" placeholder="MAIN-A" defaultValue={editingItem?.modelCode} fullWidth />
-          <Input label="접미사코드" placeholder="LHD" defaultValue={editingItem?.suffixCode} fullWidth />
-          <Input label="접미사명" placeholder="좌핸들" defaultValue={editingItem?.suffixName} fullWidth />
-          <Input label="고객사" placeholder="현대자동차" defaultValue={editingItem?.customer} fullWidth />
-          <div className="col-span-2"><Input label="비고" placeholder="비고" defaultValue={editingItem?.remark} fullWidth /></div>
+          <Input label={t('master.modelSuffix.modelCode')} placeholder="MAIN-A" defaultValue={editingItem?.modelCode} fullWidth />
+          <Input label={t('master.modelSuffix.suffixCode')} placeholder="LHD" defaultValue={editingItem?.suffixCode} fullWidth />
+          <Input label={t('master.modelSuffix.suffixName')} placeholder="좌핸들" defaultValue={editingItem?.suffixName} fullWidth />
+          <Input label={t('master.modelSuffix.customer')} placeholder="현대자동차" defaultValue={editingItem?.customer} fullWidth />
+          <div className="col-span-2"><Input label={t('common.remark')} placeholder={t('common.remark')} defaultValue={editingItem?.remark} fullWidth /></div>
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>

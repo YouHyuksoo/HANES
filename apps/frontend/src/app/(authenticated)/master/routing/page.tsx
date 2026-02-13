@@ -61,16 +61,16 @@ function RoutingPage() {
   }), [searchText, partFilter]);
 
   const columns = useMemo<ColumnDef<Routing>[]>(() => [
-    { accessorKey: 'partCode', header: '품목코드', size: 100 },
-    { accessorKey: 'partName', header: '품목명', size: 140 },
-    { accessorKey: 'seq', header: '순서', size: 60 },
-    { accessorKey: 'processCode', header: '공정코드', size: 100 },
-    { accessorKey: 'processName', header: '공정명', size: 120 },
-    { accessorKey: 'processType', header: '유형', size: 70 },
-    { accessorKey: 'equipType', header: '설비타입', size: 80 },
-    { accessorKey: 'stdTime', header: '표준시간', size: 80, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : '-' },
-    { accessorKey: 'setupTime', header: '셋업시간', size: 80, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : '-' },
-    { accessorKey: 'useYn', header: '사용', size: 60, cell: ({ getValue }) => (
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
+    { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+    { accessorKey: 'seq', header: t('master.routing.seq'), size: 60 },
+    { accessorKey: 'processCode', header: t('master.routing.processCode'), size: 100 },
+    { accessorKey: 'processName', header: t('master.routing.processName'), size: 120 },
+    { accessorKey: 'processType', header: t('common.type'), size: 70 },
+    { accessorKey: 'equipType', header: t('master.routing.equipType'), size: 80 },
+    { accessorKey: 'stdTime', header: t('master.routing.stdTime'), size: 80, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : '-' },
+    { accessorKey: 'setupTime', header: t('master.routing.setupTime'), size: 80, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : '-' },
+    { accessorKey: 'useYn', header: t('master.routing.use'), size: 60, cell: ({ getValue }) => (
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
     )},
     { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
@@ -85,32 +85,32 @@ function RoutingPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Route className="w-7 h-7 text-primary" />라우팅관리</h1>
-          <p className="text-text-muted mt-1">품목별 공정순서를 관리합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Route className="w-7 h-7 text-primary" />{t('master.routing.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.routing.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />라우팅 추가</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.routing.addRouting')}</Button>
         </div>
       </div>
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="공정코드/공정명 검색" value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-56"><Select options={partOptions} value={partFilter} onChange={setPartFilter} placeholder="품목선택" fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('master.routing.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="w-56"><Select options={partOptions} value={partFilter} onChange={setPartFilter} placeholder={t('master.routing.partSelect')} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '라우팅 수정' : '라우팅 추가'} size="lg">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.routing.editRouting') : t('master.routing.addRouting')} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Select label="품목" options={partOptions.filter(o => o.value)} value={editingItem?.partCode || ''} onChange={() => {}} fullWidth />
-          <Input label="순서" type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
-          <Input label="공정코드" placeholder="CUT-01" defaultValue={editingItem?.processCode} fullWidth />
-          <Input label="공정명" placeholder="전선절단" defaultValue={editingItem?.processName} fullWidth />
-          <Input label="공정유형" placeholder="CUT" defaultValue={editingItem?.processType} fullWidth />
-          <Input label="설비타입" placeholder="자동/수동" defaultValue={editingItem?.equipType} fullWidth />
-          <Input label="표준시간(초)" type="number" placeholder="5.5" defaultValue={editingItem?.stdTime?.toString()} fullWidth />
-          <Input label="셋업시간(초)" type="number" placeholder="10" defaultValue={editingItem?.setupTime?.toString()} fullWidth />
+          <Select label={t('common.part')} options={partOptions.filter(o => o.value)} value={editingItem?.partCode || ''} onChange={() => {}} fullWidth />
+          <Input label={t('master.routing.seq')} type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
+          <Input label={t('master.routing.processCode')} placeholder="CUT-01" defaultValue={editingItem?.processCode} fullWidth />
+          <Input label={t('master.routing.processName')} placeholder="전선절단" defaultValue={editingItem?.processName} fullWidth />
+          <Input label={t('master.routing.processType')} placeholder="CUT" defaultValue={editingItem?.processType} fullWidth />
+          <Input label={t('master.routing.equipType')} placeholder={t('master.routing.equipTypePlaceholder')} defaultValue={editingItem?.equipType} fullWidth />
+          <Input label={t('master.routing.stdTimeSec')} type="number" placeholder="5.5" defaultValue={editingItem?.stdTime?.toString()} fullWidth />
+          <Input label={t('master.routing.setupTimeSec')} type="number" placeholder="10" defaultValue={editingItem?.setupTime?.toString()} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>

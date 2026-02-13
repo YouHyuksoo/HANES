@@ -60,17 +60,17 @@ function TransferRulePage() {
   }), [searchText]);
 
   const columns = useMemo<ColumnDef<TransferRule>[]>(() => [
-    { accessorKey: 'fromWarehouseCode', header: '출발창고코드', size: 120 },
-    { accessorKey: 'fromWarehouseName', header: '출발창고명', size: 140 },
+    { accessorKey: 'fromWarehouseCode', header: t('master.transferRule.fromWarehouseCode'), size: 120 },
+    { accessorKey: 'fromWarehouseName', header: t('master.transferRule.fromWarehouseName'), size: 140 },
     { id: 'arrow', header: '', size: 40, cell: () => <ArrowRightLeft className="w-4 h-4 text-text-muted mx-auto" /> },
-    { accessorKey: 'toWarehouseCode', header: '도착창고코드', size: 120 },
-    { accessorKey: 'toWarehouseName', header: '도착창고명', size: 140 },
-    { accessorKey: 'allowYn', header: '허용', size: 70, cell: ({ getValue }) => (
+    { accessorKey: 'toWarehouseCode', header: t('master.transferRule.toWarehouseCode'), size: 120 },
+    { accessorKey: 'toWarehouseName', header: t('master.transferRule.toWarehouseName'), size: 140 },
+    { accessorKey: 'allowYn', header: t('master.transferRule.allow'), size: 70, cell: ({ getValue }) => (
       <span className={`px-2 py-1 text-xs rounded-full ${getValue() === 'Y' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}`}>
-        {getValue() === 'Y' ? '허용' : '금지'}
+        {getValue() === 'Y' ? t('master.transferRule.allowed') : t('master.transferRule.denied')}
       </span>
     )},
-    { accessorKey: 'remark', header: '비고', size: 150, cell: ({ getValue }) => getValue() || '-' },
+    { accessorKey: 'remark', header: t('common.remark'), size: 150, cell: ({ getValue }) => getValue() || '-' },
     { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
@@ -83,27 +83,27 @@ function TransferRulePage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ArrowRightLeft className="w-7 h-7 text-primary" />창고이동규칙</h1>
-          <p className="text-text-muted mt-1">창고 간 이동 허용 규칙을 관리합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ArrowRightLeft className="w-7 h-7 text-primary" />{t('master.transferRule.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.transferRule.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />규칙 추가</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.transferRule.addRule')}</Button>
         </div>
       </div>
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="창고코드/창고명 검색" value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('master.transferRule.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '이동규칙 수정' : '이동규칙 추가'} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.transferRule.editRule') : t('master.transferRule.addRule')} size="md">
         <div className="grid grid-cols-2 gap-4">
-          <Select label="출발창고" options={warehouseOptions} value={editingItem?.fromWarehouseCode || ''} onChange={() => {}} fullWidth />
-          <Select label="도착창고" options={warehouseOptions} value={editingItem?.toWarehouseCode || ''} onChange={() => {}} fullWidth />
-          <Select label="허용여부" options={[{ value: 'Y', label: '허용' }, { value: 'N', label: '금지' }]} value={editingItem?.allowYn || 'Y'} onChange={() => {}} fullWidth />
-          <Input label="비고" placeholder="비고" defaultValue={editingItem?.remark} fullWidth />
+          <Select label={t('master.transferRule.fromWarehouse')} options={warehouseOptions} value={editingItem?.fromWarehouseCode || ''} onChange={() => {}} fullWidth />
+          <Select label={t('master.transferRule.toWarehouse')} options={warehouseOptions} value={editingItem?.toWarehouseCode || ''} onChange={() => {}} fullWidth />
+          <Select label={t('master.transferRule.allowYn')} options={[{ value: 'Y', label: t('master.transferRule.allowed') }, { value: 'N', label: t('master.transferRule.denied') }]} value={editingItem?.allowYn || 'Y'} onChange={() => {}} fullWidth />
+          <Input label={t('common.remark')} placeholder={t('common.remark')} defaultValue={editingItem?.remark} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>

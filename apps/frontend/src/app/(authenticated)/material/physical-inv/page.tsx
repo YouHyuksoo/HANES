@@ -44,9 +44,9 @@ function PhysicalInvPage() {
 
   const warehouseOptions = useMemo(() => [
     { value: '', label: t('common.all') },
-    { value: '자재창고A', label: '자재창고A' },
-    { value: '자재창고B', label: '자재창고B' },
-    { value: '부자재창고', label: '부자재창고' },
+    { value: '자재창고A', label: t('material.physicalInv.warehouseA') },
+    { value: '자재창고B', label: t('material.physicalInv.warehouseB') },
+    { value: '부자재창고', label: t('material.physicalInv.subMaterialWarehouse') },
   ], [t]);
 
   const filteredData = useMemo(() => {

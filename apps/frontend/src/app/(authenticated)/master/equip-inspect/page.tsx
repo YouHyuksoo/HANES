@@ -38,9 +38,9 @@ const mockData: EquipInspectItem[] = [
   { id: '6', equipCode: 'INSP-01', equipName: '통전검사기 1호', inspectType: 'PERIODIC', seq: 1, itemName: '캘리브레이션', criteria: '기준 저항값 검증', cycle: 'MONTHLY', useYn: 'Y' },
 ];
 
-const inspectTypeMap: Record<string, { label: string; color: string }> = {
-  DAILY: { label: '일상점검', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-  PERIODIC: { label: '정기점검', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' },
+const inspectTypeColorMap: Record<string, string> = {
+  DAILY: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  PERIODIC: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
 };
 
 function EquipInspectPage() {
@@ -52,13 +52,13 @@ function EquipInspectPage() {
 
   const typeOptions = useMemo(() => [
     { value: '', label: t('common.all') },
-    { value: 'DAILY', label: '일상점검' },
-    { value: 'PERIODIC', label: '정기점검' },
+    { value: 'DAILY', label: t('master.equipInspect.typeDaily') },
+    { value: 'PERIODIC', label: t('master.equipInspect.typePeriodic') },
   ], [t]);
 
-  const cycleOptions = [
-    { value: 'DAILY', label: '매일' }, { value: 'WEEKLY', label: '매주' }, { value: 'MONTHLY', label: '매월' },
-  ];
+  const cycleOptions = useMemo(() => [
+    { value: 'DAILY', label: t('master.equipInspect.cycleDaily') }, { value: 'WEEKLY', label: t('master.equipInspect.cycleWeekly') }, { value: 'MONTHLY', label: t('master.equipInspect.cycleMonthly') },
+  ], [t]);
 
   const filteredData = useMemo(() => mockData.filter(item => {
     if (typeFilter && item.inspectType !== typeFilter) return false;
@@ -67,18 +67,24 @@ function EquipInspectPage() {
     return item.equipCode.toLowerCase().includes(s) || item.itemName.toLowerCase().includes(s);
   }), [searchText, typeFilter]);
 
+  const inspectTypeLabels: Record<string, string> = useMemo(() => ({
+    DAILY: t('master.equipInspect.typeDaily'), PERIODIC: t('master.equipInspect.typePeriodic'),
+  }), [t]);
+
   const columns = useMemo<ColumnDef<EquipInspectItem>[]>(() => [
-    { accessorKey: 'equipCode', header: '설비코드', size: 100 },
-    { accessorKey: 'equipName', header: '설비명', size: 130 },
-    { accessorKey: 'inspectType', header: '점검유형', size: 100, cell: ({ getValue }) => {
-      const t = inspectTypeMap[getValue() as string];
-      return t ? <span className={`px-2 py-1 text-xs rounded-full ${t.color}`}>{t.label}</span> : getValue();
+    { accessorKey: 'equipCode', header: t('master.equipInspect.equipCode'), size: 100 },
+    { accessorKey: 'equipName', header: t('master.equipInspect.equipName'), size: 130 },
+    { accessorKey: 'inspectType', header: t('master.equipInspect.inspectType'), size: 100, cell: ({ getValue }) => {
+      const val = getValue() as string;
+      const color = inspectTypeColorMap[val];
+      const label = inspectTypeLabels[val];
+      return color ? <span className={`px-2 py-1 text-xs rounded-full ${color}`}>{label}</span> : getValue();
     }},
-    { accessorKey: 'seq', header: '순서', size: 60 },
-    { accessorKey: 'itemName', header: '점검항목', size: 180 },
-    { accessorKey: 'criteria', header: '판정기준', size: 180 },
-    { accessorKey: 'cycle', header: '주기', size: 80 },
-    { accessorKey: 'useYn', header: '사용', size: 60, cell: ({ getValue }) => (
+    { accessorKey: 'seq', header: t('master.equipInspect.seq'), size: 60 },
+    { accessorKey: 'itemName', header: t('master.equipInspect.itemName'), size: 180 },
+    { accessorKey: 'criteria', header: t('master.equipInspect.criteria'), size: 180 },
+    { accessorKey: 'cycle', header: t('master.equipInspect.cycle'), size: 80 },
+    { accessorKey: 'useYn', header: t('master.equipInspect.use'), size: 60, cell: ({ getValue }) => (
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
     )},
     { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
@@ -93,30 +99,30 @@ function EquipInspectPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Wrench className="w-7 h-7 text-primary" />설비점검항목</h1>
-          <p className="text-text-muted mt-1">설비별 점검 기준을 관리합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Wrench className="w-7 h-7 text-primary" />{t('master.equipInspect.title')}</h1>
+          <p className="text-text-muted mt-1">{t('master.equipInspect.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />점검항목 추가</Button>
+          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.equipInspect.addItem')}</Button>
         </div>
       </div>
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="설비코드/점검항목 검색" value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-40"><Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} placeholder="점검유형" fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('master.equipInspect.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="w-40"><Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} placeholder={t('master.equipInspect.inspectType')} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? '점검항목 수정' : '점검항목 추가'} size="lg">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.equipInspect.editItem') : t('master.equipInspect.addItem')} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="설비코드" placeholder="CUT-001" defaultValue={editingItem?.equipCode} fullWidth />
-          <Select label="점검유형" options={typeOptions.filter(o => o.value)} value={editingItem?.inspectType || 'DAILY'} onChange={() => {}} fullWidth />
-          <Input label="순서" type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
-          <Select label="주기" options={cycleOptions} value={editingItem?.cycle || 'DAILY'} onChange={() => {}} fullWidth />
-          <div className="col-span-2"><Input label="점검항목" placeholder="블레이드 마모 확인" defaultValue={editingItem?.itemName} fullWidth /></div>
-          <div className="col-span-2"><Input label="판정기준" placeholder="마모선 이하" defaultValue={editingItem?.criteria} fullWidth /></div>
+          <Input label={t('master.equipInspect.equipCode')} placeholder="CUT-001" defaultValue={editingItem?.equipCode} fullWidth />
+          <Select label={t('master.equipInspect.inspectType')} options={typeOptions.filter(o => o.value)} value={editingItem?.inspectType || 'DAILY'} onChange={() => {}} fullWidth />
+          <Input label={t('master.equipInspect.seq')} type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
+          <Select label={t('master.equipInspect.cycle')} options={cycleOptions} value={editingItem?.cycle || 'DAILY'} onChange={() => {}} fullWidth />
+          <div className="col-span-2"><Input label={t('master.equipInspect.itemName')} placeholder="블레이드 마모 확인" defaultValue={editingItem?.itemName} fullWidth /></div>
+          <div className="col-span-2"><Input label={t('master.equipInspect.criteria')} placeholder="마모선 이하" defaultValue={editingItem?.criteria} fullWidth /></div>
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>

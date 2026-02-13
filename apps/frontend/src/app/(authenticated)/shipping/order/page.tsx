@@ -30,8 +30,8 @@ interface ShipOrder {
   totalQty: number;
 }
 
-const statusLabels: Record<string, string> = {
-  DRAFT: "작성중", CONFIRMED: "확정", SHIPPING: "출하중", SHIPPED: "출하완료",
+const statusKeys: Record<string, string> = {
+  DRAFT: "shipping.shipOrder.statusDraft", CONFIRMED: "shipping.shipOrder.statusConfirmed", SHIPPING: "shipping.shipOrder.statusShipping", SHIPPED: "shipping.shipOrder.statusShipped",
 };
 const statusColors: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
@@ -55,9 +55,9 @@ function ShipOrderPage() {
   const [editingItem, setEditingItem] = useState<ShipOrder | null>(null);
 
   const statusOptions = [
-    { value: "", label: "전체 상태" },
-    { value: "DRAFT", label: "작성중" }, { value: "CONFIRMED", label: "확정" },
-    { value: "SHIPPING", label: "출하중" }, { value: "SHIPPED", label: "출하완료" },
+    { value: "", label: t("common.allStatus") },
+    { value: "DRAFT", label: t("shipping.shipOrder.statusDraft") }, { value: "CONFIRMED", label: t("shipping.shipOrder.statusConfirmed") },
+    { value: "SHIPPING", label: t("shipping.shipOrder.statusShipping") }, { value: "SHIPPED", label: t("shipping.shipOrder.statusShipped") },
   ];
 
   const filteredData = useMemo(() => mockData.filter((item) => {
@@ -72,13 +72,13 @@ function ShipOrderPage() {
   }), []);
 
   const columns = useMemo<ColumnDef<ShipOrder>[]>(() => [
-    { accessorKey: "shipOrderNo", header: "출하지시번호", size: 160 },
-    { accessorKey: "customerName", header: "고객사", size: 120 },
-    { accessorKey: "dueDate", header: "납기일", size: 100 },
-    { accessorKey: "shipDate", header: "출하예정일", size: 100 },
-    { accessorKey: "itemCount", header: "품목수", size: 70, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: "totalQty", header: "총수량", size: 90, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{statusLabels[s]}</span>; } },
+    { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160 },
+    { accessorKey: "customerName", header: t("shipping.shipOrder.customer"), size: 120 },
+    { accessorKey: "dueDate", header: t("shipping.shipOrder.dueDate"), size: 100 },
+    { accessorKey: "shipDate", header: t("shipping.shipOrder.shipDate"), size: 100 },
+    { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: "totalQty", header: t("common.totalQty"), size: 90, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{t(statusKeys[s])}</span>; } },
     { id: "actions", header: t("common.actions"), size: 80, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
@@ -91,34 +91,34 @@ function ShipOrderPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardList className="w-7 h-7 text-primary" />출하지시등록</h1>
-          <p className="text-text-muted mt-1">출하지시서를 등록하고 품목을 관리합니다.</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardList className="w-7 h-7 text-primary" />{t("shipping.shipOrder.title")}</h1>
+          <p className="text-text-muted mt-1">{t("shipping.shipOrder.subtitle")}</p>
         </div>
         <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
       </div>
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label="전체 지시" value={stats.total} icon={FileText} color="blue" />
-        <StatCard label="작성중" value={stats.draft} icon={Clock} color="yellow" />
-        <StatCard label="확정" value={stats.confirmed} icon={CheckCircle} color="green" />
-        <StatCard label="출하완료" value={stats.shipped} icon={Truck} color="purple" />
+        <StatCard label={t("shipping.shipOrder.statTotal")} value={stats.total} icon={FileText} color="blue" />
+        <StatCard label={t("shipping.shipOrder.statusDraft")} value={stats.draft} icon={Clock} color="yellow" />
+        <StatCard label={t("shipping.shipOrder.statusConfirmed")} value={stats.confirmed} icon={CheckCircle} color="green" />
+        <StatCard label={t("shipping.shipOrder.statusShipped")} value={stats.shipped} icon={Truck} color="purple" />
       </div>
       <Card><CardContent>
         <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder="지시번호 / 고객명 검색" value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1 min-w-[200px]"><Input placeholder={t("shipping.shipOrder.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <div className="w-40"><Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? "출하지시 수정" : "출하지시 등록"} size="lg">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("shipping.shipOrder.editTitle") : t("shipping.shipOrder.addTitle")} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="출하지시번호" placeholder="SO-YYYYMMDD-NNN" defaultValue={editingItem?.shipOrderNo} fullWidth />
-            <Input label="고객사" placeholder="고객명 입력" defaultValue={editingItem?.customerName} fullWidth />
-            <Input label="납기일" type="date" defaultValue={editingItem?.dueDate} fullWidth />
-            <Input label="출하예정일" type="date" defaultValue={editingItem?.shipDate} fullWidth />
+            <Input label={t("shipping.shipOrder.shipOrderNo")} placeholder="SO-YYYYMMDD-NNN" defaultValue={editingItem?.shipOrderNo} fullWidth />
+            <Input label={t("shipping.shipOrder.customer")} placeholder={t("shipping.shipOrder.customerPlaceholder")} defaultValue={editingItem?.customerName} fullWidth />
+            <Input label={t("shipping.shipOrder.dueDate")} type="date" defaultValue={editingItem?.dueDate} fullWidth />
+            <Input label={t("shipping.shipOrder.shipDate")} type="date" defaultValue={editingItem?.shipDate} fullWidth />
           </div>
-          <Input label={t("common.remark")} placeholder="비고 입력" fullWidth />
+          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
             <Button onClick={() => setIsModalOpen(false)}>{editingItem ? t("common.edit") : t("common.register")}</Button>

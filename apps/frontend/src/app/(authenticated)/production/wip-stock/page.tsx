@@ -44,10 +44,10 @@ function WipStockPage() {
   const [typeFilter, setTypeFilter] = useState('');
 
   const typeOptions = useMemo(() => [
-    { value: '', label: '전체 유형' },
-    { value: 'WIP', label: '반제품 (WIP)' },
-    { value: 'FG', label: '완제품 (FG)' },
-  ], []);
+    { value: '', label: t('production.wipStock.allType') },
+    { value: 'WIP', label: t('production.wipStock.wip') },
+    { value: 'FG', label: t('production.wipStock.fg') },
+  ], [t]);
 
   const filteredData = useMemo(() => mockData.filter(item => {
     const matchSearch = !searchText || item.partCode.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
@@ -63,44 +63,44 @@ function WipStockPage() {
   }), []);
 
   const columns = useMemo<ColumnDef<WipStock>[]>(() => [
-    { accessorKey: 'partCode', header: '품목코드', size: 120 },
-    { accessorKey: 'partName', header: '품목명', size: 180 },
+    { accessorKey: 'partCode', header: t('production.wipStock.partCode'), size: 120 },
+    { accessorKey: 'partName', header: t('production.wipStock.partName'), size: 180 },
     {
-      accessorKey: 'partType', header: '유형', size: 90,
+      accessorKey: 'partType', header: t('production.wipStock.type'), size: 90,
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v === 'WIP'
-          ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">반제품</span>
-          : <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">완제품</span>;
+          ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{t('production.wipStock.wipLabel')}</span>
+          : <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{t('production.wipStock.fgLabel')}</span>;
       },
     },
-    { accessorKey: 'whName', header: '창고', size: 110 },
-    { accessorKey: 'qty', header: '재고수량', size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'unit', header: '단위', size: 60 },
-    { accessorKey: 'lotNo', header: 'LOT번호', size: 130 },
-    { accessorKey: 'updatedAt', header: '최종 갱신일', size: 110 },
-  ], []);
+    { accessorKey: 'whName', header: t('production.wipStock.warehouse'), size: 110 },
+    { accessorKey: 'qty', header: t('production.wipStock.stockQty'), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'unit', header: t('production.wipStock.unit'), size: 60 },
+    { accessorKey: 'lotNo', header: t('production.wipStock.lotNo'), size: 130 },
+    { accessorKey: 'updatedAt', header: t('production.wipStock.updatedAt'), size: 110 },
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Warehouse className="w-7 h-7 text-primary" />반제품/제품 재고</h1>
-          <p className="text-text-muted mt-1">반제품(WIP)과 완제품(FG)의 재고 현황을 조회합니다</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Warehouse className="w-7 h-7 text-primary" />{t('production.wipStock.title')}</h1>
+          <p className="text-text-muted mt-1">{t('production.wipStock.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />엑셀 다운로드</Button>
+        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('production.wipStock.excelDownload')}</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="품목 수" value={stats.totalItems} icon={Package} color="blue" />
-        <StatCard label="반제품 재고" value={stats.wipQty} icon={Box} color="orange" />
-        <StatCard label="완제품 재고" value={stats.fgQty} icon={Layers} color="green" />
-        <StatCard label="총 재고" value={stats.totalQty} icon={Warehouse} color="purple" />
+        <StatCard label={t('production.wipStock.itemCount')} value={stats.totalItems} icon={Package} color="blue" />
+        <StatCard label={t('production.wipStock.wipStock')} value={stats.wipQty} icon={Box} color="orange" />
+        <StatCard label={t('production.wipStock.fgStock')} value={stats.fgQty} icon={Layers} color="green" />
+        <StatCard label={t('production.wipStock.totalStock')} value={stats.totalQty} icon={Warehouse} color="purple" />
       </div>
 
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder="품목코드, 품목명 검색..." value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex-1"><Input placeholder={t('production.wipStock.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
           <div className="w-40"><Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>
