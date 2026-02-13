@@ -6,3 +6,6 @@
 export * from './box.service';
 export * from './pallet.service';
 export * from './shipment.service';
+export * from './ship-order.service';
+export * from './ship-history.service';
+export * from './ship-return.service';

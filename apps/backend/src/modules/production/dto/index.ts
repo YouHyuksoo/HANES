@@ -5,3 +5,4 @@
 
 export * from './job-order.dto';
 export * from './prod-result.dto';
+export * from './production-views.dto';

@@ -1,6 +1,6 @@
 /**
  * @file src/modules/production/production.module.ts
- * @description 생산관리 모듈 - 작업지시, 생산실적 관리
+ * @description 생산관리 모듈 - 작업지시, 생산실적, 진행현황, 검사/포장/재고 조회
  *
  * 초보자 가이드:
  * 1. **목적**: 생산 계획, 작업 지시, 실적 관리 기능
@@ -9,6 +9,8 @@
  *    - 생산실적 등록 및 집계
  *    - ERP 연동 플래그 관리
  *    - 설비별/작업자별/일자별 실적 분석
+ *    - 작업진행현황 대시보드
+ *    - 샘플검사이력, 포장실적, 반제품/제품재고 조회
  *
  * 컨트롤러/서비스 추가 시:
  * 1. controllers/ 폴더에 컨트롤러 생성
@@ -16,8 +18,12 @@
  * 3. 이 모듈에 등록
  *
  * API 엔드포인트:
- * - /api/v1/production/job-orders : 작업지시 관리
- * - /api/v1/production/prod-results : 생산실적 관리
+ * - /api/v1/production/job-orders     : 작업지시 관리
+ * - /api/v1/production/prod-results   : 생산실적 관리
+ * - /api/v1/production/progress       : 작업진행현황 (조회 전용)
+ * - /api/v1/production/sample-inspect : 샘플검사이력 (조회 전용)
+ * - /api/v1/production/pack-result    : 포장실적 (조회 전용)
+ * - /api/v1/production/wip-stock      : 반제품/제품재고 (조회 전용)
  */
 
 import { Module } from '@nestjs/common';
@@ -25,6 +31,8 @@ import { JobOrderController } from './controllers/job-order.controller';
 import { JobOrderService } from './services/job-order.service';
 import { ProdResultController } from './controllers/prod-result.controller';
 import { ProdResultService } from './services/prod-result.service';
+import { ProductionViewsController } from './controllers/production-views.controller';
+import { ProductionViewsService } from './services/production-views.service';
 import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
@@ -32,14 +40,17 @@ import { InventoryModule } from '../inventory/inventory.module';
   controllers: [
     JobOrderController,
     ProdResultController,
+    ProductionViewsController,
   ],
   providers: [
     JobOrderService,
     ProdResultService,
+    ProductionViewsService,
   ],
   exports: [
     JobOrderService,
     ProdResultService,
+    ProductionViewsService,
   ],
 })
 export class ProductionModule {}

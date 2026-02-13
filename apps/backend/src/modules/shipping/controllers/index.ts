@@ -6,3 +6,6 @@
 export * from './box.controller';
 export * from './pallet.controller';
 export * from './shipment.controller';
+export * from './ship-order.controller';
+export * from './ship-history.controller';
+export * from './ship-return.controller';

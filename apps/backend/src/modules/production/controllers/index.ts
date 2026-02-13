@@ -5,3 +5,4 @@
 
 export * from './job-order.controller';
 export * from './prod-result.controller';
+export * from './production-views.controller';

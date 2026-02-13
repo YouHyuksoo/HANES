@@ -1,32 +1,34 @@
 /**
  * @file src/modules/equipment/equipment.module.ts
- * @description 설비관리 모듈 - 설비마스터 및 소모품(금형/지그/공구) 관리
+ * @description 설비관리 모듈 - 설비마스터, 소모품, 일상/정기 점검, 점검이력 관리
  *
  * 초보자 가이드:
  * 1. **목적**: 생산 설비 및 소모품 관리 기능 제공
  * 2. **주요 기능**:
  *    - 설비 마스터 CRUD
  *    - 설비 상태 관리 (NORMAL, MAINT, STOP)
- *    - 라인별/유형별 설비 조회
  *    - 소모품 마스터 CRUD
- *    - 소모품 수명 관리 (사용 횟수, 교체 주기)
- *    - 소모품 입출고 이력 관리
+ *    - 일상점검 (DAILY) CRUD
+ *    - 정기점검 (PERIODIC) CRUD
+ *    - 점검이력 조회 (전체 통합)
  *
- * 컨트롤러:
- * - EquipMasterController: 설비 API
- * - ConsumableController: 소모품 API
- * - ConsumableLogController: 소모품 로그 API
- *
- * 서비스:
- * - EquipMasterService: 설비 비즈니스 로직
- * - ConsumableService: 소모품 비즈니스 로직
+ * API 엔드포인트:
+ * - /api/v1/equipment/equips : 설비 마스터
+ * - /api/v1/equipment/consumables : 소모품
+ * - /api/v1/equipment/daily-inspect : 일상점검
+ * - /api/v1/equipment/periodic-inspect : 정기점검
+ * - /api/v1/equipment/inspect-history : 점검이력 조회
  */
 
 import { Module } from '@nestjs/common';
 import { EquipMasterController } from './controllers/equip-master.controller';
 import { ConsumableController, ConsumableLogController } from './controllers/consumable.controller';
+import { DailyInspectController } from './controllers/daily-inspect.controller';
+import { PeriodicInspectController } from './controllers/periodic-inspect.controller';
+import { InspectHistoryController } from './controllers/inspect-history.controller';
 import { EquipMasterService } from './services/equip-master.service';
 import { ConsumableService } from './services/consumable.service';
+import { EquipInspectService } from './services/equip-inspect.service';
 
 @Module({
   imports: [],
@@ -34,14 +36,19 @@ import { ConsumableService } from './services/consumable.service';
     EquipMasterController,
     ConsumableController,
     ConsumableLogController,
+    DailyInspectController,
+    PeriodicInspectController,
+    InspectHistoryController,
   ],
   providers: [
     EquipMasterService,
     ConsumableService,
+    EquipInspectService,
   ],
   exports: [
     EquipMasterService,
     ConsumableService,
+    EquipInspectService,
   ],
 })
 export class EquipmentModule {}
