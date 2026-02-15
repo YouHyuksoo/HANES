@@ -12,7 +12,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, Search, RefreshCw, Download, Building2 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -80,14 +80,9 @@ function PartnerPage() {
         accessorKey: 'partnerType',
         header: t('master.partner.type'),
         size: 80,
-        cell: ({ getValue }) => {
-          const typeMap: Record<string, { label: string; color: string }> = {
-            SUPPLIER: { label: t('master.partner.supplier'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-            CUSTOMER: { label: t('master.partner.customer'), color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-          };
-          const typeInfo = typeMap[getValue() as string] || { label: getValue(), color: 'bg-gray-100 text-gray-700' };
-          return <span className={`px-2 py-1 text-xs rounded-full ${typeInfo.color}`}>{typeInfo.label}</span>;
-        },
+        cell: ({ getValue }) => (
+          <ComCodeBadge groupCode="PARTNER_TYPE" code={getValue() as string} />
+        ),
       },
       { accessorKey: 'bizNo', header: t('master.partner.bizNo'), size: 130 },
       { accessorKey: 'ceoName', header: t('master.partner.ceoName'), size: 90 },

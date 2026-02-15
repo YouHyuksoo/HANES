@@ -16,8 +16,10 @@ import {
   ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2,
   FileText, Clock, CheckCircle, Truck,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import { useComCodeOptions } from "@/hooks/useComCode";
+import { usePartnerOptions } from "@/hooks/useMasterOptions";
 
 interface ShipOrder {
   id: string;
@@ -30,15 +32,6 @@ interface ShipOrder {
   totalQty: number;
 }
 
-const statusKeys: Record<string, string> = {
-  DRAFT: "shipping.shipOrder.statusDraft", CONFIRMED: "shipping.shipOrder.statusConfirmed", SHIPPING: "shipping.shipOrder.statusShipping", SHIPPED: "shipping.shipOrder.statusShipped",
-};
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-  CONFIRMED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  SHIPPING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-  SHIPPED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-};
 
 const mockData: ShipOrder[] = [
   { id: "1", shipOrderNo: "SO-20250201-001", customerName: "현대자동차", dueDate: "2025-02-05", shipDate: "2025-02-03", status: "DRAFT", itemCount: 3, totalQty: 1500 },
@@ -54,11 +47,9 @@ function ShipOrderPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShipOrder | null>(null);
 
-  const statusOptions = [
-    { value: "", label: t("common.allStatus") },
-    { value: "DRAFT", label: t("shipping.shipOrder.statusDraft") }, { value: "CONFIRMED", label: t("shipping.shipOrder.statusConfirmed") },
-    { value: "SHIPPING", label: t("shipping.shipOrder.statusShipping") }, { value: "SHIPPED", label: t("shipping.shipOrder.statusShipped") },
-  ];
+  const comCodeStatusOptions = useComCodeOptions("SHIP_ORDER_STATUS");
+  const { options: customerOptions } = usePartnerOptions("CUSTOMER");
+  const statusOptions = [{ value: "", label: t("common.allStatus") }, ...comCodeStatusOptions];
 
   const filteredData = useMemo(() => mockData.filter((item) => {
     const matchSearch = !searchText || item.shipOrderNo.toLowerCase().includes(searchText.toLowerCase()) || item.customerName.toLowerCase().includes(searchText.toLowerCase());
@@ -78,7 +69,7 @@ function ShipOrderPage() {
     { accessorKey: "shipDate", header: t("shipping.shipOrder.shipDate"), size: 100 },
     { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 90, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{t(statusKeys[s])}</span>; } },
+    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
     { id: "actions", header: t("common.actions"), size: 80, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
@@ -114,7 +105,7 @@ function ShipOrderPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label={t("shipping.shipOrder.shipOrderNo")} placeholder="SO-YYYYMMDD-NNN" defaultValue={editingItem?.shipOrderNo} fullWidth />
-            <Input label={t("shipping.shipOrder.customer")} placeholder={t("shipping.shipOrder.customerPlaceholder")} defaultValue={editingItem?.customerName} fullWidth />
+            <Select label={t("shipping.shipOrder.customer")} options={customerOptions} value={editingItem?.customerName ?? ""} onChange={() => {}} fullWidth />
             <Input label={t("shipping.shipOrder.dueDate")} type="date" defaultValue={editingItem?.dueDate} fullWidth />
             <Input label={t("shipping.shipOrder.shipDate")} type="date" defaultValue={editingItem?.shipDate} fullWidth />
           </div>

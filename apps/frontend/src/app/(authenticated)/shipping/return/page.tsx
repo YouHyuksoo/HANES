@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import { usePartnerOptions } from "@/hooks/useMasterOptions";
 
 interface ShipReturn {
   id: string;
@@ -48,6 +49,7 @@ const mockData: ShipReturn[] = [
 
 function ShipReturnPage() {
   const { t } = useTranslation();
+  const { options: customerOptions } = usePartnerOptions("CUSTOMER");
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,7 +116,7 @@ function ShipReturnPage() {
             <Input label={t("shipping.return.returnNo")} placeholder="RT-YYYYMMDD-NNN" defaultValue={editingItem?.returnNo} fullWidth />
             <Input label={t("shipping.return.shipOrderNo")} placeholder="SO-YYYYMMDD-NNN" defaultValue={editingItem?.shipOrderNo} fullWidth />
             <Input label={t("shipping.return.returnDate")} type="date" defaultValue={editingItem?.returnDate} fullWidth />
-            <Input label={t("shipping.return.customer")} placeholder={t("shipping.return.customerPlaceholder")} defaultValue={editingItem?.customerName} fullWidth />
+            <Select label={t("shipping.return.customer")} options={customerOptions} value={editingItem?.customerName ?? ""} onChange={() => {}} fullWidth />
           </div>
           <Input label={t("shipping.return.returnReason")} placeholder={t("shipping.return.returnReasonPlaceholder")} defaultValue={editingItem?.returnReason} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} fullWidth />
