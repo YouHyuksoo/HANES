@@ -141,6 +141,12 @@ const codes: SeedCode[] = [
   { groupCode: 'PROCESS_TYPE', detailCode: 'ASSEMBLY', codeName: '조립', sortOrder: 3, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Assembly' },
   { groupCode: 'PROCESS_TYPE', detailCode: 'INSPECTION', codeName: '검사', sortOrder: 4, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Inspection' },
   { groupCode: 'PROCESS_TYPE', detailCode: 'PACKING', codeName: '포장', sortOrder: 5, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Packing' },
+  // ===== 공정 유형 단축코드 (PROCESS_TYPE) - 생산 작업지시용 =====
+  { groupCode: 'PROCESS_TYPE', detailCode: 'CUT', codeName: '절단', sortOrder: 11, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Cutting' },
+  { groupCode: 'PROCESS_TYPE', detailCode: 'CRIMP', codeName: '압착', sortOrder: 12, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Crimping' },
+  { groupCode: 'PROCESS_TYPE', detailCode: 'ASSY', codeName: '조립', sortOrder: 13, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Assembly' },
+  { groupCode: 'PROCESS_TYPE', detailCode: 'INSP', codeName: '검사', sortOrder: 14, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Inspection' },
+  { groupCode: 'PROCESS_TYPE', detailCode: 'PACK', codeName: '포장', sortOrder: 15, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Packing' },
 
   // ===== 품목 유형 (ITEM_TYPE) =====
   { groupCode: 'ITEM_TYPE', detailCode: 'RAW_MATERIAL', codeName: '원자재', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Raw Material' },
@@ -180,6 +186,244 @@ const codes: SeedCode[] = [
   // ===== 사용여부 (USE_YN) =====
   { groupCode: 'USE_YN', detailCode: 'Y', codeName: '사용', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Yes' },
   { groupCode: 'USE_YN', detailCode: 'N', codeName: '미사용', sortOrder: 2, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'No' },
+
+  // ===== 공장/조직 유형 (PLANT_TYPE) =====
+  { groupCode: 'PLANT_TYPE', detailCode: 'PLANT', codeName: '공장', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Plant' },
+  { groupCode: 'PLANT_TYPE', detailCode: 'SHOP', codeName: '작업장', sortOrder: 2, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Shop' },
+  { groupCode: 'PLANT_TYPE', detailCode: 'LINE', codeName: '라인', sortOrder: 3, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Line' },
+  { groupCode: 'PLANT_TYPE', detailCode: 'CELL', codeName: '셀', sortOrder: 4, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Cell' },
+
+  // ===== 품목 분류 (PART_TYPE) =====
+  { groupCode: 'PART_TYPE', detailCode: 'RAW', codeName: '원자재', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Raw Material' },
+  { groupCode: 'PART_TYPE', detailCode: 'WIP', codeName: '반제품', sortOrder: 2, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'WIP' },
+  { groupCode: 'PART_TYPE', detailCode: 'FG', codeName: '완제품', sortOrder: 3, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Finished Goods' },
+
+  // ===== 거래처 유형 (PARTNER_TYPE) =====
+  { groupCode: 'PARTNER_TYPE', detailCode: 'SUPPLIER', codeName: '공급사', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Supplier' },
+  { groupCode: 'PARTNER_TYPE', detailCode: 'CUSTOMER', codeName: '고객사', sortOrder: 2, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Customer' },
+
+  // ===== 협력사 유형 (VENDOR_TYPE) =====
+  { groupCode: 'VENDOR_TYPE', detailCode: 'SUBCON', codeName: '외주사', sortOrder: 1, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Subcontractor' },
+  { groupCode: 'VENDOR_TYPE', detailCode: 'SUPPLIER', codeName: '공급사', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Supplier' },
+
+  // ===== 창고 유형 DTO (WAREHOUSE_TYPE_DTO) =====
+  { groupCode: 'WAREHOUSE_TYPE_DTO', detailCode: 'RAW', codeName: '원자재', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Raw Material' },
+  { groupCode: 'WAREHOUSE_TYPE_DTO', detailCode: 'WIP', codeName: '반제품', sortOrder: 2, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'WIP' },
+  { groupCode: 'WAREHOUSE_TYPE_DTO', detailCode: 'FG', codeName: '완제품', sortOrder: 3, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Finished Goods' },
+  { groupCode: 'WAREHOUSE_TYPE_DTO', detailCode: 'FLOOR', codeName: '현장', sortOrder: 4, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Floor' },
+  { groupCode: 'WAREHOUSE_TYPE_DTO', detailCode: 'DEFECT', codeName: '불량', sortOrder: 5, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Defect' },
+  { groupCode: 'WAREHOUSE_TYPE_DTO', detailCode: 'SCRAP', codeName: '폐기', sortOrder: 6, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Scrap' },
+  { groupCode: 'WAREHOUSE_TYPE_DTO', detailCode: 'SUBCON', codeName: '외주', sortOrder: 7, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Subcontractor' },
+
+  // ===== IQC 상태 (IQC_STATUS) =====
+  { groupCode: 'IQC_STATUS', detailCode: 'PENDING', codeName: '대기', sortOrder: 1, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Pending' },
+  { groupCode: 'IQC_STATUS', detailCode: 'PASS', codeName: '합격', sortOrder: 2, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Pass' },
+  { groupCode: 'IQC_STATUS', detailCode: 'FAIL', codeName: '불합격', sortOrder: 3, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Fail' },
+  { groupCode: 'IQC_STATUS', detailCode: 'HOLD', codeName: '보류', sortOrder: 4, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Hold' },
+
+  // ===== 자재 LOT 상태 (MAT_LOT_STATUS) =====
+  { groupCode: 'MAT_LOT_STATUS', detailCode: 'NORMAL', codeName: '정상', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Normal' },
+  { groupCode: 'MAT_LOT_STATUS', detailCode: 'HOLD', codeName: '보류', sortOrder: 2, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Hold' },
+  { groupCode: 'MAT_LOT_STATUS', detailCode: 'DEPLETED', codeName: '소진', sortOrder: 3, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Depleted' },
+
+  // ===== 출고 유형 (ISSUE_TYPE) =====
+  { groupCode: 'ISSUE_TYPE', detailCode: 'PROD', codeName: '생산', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Production' },
+  { groupCode: 'ISSUE_TYPE', detailCode: 'SUBCON', codeName: '외주', sortOrder: 2, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Subcontract' },
+  { groupCode: 'ISSUE_TYPE', detailCode: 'SAMPLE', codeName: '샘플', sortOrder: 3, attr1: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', attr3: 'Sample' },
+  { groupCode: 'ISSUE_TYPE', detailCode: 'ADJ', codeName: '조정', sortOrder: 4, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Adjustment' },
+
+  // ===== 재고 트랜잭션 유형 (TRANSACTION_TYPE) =====
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'MAT_IN', codeName: '자재입고', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Material In' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'MAT_IN_CANCEL', codeName: '자재입고취소', sortOrder: 2, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Material In Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'MAT_OUT', codeName: '자재출고', sortOrder: 3, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Material Out' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'MAT_OUT_CANCEL', codeName: '자재출고취소', sortOrder: 4, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Material Out Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'WIP_IN', codeName: '반제품입고', sortOrder: 5, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'WIP In' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'WIP_IN_CANCEL', codeName: '반제품입고취소', sortOrder: 6, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'WIP In Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'WIP_OUT', codeName: '반제품출고', sortOrder: 7, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'WIP Out' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'WIP_OUT_CANCEL', codeName: '반제품출고취소', sortOrder: 8, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'WIP Out Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'FG_IN', codeName: '완제품입고', sortOrder: 9, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'FG In' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'FG_IN_CANCEL', codeName: '완제품입고취소', sortOrder: 10, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'FG In Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'FG_OUT', codeName: '완제품출고', sortOrder: 11, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'FG Out' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'FG_OUT_CANCEL', codeName: '완제품출고취소', sortOrder: 12, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'FG Out Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'SUBCON_OUT', codeName: '외주출고', sortOrder: 13, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Subcon Out' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'SUBCON_OUT_CANCEL', codeName: '외주출고취소', sortOrder: 14, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Subcon Out Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'SUBCON_IN', codeName: '외주입고', sortOrder: 15, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Subcon In' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'SUBCON_IN_CANCEL', codeName: '외주입고취소', sortOrder: 16, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Subcon In Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'PROD_CONSUME', codeName: '생산소비', sortOrder: 17, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Production Consume' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'PROD_CONSUME_CANCEL', codeName: '생산소비취소', sortOrder: 18, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Production Consume Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'TRANSFER', codeName: '이동', sortOrder: 19, attr1: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', attr3: 'Transfer' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'TRANSFER_CANCEL', codeName: '이동취소', sortOrder: 20, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Transfer Cancel' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'ADJ_PLUS', codeName: '조정(+)', sortOrder: 21, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Adjustment Plus' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'ADJ_MINUS', codeName: '조정(-)', sortOrder: 22, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Adjustment Minus' },
+  { groupCode: 'TRANSACTION_TYPE', detailCode: 'SCRAP', codeName: '폐기', sortOrder: 23, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Scrap' },
+
+  // ===== 참조 유형 (REF_TYPE) =====
+  { groupCode: 'REF_TYPE', detailCode: 'JOB_ORDER', codeName: '작업지시', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Job Order' },
+  { groupCode: 'REF_TYPE', detailCode: 'SUBCON_ORDER', codeName: '외주발주', sortOrder: 2, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Subcon Order' },
+  { groupCode: 'REF_TYPE', detailCode: 'SHIPMENT', codeName: '출하', sortOrder: 3, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Shipment' },
+  { groupCode: 'REF_TYPE', detailCode: 'CUSTOMS', codeName: '통관', sortOrder: 4, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Customs' },
+  { groupCode: 'REF_TYPE', detailCode: 'ADJUST', codeName: '조정', sortOrder: 5, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Adjustment' },
+  { groupCode: 'REF_TYPE', detailCode: 'PROD_RESULT', codeName: '생산실적', sortOrder: 6, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Production Result' },
+
+  // ===== 생산실적 상태 (PROD_RESULT_STATUS) =====
+  { groupCode: 'PROD_RESULT_STATUS', detailCode: 'RUNNING', codeName: '진행중', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Running' },
+  { groupCode: 'PROD_RESULT_STATUS', detailCode: 'DONE', codeName: '완료', sortOrder: 2, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Done' },
+  { groupCode: 'PROD_RESULT_STATUS', detailCode: 'CANCELED', codeName: '취소', sortOrder: 3, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Canceled' },
+
+  // ===== 불량 로그 상태 (DEFECT_LOG_STATUS) =====
+  { groupCode: 'DEFECT_LOG_STATUS', detailCode: 'WAIT', codeName: '대기', sortOrder: 1, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Wait' },
+  { groupCode: 'DEFECT_LOG_STATUS', detailCode: 'REPAIR', codeName: '수리', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Repair' },
+  { groupCode: 'DEFECT_LOG_STATUS', detailCode: 'REWORK', codeName: '재작업', sortOrder: 3, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Rework' },
+  { groupCode: 'DEFECT_LOG_STATUS', detailCode: 'SCRAP', codeName: '폐기', sortOrder: 4, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Scrap' },
+  { groupCode: 'DEFECT_LOG_STATUS', detailCode: 'DONE', codeName: '완료', sortOrder: 5, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Done' },
+
+  // ===== 수리 결과 (REPAIR_RESULT) =====
+  { groupCode: 'REPAIR_RESULT', detailCode: 'PASS', codeName: '합격', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Pass' },
+  { groupCode: 'REPAIR_RESULT', detailCode: 'FAIL', codeName: '불합격', sortOrder: 2, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Fail' },
+  { groupCode: 'REPAIR_RESULT', detailCode: 'SCRAP', codeName: '폐기', sortOrder: 3, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Scrap' },
+
+  // ===== 설비 유형 (EQUIP_TYPE) =====
+  { groupCode: 'EQUIP_TYPE', detailCode: 'CUTTING', codeName: '절단설비', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Cutting Equipment' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'CRIMPING', codeName: '압착설비', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Crimping Equipment' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'ASSEMBLY', codeName: '조립설비', sortOrder: 3, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Assembly Equipment' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'AUTO_CRIMP', codeName: '자동압착기', sortOrder: 4, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Auto Crimper' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'SINGLE_CUT', codeName: '단선절단기', sortOrder: 5, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Single Cutter' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'MULTI_CUT', codeName: '다선절단기', sortOrder: 6, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Multi Cutter' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'TWIST', codeName: '트위스트기', sortOrder: 7, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Twister' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'SOLDER', codeName: '솔더링기', sortOrder: 8, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Soldering' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'HOUSING', codeName: '하우징기', sortOrder: 9, attr1: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', attr3: 'Housing' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'TESTER', codeName: '검사기', sortOrder: 10, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Tester' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'LABEL_PRINTER', codeName: '라벨프린터', sortOrder: 11, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Label Printer' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'INSPECTION', codeName: '검사설비', sortOrder: 12, attr1: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300', attr3: 'Inspection' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'PACKING', codeName: '포장기', sortOrder: 13, attr1: 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300', attr3: 'Packing' },
+  { groupCode: 'EQUIP_TYPE', detailCode: 'OTHER', codeName: '기타', sortOrder: 14, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Other' },
+
+  // ===== 소모품 상태 (CONSUMABLE_STATUS) =====
+  { groupCode: 'CONSUMABLE_STATUS', detailCode: 'NORMAL', codeName: '정상', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Normal' },
+  { groupCode: 'CONSUMABLE_STATUS', detailCode: 'WARNING', codeName: '경고', sortOrder: 2, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Warning' },
+  { groupCode: 'CONSUMABLE_STATUS', detailCode: 'REPLACE', codeName: '교체필요', sortOrder: 3, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Replace' },
+
+  // ===== 소모품 카테고리 (CONSUMABLE_CATEGORY) =====
+  { groupCode: 'CONSUMABLE_CATEGORY', detailCode: 'MOLD', codeName: '금형', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Mold' },
+  { groupCode: 'CONSUMABLE_CATEGORY', detailCode: 'JIG', codeName: '지그', sortOrder: 2, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Jig' },
+  { groupCode: 'CONSUMABLE_CATEGORY', detailCode: 'TOOL', codeName: '공구', sortOrder: 3, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Tool' },
+
+  // ===== 소모품 이력 유형 (CONSUMABLE_LOG_TYPE) =====
+  { groupCode: 'CONSUMABLE_LOG_TYPE', detailCode: 'IN', codeName: '입고', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'In' },
+  { groupCode: 'CONSUMABLE_LOG_TYPE', detailCode: 'IN_RETURN', codeName: '입고반품', sortOrder: 2, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'In Return' },
+  { groupCode: 'CONSUMABLE_LOG_TYPE', detailCode: 'OUT', codeName: '출고', sortOrder: 3, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Out' },
+  { groupCode: 'CONSUMABLE_LOG_TYPE', detailCode: 'OUT_RETURN', codeName: '출고반품', sortOrder: 4, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Out Return' },
+
+  // ===== 소모품 이력 유형 그룹 (CONSUMABLE_LOG_TYPE_GROUP) =====
+  { groupCode: 'CONSUMABLE_LOG_TYPE_GROUP', detailCode: 'RECEIVING', codeName: '입고', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Receiving' },
+  { groupCode: 'CONSUMABLE_LOG_TYPE_GROUP', detailCode: 'ISSUING', codeName: '출고', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Issuing' },
+
+  // ===== 소모품 입고 구분 (INCOMING_TYPE) =====
+  { groupCode: 'INCOMING_TYPE', detailCode: 'NEW', codeName: '신규', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'New' },
+  { groupCode: 'INCOMING_TYPE', detailCode: 'REPLACEMENT', codeName: '교체', sortOrder: 2, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Replacement' },
+
+  // ===== 소모품 출고 사유 (ISSUE_REASON) =====
+  { groupCode: 'ISSUE_REASON', detailCode: 'PRODUCTION', codeName: '생산', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Production' },
+  { groupCode: 'ISSUE_REASON', detailCode: 'REPAIR', codeName: '수리', sortOrder: 2, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Repair' },
+  { groupCode: 'ISSUE_REASON', detailCode: 'OTHER', codeName: '기타', sortOrder: 3, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Other' },
+
+  // ===== 통관 입항 상태 (CUSTOMS_ENTRY_STATUS) =====
+  { groupCode: 'CUSTOMS_ENTRY_STATUS', detailCode: 'PENDING', codeName: '대기', sortOrder: 1, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Pending' },
+  { groupCode: 'CUSTOMS_ENTRY_STATUS', detailCode: 'CLEARED', codeName: '통관', sortOrder: 2, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Cleared' },
+  { groupCode: 'CUSTOMS_ENTRY_STATUS', detailCode: 'RELEASED', codeName: '반출', sortOrder: 3, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Released' },
+
+  // ===== 통관 LOT 상태 (CUSTOMS_LOT_STATUS) =====
+  { groupCode: 'CUSTOMS_LOT_STATUS', detailCode: 'BONDED', codeName: '보세', sortOrder: 1, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Bonded' },
+  { groupCode: 'CUSTOMS_LOT_STATUS', detailCode: 'PARTIAL', codeName: '일부반출', sortOrder: 2, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Partial' },
+  { groupCode: 'CUSTOMS_LOT_STATUS', detailCode: 'RELEASED', codeName: '반출', sortOrder: 3, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Released' },
+
+  // ===== 사용보고서 상태 (USAGE_REPORT_STATUS) =====
+  { groupCode: 'USAGE_REPORT_STATUS', detailCode: 'DRAFT', codeName: '초안', sortOrder: 1, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Draft' },
+  { groupCode: 'USAGE_REPORT_STATUS', detailCode: 'REPORTED', codeName: '보고', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Reported' },
+  { groupCode: 'USAGE_REPORT_STATUS', detailCode: 'CONFIRMED', codeName: '확인', sortOrder: 3, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Confirmed' },
+
+  // ===== 외주 발주 상태 (SUBCON_ORDER_STATUS) =====
+  { groupCode: 'SUBCON_ORDER_STATUS', detailCode: 'ORDERED', codeName: '발주', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Ordered' },
+  { groupCode: 'SUBCON_ORDER_STATUS', detailCode: 'DELIVERED', codeName: '납품', sortOrder: 2, attr1: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', attr3: 'Delivered' },
+  { groupCode: 'SUBCON_ORDER_STATUS', detailCode: 'PARTIAL_RECV', codeName: '부분입고', sortOrder: 3, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Partial Received' },
+  { groupCode: 'SUBCON_ORDER_STATUS', detailCode: 'RECEIVED', codeName: '입고완료', sortOrder: 4, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Received' },
+  { groupCode: 'SUBCON_ORDER_STATUS', detailCode: 'CLOSED', codeName: '마감', sortOrder: 5, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Closed' },
+  { groupCode: 'SUBCON_ORDER_STATUS', detailCode: 'CANCELED', codeName: '취소', sortOrder: 6, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Canceled' },
+
+  // ===== 외주 검수 결과 (SUBCON_INSPECT_RESULT) =====
+  { groupCode: 'SUBCON_INSPECT_RESULT', detailCode: 'PASS', codeName: '합격', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Pass' },
+  { groupCode: 'SUBCON_INSPECT_RESULT', detailCode: 'FAIL', codeName: '불합격', sortOrder: 2, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Fail' },
+  { groupCode: 'SUBCON_INSPECT_RESULT', detailCode: 'PARTIAL', codeName: '부분합격', sortOrder: 3, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Partial' },
+
+  // ===== 통신 유형 (COMM_TYPE) =====
+  { groupCode: 'COMM_TYPE', detailCode: 'MQTT', codeName: 'MQTT', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'MQTT' },
+  { groupCode: 'COMM_TYPE', detailCode: 'SERIAL', codeName: '시리얼', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Serial' },
+  { groupCode: 'COMM_TYPE', detailCode: 'TCP', codeName: 'TCP/IP', sortOrder: 3, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'TCP' },
+  { groupCode: 'COMM_TYPE', detailCode: 'OPC_UA', codeName: 'OPC-UA', sortOrder: 4, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'OPC-UA' },
+  { groupCode: 'COMM_TYPE', detailCode: 'MODBUS', codeName: 'Modbus', sortOrder: 5, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Modbus' },
+
+  // ===== 보드레이트 (BAUD_RATE) =====
+  { groupCode: 'BAUD_RATE', detailCode: '9600', codeName: '9600', sortOrder: 1, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '9600' },
+  { groupCode: 'BAUD_RATE', detailCode: '19200', codeName: '19200', sortOrder: 2, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '19200' },
+  { groupCode: 'BAUD_RATE', detailCode: '38400', codeName: '38400', sortOrder: 3, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '38400' },
+  { groupCode: 'BAUD_RATE', detailCode: '57600', codeName: '57600', sortOrder: 4, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '57600' },
+  { groupCode: 'BAUD_RATE', detailCode: '115200', codeName: '115200', sortOrder: 5, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '115200' },
+
+  // ===== 데이터비트 (DATA_BITS) =====
+  { groupCode: 'DATA_BITS', detailCode: '7', codeName: '7비트', sortOrder: 1, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '7 bits' },
+  { groupCode: 'DATA_BITS', detailCode: '8', codeName: '8비트', sortOrder: 2, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '8 bits' },
+
+  // ===== 정지비트 (STOP_BITS) =====
+  { groupCode: 'STOP_BITS', detailCode: '1', codeName: '1', sortOrder: 1, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '1' },
+  { groupCode: 'STOP_BITS', detailCode: '1.5', codeName: '1.5', sortOrder: 2, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '1.5' },
+  { groupCode: 'STOP_BITS', detailCode: '2', codeName: '2', sortOrder: 3, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: '2' },
+
+  // ===== 패리티 (PARITY) =====
+  { groupCode: 'PARITY', detailCode: 'NONE', codeName: '없음', sortOrder: 1, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'None' },
+  { groupCode: 'PARITY', detailCode: 'EVEN', codeName: '짝수', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Even' },
+  { groupCode: 'PARITY', detailCode: 'ODD', codeName: '홀수', sortOrder: 3, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Odd' },
+
+  // ===== 흐름제어 (FLOW_CONTROL) =====
+  { groupCode: 'FLOW_CONTROL', detailCode: 'NONE', codeName: '없음', sortOrder: 1, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'None' },
+  { groupCode: 'FLOW_CONTROL', detailCode: 'XONXOFF', codeName: 'XON/XOFF', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'XON/XOFF' },
+  { groupCode: 'FLOW_CONTROL', detailCode: 'RTSCTS', codeName: 'RTS/CTS', sortOrder: 3, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'RTS/CTS' },
+
+  // ===== 인터페이스 방향 (INTERFACE_DIRECTION) =====
+  { groupCode: 'INTERFACE_DIRECTION', detailCode: 'IN', codeName: '수신', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'In' },
+  { groupCode: 'INTERFACE_DIRECTION', detailCode: 'OUT', codeName: '발신', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Out' },
+
+  // ===== 인터페이스 로그 상태 (IF_LOG_STATUS) =====
+  { groupCode: 'IF_LOG_STATUS', detailCode: 'PENDING', codeName: '대기', sortOrder: 1, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Pending' },
+  { groupCode: 'IF_LOG_STATUS', detailCode: 'SUCCESS', codeName: '성공', sortOrder: 2, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Success' },
+  { groupCode: 'IF_LOG_STATUS', detailCode: 'FAIL', codeName: '실패', sortOrder: 3, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Fail' },
+  { groupCode: 'IF_LOG_STATUS', detailCode: 'RETRY', codeName: '재시도', sortOrder: 4, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Retry' },
+
+  // ===== 작업자 유형 (WORKER_TYPE) =====
+  { groupCode: 'WORKER_TYPE', detailCode: 'CUTTING', codeName: '절단작업자', sortOrder: 1, attr1: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', attr3: 'Cutting Worker' },
+  { groupCode: 'WORKER_TYPE', detailCode: 'CRIMPING', codeName: '압착작업자', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Crimping Worker' },
+  { groupCode: 'WORKER_TYPE', detailCode: 'ASSEMBLY', codeName: '조립작업자', sortOrder: 3, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Assembly Worker' },
+  { groupCode: 'WORKER_TYPE', detailCode: 'INSPECTOR', codeName: '검사원', sortOrder: 4, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Inspector' },
+  { groupCode: 'WORKER_TYPE', detailCode: 'PACKING', codeName: '포장작업자', sortOrder: 5, attr1: 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300', attr3: 'Packing Worker' },
+  { groupCode: 'WORKER_TYPE', detailCode: 'LEADER', codeName: '반장', sortOrder: 6, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Team Leader' },
+
+  // ===== 출하지시 상태 (SHIP_ORDER_STATUS) =====
+  { groupCode: 'SHIP_ORDER_STATUS', detailCode: 'DRAFT', codeName: '임시저장', sortOrder: 1, attr1: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', attr3: 'Draft' },
+  { groupCode: 'SHIP_ORDER_STATUS', detailCode: 'CONFIRMED', codeName: '확정', sortOrder: 2, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Confirmed' },
+  { groupCode: 'SHIP_ORDER_STATUS', detailCode: 'SHIPPING', codeName: '출하중', sortOrder: 3, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Shipping' },
+  { groupCode: 'SHIP_ORDER_STATUS', detailCode: 'SHIPPED', codeName: '출하완료', sortOrder: 4, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Shipped' },
+
+  // ===== 점검유형 (INSPECT_CHECK_TYPE) =====
+  { groupCode: 'INSPECT_CHECK_TYPE', detailCode: 'DAILY', codeName: '일상점검', sortOrder: 1, attr1: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', attr3: 'Daily Inspection' },
+  { groupCode: 'INSPECT_CHECK_TYPE', detailCode: 'PERIODIC', codeName: '정기점검', sortOrder: 2, attr1: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', attr3: 'Periodic Inspection' },
+
+  // ===== 점검판정 (INSPECT_JUDGE) =====
+  { groupCode: 'INSPECT_JUDGE', detailCode: 'PASS', codeName: '합격', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Pass' },
+  { groupCode: 'INSPECT_JUDGE', detailCode: 'FAIL', codeName: '불합격', sortOrder: 2, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Fail' },
+  { groupCode: 'INSPECT_JUDGE', detailCode: 'CONDITIONAL', codeName: '조건부합격', sortOrder: 3, attr1: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', attr3: 'Conditional' },
+
+  // ===== 합격여부 (JUDGE_YN) =====
+  { groupCode: 'JUDGE_YN', detailCode: 'Y', codeName: '합격', sortOrder: 1, attr1: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', attr3: 'Pass' },
+  { groupCode: 'JUDGE_YN', detailCode: 'N', codeName: '불합격', sortOrder: 2, attr1: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', attr3: 'Fail' },
 ];
 
 async function seedComCodes() {

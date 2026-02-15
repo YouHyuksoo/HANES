@@ -1,0 +1,58 @@
+"use client";
+
+/**
+ * @file src/app/(authenticated)/material/receive/components/ReceivingHistoryTable.tsx
+ * @description 입고 이력 테이블 - RECEIVE 타입 StockTransaction 표시
+ */
+
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ColumnDef } from '@tanstack/react-table';
+import DataGrid from '@/components/data-grid/DataGrid';
+import type { ReceivingRecord } from './types';
+
+interface ReceivingHistoryTableProps {
+  data: ReceivingRecord[];
+}
+
+export default function ReceivingHistoryTable({ data }: ReceivingHistoryTableProps) {
+  const { t } = useTranslation();
+
+  const columns = useMemo<ColumnDef<ReceivingRecord>[]>(() => [
+    { accessorKey: 'transNo', header: t('material.arrival.col.transNo'), size: 180 },
+    {
+      accessorKey: 'transDate',
+      header: t('material.receive.col.receivedDate'),
+      size: 100,
+      cell: ({ getValue }) => (getValue() as string).slice(0, 10),
+    },
+    { id: 'lotNo', header: t('material.col.lotNo'), size: 150, cell: ({ row }) => row.original.lot?.lotNo || '-' },
+    { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, cell: ({ row }) => row.original.lot?.poNo || '-' },
+    { id: 'partCode', header: t('common.partCode'), size: 100, cell: ({ row }) => row.original.part?.partCode },
+    { id: 'partName', header: t('common.partName'), size: 130, cell: ({ row }) => row.original.part?.partName },
+    {
+      accessorKey: 'qty',
+      header: t('common.quantity'),
+      size: 100,
+      cell: ({ row }) => (
+        <span className="text-green-600 font-medium">
+          +{row.original.qty.toLocaleString()} {row.original.part?.unit}
+        </span>
+      ),
+    },
+    {
+      id: 'warehouse',
+      header: t('material.arrival.col.warehouse'),
+      size: 100,
+      cell: ({ row }) => row.original.toWarehouse?.warehouseName || '-',
+    },
+    {
+      accessorKey: 'remark',
+      header: t('common.remark'),
+      size: 120,
+      cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || '-'}</span>,
+    },
+  ], [t]);
+
+  return <DataGrid data={data} columns={columns} pageSize={10} />;
+}

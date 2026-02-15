@@ -16,8 +16,9 @@ import {
   ScrollText, Search, RefreshCw, Download, Calendar,
   ClipboardCheck, CheckCircle, XCircle, AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import { useComCodeOptions } from "@/hooks/useComCode";
 
 interface InspectHistory {
   id: string;
@@ -30,17 +31,6 @@ interface InspectHistory {
   remark: string;
 }
 
-const typeKeys: Record<string, string> = { DAILY: "equipment.inspectHistory.typeDaily", PERIODIC: "equipment.inspectHistory.typePeriodic" };
-const typeColors: Record<string, string> = {
-  DAILY: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  PERIODIC: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
-};
-const resultKeys: Record<string, string> = { PASS: "equipment.inspectHistory.resultPass", FAIL: "equipment.inspectHistory.resultFail", CONDITIONAL: "equipment.inspectHistory.resultConditional" };
-const resultColors: Record<string, string> = {
-  PASS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  FAIL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-  CONDITIONAL: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-};
 
 const mockData: InspectHistory[] = [
   { id: "1", equipCode: "CUT-001", equipName: "절단기 1호", inspectType: "DAILY", inspectDate: "2025-02-01", inspectorName: "김점검", overallResult: "PASS", remark: "" },
@@ -59,8 +49,10 @@ function InspectHistoryPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const typeOptions = [{ value: "", label: t("equipment.inspectHistory.allType") }, { value: "DAILY", label: t("equipment.inspectHistory.typeDailyInspect") }, { value: "PERIODIC", label: t("equipment.inspectHistory.typePeriodicInspect") }];
-  const resultOptions = [{ value: "", label: t("equipment.inspectHistory.allResult") }, { value: "PASS", label: t("equipment.inspectHistory.resultPass") }, { value: "FAIL", label: t("equipment.inspectHistory.resultFail") }, { value: "CONDITIONAL", label: t("equipment.inspectHistory.resultConditional") }];
+  const comCodeTypeOptions = useComCodeOptions("INSPECT_CHECK_TYPE");
+  const typeOptions = [{ value: "", label: t("equipment.inspectHistory.allType") }, ...comCodeTypeOptions];
+  const comCodeResultOptions = useComCodeOptions("INSPECT_JUDGE");
+  const resultOptions = [{ value: "", label: t("equipment.inspectHistory.allResult") }, ...comCodeResultOptions];
 
   const filteredData = useMemo(() => mockData.filter((item) => {
     const matchSearch = !searchText || item.equipCode.toLowerCase().includes(searchText.toLowerCase()) || item.equipName.toLowerCase().includes(searchText.toLowerCase());
@@ -79,11 +71,11 @@ function InspectHistoryPage() {
 
   const columns = useMemo<ColumnDef<InspectHistory>[]>(() => [
     { accessorKey: "inspectDate", header: t("equipment.inspectHistory.inspectDate"), size: 100 },
-    { accessorKey: "inspectType", header: t("equipment.inspectHistory.inspectType"), size: 70, cell: ({ getValue }) => { const v = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${typeColors[v] || ""}`}>{t(typeKeys[v])}</span>; } },
+    { accessorKey: "inspectType", header: t("equipment.inspectHistory.inspectType"), size: 70, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_CHECK_TYPE" code={getValue() as string} /> },
     { accessorKey: "equipCode", header: t("equipment.inspectHistory.equipCode"), size: 100 },
     { accessorKey: "equipName", header: t("equipment.inspectHistory.equipName"), size: 120 },
     { accessorKey: "inspectorName", header: t("equipment.inspectHistory.inspector"), size: 80 },
-    { accessorKey: "overallResult", header: t("equipment.inspectHistory.result"), size: 80, cell: ({ getValue }) => { const r = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${resultColors[r] || ""}`}>{t(resultKeys[r])}</span>; } },
+    { accessorKey: "overallResult", header: t("equipment.inspectHistory.result"), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_JUDGE" code={getValue() as string} /> },
     { accessorKey: "remark", header: t("common.remark"), size: 180 },
   ], [t]);
 

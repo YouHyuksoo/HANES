@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useApiQuery } from "./useApi";
 
 export interface ComCodeItem {
@@ -31,11 +32,29 @@ const COM_CODE_URL = "/master/com-codes/all-active";
 const DEFAULT_COLOR =
   "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
 
-export function useComCodes() {
+export function useComCodes(enabled: boolean = true) {
   return useApiQuery<ComCodeMap>(COM_CODE_QUERY_KEY, COM_CODE_URL, {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    retry: false,
+    enabled,
   });
+}
+
+/**
+ * 현재 locale에 따라 코드의 적절한 이름을 반환하는 헬퍼
+ * i18n 번역 파일에 comCode.{groupCode}.{detailCode} 키가 있으면 해당 번역 사용,
+ * 없으면 DB의 codeName(한국어) 폴백
+ */
+function getLocalizedCodeName(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  groupCode: string,
+  detailCode: string,
+  fallback: string,
+): string {
+  const key = `comCode.${groupCode}.${detailCode}`;
+  const translated = t(key, { defaultValue: "" });
+  return translated || fallback;
 }
 
 export function useComCodeOptions(
@@ -43,17 +62,18 @@ export function useComCodeOptions(
   includeAll: boolean = false,
 ) {
   const { data } = useComCodes();
+  const { t } = useTranslation();
   return useMemo(() => {
     const codes = data?.data?.[groupCode] ?? [];
     const options = codes.map((c: ComCodeItem) => ({
       value: c.detailCode,
-      label: c.codeName,
+      label: getLocalizedCodeName(t, groupCode, c.detailCode, c.codeName),
     }));
     if (includeAll) {
-      return [{ value: "", label: "전체" }, ...options];
+      return [{ value: "", label: t("common.all", { defaultValue: "전체" }) }, ...options];
     }
     return options;
-  }, [data, groupCode, includeAll]);
+  }, [data, groupCode, includeAll, t]);
 }
 
 export function useComCodeLabel(
@@ -61,13 +81,15 @@ export function useComCodeLabel(
   detailCode: string,
 ): string {
   const { data } = useComCodes();
+  const { t } = useTranslation();
   return useMemo(() => {
     const codes = data?.data?.[groupCode] ?? [];
     const found = codes.find(
       (c: ComCodeItem) => c.detailCode === detailCode,
     );
-    return found?.codeName ?? detailCode;
-  }, [data, groupCode, detailCode]);
+    if (!found) return detailCode;
+    return getLocalizedCodeName(t, groupCode, detailCode, found.codeName);
+  }, [data, groupCode, detailCode, t]);
 }
 
 export function useComCodeColor(

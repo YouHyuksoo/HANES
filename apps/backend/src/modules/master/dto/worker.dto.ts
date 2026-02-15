@@ -34,6 +34,11 @@ export class CreateWorkerDto {
   @MaxLength(200)
   qrCode?: string;
 
+  @ApiPropertyOptional({ description: '사진 URL' })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+
   @ApiPropertyOptional({ description: '담당 공정 ID 목록', type: [String] })
   @IsOptional()
   @IsArray()

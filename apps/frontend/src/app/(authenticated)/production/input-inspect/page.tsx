@@ -13,6 +13,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Save, ClipboardCheck, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
+import WorkOrderContext from '@/components/production/WorkOrderContext';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -101,7 +102,7 @@ function InputInspectPage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputInspect.modalTitle')} size="md">
         <div className="space-y-4">
-          <Select label={t('production.inputInspect.workOrder')} options={[{ value: 'JO-001', label: 'JO-20250126-001 (메인 하네스 A)' }, { value: 'JO-002', label: 'JO-20250126-002 (서브 하네스 B)' }]} value={form.orderNo} onChange={v => setForm(p => ({ ...p, orderNo: v }))} fullWidth />
+          <WorkOrderContext selectedOrderNo={form.orderNo} onSelect={(v) => setForm((p) => ({ ...p, orderNo: v }))} processFilter={["INSP"]} />
           <Input label={t('production.inputInspect.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
           <div className="grid grid-cols-3 gap-4">
             <Input label={t('production.inputInspect.inspectQty')} type="number" value={form.inspectQty} onChange={e => setForm(p => ({ ...p, inspectQty: e.target.value }))} fullWidth />

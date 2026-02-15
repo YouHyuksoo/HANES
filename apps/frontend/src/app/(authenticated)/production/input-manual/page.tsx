@@ -2,17 +2,21 @@
 
 /**
  * @file src/app/(authenticated)/production/input-manual/page.tsx
- * @description 실적입력(수작업) 페이지 - 설비 불필요, 작업지도서 표시 영역 포함
+ * @description 실적입력(수작업) 페이지 - 작업자 선택 + 작업지도서 + 실적 입력
  *
  * 초보자 가이드:
- * 1. **목적**: 수작업 공정에서 실적을 입력하는 페이지
- * 2. **작업지도서**: 상단에 현재 작업지시의 작업지도서 요약 표시
+ * 1. **작업자 선택**: 바코드 스캔 또는 코드 검색으로 작업자 지정
+ * 2. **작업지도서**: 상단에 작업지시서 요약 + 선택된 작업자 사진 표시
  * 3. **실적 입력**: 양품/불량 수량 입력 후 저장
  */
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Save, HandMetal, FileText, Package, CheckCircle, XCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
+import { Search, RefreshCw, Save, HandMetal, FileText, Package, CheckCircle, XCircle, UserPlus, X } from 'lucide-react';
+import { Card, CardContent, Button, Input, StatCard, Modal } from '@/components/ui';
+import WorkOrderContext from '@/components/production/WorkOrderContext';
+import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
+import { WorkerAvatar } from '@/components/worker/WorkerSelector';
+import type { Worker } from '@/components/worker/WorkerSelector';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -40,6 +44,8 @@ function InputManualPage() {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [form, setForm] = useState({ orderNo: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', startTime: '', endTime: '', remark: '' });
 
   const filteredData = useMemo(() => mockData.filter(item => {
@@ -56,6 +62,12 @@ function InputManualPage() {
   const handleSubmit = () => {
     console.log('수작업 실적 저장:', form);
     setIsModalOpen(false);
+  };
+
+  /** 작업자 선택 확인 */
+  const handleWorkerConfirm = (worker: Worker) => {
+    setSelectedWorker(worker);
+    setIsWorkerModalOpen(false);
   };
 
   const columns = useMemo<ColumnDef<ManualResult>[]>(() => [
@@ -76,14 +88,70 @@ function InputManualPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><HandMetal className="w-7 h-7 text-primary" />{t('production.inputManual.title')}</h1>
           <p className="text-text-muted mt-1">{t('production.inputManual.description')}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}><Save className="w-4 h-4 mr-1" />{t('production.inputManual.inputResult')}</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setIsWorkerModalOpen(true)}>
+            <UserPlus className="w-4 h-4 mr-1" />{t('production.inputManual.selectWorker')}
+          </Button>
+          <Button size="sm" onClick={() => setIsModalOpen(true)}><Save className="w-4 h-4 mr-1" />{t('production.inputManual.inputResult')}</Button>
+        </div>
       </div>
 
-      {/* 작업지도서 영역 */}
-      <Card><CardContent>
-        <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-primary" /><span className="font-semibold text-text">{t('production.inputManual.workInstruction')}</span></div>
-        <div className="p-3 bg-background rounded-lg text-sm text-text-muted">{t('production.inputManual.workInstructionDesc')}</div>
-      </CardContent></Card>
+      {/* 작업지도서 + 작업자 정보 영역 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* 작업지도서 (좌측 2칸) */}
+        <Card className="lg:col-span-2"><CardContent>
+          <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-primary" /><span className="font-semibold text-text">{t('production.inputManual.workInstruction')}</span></div>
+          <div className="p-3 bg-background rounded-lg text-sm text-text-muted">{t('production.inputManual.workInstructionDesc')}</div>
+        </CardContent></Card>
+
+        {/* 선택된 작업자 정보 (우측 1칸) */}
+        <Card><CardContent>
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-semibold text-text text-sm">{t('production.inputManual.currentWorker')}</span>
+            {selectedWorker && (
+              <button onClick={() => setSelectedWorker(null)} className="p-1 hover:bg-surface rounded text-text-muted" title={t('common.delete')}>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          {selectedWorker ? (
+            <div className="flex flex-col items-center text-center space-y-3">
+              {/* 작업자 사진 */}
+              {selectedWorker.photoUrl ? (
+                <img
+                  src={selectedWorker.photoUrl}
+                  alt={selectedWorker.workerName}
+                  className="w-20 h-20 rounded-full object-cover border-3 border-primary/20 shadow-md"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-primary/10 border-3 border-primary/20 shadow-md flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary">
+                    {selectedWorker.workerName.charAt(0)}
+                  </span>
+                </div>
+              )}
+              {/* 작업자 이름 + 코드 */}
+              <div>
+                <p className="text-base font-bold text-text">{selectedWorker.workerName}</p>
+                <p className="text-xs text-text-muted mt-0.5">{selectedWorker.workerCode} | {selectedWorker.dept}</p>
+              </div>
+              {/* 상태 뱃지 */}
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+                <CheckCircle className="w-3 h-3" />
+                {t('production.inputManual.workerActive')}
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsWorkerModalOpen(true)}
+              className="w-full flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer"
+            >
+              <UserPlus className="w-8 h-8 text-text-muted mb-2" />
+              <span className="text-sm text-text-muted">{t('production.inputManual.clickToSelectWorker')}</span>
+            </button>
+          )}
+        </CardContent></Card>
+      </div>
 
       <div className="grid grid-cols-3 gap-4">
         <StatCard label={t('production.inputManual.inputCount')} value={stats.count} icon={Package} color="blue" />
@@ -99,11 +167,12 @@ function InputManualPage() {
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
 
+      {/* 실적 입력 모달 */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputManual.modalTitle')} size="md">
         <div className="space-y-4">
-          <Select label={t('production.inputManual.workOrder')} options={[{ value: 'JO-20250126-001', label: 'JO-20250126-001 (메인 하네스 A)' }, { value: 'JO-20250126-002', label: 'JO-20250126-002 (서브 하네스 B)' }]} value={form.orderNo} onChange={v => setForm(p => ({ ...p, orderNo: v }))} fullWidth />
+          <WorkOrderContext selectedOrderNo={form.orderNo} onSelect={(v) => setForm((p) => ({ ...p, orderNo: v }))} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t('production.inputManual.worker')} value={form.workerName} onChange={e => setForm(p => ({ ...p, workerName: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.worker')} value={selectedWorker?.workerName ?? form.workerName} onChange={e => setForm(p => ({ ...p, workerName: e.target.value }))} fullWidth disabled={!!selectedWorker} />
             <Input label={t('production.inputManual.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
             <Input label={t('production.inputManual.goodQty')} type="number" value={form.goodQty} onChange={e => setForm(p => ({ ...p, goodQty: e.target.value }))} fullWidth />
             <Input label={t('production.inputManual.defectQty')} type="number" value={form.defectQty} onChange={e => setForm(p => ({ ...p, defectQty: e.target.value }))} fullWidth />
@@ -117,6 +186,13 @@ function InputManualPage() {
           </div>
         </div>
       </Modal>
+
+      {/* 작업자 선택 모달 */}
+      <WorkerSelectModal
+        isOpen={isWorkerModalOpen}
+        onClose={() => setIsWorkerModalOpen(false)}
+        onConfirm={handleWorkerConfirm}
+      />
     </div>
   );
 }

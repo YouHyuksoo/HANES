@@ -1,47 +1,43 @@
 "use client";
 
 /**
- * @file src/pages/production/ProdResultPage.tsx
- * @description 생산실적 조회 페이지
+ * @file src/app/(authenticated)/production/result/page.tsx
+ * @description 생산실적 조회 페이지 (절단/압착/조립/검사/포장 통합 + 작업자 선택)
  *
  * 초보자 가이드:
  * 1. **생산실적**: 작업지시에 대한 실제 생산 결과 기록
- * 2. **LOT**: 동일 조건에서 생산된 제품 묶음 단위
- * 3. **양품/불량**: 검사를 통과한 제품과 불합격 제품 구분
- *
- * 사용 방법:
- * - 날짜, 라인, 공정 필터로 실적 조회
- * - 실적 등록 버튼으로 새 실적 입력
+ * 2. **공정유형**: CUT(절단), CRIMP(압착), ASSY(조립), INSP(검사), PACK(포장)
+ * 3. **작업자 아바타**: 부서별 색상 이니셜 아바타 표시
  */
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Plus,
-  Search,
-  RefreshCw,
-  Download,
-  Calendar,
-  Factory,
-  Package,
-  Clock,
-  CheckCircle,
-  XCircle,
+  Search, RefreshCw, Download, Calendar,
+  Factory, Package, Clock, CheckCircle, XCircle,
 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { useComCodeOptions } from '@/hooks/useComCode';
+import { WorkerAvatar } from '@/components/worker/WorkerSelector';
+
+/** 공정 유형 */
+type ProcessType = 'CUT' | 'CRIMP' | 'ASSY' | 'INSP' | 'PACK';
+
 
 /** 생산실적 인터페이스 */
 interface ProdResult {
   id: string;
   resultNo: string;
   orderNo: string;
+  processType: ProcessType;
   partCode: string;
   partName: string;
   lineName: string;
   processName: string;
   equipName: string;
   workerName: string;
+  workerDept: string;
   lotNo: string;
   goodQty: number;
   defectQty: number;
@@ -52,281 +48,163 @@ interface ProdResult {
   workHours: number;
 }
 
-// Mock 데이터
+// Mock 데이터 (절단/압착 실적 포함)
 const mockResults: ProdResult[] = [
   {
-    id: '1',
-    resultNo: 'PR-20250126-001',
-    orderNo: 'JO-20250126-002',
-    partCode: 'H-002',
-    partName: '서브 하네스 B',
-    lineName: 'L2-조립',
-    processName: '2차 조립',
-    equipName: 'ASSY-001',
-    workerName: '김작업',
-    lotNo: 'LOT-20250126-001',
-    goodQty: 145,
-    defectQty: 5,
-    totalQty: 150,
-    workDate: '2025-01-26',
-    startTime: '09:00',
-    endTime: '12:00',
-    workHours: 3
+    id: '1', resultNo: 'PR-20250126-001', orderNo: 'JO-20250126-004',
+    processType: 'CUT', partCode: 'W-002', partName: 'AVSS 0.3sq 흰색',
+    lineName: 'L1-절단', processName: '전선절단', equipName: 'CUT-001',
+    workerName: '김작업', workerDept: '절단팀', lotNo: 'LOT-20250126-C01',
+    goodQty: 5900, defectQty: 100, totalQty: 6000,
+    workDate: '2025-01-26', startTime: '08:30', endTime: '15:30', workHours: 7
   },
   {
-    id: '2',
-    resultNo: 'PR-20250126-002',
-    orderNo: 'JO-20250126-004',
-    partCode: 'H-005',
-    partName: '트렁크 하네스 E',
-    lineName: 'L2-조립',
-    processName: '2차 조립',
-    equipName: 'ASSY-002',
-    workerName: '박작업',
-    lotNo: 'LOT-20250126-002',
-    goodQty: 278,
-    defectQty: 2,
-    totalQty: 280,
-    workDate: '2025-01-26',
-    startTime: '08:30',
-    endTime: '15:30',
-    workHours: 7
+    id: '2', resultNo: 'PR-20250126-002', orderNo: 'JO-20250126-002',
+    processType: 'CRIMP', partCode: 'T-001', partName: '110형 단자 압착',
+    lineName: 'L2-압착', processName: '단자압착', equipName: 'CRM-001',
+    workerName: '이압착', workerDept: '압착팀', lotNo: 'LOT-20250126-R01',
+    goodQty: 1480, defectQty: 20, totalQty: 1500,
+    workDate: '2025-01-26', startTime: '09:00', endTime: '14:00', workHours: 5
   },
   {
-    id: '3',
-    resultNo: 'PR-20250125-001',
-    orderNo: 'JO-20250125-001',
-    partCode: 'H-003',
-    partName: '도어 하네스 C',
-    lineName: 'L1-조립',
-    processName: '1차 조립',
-    equipName: 'ASSY-003',
-    workerName: '이작업',
-    lotNo: 'LOT-20250125-001',
-    goodQty: 195,
-    defectQty: 5,
-    totalQty: 200,
-    workDate: '2025-01-25',
-    startTime: '08:00',
-    endTime: '17:00',
-    workHours: 9
+    id: '3', resultNo: 'PR-20250126-003', orderNo: 'JO-20250126-003',
+    processType: 'ASSY', partCode: 'H-001', partName: '메인 하네스 A',
+    lineName: 'L3-조립', processName: '1차 조립', equipName: 'ASSY-001',
+    workerName: '박조립', workerDept: '조립팀', lotNo: 'LOT-20250126-A01',
+    goodQty: 145, defectQty: 5, totalQty: 150,
+    workDate: '2025-01-26', startTime: '09:00', endTime: '12:00', workHours: 3
   },
   {
-    id: '4',
-    resultNo: 'PR-20250125-002',
-    orderNo: 'JO-20250125-002',
-    partCode: 'H-001',
-    partName: '메인 하네스 A',
-    lineName: 'L1-조립',
-    processName: '1차 조립',
-    equipName: 'ASSY-001',
-    workerName: '최작업',
-    lotNo: 'LOT-20250125-002',
-    goodQty: 98,
-    defectQty: 2,
-    totalQty: 100,
-    workDate: '2025-01-25',
-    startTime: '13:00',
-    endTime: '18:00',
-    workHours: 5
+    id: '4', resultNo: 'PR-20250126-004', orderNo: 'JO-20250126-005',
+    processType: 'INSP', partCode: 'H-001', partName: '메인 하네스 A',
+    lineName: 'L4-검사', processName: '통전검사', equipName: 'TST-001',
+    workerName: '최검사', workerDept: '품질팀', lotNo: 'LOT-20250126-I01',
+    goodQty: 148, defectQty: 2, totalQty: 150,
+    workDate: '2025-01-26', startTime: '10:00', endTime: '13:00', workHours: 3
   },
   {
-    id: '5',
-    resultNo: 'PR-20250124-001',
-    orderNo: 'JO-20250124-001',
-    partCode: 'H-004',
-    partName: '엔진룸 하네스 D',
-    lineName: 'L3-조립',
-    processName: '특수 조립',
-    equipName: 'ASSY-SP1',
-    workerName: '정작업',
-    lotNo: 'LOT-20250124-001',
-    goodQty: 48,
-    defectQty: 2,
-    totalQty: 50,
-    workDate: '2025-01-24',
-    startTime: '09:00',
-    endTime: '16:00',
-    workHours: 7
+    id: '5', resultNo: 'PR-20250125-001', orderNo: 'JO-20250125-001',
+    processType: 'ASSY', partCode: 'H-003', partName: '도어 하네스 C',
+    lineName: 'L1-조립', processName: '2차 조립', equipName: 'ASSY-003',
+    workerName: '박조립', workerDept: '조립팀', lotNo: 'LOT-20250125-A01',
+    goodQty: 195, defectQty: 5, totalQty: 200,
+    workDate: '2025-01-25', startTime: '08:00', endTime: '17:00', workHours: 9
+  },
+  {
+    id: '6', resultNo: 'PR-20250126-005', orderNo: 'JO-20250126-006',
+    processType: 'CRIMP', partCode: 'T-002', partName: '250형 단자 압착',
+    lineName: 'L2-압착', processName: '단자압착', equipName: 'CRM-001',
+    workerName: '오압착', workerDept: '압착팀', lotNo: 'LOT-20250126-R02',
+    goodQty: 3960, defectQty: 40, totalQty: 4000,
+    workDate: '2025-01-26', startTime: '08:00', endTime: '14:00', workHours: 6
+  },
+  {
+    id: '7', resultNo: 'PR-20250126-006', orderNo: 'JO-20250126-007',
+    processType: 'PACK', partCode: 'H-003', partName: '도어 하네스 C',
+    lineName: 'L5-포장', processName: '포장', equipName: 'PACK-001',
+    workerName: '정포장', workerDept: '포장팀', lotNo: 'LOT-20250126-P01',
+    goodQty: 100, defectQty: 0, totalQty: 100,
+    workDate: '2025-01-26', startTime: '13:00', endTime: '15:00', workHours: 2
   },
 ];
 
 function ProdResultPage() {
   const { t } = useTranslation();
+
+  /** 공정 유형 필터 */
+  const comCodeProcessOptions = useComCodeOptions('PROCESS_TYPE');
+  const processTypeOptions = useMemo(() => [
+    { value: '', label: t('production.order.processAll') },
+    ...comCodeProcessOptions.filter(o => ['CUT','CRIMP','ASSY','INSP','PACK'].includes(o.value))
+  ], [t, comCodeProcessOptions]);
+
   /** 라인 필터 옵션 */
   const lineOptions = useMemo(() => [
     { value: '', label: t('production.result.allLines') },
-    { value: 'L1-조립', label: 'L1-조립' },
-    { value: 'L2-조립', label: 'L2-조립' },
+    { value: 'L1-절단', label: 'L1-절단' },
+    { value: 'L2-압착', label: 'L2-압착' },
     { value: 'L3-조립', label: 'L3-조립' },
-  ], [t]);
-
-  /** 공정 필터 옵션 */
-  const processOptions = useMemo(() => [
-    { value: '', label: t('production.result.allProcesses') },
-    { value: '1차 조립', label: '1차 조립' },
-    { value: '2차 조립', label: '2차 조립' },
-    { value: '특수 조립', label: '특수 조립' },
+    { value: 'L4-검사', label: 'L4-검사' },
+    { value: 'L5-포장', label: 'L5-포장' },
   ], [t]);
 
   // 필터 상태
+  const [processTypeFilter, setProcessTypeFilter] = useState('');
   const [lineFilter, setLineFilter] = useState('');
-  const [processFilter, setProcessFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchText, setSearchText] = useState('');
 
-  // 모달 상태
-  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-
-  // 등록 폼 상태
-  const [formData, setFormData] = useState({
-    orderNo: '',
-    equipName: '',
-    workerName: '',
-    lotNo: '',
-    goodQty: '',
-    defectQty: '',
-    startTime: '',
-    endTime: '',
-    remark: ''
-  });
-
   /** 필터링된 실적 목록 */
   const filteredResults = useMemo(() => {
     return mockResults.filter((result) => {
+      const matchProcessType = !processTypeFilter || result.processType === processTypeFilter;
       const matchLine = !lineFilter || result.lineName === lineFilter;
-      const matchProcess = !processFilter || result.processName === processFilter;
       const matchSearch = !searchText ||
         result.resultNo.toLowerCase().includes(searchText.toLowerCase()) ||
         result.orderNo.toLowerCase().includes(searchText.toLowerCase()) ||
         result.lotNo.toLowerCase().includes(searchText.toLowerCase());
       const matchStartDate = !startDate || result.workDate >= startDate;
       const matchEndDate = !endDate || result.workDate <= endDate;
-      return matchLine && matchProcess && matchSearch && matchStartDate && matchEndDate;
+      return matchProcessType && matchLine && matchSearch && matchStartDate && matchEndDate;
     });
-  }, [lineFilter, processFilter, searchText, startDate, endDate]);
+  }, [processTypeFilter, lineFilter, searchText, startDate, endDate]);
 
-  /** 불량률 계산 */
   const getDefectRate = (result: ProdResult): string => {
     if (result.totalQty === 0) return '0.0';
     return ((result.defectQty / result.totalQty) * 100).toFixed(1);
   };
 
-  /** 폼 데이터 변경 핸들러 */
-  const handleFormChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  /** 실적 등록 핸들러 */
-  const handleSubmit = () => {
-    console.log('실적 등록:', formData);
-    // 실제로는 API 호출 후 목록 갱신
-    setIsRegisterModalOpen(false);
-    setFormData({
-      orderNo: '',
-      equipName: '',
-      workerName: '',
-      lotNo: '',
-      goodQty: '',
-      defectQty: '',
-      startTime: '',
-      endTime: '',
-      remark: ''
-    });
-  };
-
-  /** 통계 데이터 계산 */
+  /** 통계 */
   const stats = useMemo(() => {
     const totalGood = filteredResults.reduce((sum, r) => sum + r.goodQty, 0);
     const totalDefect = filteredResults.reduce((sum, r) => sum + r.defectQty, 0);
     const totalQty = filteredResults.reduce((sum, r) => sum + r.totalQty, 0);
     const totalHours = filteredResults.reduce((sum, r) => sum + r.workHours, 0);
     const avgDefectRate = totalQty > 0 ? ((totalDefect / totalQty) * 100).toFixed(2) : '0.00';
-
     return { totalGood, totalDefect, totalQty, totalHours, avgDefectRate };
   }, [filteredResults]);
 
   /** 컬럼 정의 */
   const columns = useMemo<ColumnDef<ProdResult>[]>(
     () => [
+      { accessorKey: 'resultNo', header: t('production.result.resultNo'), size: 150 },
+      { accessorKey: 'workDate', header: t('production.result.workDate'), size: 100 },
       {
-        accessorKey: 'resultNo',
-        header: t('production.result.resultNo'),
-        size: 150
+        accessorKey: 'processType', header: t('production.order.processType'), size: 80,
+        cell: ({ getValue }) => <ComCodeBadge groupCode="PROCESS_TYPE" code={getValue() as string} />
       },
+      { accessorKey: 'orderNo', header: t('production.result.orderNo'), size: 150 },
+      { accessorKey: 'partName', header: t('production.result.partName'), size: 130 },
+      { accessorKey: 'equipName', header: t('production.result.equipment'), size: 90 },
       {
-        accessorKey: 'workDate',
-        header: t('production.result.workDate'),
-        size: 100
-      },
-      {
-        accessorKey: 'orderNo',
-        header: t('production.result.orderNo'),
-        size: 150
-      },
-      {
-        accessorKey: 'partName',
-        header: t('production.result.partName'),
-        size: 150
-      },
-      {
-        accessorKey: 'equipName',
-        header: t('production.result.equipment'),
-        size: 100
-      },
-      {
-        accessorKey: 'workerName',
-        header: t('production.result.worker'),
-        size: 80
-      },
-      {
-        accessorKey: 'lotNo',
-        header: t('production.result.lotNo'),
-        size: 150
-      },
-      {
-        accessorKey: 'goodQty',
-        header: t('production.result.goodQty'),
-        size: 70,
-        cell: ({ getValue }) => (
-          <span className="text-green-600 dark:text-green-400 font-medium">
-            {(getValue() as number).toLocaleString()}
-          </span>
+        accessorKey: 'workerName', header: t('production.result.worker'), size: 110,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <WorkerAvatar name={row.original.workerName} dept={row.original.workerDept} size="sm" />
+            <span className="text-sm">{row.original.workerName}</span>
+          </div>
         )
       },
+      { accessorKey: 'lotNo', header: t('production.result.lotNo'), size: 150 },
       {
-        accessorKey: 'defectQty',
-        header: t('production.result.defectQty'),
-        size: 70,
-        cell: ({ getValue }) => (
-          <span className="text-red-600 dark:text-red-400 font-medium">
-            {(getValue() as number).toLocaleString()}
-          </span>
-        )
+        accessorKey: 'goodQty', header: t('production.result.goodQty'), size: 70,
+        cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span>
       },
       {
-        id: 'defectRate',
-        header: t('production.result.defectRate'),
-        size: 80,
+        accessorKey: 'defectQty', header: t('production.result.defectQty'), size: 70,
+        cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span>
+      },
+      {
+        id: 'defectRate', header: t('production.result.defectRate'), size: 80,
         cell: ({ row }) => {
           const rate = parseFloat(getDefectRate(row.original));
-          return (
-            <span className={`${rate > 3 ? 'text-red-500' : 'text-text-muted'}`}>
-              {rate}%
-            </span>
-          );
+          return <span className={`${rate > 3 ? 'text-red-500' : 'text-text-muted'}`}>{rate}%</span>;
         }
       },
       {
-        id: 'workTime',
-        header: t('production.result.workTime'),
-        size: 120,
-        cell: ({ row }) => (
-          <span className="text-text-muted">
-            {row.original.startTime} ~ {row.original.endTime}
-          </span>
-        )
+        id: 'workTime', header: t('production.result.workTime'), size: 120,
+        cell: ({ row }) => <span className="text-text-muted">{row.original.startTime} ~ {row.original.endTime}</span>
       },
     ],
     [t]
@@ -343,14 +221,9 @@ function ProdResultPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('production.result.description')}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm">
-            <Download className="w-4 h-4 mr-1" /> {t('common.excel')}
-          </Button>
-          <Button size="sm" onClick={() => setIsRegisterModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" /> {t('production.result.register')}
-          </Button>
-        </div>
+        <Button variant="secondary" size="sm">
+          <Download className="w-4 h-4 mr-1" /> {t('common.excel')}
+        </Button>
       </div>
 
       {/* 통계 카드 */}
@@ -364,161 +237,29 @@ function ProdResultPage() {
       {/* 메인 카드 */}
       <Card>
         <CardContent>
-          {/* 검색 필터 */}
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t('production.result.searchPlaceholder')}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
+              <Input placeholder={t('production.result.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+            </div>
+            <div className="w-32">
+              <Select options={processTypeOptions} value={processTypeFilter} onChange={setProcessTypeFilter} placeholder={t('production.order.processType')} fullWidth />
             </div>
             <div className="w-36">
-              <Select
-                options={lineOptions}
-                value={lineFilter}
-                onChange={setLineFilter}
-                placeholder={t('production.result.line')}
-                fullWidth
-              />
-            </div>
-            <div className="w-36">
-              <Select
-                options={processOptions}
-                value={processFilter}
-                onChange={setProcessFilter}
-                placeholder={t('production.result.processCol')}
-                fullWidth
-              />
+              <Select options={lineOptions} value={lineFilter} onChange={setLineFilter} placeholder={t('production.result.line')} fullWidth />
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-text-muted" />
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-36"
-              />
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-36" />
               <span className="text-text-muted">~</span>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-36"
-              />
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-36" />
             </div>
-            <Button variant="secondary">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+            <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
           </div>
 
-          {/* 데이터 그리드 */}
-          <DataGrid
-            data={filteredResults}
-            columns={columns}
-            pageSize={10}
-            onRowClick={(row) => console.log('Selected:', row)}
-          />
+          <DataGrid data={filteredResults} columns={columns} pageSize={10} onRowClick={(row) => console.log('Selected:', row)} />
         </CardContent>
       </Card>
 
-      {/* 실적 등록 모달 */}
-      <Modal
-        isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
-        title={t('production.result.registerTitle')}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label={t('production.result.orderNo')}
-              options={[
-                { value: 'JO-20250126-001', label: 'JO-20250126-001 (메인 하네스 A)' },
-                { value: 'JO-20250126-002', label: 'JO-20250126-002 (서브 하네스 B)' },
-                { value: 'JO-20250126-003', label: 'JO-20250126-003 (엔진룸 하네스 D)' },
-                { value: 'JO-20250126-004', label: 'JO-20250126-004 (트렁크 하네스 E)' },
-              ]}
-              value={formData.orderNo}
-              onChange={(v) => handleFormChange('orderNo', v)}
-              fullWidth
-            />
-            <Select
-              label={t('production.result.equipment')}
-              options={[
-                { value: 'ASSY-001', label: 'ASSY-001' },
-                { value: 'ASSY-002', label: 'ASSY-002' },
-                { value: 'ASSY-003', label: 'ASSY-003' },
-                { value: 'ASSY-SP1', label: 'ASSY-SP1 (특수)' },
-              ]}
-              value={formData.equipName}
-              onChange={(v) => handleFormChange('equipName', v)}
-              fullWidth
-            />
-            <Input
-              label={t('production.result.worker')}
-              placeholder={t('production.result.workerPlaceholder')}
-              value={formData.workerName}
-              onChange={(e) => handleFormChange('workerName', e.target.value)}
-              fullWidth
-            />
-            <Input
-              label={t('production.result.lotNo')}
-              placeholder="LOT-YYYYMMDD-XXX"
-              value={formData.lotNo}
-              onChange={(e) => handleFormChange('lotNo', e.target.value)}
-              fullWidth
-            />
-            <Input
-              label={t('production.result.goodQtyLabel')}
-              type="number"
-              placeholder="0"
-              value={formData.goodQty}
-              onChange={(e) => handleFormChange('goodQty', e.target.value)}
-              fullWidth
-            />
-            <Input
-              label={t('production.result.defectQtyLabel')}
-              type="number"
-              placeholder="0"
-              value={formData.defectQty}
-              onChange={(e) => handleFormChange('defectQty', e.target.value)}
-              fullWidth
-            />
-            <Input
-              label={t('production.result.startTime')}
-              type="time"
-              value={formData.startTime}
-              onChange={(e) => handleFormChange('startTime', e.target.value)}
-              fullWidth
-            />
-            <Input
-              label={t('production.result.endTime')}
-              type="time"
-              value={formData.endTime}
-              onChange={(e) => handleFormChange('endTime', e.target.value)}
-              fullWidth
-            />
-          </div>
-          <Input
-            label={t('common.remark')}
-            placeholder={t('production.result.remarkPlaceholder')}
-            value={formData.remark}
-            onChange={(e) => handleFormChange('remark', e.target.value)}
-            fullWidth
-          />
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsRegisterModalOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={handleSubmit}>
-              <Plus className="w-4 h-4 mr-1" /> {t('common.register')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

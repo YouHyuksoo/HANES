@@ -15,6 +15,8 @@
  * 10. **MiscReceipt**: 기타입고
  * 11. **PhysicalInv**: 재고 실사
  * 12. **ReceiptCancel**: 입고 취소 (역분개)
+ * 13. **Arrival**: 입하관리 (PO 기반/수동 입하 + 취소)
+ * 14. **Receiving**: 입고관리 (IQC 합격건 일괄/분할 입고)
  */
 
 import { Module } from '@nestjs/common';
@@ -51,6 +53,10 @@ import { PhysicalInvController } from './controllers/physical-inv.controller';
 import { PhysicalInvService } from './services/physical-inv.service';
 import { ReceiptCancelController } from './controllers/receipt-cancel.controller';
 import { ReceiptCancelService } from './services/receipt-cancel.service';
+import { ArrivalController } from './controllers/arrival.controller';
+import { ArrivalService } from './services/arrival.service';
+import { ReceivingController } from './controllers/receiving.controller';
+import { ReceivingService } from './services/receiving.service';
 
 @Module({
   imports: [InventoryModule],
@@ -69,6 +75,8 @@ import { ReceiptCancelService } from './services/receipt-cancel.service';
     MiscReceiptController,
     PhysicalInvController,
     ReceiptCancelController,
+    ArrivalController,
+    ReceivingController,
   ],
   providers: [
     MatLotService,
@@ -85,6 +93,8 @@ import { ReceiptCancelService } from './services/receipt-cancel.service';
     MiscReceiptService,
     PhysicalInvService,
     ReceiptCancelService,
+    ArrivalService,
+    ReceivingService,
   ],
   exports: [
     MatLotService,

@@ -1,6 +1,11 @@
 /**
  * @file src/modules/master/controllers/bom.controller.ts
- * @description BOM CRUD API 컨트롤러
+ * @description BOM CRUD API 컨트롤러 - Oracle TM_BOM 기준 보강
+ *
+ * 초보자 가이드:
+ * 1. **GET /parents**: BOM에 등재된 모품목(부모품목) 목록 + 자품목 수
+ * 2. **GET /hierarchy/:parentPartId**: 부모품목 기준 트리 구조 조회
+ * 3. **CRUD**: 추가/수정/삭제 모두 DB에 반영
  */
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
@@ -13,6 +18,14 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 @Controller('master/boms')
 export class BomController {
   constructor(private readonly bomService: BomService) {}
+
+  @Get('parents')
+  @ApiOperation({ summary: 'BOM 모품목(부모품목) 목록 조회' })
+  @ApiQuery({ name: 'search', required: false, description: '검색어' })
+  async findParents(@Query('search') search?: string) {
+    const data = await this.bomService.findParents(search);
+    return ResponseUtil.success(data);
+  }
 
   @Get('hierarchy/:parentPartId')
   @ApiOperation({ summary: 'BOM 계층 조회' })

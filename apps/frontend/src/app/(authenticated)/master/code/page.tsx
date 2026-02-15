@@ -1,154 +1,187 @@
 "use client";
 
 /**
- * @file src/pages/master/ComCodePage.tsx
- * @description 공통코드 관리 페이지
+ * @file master/code/page.tsx
+ * @description 공통코드 관리 페이지 - 실제 API 연동
+ *
+ * 초보자 가이드:
+ * 1. **좌측**: 그룹 코드 목록 (GET /master/com-codes/groups)
+ * 2. **우측**: 선택된 그룹의 상세 코드 (GET /master/com-codes/groups/:groupCode)
+ * 3. **CRUD**: 추가/수정/삭제 모두 API 통해 처리
  */
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2, RefreshCw, Settings } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Modal } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
-
-interface ComCode {
-  id: string;
-  groupCode: string;
-  detailCode: string;
-  codeName: string;
-  codeNameEn?: string;
-  sortOrder: number;
-  useYn: string;
-}
-
-// Mock 데이터
-const mockGroups = [
-  { groupCode: 'PROCESS', count: 5 },
-  { groupCode: 'DEFECT', count: 8 },
-  { groupCode: 'WAREHOUSE', count: 4 },
-  { groupCode: 'UNIT', count: 6 },
-  { groupCode: 'STATUS', count: 3 },
-];
-
-const mockCodes: ComCode[] = [
-  { id: '1', groupCode: 'PROCESS', detailCode: 'CUT', codeName: '절단', codeNameEn: 'Cutting', sortOrder: 1, useYn: 'Y' },
-  { id: '2', groupCode: 'PROCESS', detailCode: 'CRM', codeName: '압착', codeNameEn: 'Crimping', sortOrder: 2, useYn: 'Y' },
-  { id: '3', groupCode: 'PROCESS', detailCode: 'ASM', codeName: '조립', codeNameEn: 'Assembly', sortOrder: 3, useYn: 'Y' },
-  { id: '4', groupCode: 'PROCESS', detailCode: 'INS', codeName: '검사', codeNameEn: 'Inspection', sortOrder: 4, useYn: 'Y' },
-  { id: '5', groupCode: 'PROCESS', detailCode: 'PKG', codeName: '포장', codeNameEn: 'Packing', sortOrder: 5, useYn: 'Y' },
-];
+import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { Plus, RefreshCw, Settings } from "lucide-react";
+import { Button, ConfirmModal } from "@/components/ui";
+import { useApiQuery, useApiMutation, useInvalidateQueries } from "@/hooks/useApi";
+import GroupList from "./components/GroupList";
+import CodeDetailGrid from "./components/CodeDetailGrid";
+import CodeFormModal from "./components/CodeFormModal";
+import type { ComCodeGroup, ComCodeDetail, ComCodeFormData } from "./types";
 
 function ComCodePage() {
   const { t } = useTranslation();
-  const [selectedGroup, setSelectedGroup] = useState<string>('PROCESS');
+  const invalidate = useInvalidateQueries();
+
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCode, setEditingCode] = useState<ComCode | null>(null);
+  const [editingCode, setEditingCode] = useState<ComCodeDetail | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ComCodeDetail | null>(null);
 
-  const filteredCodes = useMemo(() => {
-    return mockCodes.filter((code) => code.groupCode === selectedGroup);
-  }, [selectedGroup]);
-
-  const columns = useMemo<ColumnDef<ComCode>[]>(
-    () => [
-      { accessorKey: 'detailCode', header: t('master.code.detailCode'), size: 120 },
-      { accessorKey: 'codeName', header: t('master.code.codeName'), size: 150 },
-      { accessorKey: 'codeNameEn', header: t('master.code.codeNameEn'), size: 150 },
-      { accessorKey: 'sortOrder', header: t('master.code.sortOrder'), size: 80 },
-      {
-        accessorKey: 'useYn',
-        header: t('master.code.useYn'),
-        size: 80,
-        cell: ({ getValue }) => (
-          <span className={`px-2 py-1 text-xs rounded-full ${getValue() === 'Y' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}`}>
-            {getValue() === 'Y' ? t('master.code.inUse') : t('master.code.notInUse')}
-          </span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: t('common.actions'),
-        size: 100,
-        cell: ({ row }) => (
-          <div className="flex gap-1">
-            <button onClick={() => { setEditingCode(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded">
-              <Edit2 className="w-4 h-4 text-primary" />
-            </button>
-            <button className="p-1 hover:bg-surface rounded">
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [t]
+  /* ── 그룹 목록 조회 ── */
+  const { data: groupsData, isLoading: groupsLoading } = useApiQuery<ComCodeGroup[]>(
+    ["com-codes", "groups"],
+    "/master/com-codes/groups",
   );
+  const groups = groupsData?.data ?? [];
+
+  /* ── 선택된 그룹의 상세 코드 조회 ── */
+  const { data: codesData, isLoading: codesLoading } = useApiQuery<ComCodeDetail[]>(
+    ["com-codes", "detail", selectedGroup],
+    `/master/com-codes/groups/${selectedGroup}`,
+    { enabled: !!selectedGroup },
+  );
+  const codes = codesData?.data ?? [];
+
+  /* ── 첫 로드 시 첫 그룹 자동 선택 ── */
+  if (!selectedGroup && groups.length > 0) {
+    setSelectedGroup(groups[0].groupCode);
+  }
+
+  /* ── 생성 mutation ── */
+  const createMutation = useApiMutation<ComCodeDetail, ComCodeFormData>(
+    "/master/com-codes",
+    "post",
+    {
+      onSuccess: () => {
+        invalidate(["com-codes"]);
+        setIsModalOpen(false);
+      },
+    },
+  );
+
+  /* ── 수정 mutation ── */
+  const updateMutation = useApiMutation<ComCodeDetail, ComCodeFormData>(
+    editingCode ? `/master/com-codes/${editingCode.id}` : "/master/com-codes",
+    "put",
+    {
+      onSuccess: () => {
+        invalidate(["com-codes"]);
+        setIsModalOpen(false);
+        setEditingCode(null);
+      },
+    },
+  );
+
+  /* ── 삭제 mutation ── */
+  const deleteMutation = useApiMutation<void, void>(
+    deleteTarget ? `/master/com-codes/${deleteTarget.id}` : "/master/com-codes",
+    "delete",
+    {
+      onSuccess: () => {
+        invalidate(["com-codes"]);
+        setDeleteTarget(null);
+      },
+    },
+  );
+
+  /* ── 핸들러 ── */
+  const handleSubmit = useCallback(
+    (data: ComCodeFormData) => {
+      if (editingCode) {
+        updateMutation.mutate(data);
+      } else {
+        createMutation.mutate(data);
+      }
+    },
+    [editingCode, createMutation, updateMutation],
+  );
+
+  const handleEdit = useCallback((code: ComCodeDetail) => {
+    setEditingCode(code);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleDelete = useCallback((code: ComCodeDetail) => {
+    setDeleteTarget(code);
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    invalidate(["com-codes"]);
+  }, [invalidate]);
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* 헤더 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Settings className="w-7 h-7 text-primary" />{t('master.code.title')}</h1>
-          <p className="text-text-muted mt-1">{t('master.code.subtitle')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Settings className="w-7 h-7 text-primary" />
+            {t("master.code.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("master.code.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
+          <Button variant="secondary" size="sm" onClick={handleRefresh}>
+            <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
           </Button>
-          <Button size="sm" onClick={() => { setEditingCode(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> {t('master.code.addCode')}
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingCode(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1" /> {t("master.code.addCode")}
           </Button>
         </div>
       </div>
 
+      {/* 본문: 좌측 그룹 + 우측 상세 */}
       <div className="grid grid-cols-12 gap-6">
-        {/* 그룹 목록 */}
         <div className="col-span-3">
-          <Card>
-            <CardHeader title={t('master.code.groupCode')} subtitle={t('master.code.selectGroup')} />
-            <CardContent>
-              <div className="space-y-1">
-                {mockGroups.map((group) => (
-                  <button
-                    key={group.groupCode}
-                    onClick={() => setSelectedGroup(group.groupCode)}
-                    className={`w-full flex justify-between items-center px-3 py-2 rounded-lg text-sm transition-colors ${selectedGroup === group.groupCode ? 'bg-primary text-white' : 'hover:bg-surface text-text'}`}
-                  >
-                    <span>{group.groupCode}</span>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${selectedGroup === group.groupCode ? 'bg-white/20 text-white' : 'bg-surface text-text-muted'}`}>
-                      {group.count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <GroupList
+            groups={groups}
+            selectedGroup={selectedGroup}
+            onSelect={setSelectedGroup}
+            isLoading={groupsLoading}
+          />
         </div>
-
-        {/* 상세 코드 목록 */}
         <div className="col-span-9">
-          <Card>
-            <CardHeader title={`${t('master.code.detailCode')} - ${selectedGroup}`} subtitle={`${filteredCodes.length}${t('master.code.codesCount')}`} />
-            <CardContent>
-              <DataGrid data={filteredCodes} columns={columns} pageSize={10} />
-            </CardContent>
-          </Card>
+          <CodeDetailGrid
+            groupCode={selectedGroup}
+            codes={codes}
+            isLoading={codesLoading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         </div>
       </div>
 
-      {/* 코드 추가/수정 모달 */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCode ? t('master.code.editCode') : t('master.code.addCode')} size="md">
-        <div className="space-y-4">
-          <Input label={t('master.code.groupCode')} value={selectedGroup} disabled fullWidth />
-          <Input label={t('master.code.detailCode')} placeholder={t('master.code.detailCodePlaceholder')} defaultValue={editingCode?.detailCode} fullWidth />
-          <Input label={t('master.code.codeName')} placeholder={t('master.code.codeNamePlaceholder')} defaultValue={editingCode?.codeName} fullWidth />
-          <Input label={t('master.code.codeNameEn')} placeholder={t('master.code.codeNameEnPlaceholder')} defaultValue={editingCode?.codeNameEn} fullWidth />
-          <Input label={t('master.code.sortOrder')} type="number" placeholder="1" defaultValue={editingCode?.sortOrder?.toString()} fullWidth />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button>{editingCode ? t('common.edit') : t('common.add')}</Button>
-          </div>
-        </div>
-      </Modal>
+      {/* 추가/수정 모달 */}
+      <CodeFormModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingCode(null);
+        }}
+        onSubmit={handleSubmit}
+        editingCode={editingCode}
+        selectedGroup={selectedGroup}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+      />
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteMutation.mutate(undefined as never)}
+        title={t("common.deleteConfirm", { defaultValue: "삭제 확인" })}
+        message={`${deleteTarget?.groupCode}.${deleteTarget?.detailCode} (${deleteTarget?.codeName}) ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
+        confirmText={t("common.delete")}
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }

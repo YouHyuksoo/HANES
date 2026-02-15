@@ -43,9 +43,10 @@ function AuthInitializer() {
   return null;
 }
 
-/** 공통코드 프리페치 */
+/** 공통코드 프리페치 - 인증된 상태에서만 호출 */
 function ComCodePrefetch() {
-  useComCodes();
+  const { isAuthenticated } = useAuthStore();
+  useComCodes(isAuthenticated);
   return null;
 }
 

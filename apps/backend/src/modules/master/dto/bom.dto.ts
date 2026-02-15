@@ -21,11 +21,36 @@ export class CreateBomDto {
   @Min(0)
   qtyPer: number;
 
+  @ApiPropertyOptional({ description: 'BOM 순서', default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  seq?: number;
+
   @ApiPropertyOptional({ description: 'BOM 리비전', default: 'A' })
   @IsOptional()
   @IsString()
   @MaxLength(10)
   revision?: string;
+
+  @ApiPropertyOptional({ description: 'BOM 그룹코드 (Oracle BOMGRP)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  bomGrp?: string;
+
+  @ApiPropertyOptional({ description: '공정코드 (Oracle OPER)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  oper?: string;
+
+  @ApiPropertyOptional({ description: '사이드 (N/L/R)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5)
+  side?: string;
 
   @ApiPropertyOptional({ description: 'ECO 번호' })
   @IsOptional()

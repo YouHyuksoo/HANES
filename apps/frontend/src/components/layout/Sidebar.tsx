@@ -2,39 +2,23 @@
 
 /**
  * @file src/components/layout/Sidebar.tsx
- * @description 사이드바 네비게이션 컴포넌트
+ * @description 사이드바 네비게이션 - 접기/펴기 핸들 포함
  *
  * 초보자 가이드:
- * 1. **메뉴 구조**: 대시보드 -> 기준정보 -> 8대 공정 순서
- * 2. **하위 메뉴**: 클릭 시 펼침/접힘
- * 3. **활성 상태**: 현재 페이지 하이라이트
+ * 1. **메뉴 구조**: 대시보드 → 기준정보 → 8대 공정 순서
+ * 2. **접기/펴기**: 우측 가장자리 핸들로 사이드바 축소/확장
+ * 3. **접힌 상태**: 아이콘만 표시, 호버 시 툴팁
  */
 import { useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
-  LayoutDashboard,
-  Package,
-  Scissors,
-  Plug,
-  Factory,
-  ScanLine,
-  Shield,
-  Wrench,
-  Truck,
-  Database,
-  ChevronDown,
-  ChevronRight,
-  FileBox,
-  Cog,
-  Building2,
-  ArrowLeftRight,
-  Warehouse,
-  UserCog,
+  LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck, Database,
+  FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog, ClipboardCheck,
 } from "lucide-react";
+import SidebarMenu from "./SidebarMenu";
 
-interface MenuItem {
+export interface MenuItem {
   id: string;
   labelKey: string;
   path?: string;
@@ -42,17 +26,10 @@ interface MenuItem {
   children?: { id: string; labelKey: string; path: string }[];
 }
 
-const menuItems: MenuItem[] = [
+export const menuItems: MenuItem[] = [
+  { id: "dashboard", labelKey: "menu.dashboard", path: "/dashboard", icon: LayoutDashboard },
   {
-    id: "dashboard",
-    labelKey: "menu.dashboard",
-    path: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    id: "master",
-    labelKey: "menu.master",
-    icon: Database,
+    id: "master", labelKey: "menu.master", icon: Database,
     children: [
       { id: "mst-part", labelKey: "menu.master.part", path: "/master/part" },
       { id: "mst-bom", labelKey: "menu.master.bom", path: "/master/bom" },
@@ -64,27 +41,24 @@ const menuItems: MenuItem[] = [
       { id: "mst-worker", labelKey: "menu.master.worker", path: "/master/worker" },
       { id: "mst-iqc-item", labelKey: "menu.master.iqcItem", path: "/master/iqc-item" },
       { id: "mst-equip-inspect", labelKey: "menu.master.equipInspect", path: "/master/equip-inspect" },
+      { id: "mst-inspect-item", labelKey: "menu.master.inspectItem", path: "/master/inspect-item" },
       { id: "mst-box", labelKey: "menu.master.box", path: "/master/box" },
       { id: "mst-work-inst", labelKey: "menu.master.workInstruction", path: "/master/work-instruction" },
-      { id: "mst-transfer-rule", labelKey: "menu.master.transferRule", path: "/master/transfer-rule" },
+      { id: "mst-warehouse", labelKey: "menu.master.warehouse", path: "/master/warehouse" },
       { id: "mst-model-suffix", labelKey: "menu.master.modelSuffix", path: "/master/model-suffix" },
+      { id: "mst-label", labelKey: "menu.master.label", path: "/master/label" },
     ],
   },
   {
-    id: "inventory",
-    labelKey: "menu.inventory",
-    icon: Warehouse,
+    id: "inventory", labelKey: "menu.inventory", icon: Warehouse,
     children: [
-      { id: "inv-warehouse", labelKey: "menu.inventory.warehouse", path: "/inventory/warehouse" },
       { id: "inv-stock", labelKey: "menu.inventory.stock", path: "/inventory/stock" },
       { id: "inv-transaction", labelKey: "menu.inventory.transaction", path: "/inventory/transaction" },
       { id: "inv-lot", labelKey: "menu.inventory.lot", path: "/inventory/lot" },
     ],
   },
   {
-    id: "material",
-    labelKey: "menu.material",
-    icon: Package,
+    id: "material", labelKey: "menu.material", icon: Package,
     children: [
       { id: "mat-arrival", labelKey: "menu.material.arrival", path: "/material/arrival" },
       { id: "mat-iqc", labelKey: "menu.material.iqc", path: "/material/iqc" },
@@ -107,32 +81,10 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: "cutting",
-    labelKey: "menu.cutting",
-    icon: Scissors,
-    children: [
-      { id: "cut-order", labelKey: "menu.cutting.order", path: "/cutting/order" },
-      { id: "cut-result", labelKey: "menu.cutting.result", path: "/cutting/result" },
-    ],
-  },
-  {
-    id: "crimping",
-    labelKey: "menu.crimping",
-    icon: Plug,
-    children: [
-      { id: "crimp-order", labelKey: "menu.crimping.order", path: "/crimping/order" },
-      { id: "crimp-result", labelKey: "menu.crimping.result", path: "/crimping/result" },
-      { id: "crimp-mold", labelKey: "menu.crimping.mold", path: "/crimping/mold" },
-    ],
-  },
-  {
-    id: "production",
-    labelKey: "menu.production",
-    icon: Factory,
+    id: "production", labelKey: "menu.production", icon: Factory,
     children: [
       { id: "prod-order", labelKey: "menu.production.order", path: "/production/order" },
       { id: "prod-result", labelKey: "menu.production.result", path: "/production/result" },
-      { id: "prod-semi", labelKey: "menu.production.semi", path: "/production/semi" },
       { id: "prod-progress", labelKey: "menu.production.progress", path: "/production/progress" },
       { id: "prod-input-manual", labelKey: "menu.production.inputManual", path: "/production/input-manual" },
       { id: "prod-input-machine", labelKey: "menu.production.inputMachine", path: "/production/input-machine" },
@@ -144,18 +96,14 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: "inspection",
-    labelKey: "menu.inspection",
-    icon: ScanLine,
+    id: "inspection", labelKey: "menu.inspection", icon: ScanLine,
     children: [
       { id: "insp-result", labelKey: "menu.inspection.result", path: "/inspection/result" },
       { id: "insp-equip", labelKey: "menu.inspection.equip", path: "/inspection/equip" },
     ],
   },
   {
-    id: "quality",
-    labelKey: "menu.quality",
-    icon: Shield,
+    id: "quality", labelKey: "menu.quality", icon: Shield,
     children: [
       { id: "qc-defect", labelKey: "menu.quality.defect", path: "/quality/defect" },
       { id: "qc-inspect", labelKey: "menu.quality.inspect", path: "/quality/inspect" },
@@ -163,21 +111,18 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: "equipment",
-    labelKey: "menu.equipment",
-    icon: Wrench,
+    id: "equipment", labelKey: "menu.equipment", icon: Wrench,
     children: [
       { id: "equip-status", labelKey: "menu.equipment.status", path: "/equipment/status" },
       { id: "equip-pm", labelKey: "menu.equipment.pm", path: "/equipment/pm" },
       { id: "equip-daily", labelKey: "menu.equipment.dailyInspect", path: "/equipment/daily-inspect" },
       { id: "equip-periodic", labelKey: "menu.equipment.periodicInspect", path: "/equipment/periodic-inspect" },
       { id: "equip-history", labelKey: "menu.equipment.inspectHistory", path: "/equipment/inspect-history" },
+      { id: "equip-mold", labelKey: "menu.equipment.mold", path: "/equipment/mold" },
     ],
   },
   {
-    id: "shipping",
-    labelKey: "menu.shipping",
-    icon: Truck,
+    id: "shipping", labelKey: "menu.shipping", icon: Truck,
     children: [
       { id: "ship-pack", labelKey: "menu.shipping.pack", path: "/shipping/pack" },
       { id: "ship-pallet", labelKey: "menu.shipping.pallet", path: "/shipping/pallet" },
@@ -185,12 +130,12 @@ const menuItems: MenuItem[] = [
       { id: "ship-order", labelKey: "menu.shipping.order", path: "/shipping/order" },
       { id: "ship-history", labelKey: "menu.shipping.history", path: "/shipping/history" },
       { id: "ship-return", labelKey: "menu.shipping.return", path: "/shipping/return" },
+      { id: "ship-cust-po", labelKey: "menu.shipping.customerPo", path: "/shipping/customer-po" },
+      { id: "ship-cust-po-status", labelKey: "menu.shipping.customerPoStatus", path: "/shipping/customer-po-status" },
     ],
   },
   {
-    id: "customs",
-    labelKey: "menu.customs",
-    icon: FileBox,
+    id: "customs", labelKey: "menu.customs", icon: FileBox,
     children: [
       { id: "cust-entry", labelKey: "menu.customs.entry", path: "/customs/entry" },
       { id: "cust-stock", labelKey: "menu.customs.stock", path: "/customs/stock" },
@@ -198,9 +143,7 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: "consumables",
-    labelKey: "menu.consumables",
-    icon: Cog,
+    id: "consumables", labelKey: "menu.consumables", icon: Cog,
     children: [
       { id: "cons-master", labelKey: "menu.consumables.master", path: "/consumables/master" },
       { id: "cons-receiving", labelKey: "menu.consumables.receiving", path: "/consumables/receiving" },
@@ -210,9 +153,7 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: "outsourcing",
-    labelKey: "menu.outsourcing",
-    icon: Building2,
+    id: "outsourcing", labelKey: "menu.outsourcing", icon: Building2,
     children: [
       { id: "out-vendor", labelKey: "menu.outsourcing.vendor", path: "/outsourcing/vendor" },
       { id: "out-order", labelKey: "menu.outsourcing.order", path: "/outsourcing/order" },
@@ -220,9 +161,7 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: "interface",
-    labelKey: "menu.interface",
-    icon: ArrowLeftRight,
+    id: "interface", labelKey: "menu.interface", icon: ArrowLeftRight,
     children: [
       { id: "if-dashboard", labelKey: "menu.interface.dashboard", path: "/interface/dashboard" },
       { id: "if-log", labelKey: "menu.interface.log", path: "/interface/log" },
@@ -230,9 +169,7 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    id: "system",
-    labelKey: "menu.system",
-    icon: UserCog,
+    id: "system", labelKey: "menu.system", icon: UserCog,
     children: [
       { id: "sys-user", labelKey: "menu.system.users", path: "/system/users" },
       { id: "sys-comm", labelKey: "menu.system.commConfig", path: "/system/comm-config" },
@@ -243,132 +180,58 @@ const menuItems: MenuItem[] = [
 interface SidebarProps {
   isOpen: boolean;
   onClose?: () => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-function Sidebar({ isOpen, onClose }: SidebarProps) {
+function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["dashboard"]);
 
   const toggleMenu = (menuId: string) => {
+    if (collapsed) return;
     setExpandedMenus((prev) =>
-      prev.includes(menuId)
-        ? prev.filter((id) => id !== menuId)
-        : [...prev, menuId]
+      prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [...prev, menuId]
     );
   };
 
   const isMenuActive = (item: MenuItem) => {
-    if (item.path) {
-      return pathname === item.path;
-    }
+    if (item.path) return pathname === item.path;
     return item.children?.some((child) => pathname === child.path);
   };
+
+  const sidebarWidth = collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
 
   return (
     <>
       {/* Mobile Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={onClose} />}
 
       {/* Sidebar */}
       <aside
         className={`
           fixed top-[var(--header-height)] left-0 z-30
-          w-[var(--sidebar-width)] h-[calc(100vh-var(--header-height))]
+          h-[calc(100vh-var(--header-height))]
           bg-surface border-r border-border
-          overflow-y-auto
-          transition-transform duration-300 ease-in-out
+          overflow-y-auto overflow-x-hidden
+          transition-all duration-300 ease-in-out
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
+        style={{ width: sidebarWidth }}
       >
         <nav className="p-3">
-          <ul className="space-y-1">
-            {menuItems.map((item) => (
-              <li key={item.id}>
-                {/* 단일 메뉴 (하위 없음) */}
-                {item.path && !item.children ? (
-                  <Link
-                    href={item.path}
-                    onClick={onClose}
-                    className={`
-                      flex items-center gap-3 px-3 py-2.5
-                      rounded-[var(--radius)]
-                      text-sm font-medium
-                      transition-colors duration-200
-                      ${
-                        pathname === item.path
-                          ? "bg-primary text-white"
-                          : "text-text hover:bg-background"
-                      }
-                    `}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    {t(item.labelKey)}
-                  </Link>
-                ) : (
-                  /* 하위 메뉴가 있는 경우 */
-                  <>
-                    <button
-                      onClick={() => toggleMenu(item.id)}
-                      className={`
-                        w-full flex items-center justify-between
-                        px-3 py-2.5 rounded-[var(--radius)]
-                        text-sm font-medium
-                        transition-colors duration-200
-                        ${
-                          isMenuActive(item)
-                            ? "bg-primary/10 text-primary"
-                            : "text-text hover:bg-background"
-                        }
-                      `}
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-5 h-5" />
-                        {t(item.labelKey)}
-                      </div>
-                      {expandedMenus.includes(item.id) ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </button>
-
-                    {/* 하위 메뉴 리스트 */}
-                    {expandedMenus.includes(item.id) && item.children && (
-                      <ul className="mt-1 ml-4 pl-4 border-l border-border space-y-1">
-                        {item.children.map((child) => (
-                          <li key={child.id}>
-                            <Link
-                              href={child.path}
-                              onClick={onClose}
-                              className={`
-                                block px-3 py-2 rounded-[var(--radius)]
-                                text-sm
-                                transition-colors duration-200
-                                ${
-                                  pathname === child.path
-                                    ? "bg-primary text-white"
-                                    : "text-text-muted hover:text-text hover:bg-background"
-                                }
-                              `}
-                            >
-                              {t(child.labelKey)}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+          <SidebarMenu
+            items={menuItems}
+            collapsed={collapsed}
+            pathname={pathname}
+            expandedMenus={expandedMenus}
+            onToggleMenu={toggleMenu}
+            isMenuActive={isMenuActive}
+            onClose={onClose}
+            t={t}
+          />
         </nav>
       </aside>
     </>

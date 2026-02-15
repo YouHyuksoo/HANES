@@ -2,125 +2,181 @@
 
 /**
  * @file src/app/(authenticated)/master/iqc-item/page.tsx
- * @description IQC 검사항목 관리 페이지 - 품목별 수입검사 기준 관리
+ * @description IQC 검사항목 마스터 관리 - 독립적 검사항목 풀 CRUD
  *
  * 초보자 가이드:
- * 1. **검사항목 목록**: 품목별 IQC 검사항목 DataGrid 표시
- * 2. **품목 필터**: 특정 품목의 검사항목만 필터링
- * 3. **LSL/USL**: 하한/상한 규격 관리
+ * 1. **검사항목 코드**: IQC-001 등 고유 코드로 관리
+ * 2. **판정방법**: VISUAL(육안)/MEASURE(계측) - 계측은 LSL/USL 수치
+ * 3. 품목 마스터에서 이 항목코드를 연결해서 사용
  */
 
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2, Search, RefreshCw, Download, ClipboardCheck } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
+import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Plus, Edit2, Trash2, Search, ClipboardCheck } from "lucide-react";
+import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import { IqcItemMaster, seedIqcItems, JUDGE_METHOD_COLORS } from "./types";
 
-interface IqcItem {
-  id: string;
-  partCode: string;
-  partName: string;
-  seq: number;
-  inspectItem: string;
-  spec?: string;
-  lsl?: number;
-  usl?: number;
-  unit?: string;
-  isShelfLife: boolean;
-  retestCycle?: number;
-  useYn: string;
+interface FormState {
+  itemCode: string;
+  itemName: string;
+  judgeMethod: "VISUAL" | "MEASURE";
+  criteria: string;
+  lsl: string;
+  usl: string;
+  unit: string;
 }
 
-const mockData: IqcItem[] = [
-  { id: '1', partCode: 'W-001', partName: '전선 AWG18 RED', seq: 1, inspectItem: '외관검사', spec: '이물/손상 없을것', unit: '-', isShelfLife: false, useYn: 'Y' },
-  { id: '2', partCode: 'W-001', partName: '전선 AWG18 RED', seq: 2, inspectItem: '도체저항', spec: '23.2 ohm/km', lsl: 20, usl: 26, unit: 'ohm/km', isShelfLife: false, useYn: 'Y' },
-  { id: '3', partCode: 'W-001', partName: '전선 AWG18 RED', seq: 3, inspectItem: '피복두께', spec: '0.5mm', lsl: 0.4, usl: 0.6, unit: 'mm', isShelfLife: false, useYn: 'Y' },
-  { id: '4', partCode: 'T-001', partName: '단자 110형', seq: 1, inspectItem: '외관검사', spec: '변형/부식 없을것', isShelfLife: false, useYn: 'Y' },
-  { id: '5', partCode: 'T-001', partName: '단자 110형', seq: 2, inspectItem: '도금두께', spec: '0.8um', lsl: 0.5, usl: 1.2, unit: 'um', isShelfLife: false, useYn: 'Y' },
-  { id: '6', partCode: 'G-001', partName: '그리스 A', seq: 1, inspectItem: '유효기한', spec: '제조일 12개월', isShelfLife: true, retestCycle: 90, useYn: 'Y' },
-];
+const EMPTY_FORM: FormState = {
+  itemCode: "", itemName: "", judgeMethod: "VISUAL", criteria: "", lsl: "", usl: "", unit: "",
+};
 
-function IqcItemPage() {
+export default function IqcItemPage() {
   const { t } = useTranslation();
-  const [searchText, setSearchText] = useState('');
-  const [partFilter, setPartFilter] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<IqcItem | null>(null);
+  const [items, setItems] = useState<IqcItemMaster[]>(seedIqcItems);
+  const [searchText, setSearchText] = useState("");
+  const [methodFilter, setMethodFilter] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<IqcItemMaster | null>(null);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
-  const partOptions = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: 'W-001', label: 'W-001 전선 AWG18 RED' },
-    { value: 'T-001', label: 'T-001 단자 110형' },
-    { value: 'G-001', label: 'G-001 그리스 A' },
+  const methodOptions = useMemo(() => [
+    { value: "", label: t("common.all") },
+    { value: "VISUAL", label: t("master.iqcItem.visual", "육안") },
+    { value: "MEASURE", label: t("master.iqcItem.measureMethod", "계측") },
   ], [t]);
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    if (partFilter && item.partCode !== partFilter) return false;
-    if (!searchText) return true;
-    const s = searchText.toLowerCase();
-    return item.inspectItem.toLowerCase().includes(s) || item.partCode.toLowerCase().includes(s);
-  }), [searchText, partFilter]);
-
-  const columns = useMemo<ColumnDef<IqcItem>[]>(() => [
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('common.partName'), size: 140 },
-    { accessorKey: 'seq', header: t('master.iqcItem.seq'), size: 60 },
-    { accessorKey: 'inspectItem', header: t('master.iqcItem.inspectItem'), size: 140 },
-    { accessorKey: 'spec', header: t('master.iqcItem.spec'), size: 150 },
-    { accessorKey: 'lsl', header: 'LSL', size: 70, cell: ({ getValue }) => getValue() != null ? getValue() : '-' },
-    { accessorKey: 'usl', header: 'USL', size: 70, cell: ({ getValue }) => getValue() != null ? getValue() : '-' },
-    { accessorKey: 'unit', header: t('common.unit'), size: 70 },
-    { accessorKey: 'isShelfLife', header: t('master.iqcItem.shelfLife'), size: 70, cell: ({ getValue }) => getValue() ? 'O' : '-' },
-    { accessorKey: 'useYn', header: t('master.iqcItem.use'), size: 60, cell: ({ getValue }) => (
-      <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
-    )},
-    { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
-      </div>
-    )},
+  const judgeOptions = useMemo(() => [
+    { value: "VISUAL", label: t("master.iqcItem.visual", "육안") },
+    { value: "MEASURE", label: t("master.iqcItem.measureMethod", "계측") },
   ], [t]);
+
+  const methodLabels = useMemo<Record<string, string>>(() => ({
+    VISUAL: t("master.iqcItem.visual", "육안"),
+    MEASURE: t("master.iqcItem.measureMethod", "계측"),
+  }), [t]);
+
+  const filtered = useMemo(() => {
+    return items.filter(item => {
+      if (methodFilter && item.judgeMethod !== methodFilter) return false;
+      if (searchText) {
+        const s = searchText.toLowerCase();
+        if (!item.itemCode.toLowerCase().includes(s) && !item.itemName.toLowerCase().includes(s)) return false;
+      }
+      return true;
+    });
+  }, [items, methodFilter, searchText]);
+
+  const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setModalOpen(true); };
+
+  const openEdit = (item: IqcItemMaster) => {
+    setEditing(item);
+    setForm({
+      itemCode: item.itemCode, itemName: item.itemName, judgeMethod: item.judgeMethod,
+      criteria: item.criteria, lsl: item.lsl?.toString() ?? "", usl: item.usl?.toString() ?? "",
+      unit: item.unit ?? "",
+    });
+    setModalOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!form.itemCode || !form.itemName) return;
+    const data: IqcItemMaster = {
+      id: editing?.id || `iq${Date.now()}`, itemCode: form.itemCode, itemName: form.itemName,
+      judgeMethod: form.judgeMethod, criteria: form.criteria, useYn: "Y",
+      ...(form.judgeMethod === "MEASURE" ? {
+        lsl: form.lsl ? Number(form.lsl) : undefined,
+        usl: form.usl ? Number(form.usl) : undefined,
+        unit: form.unit || undefined,
+      } : {}),
+    };
+    if (editing) {
+      setItems(prev => prev.map(i => i.id === editing.id ? data : i));
+    } else {
+      setItems(prev => [...prev, data]);
+    }
+    setModalOpen(false);
+  };
+
+  const handleDelete = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
+
+  const formatSpec = (item: IqcItemMaster) => {
+    if (item.judgeMethod === "VISUAL") return "-";
+    const parts: string[] = [];
+    if (item.lsl != null) parts.push(`${item.lsl}`);
+    if (item.usl != null) parts.push(`${item.usl}`);
+    const spec = parts.join(" ~ ");
+    return item.unit ? `${spec} ${item.unit}` : spec;
+  };
+
+  const columns = useMemo<ColumnDef<IqcItemMaster>[]>(() => [
+    { accessorKey: "itemCode", header: t("master.iqcItem.itemCode", "항목코드"), size: 100 },
+    { accessorKey: "itemName", header: t("master.iqcItem.inspectItem"), size: 160 },
+    {
+      accessorKey: "judgeMethod", header: t("master.iqcItem.judgeMethod", "판정방법"), size: 80,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return <span className={`px-2 py-0.5 text-xs rounded-full ${JUDGE_METHOD_COLORS[v]}`}>{methodLabels[v]}</span>;
+      },
+    },
+    { accessorKey: "criteria", header: t("master.iqcItem.spec"), size: 160 },
+    {
+      id: "lslUsl", header: "LSL ~ USL", size: 140,
+      cell: ({ row }) => <span className="font-mono text-xs">{formatSpec(row.original)}</span>,
+    },
+    {
+      id: "actions", header: t("common.actions"), size: 70,
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
+          <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+        </div>
+      ),
+    },
+  ], [t, methodLabels]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardCheck className="w-7 h-7 text-primary" />{t('master.iqcItem.title')}</h1>
-          <p className="text-text-muted mt-1">{t('master.iqcItem.subtitle')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <ClipboardCheck className="w-7 h-7 text-primary" />{t("master.iqcItem.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("master.iqcItem.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.iqcItem.addItem')}</Button>
-        </div>
+        <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("master.iqcItem.addItem")}</Button>
       </div>
+
       <Card><CardContent>
         <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('master.iqcItem.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-56"><Select options={partOptions} value={partFilter} onChange={setPartFilter} placeholder={t('master.iqcItem.partSelect')} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
+          <div className="flex-1">
+            <Input placeholder={t("master.iqcItem.searchPlaceholder")} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+          </div>
+          <Select options={methodOptions} value={methodFilter} onChange={setMethodFilter} />
         </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={filtered} columns={columns} pageSize={15} />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.iqcItem.editItem') : t('master.iqcItem.addItem')} size="lg">
+
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t("master.iqcItem.editItem") : t("master.iqcItem.addItem")} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Select label={t('common.part')} options={partOptions.filter(o => o.value)} value={editingItem?.partCode || ''} onChange={() => {}} fullWidth />
-          <Input label={t('master.iqcItem.seq')} type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
-          <div className="col-span-2"><Input label={t('master.iqcItem.inspectItem')} placeholder="외관검사" defaultValue={editingItem?.inspectItem} fullWidth /></div>
-          <div className="col-span-2"><Input label={t('master.iqcItem.spec')} placeholder="이물/손상 없을것" defaultValue={editingItem?.spec} fullWidth /></div>
-          <Input label="LSL" type="number" placeholder="0.4" defaultValue={editingItem?.lsl?.toString()} fullWidth />
-          <Input label="USL" type="number" placeholder="0.6" defaultValue={editingItem?.usl?.toString()} fullWidth />
-          <Input label={t('common.unit')} placeholder="mm" defaultValue={editingItem?.unit} fullWidth />
-          <Input label={t('master.iqcItem.retestCycle')} type="number" placeholder="90" defaultValue={editingItem?.retestCycle?.toString()} fullWidth />
+          <Input label={t("master.iqcItem.itemCode", "항목코드")} value={form.itemCode} onChange={e => setForm({ ...form, itemCode: e.target.value })} placeholder="IQC-001" fullWidth disabled={!!editing} />
+          <Input label={t("master.iqcItem.inspectItem")} value={form.itemName} onChange={e => setForm({ ...form, itemName: e.target.value })} placeholder="외관검사" fullWidth />
+          <Select label={t("master.iqcItem.judgeMethod", "판정방법")} options={judgeOptions} value={form.judgeMethod} onChange={v => setForm({ ...form, judgeMethod: v as "VISUAL" | "MEASURE" })} fullWidth />
+          <Input label={t("master.iqcItem.spec")} value={form.criteria} onChange={e => setForm({ ...form, criteria: e.target.value })} placeholder="규격 이내" fullWidth />
         </div>
+        {form.judgeMethod === "MEASURE" && (
+          <div className="grid grid-cols-3 gap-4 mt-4 p-4 bg-background rounded-lg border border-border">
+            <Input label="LSL" type="number" value={form.lsl} onChange={e => setForm({ ...form, lsl: e.target.value })} placeholder="0.4" fullWidth />
+            <Input label="USL" type="number" value={form.usl} onChange={e => setForm({ ...form, usl: e.target.value })} placeholder="0.6" fullWidth />
+            <Input label={t("common.unit")} value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="mm" fullWidth />
+          </div>
+        )}
         <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button>{editingItem ? t('common.edit') : t('common.add')}</Button>
+          <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
+          <Button onClick={handleSave}>{editing ? t("common.edit") : t("common.add")}</Button>
         </div>
       </Modal>
     </div>
   );
 }
-
-export default IqcItemPage;

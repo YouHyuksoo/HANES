@@ -5,6 +5,7 @@
   "description": "HARNESS MES - Manufacturing Execution System for Wire Harness Production",
   "scripts": {
     "dev": "turbo dev",
+    "kill": "taskkill /F /FI \"WINDOWTITLE eq turbo\" >nul 2>&1 & (FOR /F \"tokens=5\" %P IN ('netstat -ano ^| findstr :3002 ^| findstr LISTENING') DO taskkill /F /PID %P >nul 2>&1) & (FOR /F \"tokens=5\" %P IN ('netstat -ano ^| findstr :3003 ^| findstr LISTENING') DO taskkill /F /PID %P >nul 2>&1) & echo Killed dev servers",
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "turbo test",

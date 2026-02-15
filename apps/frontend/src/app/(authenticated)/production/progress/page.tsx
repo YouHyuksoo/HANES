@@ -11,10 +11,14 @@
  */
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, BarChart3, Clock, Play, CheckCircle, ListChecks } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import { Search, RefreshCw, BarChart3, Clock, Play, CheckCircle, ListChecks, Calendar } from 'lucide-react';
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { useComCodeOptions } from '@/hooks/useComCode';
+
+/** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
+const getToday = () => new Date().toISOString().slice(0, 10);
 
 interface ProgressItem {
   id: string;
@@ -39,35 +43,25 @@ const mockData: ProgressItem[] = [
   { id: '5', orderNo: 'JO-20250126-004', partCode: 'H-005', partName: '트렁크 하네스 E', lineCode: 'L2', planQty: 400, goodQty: 280, defectQty: 2, progress: 70, status: 'RUNNING', planDate: '2025-01-26', priority: 1 },
 ];
 
-const statusBadge = (status: string, t: (key: string) => string) => {
-  const map: Record<string, string> = {
-    WAITING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    RUNNING: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    PAUSED: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    DONE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    CANCELED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  };
-  const labelMap: Record<string, string> = { WAITING: t('production.progress.statusWaiting'), RUNNING: t('production.progress.statusRunning'), PAUSED: t('production.progress.statusPaused'), DONE: t('production.progress.statusDone'), CANCELED: t('production.progress.statusCanceled') };
-  return <span className={`px-2 py-0.5 rounded text-xs font-medium ${map[status] || ''}`}>{labelMap[status] || status}</span>;
-};
-
 function ProgressPage() {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [planDateFrom, setPlanDateFrom] = useState(getToday());
+  const [planDateTo, setPlanDateTo] = useState(getToday());
 
+  const comCodeStatusOptions = useComCodeOptions('JOB_ORDER_STATUS');
   const statusOptions = useMemo(() => [
-    { value: '', label: t('production.progress.allStatus') },
-    { value: 'WAITING', label: t('production.progress.statusWaiting') },
-    { value: 'RUNNING', label: t('production.progress.statusRunning') },
-    { value: 'DONE', label: t('production.progress.statusDone') },
-  ], [t]);
+    { value: '', label: t('common.allStatus') }, ...comCodeStatusOptions
+  ], [t, comCodeStatusOptions]);
 
   const filteredData = useMemo(() => mockData.filter(item => {
     const matchSearch = !searchText || item.orderNo.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
     const matchStatus = !statusFilter || item.status === statusFilter;
-    return matchSearch && matchStatus;
-  }), [searchText, statusFilter]);
+    const matchDateFrom = !planDateFrom || item.planDate >= planDateFrom;
+    const matchDateTo = !planDateTo || item.planDate <= planDateTo;
+    return matchSearch && matchStatus && matchDateFrom && matchDateTo;
+  }), [searchText, statusFilter, planDateFrom, planDateTo]);
 
   const stats = useMemo(() => ({
     total: mockData.length,
@@ -98,7 +92,7 @@ function ProgressPage() {
         );
       },
     },
-    { accessorKey: 'status', header: t('production.progress.status'), size: 90, cell: ({ getValue }) => statusBadge(getValue() as string, t) },
+    { accessorKey: 'status', header: t('production.progress.status'), size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
     { accessorKey: 'planDate', header: t('production.progress.planDate'), size: 100 },
   ], [t]);
 
@@ -117,8 +111,19 @@ function ProgressPage() {
         <StatCard label={t('production.progress.statusDone')} value={stats.done} icon={CheckCircle} color="purple" />
       </div>
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('production.progress.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+        <div className="flex flex-wrap gap-4 mb-4 items-end">
+          <div className="flex-1 min-w-[200px]"><Input placeholder={t('production.progress.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
+          <div className="flex items-center gap-2">
+            <div className="w-40">
+              <label className="block text-xs text-text-muted mb-1">{t('production.progress.planDateFrom')}</label>
+              <Input type="date" value={planDateFrom} onChange={e => setPlanDateFrom(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
+            </div>
+            <span className="text-text-muted mt-4">~</span>
+            <div className="w-40">
+              <label className="block text-xs text-text-muted mb-1">{t('production.progress.planDateTo')}</label>
+              <Input type="date" value={planDateTo} onChange={e => setPlanDateTo(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
+            </div>
+          </div>
           <div className="w-36"><Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth /></div>
           <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
         </div>

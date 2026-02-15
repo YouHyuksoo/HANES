@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { ComCodeBadge } from '@/components/ui';
 import type { ConsumableStock } from '@/hooks/consumables/useStockData';
 
 interface StockTableProps {
@@ -16,12 +17,6 @@ interface StockTableProps {
 
 function StockTable({ data }: StockTableProps) {
   const { t } = useTranslation();
-
-  const categoryLabels: Record<string, string> = {
-    MOLD: t('consumables.stock.categoryMold'),
-    JIG: t('consumables.stock.categoryJig'),
-    TOOL: t('consumables.stock.categoryTool'),
-  };
 
   const columns = useMemo<ColumnDef<ConsumableStock>[]>(
     () => [
@@ -33,7 +28,7 @@ function StockTable({ data }: StockTableProps) {
         size: 80,
         cell: ({ getValue }) => {
           const val = getValue() as string | null;
-          return val ? categoryLabels[val] ?? val : '-';
+          return val ? <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={val} /> : '-';
         },
       },
       {

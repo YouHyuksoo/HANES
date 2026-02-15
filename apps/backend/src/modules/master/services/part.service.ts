@@ -1,6 +1,6 @@
 /**
  * @file src/modules/master/services/part.service.ts
- * @description 품목마스터 비즈니스 로직 서비스
+ * @description 품목마스터 비즈니스 로직 서비스 - Oracle TM_ITEMS 기준 10개 컬럼 보강
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
@@ -12,7 +12,7 @@ export class PartService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: PartQueryDto) {
-    const { page = 1, limit = 10, partType, search, customer, useYn } = query;
+    const { page = 1, limit = 20, partType, search, customer, useYn } = query;
     const skip = (page - 1) * limit;
 
     const where = {
@@ -24,6 +24,8 @@ export class PartService {
         OR: [
           { partCode: { contains: search, mode: 'insensitive' as const } },
           { partName: { contains: search, mode: 'insensitive' as const } },
+          { partNo: { contains: search, mode: 'insensitive' as const } },
+          { custPartNo: { contains: search, mode: 'insensitive' as const } },
           { spec: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
@@ -60,14 +62,24 @@ export class PartService {
       data: {
         partCode: dto.partCode,
         partName: dto.partName,
+        partNo: dto.partNo,
+        custPartNo: dto.custPartNo,
         partType: dto.partType,
+        productType: dto.productType,
         spec: dto.spec,
+        rev: dto.rev,
         unit: dto.unit ?? 'EA',
         drawNo: dto.drawNo,
         customer: dto.customer,
         vendor: dto.vendor,
         leadTime: dto.leadTime ?? 0,
         safetyStock: dto.safetyStock ?? 0,
+        lotUnitQty: dto.lotUnitQty,
+        boxQty: dto.boxQty ?? 0,
+        iqcFlag: dto.iqcFlag ?? 'Y',
+        tactTime: dto.tactTime ?? 0,
+        expiryDate: dto.expiryDate ?? 0,
+        remarks: dto.remarks,
         useYn: dto.useYn ?? 'Y',
       },
     });

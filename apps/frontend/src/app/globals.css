@@ -121,6 +121,7 @@
 
   /* 레이아웃 */
   --sidebar-width: 260px;
+  --sidebar-collapsed-width: 64px;
   --header-height: 64px;
 }
 
@@ -208,6 +209,7 @@
 
   /* 레이아웃 */
   --sidebar-width: 260px;
+  --sidebar-collapsed-width: 64px;
   --header-height: 64px;
 }
 

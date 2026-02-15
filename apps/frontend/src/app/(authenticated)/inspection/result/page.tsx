@@ -16,7 +16,7 @@ import {
   RefreshCw, Calendar, CheckCircle, XCircle,
   TrendingUp, Activity, Cpu, Search,
 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 
 // ========================================
@@ -69,21 +69,6 @@ function ResultPage() {
     { value: 'INSP-02', label: 'INSP-02' },
   ], [t]);
 
-  const ResultBadge = useMemo(() => {
-    const Badge = ({ result }: { result: InspectResult }) => {
-      const config = {
-        PASS: { icon: CheckCircle, label: t('inspection.result.pass'), className: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-        FAIL: { icon: XCircle, label: t('inspection.result.fail'), className: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
-      };
-      const { icon: Icon, label, className } = config[result];
-      return (
-        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${className}`}>
-          <Icon className="w-3 h-3" />{label}
-        </span>
-      );
-    };
-    return Badge;
-  }, [t]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [resultFilter, setResultFilter] = useState('');
@@ -110,13 +95,13 @@ function ResultPage() {
   const columns = useMemo<ColumnDef<InspectRecord>[]>(() => [
     { accessorKey: 'inspectedAt', header: t('inspection.result.inspectedAt'), size: 150 },
     { accessorKey: 'serialNo', header: t('inspection.result.serialNo'), size: 170, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'result', header: t('inspection.result.resultCol'), size: 80, cell: ({ getValue }) => <ResultBadge result={getValue() as InspectResult} /> },
+    { accessorKey: 'result', header: t('inspection.result.resultCol'), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_RESULT" code={getValue() as string} /> },
     { accessorKey: 'errorCode', header: t('inspection.result.errorCode'), size: 80, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
     { accessorKey: 'errorDesc', header: t('inspection.result.errorDesc'), size: 150, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
     { accessorKey: 'voltage', header: t('inspection.result.voltage'), size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(1)}</span> },
     { accessorKey: 'current', header: t('inspection.result.current'), size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(2)}</span> },
     { accessorKey: 'equipmentNo', header: t('inspection.result.equipmentNo'), size: 90 },
-  ], [t, ResultBadge]);
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">

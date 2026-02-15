@@ -57,6 +57,7 @@ export class WorkerService {
         workerName: dto.workerName,
         dept: dto.dept,
         qrCode: dto.qrCode,
+        photoUrl: dto.photoUrl,
         processIds: dto.processIds ?? [],
         useYn: dto.useYn ?? 'Y',
       },

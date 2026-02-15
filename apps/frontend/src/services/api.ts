@@ -36,18 +36,26 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    // 네트워크 에러 (백엔드 미실행, ECONNREFUSED 등)
+    if (!error.response) {
+      console.warn(
+        `[API] 서버 연결 실패: ${error.config?.url ?? "unknown"} - 백엔드가 실행 중인지 확인하세요.`,
+      );
+      return Promise.reject(error);
+    }
+
+    if (error.response.status === 401) {
       localStorage.removeItem("harness-token");
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
     }
 
-    if (error.response?.status === 403) {
+    if (error.response.status === 403) {
       console.error("접근 권한이 없습니다.");
     }
 
-    if (error.response?.status && error.response.status >= 500) {
+    if (error.response.status >= 500) {
       console.error("서버 오류가 발생했습니다.");
     }
 

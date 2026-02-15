@@ -13,6 +13,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Save, Microscope, Gauge, CheckCircle, XCircle, Target } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
+import WorkOrderContext from '@/components/production/WorkOrderContext';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -123,7 +124,7 @@ function InputEquipPage() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputEquip.modalTitle')} size="md">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Select label={t('production.inputEquip.workOrder')} options={[{ value: 'JO-001', label: 'JO-20250126-001' }, { value: 'JO-002', label: 'JO-20250126-002' }]} value={form.orderNo} onChange={v => setForm(p => ({ ...p, orderNo: v }))} fullWidth />
+            <WorkOrderContext selectedOrderNo={form.orderNo} onSelect={(v) => setForm((p) => ({ ...p, orderNo: v }))} processFilter={["INSP"]} />
             <Select label={t('production.inputEquip.inspectEquip')} options={[{ value: 'T-001', label: 'TESTER-001 (4.5~5.5)' }, { value: 'T-002', label: 'TESTER-002 (3.0~4.0)' }, { value: 'T-003', label: 'TESTER-003 (2.0~3.0)' }]} value={form.equipId} onChange={v => setForm(p => ({ ...p, equipId: v }))} fullWidth />
           </div>
           <Input label={t('production.inputEquip.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />

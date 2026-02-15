@@ -16,7 +16,7 @@ import {
   Plus, Edit2, Trash2, Search, RefreshCw, Download, Settings,
   Wifi, Monitor,
 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, Modal } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, Modal, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 
 // ========================================
@@ -97,13 +97,7 @@ function EquipMasterPage() {
     { value: 'PACKING', label: t('master.equip.packing') },
   ], [t]);
 
-  const equipTypeLabels = useMemo<Record<EquipType, string>>(() => ({
-    CUTTING: t('master.equip.cutting'),
-    CRIMPING: t('master.equip.crimping'),
-    ASSEMBLY: t('master.equip.assembly'),
-    INSPECTION: t('master.equip.inspection'),
-    PACKING: t('master.equip.packing'),
-  }), [t]);
+  /* equipType 라벨은 ComCodeBadge에서 i18n 자동 처리 */
 
   const lineFilterOptions = useMemo(() => [
     { value: '', label: t('master.equip.allLines') },
@@ -128,7 +122,7 @@ function EquipMasterPage() {
   const columns = useMemo<ColumnDef<EquipMaster>[]>(() => [
     { accessorKey: 'equipCode', header: t('master.equip.equipCode'), size: 100 },
     { accessorKey: 'equipName', header: t('master.equip.equipName'), size: 140 },
-    { accessorKey: 'equipType', header: t('master.equip.type'), size: 70, cell: ({ getValue }) => equipTypeLabels[getValue() as EquipType] },
+    { accessorKey: 'equipType', header: t('master.equip.type'), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="EQUIP_TYPE" code={getValue() as string} /> },
     { accessorKey: 'lineName', header: t('master.equip.line'), size: 50 },
     { accessorKey: 'commType', header: t('master.equip.commType'), size: 80, cell: ({ getValue }) => { const { label, color } = commTypeLabels[getValue() as CommType]; return <span className={`px-2 py-1 text-xs rounded-full ${color}`}>{label}</span>; }},
     { accessorKey: 'ipAddress', header: t('master.equip.ipPort'), size: 140, cell: ({ row }) => { const e = row.original; return e.commType === 'SERIAL' ? <span className="font-mono">{e.port}</span> : e.ipAddress ? <span className="font-mono">{e.ipAddress}:{e.port}</span> : '-'; }},
@@ -141,7 +135,7 @@ function EquipMasterPage() {
         <button className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
-  ], [t, equipTypeLabels]);
+  ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">

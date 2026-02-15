@@ -84,14 +84,24 @@ model PartMaster {
   id          String    @id @default(cuid())
   partCode    String    @unique @map("part_code")   // 품목 코드 (ERP 동기화)
   partName    String    @map("part_name")           // 품목명
+  partNo      String?   @map("part_no")             // 품번 (Part Number) - Oracle PARTNO
+  custPartNo  String?   @map("cust_part_no")        // 고객사 품번 - Oracle CUSTPARTNO
   partType    String    @map("part_type")           // 품목 유형 (RAW, WIP, FG)
+  productType String?   @map("product_type")        // 제품유형 코드 - Oracle PRODUCTTYPE
   spec        String?                               // 규격
+  rev         String?                               // 리비전 - Oracle REV
   unit        String    @default("EA")              // 단위
   drawNo      String?   @map("draw_no")             // 도면 번호
   customer    String?                               // 고객사
   vendor      String?                               // 공급업체
   leadTime    Int       @default(0) @map("lead_time")       // 리드타임 (일)
   safetyStock Int       @default(0) @map("safety_stock")    // 안전재고
+  lotUnitQty  Int?      @map("lot_unit_qty")        // LOT 단위수량 - Oracle LOTUNITQTY
+  boxQty      Int       @default(0) @map("box_qty")         // 박스 입수량 - Oracle BOXQTY
+  iqcFlag     String    @default("Y") @map("iqc_flag")      // IQC 대상여부 (Y/N) - Oracle IQCFLAG
+  tactTime    Int       @default(0) @map("tact_time")       // 택타임 (초) - Oracle TACTTIME
+  expiryDate  Int       @default(0) @map("expiry_date")     // 유효기간 (일) - Oracle EXPIRYDATE
+  remarks     String?                               // 비고 - Oracle REMARKS
   useYn       String    @default("Y") @map("use_yn")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -115,6 +125,7 @@ model PartMaster {
   iqcLogs           IqcLog[]
   shipmentOrderItems ShipmentOrderItem[]
   shipmentReturnItems ShipmentReturnItem[]
+  customerOrderItems CustomerOrderItem[]
 
   @@index([partType])
   @@index([customer])
@@ -127,7 +138,11 @@ model BomMaster {
   parentPartId  String    @map("parent_part_id")    // 상위 품목 ID
   childPartId   String    @map("child_part_id")     // 하위 품목 ID
   qtyPer        Decimal   @map("qty_per") @db.Decimal(10, 4)  // 단위 소요량
+  seq           Int       @default(0)               // BOM 순서 - Oracle SEQ
   revision      String    @default("A")             // BOM 리비전
+  bomGrp        String?   @map("bom_grp")           // BOM 그룹코드 - Oracle BOMGRP
+  oper          String?                             // 공정코드 - Oracle OPER
+  side          String?                             // 사이드 (N/L/R) - Oracle SIDE
   ecoNo         String?   @map("eco_no")            // ECO 번호
   validFrom     DateTime? @map("valid_from") @db.Date  // 유효 시작일
   validTo       DateTime? @map("valid_to") @db.Date    // 유효 종료일
@@ -144,6 +159,7 @@ model BomMaster {
   @@unique([parentPartId, childPartId, revision])
   @@index([parentPartId])
   @@index([childPartId])
+  @@index([bomGrp])
   @@map("bom_masters")
 }
 
@@ -1141,6 +1157,7 @@ model WorkerMaster {
   workerName  String    @map("worker_name")            // 작업자명
   dept        String?                                  // 부서
   qrCode      String?   @map("qr_code")               // QR 코드
+  photoUrl    String?   @map("photo_url")              // 사진 URL (DataURL 또는 Storage URL)
   processIds  Json?     @map("process_ids")            // 담당 공정 ID 목록 (JSON)
   useYn       String    @default("Y") @map("use_yn")
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1440,4 +1457,73 @@ model ShipmentReturnItem {
   @@index([returnId])
   @@index([partId])
   @@map("shipment_return_items")
+}
+
+// ============================================================================
+// 고객발주 그룹 (Customer Order)
+// ============================================================================
+
+/// 고객발주 테이블 - 고객이 우리 회사에 발주한 주문
+/// 흐름: 고객발주(Customer PO) → 출하지시(ShipmentOrder) → 포장/팔레트 → 출하확정
+model CustomerOrder {
+  id            String    @id @default(cuid())
+  orderNo       String    @unique @map("order_no")       // 수주번호 (CO-YYYYMMDD-NNN)
+  customerId    String?   @map("customer_id")            // 거래처 ID (PartnerMaster)
+  customerName  String?   @map("customer_name")           // 고객명
+  orderDate     DateTime  @default(now()) @map("order_date") @db.Date  // 수주일
+  dueDate       DateTime? @map("due_date") @db.Date       // 납기일
+  status        String    @default("RECEIVED")            // RECEIVED/CONFIRMED/IN_PRODUCTION/PARTIAL_SHIP/SHIPPED/CLOSED
+  totalAmount   Decimal?  @map("total_amount") @db.Decimal(15,2)
+  currency      String?   @default("KRW")
+  remark        String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  items         CustomerOrderItem[]
+
+  @@index([status])
+  @@index([orderDate])
+  @@index([customerId])
+  @@map("customer_orders")
+}
+
+/// 라벨 디자인 템플릿 테이블 - 카테고리별 바코드 라벨 설정 저장
+model LabelTemplate {
+  id            String    @id @default(cuid())
+  templateName  String    @map("template_name")              // 템플릿 이름
+  category      String                                       // 카테고리 (equip, jig, worker, part)
+  designData    Json      @map("design_data")                // 라벨 디자인 JSON (LabelDesign)
+  isDefault     Boolean   @default(false) @map("is_default") // 기본 템플릿 여부
+  remark        String?                                      // 비고
+  createdBy     String?   @map("created_by")                 // 생성자
+  useYn         String    @default("Y") @map("use_yn")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@unique([templateName, category])
+  @@index([category])
+  @@index([isDefault])
+  @@map("label_templates")
+}
+
+/// 고객발주 품목 테이블
+model CustomerOrderItem {
+  id            String    @id @default(cuid())
+  orderId       String    @map("order_id")
+  partId        String    @map("part_id")
+  orderQty      Int       @map("order_qty")              // 수주 수량
+  shippedQty    Int       @default(0) @map("shipped_qty") // 출하 수량
+  unitPrice     Decimal?  @map("unit_price") @db.Decimal(15,2)
+  remark        String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order         CustomerOrder @relation(fields: [orderId], references: [id])
+  part          PartMaster    @relation(fields: [partId], references: [id])
+
+  @@index([orderId])
+  @@index([partId])
+  @@map("customer_order_items")
 }

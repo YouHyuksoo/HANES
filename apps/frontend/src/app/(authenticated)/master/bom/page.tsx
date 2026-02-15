@@ -1,198 +1,167 @@
 "use client";
 
 /**
- * @file src/pages/master/BomPage.tsx
- * @description BOM 관리 페이지
+ * @file src/app/(authenticated)/master/bom/page.tsx
+ * @description BOM + Routing 통합 관리 페이지 - DB API 연동
+ *
+ * 초보자 가이드:
+ * 1. **좌측 패널**: GET /master/boms/parents 로 모품목 목록 조회
+ * 2. **우측 패널**: 탭으로 BOM(자재) / Routing(공정순서) 전환
+ * 3. **BOM 탭**: GET /master/boms/hierarchy/:id 로 트리 구조 조회
  */
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2, Search, ChevronRight, Package, Layers } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Modal } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
+import { useState, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Search, Package, ChevronRight, Layers, RefreshCw } from "lucide-react";
+import { Card, CardHeader, CardContent, Input, Button } from "@/components/ui";
+import api from "@/services/api";
+import BomTab from "./components/BomTab";
+import RoutingTab from "./components/RoutingTab";
+import { ParentPart, RoutingTarget } from "./types";
 
-interface BomItem {
-  id: string;
-  childPartCode: string;
-  childPartName: string;
-  childPartType: string;
-  qtyPer: number;
-  unit: string;
-  revision: string;
-  useYn: string;
-}
-
-interface ParentPart {
-  id: string;
-  partCode: string;
-  partName: string;
-  partType: string;
-  bomCount: number;
-}
-
-// Mock 데이터
-const mockParents: ParentPart[] = [
-  { id: '1', partCode: 'H-001', partName: '메인 하네스 A', partType: 'FG', bomCount: 5 },
-  { id: '2', partCode: 'H-002', partName: '서브 하네스 B', partType: 'WIP', bomCount: 3 },
-  { id: '3', partCode: 'H-003', partName: '엔진룸 하네스', partType: 'FG', bomCount: 8 },
-];
-
-const mockBomItems: BomItem[] = [
-  { id: '1', childPartCode: 'W-001', childPartName: '전선 AWG18 RED', childPartType: 'RAW', qtyPer: 2.5, unit: 'M', revision: 'A', useYn: 'Y' },
-  { id: '2', childPartCode: 'W-002', childPartName: '전선 AWG18 BLK', childPartType: 'RAW', qtyPer: 1.8, unit: 'M', revision: 'A', useYn: 'Y' },
-  { id: '3', childPartCode: 'T-001', childPartName: '단자 110형', childPartType: 'RAW', qtyPer: 4, unit: 'EA', revision: 'A', useYn: 'Y' },
-  { id: '4', childPartCode: 'T-002', childPartName: '커넥터 12P', childPartType: 'RAW', qtyPer: 1, unit: 'EA', revision: 'A', useYn: 'Y' },
-  { id: '5', childPartCode: 'C-001', childPartName: '튜브 10mm', childPartType: 'RAW', qtyPer: 0.5, unit: 'M', revision: 'A', useYn: 'Y' },
-];
+type TabType = "bom" | "routing";
 
 function BomPage() {
   const { t } = useTranslation();
-  const [selectedParent, setSelectedParent] = useState<ParentPart | null>(mockParents[0]);
-  const [searchText, setSearchText] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingBom, setEditingBom] = useState<BomItem | null>(null);
+  const [parents, setParents] = useState<ParentPart[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedParent, setSelectedParent] = useState<ParentPart | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [activeTab, setActiveTab] = useState<TabType>("bom");
+  const [routingTarget, setRoutingTarget] = useState<RoutingTarget | null>(null);
+  const [bomRoutingLinks, setBomRoutingLinks] = useState<Map<string, string>>(() => new Map());
 
-  const columns = useMemo<ColumnDef<BomItem>[]>(
-    () => [
-      { accessorKey: 'childPartCode', header: t('master.bom.childPartCode'), size: 120 },
-      { accessorKey: 'childPartName', header: t('master.bom.childPartName'), size: 180 },
-      {
-        accessorKey: 'childPartType',
-        header: t('master.bom.type'),
-        size: 80,
-        cell: ({ getValue }) => {
-          const typeMap: Record<string, { label: string; color: string }> = {
-            RAW: { label: t('inventory.stock.raw'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-            WIP: { label: t('inventory.stock.wip'), color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
-          };
-          const type = typeMap[getValue() as string] || { label: getValue(), color: 'bg-gray-100 text-gray-700' };
-          return <span className={`px-2 py-1 text-xs rounded-full ${type.color}`}>{type.label}</span>;
-        },
-      },
-      {
-        accessorKey: 'qtyPer',
-        header: t('master.bom.qtyPer'),
-        size: 100,
-        cell: ({ row }) => `${row.original.qtyPer} ${row.original.unit}`,
-      },
-      { accessorKey: 'revision', header: t('master.bom.revision'), size: 80 },
-      {
-        accessorKey: 'useYn',
-        header: t('master.bom.use'),
-        size: 60,
-        cell: ({ getValue }) => (
-          <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
-        ),
-      },
-      {
-        id: 'actions',
-        header: t('common.actions'),
-        size: 80,
-        cell: ({ row }) => (
-          <div className="flex gap-1">
-            <button onClick={() => { setEditingBom(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded">
-              <Edit2 className="w-4 h-4 text-primary" />
-            </button>
-            <button className="p-1 hover:bg-surface rounded">
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [t]
-  );
+  /** DB에서 모품목(부모품목) 목록 조회 */
+  const fetchParents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/master/boms/parents", { params: searchText ? { search: searchText } : {} });
+      if (res.data.success) {
+        setParents(res.data.data || []);
+        if (!selectedParent && res.data.data?.length > 0) {
+          setSelectedParent(res.data.data[0]);
+        }
+      }
+    } catch {
+      setParents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText]);
+
+  useEffect(() => { fetchParents(); }, [fetchParents]);
+
+  const handleViewRouting = useCallback((target: RoutingTarget) => {
+    setRoutingTarget(target);
+    setActiveTab("routing");
+  }, []);
+
+  const handleSelectParent = useCallback((parent: ParentPart) => {
+    setSelectedParent(parent);
+    setRoutingTarget(null);
+  }, []);
+
+  const handleClearRoutingTarget = useCallback(() => { setRoutingTarget(null); }, []);
+
+  const handleLinkRouting = useCallback((partCode: string, routingCode: string) => {
+    setBomRoutingLinks((prev) => new Map(prev).set(partCode, routingCode));
+  }, []);
+
+  const handleUnlinkRouting = useCallback((partCode: string) => {
+    setBomRoutingLinks((prev) => { const next = new Map(prev); next.delete(partCode); return next; });
+  }, []);
+
+  const tabs: { key: TabType; label: string }[] = [
+    { key: "bom", label: t("master.bom.tabBom") },
+    { key: "routing", label: t("master.bom.tabRouting") },
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Layers className="w-7 h-7 text-primary" />{t('master.bom.title')}</h1>
-          <p className="text-text-muted mt-1">{t('master.bom.subtitle')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Layers className="w-7 h-7 text-primary" />{t("master.bom.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("master.bom.subtitle")} ({parents.length}건)</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingBom(null); setIsModalOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1" /> {t('master.bom.addBom')}
+        <Button variant="secondary" size="sm" onClick={fetchParents}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
       </div>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* 부모 품목 목록 */}
-        <div className="col-span-4">
+        {/* 좌측: 부모품목 목록 */}
+        <div className="col-span-3">
           <Card>
-            <CardHeader title={t('master.bom.parentPart')} subtitle={t('master.bom.selectParent')} />
+            <CardHeader title={t("master.bom.parentPart")} subtitle={t("master.bom.selectParent")} />
             <CardContent>
-              <Input
-                placeholder={t('master.bom.searchPlaceholder')}
-                value={searchText}
+              <Input placeholder={t("master.bom.searchPlaceholder")} value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-                className="mb-3"
-              />
-              <div className="space-y-1">
-                {mockParents.map((parent) => (
-                  <button
-                    key={parent.id}
-                    onClick={() => setSelectedParent(parent)}
-                    className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-colors ${selectedParent?.id === parent.id ? 'bg-primary text-white' : 'hover:bg-surface text-text'}`}
-                  >
+                leftIcon={<Search className="w-4 h-4" />} fullWidth className="mb-3" />
+              <div className="space-y-1 max-h-[calc(100vh-320px)] overflow-y-auto">
+                {parents.map((parent) => (
+                  <button key={parent.id} onClick={() => handleSelectParent(parent)}
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-colors ${
+                      selectedParent?.id === parent.id ? "bg-primary text-white" : "hover:bg-surface text-text"
+                    }`}>
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4" />
                       <div className="text-left">
-                        <div className="font-medium">{parent.partCode}</div>
-                        <div className={`text-xs ${selectedParent?.id === parent.id ? 'text-white/70' : 'text-text-muted'}`}>{parent.partName}</div>
+                        <div className="font-medium">{parent.partNo || parent.partCode}</div>
+                        <div className={`text-xs ${selectedParent?.id === parent.id ? "text-white/70" : "text-text-muted"}`}>
+                          {parent.partName}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${selectedParent?.id === parent.id ? 'bg-white/20 text-white' : 'bg-surface text-text-muted'}`}>
-                        {parent.bomCount}
-                      </span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        selectedParent?.id === parent.id ? "bg-white/20 text-white" : "bg-surface text-text-muted"
+                      }`}>{parent.bomCount}</span>
                       <ChevronRight className="w-4 h-4" />
                     </div>
                   </button>
                 ))}
+                {parents.length === 0 && !loading && (
+                  <p className="text-center text-sm text-text-muted py-8">{t("common.noData")}</p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* BOM 상세 */}
-        <div className="col-span-8">
+        {/* 우측: BOM / Routing 탭 전환 */}
+        <div className="col-span-9">
           <Card>
-            <CardHeader
-              title={selectedParent ? `${t('master.bom.bomDetail')} - ${selectedParent.partCode}` : t('master.bom.bomDetail')}
-              subtitle={selectedParent ? `${selectedParent.partName} (${mockBomItems.length}${t('master.bom.materialsCount')})` : t('master.bom.selectParent')}
-            />
             <CardContent>
-              {selectedParent ? (
-                <DataGrid data={mockBomItems} columns={columns} pageSize={10} />
+              <div className="flex border-b border-border mb-4">
+                {tabs.map((tab) => (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                    className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                      activeTab === tab.key ? "border-primary text-primary"
+                        : "border-transparent text-text-muted hover:text-text hover:border-border"
+                    }`}>
+                    {tab.label}
+                    {tab.key === "routing" && routingTarget && (
+                      <span className="ml-1.5 px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary">
+                        {routingTarget.partCode}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {activeTab === "bom" ? (
+                <BomTab selectedParent={selectedParent} onViewRouting={handleViewRouting}
+                  bomRoutingLinks={bomRoutingLinks} onLinkRouting={handleLinkRouting}
+                  onUnlinkRouting={handleUnlinkRouting} />
               ) : (
-                <div className="flex items-center justify-center h-64 text-text-muted">
-                  {t('master.bom.selectParentPrompt')}
-                </div>
+                <RoutingTab selectedParent={selectedParent} routingTarget={routingTarget}
+                  onClearTarget={handleClearRoutingTarget} bomRoutingLinks={bomRoutingLinks} />
               )}
             </CardContent>
           </Card>
         </div>
       </div>
-
-      {/* BOM 추가/수정 모달 */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingBom ? t('master.bom.editBom') : t('master.bom.addBom')} size="md">
-        <div className="space-y-4">
-          <Input label={t('master.bom.parentPart')} value={selectedParent?.partCode || ''} disabled fullWidth />
-          <Input label={t('master.bom.childPartCode')} placeholder={t('master.bom.searchChildPlaceholder')} defaultValue={editingBom?.childPartCode} fullWidth />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t('master.bom.qtyPer')} type="number" step="0.01" placeholder="1.0" defaultValue={editingBom?.qtyPer?.toString()} fullWidth />
-            <Input label={t('master.bom.unitLabel')} placeholder="EA, M, KG" defaultValue={editingBom?.unit || 'EA'} fullWidth />
-          </div>
-          <Input label={t('master.bom.revision')} placeholder="A" defaultValue={editingBom?.revision || 'A'} fullWidth />
-          <Input label={t('master.bom.remark')} placeholder={t('master.bom.remarkPlaceholder')} fullWidth />
-        </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button>{editingBom ? t('common.edit') : t('common.add')}</Button>
-        </div>
-      </Modal>
     </div>
   );
 }

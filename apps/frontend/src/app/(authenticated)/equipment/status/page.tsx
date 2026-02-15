@@ -16,8 +16,9 @@ import { Plus, RefreshCw, Search, Settings, CheckCircle, AlertTriangle, XCircle,
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useComCodeOptions } from '@/hooks/useComCode';
-import { Equipment, EquipStatus, EquipType, equipTypeLabels } from '@/types/equipment';
-import { EquipmentStatusBadge, statusConfig } from '@/components/equipment/EquipmentStatusBadge';
+import { Equipment, EquipStatus, EquipType } from '@/types/equipment';
+import { EquipmentStatusBadge, useEquipStatusConfig } from '@/components/equipment/EquipmentStatusBadge';
+import { ComCodeBadge } from '@/components/ui';
 
 // Mock 데이터
 const mockEquipments: Equipment[] = [
@@ -72,7 +73,7 @@ function EquipStatusPage() {
   const columns = useMemo<ColumnDef<Equipment>[]>(() => [
     { accessorKey: 'equipCode', header: t('equipment.status.equipCode'), size: 100 },
     { accessorKey: 'equipName', header: t('equipment.status.equipName'), size: 120 },
-    { accessorKey: 'equipType', header: t('equipment.status.type'), size: 80, cell: ({ getValue }) => equipTypeLabels[getValue() as EquipType] },
+    { accessorKey: 'equipType', header: t('equipment.status.type'), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="EQUIP_TYPE" code={getValue() as string} /> },
     { accessorKey: 'lineName', header: t('equipment.status.line'), size: 60 },
     { accessorKey: 'status', header: t('common.status'), size: 80, cell: ({ getValue }) => <EquipmentStatusBadge status={getValue() as EquipStatus} /> },
     { accessorKey: 'ipAddress', header: t('equipment.status.ipAddress'), size: 130 },
@@ -145,7 +146,7 @@ function EquipStatusPage() {
               <div className="text-sm text-text-muted">{t('equipment.status.selectedEquip')}</div>
               <div className="text-lg font-semibold text-text mt-1">{selectedEquip.equipName}</div>
               <div className="text-sm text-text-muted mt-1">{selectedEquip.equipCode}</div>
-              <div className="mt-2"><span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${statusConfig[selectedEquip.status].color}`}>{statusConfig[selectedEquip.status].label}</span></div>
+              <div className="mt-2"><EquipmentStatusBadge status={selectedEquip.status} /></div>
             </div>
             <div className="text-sm font-medium text-text mb-2">{t('equipment.status.selectStatus')}</div>
             <div className="grid grid-cols-3 gap-2">

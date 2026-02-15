@@ -15,7 +15,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Plus, RefreshCw, Search, Wrench, RotateCcw, Package, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
-import { ConsumablePart, PartStatus, PartCategory, categoryLabels } from '@/types/equipment';
+import { ConsumablePart, PartStatus, PartCategory } from '@/types/equipment';
+import { ComCodeBadge } from '@/components/ui';
 import { PartStatusBadge, partStatusConfig } from '@/components/equipment/PartStatusBadge';
 import LifeProgressBar from '@/components/equipment/LifeProgressBar';
 
@@ -76,7 +77,7 @@ function PmPage() {
   const columns = useMemo<ColumnDef<ConsumablePart>[]>(() => [
     { accessorKey: 'partCode', header: t('equipment.pm.code'), size: 90 },
     { accessorKey: 'partName', header: t('equipment.pm.name'), size: 140 },
-    { accessorKey: 'category', header: t('equipment.pm.category'), size: 80, cell: ({ getValue }) => categoryLabels[getValue() as PartCategory] },
+    { accessorKey: 'category', header: t('equipment.pm.category'), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
     {
       id: 'life', header: t('equipment.pm.currentExpectedLife'), size: 150,
       cell: ({ row }) => (<div><div className="text-sm">{row.original.currentShots.toLocaleString()} / {row.original.expectedLife.toLocaleString()}</div><LifeProgressBar current={row.original.currentShots} expected={row.original.expectedLife} /></div>),
@@ -129,7 +130,7 @@ function PmPage() {
                   urgentParts.map((part) => (
                     <div key={part.id} className={`p-3 rounded-lg border border-border cursor-pointer hover:shadow-md transition-shadow ${partStatusConfig[part.status].bgColor}`} onClick={() => { setSelectedPart(part); setIsReplaceModalOpen(true); }}>
                       <div className="flex justify-between items-start">
-                        <div><div className="font-medium text-text">{part.partName}</div><div className="text-sm text-text-muted">{part.partCode} | {categoryLabels[part.category]}</div></div>
+                        <div><div className="font-medium text-text">{part.partName}</div><div className="text-sm text-text-muted">{part.partCode} | {t(`comCode.CONSUMABLE_CATEGORY.${part.category}`, { defaultValue: part.category })}</div></div>
                         <PartStatusBadge status={part.status} />
                       </div>
                       <div className="mt-2"><LifeProgressBar current={part.currentShots} expected={part.expectedLife} /></div>
@@ -170,7 +171,7 @@ function PmPage() {
             <div className="p-4 bg-background rounded-lg">
               <div className="flex items-center gap-2 text-text-muted text-sm"><Package className="w-4 h-4" />{t('equipment.pm.selectedPart')}</div>
               <div className="text-lg font-semibold text-text mt-1">{selectedPart.partName}</div>
-              <div className="text-sm text-text-muted">{selectedPart.partCode} | {categoryLabels[selectedPart.category]}</div>
+              <div className="text-sm text-text-muted">{selectedPart.partCode} | {t(`comCode.CONSUMABLE_CATEGORY.${selectedPart.category}`, { defaultValue: selectedPart.category })}</div>
               <div className="mt-3 p-2 bg-surface rounded">
                 <div className="text-sm text-text-muted">{t('equipment.pm.currentLifeProgress')}</div>
                 <LifeProgressBar current={selectedPart.currentShots} expected={selectedPart.expectedLife} />

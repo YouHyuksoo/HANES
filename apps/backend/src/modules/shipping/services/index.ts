@@ -9,3 +9,4 @@ export * from './shipment.service';
 export * from './ship-order.service';
 export * from './ship-history.service';
 export * from './ship-return.service';
+export * from './customer-order.service';

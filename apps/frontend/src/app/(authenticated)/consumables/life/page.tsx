@@ -7,7 +7,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity } from 'lucide-react';
-import { Card, CardContent, Button, StatCard } from '@/components/ui';
+import { Card, CardContent, Button, StatCard, ComCodeBadge } from '@/components/ui';
 
 interface LifeStatus {
   id: string;
@@ -94,11 +94,7 @@ const mockData: LifeStatus[] = [
 function ConsumableLifePage() {
   const { t } = useTranslation();
 
-  const categoryLabels: Record<string, string> = {
-    MOLD: t('consumables.master.mold'),
-    JIG: t('consumables.master.jig'),
-    TOOL: t('consumables.master.tool'),
-  };
+  /* categoryLabels → ComCodeBadge로 대체 */
   const sortedData = useMemo(() => {
     return [...mockData].sort((a, b) => b.lifePercentage - a.lifePercentage);
   }, []);
@@ -169,9 +165,7 @@ function ConsumableLifePage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-text">{item.consumableCode}</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-surface text-text-muted">
-                          {categoryLabels[item.category]}
-                        </span>
+                        <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={item.category} />
                       </div>
                       <p className="text-sm text-text-muted">{item.name}</p>
                     </div>

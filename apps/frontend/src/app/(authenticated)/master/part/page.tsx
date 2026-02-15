@@ -1,186 +1,224 @@
 "use client";
 
 /**
- * @file src/pages/master/PartPage.tsx
- * @description 품목 마스터 관리 페이지
+ * @file src/app/(authenticated)/master/part/page.tsx
+ * @description 품목 마스터 관리 페이지 - DB API 연동 (Oracle TM_ITEMS 기준 보강)
+ *
+ * 초보자 가이드:
+ * 1. **품목 목록**: GET /master/parts API로 실제 DB 데이터 조회
+ * 2. **IQC 설정**: iqcFlag=Y 품목에만 IQC 검사기준 설정 버튼 표시
+ * 3. **CRUD**: 추가/수정/삭제 모두 API를 통해 DB에 반영
  */
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2, Search, RefreshCw, Download, Package } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
 
-interface Part {
-  id: string;
-  partCode: string;
-  partName: string;
-  partType: string;
-  spec?: string;
-  unit: string;
-  customer?: string;
-  vendor?: string;
-  safetyStock: number;
-  useYn: string;
-}
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { Plus, Edit2, Search, Download, Package, FlaskConical, RefreshCw } from "lucide-react";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import api from "@/services/api";
+import { Part, PartIqcLink, seedPartIqcLinks, PART_TYPE_COLORS, PRODUCT_TYPE_OPTIONS } from "./types";
+import { INSPECT_METHOD_COLORS, seedIqcGroups } from "../iqc-item/types";
+import IqcSettingModal from "./components/IqcSettingModal";
+import PartFormModal from "./components/PartFormModal";
 
-// Mock 데이터
-const mockParts: Part[] = [
-  { id: '1', partCode: 'W-001', partName: '전선 AWG18 RED', partType: 'RAW', spec: 'AWG18 1.0sq', unit: 'M', vendor: '대한전선', safetyStock: 1000, useYn: 'Y' },
-  { id: '2', partCode: 'W-002', partName: '전선 AWG18 BLK', partType: 'RAW', spec: 'AWG18 1.0sq', unit: 'M', vendor: '대한전선', safetyStock: 1000, useYn: 'Y' },
-  { id: '3', partCode: 'T-001', partName: '단자 110형', partType: 'RAW', spec: '110 Female', unit: 'EA', vendor: '현대커넥터', safetyStock: 5000, useYn: 'Y' },
-  { id: '4', partCode: 'H-001', partName: '메인 하네스 A', partType: 'FG', spec: 'MAIN-A TYPE', unit: 'EA', customer: '현대자동차', safetyStock: 100, useYn: 'Y' },
-  { id: '5', partCode: 'H-002', partName: '서브 하네스 B', partType: 'WIP', spec: 'SUB-B TYPE', unit: 'EA', customer: '현대자동차', safetyStock: 200, useYn: 'Y' },
-];
-
-function PartPage() {
+export default function PartPage() {
   const { t } = useTranslation();
-  const [searchText, setSearchText] = useState('');
-  const [partTypeFilter, setPartTypeFilter] = useState('');
+  const [parts, setParts] = useState<Part[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [iqcLinks, setIqcLinks] = useState<PartIqcLink[]>(seedPartIqcLinks);
+  const [searchText, setSearchText] = useState("");
+  const [partTypeFilter, setPartTypeFilter] = useState("");
+  const [page, setPage] = useState(1);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
+  const [iqcTarget, setIqcTarget] = useState<Part | null>(null);
+
+  const PAGE_SIZE = 20;
+
+  /** DB에서 품목 목록 조회 */
+  const fetchParts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string | number> = { page, limit: PAGE_SIZE };
+      if (partTypeFilter) params.partType = partTypeFilter;
+      if (searchText) params.search = searchText;
+
+      const res = await api.get("/master/parts", { params });
+      const body = res.data;
+      if (body.success) {
+        setParts(body.data || []);
+        setTotal(body.meta?.total || 0);
+      }
+    } catch {
+      setParts([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, partTypeFilter, searchText]);
+
+  useEffect(() => { fetchParts(); }, [fetchParts]);
+
+  /** 검색 시 page를 1로 리셋 */
+  const handleSearch = (val: string) => { setSearchText(val); setPage(1); };
+  const handleTypeFilter = (val: string) => { setPartTypeFilter(val); setPage(1); };
 
   const partTypeOptions = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: 'RAW', label: t('inventory.stock.raw') },
-    { value: 'WIP', label: t('inventory.stock.wip') },
-    { value: 'FG', label: t('inventory.stock.fg') },
+    { value: "", label: t("common.all") },
+    { value: "RAW", label: t("inventory.stock.raw", "원자재") },
+    { value: "WIP", label: t("inventory.stock.wip", "반제품") },
+    { value: "FG", label: t("inventory.stock.fg", "완제품") },
   ], [t]);
 
-  const filteredParts = useMemo(() => {
-    return mockParts.filter((part) => {
-      const matchSearch = !searchText || part.partCode.toLowerCase().includes(searchText.toLowerCase()) || part.partName.toLowerCase().includes(searchText.toLowerCase());
-      const matchType = !partTypeFilter || part.partType === partTypeFilter;
-      return matchSearch && matchType;
-    });
-  }, [searchText, partTypeFilter]);
+  const typeLabels = useMemo<Record<string, string>>(() => ({
+    RAW: t("inventory.stock.raw", "원자재"),
+    WIP: t("inventory.stock.wip", "반제품"),
+    FG: t("inventory.stock.fg", "완제품"),
+  }), [t]);
 
-  const columns = useMemo<ColumnDef<Part>[]>(
-    () => [
-      { accessorKey: 'partCode', header: t('master.part.partCode'), size: 120 },
-      { accessorKey: 'partName', header: t('master.part.partName'), size: 180 },
-      {
-        accessorKey: 'partType',
-        header: t('master.part.type'),
-        size: 80,
-        cell: ({ getValue }) => {
-          const typeMap: Record<string, { label: string; color: string }> = {
-            RAW: { label: t('inventory.stock.raw'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-            WIP: { label: t('inventory.stock.wip'), color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' },
-            FG: { label: t('inventory.stock.fg'), color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-          };
-          const type = typeMap[getValue() as string] || { label: getValue(), color: 'bg-gray-100 text-gray-700' };
-          return <span className={`px-2 py-1 text-xs rounded-full ${type.color}`}>{type.label}</span>;
-        },
+  const methodLabels = useMemo<Record<string, string>>(() => ({
+    FULL: t("master.part.iqc.methodFull", "전수"),
+    SAMPLE: t("master.part.iqc.methodSample", "샘플"),
+    SKIP: t("master.part.iqc.methodSkip", "무검사"),
+  }), [t]);
+
+  const productTypeLabels = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    PRODUCT_TYPE_OPTIONS.forEach(o => { if (o.value) map[o.value] = o.label; });
+    return map;
+  }, []);
+
+  const getIqcLink = (partCode: string) => iqcLinks.find(l => l.partCode === partCode);
+
+  const handleIqcSave = (link: PartIqcLink) => {
+    setIqcLinks(prev => {
+      const idx = prev.findIndex(l => l.partCode === link.partCode);
+      if (idx >= 0) return prev.map((l, i) => i === idx ? link : l);
+      return [...prev, link];
+    });
+  };
+
+  const handleIqcUnlink = (partCode: string) => {
+    setIqcLinks(prev => prev.filter(l => l.partCode !== partCode));
+  };
+
+  const columns = useMemo<ColumnDef<Part>[]>(() => [
+    { accessorKey: "partNo", header: t("master.part.partCode"), size: 160 },
+    { accessorKey: "partCode", header: "No.", size: 60 },
+    { accessorKey: "partName", header: t("master.part.partName"), size: 150 },
+    {
+      accessorKey: "partType", header: t("master.part.type"), size: 70,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        const cfg = PART_TYPE_COLORS[v];
+        return <span className={`px-2 py-0.5 text-xs rounded-full ${cfg?.color || ""}`}>{typeLabels[v] || v}</span>;
       },
-      { accessorKey: 'spec', header: t('master.part.spec'), size: 150 },
-      { accessorKey: 'unit', header: t('master.part.unit'), size: 60 },
-      { accessorKey: 'vendor', header: t('master.part.vendor'), size: 120 },
-      { accessorKey: 'customer', header: t('master.part.customer'), size: 120 },
-      { accessorKey: 'safetyStock', header: t('master.part.safetyStock'), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-      {
-        accessorKey: 'useYn',
-        header: t('master.part.use'),
-        size: 60,
-        cell: ({ getValue }) => (
-          <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
-        ),
+    },
+    {
+      accessorKey: "productType", header: t("master.part.productType", "제품유형"), size: 80,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return <span className="text-xs">{productTypeLabels[v] || v || "-"}</span>;
       },
-      {
-        id: 'actions',
-        header: t('common.actions'),
-        size: 80,
-        cell: ({ row }) => (
-          <div className="flex gap-1">
-            <button onClick={() => { setEditingPart(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded">
-              <Edit2 className="w-4 h-4 text-primary" />
+    },
+    { accessorKey: "spec", header: t("master.part.spec"), size: 130 },
+    { accessorKey: "rev", header: t("master.part.rev", "Rev"), size: 45 },
+    { accessorKey: "custPartNo", header: t("master.part.custPartNo", "고객품번"), size: 120, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "unit", header: t("master.part.unit"), size: 45 },
+    { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70 },
+    { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "LOT수량"), size: 75, cell: ({ getValue }) => getValue() ?? "-" },
+    {
+      accessorKey: "iqcFlag", header: t("master.part.iqcFlag", "IQC"), size: 50,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>{v}</span>;
+      },
+    },
+    { accessorKey: "tactTime", header: t("master.part.tactTime", "택타임"), size: 65, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}s` : "-"; } },
+    { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
+    { accessorKey: "vendor", header: t("master.part.vendor"), size: 90, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "customer", header: t("master.part.customer"), size: 90, cell: ({ getValue }) => getValue() || "-" },
+    {
+      id: "iqcSetup", header: t("master.part.iqc.header", "IQC설정"), size: 80,
+      cell: ({ row }) => {
+        if (row.original.iqcFlag !== "Y") return <span className="text-xs text-text-muted">-</span>;
+        const link = getIqcLink(row.original.partCode);
+        if (!link) return (
+          <button onClick={() => setIqcTarget(row.original)} className="text-xs text-primary hover:underline">
+            {t("master.part.iqc.setup", "설정")}
+          </button>
+        );
+        const group = seedIqcGroups.find(g => g.groupCode === link.groupCode);
+        if (!group) return <span className="text-xs text-text-muted">-</span>;
+        return (
+          <button onClick={() => setIqcTarget(row.original)} className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[group.inspectMethod]}`}>
+            {methodLabels[group.inspectMethod]}{group.inspectMethod === "SAMPLE" && group.sampleQty ? `(${group.sampleQty})` : ""}
+          </button>
+        );
+      },
+    },
+    {
+      id: "actions", header: t("common.actions"), size: 70,
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => { setEditingPart(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          {row.original.iqcFlag === "Y" && (
+            <button onClick={() => setIqcTarget(row.original)} className="p-1 hover:bg-surface rounded" title="IQC">
+              <FlaskConical className="w-4 h-4 text-purple-500" />
             </button>
-            <button className="p-1 hover:bg-surface rounded">
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [t]
-  );
+          )}
+        </div>
+      ),
+    },
+  ], [t, typeLabels, methodLabels, productTypeLabels, iqcLinks]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />{t('master.part.title')}</h1>
-          <p className="text-text-muted mt-1">{t('master.part.subtitle')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Package className="w-7 h-7 text-primary" />{t("master.part.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("master.part.subtitle")} ({total}건)</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm">
-            <Download className="w-4 h-4 mr-1" /> {t('common.excel')}
+          <Button variant="secondary" size="sm" onClick={fetchParts}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
+          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t("common.excel")}</Button>
           <Button size="sm" onClick={() => { setEditingPart(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> {t('master.part.addPart')}
+            <Plus className="w-4 h-4 mr-1" />{t("master.part.addPart")}
           </Button>
         </div>
       </div>
 
-      <Card>
-        <CardContent>
-          {/* 검색 필터 */}
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
-              <Input
-                placeholder={t('master.part.searchPlaceholder')}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
-            </div>
-            <div className="w-40">
-              <Select
-                options={partTypeOptions}
-                value={partTypeFilter}
-                onChange={setPartTypeFilter}
-                placeholder={t('master.part.type')}
-                fullWidth
-              />
-            </div>
-            <Button variant="secondary">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+      <Card><CardContent>
+        <div className="flex gap-4 mb-4">
+          <div className="flex-1">
+            <Input placeholder={t("master.part.searchPlaceholder")} value={searchText}
+              onChange={e => handleSearch(e.target.value)}
+              leftIcon={<Search className="w-4 h-4" />} fullWidth />
           </div>
-
-          <DataGrid data={filteredParts} columns={columns} pageSize={10} onRowClick={(row) => console.log('Selected:', row)} />
-        </CardContent>
-      </Card>
+          <div className="w-40">
+            <Select options={partTypeOptions} value={partTypeFilter} onChange={handleTypeFilter} fullWidth />
+          </div>
+        </div>
+        <DataGrid data={parts} columns={columns} pageSize={PAGE_SIZE} />
+      </CardContent></Card>
 
       {/* 품목 추가/수정 모달 */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingPart ? t('master.part.editPart') : t('master.part.addPart')} size="lg">
-        <div className="grid grid-cols-2 gap-4">
-          <Input label={t('master.part.partCode')} placeholder="W-001" defaultValue={editingPart?.partCode} fullWidth />
-          <Select
-            label={t('master.part.type')}
-            options={partTypeOptions.filter(o => o.value)}
-            value={editingPart?.partType || 'RAW'}
-            onChange={() => {}}
-            fullWidth
-          />
-          <div className="col-span-2">
-            <Input label={t('master.part.partName')} placeholder="전선 AWG18 RED" defaultValue={editingPart?.partName} fullWidth />
-          </div>
-          <Input label={t('master.part.spec')} placeholder="AWG18 1.0sq" defaultValue={editingPart?.spec} fullWidth />
-          <Input label={t('master.part.unit')} placeholder="M, EA, KG" defaultValue={editingPart?.unit || 'EA'} fullWidth />
-          <Input label={t('master.part.vendor')} placeholder={t('master.part.vendor')} defaultValue={editingPart?.vendor} fullWidth />
-          <Input label={t('master.part.customer')} placeholder={t('master.part.customer')} defaultValue={editingPart?.customer} fullWidth />
-          <Input label={t('master.part.safetyStock')} type="number" placeholder="100" defaultValue={editingPart?.safetyStock?.toString()} fullWidth />
-          <Input label={t('master.part.leadTime')} type="number" placeholder="7" fullWidth />
-        </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button>{editingPart ? t('common.edit') : t('common.add')}</Button>
-        </div>
-      </Modal>
+      <PartFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
+        editingPart={editingPart} onSave={fetchParts} />
+
+      {/* IQC 검사기준 설정 모달 */}
+      {iqcTarget && (
+        <IqcSettingModal isOpen={!!iqcTarget} onClose={() => setIqcTarget(null)} part={iqcTarget}
+          currentLink={getIqcLink(iqcTarget.partCode)} onSave={handleIqcSave} onUnlink={handleIqcUnlink} />
+      )}
     </div>
   );
 }
-
-export default PartPage;

@@ -35,6 +35,8 @@ import { TransferRuleController } from './controllers/transfer-rule.controller';
 import { TransferRuleService } from './services/transfer-rule.service';
 import { ModelSuffixController } from './controllers/model-suffix.controller';
 import { ModelSuffixService } from './services/model-suffix.service';
+import { LabelTemplateController } from './controllers/label-template.controller';
+import { LabelTemplateService } from './services/label-template.service';
 
 @Module({
   controllers: [
@@ -51,6 +53,7 @@ import { ModelSuffixService } from './services/model-suffix.service';
     WorkInstructionController,
     TransferRuleController,
     ModelSuffixController,
+    LabelTemplateController,
   ],
   providers: [
     ComCodeService,
@@ -66,6 +69,7 @@ import { ModelSuffixService } from './services/model-suffix.service';
     WorkInstructionService,
     TransferRuleService,
     ModelSuffixService,
+    LabelTemplateService,
   ],
   exports: [
     ComCodeService,
@@ -81,6 +85,7 @@ import { ModelSuffixService } from './services/model-suffix.service';
     WorkInstructionService,
     TransferRuleService,
     ModelSuffixService,
+    LabelTemplateService,
   ],
 })
 export class MasterModule {}

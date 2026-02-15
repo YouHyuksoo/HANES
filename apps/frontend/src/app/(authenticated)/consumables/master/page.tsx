@@ -7,7 +7,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, RefreshCw, Search, Wrench, AlertTriangle, XCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, StatCard, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -80,26 +80,12 @@ const mockData: Consumable[] = [
   },
 ];
 
-const statusColors: Record<string, string> = {
-  NORMAL: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  WARNING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  REPLACE: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-};
+/* statusColors → ComCodeBadge가 DB attr1에서 색상 자동 로드 */
 
 function ConsumableMasterPage() {
   const { t } = useTranslation();
 
-  const categoryLabels: Record<string, string> = {
-    MOLD: t('consumables.master.mold'),
-    JIG: t('consumables.master.jig'),
-    TOOL: t('consumables.master.tool'),
-  };
-
-  const statusLabels: Record<string, string> = {
-    NORMAL: t('consumables.master.statusNormal'),
-    WARNING: t('consumables.master.statusWarning'),
-    REPLACE: t('consumables.master.statusReplace'),
-  };
+  /* categoryLabels, statusLabels → ComCodeBadge로 대체 */
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Consumable | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,7 +109,7 @@ function ConsumableMasterPage() {
         accessorKey: 'category',
         header: t('consumables.master.category'),
         size: 70,
-        cell: ({ getValue }) => categoryLabels[getValue() as string],
+        cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />,
       },
       {
         accessorKey: 'currentCount',
@@ -160,14 +146,7 @@ function ConsumableMasterPage() {
         accessorKey: 'status',
         header: t('common.status'),
         size: 90,
-        cell: ({ getValue }) => {
-          const status = getValue() as string;
-          return (
-            <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>
-              {statusLabels[status]}
-            </span>
-          );
-        },
+        cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} />,
       },
       {
         id: 'actions',

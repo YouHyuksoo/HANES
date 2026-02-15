@@ -35,6 +35,8 @@ import { ShipHistoryController } from './controllers/ship-history.controller';
 import { ShipHistoryService } from './services/ship-history.service';
 import { ShipReturnController } from './controllers/ship-return.controller';
 import { ShipReturnService } from './services/ship-return.service';
+import { CustomerOrderController } from './controllers/customer-order.controller';
+import { CustomerOrderService } from './services/customer-order.service';
 import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
@@ -46,6 +48,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     ShipOrderController,
     ShipHistoryController,
     ShipReturnController,
+    CustomerOrderController,
   ],
   providers: [
     BoxService,
@@ -54,6 +57,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     ShipOrderService,
     ShipHistoryService,
     ShipReturnService,
+    CustomerOrderService,
   ],
   exports: [
     BoxService,
@@ -62,6 +66,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     ShipOrderService,
     ShipHistoryService,
     ShipReturnService,
+    CustomerOrderService,
   ],
 })
 export class ShippingModule {}

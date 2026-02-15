@@ -2,135 +2,155 @@
 
 /**
  * @file src/app/(authenticated)/master/equip-inspect/page.tsx
- * @description 설비점검항목 관리 페이지 - 설비별 일상/정기 점검 기준 관리
+ * @description 설비점검항목 관리 - 좌측 설비목록 + 우측 점검항목
  *
  * 초보자 가이드:
- * 1. **점검항목 목록**: 설비별 점검항목 DataGrid 표시
- * 2. **설비/유형 필터**: 설비 선택 및 일상/정기 필터링
- * 3. **점검항목 등록/수정**: 모달로 CRUD 처리
+ * 1. **좌측 패널**: 설비 목록에서 설비 선택
+ * 2. **우측 패널**: 선택된 설비의 점검항목 목록 (마스터에서 선택)
+ * 3. **점검항목 마스터**: /master/inspect-item 에서 별도 관리
  */
+import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { Search, Wrench, ChevronRight } from "lucide-react";
+import { Card, CardHeader, CardContent, Input } from "@/components/ui";
+import InspectItemPanel from "./components/InspectItemPanel";
+import LinkItemModal from "./components/LinkItemModal";
+import {
+  EquipSummary, EquipInspectLink,
+  seedEquipments, seedInspectItems, seedLinks,
+  EQUIP_TYPE_COLORS,
+} from "./types";
 
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Trash2, Search, RefreshCw, Download, Wrench } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
-
-interface EquipInspectItem {
-  id: string;
-  equipCode: string;
-  equipName: string;
-  inspectType: string;
-  seq: number;
-  itemName: string;
-  criteria?: string;
-  cycle?: string;
-  useYn: string;
-}
-
-const mockData: EquipInspectItem[] = [
-  { id: '1', equipCode: 'CUT-001', equipName: '절단기 1호', inspectType: 'DAILY', seq: 1, itemName: '블레이드 마모 확인', criteria: '마모선 이하', cycle: 'DAILY', useYn: 'Y' },
-  { id: '2', equipCode: 'CUT-001', equipName: '절단기 1호', inspectType: 'DAILY', seq: 2, itemName: '에어압력 확인', criteria: '0.5~0.7 MPa', cycle: 'DAILY', useYn: 'Y' },
-  { id: '3', equipCode: 'CRM-001', equipName: '압착기 1호', inspectType: 'DAILY', seq: 1, itemName: '압착높이 확인', criteria: '기준치 +/-0.05mm', cycle: 'DAILY', useYn: 'Y' },
-  { id: '4', equipCode: 'CRM-001', equipName: '압착기 1호', inspectType: 'PERIODIC', seq: 1, itemName: '유압 오일 교환', criteria: '3000시간 또는 6개월', cycle: 'MONTHLY', useYn: 'Y' },
-  { id: '5', equipCode: 'INSP-01', equipName: '통전검사기 1호', inspectType: 'DAILY', seq: 1, itemName: '접촉핀 상태', criteria: '변형/마모 없을것', cycle: 'DAILY', useYn: 'Y' },
-  { id: '6', equipCode: 'INSP-01', equipName: '통전검사기 1호', inspectType: 'PERIODIC', seq: 1, itemName: '캘리브레이션', criteria: '기준 저항값 검증', cycle: 'MONTHLY', useYn: 'Y' },
-];
-
-const inspectTypeColorMap: Record<string, string> = {
-  DAILY: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  PERIODIC: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-};
-
-function EquipInspectPage() {
+export default function EquipInspectPage() {
   const { t } = useTranslation();
-  const [searchText, setSearchText] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<EquipInspectItem | null>(null);
+  const [selectedEquip, setSelectedEquip] = useState<EquipSummary | null>(seedEquipments[0]);
+  const [searchText, setSearchText] = useState("");
+  const [links, setLinks] = useState<EquipInspectLink[]>(seedLinks);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
 
-  const typeOptions = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: 'DAILY', label: t('master.equipInspect.typeDaily') },
-    { value: 'PERIODIC', label: t('master.equipInspect.typePeriodic') },
-  ], [t]);
-
-  const cycleOptions = useMemo(() => [
-    { value: 'DAILY', label: t('master.equipInspect.cycleDaily') }, { value: 'WEEKLY', label: t('master.equipInspect.cycleWeekly') }, { value: 'MONTHLY', label: t('master.equipInspect.cycleMonthly') },
-  ], [t]);
-
-  const filteredData = useMemo(() => mockData.filter(item => {
-    if (typeFilter && item.inspectType !== typeFilter) return false;
+  const filteredEquips = seedEquipments.filter(e => {
     if (!searchText) return true;
     const s = searchText.toLowerCase();
-    return item.equipCode.toLowerCase().includes(s) || item.itemName.toLowerCase().includes(s);
-  }), [searchText, typeFilter]);
+    return e.equipCode.toLowerCase().includes(s) || e.equipName.toLowerCase().includes(s);
+  });
 
-  const inspectTypeLabels: Record<string, string> = useMemo(() => ({
-    DAILY: t('master.equipInspect.typeDaily'), PERIODIC: t('master.equipInspect.typePeriodic'),
-  }), [t]);
+  /** 설비별 점검항목 수 */
+  const countMap = new Map<string, number>();
+  links.forEach(l => countMap.set(l.equipCode, (countMap.get(l.equipCode) || 0) + 1));
 
-  const columns = useMemo<ColumnDef<EquipInspectItem>[]>(() => [
-    { accessorKey: 'equipCode', header: t('master.equipInspect.equipCode'), size: 100 },
-    { accessorKey: 'equipName', header: t('master.equipInspect.equipName'), size: 130 },
-    { accessorKey: 'inspectType', header: t('master.equipInspect.inspectType'), size: 100, cell: ({ getValue }) => {
-      const val = getValue() as string;
-      const color = inspectTypeColorMap[val];
-      const label = inspectTypeLabels[val];
-      return color ? <span className={`px-2 py-1 text-xs rounded-full ${color}`}>{label}</span> : getValue();
-    }},
-    { accessorKey: 'seq', header: t('master.equipInspect.seq'), size: 60 },
-    { accessorKey: 'itemName', header: t('master.equipInspect.itemName'), size: 180 },
-    { accessorKey: 'criteria', header: t('master.equipInspect.criteria'), size: 180 },
-    { accessorKey: 'cycle', header: t('master.equipInspect.cycle'), size: 80 },
-    { accessorKey: 'useYn', header: t('master.equipInspect.use'), size: 60, cell: ({ getValue }) => (
-      <span className={`w-2 h-2 rounded-full inline-block ${getValue() === 'Y' ? 'bg-green-500' : 'bg-gray-400'}`} />
-    )},
-    { id: 'actions', header: t('common.actions'), size: 80, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
-      </div>
-    )},
-  ], [t]);
+  /** 현재 설비에 연결된 itemCode set */
+  const linkedItemCodes = new Set(
+    links.filter(l => l.equipCode === selectedEquip?.equipCode).map(l => l.itemCode)
+  );
+
+  /* ── 설비-점검항목 연결/해제 ── */
+  const handleLinkItems = useCallback((itemCodes: string[]) => {
+    if (!selectedEquip) return;
+    const existing = links.filter(l => l.equipCode === selectedEquip.equipCode);
+    const maxSeq = existing.reduce((max, l) => Math.max(max, l.seq), 0);
+    const newLinks: EquipInspectLink[] = itemCodes.map((code, i) => ({
+      id: `l${Date.now()}-${i}`,
+      equipCode: selectedEquip.equipCode,
+      itemCode: code,
+      seq: maxSeq + i + 1,
+      useYn: "Y",
+    }));
+    setLinks(prev => [...prev, ...newLinks]);
+  }, [selectedEquip, links]);
+
+  const handleUnlink = useCallback((linkId: string) => {
+    setLinks(prev => prev.filter(l => l.id !== linkId));
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Wrench className="w-7 h-7 text-primary" />{t('master.equipInspect.title')}</h1>
-          <p className="text-text-muted mt-1">{t('master.equipInspect.subtitle')}</p>
+      <div>
+        <h1 className="text-xl font-bold text-text flex items-center gap-2">
+          <Wrench className="w-7 h-7 text-primary" />{t("master.equipInspect.title")}
+        </h1>
+        <p className="text-text-muted mt-1">{t("master.equipInspect.subtitle")}</p>
+      </div>
+
+      <div className="grid grid-cols-12 gap-6">
+        {/* 좌측: 설비 목록 */}
+        <div className="col-span-4">
+          <Card>
+            <CardHeader title={t("master.equipInspect.equipList", "설비 목록")} subtitle={t("master.equipInspect.selectEquip", "점검 설비 선택")} />
+            <CardContent>
+              <Input
+                placeholder={t("master.equipInspect.searchPlaceholder")}
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />}
+                fullWidth
+                className="mb-3"
+              />
+              <div className="space-y-1 max-h-[calc(100vh-320px)] overflow-y-auto">
+                {filteredEquips.map(equip => (
+                  <button
+                    key={equip.id}
+                    onClick={() => setSelectedEquip(equip)}
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-lg text-sm transition-colors ${
+                      selectedEquip?.id === equip.id ? "bg-primary text-white" : "hover:bg-surface text-text"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Wrench className="w-4 h-4 shrink-0" />
+                      <div className="text-left min-w-0">
+                        <div className="font-medium">{equip.equipCode}</div>
+                        <div className={`text-xs truncate ${selectedEquip?.id === equip.id ? "text-white/70" : "text-text-muted"}`}>
+                          {equip.equipName}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`px-1.5 py-0.5 text-[10px] rounded ${
+                        selectedEquip?.id === equip.id ? "bg-white/20 text-white" : EQUIP_TYPE_COLORS[equip.equipType] || "bg-surface text-text-muted"
+                      }`}>
+                        {equip.equipType}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        selectedEquip?.id === equip.id ? "bg-white/20 text-white" : "bg-surface text-text-muted"
+                      }`}>
+                        {countMap.get(equip.equipCode) || 0}
+                      </span>
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
-          <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t('master.equipInspect.addItem')}</Button>
+
+        {/* 우측: 점검항목 */}
+        <div className="col-span-8">
+          <Card>
+            <CardContent>
+              <InspectItemPanel
+                equip={selectedEquip}
+                links={links}
+                allItems={seedInspectItems}
+                onOpenLinkModal={() => setLinkModalOpen(true)}
+                onUnlink={handleUnlink}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
-      <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('master.equipInspect.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-40"><Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} placeholder={t('master.equipInspect.inspectType')} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
-      </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t('master.equipInspect.editItem') : t('master.equipInspect.addItem')} size="lg">
-        <div className="grid grid-cols-2 gap-4">
-          <Input label={t('master.equipInspect.equipCode')} placeholder="CUT-001" defaultValue={editingItem?.equipCode} fullWidth />
-          <Select label={t('master.equipInspect.inspectType')} options={typeOptions.filter(o => o.value)} value={editingItem?.inspectType || 'DAILY'} onChange={() => {}} fullWidth />
-          <Input label={t('master.equipInspect.seq')} type="number" placeholder="1" defaultValue={editingItem?.seq?.toString()} fullWidth />
-          <Select label={t('master.equipInspect.cycle')} options={cycleOptions} value={editingItem?.cycle || 'DAILY'} onChange={() => {}} fullWidth />
-          <div className="col-span-2"><Input label={t('master.equipInspect.itemName')} placeholder="블레이드 마모 확인" defaultValue={editingItem?.itemName} fullWidth /></div>
-          <div className="col-span-2"><Input label={t('master.equipInspect.criteria')} placeholder="마모선 이하" defaultValue={editingItem?.criteria} fullWidth /></div>
-        </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button>{editingItem ? t('common.edit') : t('common.add')}</Button>
-        </div>
-      </Modal>
+
+      {/* 점검항목 연결 모달 */}
+      {selectedEquip && (
+        <LinkItemModal
+          isOpen={linkModalOpen}
+          onClose={() => setLinkModalOpen(false)}
+          equipCode={selectedEquip.equipCode}
+          equipName={selectedEquip.equipName}
+          allItems={seedInspectItems}
+          linkedItemCodes={linkedItemCodes}
+          onLink={handleLinkItems}
+        />
+      )}
     </div>
   );
 }
-
-export default EquipInspectPage;

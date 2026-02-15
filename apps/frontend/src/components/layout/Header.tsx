@@ -12,7 +12,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu } from "lucide-react";
+import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import Input from "@/components/ui/Input";
@@ -20,9 +20,11 @@ import LanguageSwitcher from "./LanguageSwitcher";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-function Header({ onMenuToggle }: HeaderProps) {
+function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const { t } = useTranslation();
   const { isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuthStore();
@@ -65,6 +67,20 @@ function Header({ onMenuToggle }: HeaderProps) {
             HARNESS MES
           </span>
         </div>
+
+        {/* 사이드바 접기/펴기 (데스크톱) */}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="hidden lg:flex p-2 rounded-md hover:bg-background transition-colors"
+            aria-label={collapsed ? t('header.expandSidebar') : t('header.collapseSidebar')}
+          >
+            {collapsed
+              ? <PanelLeftOpen className="w-5 h-5 text-text-muted" />
+              : <PanelLeftClose className="w-5 h-5 text-text-muted" />
+            }
+          </button>
+        )}
       </div>
 
       {/* Center Section - Search */}

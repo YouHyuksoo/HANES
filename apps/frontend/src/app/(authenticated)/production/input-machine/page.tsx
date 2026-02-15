@@ -2,17 +2,20 @@
 
 /**
  * @file src/app/(authenticated)/production/input-machine/page.tsx
- * @description 실적입력(가공) 페이지 - 설비설정 + 점검확인 + 소모부품 체크 포함
+ * @description 실적입력(가공) 페이지 - 작업자 선택 + 설비설정 + 점검확인 + 소모부품 체크
  *
  * 초보자 가이드:
- * 1. **목적**: 가공 공정에서 설비를 선택하고 실적을 입력
+ * 1. **작업자 선택**: 바코드 스캔 또는 코드 검색으로 작업자 지정
  * 2. **설비 점검**: 실적 입력 전 설비 점검 상태 확인 필수
  * 3. **소모부품**: 사용된 소모부품 체크 기능
  */
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Save, Cog, Settings, Shield, Package, CheckCircle, XCircle } from 'lucide-react';
+import { Search, RefreshCw, Save, Cog, Settings, Shield, Package, CheckCircle, XCircle, UserPlus, X, FileText } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
+import WorkOrderContext from '@/components/production/WorkOrderContext';
+import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
+import type { Worker } from '@/components/worker/WorkerSelector';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -42,6 +45,8 @@ function InputMachinePage() {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [inspectConfirmed, setInspectConfirmed] = useState(false);
   const [checkedParts, setCheckedParts] = useState<string[]>([]);
   const [form, setForm] = useState({ orderNo: '', equipId: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', cycleTime: '', remark: '' });
@@ -60,6 +65,12 @@ function InputMachinePage() {
 
   const togglePart = (p: string) => setCheckedParts(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
 
+  /** 작업자 선택 확인 */
+  const handleWorkerConfirm = (worker: Worker) => {
+    setSelectedWorker(worker);
+    setIsWorkerModalOpen(false);
+  };
+
   const columns = useMemo<ColumnDef<MachineResult>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputMachine.orderNo'), size: 160 },
     { accessorKey: 'partName', header: t('production.inputMachine.partName'), size: 140 },
@@ -75,12 +86,61 @@ function InputMachinePage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* 헤더 + 작업자선택 / 실적입력 버튼 */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cog className="w-7 h-7 text-primary" />{t('production.inputMachine.title')}</h1>
           <p className="text-text-muted mt-1">{t('production.inputMachine.description')}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}><Save className="w-4 h-4 mr-1" />{t('production.inputMachine.inputResult')}</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setIsWorkerModalOpen(true)}>
+            <UserPlus className="w-4 h-4 mr-1" />{t('production.inputMachine.selectWorker')}
+          </Button>
+          <Button size="sm" onClick={() => setIsModalOpen(true)}><Save className="w-4 h-4 mr-1" />{t('production.inputMachine.inputResult')}</Button>
+        </div>
+      </div>
+
+      {/* 설비 정보 + 선택된 작업자 영역 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2"><CardContent>
+          <div className="flex items-center gap-2 mb-2"><FileText className="w-5 h-5 text-primary" /><span className="font-semibold text-text">{t('production.inputMachine.equipInspectConfirm')}</span></div>
+          <div className="p-3 bg-background rounded-lg text-sm text-text-muted">{t('production.inputMachine.equipInspectDone')}</div>
+        </CardContent></Card>
+
+        {/* 선택된 작업자 정보 (우측 1칸) */}
+        <Card><CardContent>
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-semibold text-text text-sm">{t('production.inputMachine.currentWorker')}</span>
+            {selectedWorker && (
+              <button onClick={() => setSelectedWorker(null)} className="p-1 hover:bg-surface rounded text-text-muted" title={t('common.delete')}>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          {selectedWorker ? (
+            <div className="flex flex-col items-center text-center space-y-3">
+              {selectedWorker.photoUrl ? (
+                <img src={selectedWorker.photoUrl} alt={selectedWorker.workerName} className="w-20 h-20 rounded-full object-cover border-3 border-primary/20 shadow-md" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-primary/10 border-3 border-primary/20 shadow-md flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary">{selectedWorker.workerName.charAt(0)}</span>
+                </div>
+              )}
+              <div>
+                <p className="text-base font-bold text-text">{selectedWorker.workerName}</p>
+                <p className="text-xs text-text-muted mt-0.5">{selectedWorker.workerCode} | {selectedWorker.dept}</p>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+                <CheckCircle className="w-3 h-3" />{t('production.inputMachine.workerActive')}
+              </span>
+            </div>
+          ) : (
+            <button onClick={() => setIsWorkerModalOpen(true)} className="w-full flex flex-col items-center justify-center py-6 border-2 border-dashed border-border rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+              <UserPlus className="w-8 h-8 text-text-muted mb-2" />
+              <span className="text-sm text-text-muted">{t('production.inputMachine.clickToSelectWorker')}</span>
+            </button>
+          )}
+        </CardContent></Card>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -98,9 +158,9 @@ function InputMachinePage() {
         <DataGrid data={filteredData} columns={columns} pageSize={10} />
       </CardContent></Card>
 
+      {/* 실적 입력 모달 */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputMachine.modalTitle')} size="lg">
         <div className="space-y-4">
-          {/* 설비 점검 확인 */}
           <div className="p-3 bg-background rounded-lg">
             <div className="flex items-center gap-2 mb-2"><Shield className="w-5 h-5 text-orange-500" /><span className="font-semibold text-text">{t('production.inputMachine.equipInspectConfirm')}</span></div>
             <label className="flex items-center gap-2 cursor-pointer">
@@ -108,7 +168,6 @@ function InputMachinePage() {
               <span className="text-sm text-text">{t('production.inputMachine.equipInspectDone')}</span>
             </label>
           </div>
-          {/* 소모부품 체크 */}
           <div className="p-3 bg-background rounded-lg">
             <div className="flex items-center gap-2 mb-2"><Settings className="w-5 h-5 text-blue-500" /><span className="font-semibold text-text">{t('production.inputMachine.consumableCheck')}</span></div>
             <div className="grid grid-cols-2 gap-2">
@@ -120,9 +179,9 @@ function InputMachinePage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label={t('production.inputMachine.workOrder')} options={[{ value: 'JO-001', label: 'JO-20250126-001 (메인 하네스 A)' }]} value={form.orderNo} onChange={v => setForm(p => ({ ...p, orderNo: v }))} fullWidth />
+            <WorkOrderContext selectedOrderNo={form.orderNo} onSelect={(v) => setForm((p) => ({ ...p, orderNo: v }))} processFilter={["CUT", "CRIMP"]} />
             <Select label={t('production.inputMachine.equip')} options={[{ value: 'CNC-001', label: 'CNC-001' }, { value: 'CNC-002', label: 'CNC-002' }, { value: 'PRESS-001', label: 'PRESS-001' }]} value={form.equipId} onChange={v => setForm(p => ({ ...p, equipId: v }))} fullWidth />
-            <Input label={t('production.inputMachine.worker')} value={form.workerName} onChange={e => setForm(p => ({ ...p, workerName: e.target.value }))} fullWidth />
+            <Input label={t('production.inputMachine.worker')} value={selectedWorker?.workerName ?? form.workerName} onChange={e => setForm(p => ({ ...p, workerName: e.target.value }))} fullWidth disabled={!!selectedWorker} />
             <Input label={t('production.inputMachine.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
             <Input label={t('production.inputMachine.goodQty')} type="number" value={form.goodQty} onChange={e => setForm(p => ({ ...p, goodQty: e.target.value }))} fullWidth />
             <Input label={t('production.inputMachine.defectQty')} type="number" value={form.defectQty} onChange={e => setForm(p => ({ ...p, defectQty: e.target.value }))} fullWidth />
@@ -135,6 +194,13 @@ function InputMachinePage() {
           </div>
         </div>
       </Modal>
+
+      {/* 작업자 선택 모달 */}
+      <WorkerSelectModal
+        isOpen={isWorkerModalOpen}
+        onClose={() => setIsWorkerModalOpen(false)}
+        onConfirm={handleWorkerConfirm}
+      />
     </div>
   );
 }

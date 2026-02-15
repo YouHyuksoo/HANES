@@ -67,10 +67,10 @@ function Modal({
 
   // Size 스타일
   const sizeStyles = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
+    sm: 'max-w-sm',         // 384px (확인/알림용)
+    md: 'max-w-lg',         // 512px (일반 폼)
+    lg: 'max-w-xl',         // 576px (복잡한 폼)
+    xl: 'max-w-2xl',        // 672px (대형 폼/테이블)
     full: 'max-w-[90vw] max-h-[90vh]',
   };
 
@@ -122,7 +122,7 @@ function Modal({
           )}
 
           {/* Content */}
-          <div className="p-4 overflow-y-auto max-h-[60vh]">{children}</div>
+          <div className="p-4 overflow-y-auto max-h-[75vh]">{children}</div>
 
           {/* Footer */}
           {footer && (

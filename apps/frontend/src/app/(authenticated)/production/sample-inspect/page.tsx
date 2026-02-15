@@ -12,9 +12,10 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Download, FlaskConical, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { useComCodeOptions } from '@/hooks/useComCode';
 
 interface SampleInspect {
   id: string;
@@ -47,11 +48,10 @@ function SampleInspectPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  const comCodeJudgeOptions = useComCodeOptions('JUDGE_YN');
   const passOptions = useMemo(() => [
-    { value: '', label: t('production.sampleInspect.allJudgment') },
-    { value: 'Y', label: t('production.sampleInspect.pass') },
-    { value: 'N', label: t('production.sampleInspect.fail') },
-  ], [t]);
+    { value: '', label: t('production.sampleInspect.allJudgment') }, ...comCodeJudgeOptions
+  ], [t, comCodeJudgeOptions]);
 
   const filteredData = useMemo(() => mockData.filter(item => {
     const matchSearch = !searchText || item.lotNo.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
@@ -80,12 +80,7 @@ function SampleInspectPage() {
     { accessorKey: 'failQty', header: t('production.sampleInspect.failQty'), size: 70, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400">{getValue() as number}</span> },
     {
       accessorKey: 'passYn', header: t('production.sampleInspect.judgment'), size: 80,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v === 'Y'
-          ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{t('production.sampleInspect.pass')}</span>
-          : <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{t('production.sampleInspect.fail')}</span>;
-      },
+      cell: ({ getValue }) => <ComCodeBadge groupCode="JUDGE_YN" code={getValue() as string} />,
     },
     { accessorKey: 'inspector', header: t('production.sampleInspect.inspector'), size: 80 },
     { accessorKey: 'remark', header: t('production.sampleInspect.remark'), size: 120 },
