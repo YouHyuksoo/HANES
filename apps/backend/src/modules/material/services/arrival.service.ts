@@ -107,14 +107,14 @@ export class ArrivalService {
       where: { poId },
     });
 
-    const partIds = items.map((item) => item.partId).filter(Boolean);
+    const partIds = items.map((item: PurchaseOrderItem) => item.partId).filter(Boolean);
     const parts = await this.partMasterRepository.findByIds(partIds);
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p: PartMaster) => [p.id, p]));
 
     return {
       ...po,
       items: items
-        .map((item) => ({
+        .map((item: PurchaseOrderItem) => ({
           ...item,
           remainingQty: item.orderQty - item.receivedQty,
           partCode: partMap.get(item.partId)?.partCode,
