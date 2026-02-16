@@ -21,6 +21,7 @@
     "db:migrate:run": "typeorm migration:run -d dist/database/data-source.js",
     "db:migrate:revert": "typeorm migration:revert -d dist/database/data-source.js",
     "db:test": "ts-node src/database/test-connection.ts",
+    "db:migrate-data": "ts-node src/database/migrate-data.ts",
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
