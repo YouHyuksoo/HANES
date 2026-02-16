@@ -22,6 +22,7 @@
     "db:migrate:revert": "typeorm migration:revert -d dist/database/data-source.js",
     "db:test": "ts-node src/database/test-connection.ts",
     "db:migrate-data": "ts-node src/database/migrate-data.ts",
+    "db:migrate-postgres-to-oracle": "ts-node src/database/migrate-postgres-to-oracle.ts",
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
