@@ -1,6 +1,6 @@
 /**
  * @file src/modules/material/services/mat-issue.service.ts
- * @description 자재출고 비즈니스 로직 서비스
+ * @description 자재출고 비즈니스 로직 서비스 (TypeORM)
  *
  * 초보자 가이드:
  * 1. **MatIssue 테이블**: 작업지시/외주처로의 자재 불출 이력
@@ -9,30 +9,51 @@
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Between, IsNull, DataSource } from 'typeorm';
+import { MatIssue } from '../../../entities/mat-issue.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { JobOrder } from '../../../entities/job-order.entity';
 import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 
 @Injectable()
 export class MatIssueService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(MatIssue)
+    private readonly matIssueRepository: Repository<MatIssue>,
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(MatStock)
+    private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(JobOrder)
+    private readonly jobOrderRepository: Repository<JobOrder>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /**
    * 출고 이력 데이터를 평면화하여 반환
    * lot, part 중첩 구조를 평면화된 필드로 변환
    */
-  private flattenIssue(issue: any) {
+  private async flattenIssue(issue: MatIssue) {
     if (!issue) return null;
 
-    const { lot, ...rest } = issue;
+    const lot = issue.lotId ? await this.matLotRepository.findOne({ where: { id: issue.lotId } }) : null;
+    const part = lot?.partId ? await this.partMasterRepository.findOne({ where: { id: lot.partId } }) : null;
+    const jobOrder = issue.jobOrderId ? await this.jobOrderRepository.findOne({ where: { id: issue.jobOrderId } }) : null;
 
     return {
-      ...rest,
+      ...issue,
       lotId: lot?.id ?? null,
       lotNo: lot?.lotNo ?? null,
-      partId: lot?.part?.id ?? null,
-      partCode: lot?.part?.partCode ?? null,
-      partName: lot?.part?.partName ?? null,
-      unit: lot?.part?.unit ?? null,
+      partId: part?.id ?? null,
+      partCode: part?.partCode ?? null,
+      partName: part?.partName ?? null,
+      unit: part?.unit ?? null,
+      jobOrderNo: jobOrder?.orderNo ?? null,
     };
   }
 
@@ -47,41 +68,31 @@ export class MatIssueService {
       ...(status && { status }),
     };
 
-    if (issueDateFrom || issueDateTo) {
-      where.issueDate = {};
-      if (issueDateFrom) where.issueDate.gte = new Date(issueDateFrom);
-      if (issueDateTo) where.issueDate.lte = new Date(issueDateTo);
+    if (issueDateFrom && issueDateTo) {
+      where.issueDate = Between(new Date(issueDateFrom), new Date(issueDateTo));
+    } else if (issueDateFrom) {
+      where.issueDate = Between(new Date(issueDateFrom), new Date());
+    } else if (issueDateTo) {
+      where.issueDate = Between(new Date('1900-01-01'), new Date(issueDateTo));
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.matIssue.findMany({
+      this.matIssueRepository.find({
         where,
         skip,
         take: limit,
-        include: {
-          lot: {
-            include: {
-              part: { select: { id: true, partCode: true, partName: true, unit: true } },
-            },
-          },
-          jobOrder: { select: { id: true, orderNo: true } },
-        },
-        orderBy: { issueDate: 'desc' },
+        order: { issueDate: 'DESC' },
       }),
-      this.prisma.matIssue.count({ where }),
+      this.matIssueRepository.count({ where }),
     ]);
 
-    return { data: data.map(this.flattenIssue), total, page, limit };
+    const flattenedData = await Promise.all(data.map((issue) => this.flattenIssue(issue)));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   async findById(id: string) {
-    const issue = await this.prisma.matIssue.findUnique({
-      where: { id },
-      include: {
-        lot: { include: { part: true } },
-        jobOrder: true,
-      },
-    });
+    const issue = await this.matIssueRepository.findOne({ where: { id } });
 
     if (!issue) throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${id}`);
     return this.flattenIssue(issue);
@@ -90,13 +101,17 @@ export class MatIssueService {
   async create(dto: CreateMatIssueDto) {
     const { jobOrderId, warehouseCode, issueType, items, remark, workerId } = dto;
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       const results = [];
 
       for (const item of items) {
         // LOT 유효성 확인
-        const lot = await tx.matLot.findFirst({
-          where: { id: item.lotId, deletedAt: null },
+        const lot = await queryRunner.manager.findOne(MatLot, {
+          where: { id: item.lotId, deletedAt: IsNull() },
         });
 
         if (!lot) {
@@ -112,52 +127,48 @@ export class MatIssueService {
         }
 
         // LOT 재고 차감
-        await tx.matLot.update({
-          where: { id: lot.id },
-          data: {
-            currentQty: lot.currentQty - item.issueQty,
-            status: lot.currentQty - item.issueQty === 0 ? 'DEPLETED' : lot.status,
-          },
+        await queryRunner.manager.update(MatLot, lot.id, {
+          currentQty: lot.currentQty - item.issueQty,
+          status: lot.currentQty - item.issueQty === 0 ? 'DEPLETED' : lot.status,
         });
 
         // 창고 재고 차감 (warehouseCode가 있는 경우)
         if (warehouseCode) {
-          const stock = await tx.matStock.findFirst({
+          const stock = await queryRunner.manager.findOne(MatStock, {
             where: { partId: lot.partId, warehouseCode, lotId: lot.id },
           });
 
           if (stock) {
-            await tx.matStock.update({
-              where: { id: stock.id },
-              data: {
-                qty: Math.max(0, stock.qty - item.issueQty),
-                availableQty: Math.max(0, stock.availableQty - item.issueQty),
-              },
+            await queryRunner.manager.update(MatStock, stock.id, {
+              qty: Math.max(0, stock.qty - item.issueQty),
+              availableQty: Math.max(0, stock.availableQty - item.issueQty),
             });
           }
         }
 
         // 출고 이력 생성
-        const issue = await tx.matIssue.create({
-          data: {
-            jobOrderId,
-            lotId: item.lotId,
-            issueQty: item.issueQty,
-            issueType: issueType ?? 'PROD',
-            workerId,
-            remark,
-            status: 'DONE',
-          },
-          include: {
-            lot: { include: { part: true } },
-          },
+        const issue = queryRunner.manager.create(MatIssue, {
+          jobOrderId,
+          lotId: item.lotId,
+          issueQty: item.issueQty,
+          issueType: issueType ?? 'PROD',
+          workerId,
+          remark,
+          status: 'DONE',
         });
 
-        results.push(this.flattenIssue(issue));
+        const saved = await queryRunner.manager.save(issue);
+        results.push(await this.flattenIssue(saved));
       }
 
+      await queryRunner.commitTransaction();
       return results;
-    });
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async cancel(id: string, reason?: string) {
@@ -167,38 +178,44 @@ export class MatIssueService {
       throw new BadRequestException('이미 취소된 출고입니다.');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 출고 상태 변경
-      const updated = await tx.matIssue.update({
-        where: { id },
-        data: { status: 'CANCELED', remark: reason },
-      });
+      await queryRunner.manager.update(MatIssue, id, { status: 'CANCELED', remark: reason });
 
       // LOT 재고 복구
-      await tx.matLot.update({
-        where: { id: issue.lotId },
-        data: {
-          currentQty: { increment: issue.issueQty },
-          status: 'NORMAL',
-        },
-      });
+      if (issue.lotId) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { id: issue.lotId } });
+        if (lot) {
+          await queryRunner.manager.update(MatLot, lot.id, {
+            currentQty: lot.currentQty + issue.issueQty,
+            status: 'NORMAL',
+          });
+        }
+      }
 
       // 창고 재고 복구 (stock이 있는 경우)
-      const stock = await tx.matStock.findFirst({
+      const stock = await queryRunner.manager.findOne(MatStock, {
         where: { lotId: issue.lotId },
       });
 
       if (stock) {
-        await tx.matStock.update({
-          where: { id: stock.id },
-          data: {
-            qty: stock.qty + issue.issueQty,
-            availableQty: stock.availableQty + issue.issueQty,
-          },
+        await queryRunner.manager.update(MatStock, stock.id, {
+          qty: stock.qty + issue.issueQty,
+          availableQty: stock.availableQty + issue.issueQty,
         });
       }
 
-      return updated;
-    });
+      await queryRunner.commitTransaction();
+      return { id, status: 'CANCELED' };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

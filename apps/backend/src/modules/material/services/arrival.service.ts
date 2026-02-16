@@ -1,6 +1,6 @@
 /**
  * @file src/modules/material/services/arrival.service.ts
- * @description 입하관리 비즈니스 로직 - PO 기반/수동 입하 및 역분개 취소
+ * @description 입하관리 비즈니스 로직 - PO 기반/수동 입하 및 역분개 취소 (TypeORM)
  *
  * 초보자 가이드:
  * 1. **PO 입하**: PurchaseOrder 기반 분할 입하 (receivedQty 누적, PO status 재계산)
@@ -10,7 +10,15 @@
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, In, Between, DataSource } from 'typeorm';
+import { PurchaseOrder } from '../../../entities/purchase-order.entity';
+import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
+import { Lot } from '../../../entities/lot.entity';
+import { Stock } from '../../../entities/stock.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import {
   CreatePoArrivalDto,
   CreateManualArrivalDto,
@@ -20,58 +28,98 @@ import {
 
 @Injectable()
 export class ArrivalService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(PurchaseOrder)
+    private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
+    @InjectRepository(PurchaseOrderItem)
+    private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
+    @InjectRepository(Lot)
+    private readonly lotRepository: Repository<Lot>,
+    @InjectRepository(Stock)
+    private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(StockTransaction)
+    private readonly stockTransactionRepository: Repository<StockTransaction>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
   async findReceivablePOs() {
-    const pos = await this.prisma.purchaseOrder.findMany({
+    const pos = await this.purchaseOrderRepository.find({
       where: {
-        status: { in: ['CONFIRMED', 'PARTIAL'] },
-        deletedAt: null,
+        status: In(['CONFIRMED', 'PARTIAL']),
+        deletedAt: IsNull(),
       },
-      include: {
-        items: {
-          include: {
-            part: { select: { id: true, partCode: true, partName: true, unit: true } },
-          },
-        },
-      },
-      orderBy: { orderDate: 'desc' },
+      order: { orderDate: 'DESC' },
     });
 
-    return pos.map((po) => ({
-      ...po,
-      items: po.items.map((item) => ({
+    // PO 아이템 조회
+    const poIds = pos.map((po) => po.id);
+    const items = await this.purchaseOrderItemRepository.find({
+      where: { poId: In(poIds) },
+    });
+
+    const partIds = items.map((item) => item.partId).filter(Boolean);
+    const parts = await this.partMasterRepository.findByIds(partIds);
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+
+    // PO별 아이템 그룹화
+    const itemsByPoId = new Map<string, typeof items>();
+    for (const item of items) {
+      if (!itemsByPoId.has(item.poId)) {
+        itemsByPoId.set(item.poId, []);
+      }
+      itemsByPoId.get(item.poId)!.push(item);
+    }
+
+    return pos.map((po) => {
+      const poItems = itemsByPoId.get(po.id) || [];
+      const enrichedItems = poItems.map((item) => ({
         ...item,
         remainingQty: item.orderQty - item.receivedQty,
-      })),
-      totalOrderQty: po.items.reduce((sum, i) => sum + i.orderQty, 0),
-      totalReceivedQty: po.items.reduce((sum, i) => sum + i.receivedQty, 0),
-      totalRemainingQty: po.items.reduce((sum, i) => sum + (i.orderQty - i.receivedQty), 0),
-    }));
+        partCode: partMap.get(item.partId)?.partCode,
+        partName: partMap.get(item.partId)?.partName,
+        unit: partMap.get(item.partId)?.unit,
+      }));
+
+      return {
+        ...po,
+        items: enrichedItems,
+        totalOrderQty: poItems.reduce((sum, i) => sum + i.orderQty, 0),
+        totalReceivedQty: poItems.reduce((sum, i) => sum + i.receivedQty, 0),
+        totalRemainingQty: poItems.reduce((sum, i) => sum + (i.orderQty - i.receivedQty), 0),
+      };
+    });
   }
 
   /** 특정 PO의 입하 가능 품목 조회 */
   async getPoItems(poId: string) {
-    const po = await this.prisma.purchaseOrder.findFirst({
-      where: { id: poId, deletedAt: null },
-      include: {
-        items: {
-          include: {
-            part: { select: { id: true, partCode: true, partName: true, unit: true } },
-          },
-        },
-      },
+    const po = await this.purchaseOrderRepository.findOne({
+      where: { id: poId, deletedAt: IsNull() },
     });
 
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poId}`);
 
+    const items = await this.purchaseOrderItemRepository.find({
+      where: { poId },
+    });
+
+    const partIds = items.map((item) => item.partId).filter(Boolean);
+    const parts = await this.partMasterRepository.findByIds(partIds);
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+
     return {
       ...po,
-      items: po.items
+      items: items
         .map((item) => ({
           ...item,
           remainingQty: item.orderQty - item.receivedQty,
+          partCode: partMap.get(item.partId)?.partCode,
+          partName: partMap.get(item.partId)?.partName,
+          unit: partMap.get(item.partId)?.unit,
         }))
         .filter((item) => item.remainingQty > 0),
     };
@@ -79,18 +127,21 @@ export class ArrivalService {
 
   /** PO 기반 입하 등록 (핵심 트랜잭션) */
   async createPoArrival(dto: CreatePoArrivalDto) {
-    const po = await this.prisma.purchaseOrder.findFirst({
-      where: { id: dto.poId, deletedAt: null },
-      include: { items: true },
+    const po = await this.purchaseOrderRepository.findOne({
+      where: { id: dto.poId, deletedAt: IsNull() },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${dto.poId}`);
     if (!['CONFIRMED', 'PARTIAL'].includes(po.status)) {
       throw new BadRequestException(`입하 불가 상태입니다: ${po.status}`);
     }
 
+    const poItems = await this.purchaseOrderItemRepository.find({
+      where: { poId: dto.poId },
+    });
+
     // 잔량 검증
     for (const item of dto.items) {
-      const poItem = po.items.find((pi) => pi.id === item.poItemId);
+      const poItem = poItems.find((pi) => pi.id === item.poItemId);
       if (!poItem) throw new BadRequestException(`PO 품목을 찾을 수 없습니다: ${item.poItemId}`);
       const remaining = poItem.orderQty - poItem.receivedQty;
       if (item.receivedQty > remaining) {
@@ -100,7 +151,11 @@ export class ArrivalService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       const results = [];
 
       for (const item of dto.items) {
@@ -108,62 +163,73 @@ export class ArrivalService {
         const lotNo = item.lotNo || `L${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
         // 1. LOT 생성
-        const lot = await tx.lot.create({
-          data: {
-            lotNo,
-            partId: item.partId,
-            partType: 'RAW',
-            initQty: item.receivedQty,
-            currentQty: item.receivedQty,
-            recvDate: new Date(),
-            poNo: po.poNo,
-            vendor: po.partnerName,
-          },
+        const lot = queryRunner.manager.create(Lot, {
+          lotNo,
+          partId: item.partId,
+          partType: 'RAW',
+          initQty: item.receivedQty,
+          currentQty: item.receivedQty,
+          recvDate: new Date(),
+          poNo: po.poNo,
+          vendor: po.partnerName,
         });
+        const savedLot = await queryRunner.manager.save(lot);
 
         // 2. StockTransaction 생성
-        const stockTx = await tx.stockTransaction.create({
-          data: {
-            transNo,
-            transType: 'MAT_IN',
-            toWarehouseId: item.warehouseId,
-            partId: item.partId,
-            lotId: lot.id,
-            qty: item.receivedQty,
-            remark: item.remark || dto.remark,
-            workerId: dto.workerId,
-            refType: 'PO',
-            refId: item.poItemId,
-          },
-          include: { part: true, lot: true, toWarehouse: true },
+        const stockTx = queryRunner.manager.create(StockTransaction, {
+          transNo,
+          transType: 'MAT_IN',
+          toWarehouseId: item.warehouseId,
+          partId: item.partId,
+          lotId: savedLot.id,
+          qty: item.receivedQty,
+          remark: item.remark || dto.remark,
+          workerId: dto.workerId,
+          refType: 'PO',
+          refId: item.poItemId,
         });
+        const savedTx = await queryRunner.manager.save(stockTx);
 
         // 3. Stock upsert (현재고 반영)
-        await this.upsertStock(tx, item.warehouseId, item.partId, lot.id, item.receivedQty);
+        await this.upsertStock(queryRunner.manager, item.warehouseId, item.partId, savedLot.id, item.receivedQty);
 
         // 4. PurchaseOrderItem.receivedQty 증가
-        await tx.purchaseOrderItem.update({
-          where: { id: item.poItemId },
-          data: { receivedQty: { increment: item.receivedQty } },
-        });
+        const poItem = poItems.find((pi) => pi.id === item.poItemId);
+        if (poItem) {
+          await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
+            receivedQty: poItem.receivedQty + item.receivedQty,
+          });
+        }
+
+        // part, lot, warehouse 정보 조회
+        const [part, warehouse] = await Promise.all([
+          this.partMasterRepository.findOne({ where: { id: item.partId } }),
+          this.warehouseRepository.findOne({ where: { id: item.warehouseId } }),
+        ]);
 
         results.push({
-          ...stockTx,
-          partCode: stockTx.part?.partCode,
-          partName: stockTx.part?.partName,
-          partType: stockTx.part?.partType,
-          unit: stockTx.part?.unit,
-          lotNo: stockTx.lot?.lotNo,
-          warehouseCode: stockTx.toWarehouse?.warehouseCode,
-          warehouseName: stockTx.toWarehouse?.warehouseName,
+          ...savedTx,
+          partCode: part?.partCode,
+          partName: part?.partName,
+          partType: part?.partType,
+          unit: part?.unit,
+          lotNo: savedLot?.lotNo,
+          warehouseCode: warehouse?.warehouseCode,
+          warehouseName: warehouse?.warehouseName,
         });
       }
 
       // 5. PO 상태 재계산
-      await this.updatePOStatus(tx, dto.poId);
+      await this.updatePOStatus(queryRunner.manager, dto.poId);
 
+      await queryRunner.commitTransaction();
       return results;
-    });
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /** 수동 입하 등록 */
@@ -171,50 +237,64 @@ export class ArrivalService {
     const transNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
     const lotNo = dto.lotNo || `L${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 1. LOT 생성
-      const lot = await tx.lot.create({
-        data: {
-          lotNo,
-          partId: dto.partId,
-          partType: 'RAW',
-          initQty: dto.qty,
-          currentQty: dto.qty,
-          recvDate: new Date(),
-          vendor: dto.vendor,
-        },
+      const lot = queryRunner.manager.create(Lot, {
+        lotNo,
+        partId: dto.partId,
+        partType: 'RAW',
+        initQty: dto.qty,
+        currentQty: dto.qty,
+        recvDate: new Date(),
+        vendor: dto.vendor,
       });
+      const savedLot = await queryRunner.manager.save(lot);
 
       // 2. StockTransaction 생성
-      const stockTx = await tx.stockTransaction.create({
-        data: {
-          transNo,
-          transType: 'MAT_IN',
-          toWarehouseId: dto.warehouseId,
-          partId: dto.partId,
-          lotId: lot.id,
-          qty: dto.qty,
-          remark: dto.remark,
-          workerId: dto.workerId,
-          refType: 'MANUAL',
-        },
-        include: { part: true, lot: true, toWarehouse: true },
+      const stockTx = queryRunner.manager.create(StockTransaction, {
+        transNo,
+        transType: 'MAT_IN',
+        toWarehouseId: dto.warehouseId,
+        partId: dto.partId,
+        lotId: savedLot.id,
+        qty: dto.qty,
+        remark: dto.remark,
+        workerId: dto.workerId,
+        refType: 'MANUAL',
       });
+      const savedTx = await queryRunner.manager.save(stockTx);
 
       // 3. Stock upsert
-      await this.upsertStock(tx, dto.warehouseId, dto.partId, lot.id, dto.qty);
+      await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.partId, savedLot.id, dto.qty);
+
+      // part, warehouse 정보 조회
+      const [part, warehouse] = await Promise.all([
+        this.partMasterRepository.findOne({ where: { id: dto.partId } }),
+        this.warehouseRepository.findOne({ where: { id: dto.warehouseId } }),
+      ]);
+
+      await queryRunner.commitTransaction();
 
       return {
-        ...stockTx,
-        partCode: stockTx.part?.partCode,
-        partName: stockTx.part?.partName,
-        partType: stockTx.part?.partType,
-        unit: stockTx.part?.unit,
-        lotNo: stockTx.lot?.lotNo,
-        warehouseCode: stockTx.toWarehouse?.warehouseCode,
-        warehouseName: stockTx.toWarehouse?.warehouseName,
+        ...savedTx,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        partType: part?.partType,
+        unit: part?.unit,
+        lotNo: savedLot?.lotNo,
+        warehouseCode: warehouse?.warehouseCode,
+        warehouseName: warehouse?.warehouseName,
       };
-    });
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /** 입하 이력 조회 (MAT_IN + MAT_IN_CANCEL) */
@@ -222,132 +302,151 @@ export class ArrivalService {
     const { page = 1, limit = 10, search, fromDate, toDate, status } = query;
     const skip = (page - 1) * limit;
 
-    const dateFilter: Record<string, Date> = {};
-    if (fromDate) dateFilter.gte = new Date(fromDate);
-    if (toDate) dateFilter.lte = new Date(toDate);
+    const queryBuilder = this.stockTransactionRepository.createQueryBuilder('tx')
+      .where('tx.transType IN (:...transTypes)', { transTypes: ['MAT_IN', 'MAT_IN_CANCEL'] });
 
-    const where: Record<string, unknown> = {
-      transType: { in: ['MAT_IN', 'MAT_IN_CANCEL'] },
-      ...(status && { status }),
-      ...(Object.keys(dateFilter).length > 0 && { transDate: dateFilter }),
-      ...(search && {
-        OR: [
-          { transNo: { contains: search, mode: 'insensitive' as const } },
-          { part: { partCode: { contains: search, mode: 'insensitive' as const } } },
-          { part: { partName: { contains: search, mode: 'insensitive' as const } } },
-          { lot: { poNo: { contains: search, mode: 'insensitive' as const } } },
-        ],
-      }),
-    };
+    if (status) {
+      queryBuilder.andWhere('tx.status = :status', { status });
+    }
+
+    if (fromDate && toDate) {
+      queryBuilder.andWhere('tx.transDate BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(fromDate),
+        toDate: new Date(toDate),
+      });
+    } else if (fromDate) {
+      queryBuilder.andWhere('tx.transDate >= :fromDate', { fromDate: new Date(fromDate) });
+    } else if (toDate) {
+      queryBuilder.andWhere('tx.transDate <= :toDate', { toDate: new Date(toDate) });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(tx.transNo LIKE :search OR tx.partId IN (SELECT id FROM part_masters WHERE part_code LIKE :search OR part_name LIKE :search))',
+        { search: `%${search}%` },
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.stockTransaction.findMany({
-        where,
-        skip,
-        take: limit,
-        include: {
-          part: { select: { id: true, partCode: true, partName: true, partType: true, unit: true } },
-          lot: { select: { id: true, lotNo: true, poNo: true, vendor: true } },
-          toWarehouse: { select: { id: true, warehouseCode: true, warehouseName: true } },
-        },
-        orderBy: { transDate: 'desc' },
-      }),
-      this.prisma.stockTransaction.count({ where }),
+      queryBuilder
+        .orderBy('tx.transDate', 'DESC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
 
-    const flattenedData = data.map((item) => ({
-      ...item,
-      partCode: item.part?.partCode,
-      partName: item.part?.partName,
-      partType: item.part?.partType,
-      unit: item.part?.unit,
-      lotNo: item.lot?.lotNo,
-      warehouseCode: item.toWarehouse?.warehouseCode,
-      warehouseName: item.toWarehouse?.warehouseName,
-    }));
+    // part, lot, warehouse 정보 조회
+    const partIds = data.map((item) => item.partId).filter(Boolean);
+    const lotIds = data.map((item) => item.lotId).filter(Boolean) as string[];
+    const warehouseIds = data.map((item) => item.toWarehouseId).filter(Boolean) as string[];
+
+    const [parts, lots, warehouses] = await Promise.all([
+      this.partMasterRepository.findByIds(partIds),
+      lotIds.length > 0 ? this.lotRepository.findByIds(lotIds) : Promise.resolve([]),
+      warehouseIds.length > 0 ? this.warehouseRepository.findByIds(warehouseIds) : Promise.resolve([]),
+    ]);
+
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.id, w]));
+
+    const flattenedData = data.map((item) => {
+      const part = partMap.get(item.partId);
+      const lot = item.lotId ? lotMap.get(item.lotId) : null;
+      const warehouse = item.toWarehouseId ? warehouseMap.get(item.toWarehouseId) : null;
+
+      return {
+        ...item,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        partType: part?.partType,
+        unit: part?.unit,
+        lotNo: lot?.lotNo,
+        warehouseCode: warehouse?.warehouseCode,
+        warehouseName: warehouse?.warehouseName,
+      };
+    });
 
     return { data: flattenedData, total, page, limit };
   }
 
   /** 입하 취소 (역분개 트랜잭션) */
   async cancel(dto: CancelArrivalDto) {
-    const original = await this.prisma.stockTransaction.findFirst({
+    const original = await this.stockTransactionRepository.findOne({
       where: { id: dto.transactionId },
-      include: { lot: true },
     });
+
     if (!original) throw new NotFoundException(`트랜잭션을 찾을 수 없습니다: ${dto.transactionId}`);
     if (original.status === 'CANCELED') throw new BadRequestException('이미 취소된 트랜잭션입니다.');
     if (original.transType !== 'MAT_IN') throw new BadRequestException('입하 트랜잭션만 취소할 수 있습니다.');
 
     const cancelTransNo = `${original.transNo}-C`;
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 1. 원본 CANCELED 처리
-      await tx.stockTransaction.update({
-        where: { id: dto.transactionId },
-        data: { status: 'CANCELED' },
-      });
+      await queryRunner.manager.update(StockTransaction, dto.transactionId, { status: 'CANCELED' });
 
-      // 2. 역분개 트랜잭션 생성 (원본의 part, lot, warehouse 정보 로드)
-      const [part, lot, toWarehouse] = await Promise.all([
-        tx.partMaster.findFirst({ where: { id: original.partId } }),
-        original.lotId ? tx.lot.findFirst({ where: { id: original.lotId } }) : Promise.resolve(null),
-        original.toWarehouseId ? tx.warehouse.findFirst({ where: { id: original.toWarehouseId } }) : Promise.resolve(null),
-      ]);
-
-      const cancelTx = await tx.stockTransaction.create({
-        data: {
-          transNo: cancelTransNo,
-          transType: 'MAT_IN_CANCEL',
-          fromWarehouseId: original.toWarehouseId,
-          partId: original.partId,
-          lotId: original.lotId,
-          qty: -original.qty,
-          remark: dto.reason,
-          workerId: dto.workerId,
-          cancelRefId: original.id,
-          refType: 'CANCEL',
-        },
+      // 2. 역분개 트랜잭션 생성
+      const cancelTx = queryRunner.manager.create(StockTransaction, {
+        transNo: cancelTransNo,
+        transType: 'MAT_IN_CANCEL',
+        fromWarehouseId: original.toWarehouseId,
+        partId: original.partId,
+        lotId: original.lotId,
+        qty: -original.qty,
+        remark: dto.reason,
+        workerId: dto.workerId,
+        cancelRefId: original.id,
+        refType: 'CANCEL',
       });
+      const savedCancelTx = await queryRunner.manager.save(cancelTx);
 
       // 3. Stock 감소
       if (original.toWarehouseId) {
         await this.upsertStock(
-          tx, original.toWarehouseId, original.partId, original.lotId, -original.qty,
+          queryRunner.manager, original.toWarehouseId, original.partId, original.lotId, -original.qty,
         );
       }
 
       // 4. LOT.currentQty 감소
       if (original.lotId) {
-        const lot = await tx.lot.findFirst({ where: { id: original.lotId } });
+        const lot = await queryRunner.manager.findOne(Lot, { where: { id: original.lotId } });
         if (lot) {
           const newQty = Math.max(0, lot.currentQty - original.qty);
-          await tx.lot.update({
-            where: { id: original.lotId },
-            data: {
-              currentQty: newQty,
-              status: newQty === 0 ? 'DEPLETED' : lot.status,
-            },
+          await queryRunner.manager.update(Lot, lot.id, {
+            currentQty: newQty,
+            status: newQty === 0 ? 'DEPLETED' : lot.status,
           });
         }
       }
 
       // 5. PO receivedQty 감소 + PO status 재계산
       if (original.refType === 'PO' && original.refId) {
-        await tx.purchaseOrderItem.update({
-          where: { id: original.refId },
-          data: { receivedQty: { decrement: original.qty } },
-        });
-        const poItem = await tx.purchaseOrderItem.findFirst({
-          where: { id: original.refId },
-        });
+        const poItem = await queryRunner.manager.findOne(PurchaseOrderItem, { where: { id: original.refId } });
         if (poItem) {
-          await this.updatePOStatus(tx, poItem.poId);
+          await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
+            receivedQty: Math.max(0, poItem.receivedQty - original.qty),
+          });
+          await this.updatePOStatus(queryRunner.manager, poItem.poId);
         }
       }
 
+      // part, lot, warehouse 정보 조회
+      const [part, lot, toWarehouse] = await Promise.all([
+        this.partMasterRepository.findOne({ where: { id: original.partId } }),
+        original.lotId ? this.lotRepository.findOne({ where: { id: original.lotId } }) : null,
+        original.toWarehouseId ? this.warehouseRepository.findOne({ where: { id: original.toWarehouseId } }) : null,
+      ]);
+
+      await queryRunner.commitTransaction();
+
       return {
-        ...cancelTx,
+        ...savedCancelTx,
         partCode: part?.partCode,
         partName: part?.partName,
         partType: part?.partType,
@@ -356,7 +455,12 @@ export class ArrivalService {
         warehouseCode: toWarehouse?.warehouseCode,
         warehouseName: toWarehouse?.warehouseName,
       };
-    });
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /** 오늘 입하 통계 */
@@ -367,40 +471,43 @@ export class ArrivalService {
     todayEnd.setHours(23, 59, 59, 999);
 
     const [todayCount, todayQtyResult, unrecevedPoCount, totalCount] = await Promise.all([
-      this.prisma.stockTransaction.count({
-        where: { transType: 'MAT_IN', status: 'DONE', transDate: { gte: todayStart, lte: todayEnd } },
+      this.stockTransactionRepository.count({
+        where: { transType: 'MAT_IN', status: 'DONE', transDate: Between(todayStart, todayEnd) },
       }),
-      this.prisma.stockTransaction.aggregate({
-        where: { transType: 'MAT_IN', status: 'DONE', transDate: { gte: todayStart, lte: todayEnd } },
-        _sum: { qty: true },
+      this.stockTransactionRepository
+        .createQueryBuilder('tx')
+        .select('SUM(tx.qty)', 'sumQty')
+        .where('tx.transType = :transType', { transType: 'MAT_IN' })
+        .andWhere('tx.status = :status', { status: 'DONE' })
+        .andWhere('tx.transDate BETWEEN :start AND :end', { start: todayStart, end: todayEnd })
+        .getRawOne(),
+      this.purchaseOrderRepository.count({
+        where: { status: In(['CONFIRMED', 'PARTIAL']), deletedAt: IsNull() },
       }),
-      this.prisma.purchaseOrder.count({
-        where: { status: { in: ['CONFIRMED', 'PARTIAL'] }, deletedAt: null },
-      }),
-      this.prisma.stockTransaction.count({
+      this.stockTransactionRepository.count({
         where: { transType: 'MAT_IN' },
       }),
     ]);
 
     return {
       todayCount,
-      todayQty: todayQtyResult._sum.qty || 0,
-      unrecevedPoCount: unrecevedPoCount,
+      todayQty: parseInt(todayQtyResult?.sumQty) || 0,
+      unrecevedPoCount,
       totalCount,
     };
   }
 
   /** PO 상태 재계산 */
-  private async updatePOStatus(tx: any, poId: string) {
-    const poItems = await tx.purchaseOrderItem.findMany({
+  private async updatePOStatus(manager: any, poId: string) {
+    const poItems = await manager.find(PurchaseOrderItem, {
       where: { poId },
     });
 
     const allReceived = poItems.every(
-      (item: { receivedQty: number; orderQty: number }) => item.receivedQty >= item.orderQty,
+      (item: PurchaseOrderItem) => item.receivedQty >= item.orderQty,
     );
     const someReceived = poItems.some(
-      (item: { receivedQty: number }) => item.receivedQty > 0,
+      (item: PurchaseOrderItem) => item.receivedQty > 0,
     );
 
     let newStatus: string;
@@ -412,39 +519,32 @@ export class ArrivalService {
       newStatus = 'CONFIRMED';
     }
 
-    await tx.purchaseOrder.update({
-      where: { id: poId },
-      data: { status: newStatus },
-    });
+    await manager.update(PurchaseOrder, poId, { status: newStatus });
   }
 
   /** Stock upsert (현재고 증감) */
-  private async upsertStock(tx: any, warehouseId: string, partId: string, lotId: string | null, qtyDelta: number) {
-    const existing = await tx.stock.findFirst({
+  private async upsertStock(manager: any, warehouseId: string, partId: string, lotId: string | null, qtyDelta: number) {
+    const existing = await manager.findOne(Stock, {
       where: { warehouseId, partId, lotId: lotId || null },
     });
 
     if (existing) {
       const newQty = Math.max(0, existing.qty + qtyDelta);
-      await tx.stock.update({
-        where: { id: existing.id },
-        data: {
-          qty: newQty,
-          availableQty: Math.max(0, newQty - existing.reservedQty),
-          lastTransAt: new Date(),
-        },
+      await manager.update(Stock, existing.id, {
+        qty: newQty,
+        availableQty: Math.max(0, newQty - existing.reservedQty),
+        lastTransAt: new Date(),
       });
     } else if (qtyDelta > 0) {
-      await tx.stock.create({
-        data: {
-          warehouseId,
-          partId,
-          lotId,
-          qty: qtyDelta,
-          availableQty: qtyDelta,
-          lastTransAt: new Date(),
-        },
+      const newStock = manager.create(Stock, {
+        warehouseId,
+        partId,
+        lotId,
+        qty: qtyDelta,
+        availableQty: qtyDelta,
+        lastTransAt: new Date(),
       });
+      await manager.save(newStock);
     }
   }
 }

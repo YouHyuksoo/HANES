@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. **CRUD 메서드**: 생성, 조회, 수정, 삭제 로직 구현
  * 2. **실적 집계**: 작업지시별, 설비별, 작업자별 실적 집계
- * 3. **Prisma 사용**: PrismaService를 통해 DB 접근
+ * 3. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
  *
  * 실제 DB 스키마 (prod_results 테이블):
  * - jobOrderId로 작업지시와 연결
@@ -18,7 +18,12 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Between, ILike, Not } from 'typeorm';
+import { ProdResult } from '../../../entities/prod-result.entity';
+import { JobOrder } from '../../../entities/job-order.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
+import { User } from '../../../entities/user.entity';
 import {
   CreateProdResultDto,
   UpdateProdResultDto,
@@ -30,7 +35,16 @@ import {
 export class ProdResultService {
   private readonly logger = new Logger(ProdResultService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(ProdResult)
+    private readonly prodResultRepository: Repository<ProdResult>,
+    @InjectRepository(JobOrder)
+    private readonly jobOrderRepository: Repository<JobOrder>,
+    @InjectRepository(EquipMaster)
+    private readonly equipMasterRepository: Repository<EquipMaster>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   /**
    * 생산실적 목록 조회
@@ -50,57 +64,67 @@ export class ProdResultService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(company && { company }),
       ...(jobOrderId && { jobOrderId }),
       ...(equipId && { equipId }),
       ...(workerId && { workerId }),
-      ...(lotNo && { lotNo: { contains: lotNo, mode: 'insensitive' as const } }),
+      ...(lotNo && { lotNo: ILike(`%${lotNo}%`) }),
       ...(processCode && { processCode }),
       ...(status && { status }),
       ...(startTimeFrom || startTimeTo
         ? {
-            startAt: {
-              ...(startTimeFrom && { gte: new Date(startTimeFrom) }),
-              ...(startTimeTo && { lte: new Date(startTimeTo) }),
-            },
+            startAt: Between(
+              startTimeFrom ? new Date(startTimeFrom) : new Date('1900-01-01'),
+              startTimeTo ? new Date(startTimeTo) : new Date('2099-12-31'),
+            ),
           }
         : {}),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.prodResult.findMany({
+      this.prodResultRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
+        order: { createdAt: 'DESC' },
+        relations: ['jobOrder', 'equip', 'worker'],
+        select: {
+          id: true,
+          jobOrderId: true,
+          equipId: true,
+          workerId: true,
+          lotNo: true,
+          processCode: true,
+          goodQty: true,
+          defectQty: true,
+          startAt: true,
+          endAt: true,
+          cycleTime: true,
+          status: true,
+          remark: true,
+          createdAt: true,
+          updatedAt: true,
           jobOrder: {
-            select: {
-              id: true,
-              orderNo: true,
-              planQty: true,
-              status: true,
-            },
+            id: true,
+            orderNo: true,
+            planQty: true,
+            status: true,
           },
           equip: {
-            select: {
-              id: true,
-              equipCode: true,
-              equipName: true,
-            },
+            id: true,
+            equipCode: true,
+            equipName: true,
           },
           worker: {
-            select: {
-              id: true,
-              name: true,
-              empNo: true,
-            },
+            id: true,
+            name: true,
+            empNo: true,
           },
         },
       }),
-      this.prisma.prodResult.count({ where }),
+      this.prodResultRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -110,52 +134,25 @@ export class ProdResultService {
    * 생산실적 단건 조회 (ID)
    */
   async findById(id: string) {
-    const prodResult = await this.prisma.prodResult.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        jobOrder: {
-          select: {
-            id: true,
-            orderNo: true,
-            partId: true,
-            planQty: true,
-            status: true,
-            part: {
-              select: {
-                id: true,
-                partCode: true,
-                partName: true,
-              },
-            },
-          },
-        },
-        equip: {
-          select: {
-            id: true,
-            equipCode: true,
-            equipName: true,
-          },
-        },
-        worker: {
-          select: {
-            id: true,
-            name: true,
-            empNo: true,
-          },
-        },
-        inspectResults: {
-          where: { passYn: 'N' },
-          take: 10,
-        },
-        defectLogs: {
-          where: { deletedAt: null },
-          take: 10,
-        },
-      },
+    const prodResult = await this.prodResultRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+      relations: ['jobOrder', 'jobOrder.part', 'equip', 'worker', 'inspectResults', 'defectLogs'],
     });
 
     if (!prodResult) {
       throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${id}`);
+    }
+
+    // Filter inspectResults (only passYn = 'N') and limit to 10
+    if (prodResult.inspectResults) {
+      prodResult.inspectResults = prodResult.inspectResults
+        .filter((r: any) => r.passYn === 'N')
+        .slice(0, 10);
+    }
+
+    // Limit defectLogs to 10
+    if (prodResult.defectLogs) {
+      prodResult.defectLogs = prodResult.defectLogs.slice(0, 10);
     }
 
     return prodResult;
@@ -165,23 +162,35 @@ export class ProdResultService {
    * 작업지시별 생산실적 목록 조회
    */
   async findByJobOrderId(jobOrderId: string) {
-    return this.prisma.prodResult.findMany({
-      where: { jobOrderId, deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-      include: {
+    return this.prodResultRepository.find({
+      where: { jobOrderId, deletedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+      relations: ['equip', 'worker'],
+      select: {
+        id: true,
+        jobOrderId: true,
+        equipId: true,
+        workerId: true,
+        lotNo: true,
+        processCode: true,
+        goodQty: true,
+        defectQty: true,
+        startAt: true,
+        endAt: true,
+        cycleTime: true,
+        status: true,
+        remark: true,
+        createdAt: true,
+        updatedAt: true,
         equip: {
-          select: {
-            id: true,
-            equipCode: true,
-            equipName: true,
-          },
+          id: true,
+          equipCode: true,
+          equipName: true,
         },
         worker: {
-          select: {
-            id: true,
-            name: true,
-            empNo: true,
-          },
+          id: true,
+          name: true,
+          empNo: true,
         },
       },
     });
@@ -192,8 +201,8 @@ export class ProdResultService {
    */
   async create(dto: CreateProdResultDto) {
     // 작업지시 존재 및 상태 확인
-    const jobOrder = await this.prisma.jobOrder.findFirst({
-      where: { id: dto.jobOrderId, deletedAt: null },
+    const jobOrder = await this.jobOrderRepository.findOne({
+      where: { id: dto.jobOrderId, deletedAt: IsNull() },
     });
 
     if (!jobOrder) {
@@ -206,8 +215,8 @@ export class ProdResultService {
 
     // 설비 존재 확인 (옵션)
     if (dto.equipId) {
-      const equip = await this.prisma.equipMaster.findFirst({
-        where: { id: dto.equipId, deletedAt: null },
+      const equip = await this.equipMasterRepository.findOne({
+        where: { id: dto.equipId, deletedAt: IsNull() },
       });
       if (!equip) {
         throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
@@ -216,48 +225,62 @@ export class ProdResultService {
 
     // 작업자 존재 확인 (옵션)
     if (dto.workerId) {
-      const worker = await this.prisma.user.findFirst({
-        where: { id: dto.workerId, deletedAt: null },
+      const worker = await this.userRepository.findOne({
+        where: { id: dto.workerId, deletedAt: IsNull() },
       });
       if (!worker) {
         throw new NotFoundException(`작업자를 찾을 수 없습니다: ${dto.workerId}`);
       }
     }
 
-    return this.prisma.prodResult.create({
-      data: {
-        jobOrderId: dto.jobOrderId,
-        equipId: dto.equipId,
-        workerId: dto.workerId,
-        lotNo: dto.lotNo,
-        processCode: dto.processCode,
-        goodQty: dto.goodQty ?? 0,
-        defectQty: dto.defectQty ?? 0,
-        startAt: dto.startAt ? new Date(dto.startAt) : new Date(),
-        endAt: dto.endAt ? new Date(dto.endAt) : null,
-        cycleTime: dto.cycleTime,
-        status: 'RUNNING',
-        remark: dto.remark,
-      },
-      include: {
+    const prodResult = this.prodResultRepository.create({
+      jobOrderId: dto.jobOrderId,
+      equipId: dto.equipId,
+      workerId: dto.workerId,
+      lotNo: dto.lotNo,
+      processCode: dto.processCode,
+      goodQty: dto.goodQty ?? 0,
+      defectQty: dto.defectQty ?? 0,
+      startAt: dto.startAt ? new Date(dto.startAt) : new Date(),
+      endAt: dto.endAt ? new Date(dto.endAt) : null,
+      cycleTime: dto.cycleTime,
+      status: 'RUNNING',
+      remark: dto.remark,
+    });
+
+    const saved = await this.prodResultRepository.save(prodResult);
+
+    return this.prodResultRepository.findOne({
+      where: { id: saved.id },
+      relations: ['jobOrder', 'equip', 'worker'],
+      select: {
+        id: true,
+        jobOrderId: true,
+        equipId: true,
+        workerId: true,
+        lotNo: true,
+        processCode: true,
+        goodQty: true,
+        defectQty: true,
+        startAt: true,
+        endAt: true,
+        cycleTime: true,
+        status: true,
+        remark: true,
+        createdAt: true,
+        updatedAt: true,
         jobOrder: {
-          select: {
-            id: true,
-            orderNo: true,
-          },
+          id: true,
+          orderNo: true,
         },
         equip: {
-          select: {
-            id: true,
-            equipCode: true,
-            equipName: true,
-          },
+          id: true,
+          equipCode: true,
+          equipName: true,
         },
         worker: {
-          select: {
-            id: true,
-            name: true,
-          },
+          id: true,
+          name: true,
         },
       },
     });
@@ -276,40 +299,52 @@ export class ProdResultService {
       }
     }
 
-    return this.prisma.prodResult.update({
+    const updateData: any = {};
+    if (dto.equipId !== undefined) updateData.equipId = dto.equipId;
+    if (dto.workerId !== undefined) updateData.workerId = dto.workerId;
+    if (dto.lotNo !== undefined) updateData.lotNo = dto.lotNo;
+    if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
+    if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
+    if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
+    if (dto.startAt !== undefined) updateData.startAt = new Date(dto.startAt);
+    if (dto.endAt !== undefined) updateData.endAt = new Date(dto.endAt);
+    if (dto.cycleTime !== undefined) updateData.cycleTime = dto.cycleTime;
+    if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.remark !== undefined) updateData.remark = dto.remark;
+
+    await this.prodResultRepository.update(id, updateData);
+
+    return this.prodResultRepository.findOne({
       where: { id },
-      data: {
-        ...(dto.equipId !== undefined && { equipId: dto.equipId }),
-        ...(dto.workerId !== undefined && { workerId: dto.workerId }),
-        ...(dto.lotNo !== undefined && { lotNo: dto.lotNo }),
-        ...(dto.processCode !== undefined && { processCode: dto.processCode }),
-        ...(dto.goodQty !== undefined && { goodQty: dto.goodQty }),
-        ...(dto.defectQty !== undefined && { defectQty: dto.defectQty }),
-        ...(dto.startAt !== undefined && { startAt: new Date(dto.startAt) }),
-        ...(dto.endAt !== undefined && { endAt: new Date(dto.endAt) }),
-        ...(dto.cycleTime !== undefined && { cycleTime: dto.cycleTime }),
-        ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.remark !== undefined && { remark: dto.remark }),
-      },
-      include: {
+      relations: ['jobOrder', 'equip', 'worker'],
+      select: {
+        id: true,
+        jobOrderId: true,
+        equipId: true,
+        workerId: true,
+        lotNo: true,
+        processCode: true,
+        goodQty: true,
+        defectQty: true,
+        startAt: true,
+        endAt: true,
+        cycleTime: true,
+        status: true,
+        remark: true,
+        createdAt: true,
+        updatedAt: true,
         jobOrder: {
-          select: {
-            id: true,
-            orderNo: true,
-          },
+          id: true,
+          orderNo: true,
         },
         equip: {
-          select: {
-            id: true,
-            equipCode: true,
-            equipName: true,
-          },
+          id: true,
+          equipCode: true,
+          equipName: true,
         },
         worker: {
-          select: {
-            id: true,
-            name: true,
-          },
+          id: true,
+          name: true,
         },
       },
     });
@@ -321,9 +356,10 @@ export class ProdResultService {
   async delete(id: string) {
     await this.findById(id); // 존재 확인
 
-    return this.prisma.prodResult.update({
+    await this.prodResultRepository.update(id, { deletedAt: new Date() });
+
+    return this.prodResultRepository.findOne({
       where: { id },
-      data: { deletedAt: new Date() },
     });
   }
 
@@ -339,21 +375,38 @@ export class ProdResultService {
       );
     }
 
-    return this.prisma.prodResult.update({
+    const updateData: any = {
+      status: 'DONE',
+      endAt: dto.endAt ? new Date(dto.endAt) : new Date(),
+    };
+    if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
+    if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
+    if (dto.remark) updateData.remark = dto.remark;
+
+    await this.prodResultRepository.update(id, updateData);
+
+    return this.prodResultRepository.findOne({
       where: { id },
-      data: {
-        status: 'DONE',
-        endAt: dto.endAt ? new Date(dto.endAt) : new Date(),
-        ...(dto.goodQty !== undefined && { goodQty: dto.goodQty }),
-        ...(dto.defectQty !== undefined && { defectQty: dto.defectQty }),
-        ...(dto.remark && { remark: dto.remark }),
-      },
-      include: {
+      relations: ['jobOrder'],
+      select: {
+        id: true,
+        jobOrderId: true,
+        equipId: true,
+        workerId: true,
+        lotNo: true,
+        processCode: true,
+        goodQty: true,
+        defectQty: true,
+        startAt: true,
+        endAt: true,
+        cycleTime: true,
+        status: true,
+        remark: true,
+        createdAt: true,
+        updatedAt: true,
         jobOrder: {
-          select: {
-            id: true,
-            orderNo: true,
-          },
+          id: true,
+          orderNo: true,
         },
       },
     });
@@ -369,12 +422,13 @@ export class ProdResultService {
       throw new BadRequestException(`이미 취소된 실적입니다.`);
     }
 
-    return this.prisma.prodResult.update({
+    const updateData: any = { status: 'CANCELED' };
+    if (remark) updateData.remark = remark;
+
+    await this.prodResultRepository.update(id, updateData);
+
+    return this.prodResultRepository.findOne({
       where: { id },
-      data: {
-        status: 'CANCELED',
-        ...(remark && { remark }),
-      },
     });
   }
 
@@ -384,20 +438,19 @@ export class ProdResultService {
    * 작업지시별 실적 집계
    */
   async getSummaryByJobOrder(jobOrderId: string) {
-    const summary = await this.prisma.prodResult.aggregate({
-      where: { jobOrderId, deletedAt: null, status: { not: 'CANCELED' } },
-      _sum: {
-        goodQty: true,
-        defectQty: true,
-      },
-      _avg: {
-        cycleTime: true,
-      },
-      _count: true,
-    });
+    const summary = await this.prodResultRepository
+      .createQueryBuilder('pr')
+      .select('SUM(pr.goodQty)', 'totalGoodQty')
+      .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
+      .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
+      .addSelect('COUNT(*)', 'resultCount')
+      .where('pr.jobOrderId = :jobOrderId', { jobOrderId })
+      .andWhere('pr.deletedAt IS NULL')
+      .andWhere('pr.status != :status', { status: 'CANCELED' })
+      .getRawOne();
 
-    const totalGoodQty = summary._sum.goodQty ?? 0;
-    const totalDefectQty = summary._sum.defectQty ?? 0;
+    const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
+    const totalDefectQty = summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0;
     const totalQty = totalGoodQty + totalDefectQty;
 
     return {
@@ -406,8 +459,8 @@ export class ProdResultService {
       totalDefectQty,
       totalQty,
       defectRate: totalQty > 0 ? (totalDefectQty / totalQty) * 100 : 0,
-      avgCycleTime: summary._avg.cycleTime ? Number(summary._avg.cycleTime) : null,
-      resultCount: summary._count,
+      avgCycleTime: summary?.avgCycleTime ? Number(summary.avgCycleTime) : null,
+      resultCount: summary?.resultCount ? parseInt(summary.resultCount) : 0,
     };
   }
 
@@ -415,33 +468,27 @@ export class ProdResultService {
    * 설비별 실적 집계
    */
   async getSummaryByEquip(equipId: string, dateFrom?: string, dateTo?: string) {
-    const where: any = {
-      equipId,
-      deletedAt: null,
-      status: { not: 'CANCELED' },
-    };
+    const queryBuilder = this.prodResultRepository
+      .createQueryBuilder('pr')
+      .select('SUM(pr.goodQty)', 'totalGoodQty')
+      .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
+      .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
+      .addSelect('COUNT(*)', 'resultCount')
+      .where('pr.equipId = :equipId', { equipId })
+      .andWhere('pr.deletedAt IS NULL')
+      .andWhere('pr.status != :status', { status: 'CANCELED' });
 
     if (dateFrom || dateTo) {
-      where.startAt = {
-        ...(dateFrom && { gte: new Date(dateFrom) }),
-        ...(dateTo && { lte: new Date(dateTo) }),
-      };
+      queryBuilder.andWhere('pr.startAt BETWEEN :dateFrom AND :dateTo', {
+        dateFrom: dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
+        dateTo: dateTo ? new Date(dateTo) : new Date('2099-12-31'),
+      });
     }
 
-    const summary = await this.prisma.prodResult.aggregate({
-      where,
-      _sum: {
-        goodQty: true,
-        defectQty: true,
-      },
-      _avg: {
-        cycleTime: true,
-      },
-      _count: true,
-    });
+    const summary = await queryBuilder.getRawOne();
 
-    const totalGoodQty = summary._sum.goodQty ?? 0;
-    const totalDefectQty = summary._sum.defectQty ?? 0;
+    const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
+    const totalDefectQty = summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0;
     const totalQty = totalGoodQty + totalDefectQty;
 
     return {
@@ -450,8 +497,8 @@ export class ProdResultService {
       totalDefectQty,
       totalQty,
       defectRate: totalQty > 0 ? (totalDefectQty / totalQty) * 100 : 0,
-      avgCycleTime: summary._avg.cycleTime ? Number(summary._avg.cycleTime) : null,
-      resultCount: summary._count,
+      avgCycleTime: summary?.avgCycleTime ? Number(summary.avgCycleTime) : null,
+      resultCount: summary?.resultCount ? parseInt(summary.resultCount) : 0,
     };
   }
 
@@ -459,33 +506,27 @@ export class ProdResultService {
    * 작업자별 실적 집계
    */
   async getSummaryByWorker(workerId: string, dateFrom?: string, dateTo?: string) {
-    const where: any = {
-      workerId,
-      deletedAt: null,
-      status: { not: 'CANCELED' },
-    };
+    const queryBuilder = this.prodResultRepository
+      .createQueryBuilder('pr')
+      .select('SUM(pr.goodQty)', 'totalGoodQty')
+      .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
+      .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
+      .addSelect('COUNT(*)', 'resultCount')
+      .where('pr.workerId = :workerId', { workerId })
+      .andWhere('pr.deletedAt IS NULL')
+      .andWhere('pr.status != :status', { status: 'CANCELED' });
 
     if (dateFrom || dateTo) {
-      where.startAt = {
-        ...(dateFrom && { gte: new Date(dateFrom) }),
-        ...(dateTo && { lte: new Date(dateTo) }),
-      };
+      queryBuilder.andWhere('pr.startAt BETWEEN :dateFrom AND :dateTo', {
+        dateFrom: dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
+        dateTo: dateTo ? new Date(dateTo) : new Date('2099-12-31'),
+      });
     }
 
-    const summary = await this.prisma.prodResult.aggregate({
-      where,
-      _sum: {
-        goodQty: true,
-        defectQty: true,
-      },
-      _avg: {
-        cycleTime: true,
-      },
-      _count: true,
-    });
+    const summary = await queryBuilder.getRawOne();
 
-    const totalGoodQty = summary._sum.goodQty ?? 0;
-    const totalDefectQty = summary._sum.defectQty ?? 0;
+    const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
+    const totalDefectQty = summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0;
     const totalQty = totalGoodQty + totalDefectQty;
 
     return {
@@ -494,8 +535,8 @@ export class ProdResultService {
       totalDefectQty,
       totalQty,
       defectRate: totalQty > 0 ? (totalDefectQty / totalQty) * 100 : 0,
-      avgCycleTime: summary._avg.cycleTime ? Number(summary._avg.cycleTime) : null,
-      resultCount: summary._count,
+      avgCycleTime: summary?.avgCycleTime ? Number(summary.avgCycleTime) : null,
+      resultCount: summary?.resultCount ? parseInt(summary.resultCount) : 0,
     };
   }
 
@@ -503,14 +544,11 @@ export class ProdResultService {
    * 일자별 실적 집계 (대시보드용)
    */
   async getDailySummary(dateFrom: string, dateTo: string) {
-    const results = await this.prisma.prodResult.findMany({
+    const results = await this.prodResultRepository.find({
       where: {
-        deletedAt: null,
-        status: { not: 'CANCELED' },
-        startAt: {
-          gte: new Date(dateFrom),
-          lte: new Date(dateTo),
-        },
+        deletedAt: IsNull(),
+        status: Not('CANCELED'),
+        startAt: Between(new Date(dateFrom), new Date(dateTo)),
       },
       select: {
         startAt: true,

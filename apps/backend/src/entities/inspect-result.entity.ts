@@ -1,0 +1,58 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
+
+@Entity({ name: 'INSPECT_RESULTS' })
+@Index(['PROD_RESULT_ID'])
+@Index(['PASS_YN'])
+@Index(['SERIAL_NO'])
+export class InspectResult {
+  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
+  id: string;
+
+  @Column({ name: 'PROD_RESULT_ID', length: 255 })
+  prodResultId: string;
+
+  @Column({ name: 'SERIAL_NO', length: 255, nullable: true })
+  serialNo: string | null;
+
+  @Column({ name: 'INSPECT_TYPE', length: 50, nullable: true })
+  inspectType: string | null;
+
+  @Column({ name: 'PASS_YN', length: 1, default: 'Y' })
+  passYn: string;
+
+  @Column({ name: 'ERROR_CODE', length: 50, nullable: true })
+  errorCode: string | null;
+
+  @Column({ name: 'ERROR_DETAIL', length: 500, nullable: true })
+  errorDetail: string | null;
+
+  @Column({ name: 'INSPECT_DATA', type: 'clob', nullable: true })
+  inspectData: string | null;
+
+  @Column({ name: 'INSPECT_TIME', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  inspectAt: Date;
+
+  @Column({ name: 'INSPECTOR_ID', length: 255, nullable: true })
+  inspectorId: string | null;
+
+  @Column({ name: 'COMPANY', length: 255, nullable: true })
+  company: string | null;
+
+  @Column({ name: 'PLANT_CD', length: 255, nullable: true })
+  plant: string | null;
+
+  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  createdBy: string | null;
+
+  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  updatedBy: string | null;
+
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
+  createdAt: Date;
+}

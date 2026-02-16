@@ -16,7 +16,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PrismaModule } from './prisma/prisma.module';
+import { DatabaseModule } from './database/database.module';
 import configuration from './config/configuration';
 
 // 기능 모듈
@@ -44,8 +44,8 @@ import { SystemModule } from './modules/system/system.module';
       load: [configuration],
     }),
 
-    // 데이터베이스 (글로벌)
-    PrismaModule,
+    // 데이터베이스 (글로벌) - TypeORM + Oracle
+    DatabaseModule,
 
     // ===== 기능 모듈 =====
 

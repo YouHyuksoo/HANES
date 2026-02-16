@@ -20,7 +20,22 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { InventoryModule } from '../inventory/inventory.module';
+
+// Entities
+import { MatLot } from '../../entities/mat-lot.entity';
+import { MatStock } from '../../entities/mat-stock.entity';
+import { MatIssue } from '../../entities/mat-issue.entity';
+import { Lot } from '../../entities/lot.entity';
+import { Stock } from '../../entities/stock.entity';
+import { StockTransaction } from '../../entities/stock-transaction.entity';
+import { PurchaseOrder } from '../../entities/purchase-order.entity';
+import { PurchaseOrderItem } from '../../entities/purchase-order-item.entity';
+import { PartMaster } from '../../entities/part-master.entity';
+import { Warehouse } from '../../entities/warehouse.entity';
+import { InvAdjLog } from '../../entities/inv-adj-log.entity';
+import { JobOrder } from '../../entities/job-order.entity';
 
 // 기존 컨트롤러/서비스
 import { MatLotController } from './controllers/mat-lot.controller';
@@ -59,7 +74,23 @@ import { ReceivingController } from './controllers/receiving.controller';
 import { ReceivingService } from './services/receiving.service';
 
 @Module({
-  imports: [InventoryModule],
+  imports: [
+    InventoryModule,
+    TypeOrmModule.forFeature([
+      MatLot,
+      MatStock,
+      MatIssue,
+      Lot,
+      Stock,
+      StockTransaction,
+      PurchaseOrder,
+      PurchaseOrderItem,
+      PartMaster,
+      Warehouse,
+      InvAdjLog,
+      JobOrder,
+    ]),
+  ],
   controllers: [
     MatLotController,
     MatStockController,

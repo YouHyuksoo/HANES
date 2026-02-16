@@ -1,78 +1,92 @@
 /**
  * @file src/modules/master/services/department.service.ts
- * @description 부서마스터 비즈니스 로직 서비스
+ * @description 부서마스터 비즈니스 로직 서비스 - TypeORM Repository 패턴
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { DepartmentMaster } from '../../../entities/department-master.entity';
 import { CreateDepartmentDto, UpdateDepartmentDto, DepartmentQueryDto } from '../dto/department.dto';
 
 @Injectable()
 export class DepartmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(DepartmentMaster)
+    private readonly departmentRepository: Repository<DepartmentMaster>,
+  ) {}
 
   async findAll(query: DepartmentQueryDto, company?: string) {
     const { page = 1, limit = 50, search, useYn } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(company && { company }),
-      ...(useYn && { useYn }),
-      ...(search && {
-        OR: [
-          { deptCode: { contains: search, mode: 'insensitive' as const } },
-          { deptName: { contains: search, mode: 'insensitive' as const } },
-          { managerName: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    const queryBuilder = this.departmentRepository.createQueryBuilder('dept')
+      .where('dept.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('dept.company = :company', { company });
+    }
+
+    if (useYn) {
+      queryBuilder.andWhere('dept.useYn = :useYn', { useYn });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(dept.deptCode) LIKE UPPER(:search) OR UPPER(dept.deptName) LIKE UPPER(:search) OR UPPER(dept.managerName) LIKE UPPER(:search))',
+        { search: `%${search}%` }
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.departmentMaster.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ sortOrder: 'asc' }, { deptCode: 'asc' }],
-      }),
-      this.prisma.departmentMaster.count({ where }),
+      queryBuilder
+        .orderBy('dept.sortOrder', 'ASC')
+        .addOrderBy('dept.deptCode', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
   }
 
   async findById(id: string) {
-    const dept = await this.prisma.departmentMaster.findFirst({ where: { id, deletedAt: null } });
+    const dept = await this.departmentRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
     if (!dept) throw new NotFoundException(`부서를 찾을 수 없습니다: ${id}`);
     return dept;
   }
 
   async create(dto: CreateDepartmentDto) {
-    const existing = await this.prisma.departmentMaster.findFirst({
-      where: { deptCode: dto.deptCode, deletedAt: null },
+    const existing = await this.departmentRepository.findOne({
+      where: { deptCode: dto.deptCode, deletedAt: IsNull() },
     });
     if (existing) throw new ConflictException(`이미 존재하는 부서코드입니다: ${dto.deptCode}`);
 
-    return this.prisma.departmentMaster.create({
-      data: {
-        deptCode: dto.deptCode,
-        deptName: dto.deptName,
-        parentDeptCode: dto.parentDeptCode,
-        sortOrder: dto.sortOrder ?? 0,
-        managerName: dto.managerName,
-        remark: dto.remark,
-        useYn: dto.useYn ?? 'Y',
-      },
+    const dept = this.departmentRepository.create({
+      deptCode: dto.deptCode,
+      deptName: dto.deptName,
+      parentDeptCode: dto.parentDeptCode,
+      sortOrder: dto.sortOrder ?? 0,
+      managerName: dto.managerName,
+      remark: dto.remark,
+      useYn: dto.useYn ?? 'Y',
     });
+
+    return this.departmentRepository.save(dept);
   }
 
   async update(id: string, dto: UpdateDepartmentDto) {
     await this.findById(id);
-    return this.prisma.departmentMaster.update({ where: { id }, data: dto });
+    await this.departmentRepository.update(id, dto);
+    return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    return this.prisma.departmentMaster.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.departmentRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 }

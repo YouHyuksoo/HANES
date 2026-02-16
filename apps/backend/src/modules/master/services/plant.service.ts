@@ -1,51 +1,65 @@
 /**
  * @file src/modules/master/services/plant.service.ts
- * @description 공장/라인 비즈니스 로직 서비스
+ * @description 공장/라인 비즈니스 로직 서비스 - TypeORM Repository 패턴
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { Plant } from '../../../entities/plant.entity';
 import { CreatePlantDto, UpdatePlantDto, PlantQueryDto } from '../dto/plant.dto';
 
 @Injectable()
 export class PlantService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(Plant)
+    private readonly plantRepository: Repository<Plant>,
+  ) {}
 
   async findAll(query: PlantQueryDto) {
     const { page = 1, limit = 10, plantType, search, useYn, parentId } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(plantType && { plantType }),
-      ...(useYn && { useYn }),
-      ...(parentId && { parentId }),
-      ...(search && {
-        OR: [
-          { plantCode: { contains: search, mode: 'insensitive' as const } },
-          { plantName: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    const queryBuilder = this.plantRepository.createQueryBuilder('plant')
+      .leftJoinAndSelect('plant.parent', 'parent')
+      .where('plant.deletedAt IS NULL');
+
+    if (plantType) {
+      queryBuilder.andWhere('plant.plantType = :plantType', { plantType });
+    }
+
+    if (useYn) {
+      queryBuilder.andWhere('plant.useYn = :useYn', { useYn });
+    }
+
+    if (parentId) {
+      queryBuilder.andWhere('plant.parentId = :parentId', { parentId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(plant.plantCode) LIKE UPPER(:search) OR UPPER(plant.plantName) LIKE UPPER(:search))',
+        { search: `%${search}%` }
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.plant.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ plantType: 'asc' }, { sortOrder: 'asc' }],
-        include: { parent: { select: { id: true, plantName: true } } },
-      }),
-      this.prisma.plant.count({ where }),
+      queryBuilder
+        .orderBy('plant.plantType', 'ASC')
+        .addOrderBy('plant.sortOrder', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
   }
 
   async findById(id: string) {
-    const plant = await this.prisma.plant.findFirst({
-      where: { id, deletedAt: null },
-      include: { parent: true, children: { where: { deletedAt: null } } },
+    const plant = await this.plantRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+      relations: ['parent', 'children'],
     });
 
     if (!plant) throw new NotFoundException(`공장/라인을 찾을 수 없습니다: ${id}`);
@@ -53,62 +67,69 @@ export class PlantService {
   }
 
   async findHierarchy(rootId?: string) {
-    return this.prisma.plant.findMany({
-      where: { deletedAt: null, ...(rootId ? { id: rootId } : { parentId: null }) },
-      orderBy: [{ sortOrder: 'asc' }],
-      include: {
-        children: {
-          where: { deletedAt: null },
-          include: { children: { where: { deletedAt: null } } },
-        },
-      },
+    const where: any = { deletedAt: IsNull() };
+    if (rootId) {
+      where.id = rootId;
+    } else {
+      where.parentId = IsNull();
+    }
+
+    return this.plantRepository.find({
+      where,
+      order: { sortOrder: 'asc' },
+      relations: ['children', 'children.children'],
     });
   }
 
   async create(dto: CreatePlantDto) {
-    const existing = await this.prisma.plant.findFirst({
+    const existing = await this.plantRepository.findOne({
       where: {
         plantCode: dto.plantCode,
-        shopCode: dto.shopCode ?? null,
-        lineCode: dto.lineCode ?? null,
-        cellCode: dto.cellCode ?? null,
-        deletedAt: null,
+        shopCode: dto.shopCode ?? IsNull(),
+        lineCode: dto.lineCode ?? IsNull(),
+        cellCode: dto.cellCode ?? IsNull(),
+        deletedAt: IsNull(),
       },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 공장/라인입니다`);
 
-    return this.prisma.plant.create({
-      data: {
-        plantCode: dto.plantCode,
-        shopCode: dto.shopCode,
-        lineCode: dto.lineCode,
-        cellCode: dto.cellCode,
-        plantName: dto.plantName,
-        plantType: dto.plantType,
-        parentId: dto.parentId,
-        sortOrder: dto.sortOrder ?? 0,
-        useYn: dto.useYn ?? 'Y',
-      },
+    const plant = this.plantRepository.create({
+      plantCode: dto.plantCode,
+      shopCode: dto.shopCode,
+      lineCode: dto.lineCode,
+      cellCode: dto.cellCode,
+      plantName: dto.plantName,
+      plantType: dto.plantType,
+      parentId: dto.parentId,
+      sortOrder: dto.sortOrder ?? 0,
+      useYn: dto.useYn ?? 'Y',
     });
+
+    return this.plantRepository.save(plant);
   }
 
   async update(id: string, dto: UpdatePlantDto) {
     await this.findById(id);
-    return this.prisma.plant.update({ where: { id }, data: dto });
+    await this.plantRepository.update(id, dto);
+    return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    const childCount = await this.prisma.plant.count({ where: { parentId: id, deletedAt: null } });
+    const childCount = await this.plantRepository.count({
+      where: { parentId: id, deletedAt: IsNull() },
+    });
     if (childCount > 0) throw new ConflictException(`하위 항목이 존재합니다`);
-    return this.prisma.plant.update({ where: { id }, data: { deletedAt: new Date() } });
+    
+    await this.plantRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 
   async findByType(plantType: string) {
-    return this.prisma.plant.findMany({
-      where: { plantType, useYn: 'Y', deletedAt: null },
-      orderBy: [{ sortOrder: 'asc' }],
+    return this.plantRepository.find({
+      where: { plantType, useYn: 'Y', deletedAt: IsNull() },
+      order: { sortOrder: 'asc' },
     });
   }
 }

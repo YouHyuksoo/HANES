@@ -9,6 +9,7 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ComCodeController } from './controllers/com-code.controller';
 import { ComCodeService } from './services/com-code.service';
 import { PlantController } from './controllers/plant.controller';
@@ -44,7 +45,31 @@ import { CompanyService } from './services/company.service';
 import { DepartmentController } from './controllers/department.controller';
 import { DepartmentService } from './services/department.service';
 
+// TypeORM Entities
+import { PartMaster } from '../../entities/part-master.entity';
+import { BomMaster } from '../../entities/bom-master.entity';
+import { ComCode } from '../../entities/com-code.entity';
+import { CompanyMaster } from '../../entities/company-master.entity';
+import { DepartmentMaster } from '../../entities/department-master.entity';
+import { Plant } from '../../entities/plant.entity';
+import { ProcessMap } from '../../entities/process-map.entity';
+import { WorkerMaster } from '../../entities/worker-master.entity';
+import { PartnerMaster } from '../../entities/partner-master.entity';
+
 @Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      PartMaster,
+      BomMaster,
+      ComCode,
+      CompanyMaster,
+      DepartmentMaster,
+      Plant,
+      ProcessMap,
+      WorkerMaster,
+      PartnerMaster,
+    ]),
+  ],
   controllers: [
     ComCodeController,
     PlantController,

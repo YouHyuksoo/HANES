@@ -1,6 +1,6 @@
 /**
  * @file src/modules/material/services/purchase-order.service.ts
- * @description 구매발주(PO) 비즈니스 로직 서비스
+ * @description 구매발주(PO) 비즈니스 로직 서비스 (TypeORM)
  *
  * 초보자 가이드:
  * 1. **PO 생성**: 품목 목록과 함께 PO 생성 (트랜잭션 처리)
@@ -9,81 +9,144 @@
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Like, DataSource, In } from 'typeorm';
+import { PurchaseOrder } from '../../../entities/purchase-order.entity';
+import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
 
 @Injectable()
 export class PurchaseOrderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(PurchaseOrder)
+    private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
+    @InjectRepository(PurchaseOrderItem)
+    private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   async findAll(query: PurchaseOrderQueryDto) {
     const { page = 1, limit = 10, search, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(status && { status }),
-      ...(search && {
-        OR: [
-          { poNo: { contains: search, mode: 'insensitive' as const } },
-          { partnerName: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-      ...(fromDate && { orderDate: { gte: new Date(fromDate) } }),
-      ...(toDate && { orderDate: { ...((fromDate && { gte: new Date(fromDate) }) || {}), lte: new Date(toDate) } }),
     };
 
+    if (search) {
+      where.poNo = Like(`%${search}%`);
+      // partnerName 검색은 메모리에서 처리 (TypeORM에서 OR 조건이 복잡함)
+    }
+
+    if (fromDate && toDate) {
+      where.orderDate = Like(`%`); // placeholder
+    }
+
     const [data, total] = await Promise.all([
-      this.prisma.purchaseOrder.findMany({
+      this.purchaseOrderRepository.find({
         where,
         skip,
         take: limit,
-        include: {
-          items: { include: { part: { select: { id: true, partCode: true, partName: true, unit: true } } } },
-        },
-        orderBy: { createdAt: 'desc' },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.purchaseOrder.count({ where }),
+      this.purchaseOrderRepository.count({ where: { deletedAt: IsNull(), ...(status && { status }) } }),
     ]);
 
-    const flattenedData = data.map((po) => ({
-      ...po,
-      items: po.items.map((item) => ({
-        ...item,
-        partCode: item.part?.partCode,
-        partName: item.part?.partName,
-        unit: item.part?.unit,
-        part: undefined,
-      })),
-    }));
+    // 품목 정보 조회 및 평면화
+    const poIds = data.map((po) => po.id);
+    const items = poIds.length > 0 
+      ? await this.purchaseOrderItemRepository.find({ where: { poId: In(poIds) } })
+      : [];
 
-    return { data: flattenedData, total, page, limit };
+    const partIds = items.map((item) => item.partId).filter(Boolean);
+    const parts = partIds.length > 0 ? await this.partMasterRepository.findByIds(partIds) : [];
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+
+    // PO별 아이템 그룹화
+    const itemsByPoId = new Map<string, typeof items>();
+    for (const item of items) {
+      if (!itemsByPoId.has(item.poId)) {
+        itemsByPoId.set(item.poId, []);
+      }
+      itemsByPoId.get(item.poId)!.push(item);
+    }
+
+    let result = data.map((po) => {
+      const poItems = itemsByPoId.get(po.id) || [];
+      const enrichedItems = poItems.map((item) => {
+        const part = partMap.get(item.partId);
+        return {
+          ...item,
+          partCode: part?.partCode,
+          partName: part?.partName,
+          unit: part?.unit,
+        };
+      });
+
+      return {
+        ...po,
+        items: enrichedItems,
+      };
+    });
+
+    // 검색어로 partnerName 필터링
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(
+        (po) =>
+          po.poNo?.toLowerCase().includes(searchLower) ||
+          po.partnerName?.toLowerCase().includes(searchLower),
+      );
+    }
+
+    // 날짜 필터링
+    if (fromDate) {
+      const fromDateObj = new Date(fromDate);
+      result = result.filter((po) => po.orderDate && po.orderDate >= fromDateObj);
+    }
+    if (toDate) {
+      const toDateObj = new Date(toDate);
+      result = result.filter((po) => po.orderDate && po.orderDate <= toDateObj);
+    }
+
+    return { data: result, total: result.length, page, limit };
   }
 
   async findById(id: string) {
-    const po = await this.prisma.purchaseOrder.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        items: { include: { part: { select: { id: true, partCode: true, partName: true, unit: true } } } },
-      },
+    const po = await this.purchaseOrderRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
 
+    const items = await this.purchaseOrderItemRepository.find({
+      where: { poId: id },
+    });
+
+    const partIds = items.map((item) => item.partId).filter(Boolean);
+    const parts = partIds.length > 0 ? await this.partMasterRepository.findByIds(partIds) : [];
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+
     return {
       ...po,
-      items: po.items.map((item) => ({
-        ...item,
-        partCode: item.part?.partCode,
-        partName: item.part?.partName,
-        unit: item.part?.unit,
-        part: undefined,
-      })),
+      items: items.map((item) => {
+        const part = partMap.get(item.partId);
+        return {
+          ...item,
+          partCode: part?.partCode,
+          partName: part?.partName,
+          unit: part?.unit,
+        };
+      }),
     };
   }
 
   async create(dto: CreatePurchaseOrderDto) {
-    const existing = await this.prisma.purchaseOrder.findFirst({
-      where: { poNo: dto.poNo, deletedAt: null },
+    const existing = await this.purchaseOrderRepository.findOne({
+      where: { poNo: dto.poNo, deletedAt: IsNull() },
     });
     if (existing) throw new ConflictException(`이미 존재하는 PO 번호입니다: ${dto.poNo}`);
 
@@ -91,85 +154,122 @@ export class PurchaseOrderService {
       return sum + (item.orderQty * (item.unitPrice ?? 0));
     }, 0);
 
-    const created = await this.prisma.purchaseOrder.create({
-      data: {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // PO 생성
+      const po = queryRunner.manager.create(PurchaseOrder, {
         poNo: dto.poNo,
         partnerId: dto.partnerId,
         partnerName: dto.partnerName,
         orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
         remark: dto.remark,
         totalAmount,
-        items: {
-          create: dto.items.map((item) => ({
-            partId: item.partId,
-            orderQty: item.orderQty,
-            unitPrice: item.unitPrice,
-            remark: item.remark,
-          })),
-        },
-      },
-      include: { items: { include: { part: true } } },
-    });
+      });
+      const savedPo = await queryRunner.manager.save(po);
 
-    return {
-      ...created,
-      items: created.items.map((item) => ({
-        ...item,
-        partCode: item.part?.partCode,
-        partName: item.part?.partName,
-        unit: item.part?.unit,
-        part: undefined,
-      })),
-    };
+      // 품목 생성
+      const itemEntities = dto.items.map((item) =>
+        queryRunner.manager.create(PurchaseOrderItem, {
+          poId: savedPo.id,
+          partId: item.partId,
+          orderQty: item.orderQty,
+          unitPrice: item.unitPrice,
+          remark: item.remark,
+        }),
+      );
+      const savedItems = await queryRunner.manager.save(itemEntities);
+
+      // part 정보 조회
+      const partIds = savedItems.map((item: PurchaseOrderItem) => item.partId).filter(Boolean);
+      const parts = partIds.length > 0 ? await this.partMasterRepository.findByIds(partIds) : [];
+      const partMap = new Map(parts.map((p) => [p.id, p]));
+
+      await queryRunner.commitTransaction();
+
+      return {
+        ...savedPo,
+        items: savedItems.map((item: PurchaseOrderItem) => {
+          const part = partMap.get(item.partId);
+          return {
+            ...item,
+            partCode: part?.partCode,
+            partName: part?.partName,
+            unit: part?.unit,
+          };
+        }),
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async update(id: string, dto: UpdatePurchaseOrderDto) {
     await this.findById(id);
     const { items, ...poData } = dto;
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       if (items) {
-        await tx.purchaseOrderItem.deleteMany({ where: { poId: id } });
+        // 기존 품목 삭제
+        await queryRunner.manager.delete(PurchaseOrderItem, { poId: id });
+
         const totalAmount = items.reduce((sum, item) => sum + (item.orderQty * (item.unitPrice ?? 0)), 0);
-        await tx.purchaseOrder.update({
-          where: { id },
-          data: {
-            ...poData,
-            ...(poData.orderDate && { orderDate: new Date(poData.orderDate) }),
-            ...(poData.dueDate && { dueDate: new Date(poData.dueDate) }),
-            totalAmount,
-            items: {
-              create: items.map((item) => ({
-                partId: item.partId,
-                orderQty: item.orderQty,
-                unitPrice: item.unitPrice,
-                remark: item.remark,
-              })),
-            },
-          },
-        });
+
+        // PO 업데이트
+        const updateData: any = {
+          ...poData,
+          totalAmount,
+        };
+        if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
+        if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
+
+        await queryRunner.manager.update(PurchaseOrder, id, updateData);
+
+        // 새 품목 생성
+        const itemEntities = items.map((item) =>
+          queryRunner.manager.create(PurchaseOrderItem, {
+            poId: id,
+            partId: item.partId,
+            orderQty: item.orderQty,
+            unitPrice: item.unitPrice,
+            remark: item.remark,
+          }),
+        );
+        await queryRunner.manager.save(itemEntities);
       } else {
-        await tx.purchaseOrder.update({
-          where: { id },
-          data: {
-            ...poData,
-            ...(poData.orderDate && { orderDate: new Date(poData.orderDate) }),
-            ...(poData.dueDate && { dueDate: new Date(poData.dueDate) }),
-          },
-        });
+        const updateData: any = { ...poData };
+        if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
+        if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
+
+        await queryRunner.manager.update(PurchaseOrder, id, updateData);
       }
 
-      const updated = await this.findById(id);
-      return updated;
-    });
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+
+    return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    return this.prisma.purchaseOrder.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await this.purchaseOrderRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 }
+
+

@@ -1,0 +1,67 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  Index,
+  Unique,
+} from 'typeorm';
+
+@Entity({ name: 'PROCESS_MAPS' })
+@Unique(['PART_ID', 'SEQ'])
+@Index(['PART_ID'])
+@Index(['PROCESS_TYPE'])
+export class ProcessMap {
+  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
+  id: string;
+
+  @Column({ name: 'PART_ID', length: 255 })
+  partId: string;
+
+  @Column({ name: 'SEQ', type: 'int' })
+  seq: number;
+
+  @Column({ name: 'PROCESS_CODE', length: 255 })
+  processCode: string;
+
+  @Column({ name: 'PROCESS_NAME', length: 255 })
+  processName: string;
+
+  @Column({ name: 'PROCESS_TYPE', length: 255, nullable: true })
+  processType: string | null;
+
+  @Column({ name: 'EQUIP_TYPE', length: 255, nullable: true })
+  equipType: string | null;
+
+  @Column({ name: 'STD_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
+  stdTime: number | null;
+
+  @Column({ name: 'SETUP_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
+  setupTime: number | null;
+
+  @Column({ name: 'USE_YN', length: 1, default: 'Y' })
+  useYn: string;
+
+  @Column({ name: 'COMPANY', length: 255, nullable: true })
+  company: string | null;
+
+  @Column({ name: 'PLANT_CD', length: 255, nullable: true })
+  plant: string | null;
+
+  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  createdBy: string | null;
+
+  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  updatedBy: string | null;
+
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
+  updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
+  deletedAt: Date | null;
+}

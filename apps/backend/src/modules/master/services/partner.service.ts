@@ -1,103 +1,125 @@
 /**
  * @file src/modules/master/services/partner.service.ts
- * @description 거래처마스터 비즈니스 로직 서비스
+ * @description 거래처마스터 비즈니스 로직 서비스 - TypeORM Repository 패턴
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { CreatePartnerDto, UpdatePartnerDto, PartnerQueryDto } from '../dto/partner.dto';
 
 @Injectable()
 export class PartnerService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(PartnerMaster)
+    private readonly partnerRepository: Repository<PartnerMaster>,
+  ) {}
 
   async findAll(query: PartnerQueryDto, company?: string) {
     const { page = 1, limit = 10, partnerType, search, useYn } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(company && { company }),
-      ...(partnerType && { partnerType }),
-      ...(useYn && { useYn }),
-      ...(search && {
-        OR: [
-          { partnerCode: { contains: search, mode: 'insensitive' as const } },
-          { partnerName: { contains: search, mode: 'insensitive' as const } },
-          { bizNo: { contains: search, mode: 'insensitive' as const } },
-          { contactPerson: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    const queryBuilder = this.partnerRepository.createQueryBuilder('partner')
+      .where('partner.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('partner.company = :company', { company });
+    }
+
+    if (partnerType) {
+      queryBuilder.andWhere('partner.partnerType = :partnerType', { partnerType });
+    }
+
+    if (useYn) {
+      queryBuilder.andWhere('partner.useYn = :useYn', { useYn });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(partner.partnerCode) LIKE UPPER(:search) OR UPPER(partner.partnerName) LIKE UPPER(:search) OR UPPER(partner.bizNo) LIKE UPPER(:search) OR UPPER(partner.contactPerson) LIKE UPPER(:search))',
+        { search: `%${search}%` }
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.partnerMaster.findMany({ where, skip, take: limit, orderBy: { partnerCode: 'asc' } }),
-      this.prisma.partnerMaster.count({ where }),
+      queryBuilder
+        .orderBy('partner.partnerCode', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
   }
 
   async findById(id: string) {
-    const partner = await this.prisma.partnerMaster.findFirst({ where: { id, deletedAt: null } });
+    const partner = await this.partnerRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
     if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${id}`);
     return partner;
   }
 
   async findByCode(partnerCode: string) {
-    const partner = await this.prisma.partnerMaster.findFirst({ where: { partnerCode, deletedAt: null } });
+    const partner = await this.partnerRepository.findOne({
+      where: { partnerCode, deletedAt: IsNull() },
+    });
     if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${partnerCode}`);
     return partner;
   }
 
   async create(dto: CreatePartnerDto) {
-    const existing = await this.prisma.partnerMaster.findFirst({
-      where: { partnerCode: dto.partnerCode, deletedAt: null },
+    const existing = await this.partnerRepository.findOne({
+      where: { partnerCode: dto.partnerCode, deletedAt: IsNull() },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 거래처 코드입니다: ${dto.partnerCode}`);
 
-    return this.prisma.partnerMaster.create({
-      data: {
-        partnerCode: dto.partnerCode,
-        partnerName: dto.partnerName,
-        partnerType: dto.partnerType,
-        bizNo: dto.bizNo,
-        ceoName: dto.ceoName,
-        address: dto.address,
-        tel: dto.tel,
-        fax: dto.fax,
-        email: dto.email,
-        contactPerson: dto.contactPerson,
-        remark: dto.remark,
-        useYn: dto.useYn ?? 'Y',
-      },
+    const partner = this.partnerRepository.create({
+      partnerCode: dto.partnerCode,
+      partnerName: dto.partnerName,
+      partnerType: dto.partnerType,
+      bizNo: dto.bizNo,
+      ceoName: dto.ceoName,
+      address: dto.address,
+      tel: dto.tel,
+      fax: dto.fax,
+      email: dto.email,
+      contactPerson: dto.contactPerson,
+      remark: dto.remark,
+      useYn: dto.useYn ?? 'Y',
     });
+
+    return this.partnerRepository.save(partner);
   }
 
   async update(id: string, dto: UpdatePartnerDto) {
     await this.findById(id);
-    return this.prisma.partnerMaster.update({ where: { id }, data: dto });
+    await this.partnerRepository.update(id, dto);
+    return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    return this.prisma.partnerMaster.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.partnerRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 
   async findByType(partnerType: string) {
-    return this.prisma.partnerMaster.findMany({
-      where: { partnerType, useYn: 'Y', deletedAt: null },
-      orderBy: { partnerCode: 'asc' },
+    return this.partnerRepository.find({
+      where: { partnerType, useYn: 'Y', deletedAt: IsNull() },
+      order: { partnerCode: 'asc' },
     });
   }
 
   async getStatistics() {
     const [totalCount, supplierCount, customerCount, activeCount] = await Promise.all([
-      this.prisma.partnerMaster.count({ where: { deletedAt: null } }),
-      this.prisma.partnerMaster.count({ where: { partnerType: 'SUPPLIER', deletedAt: null } }),
-      this.prisma.partnerMaster.count({ where: { partnerType: 'CUSTOMER', deletedAt: null } }),
-      this.prisma.partnerMaster.count({ where: { useYn: 'Y', deletedAt: null } }),
+      this.partnerRepository.count({ where: { deletedAt: IsNull() } }),
+      this.partnerRepository.count({ where: { partnerType: 'SUPPLIER', deletedAt: IsNull() } }),
+      this.partnerRepository.count({ where: { partnerType: 'CUSTOMER', deletedAt: IsNull() } }),
+      this.partnerRepository.count({ where: { useYn: 'Y', deletedAt: IsNull() } }),
     ]);
 
     return { totalCount, supplierCount, customerCount, activeCount };

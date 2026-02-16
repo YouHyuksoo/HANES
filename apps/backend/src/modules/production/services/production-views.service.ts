@@ -7,10 +7,16 @@
  * 2. **샘플검사이력**: InspectResult 테이블 조회
  * 3. **포장실적**: BoxMaster 테이블 조회
  * 4. **반제품/제품재고**: Stock 테이블에서 partType=WIP/FG 필터링
+ * 5. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
  */
 
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Between, ILike, In } from 'typeorm';
+import { JobOrder } from '../../../entities/job-order.entity';
+import { InspectResult } from '../../../entities/inspect-result.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
+import { Stock } from '../../../entities/stock.entity';
 import {
   ProgressQueryDto,
   SampleInspectQueryDto,
@@ -20,7 +26,16 @@ import {
 
 @Injectable()
 export class ProductionViewsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(JobOrder)
+    private readonly jobOrderRepository: Repository<JobOrder>,
+    @InjectRepository(InspectResult)
+    private readonly inspectResultRepository: Repository<InspectResult>,
+    @InjectRepository(BoxMaster)
+    private readonly boxMasterRepository: Repository<BoxMaster>,
+    @InjectRepository(Stock)
+    private readonly stockRepository: Repository<Stock>,
+  ) {}
 
   /**
    * 작업지시 진행현황 조회 (대시보드)
@@ -29,39 +44,36 @@ export class ProductionViewsService {
     const { page = 1, limit = 20, status, planDateFrom, planDateTo, search } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: null,
-      ...(status && { status }),
-      ...(search && {
-        OR: [
-          { orderNo: { contains: search, mode: 'insensitive' } },
-          { part: { partCode: { contains: search, mode: 'insensitive' } } },
-          { part: { partName: { contains: search, mode: 'insensitive' } } },
-        ],
-      }),
-      ...(planDateFrom || planDateTo
-        ? {
-            planDate: {
-              ...(planDateFrom && { gte: new Date(planDateFrom) }),
-              ...(planDateTo && { lte: new Date(planDateTo) }),
-            },
-          }
-        : {}),
-    };
+    const queryBuilder = this.jobOrderRepository
+      .createQueryBuilder('jo')
+      .leftJoinAndSelect('jo.part', 'p')
+      .where('jo.deletedAt IS NULL')
+      .orderBy('jo.priority', 'ASC')
+      .addOrderBy('jo.planDate', 'ASC')
+      .skip(skip)
+      .take(limit);
+
+    if (status) {
+      queryBuilder.andWhere('jo.status = :status', { status });
+    }
+
+    if (planDateFrom || planDateTo) {
+      queryBuilder.andWhere('jo.planDate BETWEEN :planDateFrom AND :planDateTo', {
+        planDateFrom: planDateFrom ? new Date(planDateFrom) : new Date('1900-01-01'),
+        planDateTo: planDateTo ? new Date(planDateTo) : new Date('2099-12-31'),
+      });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(jo.orderNo ILIKE :search OR p.partCode ILIKE :search OR p.partName ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.jobOrder.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ priority: 'asc' }, { planDate: 'asc' }],
-        include: {
-          part: {
-            select: { id: true, partCode: true, partName: true, partType: true },
-          },
-        },
-      }),
-      this.prisma.jobOrder.count({ where }),
+      queryBuilder.getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
@@ -74,42 +86,33 @@ export class ProductionViewsService {
     const { page = 1, limit = 10, passYn, dateFrom, dateTo, search } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      ...(passYn && { passYn }),
-      ...(search && {
-        OR: [
-          { lotNo: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-      ...(dateFrom || dateTo
-        ? {
-            inspectDate: {
-              ...(dateFrom && { gte: new Date(dateFrom) }),
-              ...(dateTo && { lte: new Date(dateTo) }),
-            },
-          }
-        : {}),
-    };
+    const queryBuilder = this.inspectResultRepository
+      .createQueryBuilder('ir')
+      .leftJoinAndSelect('ir.prodResult', 'pr')
+      .leftJoinAndSelect('pr.jobOrder', 'jo')
+      .leftJoinAndSelect('jo.part', 'p')
+      .orderBy('ir.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    if (passYn) {
+      queryBuilder.andWhere('ir.passYn = :passYn', { passYn });
+    }
+
+    if (dateFrom || dateTo) {
+      queryBuilder.andWhere('ir.inspectDate BETWEEN :dateFrom AND :dateTo', {
+        dateFrom: dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
+        dateTo: dateTo ? new Date(dateTo) : new Date('2099-12-31'),
+      });
+    }
+
+    if (search) {
+      queryBuilder.andWhere('pr.lotNo ILIKE :search', { search: `%${search}%` });
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.inspectResult.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          prodResult: {
-            select: {
-              id: true,
-              lotNo: true,
-              jobOrder: {
-                select: { id: true, orderNo: true, part: { select: { partCode: true, partName: true } } },
-              },
-            },
-          },
-        },
-      }),
-      this.prisma.inspectResult.count({ where }),
+      queryBuilder.getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
@@ -123,31 +126,52 @@ export class ProductionViewsService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: null,
-      ...(search && {
-        OR: [
-          { boxNo: { contains: search, mode: 'insensitive' } },
-          { lotNo: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-      ...(dateFrom || dateTo
-        ? {
-            packDate: {
-              ...(dateFrom && { gte: new Date(dateFrom) }),
-              ...(dateTo && { lte: new Date(dateTo) }),
-            },
-          }
-        : {}),
+      deletedAt: IsNull(),
     };
 
+    if (search) {
+      where.boxNo = ILike(`%${search}%`);
+      // For OR condition with lotNo, we need QueryBuilder
+      const queryBuilder = this.boxMasterRepository
+        .createQueryBuilder('bm')
+        .where('bm.deletedAt IS NULL')
+        .andWhere('(bm.boxNo ILIKE :search OR bm.lotNo ILIKE :search)', {
+          search: `%${search}%`,
+        })
+        .orderBy('bm.createdAt', 'DESC')
+        .skip(skip)
+        .take(limit);
+
+      if (dateFrom || dateTo) {
+        queryBuilder.andWhere('bm.packDate BETWEEN :dateFrom AND :dateTo', {
+          dateFrom: dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
+          dateTo: dateTo ? new Date(dateTo) : new Date('2099-12-31'),
+        });
+      }
+
+      const [data, total] = await Promise.all([
+        queryBuilder.getMany(),
+        queryBuilder.getCount(),
+      ]);
+
+      return { data, total, page, limit };
+    }
+
+    if (dateFrom || dateTo) {
+      where.packDate = Between(
+        dateFrom ? new Date(dateFrom) : new Date('1900-01-01'),
+        dateTo ? new Date(dateTo) : new Date('2099-12-31'),
+      );
+    }
+
     const [data, total] = await Promise.all([
-      this.prisma.boxMaster.findMany({
+      this.boxMasterRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.boxMaster.count({ where }),
+      this.boxMasterRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -160,32 +184,26 @@ export class ProductionViewsService {
     const { page = 1, limit = 10, partType, search } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: null,
-      part: {
-        partType: partType ? { equals: partType } : { in: ['WIP', 'FG'] },
-        ...(search && {
-          OR: [
-            { partCode: { contains: search, mode: 'insensitive' } },
-            { partName: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-      },
-    };
+    const queryBuilder = this.stockRepository
+      .createQueryBuilder('s')
+      .leftJoinAndSelect('s.part', 'p')
+      .where('s.deletedAt IS NULL')
+      .andWhere('p.partType IN (:...partTypes)', {
+        partTypes: partType ? [partType] : ['WIP', 'FG'],
+      })
+      .orderBy('s.updatedAt', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    if (search) {
+      queryBuilder.andWhere('(p.partCode ILIKE :search OR p.partName ILIKE :search)', {
+        search: `%${search}%`,
+      });
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.stock.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { updatedAt: 'desc' },
-        include: {
-          part: {
-            select: { id: true, partCode: true, partName: true, partType: true, unit: true },
-          },
-        },
-      }),
-      this.prisma.stock.count({ where }),
+      queryBuilder.getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };

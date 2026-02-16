@@ -1,10 +1,10 @@
 /**
  * @file src/modules/master/services/com-code.service.ts
- * @description 공통코드 비즈니스 로직 서비스
+ * @description 공통코드 비즈니스 로직 서비스 - TypeORM Repository 패턴
  *
  * 초보자 가이드:
  * 1. **CRUD 메서드**: 생성, 조회, 수정, 삭제 로직 구현
- * 2. **Prisma 사용**: PrismaService를 통해 DB 접근
+ * 2. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
  * 3. **에러 처리**: NotFoundException 등 적절한 예외 발생
  *
  * 실제 DB 스키마 (com_codes 테이블):
@@ -18,7 +18,9 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { ComCode } from '../../../entities/com-code.entity';
 import {
   CreateComCodeDto,
   UpdateComCodeDto,
@@ -29,7 +31,10 @@ import {
 export class ComCodeService {
   private readonly logger = new Logger(ComCodeService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(ComCode)
+    private readonly comCodeRepository: Repository<ComCode>,
+  ) {}
 
   /**
    * 전체 활성 코드를 groupCode별 그룹핑하여 반환
@@ -44,9 +49,9 @@ export class ComCodeService {
     attr2: string | null;
     attr3: string | null;
   }>>> {
-    const codes = await this.prisma.comCode.findMany({
+    const codes = await this.comCodeRepository.find({
       where: { useYn: 'Y' },
-      orderBy: [{ groupCode: 'asc' }, { sortOrder: 'asc' }],
+      order: { groupCode: 'asc', sortOrder: 'asc' },
       select: {
         groupCode: true,
         detailCode: true,
@@ -84,15 +89,17 @@ export class ComCodeService {
    * 그룹 코드 목록 조회 (중복 제거)
    */
   async findAllGroups() {
-    const groups = await this.prisma.comCode.groupBy({
-      by: ['groupCode'],
-      _count: { groupCode: true },
-      orderBy: { groupCode: 'asc' },
-    });
+    const queryBuilder = this.comCodeRepository.createQueryBuilder('code')
+      .select('code.groupCode', 'groupCode')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('code.groupCode')
+      .orderBy('code.groupCode', 'ASC');
+
+    const groups = await queryBuilder.getRawMany();
 
     return groups.map((g) => ({
       groupCode: g.groupCode,
-      count: g._count?.groupCode ?? 0,
+      count: parseInt(g.count, 10),
     }));
   }
 
@@ -103,25 +110,31 @@ export class ComCodeService {
     const { page = 1, limit = 10, groupCode, search, useYn } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      ...(groupCode && { groupCode }),
-      ...(useYn && { useYn }),
-      ...(search && {
-        OR: [
-          { detailCode: { contains: search, mode: 'insensitive' as const } },
-          { codeName: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    const queryBuilder = this.comCodeRepository.createQueryBuilder('code');
+
+    if (groupCode) {
+      queryBuilder.andWhere('code.groupCode = :groupCode', { groupCode });
+    }
+
+    if (useYn) {
+      queryBuilder.andWhere('code.useYn = :useYn', { useYn });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(code.detailCode) LIKE UPPER(:search) OR UPPER(code.codeName) LIKE UPPER(:search))',
+        { search: `%${search}%` }
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.comCode.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [{ groupCode: 'asc' }, { sortOrder: 'asc' }],
-      }),
-      this.prisma.comCode.count({ where }),
+      queryBuilder
+        .orderBy('code.groupCode', 'ASC')
+        .addOrderBy('code.sortOrder', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
@@ -131,22 +144,17 @@ export class ComCodeService {
    * 그룹 코드로 상세 코드 목록 조회
    */
   async findByGroupCode(groupCode: string) {
-    const codes = await this.prisma.comCode.findMany({
-      where: {
-        groupCode,
-        useYn: 'Y',
-      },
-      orderBy: { sortOrder: 'asc' },
+    return this.comCodeRepository.find({
+      where: { groupCode, useYn: 'Y' },
+      order: { sortOrder: 'asc' },
     });
-
-    return codes;
   }
 
   /**
    * 공통코드 단건 조회 (ID)
    */
   async findById(id: string) {
-    const code = await this.prisma.comCode.findUnique({
+    const code = await this.comCodeRepository.findOne({
       where: { id },
     });
 
@@ -161,13 +169,8 @@ export class ComCodeService {
    * 공통코드 단건 조회 (그룹코드 + 상세코드)
    */
   async findByCode(groupCode: string, detailCode: string) {
-    const code = await this.prisma.comCode.findUnique({
-      where: {
-        groupCode_detailCode: {
-          groupCode,
-          detailCode,
-        },
-      },
+    const code = await this.comCodeRepository.findOne({
+      where: { groupCode, detailCode },
     });
 
     if (!code) {
@@ -184,12 +187,10 @@ export class ComCodeService {
    */
   async create(dto: CreateComCodeDto) {
     // 중복 체크
-    const existing = await this.prisma.comCode.findUnique({
+    const existing = await this.comCodeRepository.findOne({
       where: {
-        groupCode_detailCode: {
-          groupCode: dto.groupCode,
-          detailCode: dto.detailCode,
-        },
+        groupCode: dto.groupCode,
+        detailCode: dto.detailCode,
       },
     });
 
@@ -199,20 +200,20 @@ export class ComCodeService {
       );
     }
 
-    return this.prisma.comCode.create({
-      data: {
-        groupCode: dto.groupCode,
-        detailCode: dto.detailCode,
-        parentCode: dto.parentCode,
-        codeName: dto.codeName,
-        codeDesc: dto.codeDesc,
-        sortOrder: dto.sortOrder ?? 0,
-        useYn: dto.useYn ?? 'Y',
-        attr1: dto.attr1,
-        attr2: dto.attr2,
-        attr3: dto.attr3,
-      },
+    const comCode = this.comCodeRepository.create({
+      groupCode: dto.groupCode,
+      detailCode: dto.detailCode,
+      parentCode: dto.parentCode,
+      codeName: dto.codeName,
+      codeDesc: dto.codeDesc,
+      sortOrder: dto.sortOrder ?? 0,
+      useYn: dto.useYn ?? 'Y',
+      attr1: dto.attr1,
+      attr2: dto.attr2,
+      attr3: dto.attr3,
     });
+
+    return this.comCodeRepository.save(comCode);
   }
 
   /**
@@ -221,19 +222,18 @@ export class ComCodeService {
   async update(id: string, dto: UpdateComCodeDto) {
     await this.findById(id); // 존재 확인
 
-    return this.prisma.comCode.update({
-      where: { id },
-      data: {
-        ...(dto.parentCode !== undefined && { parentCode: dto.parentCode }),
-        ...(dto.codeName !== undefined && { codeName: dto.codeName }),
-        ...(dto.codeDesc !== undefined && { codeDesc: dto.codeDesc }),
-        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
-        ...(dto.useYn !== undefined && { useYn: dto.useYn }),
-        ...(dto.attr1 !== undefined && { attr1: dto.attr1 }),
-        ...(dto.attr2 !== undefined && { attr2: dto.attr2 }),
-        ...(dto.attr3 !== undefined && { attr3: dto.attr3 }),
-      },
-    });
+    const updateData: any = {};
+    if (dto.parentCode !== undefined) updateData.parentCode = dto.parentCode;
+    if (dto.codeName !== undefined) updateData.codeName = dto.codeName;
+    if (dto.codeDesc !== undefined) updateData.codeDesc = dto.codeDesc;
+    if (dto.sortOrder !== undefined) updateData.sortOrder = dto.sortOrder;
+    if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
+    if (dto.attr1 !== undefined) updateData.attr1 = dto.attr1;
+    if (dto.attr2 !== undefined) updateData.attr2 = dto.attr2;
+    if (dto.attr3 !== undefined) updateData.attr3 = dto.attr3;
+
+    await this.comCodeRepository.update(id, updateData);
+    return this.findById(id);
   }
 
   /**
@@ -242,17 +242,15 @@ export class ComCodeService {
   async delete(id: string) {
     await this.findById(id); // 존재 확인
 
-    return this.prisma.comCode.delete({
-      where: { id },
-    });
+    await this.comCodeRepository.delete(id);
+    return { id, deleted: true };
   }
 
   /**
    * 공통코드 일괄 삭제 (그룹 코드 기준)
    */
   async deleteByGroupCode(groupCode: string) {
-    return this.prisma.comCode.deleteMany({
-      where: { groupCode },
-    });
+    const result = await this.comCodeRepository.delete({ groupCode });
+    return { deleted: result.affected || 0 };
   }
 }
