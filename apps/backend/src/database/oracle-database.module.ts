@@ -1,9 +1,8 @@
 /**
- * @file database/database.module.ts
- * @description Main Database Module - Oracle as Primary
+ * @file database/oracle-database.module.ts
+ * @description Oracle Database Module for MYDBPDB
  * 
- * 메인 DB: Oracle (MYDBPDB)
- * 레거시: PostgreSQL (Prisma) - 참조용으로 유지
+ * PostgreSQL(Prisma)와 함께 사용 - 듀얼 DB 설정
  */
 
 import { Module, Global } from '@nestjs/common';
@@ -13,8 +12,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 @Global()
 @Module({
   imports: [
-    // Main Database: Oracle MYDBPDB
     TypeOrmModule.forRootAsync({
+      name: 'oracle', // 연결 이름 지정
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -27,9 +26,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         logging: configService.get<string>('NODE_ENV') !== 'production' ? ['query', 'error'] : ['error'],
         logger: 'advanced-console',
-        maxQueryExecutionTime: 1000,
         entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
-        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        migrations: [__dirname + '/migrations/oracle/*{.ts,.js}'],
         migrationsRun: false,
         extra: {
           poolMax: 10,
@@ -37,12 +35,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           poolIncrement: 1,
           poolTimeout: 60,
           queueTimeout: 60000,
-          stmtCacheSize: 30,
         },
-        metadataTableName: 'typeorm_metadata',
+        metadataTableName: 'typeorm_metadata_oracle',
       }),
     }),
   ],
   exports: [TypeOrmModule],
 })
-export class DatabaseModule {}
+export class OracleDatabaseModule {}
