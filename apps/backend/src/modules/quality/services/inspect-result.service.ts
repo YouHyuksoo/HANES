@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. **CRUD 메서드**: 검사 결과 생성, 조회, 수정, 삭제
  * 2. **통계 메서드**: 합격률 계산, 유형별 통계
- * 3. **Prisma 사용**: PrismaService를 통해 DB 접근
+ * 3. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
  *
  * 주요 기능:
  * - 검사 결과 등록 (생산실적과 연결)
@@ -18,8 +18,10 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, ILike, Between, MoreThanOrEqual, LessThanOrEqual, And, Not } from 'typeorm';
+import { InspectResult } from '../../../entities/inspect-result.entity';
+import { ProdResult } from '../../../entities/prod-result.entity';
 import {
   CreateInspectResultDto,
   UpdateInspectResultDto,
@@ -32,7 +34,12 @@ import {
 export class InspectResultService {
   private readonly logger = new Logger(InspectResultService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(InspectResult)
+    private readonly inspectResultRepository: Repository<InspectResult>,
+    @InjectRepository(ProdResult)
+    private readonly prodResultRepository: Repository<ProdResult>,
+  ) {}
 
   /**
    * 검사실적 목록 조회 (페이지네이션)
@@ -50,47 +57,30 @@ export class InspectResultService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
+    const where: any = {
       ...(company && { company }),
       ...(prodResultId && { prodResultId }),
-      ...(serialNo && { serialNo: { contains: serialNo, mode: 'insensitive' as const } }),
+      ...(serialNo && { serialNo: ILike(`%${serialNo}%`) }),
       ...(inspectType && { inspectType }),
       ...(passYn && { passYn }),
       ...(startDate || endDate
         ? {
-            inspectAt: {
-              ...(startDate && { gte: new Date(startDate) }),
-              ...(endDate && { lte: new Date(endDate) }),
-            },
+            inspectAt: And(
+              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
+              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
+            ),
           }
         : {}),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.inspectResult.findMany({
+      this.inspectResultRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { inspectAt: 'desc' },
-        include: {
-          prodResult: {
-            select: {
-              id: true,
-              lotNo: true,
-              processCode: true,
-              jobOrder: {
-                select: {
-                  orderNo: true,
-                  part: {
-                    select: { partCode: true, partName: true },
-                  },
-                },
-              },
-            },
-          },
-        },
+        order: { inspectAt: 'DESC' },
       }),
-      this.prisma.inspectResult.count({ where }),
+      this.inspectResultRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -100,25 +90,8 @@ export class InspectResultService {
    * 검사실적 단건 조회
    */
   async findById(id: string) {
-    const result = await this.prisma.inspectResult.findUnique({
+    const result = await this.inspectResultRepository.findOne({
       where: { id },
-      include: {
-        prodResult: {
-          include: {
-            jobOrder: {
-              select: {
-                orderNo: true,
-                part: {
-                  select: { partCode: true, partName: true },
-                },
-              },
-            },
-            equip: {
-              select: { equipCode: true, equipName: true },
-            },
-          },
-        },
-      },
     });
 
     if (!result) {
@@ -132,17 +105,9 @@ export class InspectResultService {
    * 시리얼 번호로 검사 이력 조회
    */
   async findBySerialNo(serialNo: string) {
-    const results = await this.prisma.inspectResult.findMany({
+    const results = await this.inspectResultRepository.find({
       where: { serialNo },
-      orderBy: { inspectAt: 'desc' },
-      include: {
-        prodResult: {
-          select: {
-            lotNo: true,
-            processCode: true,
-          },
-        },
-      },
+      order: { inspectAt: 'DESC' },
     });
 
     return results;
@@ -152,9 +117,9 @@ export class InspectResultService {
    * 생산실적별 검사 이력 조회
    */
   async findByProdResultId(prodResultId: string) {
-    const results = await this.prisma.inspectResult.findMany({
+    const results = await this.inspectResultRepository.find({
       where: { prodResultId },
-      orderBy: { inspectAt: 'asc' },
+      order: { inspectAt: 'ASC' },
     });
 
     return results;
@@ -165,7 +130,7 @@ export class InspectResultService {
    */
   async create(dto: CreateInspectResultDto) {
     // 생산실적 존재 확인
-    const prodResult = await this.prisma.prodResult.findUnique({
+    const prodResult = await this.prodResultRepository.findOne({
       where: { id: dto.prodResultId },
     });
 
@@ -173,41 +138,27 @@ export class InspectResultService {
       throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultId}`);
     }
 
-    return this.prisma.inspectResult.create({
-      data: {
-        prodResultId: dto.prodResultId,
-        serialNo: dto.serialNo,
-        inspectType: dto.inspectType,
-        passYn: dto.passYn ?? 'Y',
-        errorCode: dto.errorCode,
-        errorDetail: dto.errorDetail,
-        inspectData: dto.inspectData as Prisma.InputJsonValue ?? Prisma.JsonNull,
-        inspectAt: dto.inspectAt ? new Date(dto.inspectAt) : new Date(),
-        inspectorId: dto.inspectorId,
-      },
+    const inspectResult = this.inspectResultRepository.create({
+      prodResultId: dto.prodResultId,
+      serialNo: dto.serialNo,
+      inspectType: dto.inspectType,
+      passYn: dto.passYn ?? 'Y',
+      errorCode: dto.errorCode,
+      errorDetail: dto.errorDetail,
+      inspectData: dto.inspectData ? JSON.stringify(dto.inspectData) : null,
+      inspectAt: dto.inspectAt ? new Date(dto.inspectAt) : new Date(),
+      inspectorId: dto.inspectorId,
     });
+
+    return this.inspectResultRepository.save(inspectResult);
   }
 
   /**
    * 검사실적 일괄 생성
    */
   async createMany(dtos: CreateInspectResultDto[]) {
-    const results = await this.prisma.$transaction(
-      dtos.map((dto) =>
-        this.prisma.inspectResult.create({
-          data: {
-            prodResultId: dto.prodResultId,
-            serialNo: dto.serialNo,
-            inspectType: dto.inspectType,
-            passYn: dto.passYn ?? 'Y',
-            errorCode: dto.errorCode,
-            errorDetail: dto.errorDetail,
-            inspectData: dto.inspectData as Prisma.InputJsonValue ?? Prisma.JsonNull,
-            inspectAt: dto.inspectAt ? new Date(dto.inspectAt) : new Date(),
-            inspectorId: dto.inspectorId,
-          },
-        })
-      )
+    const results = await Promise.all(
+      dtos.map((dto) => this.create(dto))
     );
 
     return { count: results.length, results };
@@ -219,21 +170,20 @@ export class InspectResultService {
   async update(id: string, dto: UpdateInspectResultDto) {
     await this.findById(id); // 존재 확인
 
-    const updateData: Prisma.InspectResultUpdateInput = {};
+    const updateData: any = {};
 
     if (dto.serialNo !== undefined) updateData.serialNo = dto.serialNo;
     if (dto.inspectType !== undefined) updateData.inspectType = dto.inspectType;
     if (dto.passYn !== undefined) updateData.passYn = dto.passYn;
     if (dto.errorCode !== undefined) updateData.errorCode = dto.errorCode;
     if (dto.errorDetail !== undefined) updateData.errorDetail = dto.errorDetail;
-    if (dto.inspectData !== undefined) updateData.inspectData = dto.inspectData as Prisma.InputJsonValue;
+    if (dto.inspectData !== undefined) updateData.inspectData = JSON.stringify(dto.inspectData);
     if (dto.inspectAt !== undefined) updateData.inspectAt = new Date(dto.inspectAt);
     if (dto.inspectorId !== undefined) updateData.inspectorId = dto.inspectorId;
 
-    return this.prisma.inspectResult.update({
-      where: { id },
-      data: updateData,
-    });
+    await this.inspectResultRepository.update({ id }, updateData);
+
+    return this.findById(id);
   }
 
   /**
@@ -242,9 +192,9 @@ export class InspectResultService {
   async delete(id: string) {
     await this.findById(id); // 존재 확인
 
-    return this.prisma.inspectResult.delete({
-      where: { id },
-    });
+    await this.inspectResultRepository.delete({ id });
+
+    return { id, deleted: true };
   }
 
   /**
@@ -258,21 +208,21 @@ export class InspectResultService {
     endDate?: string,
     inspectType?: string
   ): Promise<InspectPassRateDto> {
-    const where = {
+    const where: any = {
       ...(inspectType && { inspectType }),
       ...(startDate || endDate
         ? {
-            inspectAt: {
-              ...(startDate && { gte: new Date(startDate) }),
-              ...(endDate && { lte: new Date(endDate) }),
-            },
+            inspectAt: And(
+              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
+              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
+            ),
           }
         : {}),
     };
 
     const [totalCount, passCount] = await Promise.all([
-      this.prisma.inspectResult.count({ where }),
-      this.prisma.inspectResult.count({
+      this.inspectResultRepository.count({ where }),
+      this.inspectResultRepository.count({
         where: { ...where, passYn: 'Y' },
       }),
     ]);
@@ -297,38 +247,42 @@ export class InspectResultService {
     startDate?: string,
     endDate?: string
   ): Promise<InspectTypeStatsDto[]> {
-    const where = {
-      inspectType: { not: null },
+    const where: any = {
+      inspectType: Not(IsNull()),
       ...(startDate || endDate
         ? {
-            inspectAt: {
-              ...(startDate && { gte: new Date(startDate) }),
-              ...(endDate && { lte: new Date(endDate) }),
-            },
+            inspectAt: And(
+              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
+              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
+            ),
           }
         : {}),
     };
 
     // 유형별 그룹 조회
-    const groupedData = await this.prisma.inspectResult.groupBy({
-      by: ['inspectType'],
-      where,
-      _count: { inspectType: true },
-    });
+    const groupedData = await this.inspectResultRepository
+      .createQueryBuilder('inspect')
+      .select('inspect.inspectType', 'inspectType')
+      .addSelect('COUNT(*)', 'totalCount')
+      .where(where)
+      .groupBy('inspect.inspectType')
+      .getRawMany();
 
     // 유형별 합격 수 조회
-    const passData = await this.prisma.inspectResult.groupBy({
-      by: ['inspectType'],
-      where: { ...where, passYn: 'Y' },
-      _count: { inspectType: true },
-    });
+    const passData = await this.inspectResultRepository
+      .createQueryBuilder('inspect')
+      .select('inspect.inspectType', 'inspectType')
+      .addSelect('COUNT(*)', 'passCount')
+      .where({ ...where, passYn: 'Y' })
+      .groupBy('inspect.inspectType')
+      .getRawMany();
 
     const passMap = new Map(
-      passData.map((p) => [p.inspectType, p._count.inspectType])
+      passData.map((p) => [p.inspectType, parseInt(p.passCount)])
     );
 
     return groupedData.map((g) => {
-      const totalCount = g._count.inspectType;
+      const totalCount = parseInt(g.totalCount);
       const passCount = passMap.get(g.inspectType) ?? 0;
       const passRate = totalCount > 0 ? Math.round((passCount / totalCount) * 10000) / 100 : 0;
 
@@ -350,15 +304,12 @@ export class InspectResultService {
     startDate.setDate(startDate.getDate() - days + 1);
     startDate.setHours(0, 0, 0, 0);
 
-    const results = await this.prisma.inspectResult.findMany({
+    const results = await this.inspectResultRepository.find({
       where: {
-        inspectAt: { gte: startDate },
+        inspectAt: MoreThanOrEqual(startDate),
       },
-      select: {
-        inspectAt: true,
-        passYn: true,
-      },
-      orderBy: { inspectAt: 'asc' },
+      select: ['inspectAt', 'passYn'],
+      order: { inspectAt: 'ASC' },
     });
 
     // 일별 집계

@@ -14,8 +14,9 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, ILike, IsNull } from 'typeorm';
+import { CommConfig } from '../../../entities/comm-config.entity';
 import {
   CreateCommConfigDto,
   UpdateCommConfigDto,
@@ -26,7 +27,10 @@ import {
 export class CommConfigService {
   private readonly logger = new Logger(CommConfigService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(CommConfig)
+    private readonly commConfigRepository: Repository<CommConfig>,
+  ) {}
 
   /** 목록 조회 (페이지네이션 + 필터) */
   async findAll(query: CommConfigQueryDto) {
@@ -34,27 +38,24 @@ export class CommConfigService {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {
-      deletedAt: null,
+      deletedAt: IsNull(),
     };
 
     if (commType) where.commType = commType;
     if (useYn) where.useYn = useYn;
 
     if (search) {
-      where.OR = [
-        { configName: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
+      where.configName = ILike(`%${search}%`);
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.commConfig.findMany({
+      this.commConfigRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.commConfig.count({ where }),
+      this.commConfigRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -62,11 +63,11 @@ export class CommConfigService {
 
   /** 단건 조회 (ID) */
   async findById(id: string) {
-    const config = await this.prisma.commConfig.findUnique({
-      where: { id },
+    const config = await this.commConfigRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
 
-    if (!config || config.deletedAt) {
+    if (!config) {
       throw new NotFoundException('통신설정을 찾을 수 없습니다.');
     }
 
@@ -75,11 +76,11 @@ export class CommConfigService {
 
   /** 이름으로 조회 (다른 화면에서 참조용) */
   async findByName(configName: string) {
-    const config = await this.prisma.commConfig.findUnique({
-      where: { configName },
+    const config = await this.commConfigRepository.findOne({
+      where: { configName, deletedAt: IsNull() },
     });
 
-    if (!config || config.deletedAt) {
+    if (!config) {
       throw new NotFoundException(`통신설정 '${configName}'을 찾을 수 없습니다.`);
     }
 
@@ -88,28 +89,28 @@ export class CommConfigService {
 
   /** 유형별 목록 (드롭다운용) */
   async findByType(commType: string) {
-    return this.prisma.commConfig.findMany({
+    return this.commConfigRepository.find({
       where: {
         commType,
         useYn: 'Y',
-        deletedAt: null,
+        deletedAt: IsNull(),
       },
-      select: {
-        id: true,
-        configName: true,
-        commType: true,
-        host: true,
-        port: true,
-        portName: true,
-        baudRate: true,
-      },
-      orderBy: { configName: 'asc' },
+      select: [
+        'id',
+        'configName',
+        'commType',
+        'host',
+        'port',
+        'portName',
+        'baudRate',
+      ],
+      order: { configName: 'ASC' },
     });
   }
 
   /** 생성 */
   async create(dto: CreateCommConfigDto) {
-    const existing = await this.prisma.commConfig.findUnique({
+    const existing = await this.commConfigRepository.findOne({
       where: { configName: dto.configName },
     });
 
@@ -117,25 +118,23 @@ export class CommConfigService {
       throw new ConflictException(`이미 등록된 설정 이름입니다: ${dto.configName}`);
     }
 
-    return this.prisma.commConfig.create({
-      data: {
-        configName: dto.configName,
-        commType: dto.commType,
-        description: dto.description,
-        host: dto.host,
-        port: dto.port,
-        portName: dto.portName,
-        baudRate: dto.baudRate,
-        dataBits: dto.dataBits,
-        stopBits: dto.stopBits,
-        parity: dto.parity,
-        flowControl: dto.flowControl,
-        extraConfig: dto.extraConfig
-          ? (dto.extraConfig as Prisma.InputJsonValue)
-          : undefined,
-        useYn: dto.useYn ?? 'Y',
-      },
+    const config = this.commConfigRepository.create({
+      configName: dto.configName,
+      commType: dto.commType,
+      description: dto.description,
+      host: dto.host,
+      port: dto.port,
+      portName: dto.portName,
+      baudRate: dto.baudRate,
+      dataBits: dto.dataBits,
+      stopBits: dto.stopBits,
+      parity: dto.parity,
+      flowControl: dto.flowControl,
+      extraConfig: dto.extraConfig ? JSON.stringify(dto.extraConfig) : undefined,
+      useYn: dto.useYn ?? 'Y',
     });
+
+    return this.commConfigRepository.save(config);
   }
 
   /** 수정 */
@@ -144,7 +143,7 @@ export class CommConfigService {
 
     // 이름 변경 시 중복 체크
     if (dto.configName) {
-      const existing = await this.prisma.commConfig.findUnique({
+      const existing = await this.commConfigRepository.findOne({
         where: { configName: dto.configName },
       });
       if (existing && existing.id !== id) {
@@ -152,36 +151,30 @@ export class CommConfigService {
       }
     }
 
-    return this.prisma.commConfig.update({
-      where: { id },
-      data: {
-        ...(dto.configName !== undefined && { configName: dto.configName }),
-        ...(dto.commType !== undefined && { commType: dto.commType }),
-        ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.host !== undefined && { host: dto.host }),
-        ...(dto.port !== undefined && { port: dto.port }),
-        ...(dto.portName !== undefined && { portName: dto.portName }),
-        ...(dto.baudRate !== undefined && { baudRate: dto.baudRate }),
-        ...(dto.dataBits !== undefined && { dataBits: dto.dataBits }),
-        ...(dto.stopBits !== undefined && { stopBits: dto.stopBits }),
-        ...(dto.parity !== undefined && { parity: dto.parity }),
-        ...(dto.flowControl !== undefined && { flowControl: dto.flowControl }),
-        ...(dto.extraConfig !== undefined && {
-          extraConfig: dto.extraConfig as Prisma.InputJsonValue,
-        }),
-        ...(dto.useYn !== undefined && { useYn: dto.useYn }),
-      },
-    });
+    const updateData: Partial<CommConfig> = {};
+    if (dto.configName !== undefined) updateData.configName = dto.configName;
+    if (dto.commType !== undefined) updateData.commType = dto.commType;
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.host !== undefined) updateData.host = dto.host;
+    if (dto.port !== undefined) updateData.port = dto.port;
+    if (dto.portName !== undefined) updateData.portName = dto.portName;
+    if (dto.baudRate !== undefined) updateData.baudRate = dto.baudRate;
+    if (dto.dataBits !== undefined) updateData.dataBits = dto.dataBits;
+    if (dto.stopBits !== undefined) updateData.stopBits = dto.stopBits;
+    if (dto.parity !== undefined) updateData.parity = dto.parity;
+    if (dto.flowControl !== undefined) updateData.flowControl = dto.flowControl;
+    if (dto.extraConfig !== undefined) updateData.extraConfig = JSON.stringify(dto.extraConfig);
+    if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
+
+    await this.commConfigRepository.update(id, updateData);
+    return this.findById(id);
   }
 
   /** 삭제 (소프트 삭제) */
   async remove(id: string) {
     await this.findById(id);
 
-    await this.prisma.commConfig.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await this.commConfigRepository.softDelete(id);
 
     return { message: '통신설정이 삭제되었습니다.' };
   }

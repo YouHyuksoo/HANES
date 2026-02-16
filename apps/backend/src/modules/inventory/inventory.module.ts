@@ -13,13 +13,18 @@
  * 2. WarehouseService로 창고 마스터 관리
  */
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '@/prisma/prisma.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Stock } from '../../entities/stock.entity';
+import { StockTransaction } from '../../entities/stock-transaction.entity';
+import { Lot } from '../../entities/lot.entity';
+import { Warehouse } from '../../entities/warehouse.entity';
+import { PartMaster } from '../../entities/part-master.entity';
 import { InventoryController } from './inventory.controller';
 import { InventoryService } from './services/inventory.service';
 import { WarehouseService } from './services/warehouse.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [TypeOrmModule.forFeature([Stock, StockTransaction, Lot, Warehouse, PartMaster])],
   controllers: [InventoryController],
   providers: [InventoryService, WarehouseService],
   exports: [InventoryService, WarehouseService],

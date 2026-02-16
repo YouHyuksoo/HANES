@@ -14,97 +14,134 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
+import { ShipmentOrder } from '../../../entities/shipment-order.entity';
+import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dto/ship-order.dto';
 
 @Injectable()
 export class ShipOrderService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(ShipmentOrder)
+    private readonly shipOrderRepository: Repository<ShipmentOrder>,
+    @InjectRepository(ShipmentOrderItem)
+    private readonly shipOrderItemRepository: Repository<ShipmentOrderItem>,
+    @InjectRepository(PartMaster)
+    private readonly partRepository: Repository<PartMaster>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /** 출하지시 목록 조회 */
   async findAll(query: ShipOrderQueryDto) {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(status && { status }),
       ...(search && {
-        OR: [
-          { shipOrderNo: { contains: search, mode: 'insensitive' as const } },
-          { customerName: { contains: search, mode: 'insensitive' as const } },
-        ],
+        shipOrderNo: ILike(`%${search}%`),
       }),
       ...(dueDateFrom || dueDateTo
         ? {
-            dueDate: {
-              ...(dueDateFrom && { gte: new Date(dueDateFrom) }),
-              ...(dueDateTo && { lte: new Date(dueDateTo) }),
-            },
+            dueDate: And(
+              dueDateFrom ? MoreThanOrEqual(new Date(dueDateFrom)) : undefined,
+              dueDateTo ? LessThanOrEqual(new Date(dueDateTo)) : undefined
+            ),
           }
         : {}),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.shipmentOrder.findMany({
+      this.shipOrderRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          items: { include: { part: { select: { id: true, partCode: true, partName: true } } } },
-        },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.shipmentOrder.count({ where }),
+      this.shipOrderRepository.count({ where }),
     ]);
 
-    // items의 part를 평면화
-    const flattenedData = data.map((order) => ({
-      ...order,
-      items: order.items.map((item) => ({
-        ...item,
-        partId: item.part?.id ?? item.partId,
-        partCode: item.part?.partCode,
-        partName: item.part?.partName,
-        part: undefined,
-      })),
-    }));
+    // 품목 정보 조회 및 병합
+    const resultData = await Promise.all(
+      data.map(async (order) => {
+        const items = await this.shipOrderItemRepository.find({
+          where: { shipOrderId: order.id },
+        });
 
-    return { data: flattenedData, total, page, limit };
+        const itemsWithPart = await Promise.all(
+          items.map(async (item) => {
+            const part = await this.partRepository.findOne({
+              where: { id: item.partId },
+              select: ['id', 'partCode', 'partName'],
+            });
+            return {
+              ...item,
+              partId: part?.id ?? item.partId,
+              partCode: part?.partCode,
+              partName: part?.partName,
+            };
+          })
+        );
+
+        return {
+          ...order,
+          items: itemsWithPart,
+        };
+      })
+    );
+
+    return { data: resultData, total, page, limit };
   }
 
   /** 출하지시 단건 조회 */
   async findById(id: string) {
-    const order = await this.prisma.shipmentOrder.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        items: { include: { part: { select: { id: true, partCode: true, partName: true } } } },
-      },
+    const order = await this.shipOrderRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
+
     if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${id}`);
 
-    // items의 part를 평면화
+    const items = await this.shipOrderItemRepository.find({
+      where: { shipOrderId: order.id },
+    });
+
+    const itemsWithPart = await Promise.all(
+      items.map(async (item) => {
+        const part = await this.partRepository.findOne({
+          where: { id: item.partId },
+          select: ['id', 'partCode', 'partName'],
+        });
+        return {
+          ...item,
+          partId: part?.id ?? item.partId,
+          partCode: part?.partCode,
+          partName: part?.partName,
+        };
+      })
+    );
+
     return {
       ...order,
-      items: order.items.map((item) => ({
-        ...item,
-        partId: item.part?.id ?? item.partId,
-        partCode: item.part?.partCode,
-        partName: item.part?.partName,
-        part: undefined,
-      })),
+      items: itemsWithPart,
     };
   }
 
   /** 출하지시 생성 */
   async create(dto: CreateShipOrderDto) {
-    const existing = await this.prisma.shipmentOrder.findFirst({
-      where: { shipOrderNo: dto.shipOrderNo, deletedAt: null },
+    const existing = await this.shipOrderRepository.findOne({
+      where: { shipOrderNo: dto.shipOrderNo, deletedAt: IsNull() },
     });
     if (existing) throw new ConflictException(`이미 존재하는 출하지시 번호입니다: ${dto.shipOrderNo}`);
 
-    const order = await this.prisma.shipmentOrder.create({
-      data: {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const order = this.shipOrderRepository.create({
         shipOrderNo: dto.shipOrderNo,
         customerId: dto.customerId,
         customerName: dto.customerName,
@@ -112,31 +149,33 @@ export class ShipOrderService {
         shipDate: dto.shipDate ? new Date(dto.shipDate) : null,
         remark: dto.remark,
         status: 'DRAFT',
-        items: {
-          create: dto.items.map((item) => ({
+      });
+
+      const savedOrder = await queryRunner.manager.save(order);
+
+      // 품목 생성
+      if (dto.items && dto.items.length > 0) {
+        const items = dto.items.map((item) =>
+          this.shipOrderItemRepository.create({
+            shipOrderId: savedOrder.id,
             partId: item.partId,
             orderQty: item.orderQty,
             shippedQty: 0,
             remark: item.remark,
-          })),
-        },
-      },
-      include: {
-        items: { include: { part: { select: { id: true, partCode: true, partName: true } } } },
-      },
-    });
+          })
+        );
+        await queryRunner.manager.save(items);
+      }
 
-    // items의 part를 평면화
-    return {
-      ...order,
-      items: order.items.map((item) => ({
-        ...item,
-        partId: item.part?.id ?? item.partId,
-        partCode: item.part?.partCode,
-        partName: item.part?.partName,
-        part: undefined,
-      })),
-    };
+      await queryRunner.commitTransaction();
+
+      return this.findById(savedOrder.id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /** 출하지시 수정 */
@@ -146,48 +185,46 @@ export class ShipOrderService {
       throw new BadRequestException('DRAFT 상태에서만 수정할 수 있습니다.');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       if (dto.items) {
-        await tx.shipmentOrderItem.deleteMany({ where: { shipOrderId: id } });
-        await tx.shipmentOrderItem.createMany({
-          data: dto.items.map((item) => ({
+        await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderId: id });
+
+        const items = dto.items.map((item) =>
+          this.shipOrderItemRepository.create({
             shipOrderId: id,
             partId: item.partId,
             orderQty: item.orderQty,
             shippedQty: 0,
             remark: item.remark,
-          })),
-        });
+          })
+        );
+        await queryRunner.manager.save(items);
       }
 
-      const order = await tx.shipmentOrder.update({
-        where: { id },
-        data: {
-          ...(dto.shipOrderNo !== undefined && { shipOrderNo: dto.shipOrderNo }),
-          ...(dto.customerId !== undefined && { customerId: dto.customerId }),
-          ...(dto.customerName !== undefined && { customerName: dto.customerName }),
-          ...(dto.dueDate !== undefined && { dueDate: dto.dueDate ? new Date(dto.dueDate) : null }),
-          ...(dto.shipDate !== undefined && { shipDate: dto.shipDate ? new Date(dto.shipDate) : null }),
-          ...(dto.status !== undefined && { status: dto.status }),
-          ...(dto.remark !== undefined && { remark: dto.remark }),
-        },
-        include: {
-          items: { include: { part: { select: { id: true, partCode: true, partName: true } } } },
-        },
-      });
+      const updateData: any = {};
+      if (dto.shipOrderNo !== undefined) updateData.shipOrderNo = dto.shipOrderNo;
+      if (dto.customerId !== undefined) updateData.customerId = dto.customerId;
+      if (dto.customerName !== undefined) updateData.customerName = dto.customerName;
+      if (dto.dueDate !== undefined) updateData.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
+      if (dto.shipDate !== undefined) updateData.shipDate = dto.shipDate ? new Date(dto.shipDate) : null;
+      if (dto.status !== undefined) updateData.status = dto.status;
+      if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-      // items의 part를 평면화
-      return {
-        ...order,
-        items: order.items.map((item) => ({
-          ...item,
-          partId: item.part?.id ?? item.partId,
-          partCode: item.part?.partCode,
-          partName: item.part?.partName,
-          part: undefined,
-        })),
-      };
-    });
+      await queryRunner.manager.update(ShipmentOrder, { id }, updateData);
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /** 출하지시 삭제 (소프트 삭제) */
@@ -196,9 +233,12 @@ export class ShipOrderService {
     if (order.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
-    return this.prisma.shipmentOrder.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+
+    await this.shipOrderRepository.update(
+      { id },
+      { deletedAt: new Date() }
+    );
+
+    return { id, deleted: true };
   }
 }

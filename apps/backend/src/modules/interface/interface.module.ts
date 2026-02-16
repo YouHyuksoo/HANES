@@ -11,12 +11,16 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { InterfaceController } from './controllers/interface.controller';
 import { InterfaceService } from './services/interface.service';
-import { PrismaModule } from '../../prisma/prisma.module';
+import { InterLog } from '../../entities/inter-log.entity';
+import { PartMaster } from '../../entities/part-master.entity';
+import { BomMaster } from '../../entities/bom-master.entity';
+import { JobOrder } from '../../entities/job-order.entity';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [TypeOrmModule.forFeature([InterLog, PartMaster, BomMaster, JobOrder])],
   controllers: [InterfaceController],
   providers: [InterfaceService],
   exports: [InterfaceService],

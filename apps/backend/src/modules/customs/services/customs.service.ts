@@ -1,6 +1,6 @@
 /**
  * @file src/modules/customs/services/customs.service.ts
- * @description 보세관리 비즈니스 로직 서비스
+ * @description 보세관리 비즈니스 로직 서비스 - TypeORM Repository 패턴
  */
 
 import {
@@ -10,7 +10,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, DataSource } from 'typeorm';
+import { CustomsEntry } from '../../../entities/customs-entry.entity';
+import { CustomsLot } from '../../../entities/customs-lot.entity';
+import { CustomsUsageReport } from '../../../entities/customs-usage-report.entity';
 import {
   CreateCustomsEntryDto,
   UpdateCustomsEntryDto,
@@ -26,7 +30,15 @@ import {
 export class CustomsService {
   private readonly logger = new Logger(CustomsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(CustomsEntry)
+    private readonly customsEntryRepository: Repository<CustomsEntry>,
+    @InjectRepository(CustomsLot)
+    private readonly customsLotRepository: Repository<CustomsLot>,
+    @InjectRepository(CustomsUsageReport)
+    private readonly customsUsageReportRepository: Repository<CustomsUsageReport>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   // ============================================================================
   // 수입신고 (Customs Entry)
@@ -36,71 +48,132 @@ export class CustomsService {
     const { page = 1, limit = 10, status, search, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(status && { status }),
-      ...(search && {
-        OR: [
-          { entryNo: { contains: search, mode: 'insensitive' as const } },
-          { invoiceNo: { contains: search, mode: 'insensitive' as const } },
-          { blNo: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-      ...(startDate && endDate && {
-        declarationDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      }),
-    };
+    const queryBuilder = this.customsEntryRepository
+      .createQueryBuilder('ce')
+      .leftJoinAndSelect(
+        'customs_lot',
+        'cl',
+        'cl.ENTRY_ID = ce.ID',
+      )
+      .select([
+        'ce.id',
+        'ce.entryNo',
+        'ce.blNo',
+        'ce.invoiceNo',
+        'ce.declarationDate',
+        'ce.clearanceDate',
+        'ce.origin',
+        'ce.hsCode',
+        'ce.totalAmount',
+        'ce.currency',
+        'ce.status',
+        'ce.remark',
+        'ce.createdAt',
+        'ce.updatedAt',
+      ])
+      .addSelect([
+        'cl.id AS cl_id',
+        'cl.LOT_NO AS cl_lotNo',
+        'cl.PART_CODE AS cl_partCode',
+        'cl.QTY AS cl_qty',
+        'cl.USED_QTY AS cl_usedQty',
+        'cl.REMAIN_QTY AS cl_remainQty',
+        'cl.STATUS AS cl_status',
+      ])
+      .where('ce.deletedAt IS NULL');
 
-    const [data, total] = await Promise.all([
-      this.prisma.customsEntry.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          customsLots: {
-            select: {
-              id: true,
-              lotNo: true,
-              partCode: true,
-              qty: true,
-              usedQty: true,
-              remainQty: true,
-              status: true,
-            },
-          },
-        },
-      }),
-      this.prisma.customsEntry.count({ where }),
+    if (status) {
+      queryBuilder.andWhere('ce.status = :status', { status });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(ce.entryNo) LIKE UPPER(:search) OR UPPER(ce.invoiceNo) LIKE UPPER(:search) OR UPPER(ce.blNo) LIKE UPPER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (startDate && endDate) {
+      queryBuilder.andWhere('ce.declarationDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    }
+
+    queryBuilder.orderBy('ce.createdAt', 'DESC').skip(skip).take(limit);
+
+    // Get total count
+    const countQuery = this.customsEntryRepository
+      .createQueryBuilder('ce')
+      .where('ce.deletedAt IS NULL');
+
+    if (status) {
+      countQuery.andWhere('ce.status = :status', { status });
+    }
+
+    if (search) {
+      countQuery.andWhere(
+        '(UPPER(ce.entryNo) LIKE UPPER(:search) OR UPPER(ce.invoiceNo) LIKE UPPER(:search) OR UPPER(ce.blNo) LIKE UPPER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (startDate && endDate) {
+      countQuery.andWhere('ce.declarationDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    }
+
+    const [entries, total] = await Promise.all([
+      queryBuilder.getMany(),
+      countQuery.getCount(),
     ]);
+
+    // Fetch customs lots for each entry
+    const data = await Promise.all(
+      entries.map(async (entry) => {
+        const lots = await this.customsLotRepository.find({
+          where: { entryId: entry.id },
+          select: ['id', 'lotNo', 'partCode', 'qty', 'usedQty', 'remainQty', 'status'],
+        });
+        return {
+          ...entry,
+          customsLots: lots,
+        };
+      }),
+    );
 
     return { data, total, page, limit };
   }
 
   async findEntryById(id: string) {
-    const entry = await this.prisma.customsEntry.findUnique({
-      where: { id },
-      include: {
-        customsLots: {
-          include: {
-            usageReports: true,
-          },
-        },
-      },
+    const entry = await this.customsEntryRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
 
     if (!entry) {
       throw new NotFoundException(`수입신고를 찾을 수 없습니다: ${id}`);
     }
 
-    return entry;
+    const lots = await this.customsLotRepository.find({
+      where: { entryId: id },
+    });
+
+    const lotsWithReports = await Promise.all(
+      lots.map(async (lot) => {
+        const reports = await this.customsUsageReportRepository.find({
+          where: { customsLotId: lot.id },
+        });
+        return { ...lot, usageReports: reports };
+      }),
+    );
+
+    return { ...entry, customsLots: lotsWithReports };
   }
 
   async createEntry(dto: CreateCustomsEntryDto) {
-    const existing = await this.prisma.customsEntry.findUnique({
+    const existing = await this.customsEntryRepository.findOne({
       where: { entryNo: dto.entryNo },
     });
 
@@ -108,49 +181,46 @@ export class CustomsService {
       throw new ConflictException(`이미 존재하는 수입신고번호입니다: ${dto.entryNo}`);
     }
 
-    return this.prisma.customsEntry.create({
-      data: {
-        entryNo: dto.entryNo,
-        blNo: dto.blNo,
-        invoiceNo: dto.invoiceNo,
-        declarationDate: dto.declarationDate ? new Date(dto.declarationDate) : null,
-        clearanceDate: dto.clearanceDate ? new Date(dto.clearanceDate) : null,
-        origin: dto.origin,
-        hsCode: dto.hsCode,
-        totalAmount: dto.totalAmount,
-        currency: dto.currency,
-        remark: dto.remark,
-      },
+    const entry = this.customsEntryRepository.create({
+      entryNo: dto.entryNo,
+      blNo: dto.blNo,
+      invoiceNo: dto.invoiceNo,
+      declarationDate: dto.declarationDate ? new Date(dto.declarationDate) : null,
+      clearanceDate: dto.clearanceDate ? new Date(dto.clearanceDate) : null,
+      origin: dto.origin,
+      hsCode: dto.hsCode,
+      totalAmount: dto.totalAmount,
+      currency: dto.currency,
+      remark: dto.remark,
     });
+
+    return this.customsEntryRepository.save(entry);
   }
 
   async updateEntry(id: string, dto: UpdateCustomsEntryDto) {
     await this.findEntryById(id);
 
-    return this.prisma.customsEntry.update({
-      where: { id },
-      data: {
-        ...(dto.blNo !== undefined && { blNo: dto.blNo }),
-        ...(dto.invoiceNo !== undefined && { invoiceNo: dto.invoiceNo }),
-        ...(dto.declarationDate !== undefined && { declarationDate: new Date(dto.declarationDate) }),
-        ...(dto.clearanceDate !== undefined && { clearanceDate: new Date(dto.clearanceDate) }),
-        ...(dto.origin !== undefined && { origin: dto.origin }),
-        ...(dto.hsCode !== undefined && { hsCode: dto.hsCode }),
-        ...(dto.totalAmount !== undefined && { totalAmount: dto.totalAmount }),
-        ...(dto.currency !== undefined && { currency: dto.currency }),
-        ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.remark !== undefined && { remark: dto.remark }),
-      },
-    });
+    const updateData: Partial<CustomsEntry> = {};
+    if (dto.blNo !== undefined) updateData.blNo = dto.blNo;
+    if (dto.invoiceNo !== undefined) updateData.invoiceNo = dto.invoiceNo;
+    if (dto.declarationDate !== undefined) updateData.declarationDate = new Date(dto.declarationDate);
+    if (dto.clearanceDate !== undefined) updateData.clearanceDate = new Date(dto.clearanceDate);
+    if (dto.origin !== undefined) updateData.origin = dto.origin;
+    if (dto.hsCode !== undefined) updateData.hsCode = dto.hsCode;
+    if (dto.totalAmount !== undefined) updateData.totalAmount = dto.totalAmount;
+    if (dto.currency !== undefined) updateData.currency = dto.currency;
+    if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.remark !== undefined) updateData.remark = dto.remark;
+
+    await this.customsEntryRepository.update(id, updateData);
+    return this.findEntryById(id);
   }
 
   async deleteEntry(id: string) {
     await this.findEntryById(id);
 
-    return this.prisma.customsEntry.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await this.customsEntryRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 
   // ============================================================================
@@ -158,53 +228,62 @@ export class CustomsService {
   // ============================================================================
 
   async findLotsByEntryId(entryId: string) {
-    return this.prisma.customsLot.findMany({
+    const lots = await this.customsLotRepository.find({
       where: { entryId },
-      include: {
-        usageReports: true,
-      },
-      orderBy: { createdAt: 'desc' },
+      order: { createdAt: 'DESC' },
     });
+
+    return Promise.all(
+      lots.map(async (lot) => {
+        const reports = await this.customsUsageReportRepository.find({
+          where: { customsLotId: lot.id },
+        });
+        return { ...lot, usageReports: reports };
+      }),
+    );
   }
 
   async findLotById(id: string) {
-    const lot = await this.prisma.customsLot.findUnique({
+    const lot = await this.customsLotRepository.findOne({
       where: { id },
-      include: {
-        entry: true,
-        usageReports: true,
-      },
     });
 
     if (!lot) {
       throw new NotFoundException(`보세자재 LOT을 찾을 수 없습니다: ${id}`);
     }
 
-    return lot;
+    const entry = await this.customsEntryRepository.findOne({
+      where: { id: lot.entryId },
+    });
+
+    const reports = await this.customsUsageReportRepository.find({
+      where: { customsLotId: id },
+    });
+
+    return { ...lot, entry, usageReports: reports };
   }
 
   async createLot(dto: CreateCustomsLotDto) {
-    return this.prisma.customsLot.create({
-      data: {
-        entryId: dto.entryId,
-        lotNo: dto.lotNo,
-        partCode: dto.partCode,
-        qty: dto.qty,
-        remainQty: dto.qty,
-        unitPrice: dto.unitPrice,
-      },
+    const lot = this.customsLotRepository.create({
+      entryId: dto.entryId,
+      lotNo: dto.lotNo,
+      partCode: dto.partCode,
+      qty: dto.qty,
+      remainQty: dto.qty,
+      unitPrice: dto.unitPrice,
     });
+
+    return this.customsLotRepository.save(lot);
   }
 
   async updateLot(id: string, dto: UpdateCustomsLotDto) {
     await this.findLotById(id);
 
-    return this.prisma.customsLot.update({
-      where: { id },
-      data: {
-        ...(dto.status !== undefined && { status: dto.status }),
-      },
-    });
+    const updateData: Partial<CustomsLot> = {};
+    if (dto.status !== undefined) updateData.status = dto.status;
+
+    await this.customsLotRepository.update(id, updateData);
+    return this.findLotById(id);
   }
 
   // ============================================================================
@@ -215,32 +294,47 @@ export class CustomsService {
     const { page = 1, limit = 10, status, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      ...(status && { status }),
-      ...(startDate && endDate && {
-        usageDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      }),
-    };
+    const queryBuilder = this.customsUsageReportRepository
+      .createQueryBuilder('cur')
+      .leftJoinAndSelect(CustomsLot, 'cl', 'cl.ID = cur.CUSTOMS_LOT_ID')
+      .leftJoinAndSelect(CustomsEntry, 'ce', 'ce.ID = cl.ENTRY_ID')
+      .where('1=1');
 
-    const [data, total] = await Promise.all([
-      this.prisma.customsUsageReport.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          customsLot: {
-            include: {
-              entry: true,
-            },
-          },
-        },
-      }),
-      this.prisma.customsUsageReport.count({ where }),
+    if (status) {
+      queryBuilder.andWhere('cur.status = :status', { status });
+    }
+
+    if (startDate && endDate) {
+      queryBuilder.andWhere('cur.usageDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    }
+
+    const [reports, total] = await Promise.all([
+      queryBuilder
+        .orderBy('cur.createdAt', 'DESC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
+
+    // Fetch related data
+    const data = await Promise.all(
+      reports.map(async (report) => {
+        const lot = await this.customsLotRepository.findOne({
+          where: { id: report.customsLotId },
+        });
+        const entry = lot
+          ? await this.customsEntryRepository.findOne({ where: { id: lot.entryId } })
+          : null;
+        return {
+          ...report,
+          customsLot: lot ? { ...lot, entry } : null,
+        };
+      }),
+    );
 
     return { data, total, page, limit };
   }
@@ -250,52 +344,53 @@ export class CustomsService {
 
     if (lot.remainQty < dto.usageQty) {
       throw new BadRequestException(
-        `사용 가능 수량(${lot.remainQty})을 초과했습니다.`
+        `사용 가능 수량(${lot.remainQty})을 초과했습니다.`,
       );
     }
 
     // 시퀀스 생성
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await this.prisma.customsUsageReport.count({
+    const count = await this.customsUsageReportRepository.count({
       where: {
-        reportNo: { startsWith: `USG${today}` },
+        reportNo: `USG${today}%`,
       },
     });
     const reportNo = `USG${today}${String(count + 1).padStart(4, '0')}`;
 
     // 트랜잭션으로 사용신고 생성 및 LOT 업데이트
-    return this.prisma.$transaction(async (tx: any) => {
-      const report = await tx.customsUsageReport.create({
-        data: {
-          reportNo,
-          customsLotId: dto.customsLotId,
-          jobOrderId: dto.jobOrderId,
-          usageQty: dto.usageQty,
-          workerId: dto.workerId,
-          remark: dto.remark,
-        },
+    return this.dataSource.transaction(async (manager) => {
+      const report = manager.create(CustomsUsageReport, {
+        reportNo,
+        customsLotId: dto.customsLotId,
+        jobOrderId: dto.jobOrderId,
+        usageQty: dto.usageQty,
+        workerId: dto.workerId,
+        remark: dto.remark,
       });
+
+      await manager.save(report);
 
       // LOT 잔여수량 업데이트
       const newUsedQty = lot.usedQty + dto.usageQty;
       const newRemainQty = lot.qty - newUsedQty;
       const newStatus = newRemainQty === 0 ? 'RELEASED' : 'PARTIAL';
 
-      await tx.customsLot.update({
-        where: { id: dto.customsLotId },
-        data: {
+      await manager.update(
+        CustomsLot,
+        { id: dto.customsLotId },
+        {
           usedQty: newUsedQty,
           remainQty: newRemainQty,
           status: newStatus,
         },
-      });
+      );
 
       return report;
     });
   }
 
   async updateUsageReport(id: string, dto: UpdateUsageReportDto) {
-    const report = await this.prisma.customsUsageReport.findUnique({
+    const report = await this.customsUsageReportRepository.findOne({
       where: { id },
     });
 
@@ -303,14 +398,13 @@ export class CustomsService {
       throw new NotFoundException(`사용신고를 찾을 수 없습니다: ${id}`);
     }
 
-    return this.prisma.customsUsageReport.update({
-      where: { id },
-      data: {
-        ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.status === 'REPORTED' && { reportDate: new Date() }),
-        ...(dto.remark !== undefined && { remark: dto.remark }),
-      },
-    });
+    const updateData: Partial<CustomsUsageReport> = {};
+    if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.status === 'REPORTED') updateData.reportDate = new Date();
+    if (dto.remark !== undefined) updateData.remark = dto.remark;
+
+    await this.customsUsageReportRepository.update(id, updateData);
+    return this.customsUsageReportRepository.findOne({ where: { id } });
   }
 
   // ============================================================================
@@ -319,20 +413,23 @@ export class CustomsService {
 
   async getCustomsSummary() {
     const [totalEntries, pendingEntries, bondedLots, totalBondedQty] = await Promise.all([
-      this.prisma.customsEntry.count({ where: { deletedAt: null } }),
-      this.prisma.customsEntry.count({ where: { status: 'PENDING', deletedAt: null } }),
-      this.prisma.customsLot.count({ where: { status: 'BONDED' } }),
-      this.prisma.customsLot.aggregate({
-        where: { status: { in: ['BONDED', 'PARTIAL'] } },
-        _sum: { remainQty: true },
+      this.customsEntryRepository.count({ where: { deletedAt: IsNull() } }),
+      this.customsEntryRepository.count({
+        where: { status: 'PENDING', deletedAt: IsNull() },
       }),
+      this.customsLotRepository.count({ where: { status: 'BONDED' } }),
+      this.customsLotRepository
+        .createQueryBuilder('cl')
+        .select('SUM(cl.remainQty)', 'total')
+        .where('cl.status IN (:...statuses)', { statuses: ['BONDED', 'PARTIAL'] })
+        .getRawOne(),
     ]);
 
     return {
       totalEntries,
       pendingEntries,
       bondedLots,
-      totalBondedQty: totalBondedQty._sum.remainQty || 0,
+      totalBondedQty: totalBondedQty?.total || 0,
     };
   }
 }

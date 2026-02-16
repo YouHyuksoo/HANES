@@ -19,7 +19,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { DefectLog } from '../../../entities/defect-log.entity';
+import { RepairLog } from '../../../entities/repair-log.entity';
+import { ProdResult } from '../../../entities/prod-result.entity';
 import {
   CreateDefectLogDto,
   UpdateDefectLogDto,
@@ -34,7 +38,14 @@ import {
 export class DefectLogService {
   private readonly logger = new Logger(DefectLogService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(DefectLog)
+    private readonly defectLogRepository: Repository<DefectLog>,
+    @InjectRepository(RepairLog)
+    private readonly repairLogRepository: Repository<RepairLog>,
+    @InjectRepository(ProdResult)
+    private readonly prodResultRepository: Repository<ProdResult>,
+  ) {}
 
   // =============================================
   // 불량로그 CRUD
@@ -56,57 +67,33 @@ export class DefectLogService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(company && { company }),
       ...(prodResultId && { prodResultId }),
       ...(defectCode && { defectCode }),
       ...(status && { status }),
       ...(startDate || endDate
         ? {
-            occurAt: {
-              ...(startDate && { gte: new Date(startDate) }),
-              ...(endDate && { lte: new Date(endDate) }),
-            },
+            occurAt: And(
+              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
+              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
+            ),
           }
         : {}),
       ...(search && {
-        OR: [
-          { defectName: { contains: search, mode: 'insensitive' as const } },
-          { cause: { contains: search, mode: 'insensitive' as const } },
-        ],
+        defectName: ILike(`%${search}%`),
       }),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.defectLog.findMany({
+      this.defectLogRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { occurAt: 'desc' },
-        include: {
-          prodResult: {
-            select: {
-              id: true,
-              lotNo: true,
-              processCode: true,
-              jobOrder: {
-                select: {
-                  orderNo: true,
-                  part: {
-                    select: { partCode: true, partName: true },
-                  },
-                },
-              },
-            },
-          },
-          repairLogs: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
-        },
+        order: { occurAt: 'DESC' },
       }),
-      this.prisma.defectLog.count({ where }),
+      this.defectLogRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -116,33 +103,8 @@ export class DefectLogService {
    * 불량로그 단건 조회
    */
   async findById(id: string) {
-    const defect = await this.prisma.defectLog.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        prodResult: {
-          include: {
-            jobOrder: {
-              select: {
-                orderNo: true,
-                part: {
-                  select: { partCode: true, partName: true },
-                },
-              },
-            },
-            equip: {
-              select: { equipCode: true, equipName: true },
-            },
-          },
-        },
-        repairLogs: {
-          orderBy: { createdAt: 'desc' },
-          include: {
-            worker: {
-              select: { id: true, name: true, empNo: true },
-            },
-          },
-        },
-      },
+    const defect = await this.defectLogRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
 
     if (!defect) {
@@ -156,15 +118,9 @@ export class DefectLogService {
    * 생산실적별 불량 목록 조회
    */
   async findByProdResultId(prodResultId: string) {
-    const defects = await this.prisma.defectLog.findMany({
-      where: { prodResultId, deletedAt: null },
-      orderBy: { occurAt: 'desc' },
-      include: {
-        repairLogs: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-      },
+    const defects = await this.defectLogRepository.find({
+      where: { prodResultId, deletedAt: IsNull() },
+      order: { occurAt: 'DESC' },
     });
 
     return defects;
@@ -175,7 +131,7 @@ export class DefectLogService {
    */
   async create(dto: CreateDefectLogDto) {
     // 생산실적 존재 확인
-    const prodResult = await this.prisma.prodResult.findUnique({
+    const prodResult = await this.prodResultRepository.findOne({
       where: { id: dto.prodResultId },
     });
 
@@ -184,29 +140,26 @@ export class DefectLogService {
     }
 
     // 불량 등록 및 생산실적 불량수량 증가를 트랜잭션으로 처리
-    const [defectLog] = await this.prisma.$transaction([
-      this.prisma.defectLog.create({
-        data: {
-          prodResultId: dto.prodResultId,
-          defectCode: dto.defectCode,
-          defectName: dto.defectName,
-          qty: dto.qty ?? 1,
-          status: dto.status ?? 'WAIT',
-          cause: dto.cause,
-          occurAt: dto.occurAt ? new Date(dto.occurAt) : new Date(),
-          imageUrl: dto.imageUrl,
-        },
-      }),
-      // 생산실적의 불량수량 증가
-      this.prisma.prodResult.update({
-        where: { id: dto.prodResultId },
-        data: {
-          defectQty: { increment: dto.qty ?? 1 },
-        },
-      }),
-    ]);
+    const defectLog = this.defectLogRepository.create({
+      prodResultId: dto.prodResultId,
+      defectCode: dto.defectCode,
+      defectName: dto.defectName,
+      qty: dto.qty ?? 1,
+      status: dto.status ?? 'WAIT',
+      cause: dto.cause,
+      occurAt: dto.occurAt ? new Date(dto.occurAt) : new Date(),
+      imageUrl: dto.imageUrl,
+    });
 
-    return defectLog;
+    const savedDefectLog = await this.defectLogRepository.save(defectLog);
+
+    // 생산실적의 불량수량 증가
+    await this.prodResultRepository.update(
+      { id: dto.prodResultId },
+      { defectQty: prodResult.defectQty + (dto.qty ?? 1) }
+    );
+
+    return savedDefectLog;
   }
 
   /**
@@ -219,34 +172,31 @@ export class DefectLogService {
     const qtyDiff = (dto.qty ?? existing.qty) - existing.qty;
 
     if (qtyDiff !== 0) {
-      await this.prisma.$transaction([
-        this.prisma.defectLog.update({
-          where: { id },
-          data: {
-            ...(dto.defectCode !== undefined && { defectCode: dto.defectCode }),
-            ...(dto.defectName !== undefined && { defectName: dto.defectName }),
-            ...(dto.qty !== undefined && { qty: dto.qty }),
-            ...(dto.cause !== undefined && { cause: dto.cause }),
-            ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
-          },
-        }),
-        this.prisma.prodResult.update({
-          where: { id: existing.prodResultId },
-          data: {
-            defectQty: { increment: qtyDiff },
-          },
-        }),
-      ]);
+      await this.defectLogRepository.update(
+        { id },
+        {
+          ...(dto.defectCode !== undefined && { defectCode: dto.defectCode }),
+          ...(dto.defectName !== undefined && { defectName: dto.defectName }),
+          ...(dto.qty !== undefined && { qty: dto.qty }),
+          ...(dto.cause !== undefined && { cause: dto.cause }),
+          ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
+        }
+      );
+
+      await this.prodResultRepository.update(
+        { id: existing.prodResultId },
+        { defectQty: () => `DEFECT_QTY + ${qtyDiff}` }
+      );
     } else {
-      await this.prisma.defectLog.update({
-        where: { id },
-        data: {
+      await this.defectLogRepository.update(
+        { id },
+        {
           ...(dto.defectCode !== undefined && { defectCode: dto.defectCode }),
           ...(dto.defectName !== undefined && { defectName: dto.defectName }),
           ...(dto.cause !== undefined && { cause: dto.cause }),
           ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
-        },
-      });
+        }
+      );
     }
 
     return this.findById(id);
@@ -259,18 +209,15 @@ export class DefectLogService {
     const existing = await this.findById(id);
 
     // 불량 삭제 시 생산실적 불량수량 감소
-    await this.prisma.$transaction([
-      this.prisma.defectLog.update({
-        where: { id },
-        data: { deletedAt: new Date() },
-      }),
-      this.prisma.prodResult.update({
-        where: { id: existing.prodResultId },
-        data: {
-          defectQty: { decrement: existing.qty },
-        },
-      }),
-    ]);
+    await this.defectLogRepository.update(
+      { id },
+      { deletedAt: new Date() }
+    );
+
+    await this.prodResultRepository.update(
+      { id: existing.prodResultId },
+      { defectQty: () => `DEFECT_QTY - ${existing.qty}` }
+    );
 
     return { id, deleted: true };
   }
@@ -288,10 +235,12 @@ export class DefectLogService {
     // 상태 변경 유효성 검사
     this.validateStatusChange(existing.status, dto.status);
 
-    return this.prisma.defectLog.update({
-      where: { id },
-      data: { status: dto.status },
-    });
+    await this.defectLogRepository.update(
+      { id },
+      { status: dto.status }
+    );
+
+    return this.findById(id);
   }
 
   /**
@@ -326,22 +275,17 @@ export class DefectLogService {
     // WAIT 상태가 아니면 자동으로 REPAIR 상태로 변경하지 않음
     // 이미 REPAIR/REWORK 상태일 수 있음
 
-    const repairLog = await this.prisma.repairLog.create({
-      data: {
-        defectLogId: dto.defectLogId,
-        workerId: dto.workerId,
-        repairAction: dto.repairAction,
-        materialUsed: dto.materialUsed,
-        repairTime: dto.repairTime,
-        result: dto.result,
-        remark: dto.remark,
-      },
-      include: {
-        worker: {
-          select: { id: true, name: true, empNo: true },
-        },
-      },
+    const repairLog = this.repairLogRepository.create({
+      defectLogId: dto.defectLogId,
+      workerId: dto.workerId,
+      repairAction: dto.repairAction,
+      materialUsed: dto.materialUsed,
+      repairTime: dto.repairTime,
+      result: dto.result,
+      remark: dto.remark,
     });
+
+    const savedRepairLog = await this.repairLogRepository.save(repairLog);
 
     // 수리 결과에 따라 불량 상태 자동 변경
     if (dto.result) {
@@ -355,16 +299,16 @@ export class DefectLogService {
           break;
         default:
           // FAIL인 경우 상태 유지
-          return repairLog;
+          return savedRepairLog;
       }
 
-      await this.prisma.defectLog.update({
-        where: { id: dto.defectLogId },
-        data: { status: newStatus },
-      });
+      await this.defectLogRepository.update(
+        { id: dto.defectLogId },
+        { status: newStatus }
+      );
     }
 
-    return repairLog;
+    return savedRepairLog;
   }
 
   /**
@@ -373,14 +317,9 @@ export class DefectLogService {
   async getRepairLogs(defectLogId: string) {
     await this.findById(defectLogId); // 존재 확인
 
-    return this.prisma.repairLog.findMany({
+    return this.repairLogRepository.find({
       where: { defectLogId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        worker: {
-          select: { id: true, name: true, empNo: true },
-        },
-      },
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -395,34 +334,39 @@ export class DefectLogService {
     startDate?: string,
     endDate?: string
   ): Promise<DefectTypeStatsDto[]> {
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(startDate || endDate
         ? {
-            occurAt: {
-              ...(startDate && { gte: new Date(startDate) }),
-              ...(endDate && { lte: new Date(endDate) }),
-            },
+            occurAt: And(
+              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
+              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
+            ),
           }
         : {}),
     };
 
-    const grouped = await this.prisma.defectLog.groupBy({
-      by: ['defectCode', 'defectName'],
-      where,
-      _count: { defectCode: true },
-      _sum: { qty: true },
-    });
+    // TypeORM의 groupBy 사용
+    const grouped = await this.defectLogRepository
+      .createQueryBuilder('defect')
+      .select('defect.defectCode', 'defectCode')
+      .addSelect('defect.defectName', 'defectName')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(defect.qty)', 'totalQty')
+      .where(where)
+      .groupBy('defect.defectCode')
+      .addGroupBy('defect.defectName')
+      .getRawMany();
 
-    const total = grouped.reduce((sum, g) => sum + g._count.defectCode, 0);
+    const total = grouped.reduce((sum, g) => sum + parseInt(g.count), 0);
 
     return grouped
       .map((g) => ({
         defectCode: g.defectCode,
         defectName: g.defectName ?? g.defectCode,
-        count: g._count.defectCode,
-        totalQty: g._sum.qty ?? 0,
-        percentage: total > 0 ? Math.round((g._count.defectCode / total) * 10000) / 100 : 0,
+        count: parseInt(g.count),
+        totalQty: parseInt(g.totalQty) ?? 0,
+        percentage: total > 0 ? Math.round((parseInt(g.count) / total) * 10000) / 100 : 0,
       }))
       .sort((a, b) => b.count - a.count);
   }
@@ -434,29 +378,31 @@ export class DefectLogService {
     startDate?: string,
     endDate?: string
   ): Promise<DefectStatusStatsDto[]> {
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(startDate || endDate
         ? {
-            occurAt: {
-              ...(startDate && { gte: new Date(startDate) }),
-              ...(endDate && { lte: new Date(endDate) }),
-            },
+            occurAt: And(
+              startDate ? MoreThanOrEqual(new Date(startDate)) : undefined,
+              endDate ? LessThanOrEqual(new Date(endDate)) : undefined
+            ),
           }
         : {}),
     };
 
-    const grouped = await this.prisma.defectLog.groupBy({
-      by: ['status'],
-      where,
-      _count: { status: true },
-      _sum: { qty: true },
-    });
+    const grouped = await this.defectLogRepository
+      .createQueryBuilder('defect')
+      .select('defect.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(defect.qty)', 'totalQty')
+      .where(where)
+      .groupBy('defect.status')
+      .getRawMany();
 
     return grouped.map((g) => ({
       status: g.status,
-      count: g._count.status,
-      totalQty: g._sum.qty ?? 0,
+      count: parseInt(g.count),
+      totalQty: parseInt(g.totalQty) ?? 0,
     }));
   }
 
@@ -468,17 +414,13 @@ export class DefectLogService {
     startDate.setDate(startDate.getDate() - days + 1);
     startDate.setHours(0, 0, 0, 0);
 
-    const defects = await this.prisma.defectLog.findMany({
+    const defects = await this.defectLogRepository.find({
       where: {
-        deletedAt: null,
-        occurAt: { gte: startDate },
+        deletedAt: IsNull(),
+        occurAt: MoreThanOrEqual(startDate),
       },
-      select: {
-        occurAt: true,
-        qty: true,
-        defectCode: true,
-      },
-      orderBy: { occurAt: 'asc' },
+      select: ['occurAt', 'qty', 'defectCode'],
+      order: { occurAt: 'ASC' },
     });
 
     // 일별 집계
@@ -503,28 +445,12 @@ export class DefectLogService {
    * 미처리 불량 목록 조회
    */
   async getPendingDefects() {
-    return this.prisma.defectLog.findMany({
+    return this.defectLogRepository.find({
       where: {
-        deletedAt: null,
-        status: { in: ['WAIT', 'REPAIR', 'REWORK'] },
+        deletedAt: IsNull(),
+        status: In(['WAIT', 'REPAIR', 'REWORK']),
       },
-      orderBy: { occurAt: 'asc' },
-      include: {
-        prodResult: {
-          select: {
-            lotNo: true,
-            processCode: true,
-            jobOrder: {
-              select: {
-                orderNo: true,
-                part: {
-                  select: { partCode: true, partName: true },
-                },
-              },
-            },
-          },
-        },
-      },
+      order: { occurAt: 'ASC' },
     });
   }
 }

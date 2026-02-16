@@ -9,72 +9,102 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, ILike, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { ShipmentOrder } from '../../../entities/shipment-order.entity';
+import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { ShipHistoryQueryDto } from '../dto/ship-history.dto';
 
 @Injectable()
 export class ShipHistoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(ShipmentOrder)
+    private readonly shipmentOrderRepository: Repository<ShipmentOrder>,
+    @InjectRepository(ShipmentOrderItem)
+    private readonly shipmentOrderItemRepository: Repository<ShipmentOrderItem>,
+    @InjectRepository(PartMaster)
+    private readonly partRepository: Repository<PartMaster>,
+  ) {}
 
   /** 출하이력 목록 조회 */
   async findAll(query: ShipHistoryQueryDto) {
     const { page = 1, limit = 10, search, status, shipDateFrom, shipDateTo, customerName } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(status && { status }),
-      ...(customerName && { customerName: { contains: customerName, mode: 'insensitive' as const } }),
+      ...(customerName && { customerName: ILike(`%${customerName}%`) }),
       ...(search && {
-        OR: [
-          { shipOrderNo: { contains: search, mode: 'insensitive' as const } },
-          { customerName: { contains: search, mode: 'insensitive' as const } },
-        ],
+        shipOrderNo: ILike(`%${search}%`),
       }),
       ...(shipDateFrom || shipDateTo
         ? {
-            shipDate: {
-              ...(shipDateFrom && { gte: new Date(shipDateFrom) }),
-              ...(shipDateTo && { lte: new Date(shipDateTo) }),
-            },
+            shipDate: And(
+              shipDateFrom ? MoreThanOrEqual(new Date(shipDateFrom)) : undefined,
+              shipDateTo ? LessThanOrEqual(new Date(shipDateTo)) : undefined
+            ),
           }
         : {}),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.shipmentOrder.findMany({
+      this.shipmentOrderRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          items: {
-            include: {
-              part: { select: { id: true, partCode: true, partName: true } },
-            },
-          },
-        },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.shipmentOrder.count({ where }),
+      this.shipmentOrderRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // 품목 정보 병합
+    const resultData = await Promise.all(
+      data.map(async (order) => {
+        const items = await this.shipmentOrderItemRepository.find({
+          where: { shipOrderId: order.id },
+        });
+
+        const itemsWithPart = await Promise.all(
+          items.map(async (item) => {
+            const part = await this.partRepository.findOne({
+              where: { id: item.partId },
+              select: ['id', 'partCode', 'partName'],
+            });
+            return {
+              ...item,
+              part: part || undefined,
+            };
+          })
+        );
+
+        return {
+          ...order,
+          items: itemsWithPart,
+        };
+      })
+    );
+
+    return { data: resultData, total, page, limit };
   }
 
   /** 출하이력 통계 요약 */
   async getSummary() {
     const [total, byStatus] = await Promise.all([
-      this.prisma.shipmentOrder.count({ where: { deletedAt: null } }),
-      this.prisma.shipmentOrder.groupBy({
-        by: ['status'],
-        where: { deletedAt: null },
-        _count: { status: true },
-      }),
+      this.shipmentOrderRepository.count({ where: { deletedAt: IsNull() } }),
+      this.shipmentOrderRepository
+        .createQueryBuilder('order')
+        .select('order.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .where('order.deletedAt IS NULL')
+        .groupBy('order.status')
+        .getRawMany(),
     ]);
 
     return {
       total,
-      byStatus: byStatus.map((s) => ({ status: s.status, count: s._count.status })),
+      byStatus: byStatus.map((s) => ({ status: s.status, count: parseInt(s.count) })),
     };
   }
 }

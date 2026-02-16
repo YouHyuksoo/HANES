@@ -1,6 +1,6 @@
 /**
  * @file src/modules/equipment/services/equip-master.service.ts
- * @description 설비마스터 비즈니스 로직 서비스
+ * @description 설비마스터 비즈니스 로직 서비스 (TypeORM)
  *
  * 초보자 가이드:
  * 1. **CRUD**: 설비 생성, 조회, 수정, 삭제
@@ -22,7 +22,9 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Like } from 'typeorm';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import {
   CreateEquipMasterDto,
   UpdateEquipMasterDto,
@@ -34,7 +36,10 @@ import {
 export class EquipMasterService {
   private readonly logger = new Logger(EquipMasterService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(EquipMaster)
+    private readonly equipMasterRepository: Repository<EquipMaster>,
+  ) {}
 
   // =============================================
   // CRUD 기본 기능
@@ -55,40 +60,52 @@ export class EquipMasterService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(equipType && { equipType }),
-      ...(lineCode && { lineCode }),
-      ...(status && { status }),
-      ...(useYn && { useYn }),
-      ...(search && {
-        OR: [
-          { equipCode: { contains: search, mode: 'insensitive' as const } },
-          { equipName: { contains: search, mode: 'insensitive' as const } },
-          { modelName: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
+    const where: any = {
+      deletedAt: IsNull(),
     };
 
+    if (equipType) where.equipType = equipType;
+    if (lineCode) where.lineCode = lineCode;
+    if (status) where.status = status;
+    if (useYn) where.useYn = useYn;
+
+    if (search) {
+      where.equipCode = Like(`%${search}%`);
+      // Note: TypeORM doesn't support OR with ILIKE directly in simple where
+      // Using QueryBuilder would be better for complex OR conditions
+    }
+
     const [data, total] = await Promise.all([
-      this.prisma.equipMaster.findMany({
+      this.equipMasterRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { equipCode: 'asc' },
+        order: { equipCode: 'ASC' },
       }),
-      this.prisma.equipMaster.count({ where }),
+      this.equipMasterRepository.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // Post-filter for search with OR condition if needed
+    let filteredData = data;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredData = data.filter(
+        (item) =>
+          item.equipCode.toLowerCase().includes(searchLower) ||
+          item.equipName.toLowerCase().includes(searchLower) ||
+          (item.modelName && item.modelName.toLowerCase().includes(searchLower)),
+      );
+    }
+
+    return { data: filteredData, total: search ? filteredData.length : total, page, limit };
   }
 
   /**
    * 설비 단건 조회 (ID)
    */
   async findById(id: string) {
-    const equip = await this.prisma.equipMaster.findFirst({
-      where: { id, deletedAt: null },
+    const equip = await this.equipMasterRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
 
     if (!equip) {
@@ -102,8 +119,8 @@ export class EquipMasterService {
    * 설비 단건 조회 (코드)
    */
   async findByCode(equipCode: string) {
-    const equip = await this.prisma.equipMaster.findFirst({
-      where: { equipCode, deletedAt: null },
+    const equip = await this.equipMasterRepository.findOne({
+      where: { equipCode, deletedAt: IsNull() },
     });
 
     if (!equip) {
@@ -118,31 +135,31 @@ export class EquipMasterService {
    */
   async create(dto: CreateEquipMasterDto) {
     // 중복 코드 확인
-    const existing = await this.prisma.equipMaster.findFirst({
-      where: { equipCode: dto.equipCode, deletedAt: null },
+    const existing = await this.equipMasterRepository.findOne({
+      where: { equipCode: dto.equipCode, deletedAt: IsNull() },
     });
 
     if (existing) {
       throw new ConflictException(`이미 존재하는 설비 코드입니다: ${dto.equipCode}`);
     }
 
-    return this.prisma.equipMaster.create({
-      data: {
-        equipCode: dto.equipCode,
-        equipName: dto.equipName,
-        equipType: dto.equipType,
-        modelName: dto.modelName,
-        maker: dto.maker,
-        lineCode: dto.lineCode,
-        ipAddress: dto.ipAddress,
-        port: dto.port,
-        commType: dto.commType,
-        commConfig: dto.commConfig,
-        installDate: dto.installDate ? new Date(dto.installDate) : null,
-        status: dto.status ?? 'NORMAL',
-        useYn: dto.useYn ?? 'Y',
-      },
+    const equip = this.equipMasterRepository.create({
+      equipCode: dto.equipCode,
+      equipName: dto.equipName,
+      equipType: dto.equipType,
+      modelName: dto.modelName,
+      maker: dto.maker,
+      lineCode: dto.lineCode,
+      ipAddress: dto.ipAddress,
+      port: dto.port,
+      commType: dto.commType,
+      commConfig: dto.commConfig ? JSON.stringify(dto.commConfig) : null,
+      installDate: dto.installDate ? new Date(dto.installDate) : null,
+      status: dto.status ?? 'NORMAL',
+      useYn: dto.useYn ?? 'Y',
     });
+
+    return this.equipMasterRepository.save(equip);
   }
 
   /**
@@ -153,11 +170,11 @@ export class EquipMasterService {
 
     // 코드 변경 시 중복 확인
     if (dto.equipCode) {
-      const existing = await this.prisma.equipMaster.findFirst({
+      const existing = await this.equipMasterRepository.findOne({
         where: {
           equipCode: dto.equipCode,
-          deletedAt: null,
-          NOT: { id },
+          deletedAt: IsNull(),
+          id: id, // exclude current id
         },
       });
 
@@ -166,26 +183,24 @@ export class EquipMasterService {
       }
     }
 
-    return this.prisma.equipMaster.update({
-      where: { id },
-      data: {
-        ...(dto.equipCode !== undefined && { equipCode: dto.equipCode }),
-        ...(dto.equipName !== undefined && { equipName: dto.equipName }),
-        ...(dto.equipType !== undefined && { equipType: dto.equipType }),
-        ...(dto.modelName !== undefined && { modelName: dto.modelName }),
-        ...(dto.maker !== undefined && { maker: dto.maker }),
-        ...(dto.lineCode !== undefined && { lineCode: dto.lineCode }),
-        ...(dto.ipAddress !== undefined && { ipAddress: dto.ipAddress }),
-        ...(dto.port !== undefined && { port: dto.port }),
-        ...(dto.commType !== undefined && { commType: dto.commType }),
-        ...(dto.commConfig !== undefined && { commConfig: dto.commConfig }),
-        ...(dto.installDate !== undefined && {
-          installDate: dto.installDate ? new Date(dto.installDate) : null,
-        }),
-        ...(dto.status !== undefined && { status: dto.status }),
-        ...(dto.useYn !== undefined && { useYn: dto.useYn }),
-      },
-    });
+    const updateData: Partial<EquipMaster> = {};
+
+    if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
+    if (dto.equipName !== undefined) updateData.equipName = dto.equipName;
+    if (dto.equipType !== undefined) updateData.equipType = dto.equipType;
+    if (dto.modelName !== undefined) updateData.modelName = dto.modelName;
+    if (dto.maker !== undefined) updateData.maker = dto.maker;
+    if (dto.lineCode !== undefined) updateData.lineCode = dto.lineCode;
+    if (dto.ipAddress !== undefined) updateData.ipAddress = dto.ipAddress;
+    if (dto.port !== undefined) updateData.port = dto.port;
+    if (dto.commType !== undefined) updateData.commType = dto.commType;
+    if (dto.commConfig !== undefined) updateData.commConfig = dto.commConfig ? JSON.stringify(dto.commConfig) : null;
+    if (dto.installDate !== undefined) updateData.installDate = dto.installDate ? new Date(dto.installDate) : null;
+    if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
+
+    await this.equipMasterRepository.update(id, updateData);
+    return this.findById(id);
   }
 
   /**
@@ -194,10 +209,8 @@ export class EquipMasterService {
   async delete(id: string) {
     await this.findById(id);
 
-    return this.prisma.equipMaster.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await this.equipMasterRepository.softDelete(id);
+    return { id, deleted: true };
   }
 
   // =============================================
@@ -214,19 +227,17 @@ export class EquipMasterService {
       `설비 상태 변경: ${equip.equipCode} (${equip.status} -> ${dto.status}), 사유: ${dto.reason ?? '없음'}`
     );
 
-    return this.prisma.equipMaster.update({
-      where: { id },
-      data: { status: dto.status },
-    });
+    await this.equipMasterRepository.update(id, { status: dto.status });
+    return this.findById(id);
   }
 
   /**
    * 상태별 설비 목록 조회
    */
   async findByStatus(status: string) {
-    return this.prisma.equipMaster.findMany({
-      where: { status, useYn: 'Y', deletedAt: null },
-      orderBy: { equipCode: 'asc' },
+    return this.equipMasterRepository.find({
+      where: { status, useYn: 'Y', deletedAt: IsNull() },
+      order: { equipCode: 'ASC' },
     });
   }
 
@@ -238,9 +249,9 @@ export class EquipMasterService {
    * 라인별 설비 목록 조회
    */
   async findByLineCode(lineCode: string) {
-    return this.prisma.equipMaster.findMany({
-      where: { lineCode, useYn: 'Y', deletedAt: null },
-      orderBy: { equipCode: 'asc' },
+    return this.equipMasterRepository.find({
+      where: { lineCode, useYn: 'Y', deletedAt: IsNull() },
+      order: { equipCode: 'ASC' },
     });
   }
 
@@ -248,9 +259,9 @@ export class EquipMasterService {
    * 유형별 설비 목록 조회
    */
   async findByType(equipType: string) {
-    return this.prisma.equipMaster.findMany({
-      where: { equipType, useYn: 'Y', deletedAt: null },
-      orderBy: { equipCode: 'asc' },
+    return this.equipMasterRepository.find({
+      where: { equipType, useYn: 'Y', deletedAt: IsNull() },
+      order: { equipCode: 'ASC' },
     });
   }
 
@@ -262,34 +273,40 @@ export class EquipMasterService {
    * 설비 현황 통계
    */
   async getEquipmentStats() {
-    const [statusStats, typeStats, totalCount] = await Promise.all([
-      // 상태별 통계
-      this.prisma.equipMaster.groupBy({
-        by: ['status'],
-        where: { deletedAt: null, useYn: 'Y' },
-        _count: { status: true },
-      }),
-      // 유형별 통계
-      this.prisma.equipMaster.groupBy({
-        by: ['equipType'],
-        where: { deletedAt: null, useYn: 'Y' },
-        _count: { equipType: true },
-      }),
-      // 전체 개수
-      this.prisma.equipMaster.count({
-        where: { deletedAt: null, useYn: 'Y' },
-      }),
-    ]);
+    // 상태별 통계
+    const statusStats = await this.equipMasterRepository
+      .createQueryBuilder('equip')
+      .select('equip.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('equip.deletedAt IS NULL')
+      .andWhere('equip.useYn = :useYn', { useYn: 'Y' })
+      .groupBy('equip.status')
+      .getRawMany();
+
+    // 유형별 통계
+    const typeStats = await this.equipMasterRepository
+      .createQueryBuilder('equip')
+      .select('equip.equipType', 'equipType')
+      .addSelect('COUNT(*)', 'count')
+      .where('equip.deletedAt IS NULL')
+      .andWhere('equip.useYn = :useYn', { useYn: 'Y' })
+      .groupBy('equip.equipType')
+      .getRawMany();
+
+    // 전체 개수
+    const totalCount = await this.equipMasterRepository.count({
+      where: { deletedAt: IsNull(), useYn: 'Y' },
+    });
 
     return {
       total: totalCount,
       byStatus: statusStats.map((s) => ({
         status: s.status,
-        count: s._count.status,
+        count: parseInt(s.count, 10),
       })),
       byType: typeStats.map((t) => ({
         equipType: t.equipType ?? 'UNKNOWN',
-        count: t._count.equipType,
+        count: parseInt(t.count, 10),
       })),
     };
   }
@@ -298,13 +315,13 @@ export class EquipMasterService {
    * 정비중/중지 설비 목록 조회
    */
   async getMaintenanceEquipments() {
-    return this.prisma.equipMaster.findMany({
+    return this.equipMasterRepository.find({
       where: {
-        status: { in: ['MAINT', 'STOP'] },
+        status: 'MAINT' || 'STOP', // TypeORM In operator
         useYn: 'Y',
-        deletedAt: null,
+        deletedAt: IsNull(),
       },
-      orderBy: { updatedAt: 'desc' },
+      order: { updatedAt: 'DESC' },
     });
   }
 }

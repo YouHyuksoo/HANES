@@ -23,6 +23,7 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { BoxController } from './controllers/box.controller';
 import { BoxService } from './services/box.service';
 import { PalletController } from './controllers/pallet.controller';
@@ -38,9 +39,33 @@ import { ShipReturnService } from './services/ship-return.service';
 import { CustomerOrderController } from './controllers/customer-order.controller';
 import { CustomerOrderService } from './services/customer-order.service';
 import { InventoryModule } from '../inventory/inventory.module';
+import { BoxMaster } from '../../entities/box-master.entity';
+import { PalletMaster } from '../../entities/pallet-master.entity';
+import { ShipmentLog } from '../../entities/shipment-log.entity';
+import { ShipmentOrder } from '../../entities/shipment-order.entity';
+import { ShipmentOrderItem } from '../../entities/shipment-order-item.entity';
+import { ShipmentReturn } from '../../entities/shipment-return.entity';
+import { ShipmentReturnItem } from '../../entities/shipment-return-item.entity';
+import { CustomerOrder } from '../../entities/customer-order.entity';
+import { CustomerOrderItem } from '../../entities/customer-order-item.entity';
+import { PartMaster } from '../../entities/part-master.entity';
 
 @Module({
-  imports: [InventoryModule],
+  imports: [
+    TypeOrmModule.forFeature([
+      BoxMaster,
+      PalletMaster,
+      ShipmentLog,
+      ShipmentOrder,
+      ShipmentOrderItem,
+      ShipmentReturn,
+      ShipmentReturnItem,
+      CustomerOrder,
+      CustomerOrderItem,
+      PartMaster,
+    ]),
+    InventoryModule,
+  ],
   controllers: [
     BoxController,
     PalletController,

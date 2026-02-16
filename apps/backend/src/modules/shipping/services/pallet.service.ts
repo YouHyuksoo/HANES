@@ -6,7 +6,7 @@
  * 1. **CRUD 메서드**: 생성, 조회, 수정, 삭제 로직 구현
  * 2. **박스 관리**: addBox, removeBox로 박스 추가/제거
  * 3. **상태 관리**: closePallet로 팔레트 닫기, 출하 할당
- * 4. **Prisma 사용**: PrismaService를 통해 DB 접근
+ * 4. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
  *
  * 실제 DB 스키마 (pallet_masters 테이블):
  * - palletNo가 유니크 키
@@ -21,7 +21,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, ILike, DataSource, In } from 'typeorm';
+import { PalletMaster } from '../../../entities/pallet-master.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
+import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import {
   CreatePalletDto,
   UpdatePalletDto,
@@ -36,7 +40,15 @@ import {
 export class PalletService {
   private readonly logger = new Logger(PalletService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(PalletMaster)
+    private readonly palletRepository: Repository<PalletMaster>,
+    @InjectRepository(BoxMaster)
+    private readonly boxRepository: Repository<BoxMaster>,
+    @InjectRepository(ShipmentLog)
+    private readonly shipmentRepository: Repository<ShipmentLog>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /**
    * 팔레트 목록 조회
@@ -52,48 +64,23 @@ export class PalletService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(company && { company }),
-      ...(palletNo && { palletNo: { contains: palletNo, mode: 'insensitive' as const } }),
+      ...(palletNo && { palletNo: ILike(`%${palletNo}%`) }),
       ...(shipmentId && { shipmentId }),
       ...(status && { status }),
-      ...(unassigned && { shipmentId: null }),
+      ...(unassigned && { shipmentId: IsNull() }),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.palletMaster.findMany({
+      this.palletRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          shipment: {
-            select: {
-              id: true,
-              shipNo: true,
-              status: true,
-            },
-          },
-          boxes: {
-            where: { deletedAt: null },
-            select: {
-              id: true,
-              boxNo: true,
-              qty: true,
-              status: true,
-              part: {
-                select: {
-                  id: true,
-                  partCode: true,
-                  partName: true,
-                },
-              },
-            },
-          },
-        },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.palletMaster.count({ where }),
+      this.palletRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -103,24 +90,8 @@ export class PalletService {
    * 팔레트 단건 조회 (ID)
    */
   async findById(id: string) {
-    const pallet = await this.prisma.palletMaster.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        shipment: true,
-        boxes: {
-          where: { deletedAt: null },
-          include: {
-            part: {
-              select: {
-                id: true,
-                partCode: true,
-                partName: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
+    const pallet = await this.palletRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
 
     if (!pallet) {
@@ -134,24 +105,8 @@ export class PalletService {
    * 팔레트 단건 조회 (팔레트번호)
    */
   async findByPalletNo(palletNo: string) {
-    const pallet = await this.prisma.palletMaster.findFirst({
-      where: { palletNo, deletedAt: null },
-      include: {
-        shipment: true,
-        boxes: {
-          where: { deletedAt: null },
-          include: {
-            part: {
-              select: {
-                id: true,
-                partCode: true,
-                partName: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
+    const pallet = await this.palletRepository.findOne({
+      where: { palletNo, deletedAt: IsNull() },
     });
 
     if (!pallet) {
@@ -166,22 +121,22 @@ export class PalletService {
    */
   async create(dto: CreatePalletDto) {
     // 중복 체크
-    const existing = await this.prisma.palletMaster.findFirst({
-      where: { palletNo: dto.palletNo, deletedAt: null },
+    const existing = await this.palletRepository.findOne({
+      where: { palletNo: dto.palletNo, deletedAt: IsNull() },
     });
 
     if (existing) {
       throw new ConflictException(`이미 존재하는 팔레트번호입니다: ${dto.palletNo}`);
     }
 
-    return this.prisma.palletMaster.create({
-      data: {
-        palletNo: dto.palletNo,
-        boxCount: 0,
-        totalQty: 0,
-        status: 'OPEN',
-      },
+    const pallet = this.palletRepository.create({
+      palletNo: dto.palletNo,
+      boxCount: 0,
+      totalQty: 0,
+      status: 'OPEN',
     });
+
+    return this.palletRepository.save(pallet);
   }
 
   /**
@@ -195,21 +150,13 @@ export class PalletService {
       throw new BadRequestException('출하된 팔레트는 수정할 수 없습니다.');
     }
 
-    return this.prisma.palletMaster.update({
-      where: { id },
-      data: {
-        ...(dto.shipmentId !== undefined && { shipmentId: dto.shipmentId }),
-        ...(dto.status !== undefined && { status: dto.status }),
-      },
-      include: {
-        shipment: {
-          select: {
-            id: true,
-            shipNo: true,
-          },
-        },
-      },
-    });
+    const updateData: any = {};
+    if (dto.shipmentId !== undefined) updateData.shipmentId = dto.shipmentId;
+    if (dto.status !== undefined) updateData.status = dto.status;
+
+    await this.palletRepository.update({ id }, updateData);
+
+    return this.findById(id);
   }
 
   /**
@@ -233,10 +180,12 @@ export class PalletService {
       throw new BadRequestException('출하에 할당된 팔레트는 삭제할 수 없습니다. 먼저 출하에서 제거해주세요.');
     }
 
-    return this.prisma.palletMaster.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await this.palletRepository.update(
+      { id },
+      { deletedAt: new Date() }
+    );
+
+    return { id, deleted: true };
   }
 
   // ===== 박스 관리 =====
@@ -253,16 +202,16 @@ export class PalletService {
     }
 
     // 박스 존재 및 상태 확인
-    const boxes = await this.prisma.boxMaster.findMany({
+    const boxes = await this.boxRepository.find({
       where: {
-        id: { in: dto.boxIds },
-        deletedAt: null,
+        id: In(dto.boxIds),
+        deletedAt: IsNull(),
       },
     });
 
     if (boxes.length !== dto.boxIds.length) {
       const foundIds = boxes.map(b => b.id);
-      const notFound = dto.boxIds.filter(id => !foundIds.includes(id));
+      const notFound = dto.boxIds.filter(boxId => !foundIds.includes(boxId));
       throw new NotFoundException(`박스를 찾을 수 없습니다: ${notFound.join(', ')}`);
     }
 
@@ -279,42 +228,45 @@ export class PalletService {
     }
 
     // 트랜잭션으로 박스 할당 및 팔레트 집계 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 박스 업데이트
-      await tx.boxMaster.updateMany({
-        where: { id: { in: dto.boxIds } },
-        data: { palletId: id },
-      });
+      await queryRunner.manager.update(
+        BoxMaster,
+        { id: In(dto.boxIds) },
+        { palletId: id }
+      );
 
       // 팔레트 집계 업데이트
-      const palletSummary = await tx.boxMaster.aggregate({
-        where: { palletId: id, deletedAt: null },
-        _count: true,
-        _sum: { qty: true },
-      });
+      const palletSummary = await queryRunner.manager
+        .createQueryBuilder(BoxMaster, 'box')
+        .where('box.palletId = :palletId', { palletId: id })
+        .andWhere('box.deletedAt IS NULL')
+        .select('COUNT(*)', 'count')
+        .addSelect('SUM(box.qty)', 'totalQty')
+        .getRawOne();
 
-      return tx.palletMaster.update({
-        where: { id },
-        data: {
-          boxCount: palletSummary._count,
-          totalQty: palletSummary._sum.qty ?? 0,
-        },
-        include: {
-          boxes: {
-            where: { deletedAt: null },
-            include: {
-              part: {
-                select: {
-                  id: true,
-                  partCode: true,
-                  partName: true,
-                },
-              },
-            },
-          },
-        },
-      });
-    });
+      const updatedPallet = await queryRunner.manager.update(
+        PalletMaster,
+        { id },
+        {
+          boxCount: parseInt(palletSummary?.count) || 0,
+          totalQty: parseInt(palletSummary?.totalQty) || 0,
+        }
+      );
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -329,11 +281,11 @@ export class PalletService {
     }
 
     // 박스가 이 팔레트에 있는지 확인
-    const boxes = await this.prisma.boxMaster.findMany({
+    const boxes = await this.boxRepository.find({
       where: {
-        id: { in: dto.boxIds },
+        id: In(dto.boxIds),
         palletId: id,
-        deletedAt: null,
+        deletedAt: IsNull(),
       },
     });
 
@@ -344,42 +296,45 @@ export class PalletService {
     }
 
     // 트랜잭션으로 박스 제거 및 팔레트 집계 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 박스 업데이트
-      await tx.boxMaster.updateMany({
-        where: { id: { in: dto.boxIds } },
-        data: { palletId: null },
-      });
+      await queryRunner.manager.update(
+        BoxMaster,
+        { id: In(dto.boxIds) },
+        { palletId: null }
+      );
 
       // 팔레트 집계 업데이트
-      const palletSummary = await tx.boxMaster.aggregate({
-        where: { palletId: id, deletedAt: null },
-        _count: true,
-        _sum: { qty: true },
-      });
+      const palletSummary = await queryRunner.manager
+        .createQueryBuilder(BoxMaster, 'box')
+        .where('box.palletId = :palletId', { palletId: id })
+        .andWhere('box.deletedAt IS NULL')
+        .select('COUNT(*)', 'count')
+        .addSelect('SUM(box.qty)', 'totalQty')
+        .getRawOne();
 
-      return tx.palletMaster.update({
-        where: { id },
-        data: {
-          boxCount: palletSummary._count,
-          totalQty: palletSummary._sum.qty ?? 0,
-        },
-        include: {
-          boxes: {
-            where: { deletedAt: null },
-            include: {
-              part: {
-                select: {
-                  id: true,
-                  partCode: true,
-                  partName: true,
-                },
-              },
-            },
-          },
-        },
-      });
-    });
+      await queryRunner.manager.update(
+        PalletMaster,
+        { id },
+        {
+          boxCount: parseInt(palletSummary?.count) || 0,
+          totalQty: parseInt(palletSummary?.totalQty) || 0,
+        }
+      );
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // ===== 상태 관리 =====
@@ -399,23 +354,15 @@ export class PalletService {
       throw new BadRequestException('빈 팔레트는 닫을 수 없습니다.');
     }
 
-    return this.prisma.palletMaster.update({
-      where: { id },
-      data: {
+    await this.palletRepository.update(
+      { id },
+      {
         status: 'CLOSED',
         closeAt: new Date(),
-      },
-      include: {
-        boxes: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            boxNo: true,
-            qty: true,
-          },
-        },
-      },
-    });
+      }
+    );
+
+    return this.findById(id);
   }
 
   /**
@@ -433,23 +380,15 @@ export class PalletService {
       throw new BadRequestException('출하에 할당된 팔레트는 다시 열 수 없습니다.');
     }
 
-    return this.prisma.palletMaster.update({
-      where: { id },
-      data: {
+    await this.palletRepository.update(
+      { id },
+      {
         status: 'OPEN',
         closeAt: null,
-      },
-      include: {
-        boxes: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            boxNo: true,
-            qty: true,
-          },
-        },
-      },
-    });
+      }
+    );
+
+    return this.findById(id);
   }
 
   // ===== 출하 할당 =====
@@ -471,8 +410,8 @@ export class PalletService {
     }
 
     // 출하 존재 및 상태 확인
-    const shipment = await this.prisma.shipmentLog.findFirst({
-      where: { id: dto.shipmentId, deletedAt: null },
+    const shipment = await this.shipmentRepository.findOne({
+      where: { id: dto.shipmentId, deletedAt: IsNull() },
     });
 
     if (!shipment) {
@@ -484,50 +423,50 @@ export class PalletService {
     }
 
     // 트랜잭션으로 팔레트 할당 및 출하 집계 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 팔레트 업데이트
-      const updatedPallet = await tx.palletMaster.update({
-        where: { id },
-        data: {
+      await queryRunner.manager.update(
+        PalletMaster,
+        { id },
+        {
           shipmentId: dto.shipmentId,
           status: 'LOADED',
-        },
-        include: {
-          shipment: {
-            select: {
-              id: true,
-              shipNo: true,
-            },
-          },
-          boxes: {
-            where: { deletedAt: null },
-            select: {
-              id: true,
-              boxNo: true,
-              qty: true,
-            },
-          },
-        },
-      });
+        }
+      );
 
       // 출하 집계 업데이트
-      const shipmentSummary = await tx.palletMaster.aggregate({
-        where: { shipmentId: dto.shipmentId, deletedAt: null },
-        _count: true,
-        _sum: { boxCount: true, totalQty: true },
-      });
+      const shipmentSummary = await queryRunner.manager
+        .createQueryBuilder(PalletMaster, 'pallet')
+        .where('pallet.shipmentId = :shipmentId', { shipmentId: dto.shipmentId })
+        .andWhere('pallet.deletedAt IS NULL')
+        .select('COUNT(*)', 'count')
+        .addSelect('SUM(pallet.boxCount)', 'boxCount')
+        .addSelect('SUM(pallet.totalQty)', 'totalQty')
+        .getRawOne();
 
-      await tx.shipmentLog.update({
-        where: { id: dto.shipmentId },
-        data: {
-          palletCount: shipmentSummary._count,
-          boxCount: shipmentSummary._sum.boxCount ?? 0,
-          totalQty: shipmentSummary._sum.totalQty ?? 0,
-        },
-      });
+      await queryRunner.manager.update(
+        ShipmentLog,
+        { id: dto.shipmentId },
+        {
+          palletCount: parseInt(shipmentSummary?.count) || 0,
+          boxCount: parseInt(shipmentSummary?.boxCount) || 0,
+          totalQty: parseInt(shipmentSummary?.totalQty) || 0,
+        }
+      );
 
-      return updatedPallet;
-    });
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -541,8 +480,8 @@ export class PalletService {
     }
 
     // 출하가 PREPARING 상태일 때만 제거 가능
-    const shipment = await this.prisma.shipmentLog.findFirst({
-      where: { id: pallet.shipmentId, deletedAt: null },
+    const shipment = await this.shipmentRepository.findOne({
+      where: { id: pallet.shipmentId, deletedAt: IsNull() },
     });
 
     if (!shipment) {
@@ -556,44 +495,50 @@ export class PalletService {
     const shipmentId = pallet.shipmentId;
 
     // 트랜잭션으로 팔레트 제거 및 출하 집계 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 팔레트 업데이트
-      const updatedPallet = await tx.palletMaster.update({
-        where: { id },
-        data: {
+      await queryRunner.manager.update(
+        PalletMaster,
+        { id },
+        {
           shipmentId: null,
           status: 'CLOSED',
-        },
-        include: {
-          boxes: {
-            where: { deletedAt: null },
-            select: {
-              id: true,
-              boxNo: true,
-              qty: true,
-            },
-          },
-        },
-      });
+        }
+      );
 
       // 출하 집계 업데이트
-      const shipmentSummary = await tx.palletMaster.aggregate({
-        where: { shipmentId, deletedAt: null },
-        _count: true,
-        _sum: { boxCount: true, totalQty: true },
-      });
+      const shipmentSummary = await queryRunner.manager
+        .createQueryBuilder(PalletMaster, 'pallet')
+        .where('pallet.shipmentId = :shipmentId', { shipmentId })
+        .andWhere('pallet.deletedAt IS NULL')
+        .select('COUNT(*)', 'count')
+        .addSelect('SUM(pallet.boxCount)', 'boxCount')
+        .addSelect('SUM(pallet.totalQty)', 'totalQty')
+        .getRawOne();
 
-      await tx.shipmentLog.update({
-        where: { id: shipmentId },
-        data: {
-          palletCount: shipmentSummary._count,
-          boxCount: shipmentSummary._sum.boxCount ?? 0,
-          totalQty: shipmentSummary._sum.totalQty ?? 0,
-        },
-      });
+      await queryRunner.manager.update(
+        ShipmentLog,
+        { id: shipmentId },
+        {
+          palletCount: parseInt(shipmentSummary?.count) || 0,
+          boxCount: parseInt(shipmentSummary?.boxCount) || 0,
+          totalQty: parseInt(shipmentSummary?.totalQty) || 0,
+        }
+      );
 
-      return updatedPallet;
-    });
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // ===== 조회 유틸리티 =====
@@ -602,23 +547,9 @@ export class PalletService {
    * 출하별 팔레트 목록 조회
    */
   async findByShipmentId(shipmentId: string) {
-    return this.prisma.palletMaster.findMany({
-      where: { shipmentId, deletedAt: null },
-      include: {
-        boxes: {
-          where: { deletedAt: null },
-          include: {
-            part: {
-              select: {
-                id: true,
-                partCode: true,
-                partName: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
+    return this.palletRepository.find({
+      where: { shipmentId, deletedAt: IsNull() },
+      order: { createdAt: 'ASC' },
     });
   }
 
@@ -626,30 +557,13 @@ export class PalletService {
    * 미할당 팔레트 목록 조회 (출하에 할당되지 않은 CLOSED 상태)
    */
   async findUnassignedPallets() {
-    return this.prisma.palletMaster.findMany({
+    return this.palletRepository.find({
       where: {
-        shipmentId: null,
+        shipmentId: IsNull(),
         status: 'CLOSED',
-        deletedAt: null,
+        deletedAt: IsNull(),
       },
-      include: {
-        boxes: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            boxNo: true,
-            qty: true,
-            part: {
-              select: {
-                id: true,
-                partCode: true,
-                partName: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
+      order: { createdAt: 'ASC' },
     });
   }
 
@@ -659,23 +573,22 @@ export class PalletService {
   async getPalletSummary(id: string) {
     const pallet = await this.findById(id);
 
-    // 품목별 수량 집계
-    const partSummary = await this.prisma.boxMaster.groupBy({
-      by: ['partId'],
-      where: { palletId: id, deletedAt: null },
-      _count: true,
-      _sum: { qty: true },
-    });
+    // 품목별 수량 집계 - 박스 기준
+    const partSummary = await this.boxRepository
+      .createQueryBuilder('box')
+      .select('box.partId', 'partId')
+      .addSelect('COUNT(*)', 'boxCount')
+      .addSelect('SUM(box.qty)', 'qty')
+      .where('box.palletId = :palletId', { palletId: id })
+      .andWhere('box.deletedAt IS NULL')
+      .groupBy('box.partId')
+      .getRawMany();
 
     // 품목 정보 조회
     const partIds = partSummary.map(p => p.partId);
-    const parts = await this.prisma.partMaster.findMany({
-      where: { id: { in: partIds } },
-      select: {
-        id: true,
-        partCode: true,
-        partName: true,
-      },
+    const parts = await this.partRepository.find({
+      where: partIds.length > 0 ? { id: In(partIds) } : {},
+      select: ['id', 'partCode', 'partName'],
     });
 
     const partsMap = new Map(parts.map(p => [p.id, p]));
@@ -689,8 +602,8 @@ export class PalletService {
       closeAt: pallet.closeAt,
       partBreakdown: partSummary.map(ps => ({
         part: partsMap.get(ps.partId),
-        boxCount: ps._count,
-        qty: ps._sum.qty ?? 0,
+        boxCount: parseInt(ps.boxCount),
+        qty: parseInt(ps.qty) || 0,
       })),
     };
   }

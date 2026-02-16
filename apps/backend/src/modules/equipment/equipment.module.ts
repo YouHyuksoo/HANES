@@ -21,6 +21,12 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EquipMaster } from '../../entities/equip-master.entity';
+import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
+import { EquipInspectLog } from '../../entities/equip-inspect-log.entity';
+import { ConsumableMaster } from '../../entities/consumable-master.entity';
+import { ConsumableLog } from '../../entities/consumable-log.entity';
 import { EquipMasterController } from './controllers/equip-master.controller';
 import { ConsumableController, ConsumableLogController } from './controllers/consumable.controller';
 import { DailyInspectController } from './controllers/daily-inspect.controller';
@@ -31,7 +37,15 @@ import { ConsumableService } from './services/consumable.service';
 import { EquipInspectService } from './services/equip-inspect.service';
 
 @Module({
-  imports: [],
+  imports: [
+    TypeOrmModule.forFeature([
+      EquipMaster,
+      EquipInspectItemMaster,
+      EquipInspectLog,
+      ConsumableMaster,
+      ConsumableLog,
+    ]),
+  ],
   controllers: [
     EquipMasterController,
     ConsumableController,

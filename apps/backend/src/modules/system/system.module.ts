@@ -9,10 +9,13 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommConfigController } from './controllers/comm-config.controller';
 import { CommConfigService } from './services/comm-config.service';
+import { CommConfig } from '../../entities/comm-config.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([CommConfig])],
   controllers: [CommConfigController],
   providers: [CommConfigService],
   exports: [CommConfigService],

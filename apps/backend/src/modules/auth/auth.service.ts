@@ -13,21 +13,26 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../../entities/user.entity';
 import { LoginDto, RegisterDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   /**
    * 로그인 - DB에서 email/password 직접 체크
    * @returns userId를 토큰으로 사용
    */
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.userRepository.findOne({
       where: { email: dto.email },
     });
 
@@ -44,10 +49,7 @@ export class AuthService {
     }
 
     // 최근 로그인 시간 업데이트
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await this.userRepository.update(user.id, { lastLoginAt: new Date() });
 
     this.logger.log(`User logged in: ${user.email}`);
 
@@ -73,7 +75,7 @@ export class AuthService {
    * 회원가입 - 새 사용자 DB에 등록
    */
   async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({
+    const existing = await this.userRepository.findOne({
       where: { email: dto.email },
     });
 
@@ -81,29 +83,29 @@ export class AuthService {
       throw new ConflictException('이미 등록된 이메일입니다.');
     }
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: dto.password,
-        name: dto.name,
-        empNo: dto.empNo,
-        dept: dto.dept,
-        role: 'OPERATOR', // 기본 역할
-      },
+    const user = this.userRepository.create({
+      email: dto.email,
+      password: dto.password,
+      name: dto.name,
+      empNo: dto.empNo,
+      dept: dto.dept,
+      role: 'OPERATOR', // 기본 역할
     });
 
-    this.logger.log(`User registered: ${user.email}`);
+    const savedUser = await this.userRepository.save(user);
+
+    this.logger.log(`User registered: ${savedUser.email}`);
 
     return {
-      token: user.id,
+      token: savedUser.id,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        empNo: user.empNo,
-        dept: user.dept,
-        role: user.role,
-        status: user.status,
+        id: savedUser.id,
+        email: savedUser.email,
+        name: savedUser.name,
+        empNo: savedUser.empNo,
+        dept: savedUser.dept,
+        role: savedUser.role,
+        status: savedUser.status,
       },
     };
   }
@@ -112,19 +114,19 @@ export class AuthService {
    * 현재 사용자 조회 - Bearer 토큰(userId)으로 사용자 조회
    */
   async me(userId: string) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        empNo: true,
-        dept: true,
-        role: true,
-        status: true,
-        company: true,
-        lastLoginAt: true,
-      },
+      select: [
+        'id',
+        'email',
+        'name',
+        'empNo',
+        'dept',
+        'role',
+        'status',
+        'company',
+        'lastLoginAt',
+      ],
     });
 
     if (!user) {

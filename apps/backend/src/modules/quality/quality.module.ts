@@ -20,13 +20,25 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { InspectResultController } from './controllers/inspect-result.controller';
 import { InspectResultService } from './services/inspect-result.service';
 import { DefectLogController } from './controllers/defect-log.controller';
 import { DefectLogService } from './services/defect-log.service';
+import { DefectLog } from '../../entities/defect-log.entity';
+import { RepairLog } from '../../entities/repair-log.entity';
+import { InspectResult } from '../../entities/inspect-result.entity';
+import { ProdResult } from '../../entities/prod-result.entity';
 
 @Module({
-  imports: [],
+  imports: [
+    TypeOrmModule.forFeature([
+      DefectLog,
+      RepairLog,
+      InspectResult,
+      ProdResult,
+    ]),
+  ],
   controllers: [
     InspectResultController,
     DefectLogController,

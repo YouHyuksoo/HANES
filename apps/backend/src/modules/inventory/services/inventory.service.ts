@@ -1,6 +1,6 @@
 /**
  * @file src/modules/inventory/services/inventory.service.ts
- * @description 재고관리 핵심 서비스 - 수불 트랜잭션 처리
+ * @description 재고관리 핵심 서비스 - 수불 트랜잭션 처리 (TypeORM)
  *
  * 핵심 원칙:
  * 1. 모든 수불은 이력으로 남김 (삭제 금지)
@@ -8,7 +8,13 @@
  * 3. 재고 = SUM(트랜잭션 수량)
  */
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { Stock } from '../../../entities/stock.entity';
+import { Lot } from '../../../entities/lot.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import {
   ReceiveStockDto,
   IssueStockDto,
@@ -21,7 +27,19 @@ import {
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(StockTransaction)
+    private readonly stockTransactionRepository: Repository<StockTransaction>,
+    @InjectRepository(Stock)
+    private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(Lot)
+    private readonly lotRepository: Repository<Lot>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /**
    * 트랜잭션 번호 생성
@@ -30,9 +48,9 @@ export class InventoryService {
     const today = new Date();
     const prefix = `TRX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
-    const lastTrans = await this.prisma.stockTransaction.findFirst({
-      where: { transNo: { startsWith: prefix } },
-      orderBy: { transNo: 'desc' },
+    const lastTrans = await this.stockTransactionRepository.findOne({
+      where: { transNo: prefix },
+      order: { transNo: 'DESC' },
     });
 
     let seq = 1;
@@ -51,9 +69,9 @@ export class InventoryService {
     const today = new Date();
     const prefix = `${partType}${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
-    const lastLot = await this.prisma.lot.findFirst({
-      where: { lotNo: { startsWith: prefix } },
-      orderBy: { lotNo: 'desc' },
+    const lastLot = await this.lotRepository.findOne({
+      where: { lotNo: prefix },
+      order: { lotNo: 'DESC' },
     });
 
     let seq = 1;
@@ -69,28 +87,27 @@ export class InventoryService {
    * LOT 생성
    */
   async createLot(dto: CreateLotDto) {
-    return this.prisma.lot.create({
-      data: {
-        lotNo: dto.lotNo,
-        partId: dto.partId,
-        partType: dto.partType,
-        initQty: dto.initQty,
-        currentQty: dto.initQty,
-        recvDate: dto.recvDate,
-        expireDate: dto.expireDate,
-        origin: dto.origin,
-        vendor: dto.vendor,
-        invoiceNo: dto.invoiceNo,
-        poNo: dto.poNo,
-        jobOrderId: dto.jobOrderId,
-        parentLotId: dto.parentLotId,
-      },
-      include: { part: true },
+    const lot = this.lotRepository.create({
+      lotNo: dto.lotNo,
+      partId: dto.partId,
+      partType: dto.partType,
+      initQty: dto.initQty,
+      currentQty: dto.initQty,
+      recvDate: dto.recvDate,
+      expireDate: dto.expireDate,
+      origin: dto.origin,
+      vendor: dto.vendor,
+      invoiceNo: dto.invoiceNo,
+      poNo: dto.poNo,
+      jobOrderId: dto.jobOrderId,
+      parentLotId: dto.parentLotId,
     });
+
+    return this.lotRepository.save(lot);
   }
 
   /**
-   * 재고 업데이트 (내부 함수)
+   * 재고 업데이트 (낶부 함수)
    */
   private async updateStock(
     warehouseId: string,
@@ -99,8 +116,8 @@ export class InventoryService {
     qtyDelta: number,
   ) {
     // 기존 재고 조회
-    const existingStock = await this.prisma.stock.findFirst({
-      where: { warehouseId, partId, lotId: lotId || null },
+    const existingStock = await this.stockRepository.findOne({
+      where: { warehouseId, partId, lotId: lotId || IsNull() },
     });
 
     if (existingStock) {
@@ -110,13 +127,10 @@ export class InventoryService {
         throw new BadRequestException(`재고 부족: 현재 ${existingStock.qty}, 요청 ${Math.abs(qtyDelta)}`);
       }
 
-      return this.prisma.stock.update({
-        where: { id: existingStock.id },
-        data: {
-          qty: newQty,
-          availableQty: newQty - existingStock.reservedQty,
-          lastTransAt: new Date(),
-        },
+      return this.stockRepository.update(existingStock.id, {
+        qty: newQty,
+        availableQty: newQty - existingStock.reservedQty,
+        lastTransAt: new Date(),
       });
     } else {
       // 신규 재고 생성 (입고 시에만)
@@ -124,34 +138,31 @@ export class InventoryService {
         throw new BadRequestException('재고가 존재하지 않습니다.');
       }
 
-      return this.prisma.stock.create({
-        data: {
-          warehouseId,
-          partId,
-          lotId: lotId || null,
-          qty: qtyDelta,
-          reservedQty: 0,
-          availableQty: qtyDelta,
-          lastTransAt: new Date(),
-        },
+      const newStock = this.stockRepository.create({
+        warehouseId,
+        partId,
+        lotId: lotId || null,
+        qty: qtyDelta,
+        reservedQty: 0,
+        availableQty: qtyDelta,
+        lastTransAt: new Date(),
       });
+
+      return this.stockRepository.save(newStock);
     }
   }
 
   /**
-   * LOT 수량 업데이트 (내부 함수)
+   * LOT 수량 업데이트 (낶부 함수)
    */
   private async updateLotQty(lotId: string, qtyDelta: number) {
-    const lot = await this.prisma.lot.findUnique({ where: { id: lotId } });
+    const lot = await this.lotRepository.findOne({ where: { id: lotId } });
     if (!lot) return;
 
     const newQty = lot.currentQty + qtyDelta;
-    await this.prisma.lot.update({
-      where: { id: lotId },
-      data: {
-        currentQty: Math.max(0, newQty),
-        status: newQty <= 0 ? 'DEPLETED' : lot.status,
-      },
+    await this.lotRepository.update(lotId, {
+      currentQty: Math.max(0, newQty),
+      status: newQty <= 0 ? 'DEPLETED' : lot.status,
     });
   }
 
@@ -161,68 +172,72 @@ export class InventoryService {
   async receiveStock(dto: ReceiveStockDto) {
     const transNo = await this.generateTransNo();
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 1. 트랜잭션 생성
-      const transaction = await tx.stockTransaction.create({
-        data: {
-          transNo,
-          transType: dto.transType,
-          transDate: new Date(),
-          toWarehouseId: dto.warehouseId,
-          partId: dto.partId,
-          lotId: dto.lotId,
-          qty: dto.qty, // 양수
-          unitPrice: dto.unitPrice,
-          totalAmount: dto.unitPrice ? dto.unitPrice * dto.qty : null,
-          refType: dto.refType,
-          refId: dto.refId,
-          workerId: dto.workerId,
-          remark: dto.remark,
-          status: 'DONE',
-        },
+      const transaction = this.stockTransactionRepository.create({
+        transNo,
+        transType: dto.transType,
+        transDate: new Date(),
+        toWarehouseId: dto.warehouseId,
+        partId: dto.partId,
+        lotId: dto.lotId,
+        qty: dto.qty, // 양수
+        unitPrice: dto.unitPrice,
+        totalAmount: dto.unitPrice ? dto.unitPrice * dto.qty : null,
+        refType: dto.refType,
+        refId: dto.refId,
+        workerId: dto.workerId,
+        remark: dto.remark,
+        status: 'DONE',
       });
 
+      const savedTransaction = await queryRunner.manager.save(StockTransaction, transaction);
+
       // 2. 재고 업데이트
-      const existingStock = await tx.stock.findFirst({
-        where: { warehouseId: dto.warehouseId, partId: dto.partId, lotId: dto.lotId || null },
+      const existingStock = await queryRunner.manager.findOne(Stock, {
+        where: { warehouseId: dto.warehouseId, partId: dto.partId, lotId: dto.lotId || IsNull() },
       });
 
       if (existingStock) {
-        await tx.stock.update({
-          where: { id: existingStock.id },
-          data: {
-            qty: existingStock.qty + dto.qty,
-            availableQty: existingStock.qty + dto.qty - existingStock.reservedQty,
-            lastTransAt: new Date(),
-          },
+        await queryRunner.manager.update(Stock, existingStock.id, {
+          qty: existingStock.qty + dto.qty,
+          availableQty: existingStock.qty + dto.qty - existingStock.reservedQty,
+          lastTransAt: new Date(),
         });
       } else {
-        await tx.stock.create({
-          data: {
-            warehouseId: dto.warehouseId,
-            partId: dto.partId,
-            lotId: dto.lotId || null,
-            qty: dto.qty,
-            reservedQty: 0,
-            availableQty: dto.qty,
-            lastTransAt: new Date(),
-          },
+        await queryRunner.manager.save(Stock, {
+          warehouseId: dto.warehouseId,
+          partId: dto.partId,
+          lotId: dto.lotId || null,
+          qty: dto.qty,
+          reservedQty: 0,
+          availableQty: dto.qty,
+          lastTransAt: new Date(),
         });
       }
 
       // 3. LOT 수량 업데이트
       if (dto.lotId) {
-        const lot = await tx.lot.findUnique({ where: { id: dto.lotId } });
+        const lot = await queryRunner.manager.findOne(Lot, { where: { id: dto.lotId } });
         if (lot) {
-          await tx.lot.update({
-            where: { id: dto.lotId },
-            data: { currentQty: lot.currentQty + dto.qty },
+          await queryRunner.manager.update(Lot, dto.lotId, {
+            currentQty: lot.currentQty + dto.qty,
           });
         }
       }
 
-      return transaction;
-    });
+      await queryRunner.commitTransaction();
+      return savedTransaction;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -231,10 +246,14 @@ export class InventoryService {
   async issueStock(dto: IssueStockDto) {
     const transNo = await this.generateTransNo();
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 1. 재고 확인
-      const stock = await tx.stock.findFirst({
-        where: { warehouseId: dto.warehouseId, partId: dto.partId, lotId: dto.lotId || null },
+      const stock = await queryRunner.manager.findOne(Stock, {
+        where: { warehouseId: dto.warehouseId, partId: dto.partId, lotId: dto.lotId || IsNull() },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -242,81 +261,76 @@ export class InventoryService {
       }
 
       // 2. 트랜잭션 생성
-      const transaction = await tx.stockTransaction.create({
-        data: {
-          transNo,
-          transType: dto.transType,
-          transDate: new Date(),
-          fromWarehouseId: dto.warehouseId,
-          toWarehouseId: dto.toWarehouseId,
-          partId: dto.partId,
-          lotId: dto.lotId,
-          qty: -dto.qty, // 음수 (출고)
-          refType: dto.refType,
-          refId: dto.refId,
-          workerId: dto.workerId,
-          remark: dto.remark,
-          status: 'DONE',
-        },
+      const transaction = this.stockTransactionRepository.create({
+        transNo,
+        transType: dto.transType,
+        transDate: new Date(),
+        fromWarehouseId: dto.warehouseId,
+        toWarehouseId: dto.toWarehouseId,
+        partId: dto.partId,
+        lotId: dto.lotId,
+        qty: -dto.qty, // 음수 (출고)
+        refType: dto.refType,
+        refId: dto.refId,
+        workerId: dto.workerId,
+        remark: dto.remark,
+        status: 'DONE',
       });
 
+      const savedTransaction = await queryRunner.manager.save(StockTransaction, transaction);
+
       // 3. 출고 창고 재고 감소
-      await tx.stock.update({
-        where: { id: stock.id },
-        data: {
-          qty: stock.qty - dto.qty,
-          availableQty: stock.availableQty - dto.qty,
-          lastTransAt: new Date(),
-        },
+      await queryRunner.manager.update(Stock, stock.id, {
+        qty: stock.qty - dto.qty,
+        availableQty: stock.availableQty - dto.qty,
+        lastTransAt: new Date(),
       });
 
       // 4. 이동 대상 창고가 있으면 입고 처리
       if (dto.toWarehouseId) {
-        const targetStock = await tx.stock.findFirst({
-          where: { warehouseId: dto.toWarehouseId, partId: dto.partId, lotId: dto.lotId || null },
+        const targetStock = await queryRunner.manager.findOne(Stock, {
+          where: { warehouseId: dto.toWarehouseId, partId: dto.partId, lotId: dto.lotId || IsNull() },
         });
 
         if (targetStock) {
-          await tx.stock.update({
-            where: { id: targetStock.id },
-            data: {
-              qty: targetStock.qty + dto.qty,
-              availableQty: targetStock.qty + dto.qty - targetStock.reservedQty,
-              lastTransAt: new Date(),
-            },
+          await queryRunner.manager.update(Stock, targetStock.id, {
+            qty: targetStock.qty + dto.qty,
+            availableQty: targetStock.qty + dto.qty - targetStock.reservedQty,
+            lastTransAt: new Date(),
           });
         } else {
-          await tx.stock.create({
-            data: {
-              warehouseId: dto.toWarehouseId,
-              partId: dto.partId,
-              lotId: dto.lotId || null,
-              qty: dto.qty,
-              reservedQty: 0,
-              availableQty: dto.qty,
-              lastTransAt: new Date(),
-            },
+          await queryRunner.manager.save(Stock, {
+            warehouseId: dto.toWarehouseId,
+            partId: dto.partId,
+            lotId: dto.lotId || null,
+            qty: dto.qty,
+            reservedQty: 0,
+            availableQty: dto.qty,
+            lastTransAt: new Date(),
           });
         }
       }
 
       // 5. LOT 수량 업데이트 (이동이 아닌 순수 출고 시)
       if (dto.lotId && !dto.toWarehouseId) {
-        const lot = await tx.lot.findUnique({ where: { id: dto.lotId } });
+        const lot = await queryRunner.manager.findOne(Lot, { where: { id: dto.lotId } });
         if (lot) {
           const newQty = lot.currentQty - dto.qty;
-          await tx.lot.update({
-            where: { id: dto.lotId },
-            data: {
-              currentQty: Math.max(0, newQty),
-              status: newQty <= 0 ? 'DEPLETED' : lot.status,
-            },
+          await queryRunner.manager.update(Lot, dto.lotId, {
+            currentQty: Math.max(0, newQty),
+            status: newQty <= 0 ? 'DEPLETED' : lot.status,
           });
         }
       }
 
-      return transaction;
-    });
+      await queryRunner.commitTransaction();
+      return savedTransaction;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -342,7 +356,7 @@ export class InventoryService {
    * 원 트랜잭션의 반대 수량으로 새 트랜잭션 생성
    */
   async cancelTransaction(dto: CancelTransactionDto) {
-    const originalTrans = await this.prisma.stockTransaction.findUnique({
+    const originalTrans = await this.stockTransactionRepository.findOne({
       where: { id: dto.transactionId },
     });
 
@@ -358,43 +372,44 @@ export class InventoryService {
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
     const transNo = await this.generateTransNo();
 
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 1. 원본 트랜잭션 상태 변경
-      await tx.stockTransaction.update({
-        where: { id: dto.transactionId },
-        data: { status: 'CANCELED' },
-      });
+      await queryRunner.manager.update(StockTransaction, dto.transactionId, { status: 'CANCELED' });
 
       // 2. 취소 트랜잭션 생성 (반대 수량)
-      const cancelTrans = await tx.stockTransaction.create({
-        data: {
-          transNo,
-          transType: cancelTransType,
-          transDate: new Date(),
-          fromWarehouseId: originalTrans.toWarehouseId, // 반대
-          toWarehouseId: originalTrans.fromWarehouseId, // 반대
-          partId: originalTrans.partId,
-          lotId: originalTrans.lotId,
-          qty: -originalTrans.qty, // 반대 부호
-          unitPrice: originalTrans.unitPrice,
-          totalAmount: originalTrans.totalAmount ? -Number(originalTrans.totalAmount) : null,
-          refType: originalTrans.refType,
-          refId: originalTrans.refId,
-          cancelRefId: originalTrans.id,
-          workerId: dto.workerId,
-          remark: dto.remark || `취소: ${originalTrans.transNo}`,
-          status: 'DONE',
-        },
+      const cancelTrans = this.stockTransactionRepository.create({
+        transNo,
+        transType: cancelTransType,
+        transDate: new Date(),
+        fromWarehouseId: originalTrans.toWarehouseId, // 반대
+        toWarehouseId: originalTrans.fromWarehouseId, // 반대
+        partId: originalTrans.partId,
+        lotId: originalTrans.lotId,
+        qty: -originalTrans.qty, // 반대 부호
+        unitPrice: originalTrans.unitPrice,
+        totalAmount: originalTrans.totalAmount ? -Number(originalTrans.totalAmount) : null,
+        refType: originalTrans.refType,
+        refId: originalTrans.refId,
+        cancelRefId: originalTrans.id,
+        workerId: dto.workerId,
+        remark: dto.remark || `취소: ${originalTrans.transNo}`,
+        status: 'DONE',
       });
+
+      const savedCancelTrans = await queryRunner.manager.save(StockTransaction, cancelTrans);
 
       // 3. 재고 복구
       // 원래 입고 창고에서 감소
       if (originalTrans.toWarehouseId && originalTrans.qty > 0) {
-        const stock = await tx.stock.findFirst({
+        const stock = await queryRunner.manager.findOne(Stock, {
           where: {
             warehouseId: originalTrans.toWarehouseId,
             partId: originalTrans.partId,
-            lotId: originalTrans.lotId || null,
+            lotId: originalTrans.lotId || IsNull(),
           },
         });
 
@@ -403,68 +418,63 @@ export class InventoryService {
           if (newQty < 0) {
             throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
           }
-          await tx.stock.update({
-            where: { id: stock.id },
-            data: {
-              qty: newQty,
-              availableQty: newQty - stock.reservedQty,
-              lastTransAt: new Date(),
-            },
+          await queryRunner.manager.update(Stock, stock.id, {
+            qty: newQty,
+            availableQty: newQty - stock.reservedQty,
+            lastTransAt: new Date(),
           });
         }
       }
 
       // 원래 출고 창고로 복구
       if (originalTrans.fromWarehouseId && originalTrans.qty < 0) {
-        const stock = await tx.stock.findFirst({
+        const stock = await queryRunner.manager.findOne(Stock, {
           where: {
             warehouseId: originalTrans.fromWarehouseId,
             partId: originalTrans.partId,
-            lotId: originalTrans.lotId || null,
+            lotId: originalTrans.lotId || IsNull(),
           },
         });
 
         if (stock) {
-          await tx.stock.update({
-            where: { id: stock.id },
-            data: {
-              qty: stock.qty + Math.abs(originalTrans.qty),
-              availableQty: stock.availableQty + Math.abs(originalTrans.qty),
-              lastTransAt: new Date(),
-            },
+          await queryRunner.manager.update(Stock, stock.id, {
+            qty: stock.qty + Math.abs(originalTrans.qty),
+            availableQty: stock.availableQty + Math.abs(originalTrans.qty),
+            lastTransAt: new Date(),
           });
         } else {
-          await tx.stock.create({
-            data: {
-              warehouseId: originalTrans.fromWarehouseId,
-              partId: originalTrans.partId,
-              lotId: originalTrans.lotId || null,
-              qty: Math.abs(originalTrans.qty),
-              reservedQty: 0,
-              availableQty: Math.abs(originalTrans.qty),
-              lastTransAt: new Date(),
-            },
+          await queryRunner.manager.save(Stock, {
+            warehouseId: originalTrans.fromWarehouseId,
+            partId: originalTrans.partId,
+            lotId: originalTrans.lotId || null,
+            qty: Math.abs(originalTrans.qty),
+            reservedQty: 0,
+            availableQty: Math.abs(originalTrans.qty),
+            lastTransAt: new Date(),
           });
         }
       }
 
       // 4. LOT 수량 복구
       if (originalTrans.lotId) {
-        const lot = await tx.lot.findUnique({ where: { id: originalTrans.lotId } });
+        const lot = await queryRunner.manager.findOne(Lot, { where: { id: originalTrans.lotId } });
         if (lot) {
           const newQty = lot.currentQty - originalTrans.qty;
-          await tx.lot.update({
-            where: { id: originalTrans.lotId },
-            data: {
-              currentQty: Math.max(0, newQty),
-              status: newQty > 0 ? 'NORMAL' : lot.status,
-            },
+          await queryRunner.manager.update(Lot, originalTrans.lotId, {
+            currentQty: Math.max(0, newQty),
+            status: newQty > 0 ? 'NORMAL' : lot.status,
           });
         }
       }
 
-      return cancelTrans;
-    });
+      await queryRunner.commitTransaction();
+      return savedCancelTrans;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -489,53 +499,69 @@ export class InventoryService {
    * @returns 평면화된 재고 데이터 (중첩 객체 → 평면 필드)
    */
   async getStock(query: StockQueryDto) {
-    const where: any = {};
+    const queryBuilder = this.stockRepository.createQueryBuilder('stock')
+      .leftJoinAndSelect(Warehouse, 'warehouse', 'stock.warehouseId = warehouse.id')
+      .leftJoinAndSelect(PartMaster, 'part', 'stock.partId = part.id')
+      .leftJoinAndSelect(Lot, 'lot', 'stock.lotId = lot.id')
+      .select([
+        'stock',
+        'warehouse.warehouseCode AS warehouse_code',
+        'warehouse.warehouseName AS warehouse_name',
+        'warehouse.warehouseType AS warehouse_type',
+        'part.partCode AS part_code',
+        'part.partName AS part_name',
+        'part.partType AS part_type',
+        'part.unit AS part_unit',
+        'lot.lotNo AS lot_no',
+        'lot.status AS lot_status',
+      ]);
 
-    if (query.warehouseId) where.warehouseId = query.warehouseId;
-    if (query.partId) where.partId = query.partId;
-    if (query.lotId) where.lotId = query.lotId;
-    if (!query.includeZero) where.qty = { gt: 0 };
-
+    if (query.warehouseId) {
+      queryBuilder.andWhere('stock.warehouseId = :warehouseId', { warehouseId: query.warehouseId });
+    }
+    if (query.partId) {
+      queryBuilder.andWhere('stock.partId = :partId', { partId: query.partId });
+    }
+    if (query.lotId) {
+      queryBuilder.andWhere('stock.lotId = :lotId', { lotId: query.lotId });
+    }
+    if (!query.includeZero) {
+      queryBuilder.andWhere('stock.qty > 0');
+    }
     if (query.warehouseType) {
-      where.warehouse = { warehouseType: query.warehouseType };
+      queryBuilder.andWhere('warehouse.warehouseType = :warehouseType', { warehouseType: query.warehouseType });
     }
-
     if (query.partType) {
-      where.part = { partType: query.partType };
+      queryBuilder.andWhere('part.partType = :partType', { partType: query.partType });
     }
 
-    const stocks = await this.prisma.stock.findMany({
-      where,
-      include: {
-        warehouse: true,
-        part: true,
-        lot: true,
-      },
-      orderBy: [{ warehouseId: 'asc' }, { partId: 'asc' }],
-    });
+    const stocks = await queryBuilder
+      .orderBy('stock.warehouseId', 'ASC')
+      .addOrderBy('stock.partId', 'ASC')
+      .getRawMany();
 
     // 평면화된 응답으로 변환
     return stocks.map((stock) => ({
-      id: stock.id,
-      warehouseId: stock.warehouseId,
-      partId: stock.partId,
-      lotId: stock.lotId,
-      qty: stock.qty,
-      reservedQty: stock.reservedQty,
-      availableQty: stock.availableQty,
-      lastTransAt: stock.lastTransAt,
+      id: stock.stock_id,
+      warehouseId: stock.stock_warehouseId,
+      partId: stock.stock_partId,
+      lotId: stock.stock_lotId,
+      qty: stock.stock_qty,
+      reservedQty: stock.stock_reservedQty,
+      availableQty: stock.stock_availableQty,
+      lastTransAt: stock.stock_lastTransAt,
       // 품목 정보 (평면화)
-      partCode: stock.part?.partCode || null,
-      partName: stock.part?.partName || null,
-      partType: stock.part?.partType || null,
-      unit: stock.part?.unit || null,
+      partCode: stock.part_code || null,
+      partName: stock.part_name || null,
+      partType: stock.part_type || null,
+      unit: stock.part_unit || null,
       // 창고 정보 (평면화)
-      warehouseCode: stock.warehouse?.warehouseCode || null,
-      warehouseName: stock.warehouse?.warehouseName || null,
-      warehouseType: stock.warehouse?.warehouseType || null,
+      warehouseCode: stock.warehouse_code || null,
+      warehouseName: stock.warehouse_name || null,
+      warehouseType: stock.warehouse_type || null,
       // LOT 정보 (평면화)
-      lotNo: stock.lot?.lotNo || null,
-      lotStatus: stock.lot?.status || null,
+      lotNo: stock.lot_no || null,
+      lotStatus: stock.lot_status || null,
     }));
   }
 
@@ -543,116 +569,172 @@ export class InventoryService {
    * 수불 이력 조회
    */
   async getTransactions(query: TransactionQueryDto) {
-    const where: any = {};
+    const queryBuilder = this.stockTransactionRepository.createQueryBuilder('trans')
+      .leftJoinAndSelect(Warehouse, 'fromWh', 'trans.fromWarehouseId = fromWh.id')
+      .leftJoinAndSelect(Warehouse, 'toWh', 'trans.toWarehouseId = toWh.id')
+      .leftJoinAndSelect(PartMaster, 'part', 'trans.partId = part.id')
+      .leftJoinAndSelect(Lot, 'lot', 'trans.lotId = lot.id')
+      .leftJoinAndSelect(StockTransaction, 'cancelRef', 'trans.cancelRefId = cancelRef.id')
+      .select([
+        'trans',
+        'fromWh AS fromWarehouse',
+        'toWh AS toWarehouse',
+        'part AS part',
+        'lot AS lot',
+        'cancelRef AS cancelRef',
+      ]);
 
     if (query.warehouseId) {
-      where.OR = [
-        { fromWarehouseId: query.warehouseId },
-        { toWarehouseId: query.warehouseId },
-      ];
+      queryBuilder.andWhere(
+        '(trans.fromWarehouseId = :warehouseId OR trans.toWarehouseId = :warehouseId)',
+        { warehouseId: query.warehouseId }
+      );
     }
-    if (query.partId) where.partId = query.partId;
-    if (query.lotId) where.lotId = query.lotId;
-    if (query.transType) where.transType = query.transType;
-    if (query.refType) where.refType = query.refType;
-    if (query.refId) where.refId = query.refId;
-
-    if (query.dateFrom || query.dateTo) {
-      where.transDate = {};
-      if (query.dateFrom) where.transDate.gte = query.dateFrom;
-      if (query.dateTo) where.transDate.lte = query.dateTo;
+    if (query.partId) {
+      queryBuilder.andWhere('trans.partId = :partId', { partId: query.partId });
+    }
+    if (query.lotId) {
+      queryBuilder.andWhere('trans.lotId = :lotId', { lotId: query.lotId });
+    }
+    if (query.transType) {
+      queryBuilder.andWhere('trans.transType = :transType', { transType: query.transType });
+    }
+    if (query.refType) {
+      queryBuilder.andWhere('trans.refType = :refType', { refType: query.refType });
+    }
+    if (query.refId) {
+      queryBuilder.andWhere('trans.refId = :refId', { refId: query.refId });
+    }
+    if (query.dateFrom) {
+      queryBuilder.andWhere('trans.transDate >= :dateFrom', { dateFrom: query.dateFrom });
+    }
+    if (query.dateTo) {
+      queryBuilder.andWhere('trans.transDate <= :dateTo', { dateTo: query.dateTo });
     }
 
-    return this.prisma.stockTransaction.findMany({
-      where,
-      include: {
-        fromWarehouse: true,
-        toWarehouse: true,
-        part: true,
-        lot: true,
-        cancelRef: true,
-      },
-      orderBy: { transDate: 'desc' },
-      take: query.limit || 100,
-      skip: query.offset || 0,
-    });
+    return queryBuilder
+      .orderBy('trans.transDate', 'DESC')
+      .take(query.limit || 100)
+      .skip(query.offset || 0)
+      .getMany();
   }
 
   /**
    * LOT 목록 조회
    */
   async getLots(query: { partId?: string; partType?: string; status?: string }) {
-    const where: any = {};
-    if (query.partId) where.partId = query.partId;
-    if (query.partType) where.partType = query.partType;
-    if (query.status) where.status = query.status;
+    const queryBuilder = this.lotRepository.createQueryBuilder('lot')
+      .leftJoinAndSelect(PartMaster, 'part', 'lot.partId = part.id')
+      .leftJoinAndSelect(Lot, 'parentLot', 'lot.parentLotId = parentLot.id')
+      .select(['lot', 'part AS part', 'parentLot AS parentLot']);
 
-    return this.prisma.lot.findMany({
-      where,
-      include: { part: true, parentLot: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    if (query.partId) {
+      queryBuilder.andWhere('lot.partId = :partId', { partId: query.partId });
+    }
+    if (query.partType) {
+      queryBuilder.andWhere('lot.partType = :partType', { partType: query.partType });
+    }
+    if (query.status) {
+      queryBuilder.andWhere('lot.status = :status', { status: query.status });
+    }
+
+    return queryBuilder
+      .orderBy('lot.createdAt', 'DESC')
+      .getMany();
   }
 
   /**
    * LOT 상세 조회
    */
   async getLotById(id: string) {
-    const lot = await this.prisma.lot.findUnique({
+    const lot = await this.lotRepository.findOne({
       where: { id },
-      include: {
-        part: true,
-        parentLot: true,
-        childLots: true,
-        stocks: { include: { warehouse: true } },
-        transactions: { orderBy: { transDate: 'desc' }, take: 20 },
-      },
     });
 
     if (!lot) {
       throw new NotFoundException('LOT을 찾을 수 없습니다.');
     }
 
-    return lot;
+    // Get related data
+    const [part, parentLot, childLots, stocks, transactions] = await Promise.all([
+      this.partMasterRepository.findOne({ where: { id: lot.partId } }),
+      lot.parentLotId ? this.lotRepository.findOne({ where: { id: lot.parentLotId } }) : null,
+      this.lotRepository.find({ where: { parentLotId: id } }),
+      this.stockRepository
+        .createQueryBuilder('stock')
+        .leftJoinAndSelect(Warehouse, 'warehouse', 'stock.warehouseId = warehouse.id')
+        .where('stock.lotId = :lotId', { lotId: id })
+        .select(['stock', 'warehouse AS warehouse'])
+        .getMany(),
+      this.stockTransactionRepository.find({
+        where: { lotId: id },
+        order: { transDate: 'DESC' },
+        take: 20,
+      }),
+    ]);
+
+    return {
+      ...lot,
+      part,
+      parentLot,
+      childLots,
+      stocks,
+      transactions,
+    };
   }
 
   /**
    * 트랜잭션 상세 조회 (ID)
    */
   async getTransactionById(id: string) {
-    const transaction = await this.prisma.stockTransaction.findUnique({
+    const transaction = await this.stockTransactionRepository.findOne({
       where: { id },
-      include: {
-        fromWarehouse: true,
-        toWarehouse: true,
-        part: true,
-        lot: true,
-        cancelRef: true,
-        canceledByTrans: true,
-      },
     });
 
     if (!transaction) {
       throw new NotFoundException('트랜잭션을 찾을 수 없습니다.');
     }
 
-    return transaction;
+    // Get related data
+    const [fromWarehouse, toWarehouse, part, lot, cancelRef, canceledByTrans] = await Promise.all([
+      transaction.fromWarehouseId ? this.warehouseRepository.findOne({ where: { id: transaction.fromWarehouseId } }) : null,
+      transaction.toWarehouseId ? this.warehouseRepository.findOne({ where: { id: transaction.toWarehouseId } }) : null,
+      this.partMasterRepository.findOne({ where: { id: transaction.partId } }),
+      transaction.lotId ? this.lotRepository.findOne({ where: { id: transaction.lotId } }) : null,
+      transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { id: transaction.cancelRefId } }) : null,
+      this.stockTransactionRepository.findOne({ where: { cancelRefId: id } }),
+    ]);
+
+    return {
+      ...transaction,
+      fromWarehouse,
+      toWarehouse,
+      part,
+      lot,
+      cancelRef,
+      canceledByTrans,
+    };
   }
 
   /**
    * 재고 집계
    */
   async getStockSummary(query: { warehouseType?: string; partType?: string }) {
-    const warehouseType = query.warehouseType;
-    const partType = query.partType;
-    const where: any = {};
-    if (warehouseType) where.warehouse = { warehouseType };
-    if (partType) where.part = { partType };
+    const queryBuilder = this.stockRepository.createQueryBuilder('stock')
+      .leftJoinAndSelect(Warehouse, 'warehouse', 'stock.warehouseId = warehouse.id')
+      .leftJoinAndSelect(PartMaster, 'part', 'stock.partId = part.id')
+      .where('stock.qty > 0');
 
-    const stocks = await this.prisma.stock.findMany({
-      where: { ...where, qty: { gt: 0 } },
-      include: { warehouse: true, part: true },
-    });
+    if (query.warehouseType) {
+      queryBuilder.andWhere('warehouse.warehouseType = :warehouseType', { warehouseType: query.warehouseType });
+    }
+    if (query.partType) {
+      queryBuilder.andWhere('part.partType = :partType', { partType: query.partType });
+    }
+
+    const stocks = await queryBuilder
+      .select(['stock', 'warehouse AS warehouse', 'part AS part'])
+      .getMany();
 
     // 품목별 집계
     const summary: Record<string, { partId: string; partCode: string; partName: string; totalQty: number; warehouses: any[] }> = {};
@@ -661,8 +743,8 @@ export class InventoryService {
       if (!summary[stock.partId]) {
         summary[stock.partId] = {
           partId: stock.partId,
-          partCode: stock.part.partCode,
-          partName: stock.part.partName,
+          partCode: (stock as any).part?.partCode || '',
+          partName: (stock as any).part?.partName || '',
           totalQty: 0,
           warehouses: [],
         };
@@ -670,8 +752,8 @@ export class InventoryService {
       summary[stock.partId].totalQty += stock.qty;
       summary[stock.partId].warehouses.push({
         warehouseId: stock.warehouseId,
-        warehouseCode: stock.warehouse.warehouseCode,
-        warehouseName: stock.warehouse.warehouseName,
+        warehouseCode: (stock as any).warehouse?.warehouseCode || '',
+        warehouseName: (stock as any).warehouse?.warehouseName || '',
         qty: stock.qty,
       });
     }
@@ -683,16 +765,6 @@ export class InventoryService {
    * 트랜잭션 상세 조회
    */
   async getTransaction(id: string) {
-    return this.prisma.stockTransaction.findUnique({
-      where: { id },
-      include: {
-        fromWarehouse: true,
-        toWarehouse: true,
-        part: true,
-        lot: true,
-        cancelRef: true,
-        canceledByTrans: true,
-      },
-    });
+    return this.getTransactionById(id);
   }
 }

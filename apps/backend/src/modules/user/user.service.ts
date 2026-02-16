@@ -8,19 +8,24 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, ILike, IsNull } from 'typeorm';
+import { User } from '../../entities/user.entity';
 import { CreateUserDto, UpdateUserDto } from './user.dto';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   /** 사용자 목록 조회 (검색/필터) */
   async findAll(query?: { search?: string; role?: string; status?: string }, company?: string) {
     const where: Record<string, unknown> = {
-      deletedAt: null,
+      deletedAt: IsNull(),
       ...(company && { company }),
     };
 
@@ -31,46 +36,42 @@ export class UserService {
       where.status = query.status;
     }
     if (query?.search) {
-      where.OR = [
-        { email: { contains: query.search, mode: 'insensitive' } },
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { empNo: { contains: query.search, mode: 'insensitive' } },
-      ];
+      where.email = ILike(`%${query.search}%`);
     }
 
-    return this.prisma.user.findMany({
+    return this.userRepository.find({
       where,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        empNo: true,
-        dept: true,
-        role: true,
-        status: true,
-        lastLoginAt: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
+      select: [
+        'id',
+        'email',
+        'name',
+        'empNo',
+        'dept',
+        'role',
+        'status',
+        'lastLoginAt',
+        'createdAt',
+      ],
+      order: { createdAt: 'DESC' },
     });
   }
 
   /** 사용자 상세 조회 */
   async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        empNo: true,
-        dept: true,
-        role: true,
-        status: true,
-        lastLoginAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    const user = await this.userRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+      select: [
+        'id',
+        'email',
+        'name',
+        'empNo',
+        'dept',
+        'role',
+        'status',
+        'lastLoginAt',
+        'createdAt',
+        'updatedAt',
+      ],
     });
 
     if (!user) {
@@ -82,7 +83,7 @@ export class UserService {
 
   /** 사용자 생성 */
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.user.findUnique({
+    const existing = await this.userRepository.findOne({
       where: { email: dto.email },
     });
 
@@ -90,52 +91,53 @@ export class UserService {
       throw new ConflictException('이미 등록된 이메일입니다.');
     }
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: dto.password,
-        name: dto.name,
-        empNo: dto.empNo,
-        dept: dto.dept,
-        role: dto.role || 'OPERATOR',
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        empNo: true,
-        dept: true,
-        role: true,
-        status: true,
-        createdAt: true,
-      },
+    const user = this.userRepository.create({
+      email: dto.email,
+      password: dto.password,
+      name: dto.name,
+      empNo: dto.empNo,
+      dept: dto.dept,
+      role: dto.role || 'OPERATOR',
     });
 
-    this.logger.log(`User created: ${user.email}`);
-    return user;
+    const savedUser = await this.userRepository.save(user);
+
+    this.logger.log(`User created: ${savedUser.email}`);
+
+    return {
+      id: savedUser.id,
+      email: savedUser.email,
+      name: savedUser.name,
+      empNo: savedUser.empNo,
+      dept: savedUser.dept,
+      role: savedUser.role,
+      status: savedUser.status,
+      createdAt: savedUser.createdAt,
+    };
   }
 
   /** 사용자 수정 */
   async update(id: string, dto: UpdateUserDto) {
     await this.findOne(id); // 존재 확인
 
-    const user = await this.prisma.user.update({
+    await this.userRepository.update(id, dto);
+
+    const user = await this.userRepository.findOne({
       where: { id },
-      data: dto,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        empNo: true,
-        dept: true,
-        role: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: [
+        'id',
+        'email',
+        'name',
+        'empNo',
+        'dept',
+        'role',
+        'status',
+        'createdAt',
+        'updatedAt',
+      ],
     });
 
-    this.logger.log(`User updated: ${user.email}`);
+    this.logger.log(`User updated: ${user!.email}`);
     return user;
   }
 
@@ -143,10 +145,8 @@ export class UserService {
   async remove(id: string) {
     await this.findOne(id);
 
-    await this.prisma.user.update({
-      where: { id },
-      data: { deletedAt: new Date(), status: 'INACTIVE' },
-    });
+    await this.userRepository.softDelete(id);
+    await this.userRepository.update(id, { status: 'INACTIVE' });
 
     this.logger.log(`User deleted: ${id}`);
     return { message: '사용자가 삭제되었습니다.' };

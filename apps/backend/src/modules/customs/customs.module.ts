@@ -4,13 +4,19 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomsController } from './controllers/customs.controller';
 import { CustomsService } from './services/customs.service';
-import { PrismaModule } from '../../prisma/prisma.module';
+import { CustomsEntry } from '../../entities/customs-entry.entity';
+import { CustomsLot } from '../../entities/customs-lot.entity';
+import { CustomsUsageReport } from '../../entities/customs-usage-report.entity';
 import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
-  imports: [PrismaModule, InventoryModule],
+  imports: [
+    TypeOrmModule.forFeature([CustomsEntry, CustomsLot, CustomsUsageReport]),
+    InventoryModule,
+  ],
   controllers: [CustomsController],
   providers: [CustomsService],
   exports: [CustomsService],

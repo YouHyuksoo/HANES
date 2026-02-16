@@ -9,7 +9,12 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, MoreThanOrEqual } from 'typeorm';
+import { InterLog } from '../../../entities/inter-log.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
+import { JobOrder } from '../../../entities/job-order.entity';
 import {
   InterLogQueryDto,
   CreateInterLogDto,
@@ -23,7 +28,16 @@ import {
 export class InterfaceService {
   private readonly logger = new Logger(InterfaceService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(InterLog)
+    private readonly interLogRepository: Repository<InterLog>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(BomMaster)
+    private readonly bomMasterRepository: Repository<BomMaster>,
+    @InjectRepository(JobOrder)
+    private readonly jobOrderRepository: Repository<JobOrder>,
+  ) {}
 
   // ============================================================================
   // 인터페이스 로그 관리
@@ -33,34 +47,34 @@ export class InterfaceService {
     const { page = 1, limit = 10, direction, messageType, status, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
+    const where: Record<string, unknown> = {
       ...(company && { company }),
       ...(direction && { direction }),
       ...(messageType && { messageType }),
       ...(status && { status }),
       ...(startDate && endDate && {
         createdAt: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
         },
       }),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.interLog.findMany({
+      this.interLogRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.interLog.count({ where }),
+      this.interLogRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
   }
 
   async findLogById(id: string) {
-    const log = await this.prisma.interLog.findUnique({
+    const log = await this.interLogRepository.findOne({
       where: { id },
     });
 
@@ -72,28 +86,26 @@ export class InterfaceService {
   }
 
   async createLog(dto: CreateInterLogDto) {
-    return this.prisma.interLog.create({
-      data: {
-        direction: dto.direction,
-        messageType: dto.messageType,
-        interfaceId: dto.interfaceId,
-        payload: dto.payload,
-        status: 'PENDING',
-      },
+    const log = this.interLogRepository.create({
+      direction: dto.direction,
+      messageType: dto.messageType,
+      interfaceId: dto.interfaceId,
+      payload: dto.payload ? JSON.stringify(dto.payload) : null,
+      status: 'PENDING',
     });
+
+    return this.interLogRepository.save(log);
   }
 
   async updateLogStatus(id: string, status: string, errorMsg?: string) {
     await this.findLogById(id);
 
-    return this.prisma.interLog.update({
-      where: { id },
-      data: {
-        status,
-        ...(errorMsg && { errorMsg }),
-        ...(status === 'SUCCESS' && { recvAt: new Date() }),
-      },
-    });
+    const updateData: Partial<InterLog> = { status };
+    if (errorMsg) updateData.errorMsg = errorMsg;
+    if (status === 'SUCCESS') updateData.recvAt = new Date();
+
+    await this.interLogRepository.update(id, updateData);
+    return this.findLogById(id);
   }
 
   async retryLog(id: string) {
@@ -104,35 +116,29 @@ export class InterfaceService {
     }
 
     // 재시도 횟수 증가
-    await this.prisma.interLog.update({
-      where: { id },
-      data: {
-        status: 'RETRY',
-        retryCount: log.retryCount + 1,
-      },
+    await this.interLogRepository.update(id, {
+      status: 'RETRY',
+      retryCount: log.retryCount + 1,
     });
 
     // 실제 전송 로직 (타입별로 분기)
     try {
       if (log.direction === 'OUT') {
-        await this.processOutbound(log.messageType, log.payload as Record<string, any>);
+        await this.processOutbound(log.messageType, log.payload ? JSON.parse(log.payload) : {});
       }
 
-      return this.prisma.interLog.update({
-        where: { id },
-        data: {
-          status: 'SUCCESS',
-          recvAt: new Date(),
-        },
+      await this.interLogRepository.update(id, {
+        status: 'SUCCESS',
+        recvAt: new Date(),
       });
+
+      return this.findLogById(id);
     } catch (error) {
-      return this.prisma.interLog.update({
-        where: { id },
-        data: {
-          status: 'FAIL',
-          errorMsg: error instanceof Error ? error.message : '알 수 없는 오류',
-        },
+      await this.interLogRepository.update(id, {
+        status: 'FAIL',
+        errorMsg: error instanceof Error ? error.message : '알 수 없는 오류',
       });
+      return this.findLogById(id);
     }
   }
 
@@ -165,7 +171,7 @@ export class InterfaceService {
 
     try {
       // 품목 확인
-      const part = await this.prisma.partMaster.findUnique({
+      const part = await this.partMasterRepository.findOne({
         where: { partCode: dto.partCode },
       });
 
@@ -174,17 +180,17 @@ export class InterfaceService {
       }
 
       // 작업지시 생성
-      const jobOrder = await this.prisma.jobOrder.create({
-        data: {
-          orderNo: dto.erpOrderNo,
-          partId: part.id,
-          planQty: dto.planQty,
-          lineCode: dto.lineCode,
-          planDate: dto.planDate ? new Date(dto.planDate) : null,
-          priority: dto.priority ?? 5,
-          erpSyncYn: 'Y',
-        },
+      const jobOrder = this.jobOrderRepository.create({
+        orderNo: dto.erpOrderNo,
+        partId: part.id,
+        planQty: dto.planQty,
+        lineCode: dto.lineCode,
+        planDate: dto.planDate ? new Date(dto.planDate) : null,
+        priority: dto.priority ?? 5,
+        erpSyncYn: 'Y',
       });
+
+      await this.jobOrderRepository.save(jobOrder);
 
       await this.updateLogStatus(log.id, 'SUCCESS');
 
@@ -209,10 +215,10 @@ export class InterfaceService {
     try {
       const results = await Promise.all(
         dtos.map(async (dto) => {
-          const parentPart = await this.prisma.partMaster.findUnique({
+          const parentPart = await this.partMasterRepository.findOne({
             where: { partCode: dto.parentPartCode },
           });
-          const childPart = await this.prisma.partMaster.findUnique({
+          const childPart = await this.partMasterRepository.findOne({
             where: { partCode: dto.childPartCode },
           });
 
@@ -220,26 +226,32 @@ export class InterfaceService {
             return { success: false, dto, error: '품목을 찾을 수 없습니다' };
           }
 
-          await this.prisma.bomMaster.upsert({
+          // upsert 대신 find -> create/update 사용
+          const existingBom = await this.bomMasterRepository.findOne({
             where: {
-              parentPartId_childPartId_revision: {
-                parentPartId: parentPart.id,
-                childPartId: childPart.id,
-                revision: dto.revision ?? 'A',
-              },
+              parentPartId: parentPart.id,
+              childPartId: childPart.id,
+              revision: dto.revision ?? 'A',
             },
-            update: {
+          });
+
+          if (existingBom) {
+            // 업데이트
+            await this.bomMasterRepository.update(existingBom.id, {
               qtyPer: dto.qtyPer,
               ecoNo: dto.ecoNo,
-            },
-            create: {
+            });
+          } else {
+            // 생성
+            const newBom = this.bomMasterRepository.create({
               parentPartId: parentPart.id,
               childPartId: childPart.id,
               qtyPer: dto.qtyPer,
               revision: dto.revision ?? 'A',
               ecoNo: dto.ecoNo,
-            },
-          });
+            });
+            await this.bomMasterRepository.save(newBom);
+          }
 
           return { success: true, dto };
         })
@@ -268,17 +280,24 @@ export class InterfaceService {
     try {
       const results = await Promise.all(
         dtos.map(async (dto) => {
-          await this.prisma.partMaster.upsert({
+          // upsert 대신 find -> create/update 사용
+          const existingPart = await this.partMasterRepository.findOne({
             where: { partCode: dto.partCode },
-            update: {
+          });
+
+          if (existingPart) {
+            // 업데이트
+            await this.partMasterRepository.update(existingPart.id, {
               partName: dto.partName,
               partType: dto.partType,
               spec: dto.spec,
               unit: dto.unit ?? 'EA',
               drawNo: dto.drawNo,
               customer: dto.customer,
-            },
-            create: {
+            });
+          } else {
+            // 생성
+            const newPart = this.partMasterRepository.create({
               partCode: dto.partCode,
               partName: dto.partName,
               partType: dto.partType,
@@ -286,8 +305,9 @@ export class InterfaceService {
               unit: dto.unit ?? 'EA',
               drawNo: dto.drawNo,
               customer: dto.customer,
-            },
-          });
+            });
+            await this.partMasterRepository.save(newPart);
+          }
 
           return { success: true, partCode: dto.partCode };
         })
@@ -323,15 +343,12 @@ export class InterfaceService {
       await this.processOutbound('PROD_RESULT', dto);
 
       // 작업지시 동기화 상태 업데이트
-      const jobOrder = await this.prisma.jobOrder.findUnique({
+      const jobOrder = await this.jobOrderRepository.findOne({
         where: { orderNo: dto.orderNo },
       });
 
       if (jobOrder) {
-        await this.prisma.jobOrder.update({
-          where: { id: jobOrder.id },
-          data: { erpSyncYn: 'Y' },
-        });
+        await this.jobOrderRepository.update(jobOrder.id, { erpSyncYn: 'Y' });
       }
 
       await this.updateLogStatus(log.id, 'SUCCESS');
@@ -368,21 +385,32 @@ export class InterfaceService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [total, todayCount, pending, failed, byType, byDirection] = await Promise.all([
-      this.prisma.interLog.count(),
-      this.prisma.interLog.count({
-        where: { createdAt: { gte: today } },
+    const [
+      total,
+      todayCount,
+      pending,
+      failed,
+      byType,
+      byDirection,
+    ] = await Promise.all([
+      this.interLogRepository.count(),
+      this.interLogRepository.count({
+        where: { createdAt: MoreThanOrEqual(today) },
       }),
-      this.prisma.interLog.count({ where: { status: 'PENDING' } }),
-      this.prisma.interLog.count({ where: { status: 'FAIL' } }),
-      this.prisma.interLog.groupBy({
-        by: ['messageType'],
-        _count: { messageType: true },
-      }),
-      this.prisma.interLog.groupBy({
-        by: ['direction'],
-        _count: { direction: true },
-      }),
+      this.interLogRepository.count({ where: { status: 'PENDING' } }),
+      this.interLogRepository.count({ where: { status: 'FAIL' } }),
+      this.interLogRepository
+        .createQueryBuilder('log')
+        .select('log.messageType', 'messageType')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('log.messageType')
+        .getRawMany(),
+      this.interLogRepository
+        .createQueryBuilder('log')
+        .select('log.direction', 'direction')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('log.direction')
+        .getRawMany(),
     ]);
 
     return {
@@ -392,26 +420,26 @@ export class InterfaceService {
       failed,
       byType: byType.map((t) => ({
         messageType: t.messageType,
-        count: t._count.messageType,
+        count: Number(t.count),
       })),
       byDirection: byDirection.map((d) => ({
         direction: d.direction,
-        count: d._count.direction,
+        count: Number(d.count),
       })),
     };
   }
 
   async getFailedLogs() {
-    return this.prisma.interLog.findMany({
+    return this.interLogRepository.find({
       where: { status: 'FAIL' },
-      orderBy: { createdAt: 'desc' },
+      order: { createdAt: 'DESC' },
       take: 50,
     });
   }
 
   async getRecentLogs(limit: number = 20) {
-    return this.prisma.interLog.findMany({
-      orderBy: { createdAt: 'desc' },
+    return this.interLogRepository.find({
+      order: { createdAt: 'DESC' },
       take: limit,
     });
   }

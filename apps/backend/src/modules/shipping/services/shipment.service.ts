@@ -22,7 +22,11 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And, DataSource } from 'typeorm';
+import { ShipmentLog } from '../../../entities/shipment-log.entity';
+import { PalletMaster } from '../../../entities/pallet-master.entity';
+import { BoxMaster } from '../../../entities/box-master.entity';
 import {
   CreateShipmentDto,
   UpdateShipmentDto,
@@ -39,7 +43,15 @@ import {
 export class ShipmentService {
   private readonly logger = new Logger(ShipmentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(ShipmentLog)
+    private readonly shipmentRepository: Repository<ShipmentLog>,
+    @InjectRepository(PalletMaster)
+    private readonly palletRepository: Repository<PalletMaster>,
+    @InjectRepository(BoxMaster)
+    private readonly boxRepository: Repository<BoxMaster>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /**
    * 출하 목록 조회
@@ -57,43 +69,31 @@ export class ShipmentService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
+    const where: any = {
+      deletedAt: IsNull(),
       ...(company && { company }),
-      ...(shipNo && { shipNo: { contains: shipNo, mode: 'insensitive' as const } }),
-      ...(customer && { customer: { contains: customer, mode: 'insensitive' as const } }),
+      ...(shipNo && { shipNo: ILike(`%${shipNo}%`) }),
+      ...(customer && { customer: ILike(`%${customer}%`) }),
       ...(status && { status }),
       ...(erpSyncYn && { erpSyncYn }),
       ...(shipDateFrom || shipDateTo
         ? {
-            shipDate: {
-              ...(shipDateFrom && { gte: new Date(shipDateFrom) }),
-              ...(shipDateTo && { lte: new Date(shipDateTo) }),
-            },
+            shipDate: And(
+              shipDateFrom ? MoreThanOrEqual(new Date(shipDateFrom)) : undefined,
+              shipDateTo ? LessThanOrEqual(new Date(shipDateTo)) : undefined
+            ),
           }
         : {}),
     };
 
     const [data, total] = await Promise.all([
-      this.prisma.shipmentLog.findMany({
+      this.shipmentRepository.find({
         where,
         skip,
         take: limit,
-        orderBy: [{ shipDate: 'desc' }, { createdAt: 'desc' }],
-        include: {
-          pallets: {
-            where: { deletedAt: null },
-            select: {
-              id: true,
-              palletNo: true,
-              boxCount: true,
-              totalQty: true,
-              status: true,
-            },
-          },
-        },
+        order: { shipDate: 'DESC', createdAt: 'DESC' },
       }),
-      this.prisma.shipmentLog.count({ where }),
+      this.shipmentRepository.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -103,28 +103,8 @@ export class ShipmentService {
    * 출하 단건 조회 (ID)
    */
   async findById(id: string) {
-    const shipment = await this.prisma.shipmentLog.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        pallets: {
-          where: { deletedAt: null },
-          include: {
-            boxes: {
-              where: { deletedAt: null },
-              include: {
-                part: {
-                  select: {
-                    id: true,
-                    partCode: true,
-                    partName: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
+    const shipment = await this.shipmentRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
 
     if (!shipment) {
@@ -138,27 +118,8 @@ export class ShipmentService {
    * 출하 단건 조회 (출하번호)
    */
   async findByShipNo(shipNo: string) {
-    const shipment = await this.prisma.shipmentLog.findFirst({
-      where: { shipNo, deletedAt: null },
-      include: {
-        pallets: {
-          where: { deletedAt: null },
-          include: {
-            boxes: {
-              where: { deletedAt: null },
-              include: {
-                part: {
-                  select: {
-                    id: true,
-                    partCode: true,
-                    partName: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+    const shipment = await this.shipmentRepository.findOne({
+      where: { shipNo, deletedAt: IsNull() },
     });
 
     if (!shipment) {
@@ -173,30 +134,30 @@ export class ShipmentService {
    */
   async create(dto: CreateShipmentDto) {
     // 중복 체크
-    const existing = await this.prisma.shipmentLog.findFirst({
-      where: { shipNo: dto.shipNo, deletedAt: null },
+    const existing = await this.shipmentRepository.findOne({
+      where: { shipNo: dto.shipNo, deletedAt: IsNull() },
     });
 
     if (existing) {
       throw new ConflictException(`이미 존재하는 출하번호입니다: ${dto.shipNo}`);
     }
 
-    return this.prisma.shipmentLog.create({
-      data: {
-        shipNo: dto.shipNo,
-        shipDate: dto.shipDate ? new Date(dto.shipDate) : null,
-        vehicleNo: dto.vehicleNo,
-        driverName: dto.driverName,
-        destination: dto.destination,
-        customer: dto.customer,
-        remark: dto.remark,
-        palletCount: 0,
-        boxCount: 0,
-        totalQty: 0,
-        status: 'PREPARING',
-        erpSyncYn: 'N',
-      },
+    const shipment = this.shipmentRepository.create({
+      shipNo: dto.shipNo,
+      shipDate: dto.shipDate ? new Date(dto.shipDate) : null,
+      vehicleNo: dto.vehicleNo,
+      driverName: dto.driverName,
+      destination: dto.destination,
+      customer: dto.customer,
+      remark: dto.remark,
+      palletCount: 0,
+      boxCount: 0,
+      totalQty: 0,
+      status: 'PREPARING',
+      erpSyncYn: 'N',
     });
+
+    return this.shipmentRepository.save(shipment);
   }
 
   /**
@@ -210,29 +171,18 @@ export class ShipmentService {
       throw new BadRequestException('출하 완료된 건은 수정할 수 없습니다.');
     }
 
-    return this.prisma.shipmentLog.update({
-      where: { id },
-      data: {
-        ...(dto.shipDate !== undefined && { shipDate: dto.shipDate ? new Date(dto.shipDate) : null }),
-        ...(dto.vehicleNo !== undefined && { vehicleNo: dto.vehicleNo }),
-        ...(dto.driverName !== undefined && { driverName: dto.driverName }),
-        ...(dto.destination !== undefined && { destination: dto.destination }),
-        ...(dto.customer !== undefined && { customer: dto.customer }),
-        ...(dto.remark !== undefined && { remark: dto.remark }),
-        ...(dto.status !== undefined && { status: dto.status }),
-      },
-      include: {
-        pallets: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            palletNo: true,
-            boxCount: true,
-            totalQty: true,
-          },
-        },
-      },
-    });
+    const updateData: any = {};
+    if (dto.shipDate !== undefined) updateData.shipDate = dto.shipDate ? new Date(dto.shipDate) : null;
+    if (dto.vehicleNo !== undefined) updateData.vehicleNo = dto.vehicleNo;
+    if (dto.driverName !== undefined) updateData.driverName = dto.driverName;
+    if (dto.destination !== undefined) updateData.destination = dto.destination;
+    if (dto.customer !== undefined) updateData.customer = dto.customer;
+    if (dto.remark !== undefined) updateData.remark = dto.remark;
+    if (dto.status !== undefined) updateData.status = dto.status;
+
+    await this.shipmentRepository.update({ id }, updateData);
+
+    return this.findById(id);
   }
 
   /**
@@ -251,10 +201,12 @@ export class ShipmentService {
       throw new BadRequestException('팔레트가 적재된 출하는 삭제할 수 없습니다. 먼저 팔레트를 하차해주세요.');
     }
 
-    return this.prisma.shipmentLog.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await this.shipmentRepository.update(
+      { id },
+      { deletedAt: new Date() }
+    );
+
+    return { id, deleted: true };
   }
 
   // ===== 팔레트 관리 =====
@@ -271,10 +223,10 @@ export class ShipmentService {
     }
 
     // 팔레트 존재 및 상태 확인
-    const pallets = await this.prisma.palletMaster.findMany({
+    const pallets = await this.palletRepository.find({
       where: {
-        id: { in: dto.palletIds },
-        deletedAt: null,
+        id: In(dto.palletIds),
+        deletedAt: IsNull(),
       },
     });
 
@@ -297,44 +249,50 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 팔레트 적재 및 출하 집계 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 팔레트 업데이트
-      await tx.palletMaster.updateMany({
-        where: { id: { in: dto.palletIds } },
-        data: {
+      await queryRunner.manager.update(
+        PalletMaster,
+        { id: In(dto.palletIds) },
+        {
           shipmentId: id,
           status: 'LOADED',
-        },
-      });
+        }
+      );
 
       // 출하 집계 업데이트
-      const shipmentSummary = await tx.palletMaster.aggregate({
-        where: { shipmentId: id, deletedAt: null },
-        _count: true,
-        _sum: { boxCount: true, totalQty: true },
-      });
+      const shipmentSummary = await queryRunner.manager
+        .createQueryBuilder(PalletMaster, 'pallet')
+        .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
+        .andWhere('pallet.deletedAt IS NULL')
+        .select('COUNT(*)', 'count')
+        .addSelect('SUM(pallet.boxCount)', 'boxCount')
+        .addSelect('SUM(pallet.totalQty)', 'totalQty')
+        .getRawOne();
 
-      return tx.shipmentLog.update({
-        where: { id },
-        data: {
-          palletCount: shipmentSummary._count,
-          boxCount: shipmentSummary._sum.boxCount ?? 0,
-          totalQty: shipmentSummary._sum.totalQty ?? 0,
-        },
-        include: {
-          pallets: {
-            where: { deletedAt: null },
-            select: {
-              id: true,
-              palletNo: true,
-              boxCount: true,
-              totalQty: true,
-              status: true,
-            },
-          },
-        },
-      });
-    });
+      await queryRunner.manager.update(
+        ShipmentLog,
+        { id },
+        {
+          palletCount: parseInt(shipmentSummary?.count) || 0,
+          boxCount: parseInt(shipmentSummary?.boxCount) || 0,
+          totalQty: parseInt(shipmentSummary?.totalQty) || 0,
+        }
+      );
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -349,11 +307,11 @@ export class ShipmentService {
     }
 
     // 팔레트가 이 출하에 있는지 확인
-    const pallets = await this.prisma.palletMaster.findMany({
+    const pallets = await this.palletRepository.find({
       where: {
-        id: { in: dto.palletIds },
+        id: In(dto.palletIds),
         shipmentId: id,
-        deletedAt: null,
+        deletedAt: IsNull(),
       },
     });
 
@@ -364,44 +322,50 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 팔레트 하차 및 출하 집계 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 팔레트 업데이트
-      await tx.palletMaster.updateMany({
-        where: { id: { in: dto.palletIds } },
-        data: {
+      await queryRunner.manager.update(
+        PalletMaster,
+        { id: In(dto.palletIds) },
+        {
           shipmentId: null,
           status: 'CLOSED',
-        },
-      });
+        }
+      );
 
       // 출하 집계 업데이트
-      const shipmentSummary = await tx.palletMaster.aggregate({
-        where: { shipmentId: id, deletedAt: null },
-        _count: true,
-        _sum: { boxCount: true, totalQty: true },
-      });
+      const shipmentSummary = await queryRunner.manager
+        .createQueryBuilder(PalletMaster, 'pallet')
+        .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
+        .andWhere('pallet.deletedAt IS NULL')
+        .select('COUNT(*)', 'count')
+        .addSelect('SUM(pallet.boxCount)', 'boxCount')
+        .addSelect('SUM(pallet.totalQty)', 'totalQty')
+        .getRawOne();
 
-      return tx.shipmentLog.update({
-        where: { id },
-        data: {
-          palletCount: shipmentSummary._count,
-          boxCount: shipmentSummary._sum.boxCount ?? 0,
-          totalQty: shipmentSummary._sum.totalQty ?? 0,
-        },
-        include: {
-          pallets: {
-            where: { deletedAt: null },
-            select: {
-              id: true,
-              palletNo: true,
-              boxCount: true,
-              totalQty: true,
-              status: true,
-            },
-          },
-        },
-      });
-    });
+      await queryRunner.manager.update(
+        ShipmentLog,
+        { id },
+        {
+          palletCount: parseInt(shipmentSummary?.count) || 0,
+          boxCount: parseInt(shipmentSummary?.boxCount) || 0,
+          totalQty: parseInt(shipmentSummary?.totalQty) || 0,
+        }
+      );
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // ===== 상태 관리 =====
@@ -420,21 +384,12 @@ export class ShipmentService {
       throw new BadRequestException('팔레트가 없는 출하는 적재완료 처리할 수 없습니다.');
     }
 
-    return this.prisma.shipmentLog.update({
-      where: { id },
-      data: { status: 'LOADED' },
-      include: {
-        pallets: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            palletNo: true,
-            boxCount: true,
-            totalQty: true,
-          },
-        },
-      },
-    });
+    await this.shipmentRepository.update(
+      { id },
+      { status: 'LOADED' }
+    );
+
+    return this.findById(id);
   }
 
   /**
@@ -448,46 +403,52 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 출하 상태 및 팔레트/박스 상태 업데이트
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 팔레트 상태 업데이트
-      await tx.palletMaster.updateMany({
-        where: { shipmentId: id, deletedAt: null },
-        data: { status: 'SHIPPED' },
-      });
+      await queryRunner.manager.update(
+        PalletMaster,
+        { shipmentId: id, deletedAt: IsNull() },
+        { status: 'SHIPPED' }
+      );
 
       // 박스 상태 업데이트
-      const pallets = await tx.palletMaster.findMany({
-        where: { shipmentId: id, deletedAt: null },
-        select: { id: true },
+      const pallets = await queryRunner.manager.find(PalletMaster, {
+        where: { shipmentId: id, deletedAt: IsNull() },
+        select: ['id'],
       });
 
       const palletIds = pallets.map(p => p.id);
-      await tx.boxMaster.updateMany({
-        where: { palletId: { in: palletIds }, deletedAt: null },
-        data: { status: 'SHIPPED' },
-      });
+      if (palletIds.length > 0) {
+        await queryRunner.manager.update(
+          BoxMaster,
+          { palletId: In(palletIds), deletedAt: IsNull() },
+          { status: 'SHIPPED' }
+        );
+      }
 
       // 출하 상태 업데이트
-      return tx.shipmentLog.update({
-        where: { id },
-        data: {
+      await queryRunner.manager.update(
+        ShipmentLog,
+        { id },
+        {
           status: 'SHIPPED',
           shipAt: new Date(),
-        },
-        include: {
-          pallets: {
-            where: { deletedAt: null },
-            select: {
-              id: true,
-              palletNo: true,
-              boxCount: true,
-              totalQty: true,
-              status: true,
-            },
-          },
-        },
-      });
-    });
+        }
+      );
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -500,21 +461,12 @@ export class ShipmentService {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 배송완료 처리할 수 없습니다. SHIPPED 상태여야 합니다.`);
     }
 
-    return this.prisma.shipmentLog.update({
-      where: { id },
-      data: { status: 'DELIVERED' },
-      include: {
-        pallets: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            palletNo: true,
-            boxCount: true,
-            totalQty: true,
-          },
-        },
-      },
-    });
+    await this.shipmentRepository.update(
+      { id },
+      { status: 'DELIVERED' }
+    );
+
+    return this.findById(id);
   }
 
   /**
@@ -528,28 +480,45 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 출하 취소 및 팔레트/박스 상태 복원
-    return this.prisma.$transaction(async (tx) => {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
       // 팔레트 상태 복원 (CLOSED로)
-      await tx.palletMaster.updateMany({
-        where: { shipmentId: id, deletedAt: null },
-        data: {
+      await queryRunner.manager.update(
+        PalletMaster,
+        { shipmentId: id, deletedAt: IsNull() },
+        {
           shipmentId: null,
           status: 'CLOSED',
-        },
-      });
+        }
+      );
 
       // 출하 상태 업데이트
-      return tx.shipmentLog.update({
-        where: { id },
-        data: {
-          status: 'CANCELED',
-          palletCount: 0,
-          boxCount: 0,
-          totalQty: 0,
-          ...(remark && { remark }),
-        },
-      });
-    });
+      const updateData: any = {
+        status: 'CANCELED',
+        palletCount: 0,
+        boxCount: 0,
+        totalQty: 0,
+      };
+      if (remark) updateData.remark = remark;
+
+      await queryRunner.manager.update(
+        ShipmentLog,
+        { id },
+        updateData
+      );
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**
@@ -558,24 +527,12 @@ export class ShipmentService {
   async changeStatus(id: string, dto: ChangeShipmentStatusDto) {
     await this.findById(id); // 존재 확인
 
-    return this.prisma.shipmentLog.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        ...(dto.remark && { remark: dto.remark }),
-      },
-      include: {
-        pallets: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            palletNo: true,
-            boxCount: true,
-            totalQty: true,
-          },
-        },
-      },
-    });
+    const updateData: any = { status: dto.status };
+    if (dto.remark) updateData.remark = dto.remark;
+
+    await this.shipmentRepository.update({ id }, updateData);
+
+    return this.findById(id);
   }
 
   // ===== ERP 연동 =====
@@ -586,34 +543,25 @@ export class ShipmentService {
   async updateErpSyncYn(id: string, dto: UpdateErpSyncDto) {
     await this.findById(id); // 존재 확인
 
-    return this.prisma.shipmentLog.update({
-      where: { id },
-      data: { erpSyncYn: dto.erpSyncYn },
-    });
+    await this.shipmentRepository.update(
+      { id },
+      { erpSyncYn: dto.erpSyncYn }
+    );
+
+    return this.findById(id);
   }
 
   /**
    * ERP 미동기화 출하 목록 조회
    */
   async findUnsyncedForErp() {
-    return this.prisma.shipmentLog.findMany({
+    return this.shipmentRepository.find({
       where: {
         erpSyncYn: 'N',
-        status: { in: ['SHIPPED', 'DELIVERED'] },
-        deletedAt: null,
+        status: In(['SHIPPED', 'DELIVERED']),
+        deletedAt: IsNull(),
       },
-      include: {
-        pallets: {
-          where: { deletedAt: null },
-          select: {
-            id: true,
-            palletNo: true,
-            boxCount: true,
-            totalQty: true,
-          },
-        },
-      },
-      orderBy: { shipAt: 'asc' },
+      order: { shipAt: 'ASC' },
     });
   }
 
@@ -621,10 +569,12 @@ export class ShipmentService {
    * ERP 동기화 완료 처리 (일괄)
    */
   async markAsSynced(ids: string[]) {
-    return this.prisma.shipmentLog.updateMany({
-      where: { id: { in: ids } },
-      data: { erpSyncYn: 'Y' },
-    });
+    await this.shipmentRepository.update(
+      { id: In(ids) },
+      { erpSyncYn: 'Y' }
+    );
+
+    return { updated: ids.length };
   }
 
   // ===== 통계/집계 =====
@@ -635,27 +585,17 @@ export class ShipmentService {
   async getShipmentStats(query: ShipmentStatsQueryDto) {
     const { startDate, endDate, customer } = query;
 
-    const shipments = await this.prisma.shipmentLog.findMany({
-      where: {
-        deletedAt: null,
-        shipDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-        status: { in: ['SHIPPED', 'DELIVERED'] },
-        ...(customer && { customer: { contains: customer, mode: 'insensitive' as const } }),
-      },
-      select: {
-        id: true,
-        shipNo: true,
-        shipDate: true,
-        customer: true,
-        palletCount: true,
-        boxCount: true,
-        totalQty: true,
-        status: true,
-      },
-      orderBy: { shipDate: 'asc' },
+    const where: any = {
+      deletedAt: IsNull(),
+      shipDate: Between(new Date(startDate), new Date(endDate)),
+      status: In(['SHIPPED', 'DELIVERED']),
+      ...(customer && { customer: ILike(`%${customer}%`) }),
+    };
+
+    const shipments = await this.shipmentRepository.find({
+      where,
+      select: ['id', 'shipNo', 'shipDate', 'customer', 'palletCount', 'boxCount', 'totalQty', 'status'],
+      order: { shipDate: 'ASC' },
     });
 
     // 일자별 집계
@@ -709,21 +649,13 @@ export class ShipmentService {
    * 고객사별 출하 통계
    */
   async getCustomerStats(startDate: string, endDate: string) {
-    const shipments = await this.prisma.shipmentLog.findMany({
+    const shipments = await this.shipmentRepository.find({
       where: {
-        deletedAt: null,
-        shipDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-        status: { in: ['SHIPPED', 'DELIVERED'] },
+        deletedAt: IsNull(),
+        shipDate: Between(new Date(startDate), new Date(endDate)),
+        status: In(['SHIPPED', 'DELIVERED']),
       },
-      select: {
-        customer: true,
-        palletCount: true,
-        boxCount: true,
-        totalQty: true,
-      },
+      select: ['customer', 'palletCount', 'boxCount', 'totalQty'],
     });
 
     // 고객사별 집계
@@ -767,40 +699,30 @@ export class ShipmentService {
     const shipment = await this.findById(id);
 
     // 품목별 수량 집계
-    const boxesWithParts = await this.prisma.boxMaster.findMany({
-      where: {
-        pallet: { shipmentId: id },
-        deletedAt: null,
-      },
-      select: {
-        partId: true,
-        qty: true,
-        part: {
-          select: {
-            id: true,
-            partCode: true,
-            partName: true,
-          },
-        },
-      },
-    });
+    const boxesWithParts = await this.boxRepository
+      .createQueryBuilder('box')
+      .innerJoin(PalletMaster, 'pallet', 'box.palletId = pallet.id')
+      .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
+      .andWhere('box.deletedAt IS NULL')
+      .select(['box.partId', 'box.qty'])
+      .getMany();
 
     // 품목별 집계
     const partSummary = new Map<string, {
-      part: { id: string; partCode: string; partName: string };
+      partId: string;
       boxCount: number;
       qty: number;
     }>();
 
     boxesWithParts.forEach(box => {
       const existing = partSummary.get(box.partId) || {
-        part: box.part,
+        partId: box.partId,
         boxCount: 0,
         qty: 0,
       };
 
       partSummary.set(box.partId, {
-        part: box.part,
+        partId: box.partId,
         boxCount: existing.boxCount + 1,
         qty: existing.qty + box.qty,
       });
