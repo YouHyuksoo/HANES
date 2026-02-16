@@ -2,11 +2,10 @@
  * @file src/app/providers.tsx
  * @description 클라이언트 사이드 Provider 조합 - Theme + QueryClient + Auth
  *
- * 초보자 가이드:
- * 1. **QueryClientProvider**: React Query 전역 상태 관리
- * 2. **ThemeProvider**: 다크모드 지원
- * 3. **AuthInitializer**: 앱 시작 시 토큰 검증
- * 4. **ComCodePrefetch**: 공통코드 프리페치
+ * 개선사항:
+ * 1. ThemeContext 제거 → Zustand themeStore 통합
+ * 2. HTML dark 클래스 자동 적용 (ThemeEffect 컴포넌트)
+ * 3. system 모드 지원 (OS 설정 연동)
  */
 
 "use client";
@@ -14,9 +13,9 @@
 import { ReactNode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useAuthStore } from "@/stores/authStore";
 import { useComCodes } from "@/hooks/useComCode";
+import { useThemeStore, listenSystemThemeChange } from "@/stores/themeStore";
 import "@/lib/i18n";
 
 // React Query 클라이언트 설정
@@ -29,6 +28,39 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+/** 테마 Effect - HTML 클래스 자동 적용 */
+function ThemeEffect() {
+  const { theme, setTheme, _resolveTheme } = useThemeStore();
+
+  // 초기 테마 설정 및 HTML 클래스 적용
+  useEffect(() => {
+    const resolved = _resolveTheme(theme);
+    const root = document.documentElement;
+    
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+    
+    // store의 resolvedTheme 동기화
+    if (useThemeStore.getState().resolvedTheme !== resolved) {
+      useThemeStore.setState({ resolvedTheme: resolved });
+    }
+  }, [theme, _resolveTheme]);
+
+  // system 모드일 때 OS 테마 변경 감지
+  useEffect(() => {
+    if (theme !== "system") return;
+    
+    return listenSystemThemeChange((resolved) => {
+      const root = document.documentElement;
+      root.classList.remove("light", "dark");
+      root.classList.add(resolved);
+      useThemeStore.setState({ resolvedTheme: resolved });
+    });
+  }, [theme]);
+
+  return null;
+}
 
 /** 인증 상태 초기화 */
 function AuthInitializer() {
@@ -70,22 +102,20 @@ export function Providers({ children }: ProvidersProps) {
     setMounted(true);
   }, []);
 
+  // hydration mismatch 방지 (초기 렌더링 시 테마 클래스 없음)
   if (!mounted) {
     return (
-      <ThemeProvider defaultTheme="system">
-        <div style={{ visibility: "hidden" }}>{children}</div>
-      </ThemeProvider>
+      <div style={{ visibility: "hidden" }}>{children}</div>
     );
   }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system">
-        <AuthInitializer />
-        <ComCodePrefetch />
-        <LanguageSync />
-        {children}
-      </ThemeProvider>
+      <ThemeEffect />
+      <AuthInitializer />
+      <ComCodePrefetch />
+      <LanguageSync />
+      {children}
     </QueryClientProvider>
   );
 }

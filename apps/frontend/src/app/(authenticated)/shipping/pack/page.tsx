@@ -15,6 +15,7 @@ import { Package, Plus, Search, RefreshCw, XCircle, CheckCircle, Lock, Truck } f
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { createPartColumns } from '@/lib/table-utils';
 import { ColumnDef } from '@tanstack/react-table';
 import { StatCard } from '@/components/ui';
 import { BoxStatusBadge } from '@/components/shipping';
@@ -82,8 +83,7 @@ function PackPage() {
 
   const columns = useMemo<ColumnDef<Box>[]>(() => [
     { accessorKey: 'boxNo', header: t('shipping.pack.boxNo'), size: 160 },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('common.partName'), size: 150 },
+    ...createPartColumns<Box>(t),
     { accessorKey: 'quantity', header: t('common.quantity'), size: 80, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'status', header: t('common.status'), size: 100, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
     { accessorKey: 'closedAt', header: t('shipping.pack.closedAt'), size: 140, cell: ({ getValue }) => getValue() || '-' },

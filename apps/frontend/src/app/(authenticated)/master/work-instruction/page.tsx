@@ -16,6 +16,7 @@ import { Plus, Edit2, Trash2, Search, RefreshCw, Download, FileText } from 'luci
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface WorkInstruction {
   id: string;
@@ -50,7 +51,7 @@ function WorkInstructionPage() {
   }), [searchText]);
 
   const columns = useMemo<ColumnDef<WorkInstruction>[]>(() => [
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
+    ...createPartColumns<WorkInstruction>(t),
     { accessorKey: 'partName', header: t('common.partName'), size: 140 },
     { accessorKey: 'processCode', header: t('master.workInstruction.processCode'), size: 90, cell: ({ getValue }) => getValue() || '-' },
     { accessorKey: 'title', header: t('master.workInstruction.docTitle'), size: 220 },

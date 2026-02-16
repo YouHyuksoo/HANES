@@ -21,7 +21,7 @@ function StockTable({ data }: StockTableProps) {
   const columns = useMemo<ColumnDef<ConsumableStock>[]>(
     () => [
       { accessorKey: 'consumableCode', header: t('consumables.comp.consumableCode'), size: 120 },
-      { accessorKey: 'name', header: t('consumables.comp.consumableName'), size: 150 },
+      { accessorKey: 'consumableName', header: t('consumables.comp.consumableName'), size: 150 },
       {
         accessorKey: 'category',
         header: t('consumables.comp.category'),

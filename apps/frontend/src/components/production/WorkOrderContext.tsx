@@ -4,13 +4,11 @@
  * @file src/components/production/WorkOrderContext.tsx
  * @description 작업지시 컨텍스트 패널 - 실적입력 시 선택된 작업지시 정보를 표시
  *
- * 초보자 가이드:
- * 1. **핵심 원칙**: 모든 생산실적은 작업지시가 기준
- * 2. **진행률**: 계획수량 대비 현재 생산수량을 프로그래스바로 표시
- * 3. **잔여수량**: 아직 생산해야 할 수량을 강조 표시
+ * 개선사항:
+ * 1. 불필요한 useMemo 제거 (데이터가 7개뿐)
+ * 2. 코드 단순화
  */
 
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ClipboardList, TrendingUp } from "lucide-react";
 import { Select } from "@/components/ui";
@@ -56,26 +54,21 @@ interface WorkOrderContextProps {
 function WorkOrderContext({ selectedOrderNo, onSelect, processFilter }: WorkOrderContextProps) {
   const { t } = useTranslation();
 
-  const availableOrders = useMemo(() => {
-    let orders = mockWorkOrders.filter((o) => o.status !== "DONE");
-    if (processFilter?.length) {
-      orders = orders.filter((o) => processFilter.includes(o.processType));
-    }
-    return orders;
-  }, [processFilter]);
+  // useMemo 제거 - 데이터가 7개뿐이고 filter 연산은 매우 빠름
+  let availableOrders = mockWorkOrders.filter((o) => o.status !== "DONE");
+  if (processFilter?.length) {
+    availableOrders = availableOrders.filter((o) => processFilter.includes(o.processType));
+  }
 
-  const options = useMemo(() => [
+  const options = [
     { value: "", label: t("production.workOrderCtx.selectOrder") },
     ...availableOrders.map((o) => ({
       value: o.orderNo,
       label: `${o.orderNo} (${o.partName})`,
     })),
-  ], [availableOrders, t]);
+  ];
 
-  const selected = useMemo(
-    () => mockWorkOrders.find((o) => o.orderNo === selectedOrderNo) ?? null,
-    [selectedOrderNo],
-  );
+  const selected = mockWorkOrders.find((o) => o.orderNo === selectedOrderNo) ?? null;
 
   const remaining = selected ? Math.max(selected.planQty - selected.prodQty, 0) : 0;
   const progressPct = selected && selected.planQty > 0

@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { createPartColumns } from '@/lib/table-utils';
 import { ColumnDef } from '@tanstack/react-table';
 
 interface IqcHistoryItem {
@@ -77,8 +78,7 @@ function IqcHistoryPage() {
 
   const columns = useMemo<ColumnDef<IqcHistoryItem>[]>(() => [
     { accessorKey: 'lotNo', header: 'LOT No.', size: 160 },
-    { accessorKey: 'partCode', header: t('material.iqcHistory.partCode'), size: 110 },
-    { accessorKey: 'partName', header: t('material.iqcHistory.partName'), size: 130 },
+    ...createPartColumns<IqcHistoryItem>(t),
     { accessorKey: 'inspectType', header: t('material.iqcHistory.inspectType'), size: 100, cell: ({ getValue }) => <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{getValue() as string}</span> },
     { accessorKey: 'result', header: t('material.iqcHistory.result'), size: 80, cell: ({ getValue }) => {
       const r = getValue() as string;

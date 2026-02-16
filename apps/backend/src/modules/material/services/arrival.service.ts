@@ -147,7 +147,16 @@ export class ArrivalService {
           data: { receivedQty: { increment: item.receivedQty } },
         });
 
-        results.push(stockTx);
+        results.push({
+          ...stockTx,
+          partCode: stockTx.part?.partCode,
+          partName: stockTx.part?.partName,
+          partType: stockTx.part?.partType,
+          unit: stockTx.part?.unit,
+          lotNo: stockTx.lot?.lotNo,
+          warehouseCode: stockTx.toWarehouse?.warehouseCode,
+          warehouseName: stockTx.toWarehouse?.warehouseName,
+        });
       }
 
       // 5. PO 상태 재계산
@@ -195,7 +204,16 @@ export class ArrivalService {
       // 3. Stock upsert
       await this.upsertStock(tx, dto.warehouseId, dto.partId, lot.id, dto.qty);
 
-      return stockTx;
+      return {
+        ...stockTx,
+        partCode: stockTx.part?.partCode,
+        partName: stockTx.part?.partName,
+        partType: stockTx.part?.partType,
+        unit: stockTx.part?.unit,
+        lotNo: stockTx.lot?.lotNo,
+        warehouseCode: stockTx.toWarehouse?.warehouseCode,
+        warehouseName: stockTx.toWarehouse?.warehouseName,
+      };
     });
   }
 
@@ -228,16 +246,27 @@ export class ArrivalService {
         skip,
         take: limit,
         include: {
-          part: { select: { id: true, partCode: true, partName: true, unit: true } },
+          part: { select: { id: true, partCode: true, partName: true, partType: true, unit: true } },
           lot: { select: { id: true, lotNo: true, poNo: true, vendor: true } },
-          toWarehouse: { select: { id: true, warehouseName: true } },
+          toWarehouse: { select: { id: true, warehouseCode: true, warehouseName: true } },
         },
         orderBy: { transDate: 'desc' },
       }),
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    const flattenedData = data.map((item) => ({
+      ...item,
+      partCode: item.part?.partCode,
+      partName: item.part?.partName,
+      partType: item.part?.partType,
+      unit: item.part?.unit,
+      lotNo: item.lot?.lotNo,
+      warehouseCode: item.toWarehouse?.warehouseCode,
+      warehouseName: item.toWarehouse?.warehouseName,
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   /** 입하 취소 (역분개 트랜잭션) */
@@ -259,7 +288,13 @@ export class ArrivalService {
         data: { status: 'CANCELED' },
       });
 
-      // 2. 역분개 트랜잭션 생성
+      // 2. 역분개 트랜잭션 생성 (원본의 part, lot, warehouse 정보 로드)
+      const [part, lot, toWarehouse] = await Promise.all([
+        tx.partMaster.findFirst({ where: { id: original.partId } }),
+        original.lotId ? tx.lot.findFirst({ where: { id: original.lotId } }) : Promise.resolve(null),
+        original.toWarehouseId ? tx.warehouse.findFirst({ where: { id: original.toWarehouseId } }) : Promise.resolve(null),
+      ]);
+
       const cancelTx = await tx.stockTransaction.create({
         data: {
           transNo: cancelTransNo,
@@ -273,7 +308,6 @@ export class ArrivalService {
           cancelRefId: original.id,
           refType: 'CANCEL',
         },
-        include: { part: true, lot: true },
       });
 
       // 3. Stock 감소
@@ -312,7 +346,16 @@ export class ArrivalService {
         }
       }
 
-      return cancelTx;
+      return {
+        ...cancelTx,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        partType: part?.partType,
+        unit: part?.unit,
+        lotNo: lot?.lotNo,
+        warehouseCode: toWarehouse?.warehouseCode,
+        warehouseName: toWarehouse?.warehouseName,
+      };
     });
   }
 

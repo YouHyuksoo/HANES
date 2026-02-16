@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, Search, RefreshCw, Download, Route } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { createPartColumns } from '@/lib/table-utils';
 import { ColumnDef } from '@tanstack/react-table';
 
 interface Routing {
@@ -61,8 +62,7 @@ function RoutingPage() {
   }), [searchText, partFilter]);
 
   const columns = useMemo<ColumnDef<Routing>[]>(() => [
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+    ...createPartColumns<Routing>(t),
     { accessorKey: 'seq', header: t('master.routing.seq'), size: 60 },
     { accessorKey: 'processCode', header: t('master.routing.processCode'), size: 100 },
     { accessorKey: 'processName', header: t('master.routing.processName'), size: 120 },

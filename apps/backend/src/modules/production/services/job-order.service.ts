@@ -40,7 +40,7 @@ export class JobOrderService {
   /**
    * 작업지시 목록 조회
    */
-  async findAll(query: JobOrderQueryDto) {
+  async findAll(query: JobOrderQueryDto, company?: string) {
     const {
       page = 1,
       limit = 10,
@@ -56,6 +56,7 @@ export class JobOrderService {
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(orderNo && { orderNo: { contains: orderNo, mode: 'insensitive' as const } }),
       ...(partId && { partId }),
       ...(lineCode && { lineCode }),
@@ -255,8 +256,8 @@ export class JobOrderService {
     };
 
     // 최초 시작인 경우 시작 시간 설정
-    if (!jobOrder.startTime) {
-      updateData.startTime = new Date();
+    if (!jobOrder.startAt) {
+      updateData.startAt = new Date();
     }
 
     return this.prisma.jobOrder.update({
@@ -329,7 +330,7 @@ export class JobOrderService {
       where: { id },
       data: {
         status: 'DONE',
-        endTime: new Date(),
+        endAt: new Date(),
         goodQty: summary._sum.goodQty ?? 0,
         defectQty: summary._sum.defectQty ?? 0,
       },
@@ -364,7 +365,7 @@ export class JobOrderService {
       where: { id },
       data: {
         status: 'CANCELED',
-        endTime: new Date(),
+        endAt: new Date(),
         ...(remark && { remark }),
       },
       include: {
@@ -436,7 +437,7 @@ export class JobOrderService {
           },
         },
       },
-      orderBy: { endTime: 'asc' },
+      orderBy: { endAt: 'asc' },
     });
   }
 

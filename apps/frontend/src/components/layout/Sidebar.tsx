@@ -33,15 +33,13 @@ export const menuItems: MenuItem[] = [
     children: [
       { id: "mst-part", labelKey: "menu.master.part", path: "/master/part" },
       { id: "mst-bom", labelKey: "menu.master.bom", path: "/master/bom" },
-      { id: "mst-equip", labelKey: "menu.master.equip", path: "/master/equip" },
       { id: "mst-code", labelKey: "menu.master.code", path: "/master/code" },
       { id: "mst-partner", labelKey: "menu.master.partner", path: "/master/partner" },
+      { id: "mst-prod-line", labelKey: "menu.master.prodLine", path: "/master/prod-line" },
       { id: "mst-process", labelKey: "menu.master.process", path: "/master/process" },
       { id: "mst-routing", labelKey: "menu.master.routing", path: "/master/routing" },
       { id: "mst-worker", labelKey: "menu.master.worker", path: "/master/worker" },
       { id: "mst-iqc-item", labelKey: "menu.master.iqcItem", path: "/master/iqc-item" },
-      { id: "mst-equip-inspect", labelKey: "menu.master.equipInspect", path: "/master/equip-inspect" },
-      { id: "mst-inspect-item", labelKey: "menu.master.inspectItem", path: "/master/inspect-item" },
       { id: "mst-box", labelKey: "menu.master.box", path: "/master/box" },
       { id: "mst-work-inst", labelKey: "menu.master.workInstruction", path: "/master/work-instruction" },
       { id: "mst-warehouse", labelKey: "menu.master.warehouse", path: "/master/warehouse" },
@@ -113,12 +111,14 @@ export const menuItems: MenuItem[] = [
   {
     id: "equipment", labelKey: "menu.equipment", icon: Wrench,
     children: [
+      { id: "equip-master", labelKey: "menu.equipment.master", path: "/master/equip" },
       { id: "equip-status", labelKey: "menu.equipment.status", path: "/equipment/status" },
       { id: "equip-pm", labelKey: "menu.equipment.pm", path: "/equipment/pm" },
       { id: "equip-daily", labelKey: "menu.equipment.dailyInspect", path: "/equipment/daily-inspect" },
       { id: "equip-periodic", labelKey: "menu.equipment.periodicInspect", path: "/equipment/periodic-inspect" },
       { id: "equip-history", labelKey: "menu.equipment.inspectHistory", path: "/equipment/inspect-history" },
       { id: "equip-mold", labelKey: "menu.equipment.mold", path: "/equipment/mold" },
+      { id: "equip-inspect-item", labelKey: "menu.master.equipInspect", path: "/master/equip-inspect" },
     ],
   },
   {
@@ -171,6 +171,8 @@ export const menuItems: MenuItem[] = [
   {
     id: "system", labelKey: "menu.system", icon: UserCog,
     children: [
+      { id: "sys-company", labelKey: "menu.master.company", path: "/master/company" },
+      { id: "sys-dept", labelKey: "menu.system.department", path: "/system/department" },
       { id: "sys-user", labelKey: "menu.system.users", path: "/system/users" },
       { id: "sys-comm", labelKey: "menu.system.commConfig", path: "/system/comm-config" },
     ],

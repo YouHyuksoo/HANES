@@ -41,7 +41,7 @@ export class PalletService {
   /**
    * 팔레트 목록 조회
    */
-  async findAll(query: PalletQueryDto) {
+  async findAll(query: PalletQueryDto, company?: string) {
     const {
       page = 1,
       limit = 10,
@@ -54,6 +54,7 @@ export class PalletService {
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(palletNo && { palletNo: { contains: palletNo, mode: 'insensitive' as const } }),
       ...(shipmentId && { shipmentId }),
       ...(status && { status }),
@@ -402,7 +403,7 @@ export class PalletService {
       where: { id },
       data: {
         status: 'CLOSED',
-        closeTime: new Date(),
+        closeAt: new Date(),
       },
       include: {
         boxes: {
@@ -436,7 +437,7 @@ export class PalletService {
       where: { id },
       data: {
         status: 'OPEN',
-        closeTime: null,
+        closeAt: null,
       },
       include: {
         boxes: {
@@ -685,7 +686,7 @@ export class PalletService {
       status: pallet.status,
       boxCount: pallet.boxCount,
       totalQty: pallet.totalQty,
-      closeTime: pallet.closeTime,
+      closeAt: pallet.closeAt,
       partBreakdown: partSummary.map(ps => ({
         part: partsMap.get(ps.partId),
         boxCount: ps._count,

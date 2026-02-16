@@ -16,9 +16,22 @@ import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
 export class BomService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** 유효일자 필터 조건 생성 (validFrom <= date AND validTo >= date, NULL은 무제한) */
+  private buildDateFilter(effectiveDate?: string) {
+    if (!effectiveDate) return {};
+    const d = new Date(effectiveDate);
+    return {
+      AND: [
+        { OR: [{ validFrom: null }, { validFrom: { lte: d } }] },
+        { OR: [{ validTo: null }, { validTo: { gte: d } }] },
+      ],
+    };
+  }
+
   /** BOM에 등재된 모품목(부모품목) 목록 + 자품목 수 */
-  async findParents(search?: string) {
-    const where: any = { deletedAt: null, useYn: 'Y' };
+  async findParents(search?: string, effectiveDate?: string) {
+    const dateFilter = this.buildDateFilter(effectiveDate);
+    const where: any = { deletedAt: null, useYn: 'Y', ...dateFilter };
     if (search) {
       where.parentPart = {
         OR: [
@@ -51,12 +64,13 @@ export class BomService {
     }));
   }
 
-  async findAll(query: BomQueryDto) {
+  async findAll(query: BomQueryDto, company?: string) {
     const { page = 1, limit = 10, parentPartId, childPartId, revision } = query;
     const skip = (page - 1) * limit;
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(parentPartId && { parentPartId }),
       ...(childPartId && { childPartId }),
       ...(revision && { revision }),
@@ -88,9 +102,10 @@ export class BomService {
     return bom;
   }
 
-  async findByParentId(parentPartId: string) {
+  async findByParentId(parentPartId: string, effectiveDate?: string) {
+    const dateFilter = this.buildDateFilter(effectiveDate);
     return this.prisma.bomMaster.findMany({
-      where: { parentPartId, deletedAt: null, useYn: 'Y' },
+      where: { parentPartId, deletedAt: null, useYn: 'Y', ...dateFilter },
       include: {
         childPart: { select: { id: true, partCode: true, partName: true, unit: true, partType: true } },
       },
@@ -98,16 +113,18 @@ export class BomService {
     });
   }
 
-  /** 재귀 트리 BOM 구조 조회 (depth 제한) */
-  async findHierarchy(parentPartId: string, depth: number = 3) {
+  /** 재귀 트리 BOM 구조 조회 (depth 제한 + 유효일자 필터) */
+  async findHierarchy(parentPartId: string, depth: number = 3, effectiveDate?: string) {
+    const dateFilter = this.buildDateFilter(effectiveDate);
+
     const buildTree = async (partId: string, currentDepth: number): Promise<any[]> => {
       if (currentDepth > depth) return [];
 
       const children = await this.prisma.bomMaster.findMany({
-        where: { parentPartId: partId, deletedAt: null, useYn: 'Y' },
+        where: { parentPartId: partId, deletedAt: null, useYn: 'Y', ...dateFilter },
         include: {
           childPart: {
-            select: { id: true, partCode: true, partName: true, partType: true, unit: true, rev: true },
+            select: { id: true, partCode: true, partNo: true, partName: true, partType: true, unit: true, rev: true },
           },
         },
         orderBy: { seq: 'asc' },
@@ -118,13 +135,14 @@ export class BomService {
           id: child.id,
           level: currentDepth,
           partCode: child.childPart.partCode,
+          partNo: child.childPart.partNo,
           partName: child.childPart.partName,
           partType: child.childPart.partType,
           qtyPer: Number(child.qtyPer),
           unit: child.childPart.unit,
           revision: child.revision,
           seq: child.seq,
-          oper: child.oper,
+          processCode: child.processCode,
           side: child.side,
           validFrom: child.validFrom,
           validTo: child.validTo,
@@ -161,7 +179,7 @@ export class BomService {
         seq: dto.seq ?? 0,
         revision: dto.revision ?? 'A',
         bomGrp: dto.bomGrp,
-        oper: dto.oper,
+        processCode: dto.processCode,
         side: dto.side,
         ecoNo: dto.ecoNo,
         validFrom: dto.validFrom ? new Date(dto.validFrom) : undefined,
@@ -181,7 +199,7 @@ export class BomService {
         ...(dto.qtyPer !== undefined && { qtyPer: dto.qtyPer }),
         ...(dto.seq !== undefined && { seq: dto.seq }),
         ...(dto.bomGrp !== undefined && { bomGrp: dto.bomGrp }),
-        ...(dto.oper !== undefined && { oper: dto.oper }),
+        ...(dto.processCode !== undefined && { processCode: dto.processCode }),
         ...(dto.side !== undefined && { side: dto.side }),
         ...(dto.ecoNo !== undefined && { ecoNo: dto.ecoNo }),
         ...(dto.validFrom !== undefined && { validFrom: dto.validFrom ? new Date(dto.validFrom) : null }),

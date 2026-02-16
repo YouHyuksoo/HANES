@@ -35,7 +35,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -121,8 +123,9 @@ export class DefectLogController {
   @Get()
   @ApiOperation({ summary: '불량로그 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: DefectLogQueryDto) {
-    const result = await this.defectLogService.findAll(query);
+  async findAll(@Query() query: DefectLogQueryDto, @Req() req: Request) {
+    const company = req.headers['x-company'] as string | undefined;
+    const result = await this.defectLogService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

@@ -486,6 +486,7 @@ export class InventoryService {
 
   /**
    * 현재고 조회
+   * @returns 평면화된 재고 데이터 (중첩 객체 → 평면 필드)
    */
   async getStock(query: StockQueryDto) {
     const where: any = {};
@@ -503,7 +504,7 @@ export class InventoryService {
       where.part = { partType: query.partType };
     }
 
-    return this.prisma.stock.findMany({
+    const stocks = await this.prisma.stock.findMany({
       where,
       include: {
         warehouse: true,
@@ -512,6 +513,30 @@ export class InventoryService {
       },
       orderBy: [{ warehouseId: 'asc' }, { partId: 'asc' }],
     });
+
+    // 평면화된 응답으로 변환
+    return stocks.map((stock) => ({
+      id: stock.id,
+      warehouseId: stock.warehouseId,
+      partId: stock.partId,
+      lotId: stock.lotId,
+      qty: stock.qty,
+      reservedQty: stock.reservedQty,
+      availableQty: stock.availableQty,
+      lastTransAt: stock.lastTransAt,
+      // 품목 정보 (평면화)
+      partCode: stock.part?.partCode || null,
+      partName: stock.part?.partName || null,
+      partType: stock.part?.partType || null,
+      unit: stock.part?.unit || null,
+      // 창고 정보 (평면화)
+      warehouseCode: stock.warehouse?.warehouseCode || null,
+      warehouseName: stock.warehouse?.warehouseName || null,
+      warehouseType: stock.warehouse?.warehouseType || null,
+      // LOT 정보 (평면화)
+      lotNo: stock.lot?.lotNo || null,
+      lotStatus: stock.lot?.status || null,
+    }));
   }
 
   /**

@@ -20,15 +20,17 @@ export interface AuthUser {
   dept: string | null;
   role: string;
   status: string;
+  company?: string;
 }
 
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
+  selectedCompany: string;
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, company?: string) => Promise<void>;
   register: (data: {
     email: string;
     password: string;
@@ -38,6 +40,7 @@ interface AuthState {
   }) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
+  setCompany: (company: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -45,20 +48,23 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       token: null,
+      selectedCompany: "",
       isAuthenticated: false,
       isLoading: false,
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, password: string, company?: string) => {
         set({ isLoading: true });
         try {
-          const res = await api.post("/auth/login", { email, password });
-          const { token, user } = res.data;
+          const res = await api.post("/auth/login", { email, password, company });
+          const responseData = res.data?.data ?? res.data;
+          const { token, user } = responseData;
 
           localStorage.setItem("harness-token", token);
 
           set({
             user,
             token,
+            selectedCompany: company || user.company || "",
             isAuthenticated: true,
             isLoading: false,
           });
@@ -72,7 +78,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const res = await api.post("/auth/register", data);
-          const { token, user } = res.data;
+          const responseData = res.data?.data ?? res.data;
+          const { token, user } = responseData;
 
           localStorage.setItem("harness-token", token);
 
@@ -93,8 +100,13 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           token: null,
+          selectedCompany: "",
           isAuthenticated: false,
         });
+      },
+
+      setCompany: (company: string) => {
+        set({ selectedCompany: company });
       },
 
       fetchMe: async () => {
@@ -106,8 +118,9 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const res = await api.get("/auth/me");
+          const userData = res.data?.data ?? res.data;
           set({
-            user: res.data,
+            user: userData,
             isAuthenticated: true,
           });
         } catch {
@@ -125,6 +138,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         token: state.token,
+        selectedCompany: state.selectedCompany,
         isAuthenticated: state.isAuthenticated,
       }),
     },

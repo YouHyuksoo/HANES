@@ -53,7 +53,7 @@ export class ConsumableService {
   /**
    * 소모품 목록 조회 (페이지네이션)
    */
-  async findAll(query: ConsumableQueryDto) {
+  async findAll(query: ConsumableQueryDto, company?: string) {
     const {
       page = 1,
       limit = 20,
@@ -68,6 +68,7 @@ export class ConsumableService {
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(category && { category }),
       ...(status && { status }),
       ...(vendor && { vendor: { contains: vendor, mode: 'insensitive' as const } }),
@@ -75,11 +76,11 @@ export class ConsumableService {
       ...(search && {
         OR: [
           { consumableCode: { contains: search, mode: 'insensitive' as const } },
-          { name: { contains: search, mode: 'insensitive' as const } },
+          { consumableName: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
       ...(nextReplaceBefore && {
-        nextReplace: { lte: new Date(nextReplaceBefore) },
+        nextReplaceAt: { lte: new Date(nextReplaceBefore) },
       }),
     };
 
@@ -153,14 +154,14 @@ export class ConsumableService {
     return this.prisma.consumableMaster.create({
       data: {
         consumableCode: dto.consumableCode,
-        name: dto.name,
+        consumableName: dto.name,
         category: dto.category,
         expectedLife: dto.expectedLife,
         currentCount: dto.currentCount ?? 0,
         warningCount: dto.warningCount,
         location: dto.location,
-        lastReplace: dto.lastReplace ? new Date(dto.lastReplace) : null,
-        nextReplace: dto.nextReplace ? new Date(dto.nextReplace) : null,
+        lastReplaceAt: dto.lastReplaceAt ? new Date(dto.lastReplaceAt) : null,
+        nextReplaceAt: dto.nextReplaceAt ? new Date(dto.nextReplaceAt) : null,
         unitPrice: dto.unitPrice,
         vendor: dto.vendor,
         status: dto.status ?? 'NORMAL',
@@ -194,17 +195,17 @@ export class ConsumableService {
       where: { id },
       data: {
         ...(dto.consumableCode !== undefined && { consumableCode: dto.consumableCode }),
-        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.name !== undefined && { consumableName: dto.name }),
         ...(dto.category !== undefined && { category: dto.category }),
         ...(dto.expectedLife !== undefined && { expectedLife: dto.expectedLife }),
         ...(dto.currentCount !== undefined && { currentCount: dto.currentCount }),
         ...(dto.warningCount !== undefined && { warningCount: dto.warningCount }),
         ...(dto.location !== undefined && { location: dto.location }),
-        ...(dto.lastReplace !== undefined && {
-          lastReplace: dto.lastReplace ? new Date(dto.lastReplace) : null,
+        ...(dto.lastReplaceAt !== undefined && {
+          lastReplaceAt: dto.lastReplaceAt ? new Date(dto.lastReplaceAt) : null,
         }),
-        ...(dto.nextReplace !== undefined && {
-          nextReplace: dto.nextReplace ? new Date(dto.nextReplace) : null,
+        ...(dto.nextReplaceAt !== undefined && {
+          nextReplaceAt: dto.nextReplaceAt ? new Date(dto.nextReplaceAt) : null,
         }),
         ...(dto.unitPrice !== undefined && { unitPrice: dto.unitPrice }),
         ...(dto.vendor !== undefined && { vendor: dto.vendor }),
@@ -270,8 +271,8 @@ export class ConsumableService {
         where: { id },
         data: {
           currentCount: 0,
-          lastReplace: new Date(),
-          nextReplace: dto.nextReplace ? new Date(dto.nextReplace) : null,
+          lastReplaceAt: new Date(),
+          nextReplaceAt: dto.nextReplaceAt ? new Date(dto.nextReplaceAt) : null,
           status: 'NORMAL',
         },
       }),
@@ -348,7 +349,7 @@ export class ConsumableService {
           select: { id: true, name: true, empNo: true },
         },
         consumable: {
-          select: { consumableCode: true, name: true },
+          select: { consumableCode: true, consumableName: true },
         },
       },
     });
@@ -404,7 +405,7 @@ export class ConsumableService {
             select: { id: true, name: true, empNo: true },
           },
           consumable: {
-            select: { consumableCode: true, name: true, category: true },
+            select: { consumableCode: true, consumableName: true, category: true },
           },
         },
       }),
@@ -458,12 +459,12 @@ export class ConsumableService {
         useYn: 'Y',
         OR: [
           { status: { in: ['WARNING', 'REPLACE'] } },
-          { nextReplace: { lte: targetDate } },
+          { nextReplaceAt: { lte: targetDate } },
         ],
       },
       orderBy: [
         { status: 'desc' }, // REPLACE > WARNING > NORMAL
-        { nextReplace: 'asc' },
+        { nextReplaceAt: 'asc' },
       ],
     });
   }

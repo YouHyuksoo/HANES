@@ -55,14 +55,35 @@ export class MatStockService {
       result = data.filter((stock) => stock.qty < (stock.part?.safetyStock ?? 0));
     }
 
-    return { data: result, total, page, limit };
+    // 중첩 객체 평면화
+    const flattenedData = result.map((stock) => ({
+      ...stock,
+      // 평면화된 필드
+      partCode: stock.part?.partCode,
+      partName: stock.part?.partName,
+      unit: stock.part?.unit,
+      lotNo: stock.lot?.lotNo,
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   async findByPartAndWarehouse(partId: string, warehouseCode: string, lotId?: string) {
-    return this.prisma.matStock.findFirst({
+    const stock = await this.prisma.matStock.findFirst({
       where: { partId, warehouseCode, lotId: lotId ?? null },
       include: { part: true, lot: true },
     });
+
+    if (!stock) return null;
+
+    return {
+      ...stock,
+      // 평면화된 필드
+      partCode: stock.part?.partCode,
+      partName: stock.part?.partName,
+      unit: stock.part?.unit,
+      lotNo: stock.lot?.lotNo,
+    };
   }
 
   async getStockSummary(partId: string) {
@@ -73,7 +94,18 @@ export class MatStockService {
 
     const total = stocks.reduce((sum, s) => sum + s.qty, 0);
     const available = stocks.reduce((sum, s) => sum + s.availableQty, 0);
-    return { partId, totalQty: total, availableQty: available, byWarehouse: stocks };
+
+    // 중첩 객체 평면화
+    const flattenedStocks = stocks.map((stock) => ({
+      ...stock,
+      // 평면화된 필드
+      partCode: stock.part?.partCode,
+      partName: stock.part?.partName,
+      unit: stock.part?.unit,
+      lotNo: stock.lot?.lotNo,
+    }));
+
+    return { partId, totalQty: total, availableQty: available, byWarehouse: flattenedStocks };
   }
 
   async adjustStock(dto: StockAdjustDto) {

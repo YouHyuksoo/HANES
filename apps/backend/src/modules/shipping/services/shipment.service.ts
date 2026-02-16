@@ -44,7 +44,7 @@ export class ShipmentService {
   /**
    * 출하 목록 조회
    */
-  async findAll(query: ShipmentQueryDto) {
+  async findAll(query: ShipmentQueryDto, company?: string) {
     const {
       page = 1,
       limit = 10,
@@ -59,6 +59,7 @@ export class ShipmentService {
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(shipNo && { shipNo: { contains: shipNo, mode: 'insensitive' as const } }),
       ...(customer && { customer: { contains: customer, mode: 'insensitive' as const } }),
       ...(status && { status }),
@@ -471,7 +472,7 @@ export class ShipmentService {
         where: { id },
         data: {
           status: 'SHIPPED',
-          shipTime: new Date(),
+          shipAt: new Date(),
         },
         include: {
           pallets: {
@@ -612,7 +613,7 @@ export class ShipmentService {
           },
         },
       },
-      orderBy: { shipTime: 'asc' },
+      orderBy: { shipAt: 'asc' },
     });
   }
 
@@ -812,7 +813,7 @@ export class ShipmentService {
       customer: shipment.customer,
       destination: shipment.destination,
       shipDate: shipment.shipDate,
-      shipTime: shipment.shipTime,
+      shipAt: shipment.shipAt,
       vehicleNo: shipment.vehicleNo,
       driverName: shipment.driverName,
       palletCount: shipment.palletCount,

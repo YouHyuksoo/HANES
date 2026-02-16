@@ -43,8 +43,8 @@ interface ProdResult {
   defectQty: number;
   totalQty: number;
   workDate: string;
-  startTime: string;
-  endTime: string;
+  startAt: string;
+  endAt: string;
   workHours: number;
 }
 
@@ -56,7 +56,7 @@ const mockResults: ProdResult[] = [
     lineName: 'L1-절단', processName: '전선절단', equipName: 'CUT-001',
     workerName: '김작업', workerDept: '절단팀', lotNo: 'LOT-20250126-C01',
     goodQty: 5900, defectQty: 100, totalQty: 6000,
-    workDate: '2025-01-26', startTime: '08:30', endTime: '15:30', workHours: 7
+    workDate: '2025-01-26', startAt: '08:30', endAt: '15:30', workHours: 7
   },
   {
     id: '2', resultNo: 'PR-20250126-002', orderNo: 'JO-20250126-002',
@@ -64,7 +64,7 @@ const mockResults: ProdResult[] = [
     lineName: 'L2-압착', processName: '단자압착', equipName: 'CRM-001',
     workerName: '이압착', workerDept: '압착팀', lotNo: 'LOT-20250126-R01',
     goodQty: 1480, defectQty: 20, totalQty: 1500,
-    workDate: '2025-01-26', startTime: '09:00', endTime: '14:00', workHours: 5
+    workDate: '2025-01-26', startAt: '09:00', endAt: '14:00', workHours: 5
   },
   {
     id: '3', resultNo: 'PR-20250126-003', orderNo: 'JO-20250126-003',
@@ -72,7 +72,7 @@ const mockResults: ProdResult[] = [
     lineName: 'L3-조립', processName: '1차 조립', equipName: 'ASSY-001',
     workerName: '박조립', workerDept: '조립팀', lotNo: 'LOT-20250126-A01',
     goodQty: 145, defectQty: 5, totalQty: 150,
-    workDate: '2025-01-26', startTime: '09:00', endTime: '12:00', workHours: 3
+    workDate: '2025-01-26', startAt: '09:00', endAt: '12:00', workHours: 3
   },
   {
     id: '4', resultNo: 'PR-20250126-004', orderNo: 'JO-20250126-005',
@@ -80,7 +80,7 @@ const mockResults: ProdResult[] = [
     lineName: 'L4-검사', processName: '통전검사', equipName: 'TST-001',
     workerName: '최검사', workerDept: '품질팀', lotNo: 'LOT-20250126-I01',
     goodQty: 148, defectQty: 2, totalQty: 150,
-    workDate: '2025-01-26', startTime: '10:00', endTime: '13:00', workHours: 3
+    workDate: '2025-01-26', startAt: '10:00', endAt: '13:00', workHours: 3
   },
   {
     id: '5', resultNo: 'PR-20250125-001', orderNo: 'JO-20250125-001',
@@ -88,7 +88,7 @@ const mockResults: ProdResult[] = [
     lineName: 'L1-조립', processName: '2차 조립', equipName: 'ASSY-003',
     workerName: '박조립', workerDept: '조립팀', lotNo: 'LOT-20250125-A01',
     goodQty: 195, defectQty: 5, totalQty: 200,
-    workDate: '2025-01-25', startTime: '08:00', endTime: '17:00', workHours: 9
+    workDate: '2025-01-25', startAt: '08:00', endAt: '17:00', workHours: 9
   },
   {
     id: '6', resultNo: 'PR-20250126-005', orderNo: 'JO-20250126-006',
@@ -96,7 +96,7 @@ const mockResults: ProdResult[] = [
     lineName: 'L2-압착', processName: '단자압착', equipName: 'CRM-001',
     workerName: '오압착', workerDept: '압착팀', lotNo: 'LOT-20250126-R02',
     goodQty: 3960, defectQty: 40, totalQty: 4000,
-    workDate: '2025-01-26', startTime: '08:00', endTime: '14:00', workHours: 6
+    workDate: '2025-01-26', startAt: '08:00', endAt: '14:00', workHours: 6
   },
   {
     id: '7', resultNo: 'PR-20250126-006', orderNo: 'JO-20250126-007',
@@ -104,7 +104,7 @@ const mockResults: ProdResult[] = [
     lineName: 'L5-포장', processName: '포장', equipName: 'PACK-001',
     workerName: '정포장', workerDept: '포장팀', lotNo: 'LOT-20250126-P01',
     goodQty: 100, defectQty: 0, totalQty: 100,
-    workDate: '2025-01-26', startTime: '13:00', endTime: '15:00', workHours: 2
+    workDate: '2025-01-26', startAt: '13:00', endAt: '15:00', workHours: 2
   },
 ];
 
@@ -204,7 +204,7 @@ function ProdResultPage() {
       },
       {
         id: 'workTime', header: t('production.result.workTime'), size: 120,
-        cell: ({ row }) => <span className="text-text-muted">{row.original.startTime} ~ {row.original.endTime}</span>
+        cell: ({ row }) => <span className="text-text-muted">{row.original.startAt} ~ {row.original.endAt}</span>
       },
     ],
     [t]

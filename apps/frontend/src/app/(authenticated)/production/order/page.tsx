@@ -18,6 +18,7 @@ import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from '@
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
+import { createPartColumns, createQtyColumn } from '@/lib/table-utils';
 
 /** 공정 유형 */
 type ProcessType = 'CUT' | 'CRIMP' | 'ASSY' | 'INSP' | 'PACK';
@@ -38,8 +39,8 @@ interface JobOrder {
   planQty: number;
   prodQty: number;
   status: JobOrderStatus;
-  startTime?: string;
-  endTime?: string;
+  startAt?: string;
+  endAt?: string;
   worker?: string;
   remark?: string;
 }
@@ -57,7 +58,7 @@ const mockJobOrders: JobOrder[] = [
     id: '2', orderNo: 'JO-20250126-002', orderDate: '2025-01-26',
     processType: 'CRIMP', partCode: 'T-001', partName: '110형 단자 압착',
     lineName: 'L2-압착', processName: '단자압착', planQty: 3000, prodQty: 1500,
-    status: 'RUNNING', startTime: '2025-01-26 09:00', worker: '이압착'
+    status: 'RUNNING', startAt: '2025-01-26 09:00', worker: '이압착'
   },
   {
     id: '3', orderNo: 'JO-20250126-003', orderDate: '2025-01-26',
@@ -69,31 +70,31 @@ const mockJobOrders: JobOrder[] = [
     id: '4', orderNo: 'JO-20250125-001', orderDate: '2025-01-25',
     processType: 'ASSY', partCode: 'H-003', partName: '도어 하네스 C',
     lineName: 'L1-조립', processName: '2차 조립', planQty: 200, prodQty: 200,
-    status: 'DONE', startTime: '2025-01-25 08:00', endTime: '2025-01-25 17:00', worker: '박조립'
+    status: 'DONE', startAt: '2025-01-25 08:00', endAt: '2025-01-25 17:00', worker: '박조립'
   },
   {
     id: '5', orderNo: 'JO-20250126-004', orderDate: '2025-01-26',
     processType: 'CUT', partCode: 'W-002', partName: 'AVSS 0.3sq 흰색',
     lineName: 'L1-절단', processName: '전선절단', planQty: 8000, prodQty: 6000,
-    status: 'RUNNING', startTime: '2025-01-26 08:30', worker: '김작업'
+    status: 'RUNNING', startAt: '2025-01-26 08:30', worker: '김작업'
   },
   {
     id: '6', orderNo: 'JO-20250126-005', orderDate: '2025-01-26',
     processType: 'INSP', partCode: 'H-001', partName: '메인 하네스 A',
     lineName: 'L4-검사', processName: '통전검사', planQty: 200, prodQty: 150,
-    status: 'RUNNING', startTime: '2025-01-26 10:00', worker: '최검사'
+    status: 'RUNNING', startAt: '2025-01-26 10:00', worker: '최검사'
   },
   {
     id: '7', orderNo: 'JO-20250126-006', orderDate: '2025-01-26',
     processType: 'CRIMP', partCode: 'T-002', partName: '250형 단자 압착',
     lineName: 'L2-압착', processName: '단자압착', planQty: 4000, prodQty: 4000,
-    status: 'DONE', startTime: '2025-01-26 08:00', endTime: '2025-01-26 14:00', worker: '오압착'
+    status: 'DONE', startAt: '2025-01-26 08:00', endAt: '2025-01-26 14:00', worker: '오압착'
   },
   {
     id: '8', orderNo: 'JO-20250126-007', orderDate: '2025-01-26',
     processType: 'PACK', partCode: 'H-003', partName: '도어 하네스 C',
     lineName: 'L5-포장', processName: '포장', planQty: 200, prodQty: 100,
-    status: 'RUNNING', startTime: '2025-01-26 13:00', worker: '정포장'
+    status: 'RUNNING', startAt: '2025-01-26 13:00', worker: '정포장'
   },
 ];
 
@@ -159,17 +160,10 @@ function JobOrderPage() {
         size: 80,
         cell: ({ getValue }) => <ComCodeBadge groupCode="PROCESS_TYPE" code={getValue() as string} />
       },
-      { accessorKey: 'partCode', header: t('production.order.partCode'), size: 100 },
-      { accessorKey: 'partName', header: t('production.order.partName'), size: 150 },
+      ...createPartColumns<JobOrder>(t),
       { accessorKey: 'lineName', header: t('production.order.line'), size: 100 },
-      {
-        accessorKey: 'planQty', header: t('production.order.planQty'), size: 80,
-        cell: ({ getValue }) => (getValue() as number).toLocaleString()
-      },
-      {
-        accessorKey: 'prodQty', header: t('production.order.prodQty'), size: 80,
-        cell: ({ getValue }) => (getValue() as number).toLocaleString()
-      },
+      createQtyColumn<JobOrder>(t, 'planQty'),
+      createQtyColumn<JobOrder>(t, 'prodQty'),
       {
         id: 'progress', header: t('production.order.progress'), size: 120,
         cell: ({ row }) => {
@@ -320,11 +314,11 @@ function JobOrderPage() {
               </div>
               <div>
                 <span className="text-sm text-text-muted">{t('production.order.startTime')}</span>
-                <p className="font-semibold text-text">{selectedOrder.startTime || '-'}</p>
+                <p className="font-semibold text-text">{selectedOrder.startAt || '-'}</p>
               </div>
               <div>
                 <span className="text-sm text-text-muted">{t('production.order.endTime')}</span>
-                <p className="font-semibold text-text">{selectedOrder.endTime || '-'}</p>
+                <p className="font-semibold text-text">{selectedOrder.endAt || '-'}</p>
               </div>
               {selectedOrder.remark && (
                 <div className="col-span-2">

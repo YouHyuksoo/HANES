@@ -32,7 +32,7 @@ export class WorkInstructionService {
       }),
     };
 
-    const [data, total] = await Promise.all([
+    const [items, total] = await Promise.all([
       this.prisma.workInstruction.findMany({
         where,
         skip,
@@ -43,6 +43,13 @@ export class WorkInstructionService {
       this.prisma.workInstruction.count({ where }),
     ]);
 
+    // 평면화
+    const data = items.map(item => ({
+      ...item,
+      partCode: item.part?.partCode || null,
+      partName: item.part?.partName || null,
+    }));
+
     return { data, total, page, limit };
   }
 
@@ -52,7 +59,13 @@ export class WorkInstructionService {
       include: { part: { select: { partCode: true, partName: true } } },
     });
     if (!item) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
-    return item;
+    
+    // 평면화
+    return {
+      ...item,
+      partCode: item.part?.partCode || null,
+      partName: item.part?.partName || null,
+    };
   }
 
   async create(dto: CreateWorkInstructionDto) {

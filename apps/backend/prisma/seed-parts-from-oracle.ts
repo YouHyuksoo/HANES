@@ -17,11 +17,12 @@ import * as path from "path";
 
 const prisma = new PrismaClient();
 
-/** Oracle ITEMTYPE → PartMaster partType 매핑 */
+/** Oracle ITEMTYPE → PartMaster partType 매핑
+ * 1 = 반제품(WIP), 2 = 원자재(RAW), 3 = 완제품(FG) */
 const ITEM_TYPE_MAP: Record<string, string> = {
-  "1": "RAW",
-  "2": "FG",
-  "3": "WIP",
+  "1": "WIP",
+  "2": "RAW",
+  "3": "FG",
 };
 
 interface OracleItem {
@@ -110,10 +111,10 @@ async function main() {
       safetyStock: item.SAFTYQTY ? Math.round(item.SAFTYQTY) : 0,
       lotUnitQty: item.LOTUNITQTY ? Math.round(item.LOTUNITQTY) : null,
       boxQty: item.BOXQTY ? Math.round(item.BOXQTY) : 0,
-      iqcFlag: item.IQCFLAG || "Y",
+      iqcYn: item.IQCFLAG || "Y",
       tactTime: item.TACTTIME ? Math.round(item.TACTTIME) : 0,
       expiryDate: item.EXPIRYDATE ? Math.round(item.EXPIRYDATE) : 0,
-      remarks: item.REMARKS || null,
+      remark: item.REMARKS || null,
       useYn: item.USEFLAG || "Y",
     }));
 

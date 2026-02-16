@@ -227,5 +227,5 @@ export class ProdResultOutboundDto {
   @ApiPropertyOptional({ description: '완료 시간' })
   @IsOptional()
   @IsDateString()
-  endTime?: string;
+  endAt?: string;
 }

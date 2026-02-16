@@ -37,6 +37,12 @@ import { ModelSuffixController } from './controllers/model-suffix.controller';
 import { ModelSuffixService } from './services/model-suffix.service';
 import { LabelTemplateController } from './controllers/label-template.controller';
 import { LabelTemplateService } from './services/label-template.service';
+import { ProdLineController } from './controllers/prod-line.controller';
+import { ProdLineService } from './services/prod-line.service';
+import { CompanyController } from './controllers/company.controller';
+import { CompanyService } from './services/company.service';
+import { DepartmentController } from './controllers/department.controller';
+import { DepartmentService } from './services/department.service';
 
 @Module({
   controllers: [
@@ -54,6 +60,9 @@ import { LabelTemplateService } from './services/label-template.service';
     TransferRuleController,
     ModelSuffixController,
     LabelTemplateController,
+    ProdLineController,
+    CompanyController,
+    DepartmentController,
   ],
   providers: [
     ComCodeService,
@@ -70,6 +79,9 @@ import { LabelTemplateService } from './services/label-template.service';
     TransferRuleService,
     ModelSuffixService,
     LabelTemplateService,
+    ProdLineService,
+    CompanyService,
+    DepartmentService,
   ],
   exports: [
     ComCodeService,
@@ -86,6 +98,9 @@ import { LabelTemplateService } from './services/label-template.service';
     TransferRuleService,
     ModelSuffixService,
     LabelTemplateService,
+    ProdLineService,
+    CompanyService,
+    DepartmentService,
   ],
 })
 export class MasterModule {}

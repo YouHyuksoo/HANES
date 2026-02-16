@@ -29,11 +29,12 @@ export class InterfaceService {
   // 인터페이스 로그 관리
   // ============================================================================
 
-  async findAllLogs(query: InterLogQueryDto) {
+  async findAllLogs(query: InterLogQueryDto, company?: string) {
     const { page = 1, limit = 10, direction, messageType, status, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
     const where = {
+      ...(company && { company }),
       ...(direction && { direction }),
       ...(messageType && { messageType }),
       ...(status && { status }),
@@ -90,7 +91,7 @@ export class InterfaceService {
       data: {
         status,
         ...(errorMsg && { errorMsg }),
-        ...(status === 'SUCCESS' && { recvTime: new Date() }),
+        ...(status === 'SUCCESS' && { recvAt: new Date() }),
       },
     });
   }
@@ -121,7 +122,7 @@ export class InterfaceService {
         where: { id },
         data: {
           status: 'SUCCESS',
-          recvTime: new Date(),
+          recvAt: new Date(),
         },
       });
     } catch (error) {

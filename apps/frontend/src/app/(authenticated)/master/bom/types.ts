@@ -26,7 +26,7 @@ export interface BomItem {
   unit: string;
   revision: string;
   seq: number;
-  oper?: string;
+  processCode?: string;
   side?: string;
   useYn: string;
 }
@@ -36,13 +36,14 @@ export interface BomTreeItem {
   id: string;
   level: number;
   partCode: string;
+  partNo?: string | null;
   partName: string;
   partType: "FG" | "WIP" | "RAW";
   qtyPer: number;
   unit: string;
   revision: string;
   seq: number;
-  oper?: string;
+  processCode?: string;
   side?: string;
   validFrom?: string;
   validTo?: string;

@@ -19,7 +19,7 @@ interface IssuingFormValues {
   qty: number;
   department: string;
   lineId: string;
-  equipmentId: string;
+  equipId: string;
   issueReason: string;
   remark: string;
 }
@@ -29,7 +29,7 @@ const defaultValues: IssuingFormValues = {
   qty: 1,
   department: '',
   lineId: '',
-  equipmentId: '',
+  equipId: '',
   issueReason: 'PRODUCTION',
   remark: '',
 };
@@ -94,8 +94,8 @@ function IssuingModal({ isOpen, onClose, onSubmit }: IssuingModalProps) {
           />
           <Input
             label={t('consumables.issuing.equipmentLabel')}
-            value={form.equipmentId}
-            onChange={(e) => handleChange('equipmentId', e.target.value)}
+            value={form.equipId}
+            onChange={(e) => handleChange('equipId', e.target.value)}
             placeholder={t('consumables.issuing.equipmentPlaceholder')}
             fullWidth
           />

@@ -42,7 +42,27 @@ export class WarehouseService {
       throw new NotFoundException('창고를 찾을 수 없습니다.');
     }
 
-    return warehouse;
+    // stocks 평면화
+    const flattenedStocks = warehouse.stocks.map(stock => ({
+      id: stock.id,
+      qty: stock.qty,
+      reservedQty: stock.reservedQty,
+      availableQty: stock.availableQty,
+      // 품목 정보 평면화
+      partId: stock.part?.id || null,
+      partCode: stock.part?.partCode || null,
+      partName: stock.part?.partName || null,
+      partType: stock.part?.partType || null,
+      unit: stock.part?.unit || null,
+      // LOT 정보 평면화
+      lotId: stock.lot?.id || null,
+      lotNo: stock.lot?.lotNo || null,
+    }));
+
+    return {
+      ...warehouse,
+      stocks: flattenedStocks,
+    };
   }
 
   /**

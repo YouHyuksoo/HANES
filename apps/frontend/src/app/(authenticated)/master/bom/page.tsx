@@ -11,7 +11,7 @@
  */
 import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, Package, ChevronRight, Layers, RefreshCw } from "lucide-react";
+import { Search, Package, ChevronRight, Layers, RefreshCw, Calendar } from "lucide-react";
 import { Card, CardHeader, CardContent, Input, Button } from "@/components/ui";
 import api from "@/services/api";
 import BomTab from "./components/BomTab";
@@ -20,12 +20,16 @@ import { ParentPart, RoutingTarget } from "./types";
 
 type TabType = "bom" | "routing";
 
+/** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
+const getToday = () => new Date().toISOString().split("T")[0];
+
 function BomPage() {
   const { t } = useTranslation();
   const [parents, setParents] = useState<ParentPart[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedParent, setSelectedParent] = useState<ParentPart | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState(getToday());
   const [activeTab, setActiveTab] = useState<TabType>("bom");
   const [routingTarget, setRoutingTarget] = useState<RoutingTarget | null>(null);
   const [bomRoutingLinks, setBomRoutingLinks] = useState<Map<string, string>>(() => new Map());
@@ -34,7 +38,10 @@ function BomPage() {
   const fetchParents = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/master/boms/parents", { params: searchText ? { search: searchText } : {} });
+      const params: Record<string, string> = {};
+      if (searchText) params.search = searchText;
+      if (effectiveDate) params.effectiveDate = effectiveDate;
+      const res = await api.get("/master/boms/parents", { params });
       if (res.data.success) {
         setParents(res.data.data || []);
         if (!selectedParent && res.data.data?.length > 0) {
@@ -46,7 +53,7 @@ function BomPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText]);
+  }, [searchText, effectiveDate]);
 
   useEffect(() => { fetchParents(); }, [fetchParents]);
 
@@ -84,9 +91,21 @@ function BomPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("master.bom.subtitle")} ({parents.length}건)</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchParents}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-1.5">
+            <Calendar className="w-4 h-4 text-primary" />
+            <span className="text-sm text-text-muted whitespace-nowrap">{t("master.bom.effectiveDate")}:</span>
+            <input
+              type="date"
+              value={effectiveDate}
+              onChange={(e) => setEffectiveDate(e.target.value)}
+              className="bg-transparent text-sm text-text font-medium border-none outline-none cursor-pointer"
+            />
+          </div>
+          <Button variant="secondary" size="sm" onClick={fetchParents}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-12 gap-6">
@@ -153,7 +172,7 @@ function BomPage() {
               {activeTab === "bom" ? (
                 <BomTab selectedParent={selectedParent} onViewRouting={handleViewRouting}
                   bomRoutingLinks={bomRoutingLinks} onLinkRouting={handleLinkRouting}
-                  onUnlinkRouting={handleUnlinkRouting} />
+                  onUnlinkRouting={handleUnlinkRouting} effectiveDate={effectiveDate} />
               ) : (
                 <RoutingTab selectedParent={selectedParent} routingTarget={routingTarget}
                   onClearTarget={handleClearRoutingTarget} bomRoutingLinks={bomRoutingLinks} />

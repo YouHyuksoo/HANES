@@ -77,7 +77,7 @@ function IssuingTable({ data }: IssuingTableProps) {
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
-        accessorKey: 'equipmentId',
+        accessorKey: 'equipId',
         header: t('consumables.comp.equipment'),
         size: 90,
         cell: ({ getValue }) => (getValue() as string) ?? '-',

@@ -10,6 +10,7 @@ import { Plus, RefreshCw, Search, Package, CheckCircle, XCircle, Layers } from '
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface SubconReceive {
   id: string;
@@ -22,7 +23,7 @@ interface SubconReceive {
   goodQty: number;
   defectQty: number;
   inspectResult: string;
-  receiveDate: string;
+  receivedAt: string;
   workerName: string;
 }
 
@@ -38,7 +39,7 @@ const mockData: SubconReceive[] = [
     goodQty: 495,
     defectQty: 5,
     inspectResult: 'PARTIAL',
-    receiveDate: '2025-01-27 10:30',
+    receivedAt: '2025-01-27 10:30',
     workerName: '김검수',
   },
   {
@@ -52,7 +53,7 @@ const mockData: SubconReceive[] = [
     goodQty: 445,
     defectQty: 5,
     inspectResult: 'PARTIAL',
-    receiveDate: '2025-01-27 15:00',
+    receivedAt: '2025-01-27 15:00',
     workerName: '김검수',
   },
   {
@@ -66,7 +67,7 @@ const mockData: SubconReceive[] = [
     goodQty: 500,
     defectQty: 0,
     inspectResult: 'PASS',
-    receiveDate: '2025-01-26 11:00',
+    receivedAt: '2025-01-26 11:00',
     workerName: '이검수',
   },
 ];
@@ -103,8 +104,7 @@ function SubconReceivePage() {
       { accessorKey: 'receiveNo', header: t('outsourcing.receive.receiveNo'), size: 130 },
       { accessorKey: 'orderNo', header: t('outsourcing.order.orderNo'), size: 130 },
       { accessorKey: 'vendorName', header: t('outsourcing.order.vendor'), size: 130 },
-      { accessorKey: 'partCode', header: t('common.partCode'), size: 90 },
-      { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+      ...createPartColumns<SubconReceive>(t),
       {
         accessorKey: 'qty',
         header: t('outsourcing.receive.receiveQty'),
@@ -145,7 +145,7 @@ function SubconReceivePage() {
           );
         },
       },
-      { accessorKey: 'receiveDate', header: t('outsourcing.receive.receiveDate'), size: 130 },
+      { accessorKey: 'receivedAt', header: t('outsourcing.receive.receiveDate'), size: 130 },
       { accessorKey: 'workerName', header: t('outsourcing.receive.worker'), size: 80 },
     ],
     [t]

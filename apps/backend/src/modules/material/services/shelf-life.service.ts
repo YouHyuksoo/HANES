@@ -56,7 +56,15 @@ export class ShelfLifeService {
         if (remainDays < 0) expiryLabel = 'EXPIRED';
         else if (remainDays <= nearExpiryDays) expiryLabel = 'NEAR_EXPIRY';
       }
-      return { ...lot, expiryLabel, remainDays };
+      return {
+        ...lot,
+        expiryLabel,
+        remainDays,
+        partCode: lot.part?.partCode,
+        partName: lot.part?.partName,
+        unit: lot.part?.unit,
+        part: undefined,
+      };
     });
 
     return { data: enriched, total, page, limit };

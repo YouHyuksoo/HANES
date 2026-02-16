@@ -15,6 +15,11 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty({ message: '비밀번호를 입력해주세요.' })
   password: string;
+
+  @ApiPropertyOptional({ description: '회사코드', example: 'HANES' })
+  @IsOptional()
+  @IsString()
+  company?: string;
 }
 
 export class RegisterDto {

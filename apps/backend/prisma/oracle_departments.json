@@ -1,0 +1,205 @@
+{
+  "success": true,
+  "data": [
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "1000",
+      "DEPARTMENTNAME": "\uad00\ub9ac\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213100",
+      "DEPARTMENTNAME": "\uc784\uc6d0",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213200",
+      "DEPARTMENTNAME": "\uacbd\uc601\uc9c0\uc6d0\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213210",
+      "DEPARTMENTNAME": "\ud574\uc678\uc9c0\uc6d0",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213220",
+      "DEPARTMENTNAME": "\uc804\uc7a5\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213300",
+      "DEPARTMENTNAME": "\uc601\uc5c5\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213400",
+      "DEPARTMENTNAME": "\uac1c\ubc1c\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213410",
+      "DEPARTMENTNAME": "\uacf5\uc815\uae30\uc220\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213420",
+      "DEPARTMENTNAME": "\uae30\uc220\uc5f0\uad6c\uc18c",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213500",
+      "DEPARTMENTNAME": "\uc790\uc7ac\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213600",
+      "DEPARTMENTNAME": "\ud488\uc9c8\ubcf4\uc99d\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213700",
+      "DEPARTMENTNAME": "\uacf5\uc7a5\uc7a5",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213710",
+      "DEPARTMENTNAME": "\uc790\uc0bd\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213720",
+      "DEPARTMENTNAME": "\uc0dd\uc0b0\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213730",
+      "DEPARTMENTNAME": "\uc0dd\uc0b0\uad00\ub9ac\ud300",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213800",
+      "DEPARTMENTNAME": "Controller\ubcf8\ubd80",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    },
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "PLANT": "P200",
+      "DEPARTMENT": "213900",
+      "DEPARTMENTNAME": "EMM\ud55c\uad6d\uc9c0\uc0ac",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101610908000",
+      "CREATEUSER": "SYSOPER"
+    }
+  ],
+  "columns": [
+    "CLIENT",
+    "COMPANY",
+    "PLANT",
+    "DEPARTMENT",
+    "DEPARTMENTNAME",
+    "USEFLAG",
+    "REMARKS",
+    "CREATETIMEKEY",
+    "CREATEUSER"
+  ],
+  "row_count": 17,
+  "site": "HANES"
+}

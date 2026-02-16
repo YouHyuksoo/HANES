@@ -46,10 +46,13 @@ export class AuthService {
     // 최근 로그인 시간 업데이트
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() },
+      data: { lastLoginAt: new Date() },
     });
 
     this.logger.log(`User logged in: ${user.email}`);
+
+    // 로그인 시 선택한 회사 또는 사용자 기본 회사 사용
+    const selectedCompany = dto.company || user.company || '';
 
     return {
       token: user.id, // userId를 토큰으로 사용
@@ -61,6 +64,7 @@ export class AuthService {
         dept: user.dept,
         role: user.role,
         status: user.status,
+        company: selectedCompany,
       },
     };
   }
@@ -118,7 +122,8 @@ export class AuthService {
         dept: true,
         role: true,
         status: true,
-        lastLogin: true,
+        company: true,
+        lastLoginAt: true,
       },
     });
 

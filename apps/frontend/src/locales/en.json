@@ -87,6 +87,7 @@
     "master.equip": "Equipment Management",
     "master.code": "Code Management",
     "master.partner": "Partner Management",
+    "master.prodLine": "Production Line",
     "master.process": "Process Management",
     "master.routing": "Routing Management",
     "master.worker": "Worker Management",
@@ -114,6 +115,16 @@
     "master.worker.deptAssembly": "Assembly Team",
     "master.worker.deptQuality": "Quality Team",
     "master.worker.deptPacking": "Packing Team",
+    "master.worker.engName": "English Name",
+    "master.worker.position": "Position",
+    "master.worker.phone": "Phone",
+    "master.worker.email": "Email",
+    "master.worker.hireDate": "Hire Date",
+    "master.worker.quitDate": "Quit Date",
+    "master.worker.remark": "Remark",
+    "master.worker.workerList": "Worker List",
+    "master.worker.totalCount": "Total {{count}} records",
+    "master.worker.emptyMessage": "No workers registered.",
     "master.iqcItem": "IQC Inspect Item Mgmt",
     "master.iqcItem.itemCode": "Item Code",
     "master.iqcItem.judgeMethod": "Judge Method",
@@ -126,11 +137,12 @@
     "master.transferRule": "Transfer Rule Mgmt",
     "master.modelSuffix": "Model Suffix Mgmt",
     "master.warehouse": "Warehouse Mgmt",
+    "master.company": "Company Mgmt",
     "master.label": "Label Mgmt",
     "inventory": "Inventory",
     "inventory.stock": "Stock Status Inquiry",
     "inventory.transaction": "Transaction Inquiry",
-    "inventory.lot": "LOT Management",
+    "inventory.lot": "LOT Traceability",
     "material": "Material",
     "material.arrival": "Arrival",
     "material.iqc": "IQC Inspection",
@@ -176,6 +188,7 @@
     "quality.inspect": "Inspection",
     "quality.trace": "Traceability",
     "equipment": "Equipment",
+    "equipment.master": "Equipment Master Mgmt",
     "equipment.status": "Operation Status Inquiry",
     "equipment.pm": "Preventive Maint. Mgmt",
     "equipment.dailyInspect": "Daily Inspect Mgmt",
@@ -210,6 +223,7 @@
     "interface.log": "Transfer Log Inquiry",
     "interface.manual": "Manual Transfer Process",
     "system": "System",
+    "system.department": "Department",
     "system.users": "User Management",
     "system.commConfig": "Comm Config Mgmt"
   },
@@ -412,6 +426,25 @@
     }
   },
   "system": {
+    "department": {
+      "title": "Department Management",
+      "subtitle": "Manage department information.",
+      "searchPlaceholder": "Search code/name",
+      "addDepartment": "Add Department",
+      "editDepartment": "Edit Department",
+      "deleteDepartment": "Delete Department",
+      "deleteConfirm": "Are you sure you want to delete department '{{name}}'?",
+      "departmentList": "Department List",
+      "totalCount": "Total {{count}} departments",
+      "emptyMessage": "No departments registered.",
+      "deptCode": "Dept Code",
+      "deptName": "Dept Name",
+      "parentDeptCode": "Parent Dept",
+      "sortOrder": "Sort Order",
+      "managerName": "Manager",
+      "remark": "Remark",
+      "useYn": "Use"
+    },
     "users": {
       "title": "User Management",
       "subtitle": "Manage system users.",
@@ -534,7 +567,10 @@
       "remarkPlaceholder": "Enter remark",
       "tabBom": "BOM (Materials)",
       "tabRouting": "Routing",
-      "routingCount": "processes"
+      "routingCount": "processes",
+      "effectiveDate": "Effective Date",
+      "validFrom": "Valid From",
+      "validTo": "Valid To"
     },
     "equip": {
       "title": "Equipment Master",
@@ -605,6 +641,21 @@
       "editPartner": "Edit Partner",
       "excelDownload": "Excel Download",
       "searchPlaceholder": "Search by code, name, biz no, contact..."
+    },
+    "prodLine": {
+      "title": "Production Line",
+      "subtitle": "Register and manage production line information.",
+      "lineCode": "Line Code",
+      "lineName": "Line Name",
+      "oper": "Process Code",
+      "lineType": "Line Type",
+      "whLoc": "WH Location",
+      "erpCode": "ERP Code",
+      "remark": "Remark",
+      "use": "Use",
+      "addLine": "Add Line",
+      "editLine": "Edit Line",
+      "searchPlaceholder": "Search line code, name, process code..."
     },
     "process": {
       "title": "Process Master",
@@ -690,6 +741,8 @@
     "equipInspect": {
       "title": "Equipment Inspection Items",
       "subtitle": "Manage daily/periodic equipment inspection criteria.",
+      "tabAssign": "Equipment Assignment",
+      "tabMaster": "Inspection Item Master",
       "equipCode": "Equipment Code",
       "equipName": "Equipment Name",
       "inspectType": "Inspection Type",
@@ -705,7 +758,19 @@
       "cycleMonthly": "Monthly",
       "addItem": "Add Item",
       "editItem": "Edit Item",
-      "searchPlaceholder": "Search equipment code, inspection item..."
+      "searchPlaceholder": "Search equipment code, inspection item...",
+      "equipList": "Equipment List",
+      "selectEquip": "Select Equipment",
+      "itemMasterDesc": "Manage inspection item pool",
+      "noItems": "No inspection items",
+      "filterByType": "Filter by Type",
+      "itemCode": "Item Code",
+      "judgeMethod": "Judge Method",
+      "measureValues": "Standard/Upper/Lower",
+      "standardValue": "Standard",
+      "upperLimit": "Upper",
+      "lowerLimit": "Lower",
+      "unit": "Unit"
     },
     "box": {
       "title": "Box Management",
@@ -810,6 +875,22 @@
       "delete": "Delete",
       "templateNamePlaceholder": "Enter template name",
       "noTemplates": "No saved templates"
+    },
+    "company": {
+      "title": "Company Master",
+      "subtitle": "Register and manage company information.",
+      "companyCode": "Company Code",
+      "companyName": "Company Name",
+      "bizNo": "Business No.",
+      "ceoName": "CEO Name",
+      "address": "Address",
+      "tel": "Phone",
+      "fax": "Fax",
+      "email": "Email",
+      "addCompany": "Add Company",
+      "editCompany": "Edit Company",
+      "searchPlaceholder": "Search company code, name, biz no...",
+      "selectCompany": "Select a company"
     }
   },
   "material": {
@@ -1058,9 +1139,9 @@
       "searchPlaceholder": "Search part code, name..."
     },
     "lot": {
-      "title": "Material LOT",
-      "subtitle": "Manage material LOT.",
-      "description": "Manage material LOT.",
+      "title": "Material LOT Traceability",
+      "subtitle": "Track and manage material LOT history.",
+      "description": "Track and manage material LOT history.",
       "status": {
         "normal": "Normal",
         "hold": "Hold",

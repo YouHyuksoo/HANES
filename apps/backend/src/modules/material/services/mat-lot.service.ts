@@ -37,7 +37,16 @@ export class MatLotService {
       this.prisma.matLot.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // 중첩 객체 평면화
+    const flattenedData = data.map((lot) => ({
+      ...lot,
+      // 평면화된 필드
+      partCode: lot.part?.partCode,
+      partName: lot.part?.partName,
+      unit: lot.part?.unit,
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   async findById(id: string) {
@@ -47,7 +56,14 @@ export class MatLotService {
     });
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${id}`);
-    return lot;
+
+    return {
+      ...lot,
+      // 평면화된 필드
+      partCode: lot.part?.partCode,
+      partName: lot.part?.partName,
+      unit: lot.part?.unit,
+    };
   }
 
   async findByLotNo(lotNo: string) {
@@ -57,7 +73,14 @@ export class MatLotService {
     });
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
-    return lot;
+
+    return {
+      ...lot,
+      // 평면화된 필드
+      partCode: lot.part?.partCode,
+      partName: lot.part?.partName,
+      unit: lot.part?.unit,
+    };
   }
 
   async create(dto: CreateMatLotDto) {
@@ -67,7 +90,7 @@ export class MatLotService {
 
     if (existing) throw new ConflictException(`이미 존재하는 LOT 번호입니다: ${dto.lotNo}`);
 
-    return this.prisma.matLot.create({
+    const lot = await this.prisma.matLot.create({
       data: {
         lotNo: dto.lotNo,
         partId: dto.partId,
@@ -84,11 +107,19 @@ export class MatLotService {
       },
       include: { part: true },
     });
+
+    return {
+      ...lot,
+      // 평면화된 필드
+      partCode: lot.part?.partCode,
+      partName: lot.part?.partName,
+      unit: lot.part?.unit,
+    };
   }
 
   async update(id: string, dto: UpdateMatLotDto) {
     await this.findById(id);
-    return this.prisma.matLot.update({
+    const lot = await this.prisma.matLot.update({
       where: { id },
       data: {
         ...(dto.iqcStatus && { iqcStatus: dto.iqcStatus }),
@@ -99,6 +130,14 @@ export class MatLotService {
       },
       include: { part: true },
     });
+
+    return {
+      ...lot,
+      // 평면화된 필드
+      partCode: lot.part?.partCode,
+      partName: lot.part?.partName,
+      unit: lot.part?.unit,
+    };
   }
 
   async delete(id: string) {

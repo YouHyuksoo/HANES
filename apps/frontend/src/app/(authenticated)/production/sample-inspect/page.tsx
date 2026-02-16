@@ -16,6 +16,7 @@ import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface SampleInspect {
   id: string;
@@ -72,8 +73,7 @@ function SampleInspectPage() {
     { accessorKey: 'inspectDate', header: t('production.sampleInspect.inspectDate'), size: 100 },
     { accessorKey: 'lotNo', header: t('production.sampleInspect.lotNo'), size: 160 },
     { accessorKey: 'orderNo', header: t('production.sampleInspect.orderNo'), size: 160 },
-    { accessorKey: 'partCode', header: t('production.sampleInspect.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('production.sampleInspect.partName'), size: 140 },
+    ...createPartColumns<SampleInspect>(t),
     { accessorKey: 'inspectType', header: t('production.sampleInspect.inspectType'), size: 90 },
     { accessorKey: 'sampleQty', header: t('production.sampleInspect.sampleQty'), size: 70 },
     { accessorKey: 'passQty', header: t('production.sampleInspect.passQty'), size: 70, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{getValue() as number}</span> },

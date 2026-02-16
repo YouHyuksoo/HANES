@@ -10,7 +10,7 @@
  * 3. **중앙**: 라벨 디자인 설정 + 템플릿 저장/불러오기
  * 4. **우측**: 실시간 미리보기 + 인쇄
  */
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Tag, Palette } from "lucide-react";
 import { Card, CardContent } from "@/components/ui";
@@ -20,6 +20,7 @@ import LabelPreview from "./components/LabelPreview";
 import TemplateManager from "./components/TemplateManager";
 import LabelGrid from "./components/LabelGrid";
 import { LabelCategory, LabelItem, LabelDesign, DEFAULT_DESIGN } from "./types";
+import { api } from "@/services/api";
 
 const categories: { key: LabelCategory; labelKey: string }[] = [
   { key: "equip", labelKey: "master.label.catEquip" },
@@ -28,38 +29,47 @@ const categories: { key: LabelCategory; labelKey: string }[] = [
   { key: "part", labelKey: "master.label.catPart" },
 ];
 
-/** 카테고리별 목 데이터 */
-const mockDataMap: Record<LabelCategory, LabelItem[]> = {
-  equip: [
-    { id: "e1", code: "EQ-CUT-001", name: "자동절단기 1호", sub: "L1" },
-    { id: "e2", code: "EQ-CRM-001", name: "압착기 1호", sub: "L1" },
-    { id: "e3", code: "EQ-CRM-002", name: "압착기 2호", sub: "L2" },
-    { id: "e4", code: "EQ-ASM-001", name: "조립지그 A", sub: "L1" },
-    { id: "e5", code: "EQ-INS-001", name: "통전검사기 1호", sub: "L1" },
-    { id: "e6", code: "EQ-PKG-001", name: "포장라인 1", sub: "L3" },
-  ],
-  jig: [
-    { id: "j1", code: "JIG-A-001", name: "절단 블레이드 A", sub: "CUT" },
-    { id: "j2", code: "JIG-B-001", name: "압착 금형 110형", sub: "CRM" },
-    { id: "j3", code: "JIG-B-002", name: "압착 금형 250형", sub: "CRM" },
-    { id: "j4", code: "JIG-C-001", name: "조립보드 12P", sub: "ASM" },
-    { id: "j5", code: "JIG-C-002", name: "조립보드 24P", sub: "ASM" },
-  ],
-  worker: [
-    { id: "w1", code: "WK-2024-001", name: "김철수", sub: "생산1팀" },
-    { id: "w2", code: "WK-2024-002", name: "이영희", sub: "생산1팀" },
-    { id: "w3", code: "WK-2024-003", name: "박민수", sub: "생산2팀" },
-    { id: "w4", code: "WK-2024-004", name: "정수진", sub: "품질팀" },
-    { id: "w5", code: "WK-2024-005", name: "Nguyen Van A", sub: "생산1팀" },
-  ],
-  part: [
-    { id: "p1", code: "H-001", name: "메인 하네스 A", sub: "FG" },
-    { id: "p2", code: "H-002", name: "서브 하네스 B", sub: "WIP" },
-    { id: "p3", code: "W-001", name: "전선 AWG18 RED", sub: "RAW" },
-    { id: "p4", code: "T-001", name: "단자 110형", sub: "RAW" },
-    { id: "p5", code: "T-002", name: "커넥터 12P", sub: "RAW" },
-    { id: "p6", code: "C-001", name: "튜브 10mm", sub: "RAW" },
-  ],
+/** 카테고리별 API 경로 및 필드 매핑 */
+const categoryApiMap: Record<LabelCategory, {
+  url: string;
+  mapFn: (item: Record<string, unknown>) => LabelItem;
+}> = {
+  equip: {
+    url: "/equipment/equips",
+    mapFn: (item) => ({
+      id: item.id as string,
+      code: item.equipCode as string,
+      name: item.equipName as string,
+      sub: (item.lineCode as string) || (item.equipType as string) || "",
+    }),
+  },
+  jig: {
+    url: "/consumables",
+    mapFn: (item) => ({
+      id: item.id as string,
+      code: item.consumableCode as string,
+      name: item.consumableName as string,
+      sub: (item.category as string) || "",
+    }),
+  },
+  worker: {
+    url: "/master/workers",
+    mapFn: (item) => ({
+      id: item.id as string,
+      code: item.workerCode as string,
+      name: item.workerName as string,
+      sub: (item.dept as string) || "",
+    }),
+  },
+  part: {
+    url: "/master/parts",
+    mapFn: (item) => ({
+      id: item.id as string,
+      code: item.partCode as string,
+      name: item.partName as string,
+      sub: (item.partType as string) || "",
+    }),
+  },
 };
 
 function LabelPage() {
@@ -67,8 +77,29 @@ function LabelPage() {
   const [category, setCategory] = useState<LabelCategory>("equip");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [design, setDesign] = useState<LabelDesign>(DEFAULT_DESIGN);
+  const [items, setItems] = useState<LabelItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const items = mockDataMap[category];
+  /** 카테고리 변경 시 API 데이터 로드 */
+  const fetchItems = useCallback(async (cat: LabelCategory) => {
+    setLoading(true);
+    try {
+      const { url, mapFn } = categoryApiMap[cat];
+      const res = await api.get(url, { params: { limit: 500, useYn: "Y" } });
+      const raw = res.data?.data ?? res.data;
+      const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+      setItems(list.map(mapFn));
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchItems(category);
+  }, [category, fetchItems]);
+
   const selectedItems = useMemo(() => items.filter((i) => selectedIds.has(i.id)), [items, selectedIds]);
   const firstSelected = selectedItems[0];
 
@@ -106,7 +137,7 @@ function LabelPage() {
       <div className="grid grid-cols-12 gap-6">
         {/* 좌측: 항목 선택 */}
         <div className="col-span-4">
-          <LabelGrid items={items} selectedIds={selectedIds} onSelectionChange={setSelectedIds} />
+          <LabelGrid items={items} selectedIds={selectedIds} onSelectionChange={setSelectedIds} loading={loading} />
         </div>
 
         {/* 중앙: 디자인 설정 + 템플릿 관리 */}

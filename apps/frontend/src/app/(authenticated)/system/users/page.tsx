@@ -25,7 +25,7 @@ interface User {
   dept: string | null;
   role: string;
   status: string;
-  lastLogin: string | null;
+  lastLoginAt: string | null;
   createdAt: string;
 }
 
@@ -194,7 +194,7 @@ function UserPage() {
         },
       },
       {
-        accessorKey: 'lastLogin',
+        accessorKey: 'lastLoginAt',
         header: t('system.users.lastLogin'),
         size: 150,
         cell: ({ getValue }) => {

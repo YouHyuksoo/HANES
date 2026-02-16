@@ -75,12 +75,12 @@ export class CreateProdResultDto {
   @ApiPropertyOptional({ description: '시작 시간 (ISO 8601)', example: '2025-01-26T08:00:00Z' })
   @IsOptional()
   @IsDateString()
-  startTime?: string;
+  startAt?: string;
 
   @ApiPropertyOptional({ description: '종료 시간 (ISO 8601)', example: '2025-01-26T17:00:00Z' })
   @IsOptional()
   @IsDateString()
-  endTime?: string;
+  endAt?: string;
 
   @ApiPropertyOptional({ description: '사이클 타임 (초)', example: 30.5, minimum: 0 })
   @IsOptional()
@@ -218,7 +218,7 @@ export class CompleteProdResultDto {
   @ApiPropertyOptional({ description: '종료 시간 (ISO 8601)', example: '2025-01-26T17:00:00Z' })
   @IsOptional()
   @IsDateString()
-  endTime?: string;
+  endAt?: string;
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()

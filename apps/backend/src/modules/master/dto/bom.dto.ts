@@ -44,7 +44,7 @@ export class CreateBomDto {
   @IsOptional()
   @IsString()
   @MaxLength(20)
-  oper?: string;
+  processCode?: string;
 
   @ApiPropertyOptional({ description: '사이드 (N/L/R)' })
   @IsOptional()

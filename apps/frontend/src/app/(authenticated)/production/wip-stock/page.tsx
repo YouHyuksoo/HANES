@@ -15,6 +15,7 @@ import { Search, RefreshCw, Download, Warehouse, Package, Box, Layers } from 'lu
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface WipStock {
   id: string;
@@ -63,8 +64,7 @@ function WipStockPage() {
   }), []);
 
   const columns = useMemo<ColumnDef<WipStock>[]>(() => [
-    { accessorKey: 'partCode', header: t('production.wipStock.partCode'), size: 120 },
-    { accessorKey: 'partName', header: t('production.wipStock.partName'), size: 180 },
+    ...createPartColumns<WipStock>(t),
     {
       accessorKey: 'partType', header: t('production.wipStock.type'), size: 90,
       cell: ({ getValue }) => {

@@ -80,7 +80,7 @@ export class CreateInspectResultDto {
   @ApiPropertyOptional({ description: '검사 시간 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  inspectTime?: string;
+  inspectAt?: string;
 
   @ApiPropertyOptional({ description: '검사자 ID' })
   @IsOptional()

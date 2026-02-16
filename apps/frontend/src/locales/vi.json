@@ -87,6 +87,7 @@
     "master.equip": "Quản lý thiết bị",
     "master.code": "Quản lý mã",
     "master.partner": "Quản lý đối tác",
+    "master.prodLine": "Quản lý dây chuyền",
     "master.process": "Quản lý công đoạn",
     "master.routing": "Quản lý định tuyến",
     "master.worker": "Quản lý công nhân",
@@ -114,6 +115,16 @@
     "master.worker.deptAssembly": "Tổ lắp ráp",
     "master.worker.deptQuality": "Tổ chất lượng",
     "master.worker.deptPacking": "Tổ đóng gói",
+    "master.worker.engName": "Tên tiếng Anh",
+    "master.worker.position": "Chức vụ",
+    "master.worker.phone": "Số điện thoại",
+    "master.worker.email": "Email",
+    "master.worker.hireDate": "Ngày vào làm",
+    "master.worker.quitDate": "Ngày nghỉ việc",
+    "master.worker.remark": "Ghi chú",
+    "master.worker.workerList": "Danh sách nhân viên",
+    "master.worker.totalCount": "Tổng {{count}} bản ghi",
+    "master.worker.emptyMessage": "Chưa có nhân viên nào.",
     "master.iqcItem": "Quản lý hạng mục kiểm tra IQC",
     "master.iqcItem.itemCode": "Mã hạng mục",
     "master.iqcItem.judgeMethod": "Phương pháp",
@@ -126,11 +137,12 @@
     "master.transferRule": "Quản lý quy tắc chuyển kho",
     "master.modelSuffix": "Quản lý hậu tố model",
     "master.warehouse": "Quản lý kho hàng",
+    "master.company": "Quản lý công ty",
     "master.label": "Quản lý nhãn",
     "inventory": "Quản lý kho",
     "inventory.stock": "Tra cứu tồn kho",
     "inventory.transaction": "Tra cứu lịch sử giao dịch",
-    "inventory.lot": "Quản lý LOT",
+    "inventory.lot": "Truy xuất LOT",
     "material": "Quản lý vật tư",
     "material.arrival": "Quản lý nhập hàng",
     "material.iqc": "Kiểm tra đầu vào (IQC)",
@@ -176,6 +188,7 @@
     "quality.inspect": "Quản lý kiểm tra",
     "quality.trace": "Truy vết",
     "equipment": "Quản lý thiết bị",
+    "equipment.master": "Quản lý dữ liệu chính thiết bị",
     "equipment.status": "Tra cứu tình trạng vận hành",
     "equipment.pm": "Quản lý bảo trì phòng ngừa",
     "equipment.dailyInspect": "Quản lý kiểm tra hàng ngày",
@@ -210,6 +223,7 @@
     "interface.log": "Tra cứu lịch sử truyền",
     "interface.manual": "Xử lý truyền thủ công",
     "system": "Hệ thống",
+    "system.department": "Quản lý phòng ban",
     "system.users": "Quản lý người dùng",
     "system.commConfig": "Quản lý cài đặt truyền thông"
   },
@@ -412,6 +426,25 @@
     }
   },
   "system": {
+    "department": {
+      "title": "Quản lý phòng ban",
+      "subtitle": "Quản lý thông tin phòng ban.",
+      "searchPlaceholder": "Tìm mã/tên phòng ban",
+      "addDepartment": "Thêm phòng ban",
+      "editDepartment": "Sửa phòng ban",
+      "deleteDepartment": "Xóa phòng ban",
+      "deleteConfirm": "Bạn có chắc muốn xóa phòng ban '{{name}}'?",
+      "departmentList": "Danh sách phòng ban",
+      "totalCount": "Tổng {{count}} phòng ban",
+      "emptyMessage": "Chưa có phòng ban nào.",
+      "deptCode": "Mã phòng ban",
+      "deptName": "Tên phòng ban",
+      "parentDeptCode": "Phòng ban cấp trên",
+      "sortOrder": "Thứ tự",
+      "managerName": "Trưởng phòng",
+      "remark": "Ghi chú",
+      "useYn": "Sử dụng"
+    },
     "users": {
       "title": "Quản lý người dùng",
       "subtitle": "Quản lý người dùng hệ thống.",
@@ -534,7 +567,10 @@
       "remarkPlaceholder": "Nhập ghi chú",
       "tabBom": "BOM (Vật tư)",
       "tabRouting": "Trình tự công đoạn",
-      "routingCount": "công đoạn"
+      "routingCount": "công đoạn",
+      "effectiveDate": "Ngày cơ sở",
+      "validFrom": "Ngày áp dụng",
+      "validTo": "Ngày kết thúc"
     },
     "equip": {
       "title": "Danh mục thiết bị",
@@ -605,6 +641,21 @@
       "editPartner": "Sửa đối tác",
       "excelDownload": "Tải Excel",
       "searchPlaceholder": "Tìm theo mã, tên, MST, người liên hệ..."
+    },
+    "prodLine": {
+      "title": "Quản lý dây chuyền",
+      "subtitle": "Đăng ký và quản lý thông tin dây chuyền sản xuất.",
+      "lineCode": "Mã dây chuyền",
+      "lineName": "Tên dây chuyền",
+      "oper": "Mã công đoạn",
+      "lineType": "Loại dây chuyền",
+      "whLoc": "Vị trí kho",
+      "erpCode": "Mã ERP",
+      "remark": "Ghi chú",
+      "use": "Sử dụng",
+      "addLine": "Thêm dây chuyền",
+      "editLine": "Sửa dây chuyền",
+      "searchPlaceholder": "Tìm kiếm mã, tên dây chuyền, mã công đoạn..."
     },
     "process": {
       "title": "Danh mục công đoạn",
@@ -690,6 +741,8 @@
     "equipInspect": {
       "title": "Hạng mục kiểm tra thiết bị",
       "subtitle": "Quản lý tiêu chuẩn kiểm tra hàng ngày/định kỳ thiết bị.",
+      "tabAssign": "Phân bổ thiết bị",
+      "tabMaster": "Dữ liệu chính hạng mục",
       "equipCode": "Mã thiết bị",
       "equipName": "Tên thiết bị",
       "inspectType": "Loại kiểm tra",
@@ -705,7 +758,19 @@
       "cycleMonthly": "Hàng tháng",
       "addItem": "Thêm hạng mục",
       "editItem": "Sửa hạng mục",
-      "searchPlaceholder": "Tìm mã thiết bị, hạng mục kiểm tra..."
+      "searchPlaceholder": "Tìm mã thiết bị, hạng mục kiểm tra...",
+      "equipList": "Danh sách thiết bị",
+      "selectEquip": "Chọn thiết bị",
+      "itemMasterDesc": "Quản lý kho hạng mục kiểm tra",
+      "noItems": "Không có hạng mục kiểm tra",
+      "filterByType": "Lọc theo loại",
+      "itemCode": "Mã hạng mục",
+      "judgeMethod": "Phương pháp đánh giá",
+      "measureValues": "Chuẩn/Trên/Dưới",
+      "standardValue": "Giá trị chuẩn",
+      "upperLimit": "Giới hạn trên",
+      "lowerLimit": "Giới hạn dưới",
+      "unit": "Đơn vị"
     },
     "box": {
       "title": "Quản lý thùng đóng gói",
@@ -810,6 +875,22 @@
       "delete": "Xóa",
       "templateNamePlaceholder": "Nhập tên mẫu",
       "noTemplates": "Không có mẫu đã lưu"
+    },
+    "company": {
+      "title": "Quản lý công ty",
+      "subtitle": "Đăng ký và quản lý thông tin công ty.",
+      "companyCode": "Mã công ty",
+      "companyName": "Tên công ty",
+      "bizNo": "Số đăng ký kinh doanh",
+      "ceoName": "Tên giám đốc",
+      "address": "Địa chỉ",
+      "tel": "Điện thoại",
+      "fax": "Fax",
+      "email": "Email",
+      "addCompany": "Thêm công ty",
+      "editCompany": "Sửa công ty",
+      "searchPlaceholder": "Tìm mã, tên công ty, mã số thuế...",
+      "selectCompany": "Chọn công ty"
     }
   },
   "material": {
@@ -1058,9 +1139,9 @@
       "searchPlaceholder": "Tìm mã, tên linh kiện..."
     },
     "lot": {
-      "title": "LOT vật tư",
-      "subtitle": "Quản lý LOT vật tư.",
-      "description": "Quản lý LOT vật tư.",
+      "title": "Quản lý Truy xuất LOT",
+      "subtitle": "Theo dõi và quản lý lịch sử LOT vật tư.",
+      "description": "Theo dõi và quản lý lịch sử LOT vật tư.",
       "status": {
         "normal": "Bình thường",
         "hold": "Tạm giữ",

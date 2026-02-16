@@ -15,6 +15,7 @@ import { ShieldAlert, Search, RefreshCw, Lock, Unlock, AlertTriangle, CheckCircl
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface HoldLot {
   id: string;
@@ -69,8 +70,7 @@ function HoldPage() {
 
   const columns = useMemo<ColumnDef<HoldLot>[]>(() => [
     { accessorKey: 'lotNo', header: 'LOT No.', size: 160 },
-    { accessorKey: 'partCode', header: t('material.hold.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('material.hold.partName'), size: 130 },
+    ...createPartColumns<HoldLot>(t),
     { accessorKey: 'currentQty', header: t('material.hold.currentQty'), size: 120, cell: ({ row }) => <span className="font-semibold">{row.original.currentQty.toLocaleString()} {row.original.unit}</span> },
     { accessorKey: 'vendor', header: t('material.hold.vendor'), size: 100 },
     { accessorKey: 'status', header: t('common.status'), size: 80, cell: ({ getValue }) => {

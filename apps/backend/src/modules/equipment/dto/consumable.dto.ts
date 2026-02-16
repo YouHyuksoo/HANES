@@ -92,12 +92,12 @@ export class CreateConsumableDto {
   @ApiPropertyOptional({ description: '최근 교체일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  lastReplace?: string;
+  lastReplaceAt?: string;
 
   @ApiPropertyOptional({ description: '다음 교체 예정일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  nextReplace?: string;
+  nextReplaceAt?: string;
 
   @ApiPropertyOptional({ description: '단가', example: 500000.00 })
   @IsOptional()
@@ -241,7 +241,7 @@ export class RegisterReplacementDto {
   @ApiPropertyOptional({ description: '다음 교체 예정일 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  nextReplace?: string;
+  nextReplaceAt?: string;
 
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()

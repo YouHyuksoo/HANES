@@ -83,7 +83,7 @@ async function main() {
       seq: bom.SEQ,
       revision,
       bomGrp: bom.BOMGRP,
-      oper: bom.OPER || undefined,
+      processCode: bom.OPER || undefined,
       side: bom.SIDE || undefined,
       validFrom: parseOracleDate(bom.STARTDATE),
       validTo: parseOracleDate(bom.ENDDATE),

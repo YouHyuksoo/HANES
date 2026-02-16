@@ -20,8 +20,8 @@ interface InterLog {
   retryCount: number;
   errorMsg: string | null;
   createdAt: string;
-  sendTime: string | null;
-  recvTime: string | null;
+  sendAt: string | null;
+  recvAt: string | null;
 }
 
 const mockData: InterLog[] = [
@@ -34,8 +34,8 @@ const mockData: InterLog[] = [
     retryCount: 0,
     errorMsg: null,
     createdAt: '2025-01-27 10:30:15',
-    sendTime: '2025-01-27 10:30:15',
-    recvTime: '2025-01-27 10:30:16',
+    sendAt: '2025-01-27 10:30:15',
+    recvAt: '2025-01-27 10:30:16',
   },
   {
     id: '2',
@@ -46,8 +46,8 @@ const mockData: InterLog[] = [
     retryCount: 0,
     errorMsg: null,
     createdAt: '2025-01-27 10:25:00',
-    sendTime: '2025-01-27 10:25:00',
-    recvTime: '2025-01-27 10:25:01',
+    sendAt: '2025-01-27 10:25:00',
+    recvAt: '2025-01-27 10:25:01',
   },
   {
     id: '3',
@@ -58,8 +58,8 @@ const mockData: InterLog[] = [
     retryCount: 2,
     errorMsg: 'ERP 연결 시간 초과',
     createdAt: '2025-01-27 10:15:00',
-    sendTime: '2025-01-27 10:15:00',
-    recvTime: null,
+    sendAt: '2025-01-27 10:15:00',
+    recvAt: null,
   },
   {
     id: '4',
@@ -70,8 +70,8 @@ const mockData: InterLog[] = [
     retryCount: 0,
     errorMsg: null,
     createdAt: '2025-01-27 10:10:00',
-    sendTime: '2025-01-27 10:10:00',
-    recvTime: '2025-01-27 10:10:02',
+    sendAt: '2025-01-27 10:10:00',
+    recvAt: '2025-01-27 10:10:02',
   },
   {
     id: '5',
@@ -82,8 +82,8 @@ const mockData: InterLog[] = [
     retryCount: 0,
     errorMsg: null,
     createdAt: '2025-01-27 10:05:00',
-    sendTime: null,
-    recvTime: null,
+    sendAt: null,
+    recvAt: null,
   },
 ];
 
@@ -298,7 +298,7 @@ function InterfaceLogPage() {
               </div>
               <div>
                 <p className="text-sm text-text-muted">{t('interface.log.recvTime')}</p>
-                <p className="font-medium text-text">{selectedLog.recvTime || '-'}</p>
+                <p className="font-medium text-text">{selectedLog.recvAt || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-text-muted">{t('interface.log.retryCount')}</p>

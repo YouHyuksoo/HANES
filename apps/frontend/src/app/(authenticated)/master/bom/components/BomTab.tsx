@@ -2,12 +2,12 @@
 
 /**
  * @file src/app/(authenticated)/master/bom/components/BomTab.tsx
- * @description BOM 레벨 트리뷰 탭 - DB API 연동
+ * @description BOM 레벨 트리뷰 탭 - DB API 연동 + 유효일자 필터
  *
  * 초보자 가이드:
  * 1. **API 호출**: GET /master/boms/hierarchy/:parentPartId 로 트리 데이터 조회
- * 2. **접기/펼치기**: 하위 자재가 있는 항목은 클릭으로 전개/접기 가능
- * 3. **레벨 인디케이터**: 레벨 번호 뱃지와 들여쓰기로 계층 시각화
+ * 2. **effectiveDate**: 적용일/완료일 기준 필터링 (validFrom <= date AND validTo >= date)
+ * 3. **접기/펼치기**: 하위 자재가 있는 항목은 클릭으로 전개/접기 가능
  */
 import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -31,9 +31,10 @@ interface BomTabProps {
   bomRoutingLinks?: Map<string, string>;
   onLinkRouting?: (partCode: string, routingCode: string) => void;
   onUnlinkRouting?: (partCode: string) => void;
+  effectiveDate?: string;
 }
 
-export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks, onLinkRouting, onUnlinkRouting }: BomTabProps) {
+export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks, onLinkRouting, onUnlinkRouting, effectiveDate }: BomTabProps) {
   const { t } = useTranslation();
   const [bomTree, setBomTree] = useState<BomTreeItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,16 +43,18 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
   const [editingBom, setEditingBom] = useState<BomTreeItem | null>(null);
   const [linkingItem, setLinkingItem] = useState<{ item: BomTreeItem; breadcrumb: string } | null>(null);
 
-  /** API에서 BOM 트리 조회 */
+  /** API에서 BOM 트리 조회 (유효일자 필터 포함) */
   const fetchBomTree = useCallback(async () => {
     if (!selectedParent) { setBomTree([]); return; }
     setLoading(true);
     try {
-      const res = await api.get(`/master/boms/hierarchy/${selectedParent.id}`, { params: { depth: 5 } });
+      const params: Record<string, string | number> = { depth: 5 };
+      if (effectiveDate) params.effectiveDate = effectiveDate;
+      const res = await api.get(`/master/boms/hierarchy/${selectedParent.id}`, { params });
       if (res.data.success) setBomTree(res.data.data || []);
     } catch { setBomTree([]); }
     finally { setLoading(false); }
-  }, [selectedParent]);
+  }, [selectedParent, effectiveDate]);
 
   useEffect(() => { fetchBomTree(); }, [fetchBomTree]);
 
@@ -103,7 +106,7 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
       </div>
 
       <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
-        <table className="font-data text-sm min-w-[960px]">
+        <table className="font-data text-sm min-w-[1060px]">
           <thead className="bg-background">
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-text border-b border-r border-border w-10">Lv</th>
@@ -114,14 +117,15 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
               <th className="px-4 py-3 text-right font-semibold text-text border-b border-r border-border w-28">{t("master.bom.qtyPer")}</th>
               <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-20">{t("master.bom.revision")}</th>
               <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-16">{t("master.bom.side", "사이드")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-border w-28">{t("master.bom.effectiveDate", "적용일")}</th>
+              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-28">{t("master.bom.validFrom")}</th>
+              <th className="px-4 py-3 text-center font-semibold text-text border-b border-border w-28">{t("master.bom.validTo")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
+              <tr><td colSpan={10} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
             ) : bomTree.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
+              <tr><td colSpan={10} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
             ) : (
               <BomTreeRows items={bomTree} expanded={expanded} onToggle={toggleExpand}
                 bomRoutingLinks={bomRoutingLinks} onUnlinkRouting={onUnlinkRouting}
@@ -183,6 +187,7 @@ function BomTreeRows({
         const levelColor = levelColors[item.level % levelColors.length];
         const itemBreadcrumb = breadcrumb ? `${breadcrumb} > ${item.partCode}` : `${parentCode} > ${item.partCode}`;
         const validFrom = item.validFrom ? new Date(item.validFrom).toISOString().split("T")[0] : "-";
+        const validTo = item.validTo ? new Date(item.validTo).toISOString().split("T")[0] : "-";
 
         return (
           <BomTreeRowGroup key={item.id}>
@@ -200,7 +205,7 @@ function BomTreeRows({
                     <span className="w-5 mr-2 flex justify-center"><span className="w-1.5 h-1.5 rounded-full bg-border" /></span>
                   )}
                   <Icon className={`w-4 h-4 mr-1.5 flex-shrink-0 ${cfg.color}`} />
-                  <span className="font-mono text-text font-medium">{item.partCode}</span>
+                  <span className="font-mono text-text font-medium">{item.partNo || item.partCode}</span>
                 </div>
               </td>
               <td className="px-4 py-2.5 border-r border-border text-text">
@@ -210,11 +215,12 @@ function BomTreeRows({
               <td className="px-4 py-2.5 border-r border-border text-center">
                 <span className={`inline-flex px-2 py-0.5 text-xs rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.partType}</span>
               </td>
-              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text-muted font-mono">{item.oper || "-"}</td>
+              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text-muted font-mono">{item.processCode || "-"}</td>
               <td className="px-4 py-2.5 border-r border-border text-right font-mono text-text">{item.qtyPer} {item.unit}</td>
               <td className="px-4 py-2.5 border-r border-border text-center text-text">{item.revision}</td>
               <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text-muted">{item.side || "-"}</td>
-              <td className="px-4 py-2.5 text-center text-text whitespace-nowrap">{validFrom}</td>
+              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text font-mono whitespace-nowrap">{validFrom}</td>
+              <td className="px-4 py-2.5 text-center text-xs text-text font-mono whitespace-nowrap">{validTo}</td>
             </tr>
             {hasChildren && isExpanded && (
               <BomTreeRows items={item.children!} expanded={expanded} onToggle={onToggle}

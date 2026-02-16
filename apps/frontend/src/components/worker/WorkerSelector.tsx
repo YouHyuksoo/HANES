@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ScanLine, X } from "lucide-react";
 
@@ -78,13 +78,13 @@ function WorkerSelector({ value, onChange, label }: WorkerSelectorProps) {
   const qrRef = useRef<HTMLInputElement>(null);
 
   /** 검색 필터링된 작업자 목록 */
-  const filteredWorkers = useMemo(() => {
-    if (!searchText) return [];
-    const s = searchText.toLowerCase();
-    return mockWorkers.filter(
-      (w) => w.workerName.toLowerCase().includes(s) || w.workerCode.toLowerCase().includes(s)
-    );
-  }, [searchText]);
+  const filteredWorkers = searchText
+    ? mockWorkers.filter(
+        (w) =>
+          w.workerName.toLowerCase().includes(searchText.toLowerCase()) ||
+          w.workerCode.toLowerCase().includes(searchText.toLowerCase())
+      )
+    : [];
 
   /** 작업자 선택 핸들러 */
   const handleSelect = (worker: Worker) => {

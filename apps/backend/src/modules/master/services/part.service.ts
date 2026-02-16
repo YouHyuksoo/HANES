@@ -11,12 +11,13 @@ import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 export class PartService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: PartQueryDto) {
+  async findAll(query: PartQueryDto, company?: string) {
     const { page = 1, limit = 20, partType, search, customer, useYn } = query;
     const skip = (page - 1) * limit;
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(partType && { partType }),
       ...(useYn && { useYn }),
       ...(customer && { customer: { contains: customer, mode: 'insensitive' as const } }),
@@ -76,10 +77,10 @@ export class PartService {
         safetyStock: dto.safetyStock ?? 0,
         lotUnitQty: dto.lotUnitQty,
         boxQty: dto.boxQty ?? 0,
-        iqcFlag: dto.iqcFlag ?? 'Y',
+        iqcYn: dto.iqcYn ?? 'Y',
         tactTime: dto.tactTime ?? 0,
         expiryDate: dto.expiryDate ?? 0,
-        remarks: dto.remarks,
+        remark: dto.remark,
         useYn: dto.useYn ?? 'Y',
       },
     });

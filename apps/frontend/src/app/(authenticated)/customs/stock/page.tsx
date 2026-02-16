@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { RefreshCw, Download, Search, Package } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { createPartColumns } from '@/lib/table-utils';
 import { ColumnDef } from '@tanstack/react-table';
 
 interface CustomsLot {
@@ -99,8 +100,7 @@ function CustomsStockPage() {
     () => [
       { accessorKey: 'entryNo', header: t('customs.entry.entryNo'), size: 140 },
       { accessorKey: 'lotNo', header: t('customs.stock.lotNo'), size: 130 },
-      { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
-      { accessorKey: 'partName', header: t('common.partName'), size: 150 },
+      ...createPartColumns<CustomsLot>(t),
       { accessorKey: 'origin', header: t('customs.entry.origin'), size: 70 },
       {
         accessorKey: 'qty',

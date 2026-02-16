@@ -15,6 +15,7 @@ import { Trash, Search, RefreshCw, Plus } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface ScrapRecord {
   id: string;
@@ -50,8 +51,7 @@ function ScrapPage() {
   const columns = useMemo<ColumnDef<ScrapRecord>[]>(() => [
     { accessorKey: 'transNo', header: t('material.scrap.transNo'), size: 120 },
     { accessorKey: 'lotNo', header: 'LOT No.', size: 160 },
-    { accessorKey: 'partCode', header: t('material.scrap.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('material.scrap.partName'), size: 130 },
+    ...createPartColumns<ScrapRecord>(t),
     { accessorKey: 'qty', header: t('material.scrap.qty'), size: 100, cell: ({ row }) => <span className="text-red-600 font-medium">-{row.original.qty.toLocaleString()} {row.original.unit}</span> },
     { accessorKey: 'reason', header: t('material.scrap.reason'), size: 150 },
     { accessorKey: 'transDate', header: t('material.scrap.transDate'), size: 110 },

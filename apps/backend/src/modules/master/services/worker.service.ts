@@ -15,12 +15,13 @@ import { CreateWorkerDto, UpdateWorkerDto, WorkerQueryDto } from '../dto/worker.
 export class WorkerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: WorkerQueryDto) {
+  async findAll(query: WorkerQueryDto, company?: string) {
     const { page = 1, limit = 10, search, dept, useYn } = query;
     const skip = (page - 1) * limit;
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(dept && { dept: { contains: dept, mode: 'insensitive' as const } }),
       ...(useYn && { useYn }),
       ...(search && {
@@ -55,10 +56,17 @@ export class WorkerService {
       data: {
         workerCode: dto.workerCode,
         workerName: dto.workerName,
+        engName: dto.engName,
         dept: dto.dept,
+        position: dto.position,
+        phone: dto.phone,
+        email: dto.email,
+        hireDate: dto.hireDate,
+        quitDate: dto.quitDate,
         qrCode: dto.qrCode,
         photoUrl: dto.photoUrl,
         processIds: dto.processIds ?? [],
+        remark: dto.remark,
         useYn: dto.useYn ?? 'Y',
       },
     });

@@ -12,7 +12,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import Input from "@/components/ui/Input";
@@ -27,7 +27,7 @@ interface HeaderProps {
 function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const { t } = useTranslation();
   const { isDark, toggleTheme } = useTheme();
-  const { user, logout } = useAuthStore();
+  const { user, logout, selectedCompany } = useAuthStore();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -119,6 +119,14 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
 
         {/* 언어 전환 */}
         <LanguageSwitcher />
+
+        {/* 현재 회사 표시 */}
+        {selectedCompany && (
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 rounded-md">
+            <Building className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium text-primary">{selectedCompany}</span>
+          </div>
+        )}
 
         {/* 사용자 메뉴 */}
         <div className="relative">

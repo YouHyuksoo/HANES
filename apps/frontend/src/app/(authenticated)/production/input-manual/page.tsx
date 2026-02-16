@@ -29,15 +29,15 @@ interface ManualResult {
   goodQty: number;
   defectQty: number;
   workDate: string;
-  startTime: string;
-  endTime: string;
+  startAt: string;
+  endAt: string;
   remark: string;
 }
 
 const mockData: ManualResult[] = [
-  { id: '1', orderNo: 'JO-20250126-001', partName: '메인 하네스 A', workerName: '김작업', lotNo: 'LOT-20250126-001', goodQty: 100, defectQty: 3, workDate: '2025-01-26', startTime: '09:00', endTime: '12:00', remark: '' },
-  { id: '2', orderNo: 'JO-20250126-002', partName: '서브 하네스 B', workerName: '이작업', lotNo: 'LOT-20250126-002', goodQty: 80, defectQty: 1, workDate: '2025-01-26', startTime: '13:00', endTime: '17:00', remark: '정상' },
-  { id: '3', orderNo: 'JO-20250125-001', partName: '도어 하네스 C', workerName: '박작업', lotNo: 'LOT-20250125-001', goodQty: 200, defectQty: 5, workDate: '2025-01-25', startTime: '08:00', endTime: '17:00', remark: '' },
+  { id: '1', orderNo: 'JO-20250126-001', partName: '메인 하네스 A', workerName: '김작업', lotNo: 'LOT-20250126-001', goodQty: 100, defectQty: 3, workDate: '2025-01-26', startAt: '09:00', endAt: '12:00', remark: '' },
+  { id: '2', orderNo: 'JO-20250126-002', partName: '서브 하네스 B', workerName: '이작업', lotNo: 'LOT-20250126-002', goodQty: 80, defectQty: 1, workDate: '2025-01-26', startAt: '13:00', endAt: '17:00', remark: '정상' },
+  { id: '3', orderNo: 'JO-20250125-001', partName: '도어 하네스 C', workerName: '박작업', lotNo: 'LOT-20250125-001', goodQty: 200, defectQty: 5, workDate: '2025-01-25', startAt: '08:00', endAt: '17:00', remark: '' },
 ];
 
 function InputManualPage() {
@@ -46,7 +46,7 @@ function InputManualPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
-  const [form, setForm] = useState({ orderNo: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', startTime: '', endTime: '', remark: '' });
+  const [form, setForm] = useState({ orderNo: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', startAt: '', endAt: '', remark: '' });
 
   const filteredData = useMemo(() => mockData.filter(item => {
     if (!searchText) return true;
@@ -78,7 +78,7 @@ function InputManualPage() {
     { accessorKey: 'goodQty', header: t('production.inputManual.good'), size: 80, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'defectQty', header: t('production.inputManual.defect'), size: 80, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'workDate', header: t('production.inputManual.workDate'), size: 100 },
-    { id: 'time', header: t('production.inputManual.workTime'), size: 130, cell: ({ row }) => <span className="text-text-muted">{row.original.startTime} ~ {row.original.endTime}</span> },
+    { id: 'time', header: t('production.inputManual.workTime'), size: 130, cell: ({ row }) => <span className="text-text-muted">{row.original.startAt} ~ {row.original.endAt}</span> },
   ], [t]);
 
   return (
@@ -176,8 +176,8 @@ function InputManualPage() {
             <Input label={t('production.inputManual.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
             <Input label={t('production.inputManual.goodQty')} type="number" value={form.goodQty} onChange={e => setForm(p => ({ ...p, goodQty: e.target.value }))} fullWidth />
             <Input label={t('production.inputManual.defectQty')} type="number" value={form.defectQty} onChange={e => setForm(p => ({ ...p, defectQty: e.target.value }))} fullWidth />
-            <Input label={t('production.inputManual.startTime')} type="time" value={form.startTime} onChange={e => setForm(p => ({ ...p, startTime: e.target.value }))} fullWidth />
-            <Input label={t('production.inputManual.endTime')} type="time" value={form.endTime} onChange={e => setForm(p => ({ ...p, endTime: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.startTime')} type="time" value={form.startAt} onChange={e => setForm(p => ({ ...p, startAt: e.target.value }))} fullWidth />
+            <Input label={t('production.inputManual.endTime')} type="time" value={form.endAt} onChange={e => setForm(p => ({ ...p, endAt: e.target.value }))} fullWidth />
           </div>
           <Input label={t('production.inputManual.remark')} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">

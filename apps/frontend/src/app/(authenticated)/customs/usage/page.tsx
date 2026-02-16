@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus, RefreshCw, Search, Send, CheckCircle, Clock } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { createPartColumns } from '@/lib/table-utils';
 import { ColumnDef } from '@tanstack/react-table';
 
 interface UsageReport {
@@ -98,8 +99,7 @@ function CustomsUsagePage() {
     () => [
       { accessorKey: 'reportNo', header: t('customs.usage.reportNo'), size: 130 },
       { accessorKey: 'lotNo', header: t('customs.stock.lotNo'), size: 130 },
-      { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
-      { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+      ...createPartColumns<UsageReport>(t),
       {
         accessorKey: 'usageQty',
         header: t('customs.usage.usageQty'),

@@ -18,13 +18,24 @@ export const api = axios.create({
   },
 });
 
-// 요청 인터셉터 - 토큰 추가
+// 요청 인터셉터 - 토큰 + X-Company 헤더 추가
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem("harness-token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // 선택된 회사코드를 X-Company 헤더에 추가
+    try {
+      const authData = JSON.parse(localStorage.getItem("harness-auth") || "{}");
+      if (authData?.state?.selectedCompany) {
+        config.headers["X-Company"] = authData.state.selectedCompany;
+      }
+    } catch {
+      // JSON 파싱 실패 시 무시
+    }
+
     return config;
   },
   (error) => {

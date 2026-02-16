@@ -1,0 +1,25 @@
+{
+  "success": true,
+  "data": [
+    {
+      "CLIENT": "1060",
+      "COMPANY": "40",
+      "COMPANYNAME": "\ub3d9\ubc29 ESS HNS MES",
+      "USEFLAG": "Y",
+      "REMARKS": null,
+      "CREATETIMEKEY": "20180416101356017000",
+      "CREATEUSER": "SYSOPER"
+    }
+  ],
+  "columns": [
+    "CLIENT",
+    "COMPANY",
+    "COMPANYNAME",
+    "USEFLAG",
+    "REMARKS",
+    "CREATETIMEKEY",
+    "CREATEUSER"
+  ],
+  "row_count": 1,
+  "site": "HANES"
+}

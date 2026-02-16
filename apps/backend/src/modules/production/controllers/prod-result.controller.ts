@@ -33,7 +33,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -61,8 +63,9 @@ export class ProdResultController {
   @Get()
   @ApiOperation({ summary: '생산실적 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: ProdResultQueryDto) {
-    const result = await this.prodResultService.findAll(query);
+  async findAll(@Query() query: ProdResultQueryDto, @Req() req: Request) {
+    const company = req.headers['x-company'] as string | undefined;
+    const result = await this.prodResultService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

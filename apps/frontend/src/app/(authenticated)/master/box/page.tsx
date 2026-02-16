@@ -16,6 +16,7 @@ import { Search, RefreshCw, Download, BoxIcon, Eye } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils/column-factories';
 
 interface BoxItem {
   id: string;
@@ -25,13 +26,13 @@ interface BoxItem {
   qty: number;
   palletNo?: string;
   status: string;
-  closeTime?: string;
+  closeAt?: string;
 }
 
 const mockData: BoxItem[] = [
-  { id: '1', boxNo: 'BOX-20250213-001', partCode: 'H-001', partName: '메인하네스 A', qty: 50, palletNo: 'PLT-001', status: 'SHIPPED', closeTime: '2025-02-12 15:30' },
-  { id: '2', boxNo: 'BOX-20250213-002', partCode: 'H-001', partName: '메인하네스 A', qty: 50, palletNo: 'PLT-001', status: 'SHIPPED', closeTime: '2025-02-12 16:00' },
-  { id: '3', boxNo: 'BOX-20250213-003', partCode: 'H-002', partName: '서브하네스 B', qty: 100, palletNo: 'PLT-002', status: 'CLOSED', closeTime: '2025-02-13 09:30' },
+  { id: '1', boxNo: 'BOX-20250213-001', partCode: 'H-001', partName: '메인하네스 A', qty: 50, palletNo: 'PLT-001', status: 'SHIPPED', closeAt: '2025-02-12 15:30' },
+  { id: '2', boxNo: 'BOX-20250213-002', partCode: 'H-001', partName: '메인하네스 A', qty: 50, palletNo: 'PLT-001', status: 'SHIPPED', closeAt: '2025-02-12 16:00' },
+  { id: '3', boxNo: 'BOX-20250213-003', partCode: 'H-002', partName: '서브하네스 B', qty: 100, palletNo: 'PLT-002', status: 'CLOSED', closeAt: '2025-02-13 09:30' },
   { id: '4', boxNo: 'BOX-20250213-004', partCode: 'H-002', partName: '서브하네스 B', qty: 80, status: 'OPEN' },
   { id: '5', boxNo: 'BOX-20250213-005', partCode: 'H-003', partName: '도어하네스 C', qty: 30, status: 'OPEN' },
 ];
@@ -67,8 +68,7 @@ function BoxPage() {
 
   const columns = useMemo<ColumnDef<BoxItem>[]>(() => [
     { accessorKey: 'boxNo', header: t('master.box.boxNo'), size: 180, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+    ...createPartColumns<BoxItem>(t),
     { accessorKey: 'qty', header: t('common.quantity'), size: 70, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'palletNo', header: t('master.box.palletNo'), size: 120, cell: ({ getValue }) => getValue() || '-' },
     { accessorKey: 'status', header: t('common.status'), size: 90, cell: ({ getValue }) => {
@@ -77,7 +77,7 @@ function BoxPage() {
       const label = statusLabels[val] || val;
       return <span className={`px-2 py-1 text-xs rounded-full ${color}`}>{label}</span>;
     }},
-    { accessorKey: 'closeTime', header: t('master.box.closeTime'), size: 140, cell: ({ getValue }) => getValue() || '-' },
+    { accessorKey: 'closeAt', header: t('master.box.closeTime'), size: 140, cell: ({ getValue }) => getValue() || '-' },
     { id: 'actions', header: t('common.actions'), size: 60, cell: ({ row }) => (
       <button onClick={() => { setSelectedBox(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded">
         <Eye className="w-4 h-4 text-primary" />
@@ -111,7 +111,7 @@ function BoxPage() {
               <div><span className="text-text-muted">{t('common.part')}</span><p>{selectedBox.partCode} {selectedBox.partName}</p></div>
               <div><span className="text-text-muted">{t('common.quantity')}</span><p>{selectedBox.qty.toLocaleString()}</p></div>
               <div><span className="text-text-muted">{t('master.box.palletNo')}</span><p>{selectedBox.palletNo || '-'}</p></div>
-              <div><span className="text-text-muted">{t('master.box.closeTime')}</span><p>{selectedBox.closeTime || '-'}</p></div>
+              <div><span className="text-text-muted">{t('master.box.closeTime')}</span><p>{selectedBox.closeAt || '-'}</p></div>
             </div>
           </div>
         )}

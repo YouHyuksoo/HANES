@@ -87,6 +87,7 @@
     "master.equip": "设备管理",
     "master.code": "代码管理",
     "master.partner": "合作伙伴管理",
+    "master.prodLine": "生产线管理",
     "master.process": "工序管理",
     "master.routing": "工艺路线管理",
     "master.worker": "作业者管理",
@@ -114,6 +115,16 @@
     "master.worker.deptAssembly": "组装组",
     "master.worker.deptQuality": "品质组",
     "master.worker.deptPacking": "包装组",
+    "master.worker.engName": "英文名",
+    "master.worker.position": "职位",
+    "master.worker.phone": "电话",
+    "master.worker.email": "邮箱",
+    "master.worker.hireDate": "入职日期",
+    "master.worker.quitDate": "离职日期",
+    "master.worker.remark": "备注",
+    "master.worker.workerList": "员工列表",
+    "master.worker.totalCount": "共 {{count}} 条",
+    "master.worker.emptyMessage": "暂无员工信息。",
     "master.iqcItem": "IQC检查项目管理",
     "master.iqcItem.itemCode": "项目编号",
     "master.iqcItem.judgeMethod": "判定方法",
@@ -126,11 +137,12 @@
     "master.transferRule": "仓库移动规则管理",
     "master.modelSuffix": "型号后缀管理",
     "master.warehouse": "仓库管理",
+    "master.company": "公司管理",
     "master.label": "标签管理",
     "inventory": "库存管理",
     "inventory.stock": "库存状况查询",
     "inventory.transaction": "出入库历史查询",
-    "inventory.lot": "LOT管理",
+    "inventory.lot": "LOT追溯管理",
     "material": "物料管理",
     "material.arrival": "到货管理",
     "material.iqc": "来料检验(IQC)",
@@ -176,6 +188,7 @@
     "quality.inspect": "检查管理",
     "quality.trace": "追溯查询",
     "equipment": "设备管理",
+    "equipment.master": "设备主数据管理",
     "equipment.status": "运行状况查询",
     "equipment.pm": "预防维护管理",
     "equipment.dailyInspect": "日常点检管理",
@@ -210,6 +223,7 @@
     "interface.log": "传输历史查询",
     "interface.manual": "手动传输处理",
     "system": "系统管理",
+    "system.department": "部门管理",
     "system.users": "用户管理",
     "system.commConfig": "通信设置管理"
   },
@@ -412,6 +426,25 @@
     }
   },
   "system": {
+    "department": {
+      "title": "部门管理",
+      "subtitle": "管理组织部门信息。",
+      "searchPlaceholder": "搜索部门代码/名称",
+      "addDepartment": "添加部门",
+      "editDepartment": "编辑部门",
+      "deleteDepartment": "删除部门",
+      "deleteConfirm": "确定要删除部门 '{{name}}' 吗？",
+      "departmentList": "部门列表",
+      "totalCount": "共 {{count}} 个部门",
+      "emptyMessage": "暂无部门。",
+      "deptCode": "部门代码",
+      "deptName": "部门名称",
+      "parentDeptCode": "上级部门",
+      "sortOrder": "排序",
+      "managerName": "负责人",
+      "remark": "备注",
+      "useYn": "使用"
+    },
     "users": {
       "title": "用户管理",
       "subtitle": "管理系统用户。",
@@ -534,7 +567,10 @@
       "remarkPlaceholder": "请输入备注",
       "tabBom": "BOM (材料)",
       "tabRouting": "工序顺序",
-      "routingCount": "工序数"
+      "routingCount": "工序数",
+      "effectiveDate": "基准日期",
+      "validFrom": "生效日",
+      "validTo": "失效日"
     },
     "equip": {
       "title": "设备主数据",
@@ -605,6 +641,21 @@
       "editPartner": "编辑合作伙伴",
       "excelDownload": "Excel下载",
       "searchPlaceholder": "按代码、名称、营业执照号、联系人搜索..."
+    },
+    "prodLine": {
+      "title": "生产线管理",
+      "subtitle": "注册和管理生产线信息。",
+      "lineCode": "生产线代码",
+      "lineName": "生产线名称",
+      "oper": "工序代码",
+      "lineType": "生产线类型",
+      "whLoc": "仓库位置",
+      "erpCode": "ERP代码",
+      "remark": "备注",
+      "use": "使用",
+      "addLine": "添加生产线",
+      "editLine": "编辑生产线",
+      "searchPlaceholder": "搜索生产线代码、名称、工序代码..."
     },
     "process": {
       "title": "工序主数据",
@@ -690,6 +741,8 @@
     "equipInspect": {
       "title": "设备点检项目",
       "subtitle": "管理设备日常/定期点检基准。",
+      "tabAssign": "设备分配",
+      "tabMaster": "点检项目主数据",
       "equipCode": "设备代码",
       "equipName": "设备名称",
       "inspectType": "点检类型",
@@ -705,7 +758,19 @@
       "cycleMonthly": "每月",
       "addItem": "添加项目",
       "editItem": "编辑项目",
-      "searchPlaceholder": "搜索设备代码、点检项目..."
+      "searchPlaceholder": "搜索设备代码、点检项目...",
+      "equipList": "设备列表",
+      "selectEquip": "选择设备",
+      "itemMasterDesc": "管理点检项目池",
+      "noItems": "无点检项目",
+      "filterByType": "按类型筛选",
+      "itemCode": "项目代码",
+      "judgeMethod": "判定方法",
+      "measureValues": "基准值/上限/下限",
+      "standardValue": "基准值",
+      "upperLimit": "上限",
+      "lowerLimit": "下限",
+      "unit": "单位"
     },
     "box": {
       "title": "包装箱管理",
@@ -810,6 +875,22 @@
       "delete": "删除",
       "templateNamePlaceholder": "输入模板名称",
       "noTemplates": "没有已保存的模板"
+    },
+    "company": {
+      "title": "公司管理",
+      "subtitle": "注册和管理公司信息。",
+      "companyCode": "公司代码",
+      "companyName": "公司名称",
+      "bizNo": "营业执照号",
+      "ceoName": "代表人姓名",
+      "address": "地址",
+      "tel": "电话",
+      "fax": "传真",
+      "email": "邮箱",
+      "addCompany": "添加公司",
+      "editCompany": "编辑公司",
+      "searchPlaceholder": "搜索公司代码、名称、营业执照号...",
+      "selectCompany": "请选择公司"
     }
   },
   "material": {
@@ -1058,9 +1139,9 @@
       "searchPlaceholder": "搜索零件代码、名称..."
     },
     "lot": {
-      "title": "物料LOT",
-      "subtitle": "管理物料LOT。",
-      "description": "管理物料LOT。",
+      "title": "物料LOT追溯管理",
+      "subtitle": "追踪和管理物料LOT历史。",
+      "description": "追踪和管理物料LOT历史。",
       "status": {
         "normal": "正常",
         "hold": "保留",

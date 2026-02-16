@@ -16,6 +16,7 @@ import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
+import { createPartColumns } from '@/lib/table-utils';
 
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
 const getToday = () => new Date().toISOString().slice(0, 10);
@@ -72,8 +73,7 @@ function ProgressPage() {
 
   const columns = useMemo<ColumnDef<ProgressItem>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.progress.orderNo'), size: 160 },
-    { accessorKey: 'partCode', header: t('production.progress.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('production.progress.partName'), size: 150 },
+    ...createPartColumns<ProgressItem>(t),
     { accessorKey: 'lineCode', header: t('production.progress.line'), size: 70 },
     { accessorKey: 'planQty', header: t('production.progress.planQty'), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'goodQty', header: t('production.progress.goodQty'), size: 90, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{(getValue() as number).toLocaleString()}</span> },

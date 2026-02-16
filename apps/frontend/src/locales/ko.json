@@ -87,6 +87,7 @@
     "master.equip": "설비관리",
     "master.code": "코드관리",
     "master.partner": "거래처관리",
+    "master.prodLine": "생산라인관리",
     "master.process": "공정관리",
     "master.routing": "라우팅관리",
     "master.worker": "작업자관리",
@@ -114,6 +115,16 @@
     "master.worker.deptAssembly": "조립팀",
     "master.worker.deptQuality": "품질팀",
     "master.worker.deptPacking": "포장팀",
+    "master.worker.engName": "영문명",
+    "master.worker.position": "직급",
+    "master.worker.phone": "전화번호",
+    "master.worker.email": "이메일",
+    "master.worker.hireDate": "입사일",
+    "master.worker.quitDate": "퇴사일",
+    "master.worker.remark": "비고",
+    "master.worker.workerList": "작업자 목록",
+    "master.worker.totalCount": "총 {{count}}건",
+    "master.worker.emptyMessage": "등록된 작업자가 없습니다.",
     "master.iqcItem": "IQC검사항목관리",
     "master.iqcItem.itemCode": "항목코드",
     "master.iqcItem.judgeMethod": "판정방법",
@@ -126,11 +137,12 @@
     "master.transferRule": "창고이동규칙관리",
     "master.modelSuffix": "모델접미사관리",
     "master.warehouse": "창고관리",
+    "master.company": "회사관리",
     "master.label": "라벨관리",
     "inventory": "재고관리",
     "inventory.stock": "재고현황조회",
     "inventory.transaction": "수불이력조회",
-    "inventory.lot": "LOT관리",
+    "inventory.lot": "LOT추적관리",
     "material": "자재관리",
     "material.arrival": "입하관리",
     "material.iqc": "수입검사(IQC)",
@@ -176,6 +188,7 @@
     "quality.inspect": "검사관리",
     "quality.trace": "추적성조회",
     "equipment": "설비관리",
+    "equipment.master": "설비마스터관리",
     "equipment.status": "가동현황조회",
     "equipment.pm": "예방보전관리",
     "equipment.dailyInspect": "일상점검관리",
@@ -210,6 +223,7 @@
     "interface.log": "전송이력조회",
     "interface.manual": "수동전송처리",
     "system": "시스템관리",
+    "system.department": "부서관리",
     "system.users": "사용자관리",
     "system.commConfig": "통신설정관리"
   },
@@ -412,6 +426,25 @@
     }
   },
   "system": {
+    "department": {
+      "title": "부서 관리",
+      "subtitle": "조직의 부서 정보를 관리합니다.",
+      "searchPlaceholder": "부서코드/부서명 검색",
+      "addDepartment": "부서 추가",
+      "editDepartment": "부서 수정",
+      "deleteDepartment": "부서 삭제",
+      "deleteConfirm": "'{{name}}' 부서를 삭제하시겠습니까?",
+      "departmentList": "부서 목록",
+      "totalCount": "총 {{count}}건",
+      "emptyMessage": "등록된 부서가 없습니다.",
+      "deptCode": "부서코드",
+      "deptName": "부서명",
+      "parentDeptCode": "상위부서",
+      "sortOrder": "정렬순서",
+      "managerName": "부서장",
+      "remark": "비고",
+      "useYn": "사용여부"
+    },
     "users": {
       "title": "사용자 관리",
       "subtitle": "시스템 사용자를 관리합니다.",
@@ -534,7 +567,10 @@
       "remarkPlaceholder": "비고 입력",
       "tabBom": "BOM (자재)",
       "tabRouting": "공정순서",
-      "routingCount": "공정수"
+      "routingCount": "공정수",
+      "effectiveDate": "기준일자",
+      "validFrom": "적용일",
+      "validTo": "완료일"
     },
     "equip": {
       "title": "설비마스터",
@@ -605,6 +641,21 @@
       "editPartner": "거래처 수정",
       "excelDownload": "엑셀 다운로드",
       "searchPlaceholder": "거래처코드, 거래처명, 사업자번호, 담당자로 검색..."
+    },
+    "prodLine": {
+      "title": "생산라인관리",
+      "subtitle": "생산라인 정보를 등록하고 관리합니다.",
+      "lineCode": "라인코드",
+      "lineName": "라인명",
+      "oper": "공정코드",
+      "lineType": "라인유형",
+      "whLoc": "창고위치",
+      "erpCode": "ERP코드",
+      "remark": "비고",
+      "use": "사용",
+      "addLine": "라인 추가",
+      "editLine": "라인 수정",
+      "searchPlaceholder": "라인코드, 라인명, 공정코드 검색..."
     },
     "process": {
       "title": "공정마스터",
@@ -690,6 +741,8 @@
     "equipInspect": {
       "title": "설비점검항목",
       "subtitle": "설비별 일상/정기 점검 기준을 관리합니다.",
+      "tabAssign": "설비별 할당",
+      "tabMaster": "점검항목 마스터",
       "equipCode": "설비코드",
       "equipName": "설비명",
       "inspectType": "점검유형",
@@ -705,7 +758,19 @@
       "cycleMonthly": "매월",
       "addItem": "점검항목 추가",
       "editItem": "점검항목 수정",
-      "searchPlaceholder": "설비코드, 점검항목 검색..."
+      "searchPlaceholder": "설비코드, 점검항목 검색...",
+      "equipList": "설비 목록",
+      "selectEquip": "점검 설비 선택",
+      "itemMasterDesc": "점검항목 Pool을 관리합니다",
+      "noItems": "점검항목이 없습니다",
+      "filterByType": "점검유형 필터",
+      "itemCode": "항목코드",
+      "judgeMethod": "판정방법",
+      "measureValues": "기준값/상한/하한",
+      "standardValue": "기준값",
+      "upperLimit": "상한",
+      "lowerLimit": "하한",
+      "unit": "단위"
     },
     "box": {
       "title": "포장박스관리",
@@ -810,6 +875,22 @@
       "delete": "삭제",
       "templateNamePlaceholder": "템플릿 이름 입력",
       "noTemplates": "저장된 템플릿이 없습니다"
+    },
+    "company": {
+      "title": "회사관리",
+      "subtitle": "회사 정보를 등록하고 관리합니다.",
+      "companyCode": "회사코드",
+      "companyName": "회사명",
+      "bizNo": "사업자번호",
+      "ceoName": "대표자명",
+      "address": "주소",
+      "tel": "전화번호",
+      "fax": "팩스번호",
+      "email": "이메일",
+      "addCompany": "회사 추가",
+      "editCompany": "회사 수정",
+      "searchPlaceholder": "회사코드, 회사명, 사업자번호 검색...",
+      "selectCompany": "회사를 선택하세요"
     }
   },
   "material": {
@@ -1058,9 +1139,9 @@
       "searchPlaceholder": "품목코드, 품목명 검색..."
     },
     "lot": {
-      "title": "자재LOT관리",
-      "subtitle": "자재 LOT을 관리합니다.",
-      "description": "자재 LOT을 관리합니다.",
+      "title": "자재LOT추적관리",
+      "subtitle": "자재 LOT 추적 및 이력을 관리합니다.",
+      "description": "자재 LOT 추적 및 이력을 관리합니다.",
       "status": {
         "normal": "정상",
         "hold": "보류",

@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { Timer, Search, RefreshCw, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { createPartColumns } from '@/lib/table-utils';
 import { ColumnDef } from '@tanstack/react-table';
 
 interface ShelfLifeItem {
@@ -72,8 +73,7 @@ function ShelfLifePage() {
 
   const columns = useMemo<ColumnDef<ShelfLifeItem>[]>(() => [
     { accessorKey: 'lotNo', header: 'LOT No.', size: 160 },
-    { accessorKey: 'partCode', header: t('material.shelfLife.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('material.shelfLife.partName'), size: 130 },
+    ...createPartColumns<ShelfLifeItem>(t),
     { accessorKey: 'currentQty', header: t('material.shelfLife.currentQty'), size: 110, cell: ({ row }) => <span>{row.original.currentQty.toLocaleString()} {row.original.unit}</span> },
     { accessorKey: 'expireDate', header: t('material.shelfLife.expireDate'), size: 110 },
     { accessorKey: 'remainDays', header: t('material.shelfLife.remainDays'), size: 100, cell: ({ getValue }) => {

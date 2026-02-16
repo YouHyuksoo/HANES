@@ -9,6 +9,7 @@
 
 // DTOs
 export * from './dto/response.dto';
+export * from './dto/base-query.dto';
 
 // Filters
 export * from './filters/http-exception.filter';

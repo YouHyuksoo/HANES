@@ -47,8 +47,8 @@ export interface CuttingResult {
   equipCode: string;
   workerName: string;
   reelLotNo: string;
-  startTime: string;
-  endTime: string;
+  startAt: string;
+  endAt: string;
 }
 
 /** 릴(전선 보빈) 인터페이스 */
@@ -62,7 +62,7 @@ export interface WireReel {
   totalLength: number;   // 총 길이 (m)
   usedLength: number;    // 사용 길이 (m)
   remainLength: number;  // 잔량 (m)
-  receiveDate: string;
+  receivedAt: string;
   supplier: string;
 }
 

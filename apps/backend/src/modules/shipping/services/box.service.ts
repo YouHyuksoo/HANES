@@ -41,7 +41,7 @@ export class BoxService {
   /**
    * 박스 목록 조회
    */
-  async findAll(query: BoxQueryDto) {
+  async findAll(query: BoxQueryDto, company?: string) {
     const {
       page = 1,
       limit = 10,
@@ -55,6 +55,7 @@ export class BoxService {
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(boxNo && { boxNo: { contains: boxNo, mode: 'insensitive' as const } }),
       ...(partId && { partId }),
       ...(palletId && { palletId }),
@@ -338,7 +339,7 @@ export class BoxService {
       where: { id },
       data: {
         status: 'CLOSED',
-        closeTime: new Date(),
+        closeAt: new Date(),
       },
       include: {
         part: {
@@ -371,7 +372,7 @@ export class BoxService {
       where: { id },
       data: {
         status: 'OPEN',
-        closeTime: null,
+        closeAt: null,
       },
       include: {
         part: {

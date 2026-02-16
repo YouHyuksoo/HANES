@@ -13,6 +13,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Download, BoxIcon, Package, Calendar, Layers, Truck } from 'lucide-react';
 import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
+import { createPartColumns } from '@/lib/table-utils';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 
@@ -61,8 +62,7 @@ function PackResultPage() {
     { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 100 },
     { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170 },
     { accessorKey: 'lotNo', header: t('production.packResult.lotNo'), size: 160 },
-    { accessorKey: 'partCode', header: t('production.packResult.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('production.packResult.partName'), size: 140 },
+    ...createPartColumns<PackResult>(t),
     { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'boxType', header: t('production.packResult.boxType'), size: 80 },
     { accessorKey: 'packer', header: t('production.packResult.packer'), size: 80 },

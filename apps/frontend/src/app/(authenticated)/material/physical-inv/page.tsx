@@ -15,6 +15,7 @@ import { ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCirc
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface PhysicalInvItem {
   id: string;
@@ -66,8 +67,7 @@ function PhysicalInvPage() {
 
   const columns = useMemo<ColumnDef<PhysicalInvItem>[]>(() => [
     { accessorKey: 'warehouseName', header: t('material.physicalInv.warehouse'), size: 100 },
-    { accessorKey: 'partCode', header: t('material.physicalInv.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('material.physicalInv.partName'), size: 130 },
+    ...createPartColumns<PhysicalInvItem>(t),
     { accessorKey: 'lotNo', header: 'LOT No.', size: 150 },
     { accessorKey: 'systemQty', header: t('material.physicalInv.systemQty'), size: 100, cell: ({ row }) => <span>{row.original.systemQty.toLocaleString()} {row.original.unit}</span> },
     { accessorKey: 'countedQty', header: t('material.physicalInv.countedQty'), size: 100, cell: ({ getValue, row }) => {

@@ -25,6 +25,7 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   role?: string;
+  company?: string;
 }
 
 /**
@@ -52,18 +53,22 @@ export class JwtAuthGuard implements CanActivate {
       // DB에서 userId로 사용자 조회
       const user = await this.prisma.user.findUnique({
         where: { id: token },
-        select: { id: true, email: true, role: true, status: true },
+        select: { id: true, email: true, role: true, status: true, company: true },
       });
 
       if (!user || user.status !== 'ACTIVE') {
         throw new UnauthorizedException('유효하지 않은 토큰입니다.');
       }
 
+      // X-Company 헤더에서 회사 코드 추출 (프론트엔드가 설정)
+      const companyHeader = request.headers['x-company'] as string | undefined;
+
       // 요청 객체에 사용자 정보 추가
       (request as AuthenticatedRequest).user = {
         id: user.id,
         email: user.email,
         role: user.role,
+        company: companyHeader || user.company || undefined,
       };
 
       this.logger.debug(`User authenticated: ${user.email}`);

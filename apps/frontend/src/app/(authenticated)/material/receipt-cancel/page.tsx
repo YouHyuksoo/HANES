@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { RotateCcw, Search, RefreshCw, XCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import { createPartColumns } from '@/lib/table-utils';
 import { ColumnDef } from '@tanstack/react-table';
 
 interface ReceiptTransaction {
@@ -59,8 +60,7 @@ function ReceiptCancelPage() {
   const columns = useMemo<ColumnDef<ReceiptTransaction>[]>(() => [
     { accessorKey: 'transNo', header: t('material.receiptCancel.transNo'), size: 140 },
     { accessorKey: 'transType', header: t('material.receiptCancel.transType'), size: 80, cell: ({ getValue }) => <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{getValue() as string}</span> },
-    { accessorKey: 'partCode', header: t('material.receiptCancel.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('material.receiptCancel.partName'), size: 130 },
+    ...createPartColumns<ReceiptTransaction>(t),
     { accessorKey: 'lotNo', header: 'LOT No.', size: 150 },
     { accessorKey: 'warehouseName', header: t('material.receiptCancel.warehouse'), size: 100 },
     { accessorKey: 'qty', header: t('material.receiptCancel.qty'), size: 100, cell: ({ row }) => <span className="font-medium">{row.original.qty.toLocaleString()} {row.original.unit}</span> },

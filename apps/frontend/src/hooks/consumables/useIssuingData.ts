@@ -13,7 +13,7 @@ export interface IssuingLog {
   qty: number;
   department: string | null;
   lineId: string | null;
-  equipmentId: string | null;
+  equipId: string | null;
   issueReason: string | null;
   returnReason: string | null;
   remark: string | null;
@@ -24,17 +24,17 @@ export interface IssuingLog {
 const mockData: IssuingLog[] = [
   {
     id: '1', consumableId: 'c1', consumableCode: 'MOLD-001', consumableName: '압착금형 A타입',
-    logType: 'OUT', qty: 1, department: '생산1팀', lineId: 'LINE-A', equipmentId: 'EQ-001',
+    logType: 'OUT', qty: 1, department: '생산1팀', lineId: 'LINE-A', equipId: 'EQ-001',
     issueReason: 'PRODUCTION', returnReason: null, remark: '압착라인 A 투입', createdAt: '2025-01-27 09:00',
   },
   {
     id: '2', consumableId: 'c3', consumableCode: 'JIG-001', consumableName: '조립지그 001',
-    logType: 'OUT', qty: 2, department: '생산2팀', lineId: 'LINE-B', equipmentId: null,
+    logType: 'OUT', qty: 2, department: '생산2팀', lineId: 'LINE-B', equipId: null,
     issueReason: 'REPAIR', returnReason: null, remark: '수리용 출고', createdAt: '2025-01-27 11:00',
   },
   {
     id: '3', consumableId: 'c1', consumableCode: 'MOLD-001', consumableName: '압착금형 A타입',
-    logType: 'OUT_RETURN', qty: 1, department: null, lineId: null, equipmentId: null,
+    logType: 'OUT_RETURN', qty: 1, department: null, lineId: null, equipId: null,
     issueReason: null, returnReason: '작업 종료 반납', remark: '정상 반납', createdAt: '2025-01-27 18:00',
   },
 ];

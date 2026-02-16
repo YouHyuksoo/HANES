@@ -10,6 +10,7 @@ import { Plus, Eye, RefreshCw, Search, FileText, Truck, Package, CheckCircle } f
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface SubconOrder {
   id: string;
@@ -126,8 +127,7 @@ function SubconOrderPage() {
     () => [
       { accessorKey: 'orderNo', header: t('outsourcing.order.orderNo'), size: 130 },
       { accessorKey: 'vendorName', header: t('outsourcing.order.vendor'), size: 130 },
-      { accessorKey: 'partCode', header: t('common.partCode'), size: 90 },
-      { accessorKey: 'partName', header: t('common.partName'), size: 140 },
+      ...createPartColumns<SubconOrder>(t),
       {
         accessorKey: 'orderQty',
         header: t('outsourcing.order.orderQty'),

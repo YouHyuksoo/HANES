@@ -110,7 +110,7 @@ export class CreatePartDto {
   @IsOptional()
   @IsString()
   @IsIn([...USE_YN_VALUES])
-  iqcFlag?: string;
+  iqcYn?: string;
 
   @ApiPropertyOptional({ description: '택타임 (초)', default: 0 })
   @IsOptional()
@@ -130,7 +130,7 @@ export class CreatePartDto {
   @IsOptional()
   @IsString()
   @MaxLength(4000)
-  remarks?: string;
+  remark?: string;
 
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()

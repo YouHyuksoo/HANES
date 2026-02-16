@@ -29,7 +29,7 @@ export class CreateConsumableDto {
   @ApiProperty({ description: '소모품명', maxLength: 100 })
   @IsString()
   @MaxLength(100)
-  name: string;
+  consumableName: string;
 
   @ApiPropertyOptional({ description: '카테고리', enum: ['MOLD', 'JIG', 'TOOL'] })
   @IsOptional()
@@ -185,7 +185,7 @@ export class CreateConsumableLogDto {
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
   @IsString()
-  equipmentId?: string;
+  equipId?: string;
 
   @ApiPropertyOptional({ description: '출고사유', enum: ['PRODUCTION', 'REPAIR', 'OTHER'] })
   @IsOptional()

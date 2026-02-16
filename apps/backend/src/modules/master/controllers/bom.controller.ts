@@ -8,7 +8,8 @@
  * 3. **CRUD**: 추가/수정/삭제 모두 DB에 반영
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { BomService } from '../services/bom.service';
 import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
@@ -22,8 +23,12 @@ export class BomController {
   @Get('parents')
   @ApiOperation({ summary: 'BOM 모품목(부모품목) 목록 조회' })
   @ApiQuery({ name: 'search', required: false, description: '검색어' })
-  async findParents(@Query('search') search?: string) {
-    const data = await this.bomService.findParents(search);
+  @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
+  async findParents(
+    @Query('search') search?: string,
+    @Query('effectiveDate') effectiveDate?: string,
+  ) {
+    const data = await this.bomService.findParents(search, effectiveDate);
     return ResponseUtil.success(data);
   }
 
@@ -31,22 +36,32 @@ export class BomController {
   @ApiOperation({ summary: 'BOM 계층 조회' })
   @ApiParam({ name: 'parentPartId', description: '상위 품목 ID' })
   @ApiQuery({ name: 'depth', required: false, description: '조회 깊이 (기본 3)' })
-  async findHierarchy(@Param('parentPartId') parentPartId: string, @Query('depth') depth?: number) {
-    const data = await this.bomService.findHierarchy(parentPartId, depth ?? 3);
+  @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
+  async findHierarchy(
+    @Param('parentPartId') parentPartId: string,
+    @Query('depth') depth?: number,
+    @Query('effectiveDate') effectiveDate?: string,
+  ) {
+    const data = await this.bomService.findHierarchy(parentPartId, depth ?? 3, effectiveDate);
     return ResponseUtil.success(data);
   }
 
   @Get('parent/:parentPartId')
   @ApiOperation({ summary: '상위 품목 기준 BOM 조회' })
-  async findByParentId(@Param('parentPartId') parentPartId: string) {
-    const data = await this.bomService.findByParentId(parentPartId);
+  @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
+  async findByParentId(
+    @Param('parentPartId') parentPartId: string,
+    @Query('effectiveDate') effectiveDate?: string,
+  ) {
+    const data = await this.bomService.findByParentId(parentPartId, effectiveDate);
     return ResponseUtil.success(data);
   }
 
   @Get()
   @ApiOperation({ summary: 'BOM 목록 조회' })
-  async findAll(@Query() query: BomQueryDto) {
-    const result = await this.bomService.findAll(query);
+  async findAll(@Query() query: BomQueryDto, @Req() req: Request) {
+    const company = req.headers['x-company'] as string | undefined;
+    const result = await this.bomService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

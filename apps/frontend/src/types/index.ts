@@ -11,7 +11,8 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
-  error?: string;
+  errorCode?: string;
+  timestamp?: string;
 }
 
 export interface PaginationParams {
@@ -22,11 +23,15 @@ export interface PaginationParams {
 }
 
 export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
 
 // ========================================
@@ -65,11 +70,11 @@ export interface JobOrder {
 }
 
 export type JobOrderStatus =
-  | "planned"
-  | "released"
-  | "in_progress"
-  | "completed"
-  | "canceled";
+  | "WAITING"
+  | "RUNNING"
+  | "PAUSED"
+  | "DONE"
+  | "CANCELED";
 
 export interface ProductionResult {
   id: string;
@@ -78,8 +83,8 @@ export interface ProductionResult {
   workerId: string;
   goodQty: number;
   defectQty: number;
-  startTime: string;
-  endTime?: string;
+  startAt: string;
+  endAt?: string;
   shiftCode: string;
 }
 
@@ -94,19 +99,14 @@ export interface MaterialLot {
   partName: string;
   qty: number;
   remainQty: number;
-  receiveDate: string;
+  receivedAt: string;
   expiryDate?: string;
   warehouseCode: string;
   status: MaterialStatus;
 }
 
-export type MaterialStatus =
-  | "received"
-  | "iqc_pending"
-  | "iqc_pass"
-  | "iqc_fail"
-  | "in_use"
-  | "depleted";
+/** IQC 상태 (자재 품질 검사 상태) */
+export type MaterialStatus = "PENDING" | "PASS" | "FAIL" | "HOLD";
 
 // ========================================
 // 품질 관련 타입
@@ -136,11 +136,10 @@ export interface DefectLog {
 }
 
 export type DefectStatus =
-  | "detected"
-  | "analyzing"
-  | "repair_pending"
-  | "repaired"
-  | "scrapped";
+  | "PENDING"
+  | "REPAIRING"
+  | "COMPLETED"
+  | "SCRAPPED";
 
 // ========================================
 // 설비 관련 타입
@@ -150,19 +149,38 @@ export interface Equipment {
   id: string;
   equipCode: string;
   equipName: string;
-  equipType: string;
+  equipType: EquipType;
   lineCode: string;
   status: EquipmentStatus;
   ipAddress?: string;
-  commType?: "mqtt" | "serial" | "manual";
+  commType?: CommType;
+  manufacturer?: string;
+  model?: string;
+  useYn?: UseYn;
 }
 
-export type EquipmentStatus =
-  | "running"
-  | "idle"
-  | "maintenance"
-  | "breakdown"
-  | "offline";
+/** 설비 상태 */
+export type EquipmentStatus = "NORMAL" | "MAINT" | "STOP";
+
+/** 설비 유형 */
+export type EquipType =
+  | "AUTO_CRIMP"
+  | "SINGLE_CUT"
+  | "MULTI_CUT"
+  | "TWIST"
+  | "SOLDER"
+  | "HOUSING"
+  | "TESTER"
+  | "LABEL_PRINTER"
+  | "INSPECTION"
+  | "PACKING"
+  | "OTHER";
+
+/** 통신 방식 */
+export type CommType = "MQTT" | "SERIAL" | "TCP" | "OPC_UA" | "MODBUS";
+
+/** 사용 여부 */
+export type UseYn = "Y" | "N";
 
 // ========================================
 // 메뉴/네비게이션 타입

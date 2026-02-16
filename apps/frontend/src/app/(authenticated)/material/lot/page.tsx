@@ -15,6 +15,11 @@ import { Tag, Search, RefreshCw, Eye, Layers, CheckCircle, AlertCircle, MinusCir
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import {
+  createPartColumns,
+  createQtyColumn,
+  createDateColumn,
+} from '@/lib/table-utils';
 
 interface MatLotItem {
   id: string;
@@ -104,20 +109,15 @@ export default function MatLotPage() {
   const columns = useMemo<ColumnDef<MatLotItem>[]>(
     () => [
       { accessorKey: 'lotNo', header: t('material.lot.columns.lotNo'), size: 160 },
-      { accessorKey: 'partCode', header: t('material.lot.columns.partCode'), size: 110 },
-      { accessorKey: 'partName', header: t('material.lot.columns.partName'), size: 130 },
+      ...createPartColumns<MatLotItem>(t),
       { accessorKey: 'vendor', header: t('material.lot.columns.vendor'), size: 100 },
-      { accessorKey: 'recvDate', header: t('material.lot.columns.recvDate'), size: 100 },
+      createDateColumn<MatLotItem>(t, 'recvDate', t('material.lot.columns.recvDate')),
       {
-        accessorKey: 'initQty',
-        header: t('material.lot.columns.initQty'),
-        size: 100,
+        ...createQtyColumn<MatLotItem>(t, 'initQty'),
         cell: ({ row }) => <span>{row.original.initQty.toLocaleString()} {row.original.unit}</span>,
       },
       {
-        accessorKey: 'currentQty',
-        header: t('material.lot.columns.currentQty'),
-        size: 100,
+        ...createQtyColumn<MatLotItem>(t, 'currentQty'),
         cell: ({ row }) => (
           <span className={row.original.currentQty <= 0 ? 'text-text-muted' : 'font-semibold'}>
             {row.original.currentQty.toLocaleString()} {row.original.unit}

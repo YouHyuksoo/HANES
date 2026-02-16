@@ -31,7 +31,7 @@ export class IqcItemService {
       }),
     };
 
-    const [data, total] = await Promise.all([
+    const [items, total] = await Promise.all([
       this.prisma.iqcItemMaster.findMany({
         where,
         skip,
@@ -42,6 +42,13 @@ export class IqcItemService {
       this.prisma.iqcItemMaster.count({ where }),
     ]);
 
+    // 평면화
+    const data = items.map(item => ({
+      ...item,
+      partCode: item.part?.partCode || null,
+      partName: item.part?.partName || null,
+    }));
+
     return { data, total, page, limit };
   }
 
@@ -51,7 +58,13 @@ export class IqcItemService {
       include: { part: { select: { partCode: true, partName: true } } },
     });
     if (!item) throw new NotFoundException(`IQC 검사항목을 찾을 수 없습니다: ${id}`);
-    return item;
+    
+    // 평면화
+    return {
+      ...item,
+      partCode: item.part?.partCode || null,
+      partName: item.part?.partName || null,
+    };
   }
 
   async create(dto: CreateIqcItemDto) {

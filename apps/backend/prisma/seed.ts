@@ -12,6 +12,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { seedComCodes } from './seed-com-codes';
+import { seedCompanies } from './seed-company';
 
 const prisma = new PrismaClient();
 
@@ -20,6 +21,9 @@ async function main() {
 
   // 공통코드 시드 (중앙 관리)
   await seedComCodes();
+
+  // 회사마스터 시드
+  await seedCompanies();
 
   // 기본 관리자 계정 시드
   await prisma.user.upsert({

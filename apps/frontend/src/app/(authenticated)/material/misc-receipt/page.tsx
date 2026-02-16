@@ -15,6 +15,7 @@ import { PackagePlus, Search, RefreshCw, Plus } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface MiscReceiptRecord {
   id: string;
@@ -49,8 +50,7 @@ function MiscReceiptPage() {
 
   const columns = useMemo<ColumnDef<MiscReceiptRecord>[]>(() => [
     { accessorKey: 'transNo', header: t('material.miscReceipt.transNo'), size: 120 },
-    { accessorKey: 'partCode', header: t('material.miscReceipt.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('material.miscReceipt.partName'), size: 130 },
+    ...createPartColumns<MiscReceiptRecord>(t),
     { accessorKey: 'warehouseName', header: t('material.miscReceipt.warehouse'), size: 110 },
     { accessorKey: 'qty', header: t('material.miscReceipt.qty'), size: 100, cell: ({ row }) => <span className="text-green-600 font-medium">+{row.original.qty.toLocaleString()} {row.original.unit}</span> },
     { accessorKey: 'remark', header: t('material.miscReceipt.remark'), size: 150 },

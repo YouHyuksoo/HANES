@@ -21,6 +21,24 @@ import { CreateShipReturnDto, UpdateShipReturnDto, ShipReturnQueryDto } from '..
 export class ShipReturnService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** items 배열의 part를 평면화하는 헬퍼 메서드 */
+  private flattenItems(data: any): any {
+    return {
+      ...data,
+      items: data.items?.map((item: any) => {
+        const { part, ...rest } = item;
+        return {
+          ...rest,
+          ...(part && {
+            partId: part.id,
+            partCode: part.partCode,
+            partName: part.partName,
+          }),
+        };
+      }),
+    };
+  }
+
   /** 반품 목록 조회 */
   async findAll(query: ShipReturnQueryDto) {
     const { page = 1, limit = 10, search, status, returnDateFrom, returnDateTo } = query;
@@ -58,7 +76,7 @@ export class ShipReturnService {
       this.prisma.shipmentReturn.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return { data: data.map((item) => this.flattenItems(item)), total, page, limit };
   }
 
   /** 반품 단건 조회 */
@@ -73,7 +91,7 @@ export class ShipReturnService {
       },
     });
     if (!ret) throw new NotFoundException(`반품을 찾을 수 없습니다: ${id}`);
-    return ret;
+    return this.flattenItems(ret);
   }
 
   /** 반품 생성 */
@@ -83,7 +101,7 @@ export class ShipReturnService {
     });
     if (existing) throw new ConflictException(`이미 존재하는 반품 번호입니다: ${dto.returnNo}`);
 
-    return this.prisma.shipmentReturn.create({
+    const created = await this.prisma.shipmentReturn.create({
       data: {
         returnNo: dto.returnNo,
         shipmentId: dto.shipmentId,
@@ -107,6 +125,7 @@ export class ShipReturnService {
         },
       },
     });
+    return this.flattenItems(created);
   }
 
   /** 반품 수정 */
@@ -130,7 +149,7 @@ export class ShipReturnService {
         });
       }
 
-      return tx.shipmentReturn.update({
+      const updated = await tx.shipmentReturn.update({
         where: { id },
         data: {
           ...(dto.returnNo !== undefined && { returnNo: dto.returnNo }),
@@ -147,6 +166,7 @@ export class ShipReturnService {
           },
         },
       });
+      return this.flattenItems(updated);
     });
   }
 

@@ -36,7 +36,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
 import { ConsumableService } from '../services/consumable.service';
 import {
@@ -108,8 +110,9 @@ export class ConsumableController {
   @Get()
   @ApiOperation({ summary: '소모품 목록 조회' })
   @SwaggerResponse({ status: 200, description: '소모품 목록 조회 성공' })
-  async findAll(@Query() query: ConsumableQueryDto) {
-    const result = await this.consumableService.findAll(query);
+  async findAll(@Query() query: ConsumableQueryDto, @Req() req: Request) {
+    const company = req.headers['x-company'] as string | undefined;
+    const result = await this.consumableService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

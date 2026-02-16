@@ -17,9 +17,10 @@ interface LabelGridProps {
   items: LabelItem[];
   selectedIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
+  loading?: boolean;
 }
 
-export default function LabelGrid({ items, selectedIds, onSelectionChange }: LabelGridProps) {
+export default function LabelGrid({ items, selectedIds, onSelectionChange, loading }: LabelGridProps) {
   const { t } = useTranslation();
 
   const toggleItem = useCallback((id: string) => {
@@ -52,28 +53,43 @@ export default function LabelGrid({ items, selectedIds, onSelectionChange }: Lab
             </tr>
           </thead>
           <tbody>
-            {items.map((item, idx) => (
-              <tr
-                key={item.id}
-                onClick={() => toggleItem(item.id)}
-                className={`cursor-pointer transition-colors border-b border-border last:border-b-0 ${
-                  selectedIds.has(item.id) ? "bg-primary/5" : idx % 2 === 0 ? "bg-surface" : "bg-background/50"
-                } hover:bg-primary/10`}
-              >
-                <td className="px-3 py-2.5 text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(item.id)}
-                    onChange={() => toggleItem(item.id)}
-                    className="accent-primary"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-12 text-center text-text-muted">
+                  <div className="animate-spin inline-block w-5 h-5 border-2 border-primary border-t-transparent rounded-full mb-2" />
+                  <p className="text-sm">{t("common.loading")}</p>
                 </td>
-                <td className="px-3 py-2.5 font-mono text-text">{item.code}</td>
-                <td className="px-3 py-2.5 text-text">{item.name}</td>
-                <td className="px-3 py-2.5 text-text-muted">{item.sub || "-"}</td>
               </tr>
-            ))}
+            ) : items.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-3 py-12 text-center text-text-muted text-sm">
+                  {t("common.noData")}
+                </td>
+              </tr>
+            ) : (
+              items.map((item, idx) => (
+                <tr
+                  key={item.id}
+                  onClick={() => toggleItem(item.id)}
+                  className={`cursor-pointer transition-colors border-b border-border last:border-b-0 ${
+                    selectedIds.has(item.id) ? "bg-primary/5" : idx % 2 === 0 ? "bg-surface" : "bg-background/50"
+                  } hover:bg-primary/10`}
+                >
+                  <td className="px-3 py-2.5 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => toggleItem(item.id)}
+                      className="accent-primary"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-text">{item.code}</td>
+                  <td className="px-3 py-2.5 text-text">{item.name}</td>
+                  <td className="px-3 py-2.5 text-text-muted">{item.sub || "-"}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

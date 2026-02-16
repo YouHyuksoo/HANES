@@ -36,20 +36,33 @@ export class MiscReceiptService {
         include: {
           part: { select: { id: true, partCode: true, partName: true, unit: true } },
           lot: { select: { id: true, lotNo: true } },
-          toWarehouse: { select: { id: true, warehouseName: true } },
+          toWarehouse: { select: { id: true, warehouseCode: true, warehouseName: true } },
         },
         orderBy: { transDate: 'desc' },
       }),
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    const flattenedData = data.map((item) => ({
+      ...item,
+      partCode: item.part?.partCode,
+      partName: item.part?.partName,
+      unit: item.part?.unit,
+      lotNo: item.lot?.lotNo,
+      warehouseCode: item.toWarehouse?.warehouseCode,
+      warehouseName: item.toWarehouse?.warehouseName,
+      part: undefined,
+      lot: undefined,
+      toWarehouse: undefined,
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   async create(dto: CreateMiscReceiptDto) {
     const transNo = `MISC-${Date.now().toString(36).toUpperCase()}`;
 
-    return this.prisma.stockTransaction.create({
+    const created = await this.prisma.stockTransaction.create({
       data: {
         transNo,
         transType: 'MISC_IN',
@@ -63,5 +76,18 @@ export class MiscReceiptService {
       },
       include: { part: true, lot: true, toWarehouse: true },
     });
+
+    return {
+      ...created,
+      partCode: created.part?.partCode,
+      partName: created.part?.partName,
+      unit: created.part?.unit,
+      lotNo: created.lot?.lotNo,
+      warehouseCode: created.toWarehouse?.warehouseCode,
+      warehouseName: created.toWarehouse?.warehouseName,
+      part: undefined,
+      lot: undefined,
+      toWarehouse: undefined,
+    };
   }
 }

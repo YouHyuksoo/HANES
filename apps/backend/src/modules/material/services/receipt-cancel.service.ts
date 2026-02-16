@@ -40,14 +40,27 @@ export class ReceiptCancelService {
         include: {
           part: { select: { id: true, partCode: true, partName: true, unit: true } },
           lot: { select: { id: true, lotNo: true } },
-          toWarehouse: { select: { id: true, warehouseName: true } },
+          toWarehouse: { select: { id: true, warehouseCode: true, warehouseName: true } },
         },
         orderBy: { transDate: 'desc' },
       }),
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    const flattenedData = data.map((item) => ({
+      ...item,
+      partCode: item.part?.partCode,
+      partName: item.part?.partName,
+      unit: item.part?.unit,
+      lotNo: item.lot?.lotNo,
+      warehouseCode: item.toWarehouse?.warehouseCode,
+      warehouseName: item.toWarehouse?.warehouseName,
+      part: undefined,
+      lot: undefined,
+      toWarehouse: undefined,
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   /** 입고 취소 (역분개) */
@@ -83,6 +96,16 @@ export class ReceiptCancelService {
         include: { part: true, lot: true },
       });
 
+      const flattenedCancelTx = {
+        ...cancelTx,
+        partCode: cancelTx.part?.partCode,
+        partName: cancelTx.part?.partName,
+        unit: cancelTx.part?.unit,
+        lotNo: cancelTx.lot?.lotNo,
+        part: undefined,
+        lot: undefined,
+      };
+
       if (original.lotId) {
         const lot = await tx.lot.findFirst({ where: { id: original.lotId } });
         if (lot) {
@@ -93,7 +116,7 @@ export class ReceiptCancelService {
         }
       }
 
-      return cancelTx;
+      return flattenedCancelTx;
     });
   }
 }

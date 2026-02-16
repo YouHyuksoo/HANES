@@ -3,7 +3,8 @@
  * @description 품목마스터 CRUD API 컨트롤러
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { PartService } from '../services/part.service';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
@@ -32,8 +33,9 @@ export class PartController {
 
   @Get()
   @ApiOperation({ summary: '품목 목록 조회' })
-  async findAll(@Query() query: PartQueryDto) {
-    const result = await this.partService.findAll(query);
+  async findAll(@Query() query: PartQueryDto, @Req() req: Request) {
+    const company = req.headers['x-company'] as string | undefined;
+    const result = await this.partService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

@@ -16,6 +16,26 @@ import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 export class MatIssueService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * 출고 이력 데이터를 평면화하여 반환
+   * lot, part 중첩 구조를 평면화된 필드로 변환
+   */
+  private flattenIssue(issue: any) {
+    if (!issue) return null;
+
+    const { lot, ...rest } = issue;
+
+    return {
+      ...rest,
+      lotId: lot?.id ?? null,
+      lotNo: lot?.lotNo ?? null,
+      partId: lot?.part?.id ?? null,
+      partCode: lot?.part?.partCode ?? null,
+      partName: lot?.part?.partName ?? null,
+      unit: lot?.part?.unit ?? null,
+    };
+  }
+
   async findAll(query: MatIssueQueryDto) {
     const { page = 1, limit = 10, jobOrderId, lotId, issueType, issueDateFrom, issueDateTo, status } = query;
     const skip = (page - 1) * limit;
@@ -51,7 +71,7 @@ export class MatIssueService {
       this.prisma.matIssue.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return { data: data.map(this.flattenIssue), total, page, limit };
   }
 
   async findById(id: string) {
@@ -64,7 +84,7 @@ export class MatIssueService {
     });
 
     if (!issue) throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${id}`);
-    return issue;
+    return this.flattenIssue(issue);
   }
 
   async create(dto: CreateMatIssueDto) {
@@ -133,7 +153,7 @@ export class MatIssueService {
           },
         });
 
-        results.push(issue);
+        results.push(this.flattenIssue(issue));
       }
 
       return results;

@@ -43,7 +43,19 @@ export class ScrapService {
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    const flattened = data.map((trans) => ({
+      ...trans,
+      partCode: trans.part?.partCode,
+      partName: trans.part?.partName,
+      unit: trans.part?.unit,
+      lotNo: trans.lot?.lotNo,
+      warehouseName: trans.fromWarehouse?.warehouseName,
+      part: undefined,
+      lot: undefined,
+      fromWarehouse: undefined,
+    }));
+
+    return { data: flattened, total, page, limit };
   }
 
   async create(dto: CreateScrapDto) {

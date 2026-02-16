@@ -9,15 +9,21 @@
  * 2. **useAuthStore**: Zustand 인증 스토어로 로그인/회원가입 처리
  * 3. **에러 표시**: API 에러 메시지를 폼 아래에 표시
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { LogIn, UserPlus, Factory } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, Select } from '@/components/ui';
 import { AxiosError } from 'axios';
+import { api } from '@/services/api';
 import LoginBranding from './components/LoginBranding';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
+
+interface CompanyOption {
+  companyCode: string;
+  companyName: string;
+}
 
 type TabType = 'login' | 'register';
 
@@ -28,9 +34,27 @@ function LoginPage() {
   const [tab, setTab] = useState<TabType>('login');
   const [error, setError] = useState('');
 
+  // 회사 목록
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [companyLoading, setCompanyLoading] = useState(true);
+
   // 로그인 폼
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+
+  // 페이지 로드 시 활성 회사 목록 조회
+  useEffect(() => {
+    setCompanyLoading(true);
+    api.get('/master/companies/public')
+      .then((res) => {
+        const list = res.data?.data || [];
+        setCompanies(list);
+        if (list.length > 0) setSelectedCompany(list[0].companyCode);
+      })
+      .catch(() => setCompanies([]))
+      .finally(() => setCompanyLoading(false));
+  }, []);
 
   // 회원가입 폼
   const [regEmail, setRegEmail] = useState('');
@@ -43,7 +67,7 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      await login(loginEmail, loginPassword);
+      await login(loginEmail, loginPassword, selectedCompany);
       router.replace('/dashboard');
     } catch (err) {
       const axiosErr = err as AxiosError<{ message: string }>;
@@ -126,6 +150,15 @@ function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4">
               <h2 className="text-xl font-semibold text-text mb-2">{t('auth.loginTitle')}</h2>
               <p className="text-sm text-text-muted mb-6">{t('auth.loginDesc')}</p>
+
+              <Select
+                label={t('master.company.selectCompany')}
+                options={companies.map((c) => ({ value: c.companyCode, label: `${c.companyName} (${c.companyCode})` }))}
+                value={selectedCompany}
+                onChange={setSelectedCompany}
+                placeholder={companyLoading ? t('common.loading') : t('master.company.selectCompany')}
+                fullWidth
+              />
 
               <Input
                 label={t('auth.email')}

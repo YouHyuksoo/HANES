@@ -68,11 +68,18 @@ export class ReceivingService {
       .map((lot) => {
         const receivedQty = receivedMap.get(lot.id) || 0;
         const remainingQty = lot.initQty - receivedQty;
+        const arrivalWarehouse = arrivalWhMap.get(lot.id);
         return {
           ...lot,
           receivedQty,
           remainingQty,
-          arrivalWarehouse: arrivalWhMap.get(lot.id) || null,
+          arrivalWarehouse: arrivalWarehouse || null,
+          // 평면화된 필드
+          partCode: lot.part?.partCode,
+          partName: lot.part?.partName,
+          unit: lot.part?.unit,
+          arrivalWarehouseCode: arrivalWarehouse?.id,
+          arrivalWarehouseName: arrivalWarehouse?.warehouseName,
         };
       })
       .filter((lot) => lot.remainingQty > 0);
@@ -172,7 +179,19 @@ export class ReceivingService {
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // 중첩 객체 평면화
+    const flattenedData = data.map((item) => ({
+      ...item,
+      // 평면화된 필드
+      partCode: item.part?.partCode,
+      partName: item.part?.partName,
+      unit: item.part?.unit,
+      lotNo: item.lot?.lotNo,
+      warehouseCode: item.toWarehouse?.id,
+      warehouseName: item.toWarehouse?.warehouseName,
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   /** 입고 통계 */

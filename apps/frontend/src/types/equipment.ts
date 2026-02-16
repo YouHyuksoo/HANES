@@ -1,31 +1,35 @@
 /**
- * @file src/pages/equipment/types.ts
+ * @file src/types/equipment.ts
  * @description 설비관리 페이지 공통 타입 정의
+ *
+ * @deprecated 대부분의 타입이 types/index.ts로 이동되었습니다.
+ * 새 코드에서는 types/index.ts의 타입을 사용하세요.
  */
 
-/** 설비 상태 타입 */
-export type EquipStatus = 'NORMAL' | 'MAINT' | 'STOP';
+import type {
+  Equipment,
+  EquipmentStatus,
+  EquipType,
+  UseYn,
+} from "./index";
 
-/** 설비 유형 타입 */
-export type EquipType = 'CUTTING' | 'CRIMPING' | 'ASSEMBLY' | 'INSPECTION';
+/** @deprecated UseYn으로 대체 */
+export type UseYnStatus = UseYn;
 
 /** 소모품 상태 타입 */
-export type PartStatus = 'OK' | 'WARNING' | 'REPLACE';
+export type PartStatus = "OK" | "WARNING" | "REPLACE";
 
 /** 소모품 카테고리 타입 */
-export type PartCategory = 'MOLD' | 'JIG' | 'TOOL';
+export type PartCategory = "MOLD" | "JIG" | "TOOL";
 
-/** 설비 인터페이스 */
-export interface Equipment {
-  id: string;
-  equipCode: string;
-  equipName: string;
-  equipType: EquipType;
-  lineName: string;
-  status: EquipStatus;
-  ipAddress: string;
-  remark?: string;
-}
+/** @deprecated types/index.ts의 Equipment를 사용하세요 */
+export type { Equipment };
+
+/** @deprecated types/index.ts의 EquipmentStatus를 사용하세요 */
+export type { EquipmentStatus };
+
+/** @deprecated types/index.ts의 EquipType를 사용하세요 */
+export type { EquipType };
 
 /** 소모품 인터페이스 */
 export interface ConsumablePart {
@@ -37,21 +41,28 @@ export interface ConsumablePart {
   expectedLife: number;
   status: PartStatus;
   lastReplacedAt: string;
-  equipmentCode?: string;
+  equipCode?: string;
   remark?: string;
 }
 
 /** 설비 유형 라벨 */
 export const equipTypeLabels: Record<EquipType, string> = {
-  CUTTING: '절단',
-  CRIMPING: '압착',
-  ASSEMBLY: '조립',
-  INSPECTION: '검사',
+  AUTO_CRIMP: "자동압착",
+  SINGLE_CUT: "단선절단",
+  MULTI_CUT: "다발절단",
+  TWIST: "트위스트",
+  SOLDER: "솔더링",
+  HOUSING: "하우징",
+  TESTER: "테스터",
+  LABEL_PRINTER: "라벨프린터",
+  INSPECTION: "검사",
+  PACKING: "포장",
+  OTHER: "기타",
 };
 
 /** 소모품 카테고리 라벨 */
 export const categoryLabels: Record<PartCategory, string> = {
-  MOLD: '금형',
-  JIG: '지그',
-  TOOL: '공구',
+  MOLD: "금형",
+  JIG: "지그",
+  TOOL: "공구",
 };

@@ -58,8 +58,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     safetyStock: editingPart?.safetyStock ?? 0,
     tactTime: editingPart?.tactTime ?? 0,
     expiryDate: editingPart?.expiryDate ?? 0,
-    iqcFlag: editingPart?.iqcFlag || "Y",
-    remarks: editingPart?.remarks || "",
+    iqcYn: editingPart?.iqcYn || "Y",
+    remark: editingPart?.remark || "",
   }));
   const [saving, setSaving] = useState(false);
 
@@ -80,7 +80,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         rev: form.rev || undefined,
         vendor: form.vendor || undefined,
         customer: form.customer || undefined,
-        remarks: form.remarks || undefined,
+        remark: form.remark || undefined,
         lotUnitQty: form.lotUnitQty || undefined,
       };
 
@@ -132,7 +132,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         <Input label={t("master.part.unit")} placeholder="EA, M, KG"
           value={form.unit} onChange={e => setField("unit", e.target.value)} fullWidth />
         <Select label={t("master.part.iqcFlag", "IQC대상")} options={iqcOptions}
-          value={form.iqcFlag} onChange={v => setField("iqcFlag", v)} fullWidth />
+          value={form.iqcYn} onChange={v => setField("iqcYn", v)} fullWidth />
       </div>
 
       {/* 거래처/수량 섹션 */}
@@ -161,7 +161,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
       {/* 비고 */}
       <div className="mb-4">
         <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
-          value={form.remarks} onChange={e => setField("remarks", e.target.value)} fullWidth />
+          value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
       </div>
 
       <div className="flex justify-end gap-2 pt-4 border-t border-border">

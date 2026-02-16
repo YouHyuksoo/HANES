@@ -28,7 +28,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -57,8 +59,9 @@ export class ConsumablesController {
   @Get()
   @ApiOperation({ summary: '소모품 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: ConsumableQueryDto) {
-    const result = await this.consumablesService.findAll(query);
+  async findAll(@Query() query: ConsumableQueryDto, @Req() req: Request) {
+    const company = req.headers['x-company'] as string | undefined;
+    const result = await this.consumablesService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

@@ -37,7 +37,7 @@ export class InspectResultService {
   /**
    * 검사실적 목록 조회 (페이지네이션)
    */
-  async findAll(query: InspectResultQueryDto) {
+  async findAll(query: InspectResultQueryDto, company?: string) {
     const {
       page = 1,
       limit = 20,
@@ -51,13 +51,14 @@ export class InspectResultService {
     const skip = (page - 1) * limit;
 
     const where = {
+      ...(company && { company }),
       ...(prodResultId && { prodResultId }),
       ...(serialNo && { serialNo: { contains: serialNo, mode: 'insensitive' as const } }),
       ...(inspectType && { inspectType }),
       ...(passYn && { passYn }),
       ...(startDate || endDate
         ? {
-            inspectTime: {
+            inspectAt: {
               ...(startDate && { gte: new Date(startDate) }),
               ...(endDate && { lte: new Date(endDate) }),
             },
@@ -70,7 +71,7 @@ export class InspectResultService {
         where,
         skip,
         take: limit,
-        orderBy: { inspectTime: 'desc' },
+        orderBy: { inspectAt: 'desc' },
         include: {
           prodResult: {
             select: {
@@ -133,7 +134,7 @@ export class InspectResultService {
   async findBySerialNo(serialNo: string) {
     const results = await this.prisma.inspectResult.findMany({
       where: { serialNo },
-      orderBy: { inspectTime: 'desc' },
+      orderBy: { inspectAt: 'desc' },
       include: {
         prodResult: {
           select: {
@@ -153,7 +154,7 @@ export class InspectResultService {
   async findByProdResultId(prodResultId: string) {
     const results = await this.prisma.inspectResult.findMany({
       where: { prodResultId },
-      orderBy: { inspectTime: 'asc' },
+      orderBy: { inspectAt: 'asc' },
     });
 
     return results;
@@ -181,7 +182,7 @@ export class InspectResultService {
         errorCode: dto.errorCode,
         errorDetail: dto.errorDetail,
         inspectData: dto.inspectData as Prisma.InputJsonValue ?? Prisma.JsonNull,
-        inspectTime: dto.inspectTime ? new Date(dto.inspectTime) : new Date(),
+        inspectAt: dto.inspectAt ? new Date(dto.inspectAt) : new Date(),
         inspectorId: dto.inspectorId,
       },
     });
@@ -202,7 +203,7 @@ export class InspectResultService {
             errorCode: dto.errorCode,
             errorDetail: dto.errorDetail,
             inspectData: dto.inspectData as Prisma.InputJsonValue ?? Prisma.JsonNull,
-            inspectTime: dto.inspectTime ? new Date(dto.inspectTime) : new Date(),
+            inspectAt: dto.inspectAt ? new Date(dto.inspectAt) : new Date(),
             inspectorId: dto.inspectorId,
           },
         })
@@ -226,7 +227,7 @@ export class InspectResultService {
     if (dto.errorCode !== undefined) updateData.errorCode = dto.errorCode;
     if (dto.errorDetail !== undefined) updateData.errorDetail = dto.errorDetail;
     if (dto.inspectData !== undefined) updateData.inspectData = dto.inspectData as Prisma.InputJsonValue;
-    if (dto.inspectTime !== undefined) updateData.inspectTime = new Date(dto.inspectTime);
+    if (dto.inspectAt !== undefined) updateData.inspectAt = new Date(dto.inspectAt);
     if (dto.inspectorId !== undefined) updateData.inspectorId = dto.inspectorId;
 
     return this.prisma.inspectResult.update({
@@ -261,7 +262,7 @@ export class InspectResultService {
       ...(inspectType && { inspectType }),
       ...(startDate || endDate
         ? {
-            inspectTime: {
+            inspectAt: {
               ...(startDate && { gte: new Date(startDate) }),
               ...(endDate && { lte: new Date(endDate) }),
             },
@@ -300,7 +301,7 @@ export class InspectResultService {
       inspectType: { not: null },
       ...(startDate || endDate
         ? {
-            inspectTime: {
+            inspectAt: {
               ...(startDate && { gte: new Date(startDate) }),
               ...(endDate && { lte: new Date(endDate) }),
             },
@@ -351,20 +352,20 @@ export class InspectResultService {
 
     const results = await this.prisma.inspectResult.findMany({
       where: {
-        inspectTime: { gte: startDate },
+        inspectAt: { gte: startDate },
       },
       select: {
-        inspectTime: true,
+        inspectAt: true,
         passYn: true,
       },
-      orderBy: { inspectTime: 'asc' },
+      orderBy: { inspectAt: 'asc' },
     });
 
     // 일별 집계
     const dailyStats = new Map<string, { total: number; pass: number }>();
 
     results.forEach((r) => {
-      const dateKey = r.inspectTime.toISOString().split('T')[0];
+      const dateKey = r.inspectAt.toISOString().split('T')[0];
       const current = dailyStats.get(dateKey) ?? { total: 0, pass: 0 };
       current.total++;
       if (r.passYn === 'Y') current.pass++;

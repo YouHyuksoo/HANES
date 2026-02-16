@@ -22,11 +22,47 @@ export class CreateWorkerDto {
   @MaxLength(100)
   workerName: string;
 
+  @ApiPropertyOptional({ description: '영문 이름' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  engName?: string;
+
   @ApiPropertyOptional({ description: '부서' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   dept?: string;
+
+  @ApiPropertyOptional({ description: '직급/직위' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  position?: string;
+
+  @ApiPropertyOptional({ description: '전화번호' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  phone?: string;
+
+  @ApiPropertyOptional({ description: '이메일' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  email?: string;
+
+  @ApiPropertyOptional({ description: '입사일 (YYYYMMDD)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(8)
+  hireDate?: string;
+
+  @ApiPropertyOptional({ description: '퇴사일 (YYYYMMDD)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(8)
+  quitDate?: string;
 
   @ApiPropertyOptional({ description: 'QR 코드' })
   @IsOptional()
@@ -43,6 +79,11 @@ export class CreateWorkerDto {
   @IsOptional()
   @IsArray()
   processIds?: string[];
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  remark?: string;
 
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
@@ -66,8 +107,8 @@ export class WorkerQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(500)
+  limit?: number = 50;
 
   @ApiPropertyOptional()
   @IsOptional()

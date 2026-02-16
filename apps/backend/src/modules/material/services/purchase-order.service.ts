@@ -46,7 +46,18 @@ export class PurchaseOrderService {
       this.prisma.purchaseOrder.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    const flattenedData = data.map((po) => ({
+      ...po,
+      items: po.items.map((item) => ({
+        ...item,
+        partCode: item.part?.partCode,
+        partName: item.part?.partName,
+        unit: item.part?.unit,
+        part: undefined,
+      })),
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   async findById(id: string) {
@@ -57,7 +68,17 @@ export class PurchaseOrderService {
       },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
-    return po;
+
+    return {
+      ...po,
+      items: po.items.map((item) => ({
+        ...item,
+        partCode: item.part?.partCode,
+        partName: item.part?.partName,
+        unit: item.part?.unit,
+        part: undefined,
+      })),
+    };
   }
 
   async create(dto: CreatePurchaseOrderDto) {
@@ -70,7 +91,7 @@ export class PurchaseOrderService {
       return sum + (item.orderQty * (item.unitPrice ?? 0));
     }, 0);
 
-    return this.prisma.purchaseOrder.create({
+    const created = await this.prisma.purchaseOrder.create({
       data: {
         poNo: dto.poNo,
         partnerId: dto.partnerId,
@@ -90,6 +111,17 @@ export class PurchaseOrderService {
       },
       include: { items: { include: { part: true } } },
     });
+
+    return {
+      ...created,
+      items: created.items.map((item) => ({
+        ...item,
+        partCode: item.part?.partCode,
+        partName: item.part?.partName,
+        unit: item.part?.unit,
+        part: undefined,
+      })),
+    };
   }
 
   async update(id: string, dto: UpdatePurchaseOrderDto) {
@@ -128,7 +160,8 @@ export class PurchaseOrderService {
         });
       }
 
-      return this.findById(id);
+      const updated = await this.findById(id);
+      return updated;
     });
   }
 

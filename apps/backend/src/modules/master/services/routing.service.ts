@@ -32,7 +32,7 @@ export class RoutingService {
       }),
     };
 
-    const [data, total] = await Promise.all([
+    const [items, total] = await Promise.all([
       this.prisma.processMap.findMany({
         where,
         skip,
@@ -43,6 +43,12 @@ export class RoutingService {
       this.prisma.processMap.count({ where }),
     ]);
 
+    const data = items.map(item => ({
+      ...item,
+      partCode: item.part?.partCode || null,
+      partName: item.part?.partName || null,
+    }));
+
     return { data, total, page, limit };
   }
 
@@ -52,7 +58,12 @@ export class RoutingService {
       include: { part: { select: { partCode: true, partName: true } } },
     });
     if (!item) throw new NotFoundException(`라우팅을 찾을 수 없습니다: ${id}`);
-    return item;
+
+    return {
+      ...item,
+      partCode: item.part?.partCode || null,
+      partName: item.part?.partName || null,
+    };
   }
 
   async create(dto: CreateRoutingDto) {

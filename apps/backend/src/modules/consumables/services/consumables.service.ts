@@ -30,19 +30,20 @@ export class ConsumablesService {
   // 소모품 마스터
   // ============================================================================
 
-  async findAll(query: ConsumableQueryDto) {
+  async findAll(query: ConsumableQueryDto, company?: string) {
     const { page = 1, limit = 10, category, status, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(category && { category }),
       ...(status && { status }),
       ...(useYn && { useYn }),
       ...(search && {
         OR: [
           { consumableCode: { contains: search, mode: 'insensitive' as const } },
-          { name: { contains: search, mode: 'insensitive' as const } },
+          { consumableName: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
     };
@@ -90,7 +91,7 @@ export class ConsumablesService {
     return this.prisma.consumableMaster.create({
       data: {
         consumableCode: dto.consumableCode,
-        name: dto.name,
+        consumableName: dto.consumableName,
         category: dto.category,
         expectedLife: dto.expectedLife,
         warningCount: dto.warningCount,
@@ -122,7 +123,7 @@ export class ConsumablesService {
     return this.prisma.consumableMaster.update({
       where: { id },
       data: {
-        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.consumableName !== undefined && { consumableName: dto.consumableName }),
         ...(dto.category !== undefined && { category: dto.category }),
         ...(dto.expectedLife !== undefined && { expectedLife: dto.expectedLife }),
         ...(dto.warningCount !== undefined && { warningCount: dto.warningCount }),
@@ -183,7 +184,7 @@ export class ConsumablesService {
           consumable: {
             select: {
               consumableCode: true,
-              name: true,
+              consumableName: true,
               category: true,
             },
           },
@@ -233,7 +234,7 @@ export class ConsumablesService {
           // 출고 전용 필드
           department: dto.department,
           lineId: dto.lineId,
-          equipmentId: dto.equipmentId,
+          equipId: dto.equipId,
           issueReason: dto.issueReason,
           // 반품 공통 필드
           returnReason: dto.returnReason,
@@ -263,7 +264,7 @@ export class ConsumablesService {
       ...(search && {
         OR: [
           { consumableCode: { contains: search, mode: 'insensitive' as const } },
-          { name: { contains: search, mode: 'insensitive' as const } },
+          { consumableName: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
     };
@@ -276,7 +277,7 @@ export class ConsumablesService {
         select: {
           id: true,
           consumableCode: true,
-          name: true,
+          consumableName: true,
           category: true,
           stockQty: true,
           safetyStock: true,
@@ -339,7 +340,7 @@ export class ConsumablesService {
       data: {
         currentCount: 0,
         status: 'NORMAL',
-        lastReplace: new Date(),
+        lastReplaceAt: new Date(),
       },
     });
   }
@@ -395,7 +396,7 @@ export class ConsumablesService {
       select: {
         id: true,
         consumableCode: true,
-        name: true,
+        consumableName: true,
         category: true,
         currentCount: true,
         expectedLife: true,

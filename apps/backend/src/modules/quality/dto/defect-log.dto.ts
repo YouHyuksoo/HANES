@@ -74,7 +74,7 @@ export class CreateDefectLogDto {
   @ApiPropertyOptional({ description: '발생 시간 (ISO 8601)' })
   @IsOptional()
   @IsDateString()
-  occurTime?: string;
+  occurAt?: string;
 
   @ApiPropertyOptional({ description: '현장 사진 URL', maxLength: 500 })
   @IsOptional()

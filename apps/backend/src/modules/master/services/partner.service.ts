@@ -11,12 +11,13 @@ import { CreatePartnerDto, UpdatePartnerDto, PartnerQueryDto } from '../dto/part
 export class PartnerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: PartnerQueryDto) {
+  async findAll(query: PartnerQueryDto, company?: string) {
     const { page = 1, limit = 10, partnerType, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(partnerType && { partnerType }),
       ...(useYn && { useYn }),
       ...(search && {

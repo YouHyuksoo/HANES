@@ -58,7 +58,19 @@ export class ShipOrderService {
       this.prisma.shipmentOrder.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // items의 part를 평면화
+    const flattenedData = data.map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        partId: item.part?.id ?? item.partId,
+        partCode: item.part?.partCode,
+        partName: item.part?.partName,
+        part: undefined,
+      })),
+    }));
+
+    return { data: flattenedData, total, page, limit };
   }
 
   /** 출하지시 단건 조회 */
@@ -70,7 +82,18 @@ export class ShipOrderService {
       },
     });
     if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${id}`);
-    return order;
+
+    // items의 part를 평면화
+    return {
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        partId: item.part?.id ?? item.partId,
+        partCode: item.part?.partCode,
+        partName: item.part?.partName,
+        part: undefined,
+      })),
+    };
   }
 
   /** 출하지시 생성 */
@@ -80,7 +103,7 @@ export class ShipOrderService {
     });
     if (existing) throw new ConflictException(`이미 존재하는 출하지시 번호입니다: ${dto.shipOrderNo}`);
 
-    return this.prisma.shipmentOrder.create({
+    const order = await this.prisma.shipmentOrder.create({
       data: {
         shipOrderNo: dto.shipOrderNo,
         customerId: dto.customerId,
@@ -102,6 +125,18 @@ export class ShipOrderService {
         items: { include: { part: { select: { id: true, partCode: true, partName: true } } } },
       },
     });
+
+    // items의 part를 평면화
+    return {
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        partId: item.part?.id ?? item.partId,
+        partCode: item.part?.partCode,
+        partName: item.part?.partName,
+        part: undefined,
+      })),
+    };
   }
 
   /** 출하지시 수정 */
@@ -125,7 +160,7 @@ export class ShipOrderService {
         });
       }
 
-      return tx.shipmentOrder.update({
+      const order = await tx.shipmentOrder.update({
         where: { id },
         data: {
           ...(dto.shipOrderNo !== undefined && { shipOrderNo: dto.shipOrderNo }),
@@ -140,6 +175,18 @@ export class ShipOrderService {
           items: { include: { part: { select: { id: true, partCode: true, partName: true } } } },
         },
       });
+
+      // items의 part를 평면화
+      return {
+        ...order,
+        items: order.items.map((item) => ({
+          ...item,
+          partId: item.part?.id ?? item.partId,
+          partCode: item.part?.partCode,
+          partName: item.part?.partName,
+          part: undefined,
+        })),
+      };
     });
   }
 

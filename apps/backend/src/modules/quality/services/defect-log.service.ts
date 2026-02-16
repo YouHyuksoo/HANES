@@ -43,7 +43,7 @@ export class DefectLogService {
   /**
    * 불량로그 목록 조회 (페이지네이션)
    */
-  async findAll(query: DefectLogQueryDto) {
+  async findAll(query: DefectLogQueryDto, company?: string) {
     const {
       page = 1,
       limit = 20,
@@ -58,12 +58,13 @@ export class DefectLogService {
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(prodResultId && { prodResultId }),
       ...(defectCode && { defectCode }),
       ...(status && { status }),
       ...(startDate || endDate
         ? {
-            occurTime: {
+            occurAt: {
               ...(startDate && { gte: new Date(startDate) }),
               ...(endDate && { lte: new Date(endDate) }),
             },
@@ -82,7 +83,7 @@ export class DefectLogService {
         where,
         skip,
         take: limit,
-        orderBy: { occurTime: 'desc' },
+        orderBy: { occurAt: 'desc' },
         include: {
           prodResult: {
             select: {
@@ -157,7 +158,7 @@ export class DefectLogService {
   async findByProdResultId(prodResultId: string) {
     const defects = await this.prisma.defectLog.findMany({
       where: { prodResultId, deletedAt: null },
-      orderBy: { occurTime: 'desc' },
+      orderBy: { occurAt: 'desc' },
       include: {
         repairLogs: {
           orderBy: { createdAt: 'desc' },
@@ -192,7 +193,7 @@ export class DefectLogService {
           qty: dto.qty ?? 1,
           status: dto.status ?? 'WAIT',
           cause: dto.cause,
-          occurTime: dto.occurTime ? new Date(dto.occurTime) : new Date(),
+          occurAt: dto.occurAt ? new Date(dto.occurAt) : new Date(),
           imageUrl: dto.imageUrl,
         },
       }),
@@ -398,7 +399,7 @@ export class DefectLogService {
       deletedAt: null,
       ...(startDate || endDate
         ? {
-            occurTime: {
+            occurAt: {
               ...(startDate && { gte: new Date(startDate) }),
               ...(endDate && { lte: new Date(endDate) }),
             },
@@ -437,7 +438,7 @@ export class DefectLogService {
       deletedAt: null,
       ...(startDate || endDate
         ? {
-            occurTime: {
+            occurAt: {
               ...(startDate && { gte: new Date(startDate) }),
               ...(endDate && { lte: new Date(endDate) }),
             },
@@ -470,21 +471,21 @@ export class DefectLogService {
     const defects = await this.prisma.defectLog.findMany({
       where: {
         deletedAt: null,
-        occurTime: { gte: startDate },
+        occurAt: { gte: startDate },
       },
       select: {
-        occurTime: true,
+        occurAt: true,
         qty: true,
         defectCode: true,
       },
-      orderBy: { occurTime: 'asc' },
+      orderBy: { occurAt: 'asc' },
     });
 
     // 일별 집계
     const dailyStats = new Map<string, { count: number; totalQty: number }>();
 
     defects.forEach((d) => {
-      const dateKey = d.occurTime.toISOString().split('T')[0];
+      const dateKey = d.occurAt.toISOString().split('T')[0];
       const current = dailyStats.get(dateKey) ?? { count: 0, totalQty: 0 };
       current.count++;
       current.totalQty += d.qty;
@@ -507,7 +508,7 @@ export class DefectLogService {
         deletedAt: null,
         status: { in: ['WAIT', 'REPAIR', 'REWORK'] },
       },
-      orderBy: { occurTime: 'asc' },
+      orderBy: { occurAt: 'asc' },
       include: {
         prodResult: {
           select: {

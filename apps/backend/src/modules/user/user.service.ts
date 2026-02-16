@@ -18,9 +18,10 @@ export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 사용자 목록 조회 (검색/필터) */
-  async findAll(query?: { search?: string; role?: string; status?: string }) {
+  async findAll(query?: { search?: string; role?: string; status?: string }, company?: string) {
     const where: Record<string, unknown> = {
       deletedAt: null,
+      ...(company && { company }),
     };
 
     if (query?.role) {
@@ -47,7 +48,7 @@ export class UserService {
         dept: true,
         role: true,
         status: true,
-        lastLogin: true,
+        lastLoginAt: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -66,7 +67,7 @@ export class UserService {
         dept: true,
         role: true,
         status: true,
-        lastLogin: true,
+        lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
       },

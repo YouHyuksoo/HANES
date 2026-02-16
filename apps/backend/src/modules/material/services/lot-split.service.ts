@@ -42,7 +42,15 @@ export class LotSplitService {
       this.prisma.lot.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    const flattened = data.map((lot) => ({
+      ...lot,
+      partCode: lot.part?.partCode,
+      partName: lot.part?.partName,
+      unit: lot.part?.unit,
+      part: undefined,
+    }));
+
+    return { data: flattened, total, page, limit };
   }
 
   /** LOT 분할 실행 */

@@ -15,6 +15,7 @@ import { SlidersHorizontal, Search, RefreshCw, Plus, TrendingUp, TrendingDown } 
 import { Card, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface AdjustmentRecord {
   id: string;
@@ -51,8 +52,7 @@ function AdjustmentPage() {
 
   const columns = useMemo<ColumnDef<AdjustmentRecord>[]>(() => [
     { accessorKey: 'warehouseCode', header: t('material.adjustment.warehouse'), size: 80 },
-    { accessorKey: 'partCode', header: t('material.adjustment.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('material.adjustment.partName'), size: 130 },
+    ...createPartColumns<AdjustmentRecord>(t),
     { accessorKey: 'adjType', header: t('material.adjustment.adjType'), size: 80, cell: ({ getValue }) => {
       const type = getValue() as string;
       return type === 'INCREASE'

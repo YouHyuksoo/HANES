@@ -1,0 +1,49 @@
+{
+  "output": {
+    "filePath": "repomix-hanes-mes-clean.md",
+    "style": "markdown",
+    "removeComments": false,
+    "removeEmptyLines": false
+  },
+  "ignore": {
+    "customPatterns": [
+      "repomix*.md",
+      "**/*.json",
+      "!package.json",
+      "!tsconfig.json",
+      "!**/locales/*.json",
+      "**/.env*",
+      "**/dist/**",
+      "**/build/**",
+      "**/.next/**",
+      "**/node_modules/**",
+      "**/*.log",
+      "**/*.lock",
+      "**/pnpm-lock.yaml",
+      "**/.git/**",
+      "**/.claude/**",
+      "**/coverage/**",
+      "**/__tests__/**",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/playwright-report/**",
+      "**/.playwright-mcp/**",
+      "**/harness.xlsx",
+      "**/*.bat"
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.prisma",
+    "**/package.json",
+    "**/tsconfig.json",
+    "**/locales/*.json",
+    "**/*.md",
+    "!node_modules/**"
+  ]
+}

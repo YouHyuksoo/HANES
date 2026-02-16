@@ -9,8 +9,14 @@ import { useTranslation } from 'react-i18next';
 import { Package, RefreshCw, Search, Download, CheckCircle, Layers, Hash } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
+import { ColumnDef, CellContext } from '@tanstack/react-table';
 import { api } from '@/services/api';
+import {
+  createPartColumns,
+  createWarehouseColumns,
+  createQtyColumn,
+  createDateColumn,
+} from '@/lib/table-utils';
 
 interface StockData {
   id: string;
@@ -110,13 +116,14 @@ export default function InventoryStockPage() {
     });
   }, [stocks, filters.partCode]);
 
-  const columns: ColumnDef<StockData>[] = useMemo(() => [
+  const columns: ColumnDef<StockData>[] = [
+    // 창고 유형 배지
     {
       accessorKey: 'warehouseType',
       header: t('inventory.stock.warehouseType'),
       size: 100,
-      cell: ({ row }) => {
-        const type = row.original.warehouse.warehouseType;
+      cell: ({ getValue }: CellContext<StockData, unknown>) => {
+        const type = getValue() as string;
         return (
           <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(type)}`}>
             {type}
@@ -124,71 +131,49 @@ export default function InventoryStockPage() {
         );
       },
     },
-    {
-      accessorKey: 'warehouseCode',
-      header: t('inventory.stock.warehouseCode'),
-      size: 120,
-      cell: ({ row }) => row.original.warehouse.warehouseCode,
-    },
-    {
-      accessorKey: 'warehouseName',
-      header: t('inventory.stock.warehouseName'),
-      size: 150,
-      cell: ({ row }) => row.original.warehouse.warehouseName,
-    },
-    {
-      accessorKey: 'partCode',
-      header: t('inventory.stock.partCode'),
-      size: 120,
-      cell: ({ row }) => row.original.part.partCode,
-    },
-    {
-      accessorKey: 'partName',
-      header: t('inventory.stock.partName'),
-      size: 180,
-      cell: ({ row }) => row.original.part.partName,
-    },
+    // 창고 코드, 명 (공통 유틸리티)
+    ...createWarehouseColumns<StockData>(t),
+    // 품목 코드, 명 (공통 유틸리티)
+    ...createPartColumns<StockData>(t),
+    // LOT 번호
     {
       accessorKey: 'lotNo',
       header: t('inventory.stock.lot'),
       size: 150,
-      cell: ({ row }) => row.original.lot?.lotNo || '-',
+      cell: ({ getValue }: CellContext<StockData, unknown>) => getValue() || '-',
     },
+    // 현재고
+    createQtyColumn<StockData>(t, 'qty'),
+    // 예약수량
     {
-      accessorKey: 'qty',
-      header: t('inventory.stock.currentStock'),
-      size: 100,
-      cell: ({ row }) => row.original.qty.toLocaleString(),
-    },
-    {
-      accessorKey: 'reservedQty',
+      ...createQtyColumn<StockData>(t, 'reservedQty'),
       header: t('inventory.stock.reserved'),
       size: 80,
-      cell: ({ row }) => row.original.reservedQty.toLocaleString(),
     },
+    // 가용수량 (커스텀 색상)
     {
       accessorKey: 'availableQty',
       header: t('inventory.stock.available'),
       size: 100,
-      cell: ({ row }) => (
-        <span className={row.original.availableQty <= 0 ? 'text-red-500 font-semibold' : 'text-green-600 font-semibold'}>
-          {row.original.availableQty.toLocaleString()}
-        </span>
-      ),
+      cell: ({ getValue }: CellContext<StockData, unknown>) => {
+        const value = getValue() as number;
+        return (
+          <span className={value <= 0 ? 'text-red-500 font-semibold' : 'text-green-600 font-semibold'}>
+            {value.toLocaleString()}
+          </span>
+        );
+      },
+      meta: { align: 'right' },
     },
+    // 단위
     {
       accessorKey: 'unit',
       header: t('inventory.stock.unit'),
       size: 60,
-      cell: ({ row }) => row.original.part.unit,
     },
-    {
-      accessorKey: 'lastTransAt',
-      header: t('inventory.stock.lastTransaction'),
-      size: 150,
-      cell: ({ row }) => row.original.lastTransAt ? new Date(row.original.lastTransAt).toLocaleString() : '-',
-    },
-  ], [t]);
+    // 마지막 거래일 (공통 유틸리티)
+    createDateColumn<StockData>(t, 'lastTransAt', t('inventory.stock.lastTransaction'), { size: 150 }),
+  ];
 
   // 통계 계산
   const totalStock = stocks.reduce((sum, s) => sum + s.qty, 0);

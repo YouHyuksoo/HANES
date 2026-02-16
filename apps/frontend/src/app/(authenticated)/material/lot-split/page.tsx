@@ -15,6 +15,7 @@ import { Scissors, Search, RefreshCw, GitBranch } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import { createPartColumns } from '@/lib/table-utils';
 
 interface SplittableLot {
   id: string;
@@ -50,8 +51,7 @@ function LotSplitPage() {
 
   const columns = useMemo<ColumnDef<SplittableLot>[]>(() => [
     { accessorKey: 'lotNo', header: 'LOT No.', size: 160 },
-    { accessorKey: 'partCode', header: t('material.lotSplit.partCode'), size: 110 },
-    { accessorKey: 'partName', header: t('material.lotSplit.partName'), size: 130 },
+    ...createPartColumns<SplittableLot>(t),
     { accessorKey: 'currentQty', header: t('material.lotSplit.currentQty'), size: 120, cell: ({ row }) => <span className="font-semibold">{row.original.currentQty.toLocaleString()} {row.original.unit}</span> },
     { accessorKey: 'vendor', header: t('material.lotSplit.vendor'), size: 100 },
     { id: 'actions', header: '', size: 80, cell: ({ row }) => (

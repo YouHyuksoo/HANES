@@ -9,7 +9,8 @@
  * 4. **DELETE /master/workers/:id**: 작업자 삭제
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { WorkerService } from '../services/worker.service';
 import { CreateWorkerDto, UpdateWorkerDto, WorkerQueryDto } from '../dto/worker.dto';
@@ -22,8 +23,9 @@ export class WorkerController {
 
   @Get()
   @ApiOperation({ summary: '작업자 목록 조회' })
-  async findAll(@Query() query: WorkerQueryDto) {
-    const result = await this.workerService.findAll(query);
+  async findAll(@Query() query: WorkerQueryDto, @Req() req: Request) {
+    const company = req.headers['x-company'] as string | undefined;
+    const result = await this.workerService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

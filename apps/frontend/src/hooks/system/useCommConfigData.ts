@@ -7,7 +7,7 @@
  * 2. **useCommConfigsByType**: 다른 페이지에서 유형별 드롭다운 용도
  */
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import api from "@/services/api";
 
 /** 통신설정 데이터 인터페이스 */
@@ -100,17 +100,15 @@ export function useCommConfigData() {
   }, [fetchConfigs]);
 
   /** 통계 */
-  const stats = useMemo(() => {
-    const active = configs.filter((c) => c.useYn === "Y");
-    return {
-      total: configs.length,
-      serialCount: active.filter((c) => c.commType === "SERIAL").length,
-      tcpCount: active.filter((c) => c.commType === "TCP").length,
-      otherCount: active.filter(
-        (c) => !["SERIAL", "TCP"].includes(c.commType)
-      ).length,
-    };
-  }, [configs]);
+  const activeConfigs = configs.filter((c) => c.useYn === "Y");
+  const stats = {
+    total: configs.length,
+    serialCount: activeConfigs.filter((c) => c.commType === "SERIAL").length,
+    tcpCount: activeConfigs.filter((c) => c.commType === "TCP").length,
+    otherCount: activeConfigs.filter(
+      (c) => !["SERIAL", "TCP"].includes(c.commType)
+    ).length,
+  };
 
   /** 새로 만들기 모달 열기 */
   const openCreateModal = useCallback(() => {

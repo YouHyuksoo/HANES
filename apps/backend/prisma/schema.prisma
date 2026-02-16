@@ -1,12 +1,10 @@
 /**
  * @file prisma/schema.prisma
  * @description HARNESS MES 시스템의 Prisma 데이터베이스 스키마
- *
  * 초보자 가이드:
  * 1. **스키마 변경 후**: pnpm db:generate 실행 필수
  * 2. **DB 동기화**: pnpm db:push 또는 pnpm db:migrate
  * 3. **Oracle 예약어 회피**: ORDER → JobOrder, LEVEL 사용 안함
- *
  * 테이블 그룹:
  * - 기준정보 (Master Data): ComCode, Plant, PartMaster, BomMaster, EquipMaster, ConsumableMaster, NumRuleMaster
  * - 생산/공정 (Production): JobOrder, ProdResult, ProcessMap, SubconResult
@@ -32,20 +30,24 @@ datasource db {
 /// 공통코드 테이블 - 시스템 전반의 코드 관리 (대/중/소 계층 구조)
 /// 사용 예: 상태코드, 불량코드, 단위코드 등
 model ComCode {
-  id          String    @id @default(cuid())
-  groupCode   String    @map("group_code")     // 그룹 코드 (예: STATUS, DEFECT_TYPE)
-  detailCode  String    @map("detail_code")    // 상세 코드 (예: WAIT, RUNNING, DONE)
-  parentCode  String?   @map("parent_code")    // 계층 구조용 부모 코드
-  codeName    String    @map("code_name")      // 코드명 (예: 대기, 진행중, 완료)
-  codeDesc    String?   @map("code_desc")      // 코드 설명
-  sortOrder   Int       @default(0) @map("sort_order")  // 정렬 순서
-  useYn       String    @default("Y") @map("use_yn")    // 사용 여부
-  attr1       String?                          // 추가 속성 1
-  attr2       String?                          // 추가 속성 2
-  attr3       String?                          // 추가 속성 3
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id         String    @id @default(cuid())
+  groupCode  String    @map("group_code") // 그룹 코드 (예: STATUS, DEFECT_TYPE)
+  detailCode String    @map("detail_code") // 상세 코드 (예: WAIT, RUNNING, DONE)
+  parentCode String?   @map("parent_code") // 계층 구조용 부모 코드
+  codeName   String    @map("code_name") // 코드명 (예: 대기, 진행중, 완료)
+  codeDesc   String?   @map("code_desc") // 코드 설명
+  sortOrder  Int       @default(0) @map("sort_order") // 정렬 순서
+  useYn      String    @default("Y") @map("use_yn") // 사용 여부
+  attr1      String? // 추가 속성 1
+  attr2      String? // 추가 속성 2
+  attr3      String? // 추가 속성 3
+  company    String?   @map("company") // 회사코드
+  plant      String?   @map("plant_cd") // 공장코드
+  createdBy  String?   @map("created_by") // 생성자
+  updatedBy  String?   @map("updated_by") // 수정자
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@unique([groupCode, detailCode])
   @@index([groupCode])
@@ -55,23 +57,27 @@ model ComCode {
 
 /// 공장/라인 테이블 - 계층형 위치 관리 (공장 > 작업장 > 라인 > 셀)
 model Plant {
-  id          String    @id @default(cuid())
-  plantCode   String    @map("plant_code")     // 공장 코드
-  shopCode    String?   @map("shop_code")      // 작업장 코드
-  lineCode    String?   @map("line_code")      // 라인 코드
-  cellCode    String?   @map("cell_code")      // 셀 코드
-  plantName   String    @map("plant_name")     // 공장/라인명
-  plantType   String?   @map("plant_type")     // 타입 (PLANT, SHOP, LINE, CELL)
-  parentId    String?   @map("parent_id")      // 상위 위치 ID
-  sortOrder   Int       @default(0) @map("sort_order")
-  useYn       String    @default("Y") @map("use_yn")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id        String    @id @default(cuid())
+  plantCode String    @map("plant_code") // 공장 코드
+  shopCode  String?   @map("shop_code") // 작업장 코드
+  lineCode  String?   @map("line_code") // 라인 코드
+  cellCode  String?   @map("cell_code") // 셀 코드
+  plantName String    @map("plant_name") // 공장/라인명
+  plantType String?   @map("plant_type") // 타입 (PLANT, SHOP, LINE, CELL)
+  parentId  String?   @map("parent_id") // 상위 위치 ID
+  sortOrder Int       @default(0) @map("sort_order")
+  useYn     String    @default("Y") @map("use_yn")
+  company   String?   @map("company") // 회사코드
+  plant     String?   @map("plant_cd") // 공장코드
+  createdBy String?   @map("created_by") // 생성자
+  updatedBy String?   @map("updated_by") // 수정자
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Self relation for hierarchy
-  parent      Plant?    @relation("PlantHierarchy", fields: [parentId], references: [id])
-  children    Plant[]   @relation("PlantHierarchy")
+  parent   Plant?  @relation("PlantHierarchy", fields: [parentId], references: [id])
+  children Plant[] @relation("PlantHierarchy")
 
   @@unique([plantCode, shopCode, lineCode, cellCode])
   @@index([plantType])
@@ -79,53 +85,81 @@ model Plant {
   @@map("plants")
 }
 
+/// 회사마스터 테이블 - 멀티회사 관리
+model CompanyMaster {
+  id          String    @id @default(cuid())
+  companyCode String    @unique @map("company_code") // 회사 코드
+  companyName String    @map("company_name") // 회사명
+  bizNo       String?   @map("biz_no") // 사업자번호
+  ceoName     String?   @map("ceo_name") // 대표자명
+  address     String? // 주소
+  tel         String? // 전화번호
+  fax         String? // 팩스번호
+  email       String? // 이메일
+  remark      String? // 비고
+  useYn       String    @default("Y") @map("use_yn") // 사용 여부
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by")
+  updatedBy   String?   @map("updated_by")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@map("company_masters")
+}
+
 /// 품목마스터 테이블 - ERP 연동 품목 정보
 model PartMaster {
   id          String    @id @default(cuid())
-  partCode    String    @unique @map("part_code")   // 품목 코드 (ERP 동기화)
-  partName    String    @map("part_name")           // 품목명
-  partNo      String?   @map("part_no")             // 품번 (Part Number) - Oracle PARTNO
-  custPartNo  String?   @map("cust_part_no")        // 고객사 품번 - Oracle CUSTPARTNO
-  partType    String    @map("part_type")           // 품목 유형 (RAW, WIP, FG)
-  productType String?   @map("product_type")        // 제품유형 코드 - Oracle PRODUCTTYPE
-  spec        String?                               // 규격
-  rev         String?                               // 리비전 - Oracle REV
-  unit        String    @default("EA")              // 단위
-  drawNo      String?   @map("draw_no")             // 도면 번호
-  customer    String?                               // 고객사
-  vendor      String?                               // 공급업체
-  leadTime    Int       @default(0) @map("lead_time")       // 리드타임 (일)
-  safetyStock Int       @default(0) @map("safety_stock")    // 안전재고
-  lotUnitQty  Int?      @map("lot_unit_qty")        // LOT 단위수량 - Oracle LOTUNITQTY
-  boxQty      Int       @default(0) @map("box_qty")         // 박스 입수량 - Oracle BOXQTY
-  iqcFlag     String    @default("Y") @map("iqc_flag")      // IQC 대상여부 (Y/N) - Oracle IQCFLAG
-  tactTime    Int       @default(0) @map("tact_time")       // 택타임 (초) - Oracle TACTTIME
-  expiryDate  Int       @default(0) @map("expiry_date")     // 유효기간 (일) - Oracle EXPIRYDATE
-  remarks     String?                               // 비고 - Oracle REMARKS
+  partCode    String    @unique @map("part_code") // 품목 코드 (ERP 동기화)
+  partName    String    @map("part_name") // 품목명
+  partNo      String?   @map("part_no") // 품번 (Part Number) - Oracle PARTNO
+  custPartNo  String?   @map("cust_part_no") // 고객사 품번 - Oracle CUSTPARTNO
+  partType    String    @map("part_type") // 품목 유형 (RAW, WIP, FG)
+  productType String?   @map("product_type") // 제품유형 코드 - Oracle PRODUCTTYPE
+  spec        String? // 규격
+  rev         String? // 리비전 - Oracle REV
+  unit        String    @default("EA") // 단위
+  drawNo      String?   @map("draw_no") // 도면 번호
+  customer    String? // 고객사
+  vendor      String? // 공급업체
+  leadTime    Int       @default(0) @map("lead_time") // 리드타임 (일)
+  safetyStock Int       @default(0) @map("safety_stock") // 안전재고
+  lotUnitQty  Int?      @map("lot_unit_qty") // LOT 단위수량 - Oracle LOTUNITQTY
+  boxQty      Int       @default(0) @map("box_qty") // 박스 입수량 - Oracle BOXQTY
+  iqcYn       String    @default("Y") @map("iqc_flag") // IQC 대상여부 (Y/N) - Oracle IQCFLAG
+  tactTime    Int       @default(0) @map("tact_time") // 택타임 (초) - Oracle TACTTIME
+  expiryDate  Int       @default(0) @map("expiry_date") // 유효기간 (일) - Oracle EXPIRYDATE
+  remark      String?   @map("remarks") // 비고 - Oracle REMARKS
   useYn       String    @default("Y") @map("use_yn")
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  bomParents        BomMaster[]         @relation("BomParent")
-  bomChildren       BomMaster[]         @relation("BomChild")
-  jobOrders         JobOrder[]
-  lots              Lot[]
-  stocks            Stock[]
-  stockTransactions StockTransaction[]
-  matLots           MatLot[]
-  matStocks         MatStock[]
-  processMaps       ProcessMap[]
-  subconResults     SubconResult[]
-  boxMasters        BoxMaster[]
-  iqcItems          IqcItemMaster[]
-  workInstructions  WorkInstruction[]
-  purchaseOrderItems PurchaseOrderItem[]
-  iqcLogs           IqcLog[]
-  shipmentOrderItems ShipmentOrderItem[]
+  bomParents          BomMaster[]          @relation("BomParent")
+  bomChildren         BomMaster[]          @relation("BomChild")
+  jobOrders           JobOrder[]
+  lots                Lot[]
+  stocks              Stock[]
+  stockTransactions   StockTransaction[]
+  matLots             MatLot[]
+  matStocks           MatStock[]
+  processMaps         ProcessMap[]
+  subconResults       SubconResult[]
+  boxMasters          BoxMaster[]
+  iqcItems            IqcItemMaster[]
+  workInstructions    WorkInstruction[]
+  purchaseOrderItems  PurchaseOrderItem[]
+  iqcLogs             IqcLog[]
+  shipmentOrderItems  ShipmentOrderItem[]
   shipmentReturnItems ShipmentReturnItem[]
-  customerOrderItems CustomerOrderItem[]
+  customerOrderItems  CustomerOrderItem[]
 
   @@index([partType])
   @@index([customer])
@@ -134,27 +168,31 @@ model PartMaster {
 
 /// BOM 테이블 - 부모-자식 관계, ECO 리비전 관리
 model BomMaster {
-  id            String    @id @default(cuid())
-  parentPartId  String    @map("parent_part_id")    // 상위 품목 ID
-  childPartId   String    @map("child_part_id")     // 하위 품목 ID
-  qtyPer        Decimal   @map("qty_per") @db.Decimal(10, 4)  // 단위 소요량
-  seq           Int       @default(0)               // BOM 순서 - Oracle SEQ
-  revision      String    @default("A")             // BOM 리비전
-  bomGrp        String?   @map("bom_grp")           // BOM 그룹코드 - Oracle BOMGRP
-  oper          String?                             // 공정코드 - Oracle OPER
-  side          String?                             // 사이드 (N/L/R) - Oracle SIDE
-  ecoNo         String?   @map("eco_no")            // ECO 번호
-  validFrom     DateTime? @map("valid_from") @db.Date  // 유효 시작일
-  validTo       DateTime? @map("valid_to") @db.Date    // 유효 종료일
-  remark        String?                             // 비고
-  useYn         String    @default("Y") @map("use_yn")
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  parentPartId String    @map("parent_part_id") // 상위 품목 ID
+  childPartId  String    @map("child_part_id") // 하위 품목 ID
+  qtyPer       Decimal   @map("qty_per") @db.Decimal(10, 4) // 단위 소요량
+  seq          Int       @default(0) // BOM 순서 - Oracle SEQ
+  revision     String    @default("A") // BOM 리비전
+  bomGrp       String?   @map("bom_grp") // BOM 그룹코드 - Oracle BOMGRP
+  processCode  String?   @map("oper") // 공정코드 - Oracle OPER
+  side         String? // 사이드 (N/L/R) - Oracle SIDE
+  ecoNo        String?   @map("eco_no") // ECO 번호
+  validFrom    DateTime? @map("valid_from") @db.Date // 유효 시작일
+  validTo      DateTime? @map("valid_to") @db.Date // 유효 종료일
+  remark       String? // 비고
+  useYn        String    @default("Y") @map("use_yn")
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  parentPart    PartMaster @relation("BomParent", fields: [parentPartId], references: [id])
-  childPart     PartMaster @relation("BomChild", fields: [childPartId], references: [id])
+  parentPart PartMaster @relation("BomParent", fields: [parentPartId], references: [id])
+  childPart  PartMaster @relation("BomChild", fields: [childPartId], references: [id])
 
   @@unique([parentPartId, childPartId, revision])
   @@index([parentPartId])
@@ -166,28 +204,32 @@ model BomMaster {
 /// 설비마스터 테이블 - 설비 정보 및 통신 설정
 model EquipMaster {
   id          String    @id @default(cuid())
-  equipCode   String    @unique @map("equip_code")  // 설비 코드
-  equipName   String    @map("equip_name")          // 설비명
-  equipType   String?   @map("equip_type")          // 설비 유형 (AUTO_CRIMP, SINGLE_CUT 등)
-  modelName   String?   @map("model_name")          // 모델명
-  maker       String?                               // 제조사
-  lineCode    String?   @map("line_code")           // 소속 라인 코드
-  ipAddress   String?   @map("ip_address")          // IP 주소
-  port        Int?                                  // 포트
-  commType    String?   @map("comm_type")           // 통신 방식 (MQTT, SERIAL, TCP)
-  commConfig  Json?     @map("comm_config")         // 통신 상세 설정 (JSON)
-  installDate DateTime? @map("install_date") @db.Date  // 설치일
-  status      String    @default("NORMAL") @map("status")  // 상태 (NORMAL, MAINT, STOP)
+  equipCode   String    @unique @map("equip_code") // 설비 코드
+  equipName   String    @map("equip_name") // 설비명
+  equipType   String?   @map("equip_type") // 설비 유형 (AUTO_CRIMP, SINGLE_CUT 등)
+  modelName   String?   @map("model_name") // 모델명
+  maker       String? // 제조사
+  lineCode    String?   @map("line_code") // 소속 라인 코드
+  ipAddress   String?   @map("ip_address") // IP 주소
+  port        Int? // 포트
+  commType    String?   @map("comm_type") // 통신 방식 (MQTT, SERIAL, TCP)
+  commConfig  Json?     @map("comm_config") // 통신 상세 설정 (JSON)
+  installDate DateTime? @map("install_date") @db.Date // 설치일
+  status      String    @default("NORMAL") @map("status") // 상태 (NORMAL, MAINT, STOP)
   useYn       String    @default("Y") @map("use_yn")
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  prodResults   ProdResult[]
-  traceLogs     TraceLog[]
-  inspectItems  EquipInspectItemMaster[]
-  inspectLogs   EquipInspectLog[]
+  prodResults  ProdResult[]
+  traceLogs    TraceLog[]
+  inspectItems EquipInspectItemMaster[]
+  inspectLogs  EquipInspectLog[]
 
   @@index([equipType])
   @@index([lineCode])
@@ -197,25 +239,29 @@ model EquipMaster {
 
 /// 소모품마스터 테이블 - 금형/지그/공구 관리
 model ConsumableMaster {
-  id            String    @id @default(cuid())
-  consumableCode String   @unique @map("consumable_code")  // 소모품 코드
-  name          String                              // 소모품명
-  category      String?                             // 카테고리 (MOLD, JIG, TOOL)
-  expectedLife  Int?      @map("expected_life")     // 기대 수명 (타수)
-  currentCount  Int       @default(0) @map("current_count")  // 현재 사용 횟수 (타수)
-  stockQty      Int       @default(0) @map("stock_qty")      // 현재고 수량
-  safetyStock   Int       @default(0) @map("safety_stock")   // 안전재고
-  warningCount  Int?      @map("warning_count")     // 경고 임계치
-  location      String?                             // 보관 위치
-  lastReplace   DateTime? @map("last_replace") @db.Timestamptz(6)  // 최근 교체일
-  nextReplace   DateTime? @map("next_replace") @db.Timestamptz(6)  // 다음 교체 예정일
-  unitPrice     Decimal?  @map("unit_price") @db.Decimal(12, 2)    // 단가
-  vendor        String?                             // 공급업체
-  status        String    @default("NORMAL")        // 상태 (NORMAL, WARNING, REPLACE)
-  useYn         String    @default("Y") @map("use_yn")
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id             String    @id @default(cuid())
+  consumableCode String    @unique @map("consumable_code") // 소모품 코드
+  consumableName String    @map("name") // 소모품명
+  category       String? // 카테고리 (MOLD, JIG, TOOL)
+  expectedLife   Int?      @map("expected_life") // 기대 수명 (타수)
+  currentCount   Int       @default(0) @map("current_count") // 현재 사용 횟수 (타수)
+  stockQty       Int       @default(0) @map("stock_qty") // 현재고 수량
+  safetyStock    Int       @default(0) @map("safety_stock") // 안전재고
+  warningCount   Int?      @map("warning_count") // 경고 임계치
+  location       String? // 보관 위치
+  lastReplaceAt  DateTime? @map("last_replace") @db.Timestamptz(6) // 최근 교체일
+  nextReplaceAt  DateTime? @map("next_replace") @db.Timestamptz(6) // 다음 교체 예정일
+  unitPrice      Decimal?  @map("unit_price") @db.Decimal(12, 2) // 단가
+  vendor         String? // 공급업체
+  status         String    @default("NORMAL") // 상태 (NORMAL, WARNING, REPLACE)
+  useYn          String    @default("Y") @map("use_yn")
+  company        String?   @map("company") // 회사코드
+  plant          String?   @map("plant_cd") // 공장코드
+  createdBy      String?   @map("created_by") // 생성자
+  updatedBy      String?   @map("updated_by") // 수정자
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
   consumableLogs ConsumableLog[]
@@ -227,32 +273,36 @@ model ConsumableMaster {
 
 /// 소모품 입출고 이력 테이블
 model ConsumableLog {
-  id            String    @id @default(cuid())
-  consumableId  String    @map("consumable_id")     // 소모품 ID
-  logType       String    @map("log_type")          // 이력 유형 (IN, IN_RETURN, OUT, OUT_RETURN)
-  qty           Int       @default(1)               // 수량
-  workerId      String?   @map("worker_id")         // 작업자 ID
-  remark        String?                             // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           String   @id @default(cuid())
+  consumableId String   @map("consumable_id") // 소모품 ID
+  logType      String   @map("log_type") // 이력 유형 (IN, IN_RETURN, OUT, OUT_RETURN)
+  qty          Int      @default(1) // 수량
+  workerId     String?  @map("worker_id") // 작업자 ID
+  remark       String? // 비고
+  company      String?  @map("company") // 회사코드
+  plant        String?  @map("plant_cd") // 공장코드
+  createdBy    String?  @map("created_by") // 생성자
+  updatedBy    String?  @map("updated_by") // 수정자
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // 입고 전용 필드
-  vendorCode    String?   @map("vendor_code")       // 공급업체코드
-  vendorName    String?   @map("vendor_name")       // 공급업체명
-  unitPrice     Decimal?  @map("unit_price") @db.Decimal(12, 2) // 단가
-  incomingType  String?   @map("incoming_type")     // 입고구분 (NEW, REPLACEMENT)
+  vendorCode   String?  @map("vendor_code") // 공급업체코드
+  vendorName   String?  @map("vendor_name") // 공급업체명
+  unitPrice    Decimal? @map("unit_price") @db.Decimal(12, 2) // 단가
+  incomingType String?  @map("incoming_type") // 입고구분 (NEW, REPLACEMENT)
 
   // 출고 전용 필드
-  department    String?                             // 출고부서
-  lineId        String?   @map("line_id")           // 라인
-  equipmentId   String?   @map("equipment_id")      // 설비
-  issueReason   String?   @map("issue_reason")      // 출고사유 (PRODUCTION, REPAIR, OTHER)
+  department  String? // 출고부서
+  lineId      String? @map("line_id") // 라인
+  equipId     String? @map("equipment_id") // 설비
+  issueReason String? @map("issue_reason") // 출고사유 (PRODUCTION, REPAIR, OTHER)
 
   // 반품 공통 필드
-  returnReason  String?   @map("return_reason")     // 반품사유
+  returnReason String? @map("return_reason") // 반품사유
 
   // Relations
-  consumable    ConsumableMaster @relation(fields: [consumableId], references: [id])
-  worker        User?            @relation(fields: [workerId], references: [id])
+  consumable ConsumableMaster @relation(fields: [consumableId], references: [id])
+  worker     User?            @relation(fields: [workerId], references: [id])
 
   @@index([consumableId])
   @@index([logType])
@@ -262,18 +312,22 @@ model ConsumableLog {
 /// 거래처마스터 테이블 - 공급상/고객 관리
 model PartnerMaster {
   id            String    @id @default(cuid())
-  partnerCode   String    @unique @map("partner_code")     // 거래처 코드
-  partnerName   String    @map("partner_name")             // 거래처명
-  partnerType   String    @map("partner_type")             // 유형 (SUPPLIER, CUSTOMER)
-  bizNo         String?   @map("biz_no")                   // 사업자번호
-  ceoName       String?   @map("ceo_name")                 // 대표자명
-  address       String?                                    // 주소
-  tel           String?                                    // 전화번호
-  fax           String?                                    // 팩스번호
-  email         String?                                    // 이메일
-  contactPerson String?   @map("contact_person")           // 담당자명
-  remark        String?                                    // 비고
+  partnerCode   String    @unique @map("partner_code") // 거래처 코드
+  partnerName   String    @map("partner_name") // 거래처명
+  partnerType   String    @map("partner_type") // 유형 (SUPPLIER, CUSTOMER)
+  bizNo         String?   @map("biz_no") // 사업자번호
+  ceoName       String?   @map("ceo_name") // 대표자명
+  address       String? // 주소
+  tel           String? // 전화번호
+  fax           String? // 팩스번호
+  email         String? // 이메일
+  contactPerson String?   @map("contact_person") // 담당자명
+  remark        String? // 비고
   useYn         String    @default("Y") @map("use_yn")
+  company       String?   @map("company") // 회사코드
+  plant         String?   @map("plant_cd") // 공장코드
+  createdBy     String?   @map("created_by") // 생성자
+  updatedBy     String?   @map("updated_by") // 수정자
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
@@ -284,22 +338,47 @@ model PartnerMaster {
 
 /// 체번룰마스터 테이블 - Lot/Box/Pallet 번호 생성 규칙
 model NumRuleMaster {
-  id          String    @id @default(cuid())
-  ruleType    String    @unique @map("rule_type")   // 규칙 유형 (LOT, BOX, PALLET, SERIAL)
-  ruleName    String    @map("rule_name")           // 규칙명
-  pattern     String                                // 패턴 (예: {PREFIX}{YYYYMMDD}{LINE}{SEQ:4})
-  prefix      String?                               // 접두사
-  suffix      String?                               // 접미사
-  seqLength   Int       @default(4) @map("seq_length")    // 시퀀스 자릿수
-  currentSeq  Int       @default(0) @map("current_seq")   // 현재 시퀀스
-  resetType   String    @default("DAILY") @map("reset_type")  // 리셋 주기 (DAILY, MONTHLY, YEARLY, NEVER)
-  lastReset   DateTime? @map("last_reset") @db.Date        // 마지막 리셋일
-  useYn       String    @default("Y") @map("use_yn")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id            String    @id @default(cuid())
+  ruleType      String    @unique @map("rule_type") // 규칙 유형 (LOT, BOX, PALLET, SERIAL)
+  ruleName      String    @map("rule_name") // 규칙명
+  pattern       String // 패턴 (예: {PREFIX}{YYYYMMDD}{LINE}{SEQ:4})
+  prefix        String? // 접두사
+  suffix        String? // 접미사
+  seqLength     Int       @default(4) @map("seq_length") // 시퀀스 자릿수
+  currentSeq    Int       @default(0) @map("current_seq") // 현재 시퀀스
+  resetType     String    @default("DAILY") @map("reset_type") // 리셋 주기 (DAILY, MONTHLY, YEARLY, NEVER)
+  lastResetDate DateTime? @map("last_reset") @db.Date // 마지막 리셋일
+  useYn         String    @default("Y") @map("use_yn")
+  company       String?   @map("company") // 회사코드
+  plant         String?   @map("plant_cd") // 공장코드
+  createdBy     String?   @map("created_by") // 생성자
+  updatedBy     String?   @map("updated_by") // 수정자
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@map("num_rule_masters")
+}
+
+/// 부서마스터 테이블 - Oracle TM_DEPARTMENT 기반
+model DepartmentMaster {
+  id             String    @id @default(cuid())
+  deptCode       String    @unique @map("dept_code") // 부서코드
+  deptName       String    @map("dept_name") // 부서명
+  parentDeptCode String?   @map("parent_dept_code") // 상위부서코드
+  sortOrder      Int       @default(0) @map("sort_order") // 정렬순서
+  managerName    String?   @map("manager_name") // 부서장
+  remark         String? // 비고
+  useYn          String    @default("Y") @map("use_yn")
+  company        String?   @map("company")
+  plant          String?   @map("plant_cd")
+  createdBy      String?   @map("created_by")
+  updatedBy      String?   @map("updated_by")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@map("department_masters")
 }
 
 // ============================================================================
@@ -308,23 +387,27 @@ model NumRuleMaster {
 
 /// 작업지시 테이블 - ERP 계획 수신 및 현장 분할 지시
 model JobOrder {
-  id          String    @id @default(cuid())
-  orderNo     String    @unique @map("order_no")    // 작업지시 번호
-  partId      String    @map("part_id")             // 품목 ID
-  lineCode    String?   @map("line_code")           // 라인 코드
-  planQty     Int       @map("plan_qty")            // 계획 수량
-  goodQty     Int       @default(0) @map("good_qty")      // 양품 수량
-  defectQty   Int       @default(0) @map("defect_qty")    // 불량 수량
-  planDate    DateTime? @map("plan_date") @db.Date        // 계획일
-  startTime   DateTime? @map("start_time") @db.Timestamptz(6)  // 시작 시간
-  endTime     DateTime? @map("end_time") @db.Timestamptz(6)    // 종료 시간
-  priority    Int       @default(5)                 // 우선순위 (1:최상, 10:최하)
-  status      String    @default("WAITING")         // 상태 (WAITING, RUNNING, PAUSED, DONE, CANCELED)
-  remark      String?                               // 비고
-  erpSyncYn   String    @default("N") @map("erp_sync_yn")  // ERP 동기화 여부
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id        String    @id @default(cuid())
+  orderNo   String    @unique @map("order_no") // 작업지시 번호
+  partId    String    @map("part_id") // 품목 ID
+  lineCode  String?   @map("line_code") // 라인 코드
+  planQty   Int       @map("plan_qty") // 계획 수량
+  goodQty   Int       @default(0) @map("good_qty") // 양품 수량
+  defectQty Int       @default(0) @map("defect_qty") // 불량 수량
+  planDate  DateTime? @map("plan_date") @db.Date // 계획일
+  startAt   DateTime? @map("start_time") @db.Timestamptz(6) // 시작 시간
+  endAt     DateTime? @map("end_time") @db.Timestamptz(6) // 종료 시간
+  priority  Int       @default(5) // 우선순위 (1:최상, 10:최하)
+  status    String    @default("WAITING") // 상태 (WAITING, RUNNING, PAUSED, DONE, CANCELED)
+  remark    String? // 비고
+  erpSyncYn String    @default("N") @map("erp_sync_yn") // ERP 동기화 여부
+  company   String?   @map("company") // 회사코드
+  plant     String?   @map("plant_cd") // 공장코드
+  createdBy String?   @map("created_by") // 생성자
+  updatedBy String?   @map("updated_by") // 수정자
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
   part        PartMaster   @relation(fields: [partId], references: [id])
@@ -340,28 +423,32 @@ model JobOrder {
 /// 생산실적 테이블 - 공정별 작업 결과
 model ProdResult {
   id          String    @id @default(cuid())
-  jobOrderId  String    @map("job_order_id")        // 작업지시 ID
-  equipId     String?   @map("equip_id")            // 설비 ID
-  workerId    String?   @map("worker_id")           // 작업자 ID
-  lotNo       String?   @map("lot_no")              // LOT 번호
-  processCode String?   @map("process_code")        // 공정 코드
-  goodQty     Int       @default(0) @map("good_qty")      // 양품 수량
-  defectQty   Int       @default(0) @map("defect_qty")    // 불량 수량
-  startTime   DateTime? @map("start_time") @db.Timestamptz(6)  // 시작 시간
-  endTime     DateTime? @map("end_time") @db.Timestamptz(6)    // 종료 시간
-  cycleTime   Decimal?  @map("cycle_time") @db.Decimal(10, 2)  // 사이클 타임
-  status      String    @default("RUNNING")         // 상태 (RUNNING, DONE, CANCELED)
-  remark      String?                               // 비고
+  jobOrderId  String    @map("job_order_id") // 작업지시 ID
+  equipId     String?   @map("equip_id") // 설비 ID
+  workerId    String?   @map("worker_id") // 작업자 ID
+  lotNo       String?   @map("lot_no") // LOT 번호
+  processCode String?   @map("process_code") // 공정 코드
+  goodQty     Int       @default(0) @map("good_qty") // 양품 수량
+  defectQty   Int       @default(0) @map("defect_qty") // 불량 수량
+  startAt     DateTime? @map("start_time") @db.Timestamptz(6) // 시작 시간
+  endAt       DateTime? @map("end_time") @db.Timestamptz(6) // 종료 시간
+  cycleTime   Decimal?  @map("cycle_time") @db.Decimal(10, 2) // 사이클 타임
+  status      String    @default("RUNNING") // 상태 (RUNNING, DONE, CANCELED)
+  remark      String? // 비고
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  jobOrder      JobOrder        @relation(fields: [jobOrderId], references: [id])
-  equip         EquipMaster?    @relation(fields: [equipId], references: [id])
-  worker        User?           @relation(fields: [workerId], references: [id])
+  jobOrder       JobOrder        @relation(fields: [jobOrderId], references: [id])
+  equip          EquipMaster?    @relation(fields: [equipId], references: [id])
+  worker         User?           @relation(fields: [workerId], references: [id])
   inspectResults InspectResult[]
-  defectLogs    DefectLog[]
+  defectLogs     DefectLog[]
 
   @@index([jobOrderId])
   @@index([equipId])
@@ -373,21 +460,25 @@ model ProdResult {
 /// 공정라우팅 테이블 - 품목별 공정 순서
 model ProcessMap {
   id          String    @id @default(cuid())
-  partId      String    @map("part_id")             // 품목 ID
-  seq         Int                                   // 공정 순서
-  processCode String    @map("process_code")        // 공정 코드
-  processName String    @map("process_name")        // 공정명
-  processType String?   @map("process_type")        // 공정 유형 (CUT, CRIMP, ASSEMBLY, INSPECT)
-  equipType   String?   @map("equip_type")          // 설비 타입 그룹 (일체형/분리형)
-  stdTime     Decimal?  @map("std_time") @db.Decimal(10, 2)   // 표준 시간
+  partId      String    @map("part_id") // 품목 ID
+  seq         Int // 공정 순서
+  processCode String    @map("process_code") // 공정 코드
+  processName String    @map("process_name") // 공정명
+  processType String?   @map("process_type") // 공정 유형 (CUT, CRIMP, ASSEMBLY, INSPECT)
+  equipType   String?   @map("equip_type") // 설비 타입 그룹 (일체형/분리형)
+  stdTime     Decimal?  @map("std_time") @db.Decimal(10, 2) // 표준 시간
   setupTime   Decimal?  @map("setup_time") @db.Decimal(10, 2) // 셋업 시간
   useYn       String    @default("Y") @map("use_yn")
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  part        PartMaster @relation(fields: [partId], references: [id])
+  part PartMaster @relation(fields: [partId], references: [id])
 
   @@unique([partId, seq])
   @@index([partId])
@@ -398,24 +489,28 @@ model ProcessMap {
 /// 외주실적 테이블 - 사외 외주 생산 실적
 model SubconResult {
   id          String    @id @default(cuid())
-  orderNo     String    @map("order_no")            // 외주지시 번호
-  vendorId    String?   @map("vendor_id")           // 외주처 ID
-  vendorName  String?   @map("vendor_name")         // 외주처명
-  partId      String    @map("part_id")             // 품목 ID
-  orderQty    Int       @map("order_qty")           // 발주 수량
-  recvQty     Int       @default(0) @map("recv_qty")      // 입고 수량
-  defectQty   Int       @default(0) @map("defect_qty")    // 불량 수량
-  orderDate   DateTime? @map("order_date") @db.Date       // 발주일
-  dueDate     DateTime? @map("due_date") @db.Date         // 납기일
-  recvDate    DateTime? @map("recv_date") @db.Date        // 입고일
-  status      String    @default("ORDERED")         // 상태 (ORDERED, SHIPPED, RECEIVED, DONE, CANCELED)
-  remark      String?                               // 비고
+  orderNo     String    @map("order_no") // 외주지시 번호
+  vendorId    String?   @map("vendor_id") // 외주처 ID
+  vendorName  String?   @map("vendor_name") // 외주처명
+  partId      String    @map("part_id") // 품목 ID
+  orderQty    Int       @map("order_qty") // 발주 수량
+  receivedQty Int       @default(0) @map("recv_qty") // 입고 수량
+  defectQty   Int       @default(0) @map("defect_qty") // 불량 수량
+  orderDate   DateTime? @map("order_date") @db.Date // 발주일
+  dueDate     DateTime? @map("due_date") @db.Date // 납기일
+  recvDate    DateTime? @map("recv_date") @db.Date // 입고일
+  status      String    @default("ORDERED") // 상태 (ORDERED, SHIPPED, RECEIVED, DONE, CANCELED)
+  remark      String? // 비고
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  part        PartMaster @relation(fields: [partId], references: [id])
+  part PartMaster @relation(fields: [partId], references: [id])
 
   @@index([status])
   @@index([vendorId])
@@ -428,24 +523,28 @@ model SubconResult {
 
 /// 창고마스터 테이블 - 창고/저장위치 정의
 model Warehouse {
-  id              String    @id @default(cuid())
-  warehouseCode   String    @unique @map("warehouse_code")  // 창고 코드
-  warehouseName   String    @map("warehouse_name")          // 창고명
-  warehouseType   String    @map("warehouse_type")          // 창고 유형 (RAW, WIP, FG, FLOOR, DEFECT, SCRAP, SUBCON)
-  plantCode       String?   @map("plant_code")              // 공장 코드
-  lineCode        String?   @map("line_code")               // 라인 코드 (공정재공용)
-  processCode     String?   @map("process_code")            // 공정 코드 (공정재공용)
-  vendorId        String?   @map("vendor_id")               // 외주처 ID (외주창고용)
-  isDefault       Boolean   @default(false) @map("is_default")  // 기본 창고 여부
-  useYn           String    @default("Y") @map("use_yn")
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id            String    @id @default(cuid())
+  warehouseCode String    @unique @map("warehouse_code") // 창고 코드
+  warehouseName String    @map("warehouse_name") // 창고명
+  warehouseType String    @map("warehouse_type") // 창고 유형 (RAW, WIP, FG, FLOOR, DEFECT, SCRAP, SUBCON)
+  plantCode     String?   @map("plant_code") // 공장 코드
+  lineCode      String?   @map("line_code") // 라인 코드 (공정재공용)
+  processCode   String?   @map("process_code") // 공정 코드 (공정재공용)
+  vendorId      String?   @map("vendor_id") // 외주처 ID (외주창고용)
+  isDefault     Boolean   @default(false) @map("is_default") // 기본 창고 여부
+  useYn         String    @default("Y") @map("use_yn")
+  company       String?   @map("company") // 회사코드
+  plant         String?   @map("plant_cd") // 공장코드
+  createdBy     String?   @map("created_by") // 생성자
+  updatedBy     String?   @map("updated_by") // 수정자
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
   stocks            Stock[]
-  transactionsFrom  StockTransaction[] @relation("FromWarehouse")
-  transactionsTo    StockTransaction[] @relation("ToWarehouse")
+  transactionsFrom  StockTransaction[]      @relation("FromWarehouse")
+  transactionsTo    StockTransaction[]      @relation("ToWarehouse")
   transferRulesFrom WarehouseTransferRule[] @relation("TransferFrom")
   transferRulesTo   WarehouseTransferRule[] @relation("TransferTo")
 
@@ -458,32 +557,36 @@ model Warehouse {
 /// LOT 테이블 - 자재/반제품/완제품 LOT 정보
 model Lot {
   id          String    @id @default(cuid())
-  lotNo       String    @unique @map("lot_no")      // LOT 번호
-  partId      String    @map("part_id")             // 품목 ID
-  partType    String    @map("part_type")           // 품목 유형 (RAW, WIP, FG)
-  initQty     Int       @map("init_qty")            // 초기 수량
-  currentQty  Int       @map("current_qty")         // 현재 수량
-  recvDate    DateTime? @map("recv_date") @db.Date  // 입고일/생성일
-  expireDate  DateTime? @map("expire_date") @db.Date  // 유효기한
-  origin      String?                               // 원산지 (보세용)
-  vendor      String?                               // 공급업체
-  invoiceNo   String?   @map("invoice_no")          // 인보이스 번호
-  poNo        String?   @map("po_no")               // PO 번호 (ERP 연동)
-  jobOrderId  String?   @map("job_order_id")        // 생산 작업지시 ID (WIP/FG용)
-  parentLotId String?   @map("parent_lot_id")       // 상위 LOT ID (추적용)
-  iqcStatus   String    @default("PENDING") @map("iqc_status")  // IQC 상태 (PENDING, PASS, FAIL, HOLD)
-  status      String    @default("NORMAL")          // 상태 (NORMAL, HOLD, DEPLETED)
+  lotNo       String    @unique @map("lot_no") // LOT 번호
+  partId      String    @map("part_id") // 품목 ID
+  partType    String    @map("part_type") // 품목 유형 (RAW, WIP, FG)
+  initQty     Int       @map("init_qty") // 초기 수량
+  currentQty  Int       @map("current_qty") // 현재 수량
+  recvDate    DateTime? @map("recv_date") @db.Date // 입고일/생성일
+  expireDate  DateTime? @map("expire_date") @db.Date // 유효기한
+  origin      String? // 원산지 (보세용)
+  vendor      String? // 공급업체
+  invoiceNo   String?   @map("invoice_no") // 인보이스 번호
+  poNo        String?   @map("po_no") // PO 번호 (ERP 연동)
+  jobOrderId  String?   @map("job_order_id") // 생산 작업지시 ID (WIP/FG용)
+  parentLotId String?   @map("parent_lot_id") // 상위 LOT ID (추적용)
+  iqcStatus   String    @default("PENDING") @map("iqc_status") // IQC 상태 (PENDING, PASS, FAIL, HOLD)
+  status      String    @default("NORMAL") // 상태 (NORMAL, HOLD, DEPLETED)
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  part          PartMaster @relation(fields: [partId], references: [id])
-  parentLot     Lot?       @relation("LotHierarchy", fields: [parentLotId], references: [id])
-  childLots     Lot[]      @relation("LotHierarchy")
-  stocks        Stock[]
-  transactions  StockTransaction[]
-  traceLogs     TraceLog[]
+  part         PartMaster         @relation(fields: [partId], references: [id])
+  parentLot    Lot?               @relation("LotHierarchy", fields: [parentLotId], references: [id])
+  childLots    Lot[]              @relation("LotHierarchy")
+  stocks       Stock[]
+  transactions StockTransaction[]
+  traceLogs    TraceLog[]
 
   @@index([partId])
   @@index([partType])
@@ -495,22 +598,26 @@ model Lot {
 
 /// 현재고 테이블 - 창고/품목/LOT별 실시간 재고
 model Stock {
-  id            String    @id @default(cuid())
-  warehouseId   String    @map("warehouse_id")      // 창고 ID
-  partId        String    @map("part_id")           // 품목 ID
-  lotId         String?   @map("lot_id")            // LOT ID (LOT 추적 시)
-  qty           Int       @default(0)               // 현재 수량
-  reservedQty   Int       @default(0) @map("reserved_qty")    // 예약 수량
-  availableQty  Int       @default(0) @map("available_qty")   // 가용 수량 (qty - reservedQty)
-  lastTransAt   DateTime? @map("last_trans_at") @db.Timestamptz(6)  // 최근 수불일시
-  lastCountAt   DateTime? @map("last_count_at") @db.Timestamptz(6)  // 최근 실사일
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  warehouseId  String    @map("warehouse_id") // 창고 ID
+  partId       String    @map("part_id") // 품목 ID
+  lotId        String?   @map("lot_id") // LOT ID (LOT 추적 시)
+  qty          Int       @default(0) // 현재 수량
+  reservedQty  Int       @default(0) @map("reserved_qty") // 예약 수량
+  availableQty Int       @default(0) @map("available_qty") // 가용 수량 (qty - reservedQty)
+  lastTransAt  DateTime? @map("last_trans_at") @db.Timestamptz(6) // 최근 수불일시
+  lastCountAt  DateTime? @map("last_count_at") @db.Timestamptz(6) // 최근 실사일
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // Relations
-  warehouse     Warehouse  @relation(fields: [warehouseId], references: [id])
-  part          PartMaster @relation(fields: [partId], references: [id])
-  lot           Lot?       @relation(fields: [lotId], references: [id])
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id])
+  part      PartMaster @relation(fields: [partId], references: [id])
+  lot       Lot?       @relation(fields: [lotId], references: [id])
 
   @@unique([warehouseId, partId, lotId])
   @@index([warehouseId])
@@ -521,32 +628,36 @@ model Stock {
 
 /// 수불이력 테이블 - 모든 재고 트랜잭션 기록 (입고/출고/취소 포함)
 model StockTransaction {
-  id              String    @id @default(cuid())
-  transNo         String    @unique @map("trans_no")          // 트랜잭션 번호
-  transType       String    @map("trans_type")                // 트랜잭션 유형 (MAT_IN, MAT_IN_CANCEL, MAT_OUT, MAT_OUT_CANCEL, WIP_IN, ...)
-  transDate       DateTime  @default(now()) @map("trans_date") @db.Timestamptz(6)  // 트랜잭션 일시
-  fromWarehouseId String?   @map("from_warehouse_id")         // 출고 창고 ID
-  toWarehouseId   String?   @map("to_warehouse_id")           // 입고 창고 ID
-  partId          String    @map("part_id")                   // 품목 ID
-  lotId           String?   @map("lot_id")                    // LOT ID
-  qty             Int                                         // 수량 (취소 시 음수)
-  unitPrice       Decimal?  @map("unit_price") @db.Decimal(12, 4)  // 단가
-  totalAmount     Decimal?  @map("total_amount") @db.Decimal(14, 2)  // 금액
-  refType         String?   @map("ref_type")                  // 참조 유형 (JOB_ORDER, SUBCON_ORDER, SHIPMENT, ADJUST 등)
-  refId           String?   @map("ref_id")                    // 참조 ID
-  cancelRefId     String?   @map("cancel_ref_id")             // 취소 참조 ID (취소 시 원 트랜잭션 ID)
-  workerId        String?   @map("worker_id")                 // 작업자 ID
-  remark          String?                                     // 비고
-  status          String    @default("DONE")                  // 상태 (DONE, CANCELED)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id              String   @id @default(cuid())
+  transNo         String   @unique @map("trans_no") // 트랜잭션 번호
+  transType       String   @map("trans_type") // 트랜잭션 유형 (MAT_IN, MAT_IN_CANCEL, MAT_OUT, MAT_OUT_CANCEL, WIP_IN, ...)
+  transDate       DateTime @default(now()) @map("trans_date") @db.Timestamptz(6) // 트랜잭션 일시
+  fromWarehouseId String?  @map("from_warehouse_id") // 출고 창고 ID
+  toWarehouseId   String?  @map("to_warehouse_id") // 입고 창고 ID
+  partId          String   @map("part_id") // 품목 ID
+  lotId           String?  @map("lot_id") // LOT ID
+  qty             Int // 수량 (취소 시 음수)
+  unitPrice       Decimal? @map("unit_price") @db.Decimal(12, 4) // 단가
+  totalAmount     Decimal? @map("total_amount") @db.Decimal(14, 2) // 금액
+  refType         String?  @map("ref_type") // 참조 유형 (JOB_ORDER, SUBCON_ORDER, SHIPMENT, ADJUST 등)
+  refId           String?  @map("ref_id") // 참조 ID
+  cancelRefId     String?  @map("cancel_ref_id") // 취소 참조 ID (취소 시 원 트랜잭션 ID)
+  workerId        String?  @map("worker_id") // 작업자 ID
+  remark          String? // 비고
+  status          String   @default("DONE") // 상태 (DONE, CANCELED)
+  company         String?  @map("company") // 회사코드
+  plant           String?  @map("plant_cd") // 공장코드
+  createdBy       String?  @map("created_by") // 생성자
+  updatedBy       String?  @map("updated_by") // 수정자
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  fromWarehouse   Warehouse?          @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
-  toWarehouse     Warehouse?          @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
-  part            PartMaster          @relation(fields: [partId], references: [id])
-  lot             Lot?                @relation(fields: [lotId], references: [id])
-  cancelRef       StockTransaction?   @relation("TransactionCancel", fields: [cancelRefId], references: [id])
-  canceledByTrans StockTransaction[]  @relation("TransactionCancel")
+  fromWarehouse   Warehouse?         @relation("FromWarehouse", fields: [fromWarehouseId], references: [id])
+  toWarehouse     Warehouse?         @relation("ToWarehouse", fields: [toWarehouseId], references: [id])
+  part            PartMaster         @relation(fields: [partId], references: [id])
+  lot             Lot?               @relation(fields: [lotId], references: [id])
+  cancelRef       StockTransaction?  @relation("TransactionCancel", fields: [cancelRefId], references: [id])
+  canceledByTrans StockTransaction[] @relation("TransactionCancel")
 
   @@index([transType])
   @@index([transDate])
@@ -566,27 +677,31 @@ model StockTransaction {
 
 /// 자재LOT 테이블 (레거시) - Lot 테이블로 마이그레이션 예정
 model MatLot {
-  id          String    @id @default(cuid())
-  lotNo       String    @unique @map("lot_no")
-  partId      String    @map("part_id")
-  initQty     Int       @map("init_qty")
-  currentQty  Int       @map("current_qty")
-  recvDate    DateTime? @map("recv_date") @db.Date
-  expireDate  DateTime? @map("expire_date") @db.Date
-  origin      String?
-  vendor      String?
-  invoiceNo   String?   @map("invoice_no")
-  poNo        String?   @map("po_no")
-  iqcStatus   String    @default("PENDING") @map("iqc_status")
-  status      String    @default("NORMAL")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id         String    @id @default(cuid())
+  lotNo      String    @unique @map("lot_no")
+  partId     String    @map("part_id")
+  initQty    Int       @map("init_qty")
+  currentQty Int       @map("current_qty")
+  recvDate   DateTime? @map("recv_date") @db.Date
+  expireDate DateTime? @map("expire_date") @db.Date
+  origin     String?
+  vendor     String?
+  invoiceNo  String?   @map("invoice_no")
+  poNo       String?   @map("po_no")
+  iqcStatus  String    @default("PENDING") @map("iqc_status")
+  status     String    @default("NORMAL")
+  company    String?   @map("company") // 회사코드
+  plant      String?   @map("plant_cd") // 공장코드
+  createdBy  String?   @map("created_by") // 생성자
+  updatedBy  String?   @map("updated_by") // 수정자
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  part        PartMaster @relation(fields: [partId], references: [id])
-  matStocks   MatStock[]
-  matIssues   MatIssue[]
-  traceLogs   TraceLog[]
+  part      PartMaster @relation(fields: [partId], references: [id])
+  matStocks MatStock[]
+  matIssues MatIssue[]
+  traceLogs TraceLog[]
 
   @@index([partId])
   @@index([status])
@@ -604,12 +719,16 @@ model MatStock {
   qty           Int       @default(0)
   reservedQty   Int       @default(0) @map("reserved_qty")
   availableQty  Int       @default(0) @map("available_qty")
-  lastCount     DateTime? @map("last_count") @db.Timestamptz(6)
+  lastCountAt   DateTime? @map("last_count") @db.Timestamptz(6)
+  company       String?   @map("company") // 회사코드
+  plant         String?   @map("plant_cd") // 공장코드
+  createdBy     String?   @map("created_by") // 생성자
+  updatedBy     String?   @map("updated_by") // 수정자
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  part          PartMaster @relation(fields: [partId], references: [id])
-  lot           MatLot?    @relation(fields: [lotId], references: [id])
+  part PartMaster @relation(fields: [partId], references: [id])
+  lot  MatLot?    @relation(fields: [lotId], references: [id])
 
   @@unique([warehouseCode, partId, lotId])
   @@index([warehouseCode])
@@ -619,19 +738,23 @@ model MatStock {
 
 /// 자재출고 이력 테이블 (레거시) - StockTransaction으로 마이그레이션 예정
 model MatIssue {
-  id          String    @id @default(cuid())
-  jobOrderId  String?   @map("job_order_id")
-  lotId       String    @map("lot_id")
-  issueQty    Int       @map("issue_qty")
-  issueDate   DateTime  @default(now()) @map("issue_date") @db.Timestamptz(6)
-  issueType   String    @default("PROD") @map("issue_type")
-  workerId    String?   @map("worker_id")
-  remark      String?
-  status      String    @default("DONE")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id         String   @id @default(cuid())
+  jobOrderId String?  @map("job_order_id")
+  lotId      String   @map("lot_id")
+  issueQty   Int      @map("issue_qty")
+  issueDate  DateTime @default(now()) @map("issue_date") @db.Timestamptz(6)
+  issueType  String   @default("PROD") @map("issue_type")
+  workerId   String?  @map("worker_id")
+  remark     String?
+  status     String   @default("DONE")
+  company    String?  @map("company") // 회사코드
+  plant      String?  @map("plant_cd") // 공장코드
+  createdBy  String?  @map("created_by") // 생성자
+  updatedBy  String?  @map("updated_by") // 수정자
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  jobOrder    JobOrder? @relation(fields: [jobOrderId], references: [id])
-  lot         MatLot    @relation(fields: [lotId], references: [id])
+  jobOrder JobOrder? @relation(fields: [jobOrderId], references: [id])
+  lot      MatLot    @relation(fields: [lotId], references: [id])
 
   @@index([jobOrderId])
   @@index([lotId])
@@ -653,6 +776,9 @@ model InvAdjLog {
   approvedBy    String?   @map("approved_by")
   approvedAt    DateTime? @map("approved_at") @db.Timestamptz(6)
   createdBy     String?   @map("created_by")
+  company       String?   @map("company") // 회사코드
+  plant         String?   @map("plant_cd") // 공장코드
+  updatedBy     String?   @map("updated_by") // 수정자
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([warehouseCode])
@@ -667,20 +793,24 @@ model InvAdjLog {
 
 /// 검사실적 테이블 - 통전검사 등 품질 검사 결과
 model InspectResult {
-  id            String    @id @default(cuid())
-  prodResultId  String    @map("prod_result_id")    // 생산실적 ID
-  serialNo      String?   @map("serial_no")         // 시리얼 번호
-  inspectType   String?   @map("inspect_type")      // 검사 유형 (CONTINUITY, VISUAL, DIMENSION)
-  passYn        String    @default("Y") @map("pass_yn")  // 합격 여부
-  errorCode     String?   @map("error_code")        // 에러 코드
-  errorDetail   String?   @map("error_detail")      // 에러 상세
-  inspectData   Json?     @map("inspect_data")      // 검사 데이터 (JSON)
-  inspectTime   DateTime  @default(now()) @map("inspect_time") @db.Timestamptz(6)  // 검사 시간
-  inspectorId   String?   @map("inspector_id")      // 검사자 ID
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           String   @id @default(cuid())
+  prodResultId String   @map("prod_result_id") // 생산실적 ID
+  serialNo     String?  @map("serial_no") // 시리얼 번호
+  inspectType  String?  @map("inspect_type") // 검사 유형 (CONTINUITY, VISUAL, DIMENSION)
+  passYn       String   @default("Y") @map("pass_yn") // 합격 여부
+  errorCode    String?  @map("error_code") // 에러 코드
+  errorDetail  String?  @map("error_detail") // 에러 상세
+  inspectData  Json?    @map("inspect_data") // 검사 데이터 (JSON)
+  inspectAt    DateTime @default(now()) @map("inspect_time") @db.Timestamptz(6) // 검사 시간
+  inspectorId  String?  @map("inspector_id") // 검사자 ID
+  company      String?  @map("company") // 회사코드
+  plant        String?  @map("plant_cd") // 공장코드
+  createdBy    String?  @map("created_by") // 생성자
+  updatedBy    String?  @map("updated_by") // 수정자
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  prodResult    ProdResult @relation(fields: [prodResultId], references: [id])
+  prodResult ProdResult @relation(fields: [prodResultId], references: [id])
 
   @@index([prodResultId])
   @@index([passYn])
@@ -690,22 +820,26 @@ model InspectResult {
 
 /// 불량로그 테이블 - 발생 불량 정보
 model DefectLog {
-  id            String    @id @default(cuid())
-  prodResultId  String    @map("prod_result_id")    // 생산실적 ID
-  defectCode    String    @map("defect_code")       // 불량 코드 (계층형)
-  defectName    String?   @map("defect_name")       // 불량명
-  qty           Int       @default(1)               // 불량 수량
-  status        String    @default("WAIT")          // 상태 (WAIT, REPAIR, REWORK, SCRAP, DONE)
-  cause         String?                             // 원인
-  occurTime     DateTime  @default(now()) @map("occur_time") @db.Timestamptz(6)  // 발생 시간
-  imageUrl      String?   @map("image_url")         // 현장 사진 URL
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  prodResultId String    @map("prod_result_id") // 생산실적 ID
+  defectCode   String    @map("defect_code") // 불량 코드 (계층형)
+  defectName   String?   @map("defect_name") // 불량명
+  qty          Int       @default(1) // 불량 수량
+  status       String    @default("WAIT") // 상태 (WAIT, REPAIR, REWORK, SCRAP, DONE)
+  cause        String? // 원인
+  occurAt      DateTime  @default(now()) @map("occur_time") @db.Timestamptz(6) // 발생 시간
+  imageUrl     String?   @map("image_url") // 현장 사진 URL
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  prodResult    ProdResult  @relation(fields: [prodResultId], references: [id])
-  repairLogs    RepairLog[]
+  prodResult ProdResult  @relation(fields: [prodResultId], references: [id])
+  repairLogs RepairLog[]
 
   @@index([prodResultId])
   @@index([defectCode])
@@ -715,19 +849,23 @@ model DefectLog {
 
 /// 수리이력 테이블 - 불량품 수리/재작업 이력
 model RepairLog {
-  id            String    @id @default(cuid())
-  defectLogId   String    @map("defect_log_id")     // 불량로그 ID
-  workerId      String?   @map("worker_id")         // 수리 작업자 ID
-  repairAction  String?   @map("repair_action")     // 수리 내용
-  materialUsed  String?   @map("material_used")     // 사용 자재
-  repairTime    Int?      @map("repair_time")       // 수리 소요 시간 (분)
-  result        String?                             // 결과 (PASS, FAIL, SCRAP)
-  remark        String?                             // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           String   @id @default(cuid())
+  defectLogId  String   @map("defect_log_id") // 불량로그 ID
+  workerId     String?  @map("worker_id") // 수리 작업자 ID
+  repairAction String?  @map("repair_action") // 수리 내용
+  materialUsed String?  @map("material_used") // 사용 자재
+  repairTime   Int?     @map("repair_time") // 수리 소요 시간 (분)
+  result       String? // 결과 (PASS, FAIL, SCRAP)
+  remark       String? // 비고
+  company      String?  @map("company") // 회사코드
+  plant        String?  @map("plant_cd") // 공장코드
+  createdBy    String?  @map("created_by") // 생성자
+  updatedBy    String?  @map("updated_by") // 수정자
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  defectLog     DefectLog @relation(fields: [defectLogId], references: [id])
-  worker        User?     @relation(fields: [workerId], references: [id])
+  defectLog DefectLog @relation(fields: [defectLogId], references: [id])
+  worker    User?     @relation(fields: [workerId], references: [id])
 
   @@index([defectLogId])
   @@index([workerId])
@@ -736,22 +874,26 @@ model RepairLog {
 
 /// 포장박스 테이블 - 완제품/반제품 박스 관리
 model BoxMaster {
-  id          String    @id @default(cuid())
-  boxNo       String    @unique @map("box_no")      // 박스 번호 (QR)
-  partId      String    @map("part_id")             // 품목 ID
-  qty         Int                                   // 수량
-  serialList  Json?     @map("serial_list")         // 포함 시리얼 리스트 (JSON)
-  palletId    String?   @map("pallet_id")           // 팔레트 ID
-  status      String    @default("OPEN")            // 상태 (OPEN, CLOSED, SHIPPED)
-  closeTime   DateTime? @map("close_time") @db.Timestamptz(6)  // 포장 완료 시간
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id         String    @id @default(cuid())
+  boxNo      String    @unique @map("box_no") // 박스 번호 (QR)
+  partId     String    @map("part_id") // 품목 ID
+  qty        Int // 수량
+  serialList Json?     @map("serial_list") // 포함 시리얼 리스트 (JSON)
+  palletId   String?   @map("pallet_id") // 팔레트 ID
+  status     String    @default("OPEN") // 상태 (OPEN, CLOSED, SHIPPED)
+  closeAt    DateTime? @map("close_time") @db.Timestamptz(6) // 포장 완료 시간
+  company    String?   @map("company") // 회사코드
+  plant      String?   @map("plant_cd") // 공장코드
+  createdBy  String?   @map("created_by") // 생성자
+  updatedBy  String?   @map("updated_by") // 수정자
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  part        PartMaster     @relation(fields: [partId], references: [id])
-  pallet      PalletMaster?  @relation(fields: [palletId], references: [id])
-  traceLogs   TraceLog[]
+  part      PartMaster    @relation(fields: [partId], references: [id])
+  pallet    PalletMaster? @relation(fields: [palletId], references: [id])
+  traceLogs TraceLog[]
 
   @@index([partId])
   @@index([palletId])
@@ -761,21 +903,25 @@ model BoxMaster {
 
 /// 팔레트 테이블 - 박스 그룹 관리
 model PalletMaster {
-  id          String    @id @default(cuid())
-  palletNo    String    @unique @map("pallet_no")   // 팔레트 번호 (QR)
-  boxCount    Int       @default(0) @map("box_count")     // 박스 수
-  totalQty    Int       @default(0) @map("total_qty")     // 총 수량
-  status      String    @default("OPEN")            // 상태 (OPEN, CLOSED, LOADED, SHIPPED)
-  closeTime   DateTime? @map("close_time") @db.Timestamptz(6)  // 적재 완료 시간
-  shipmentId  String?   @map("shipment_id")         // 출하 ID
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id         String    @id @default(cuid())
+  palletNo   String    @unique @map("pallet_no") // 팔레트 번호 (QR)
+  boxCount   Int       @default(0) @map("box_count") // 박스 수
+  totalQty   Int       @default(0) @map("total_qty") // 총 수량
+  status     String    @default("OPEN") // 상태 (OPEN, CLOSED, LOADED, SHIPPED)
+  closeAt    DateTime? @map("close_time") @db.Timestamptz(6) // 적재 완료 시간
+  shipmentId String?   @map("shipment_id") // 출하 ID
+  company    String?   @map("company") // 회사코드
+  plant      String?   @map("plant_cd") // 공장코드
+  createdBy  String?   @map("created_by") // 생성자
+  updatedBy  String?   @map("updated_by") // 수정자
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  boxes       BoxMaster[]
-  shipment    ShipmentLog?  @relation(fields: [shipmentId], references: [id])
-  traceLogs   TraceLog[]
+  boxes     BoxMaster[]
+  shipment  ShipmentLog? @relation(fields: [shipmentId], references: [id])
+  traceLogs TraceLog[]
 
   @@index([status])
   @@index([shipmentId])
@@ -785,25 +931,29 @@ model PalletMaster {
 /// 출하이력 테이블 - 출하 정보 관리
 model ShipmentLog {
   id          String    @id @default(cuid())
-  shipNo      String    @unique @map("ship_no")     // 출하 번호
-  shipDate    DateTime? @map("ship_date") @db.Date  // 출하일
-  shipTime    DateTime? @map("ship_time") @db.Timestamptz(6)  // 출하 시간
-  vehicleNo   String?   @map("vehicle_no")          // 차량 번호
-  driverName  String?   @map("driver_name")         // 운전자명
-  destination String?                               // 배송지
-  customer    String?                               // 고객사
-  palletCount Int       @default(0) @map("pallet_count")  // 팔레트 수
-  boxCount    Int       @default(0) @map("box_count")     // 박스 수
-  totalQty    Int       @default(0) @map("total_qty")     // 총 수량
-  status      String    @default("PREPARING")       // 상태 (PREPARING, LOADED, SHIPPED, DELIVERED, CANCELED)
-  remark      String?                               // 비고
-  erpSyncYn   String    @default("N") @map("erp_sync_yn")  // ERP 동기화 여부
+  shipNo      String    @unique @map("ship_no") // 출하 번호
+  shipDate    DateTime? @map("ship_date") @db.Date // 출하일
+  shipAt      DateTime? @map("ship_time") @db.Timestamptz(6) // 출하 시간
+  vehicleNo   String?   @map("vehicle_no") // 차량 번호
+  driverName  String?   @map("driver_name") // 운전자명
+  destination String? // 배송지
+  customer    String? // 고객사
+  palletCount Int       @default(0) @map("pallet_count") // 팔레트 수
+  boxCount    Int       @default(0) @map("box_count") // 박스 수
+  totalQty    Int       @default(0) @map("total_qty") // 총 수량
+  status      String    @default("PREPARING") // 상태 (PREPARING, LOADED, SHIPPED, DELIVERED, CANCELED)
+  remark      String? // 비고
+  erpSyncYn   String    @default("N") @map("erp_sync_yn") // ERP 동기화 여부
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  pallets     PalletMaster[]
+  pallets PalletMaster[]
 
   @@index([status])
   @@index([shipDate])
@@ -813,26 +963,30 @@ model ShipmentLog {
 
 /// 4M추적 테이블 - Pallet/Box/Serial/Lot/Equip/Worker 매핑
 model TraceLog {
-  id          String    @id @default(cuid())
-  traceTime   DateTime  @default(now()) @map("trace_time") @db.Timestamptz(6)  // 추적 시간
-  palletId    String?   @map("pallet_id")           // 팔레트 ID
-  boxId       String?   @map("box_id")              // 박스 ID
-  lotId       String?   @map("lot_id")              // LOT ID (새 Lot 테이블)
-  matLotId    String?   @map("mat_lot_id")          // LOT ID (레거시 MatLot)
-  equipId     String?   @map("equip_id")            // 설비 ID
-  workerId    String?   @map("worker_id")           // 작업자 ID
-  processCode String?   @map("process_code")        // 공정 코드
-  serialNo    String?   @map("serial_no")           // 시리얼 번호
-  eventType   String?   @map("event_type")          // 이벤트 유형 (SCAN, PACK, SHIP 등)
-  eventData   Json?     @map("event_data")          // 이벤트 데이터 (JSON)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String   @id @default(cuid())
+  traceTime   DateTime @default(now()) @map("trace_time") @db.Timestamptz(6) // 추적 시간
+  palletId    String?  @map("pallet_id") // 팔레트 ID
+  boxId       String?  @map("box_id") // 박스 ID
+  lotId       String?  @map("lot_id") // LOT ID (새 Lot 테이블)
+  matLotId    String?  @map("mat_lot_id") // LOT ID (레거시 MatLot)
+  equipId     String?  @map("equip_id") // 설비 ID
+  workerId    String?  @map("worker_id") // 작업자 ID
+  processCode String?  @map("process_code") // 공정 코드
+  serialNo    String?  @map("serial_no") // 시리얼 번호
+  eventType   String?  @map("event_type") // 이벤트 유형 (SCAN, PACK, SHIP 등)
+  eventData   Json?    @map("event_data") // 이벤트 데이터 (JSON)
+  company     String?  @map("company") // 회사코드
+  plant       String?  @map("plant_cd") // 공장코드
+  createdBy   String?  @map("created_by") // 생성자
+  updatedBy   String?  @map("updated_by") // 수정자
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  pallet      PalletMaster?  @relation(fields: [palletId], references: [id])
-  box         BoxMaster?     @relation(fields: [boxId], references: [id])
-  lot         Lot?           @relation(fields: [lotId], references: [id])
-  matLot      MatLot?        @relation(fields: [matLotId], references: [id])
-  equip       EquipMaster?   @relation(fields: [equipId], references: [id])
+  pallet PalletMaster? @relation(fields: [palletId], references: [id])
+  box    BoxMaster?    @relation(fields: [boxId], references: [id])
+  lot    Lot?          @relation(fields: [lotId], references: [id])
+  matLot MatLot?       @relation(fields: [matLotId], references: [id])
+  equip  EquipMaster?  @relation(fields: [equipId], references: [id])
 
   @@index([palletId])
   @@index([boxId])
@@ -850,23 +1004,27 @@ model TraceLog {
 /// 사용자 테이블 - 작업자 및 관리자 정보
 model User {
   id          String    @id @default(cuid())
-  email       String    @unique                     // 이메일 (로그인 ID)
-  password    String    @default("admin123")        // 비밀번호 (평문 - DB 직접 관리)
-  name        String?                               // 이름
-  empNo       String?   @map("emp_no")              // 사원번호
-  dept        String?                               // 부서
-  role        String    @default("OPERATOR")        // 역할 (ADMIN, MANAGER, OPERATOR, VIEWER)
-  status      String    @default("ACTIVE")          // 상태 (ACTIVE, INACTIVE)
-  lastLogin   DateTime? @map("last_login") @db.Timestamptz(6)  // 최근 로그인
+  email       String    @unique // 이메일 (로그인 ID)
+  password    String    @default("admin123") // 비밀번호 (평문 - DB 직접 관리)
+  name        String? // 이름
+  empNo       String?   @map("emp_no") // 사원번호
+  dept        String? // 부서
+  role        String    @default("OPERATOR") // 역할 (ADMIN, MANAGER, OPERATOR, VIEWER)
+  status      String    @default("ACTIVE") // 상태 (ACTIVE, INACTIVE)
+  lastLoginAt DateTime? @map("last_login") @db.Timestamptz(6) // 최근 로그인
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  userAuths       UserAuth[]
-  prodResults     ProdResult[]
-  consumableLogs  ConsumableLog[]
-  repairLogs      RepairLog[]
+  userAuths      UserAuth[]
+  prodResults    ProdResult[]
+  consumableLogs ConsumableLog[]
+  repairLogs     RepairLog[]
 
   @@index([role])
   @@index([status])
@@ -875,18 +1033,22 @@ model User {
 
 /// 사용자권한 테이블 - 메뉴별 접근 권한
 model UserAuth {
-  id          String    @id @default(cuid())
-  userId      String    @map("user_id")             // 사용자 ID
-  menuCode    String    @map("menu_code")           // 메뉴 코드
-  canRead     Boolean   @default(true) @map("can_read")       // 읽기 권한
-  canWrite    Boolean   @default(false) @map("can_write")     // 쓰기 권한
-  canDelete   Boolean   @default(false) @map("can_delete")    // 삭제 권한
-  canExport   Boolean   @default(false) @map("can_export")    // 내보내기 권한
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id") // 사용자 ID
+  menuCode  String   @map("menu_code") // 메뉴 코드
+  canRead   Boolean  @default(true) @map("can_read") // 읽기 권한
+  canWrite  Boolean  @default(false) @map("can_write") // 쓰기 권한
+  canDelete Boolean  @default(false) @map("can_delete") // 삭제 권한
+  canExport Boolean  @default(false) @map("can_export") // 내보내기 권한
+  company   String?  @map("company") // 회사코드
+  plant     String?  @map("plant_cd") // 공장코드
+  createdBy String?  @map("created_by") // 생성자
+  updatedBy String?  @map("updated_by") // 수정자
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // Relations
-  user        User      @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, menuCode])
   @@index([userId])
@@ -900,23 +1062,27 @@ model UserAuth {
 /// 보세자재 입고 테이블 - 수입신고 정보 및 보세 자재 관리
 model CustomsEntry {
   id              String    @id @default(cuid())
-  entryNo         String    @unique @map("entry_no")       // 수입신고번호
-  blNo            String?   @map("bl_no")                   // B/L 번호
-  invoiceNo       String?   @map("invoice_no")              // 인보이스 번호
-  declarationDate DateTime? @map("declaration_date") @db.Date  // 신고일
-  clearanceDate   DateTime? @map("clearance_date") @db.Date    // 통관일
-  origin          String?                                   // 원산지
-  hsCode          String?   @map("hs_code")                 // HS코드
-  totalAmount     Decimal?  @map("total_amount") @db.Decimal(14, 2)  // 총 금액
-  currency        String?   @default("USD")                 // 통화
-  status          String    @default("PENDING")             // 상태 (PENDING, CLEARED, RELEASED)
-  remark          String?                                   // 비고
+  entryNo         String    @unique @map("entry_no") // 수입신고번호
+  blNo            String?   @map("bl_no") // B/L 번호
+  invoiceNo       String?   @map("invoice_no") // 인보이스 번호
+  declarationDate DateTime? @map("declaration_date") @db.Date // 신고일
+  clearanceDate   DateTime? @map("clearance_date") @db.Date // 통관일
+  origin          String? // 원산지
+  hsCode          String?   @map("hs_code") // HS코드
+  totalAmount     Decimal?  @map("total_amount") @db.Decimal(14, 2) // 총 금액
+  currency        String?   @default("USD") // 통화
+  status          String    @default("PENDING") // 상태 (PENDING, CLEARED, RELEASED)
+  remark          String? // 비고
+  company         String?   @map("company") // 회사코드
+  plant           String?   @map("plant_cd") // 공장코드
+  createdBy       String?   @map("created_by") // 생성자
+  updatedBy       String?   @map("updated_by") // 수정자
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  customsLots     CustomsLot[]
+  customsLots CustomsLot[]
 
   @@index([status])
   @@index([declarationDate])
@@ -925,21 +1091,25 @@ model CustomsEntry {
 
 /// 보세자재 LOT 테이블 - 수입신고번호와 자재 LOT 연결
 model CustomsLot {
-  id              String    @id @default(cuid())
-  entryId         String    @map("entry_id")                // 수입신고 ID
-  lotNo           String    @map("lot_no")                  // LOT 번호 (MatLot 참조)
-  partCode        String    @map("part_code")               // 품목 코드
-  qty             Int                                       // 수량
-  usedQty         Int       @default(0) @map("used_qty")    // 사용신고 수량
-  remainQty       Int       @default(0) @map("remain_qty")  // 잔여 수량
-  unitPrice       Decimal?  @map("unit_price") @db.Decimal(12, 4)  // 단가
-  status          String    @default("BONDED")              // 상태 (BONDED, PARTIAL, RELEASED)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id        String   @id @default(cuid())
+  entryId   String   @map("entry_id") // 수입신고 ID
+  lotNo     String   @map("lot_no") // LOT 번호 (MatLot 참조)
+  partCode  String   @map("part_code") // 품목 코드
+  qty       Int // 수량
+  usedQty   Int      @default(0) @map("used_qty") // 사용신고 수량
+  remainQty Int      @default(0) @map("remain_qty") // 잔여 수량
+  unitPrice Decimal? @map("unit_price") @db.Decimal(12, 4) // 단가
+  status    String   @default("BONDED") // 상태 (BONDED, PARTIAL, RELEASED)
+  company   String?  @map("company") // 회사코드
+  plant     String?  @map("plant_cd") // 공장코드
+  createdBy String?  @map("created_by") // 생성자
+  updatedBy String?  @map("updated_by") // 수정자
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // Relations
-  entry           CustomsEntry @relation(fields: [entryId], references: [id])
-  usageReports    CustomsUsageReport[]
+  entry        CustomsEntry         @relation(fields: [entryId], references: [id])
+  usageReports CustomsUsageReport[]
 
   @@index([entryId])
   @@index([lotNo])
@@ -949,20 +1119,24 @@ model CustomsLot {
 
 /// 보세자재 사용신고 테이블 - 생산 투입 시 사용신고 이력
 model CustomsUsageReport {
-  id              String    @id @default(cuid())
-  reportNo        String    @unique @map("report_no")       // 사용신고번호
-  customsLotId    String    @map("customs_lot_id")          // 보세자재 LOT ID
-  jobOrderId      String?   @map("job_order_id")            // 작업지시 ID
-  usageQty        Int       @map("usage_qty")               // 사용 수량
-  usageDate       DateTime  @default(now()) @map("usage_date") @db.Timestamptz(6)  // 사용일시
-  reportDate      DateTime? @map("report_date") @db.Timestamptz(6)  // 신고일시
-  status          String    @default("DRAFT")               // 상태 (DRAFT, REPORTED, CONFIRMED)
-  workerId        String?   @map("worker_id")               // 작업자 ID
-  remark          String?                                   // 비고
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  reportNo     String    @unique @map("report_no") // 사용신고번호
+  customsLotId String    @map("customs_lot_id") // 보세자재 LOT ID
+  jobOrderId   String?   @map("job_order_id") // 작업지시 ID
+  usageQty     Int       @map("usage_qty") // 사용 수량
+  usageDate    DateTime  @default(now()) @map("usage_date") @db.Timestamptz(6) // 사용일시
+  reportDate   DateTime? @map("report_date") @db.Timestamptz(6) // 신고일시
+  status       String    @default("DRAFT") // 상태 (DRAFT, REPORTED, CONFIRMED)
+  workerId     String?   @map("worker_id") // 작업자 ID
+  remark       String? // 비고
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  customsLot      CustomsLot @relation(fields: [customsLotId], references: [id])
+  customsLot CustomsLot @relation(fields: [customsLotId], references: [id])
 
   @@index([customsLotId])
   @@index([status])
@@ -977,23 +1151,27 @@ model CustomsUsageReport {
 /// 외주처 마스터 테이블 - 협력업체 정보
 model VendorMaster {
   id            String    @id @default(cuid())
-  vendorCode    String    @unique @map("vendor_code")     // 외주처 코드
-  vendorName    String    @map("vendor_name")             // 외주처명
-  bizNo         String?   @map("biz_no")                  // 사업자번호
-  ceoName       String?   @map("ceo_name")                // 대표자명
-  address       String?                                   // 주소
-  tel           String?                                   // 전화번호
-  fax           String?                                   // 팩스번호
-  email         String?                                   // 이메일
-  contactPerson String?   @map("contact_person")          // 담당자명
-  vendorType    String?   @map("vendor_type")             // 업체 유형 (SUBCON, SUPPLIER)
+  vendorCode    String    @unique @map("vendor_code") // 외주처 코드
+  vendorName    String    @map("vendor_name") // 외주처명
+  bizNo         String?   @map("biz_no") // 사업자번호
+  ceoName       String?   @map("ceo_name") // 대표자명
+  address       String? // 주소
+  tel           String? // 전화번호
+  fax           String? // 팩스번호
+  email         String? // 이메일
+  contactPerson String?   @map("contact_person") // 담당자명
+  vendorType    String?   @map("vendor_type") // 업체 유형 (SUBCON, SUPPLIER)
   useYn         String    @default("Y") @map("use_yn")
+  company       String?   @map("company") // 회사코드
+  plant         String?   @map("plant_cd") // 공장코드
+  createdBy     String?   @map("created_by") // 생성자
+  updatedBy     String?   @map("updated_by") // 수정자
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  subconOrders  SubconOrder[]
+  subconOrders SubconOrder[]
 
   @@index([vendorType])
   @@map("vendor_masters")
@@ -1001,28 +1179,32 @@ model VendorMaster {
 
 /// 외주발주 테이블 - 외주 작업지시 관리
 model SubconOrder {
-  id            String    @id @default(cuid())
-  orderNo       String    @unique @map("order_no")        // 발주번호
-  vendorId      String    @map("vendor_id")               // 외주처 ID
-  partCode      String    @map("part_code")               // 품목 코드
-  partName      String?   @map("part_name")               // 품목명
-  orderQty      Int       @map("order_qty")               // 발주 수량
-  deliveredQty  Int       @default(0) @map("delivered_qty")   // 출고 수량
-  receivedQty   Int       @default(0) @map("received_qty")    // 입고 수량
-  defectQty     Int       @default(0) @map("defect_qty")      // 불량 수량
-  unitPrice     Decimal?  @map("unit_price") @db.Decimal(12, 2)  // 단가
-  orderDate     DateTime? @map("order_date") @db.Date     // 발주일
-  dueDate       DateTime? @map("due_date") @db.Date       // 납기일
-  status        String    @default("ORDERED")             // 상태 (ORDERED, DELIVERED, PARTIAL_RECV, RECEIVED, CLOSED, CANCELED)
-  remark        String?                                   // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  orderNo      String    @unique @map("order_no") // 발주번호
+  vendorId     String    @map("vendor_id") // 외주처 ID
+  partCode     String    @map("part_code") // 품목 코드
+  partName     String?   @map("part_name") // 품목명
+  orderQty     Int       @map("order_qty") // 발주 수량
+  deliveredQty Int       @default(0) @map("delivered_qty") // 출고 수량
+  receivedQty  Int       @default(0) @map("received_qty") // 입고 수량
+  defectQty    Int       @default(0) @map("defect_qty") // 불량 수량
+  unitPrice    Decimal?  @map("unit_price") @db.Decimal(12, 2) // 단가
+  orderDate    DateTime? @map("order_date") @db.Date // 발주일
+  dueDate      DateTime? @map("due_date") @db.Date // 납기일
+  status       String    @default("ORDERED") // 상태 (ORDERED, DELIVERED, PARTIAL_RECV, RECEIVED, CLOSED, CANCELED)
+  remark       String? // 비고
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  vendor        VendorMaster @relation(fields: [vendorId], references: [id])
-  deliveries    SubconDelivery[]
-  receives      SubconReceive[]
+  vendor     VendorMaster     @relation(fields: [vendorId], references: [id])
+  deliveries SubconDelivery[]
+  receives   SubconReceive[]
 
   @@index([vendorId])
   @@index([status])
@@ -1032,78 +1214,90 @@ model SubconOrder {
 
 /// 외주 자재출고 테이블 - 외주처로의 자재 출고 이력
 model SubconDelivery {
-  id            String    @id @default(cuid())
-  orderId       String    @map("order_id")                // 외주발주 ID
-  deliveryNo    String    @unique @map("delivery_no")     // 출고번호
-  lotNo         String?   @map("lot_no")                  // LOT 번호
-  qty           Int                                       // 출고 수량
-  deliveryDate  DateTime  @default(now()) @map("delivery_date") @db.Timestamptz(6)  // 출고일시
-  workerId      String?   @map("worker_id")               // 작업자 ID
-  status        String    @default("DONE")                // 상태 (DONE, CANCELED)
-  remark        String?                                   // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String   @id @default(cuid())
+  orderId     String   @map("order_id") // 외주발주 ID
+  deliveryNo  String   @unique @map("delivery_no") // 출고번호
+  lotNo       String?  @map("lot_no") // LOT 번호
+  qty         Int // 출고 수량
+  deliveredAt DateTime @default(now()) @map("delivery_date") @db.Timestamptz(6) // 출고일시
+  workerId    String?  @map("worker_id") // 작업자 ID
+  status      String   @default("DONE") // 상태 (DONE, CANCELED)
+  remark      String? // 비고
+  company     String?  @map("company") // 회사코드
+  plant       String?  @map("plant_cd") // 공장코드
+  createdBy   String?  @map("created_by") // 생성자
+  updatedBy   String?  @map("updated_by") // 수정자
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  order         SubconOrder @relation(fields: [orderId], references: [id])
+  order SubconOrder @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
-  @@index([deliveryDate])
+  @@index([deliveredAt])
   @@map("subcon_deliveries")
 }
 
 /// 외주 입고 테이블 - 외주 생산품 입고 이력
 model SubconReceive {
-  id            String    @id @default(cuid())
-  orderId       String    @map("order_id")                // 외주발주 ID
-  receiveNo     String    @unique @map("receive_no")      // 입고번호
-  lotNo         String?   @map("lot_no")                  // 생성된 LOT 번호
-  qty           Int                                       // 입고 수량
-  goodQty       Int       @default(0) @map("good_qty")    // 양품 수량
-  defectQty     Int       @default(0) @map("defect_qty")  // 불량 수량
-  receiveDate   DateTime  @default(now()) @map("receive_date") @db.Timestamptz(6)  // 입고일시
-  inspectResult String?   @map("inspect_result")          // 검사 결과 (PASS, FAIL, PARTIAL)
-  workerId      String?   @map("worker_id")               // 작업자 ID
-  status        String    @default("DONE")                // 상태 (DONE, CANCELED)
-  remark        String?                                   // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id            String   @id @default(cuid())
+  orderId       String   @map("order_id") // 외주발주 ID
+  receiveNo     String   @unique @map("receive_no") // 입고번호
+  lotNo         String?  @map("lot_no") // 생성된 LOT 번호
+  qty           Int // 입고 수량
+  goodQty       Int      @default(0) @map("good_qty") // 양품 수량
+  defectQty     Int      @default(0) @map("defect_qty") // 불량 수량
+  receivedAt    DateTime @default(now()) @map("receive_date") @db.Timestamptz(6) // 입고일시
+  inspectResult String?  @map("inspect_result") // 검사 결과 (PASS, FAIL, PARTIAL)
+  workerId      String?  @map("worker_id") // 작업자 ID
+  status        String   @default("DONE") // 상태 (DONE, CANCELED)
+  remark        String? // 비고
+  company       String?  @map("company") // 회사코드
+  plant         String?  @map("plant_cd") // 공장코드
+  createdBy     String?  @map("created_by") // 생성자
+  updatedBy     String?  @map("updated_by") // 수정자
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  order         SubconOrder @relation(fields: [orderId], references: [id])
+  order SubconOrder @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
-  @@index([receiveDate])
+  @@index([receivedAt])
   @@map("subcon_receives")
 }
 
 /// 통신설정 테이블 - 시리얼/TCP/MQTT/OPC-UA/Modbus 통신 설정 관리
 model CommConfig {
-  id          String    @id @default(cuid())
-  configName  String    @unique @map("config_name")   // 설정 이름 (예: "절단기1호 시리얼")
-  commType    String    @map("comm_type")              // SERIAL, TCP, MQTT, OPC_UA, MODBUS
-  description String?                                  // 설명
+  id          String  @id @default(cuid())
+  configName  String  @unique @map("config_name") // 설정 이름 (예: "절단기1호 시리얼")
+  commType    String  @map("comm_type") // SERIAL, TCP, MQTT, OPC_UA, MODBUS
+  description String? // 설명
 
   // 공통 연결 정보
-  host        String?                                  // IP/호스트
-  port        Int?                                     // 포트 번호
+  host String? // IP/호스트
+  port Int? // 포트 번호
 
   // 시리얼 전용
-  portName    String?   @map("port_name")              // COM1, COM2 등
-  baudRate    Int?      @map("baud_rate")              // 9600, 19200, 38400, 57600, 115200
-  dataBits    Int?      @map("data_bits")              // 7, 8
-  stopBits    String?   @map("stop_bits")              // 1, 1.5, 2
-  parity      String?                                  // NONE, EVEN, ODD
-  flowControl String?   @map("flow_control")           // NONE, XONXOFF, RTSCTS
+  portName    String? @map("port_name") // COM1, COM2 등
+  baudRate    Int?    @map("baud_rate") // 9600, 19200, 38400, 57600, 115200
+  dataBits    Int?    @map("data_bits") // 7, 8
+  stopBits    String? @map("stop_bits") // 1, 1.5, 2
+  parity      String? // NONE, EVEN, ODD
+  flowControl String? @map("flow_control") // NONE, XONXOFF, RTSCTS
 
   // 프로토콜별 추가 설정 (JSON)
-  extraConfig Json?     @map("extra_config")
+  extraConfig Json? @map("extra_config")
   // MQTT: { brokerUrl, topic, clientId, qos, username, password }
   // OPC_UA: { endpointUrl, securityMode, securityPolicy }
   // MODBUS: { slaveId, registerType, startAddress, length }
 
-  useYn       String    @default("Y") @map("use_yn")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  useYn     String    @default("Y") @map("use_yn")
+  company   String?   @map("company") // 회사코드
+  plant     String?   @map("plant_cd") // 공장코드
+  createdBy String?   @map("created_by") // 생성자
+  updatedBy String?   @map("updated_by") // 수정자
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@index([commType])
   @@map("comm_configs")
@@ -1112,15 +1306,19 @@ model CommConfig {
 /// ERP연동 이력 테이블 - Inbound/Outbound 전문 이력
 model InterLog {
   id          String    @id @default(cuid())
-  direction   String                                // 방향 (IN, OUT)
-  messageType String    @map("message_type")        // 메시지 유형 (JOB_ORDER, BOM, PROD_RESULT 등)
-  interfaceId String?   @map("interface_id")        // 인터페이스 ID (ERP 참조 키)
-  payload     Json?                                 // 전문 내용 (JSON)
-  status      String    @default("PENDING")         // 상태 (PENDING, SUCCESS, FAIL, RETRY)
-  errorMsg    String?   @map("error_msg")           // 에러 메시지
-  retryCount  Int       @default(0) @map("retry_count")   // 재시도 횟수
-  sendTime    DateTime? @map("send_time") @db.Timestamptz(6)  // 전송 시간
-  recvTime    DateTime? @map("recv_time") @db.Timestamptz(6)  // 수신 시간
+  direction   String // 방향 (IN, OUT)
+  messageType String    @map("message_type") // 메시지 유형 (JOB_ORDER, BOM, PROD_RESULT 등)
+  interfaceId String?   @map("interface_id") // 인터페이스 ID (ERP 참조 키)
+  payload     Json? // 전문 내용 (JSON)
+  status      String    @default("PENDING") // 상태 (PENDING, SUCCESS, FAIL, RETRY)
+  errorMsg    String?   @map("error_msg") // 에러 메시지
+  retryCount  Int       @default(0) @map("retry_count") // 재시도 횟수
+  sendAt      DateTime? @map("send_time") @db.Timestamptz(6) // 전송 시간
+  recvAt      DateTime? @map("recv_time") @db.Timestamptz(6) // 수신 시간
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([direction, messageType])
@@ -1133,15 +1331,43 @@ model InterLog {
 // 신규 모델 - 기준정보 확장 (Master Extension)
 // ============================================================================
 
+/// 생산라인 마스터 테이블 - Oracle TM_PRODLINE 기반
+model ProdLineMaster {
+  id        String    @id @default(cuid())
+  lineCode  String    @unique @map("line_code")
+  lineName  String    @map("line_name")
+  whLoc     String?   @map("wh_loc")
+  erpCode   String?   @map("erp_code")
+  oper      String?
+  lineType  String?   @map("line_type")
+  remark    String?
+  useYn     String    @default("Y") @map("use_yn")
+  company   String?   @map("company") // 회사코드
+  plant     String?   @map("plant_cd") // 공장코드
+  createdBy String?   @map("created_by") // 생성자
+  updatedBy String?   @map("updated_by") // 수정자
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  @@index([lineType])
+  @@index([oper])
+  @@map("prod_line_masters")
+}
+
 /// 공정 마스터 테이블 - 공정 코드 및 유형 관리
 model ProcessMaster {
   id          String    @id @default(cuid())
-  processCode String    @unique @map("process_code")   // 공정 코드
-  processName String    @map("process_name")           // 공정명
-  processType String    @map("process_type")           // 공정 유형 (CUT, CRM, ASM, INS, PKG)
+  processCode String    @unique @map("process_code") // 공정 코드
+  processName String    @map("process_name") // 공정명
+  processType String    @map("process_type") // 공정 유형 (CUT, CRM, ASM, INS, PKG)
   sortOrder   Int       @default(0) @map("sort_order") // 정렬 순서
-  remark      String?                                  // 비고
+  remark      String? // 비고
   useYn       String    @default("Y") @map("use_yn")
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
@@ -1152,17 +1378,28 @@ model ProcessMaster {
 
 /// 작업자 마스터 테이블 - 현장 작업자 관리
 model WorkerMaster {
-  id          String    @id @default(cuid())
-  workerCode  String    @unique @map("worker_code")    // 작업자 코드
-  workerName  String    @map("worker_name")            // 작업자명
-  dept        String?                                  // 부서
-  qrCode      String?   @map("qr_code")               // QR 코드
-  photoUrl    String?   @map("photo_url")              // 사진 URL (DataURL 또는 Storage URL)
-  processIds  Json?     @map("process_ids")            // 담당 공정 ID 목록 (JSON)
-  useYn       String    @default("Y") @map("use_yn")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id         String    @id @default(cuid())
+  workerCode String    @unique @map("worker_code") // 작업자 코드
+  workerName String    @map("worker_name") // 작업자명 (현지어)
+  engName    String?   @map("eng_name") // 영문 이름
+  dept       String? // 부서
+  position   String? // 직급/직위
+  phone      String? // 전화번호
+  email      String? // 이메일
+  hireDate   String?   @map("hire_date") // 입사일 (YYYYMMDD)
+  quitDate   String?   @map("quit_date") // 퇴사일 (YYYYMMDD)
+  qrCode     String?   @map("qr_code") // QR 코드
+  photoUrl   String?   @map("photo_url") // 사진 URL (DataURL 또는 Storage URL)
+  processIds Json?     @map("process_ids") // 담당 공정 ID 목록 (JSON)
+  remark     String? // 비고
+  useYn      String    @default("Y") @map("use_yn")
+  company    String?   @map("company") // 회사코드
+  plant      String?   @map("plant_cd") // 공장코드
+  createdBy  String?   @map("created_by") // 생성자
+  updatedBy  String?   @map("updated_by") // 수정자
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@index([dept])
   @@map("worker_masters")
@@ -1171,22 +1408,26 @@ model WorkerMaster {
 /// IQC 검사항목 마스터 - 품목별 수입검사 기준
 model IqcItemMaster {
   id          String    @id @default(cuid())
-  partId      String    @map("part_id")                // 품목 ID
-  seq         Int                                      // 검사 순서
-  inspectItem String    @map("inspect_item")           // 검사항목명
-  spec        String?                                  // 규격
-  lsl         Decimal?  @db.Decimal(10, 4)             // 하한 규격
-  usl         Decimal?  @db.Decimal(10, 4)             // 상한 규격
-  unit        String?                                  // 단위
-  isShelfLife Boolean   @default(false) @map("is_shelf_life")  // 유수명 여부
-  retestCycle Int?      @map("retest_cycle")           // 재검사 주기 (일)
+  partId      String    @map("part_id") // 품목 ID
+  seq         Int // 검사 순서
+  inspectItem String    @map("inspect_item") // 검사항목명
+  spec        String? // 규격
+  lsl         Decimal?  @db.Decimal(10, 4) // 하한 규격
+  usl         Decimal?  @db.Decimal(10, 4) // 상한 규격
+  unit        String? // 단위
+  isShelfLife Boolean   @default(false) @map("is_shelf_life") // 유수명 여부
+  retestCycle Int?      @map("retest_cycle") // 재검사 주기 (일)
   useYn       String    @default("Y") @map("use_yn")
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  part        PartMaster @relation(fields: [partId], references: [id])
+  part PartMaster @relation(fields: [partId], references: [id])
 
   @@unique([partId, seq])
   @@index([partId])
@@ -1196,19 +1437,23 @@ model IqcItemMaster {
 /// 설비 점검항목 마스터 - 설비별 점검 기준
 model EquipInspectItemMaster {
   id          String    @id @default(cuid())
-  equipId     String    @map("equip_id")               // 설비 ID
-  inspectType String    @map("inspect_type")           // 점검 유형 (DAILY, PERIODIC)
-  seq         Int                                      // 점검 순서
-  itemName    String    @map("item_name")              // 점검항목명
-  criteria    String?                                  // 판정기준
-  cycle       String?                                  // 주기 (DAILY, WEEKLY, MONTHLY 등)
+  equipId     String    @map("equip_id") // 설비 ID
+  inspectType String    @map("inspect_type") // 점검 유형 (DAILY, PERIODIC)
+  seq         Int // 점검 순서
+  itemName    String    @map("item_name") // 점검항목명
+  criteria    String? // 판정기준
+  cycle       String? // 주기 (DAILY, WEEKLY, MONTHLY 등)
   useYn       String    @default("Y") @map("use_yn")
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  equip       EquipMaster @relation(fields: [equipId], references: [id])
+  equip EquipMaster @relation(fields: [equipId], references: [id])
 
   @@index([equipId])
   @@index([inspectType])
@@ -1217,19 +1462,23 @@ model EquipInspectItemMaster {
 
 /// 설비 점검이력 - 일상/정기 점검 결과 기록
 model EquipInspectLog {
-  id            String    @id @default(cuid())
-  equipId       String    @map("equip_id")             // 설비 ID
-  inspectType   String    @map("inspect_type")         // 점검 유형 (DAILY, PERIODIC)
-  inspectDate   DateTime  @map("inspect_date") @db.Date  // 점검일
-  inspectorName String?   @map("inspector_name")       // 점검자명
-  overallResult String    @default("PASS") @map("overall_result")  // 종합 결과 (PASS, FAIL, CONDITIONAL)
-  details       Json?                                  // 점검 상세 (항목별 결과 JSON)
-  remark        String?                                // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id            String   @id @default(cuid())
+  equipId       String   @map("equip_id") // 설비 ID
+  inspectType   String   @map("inspect_type") // 점검 유형 (DAILY, PERIODIC)
+  inspectDate   DateTime @map("inspect_date") @db.Date // 점검일
+  inspectorName String?  @map("inspector_name") // 점검자명
+  overallResult String   @default("PASS") @map("overall_result") // 종합 결과 (PASS, FAIL, CONDITIONAL)
+  details       Json? // 점검 상세 (항목별 결과 JSON)
+  remark        String? // 비고
+  company       String?  @map("company") // 회사코드
+  plant         String?  @map("plant_cd") // 공장코드
+  createdBy     String?  @map("created_by") // 생성자
+  updatedBy     String?  @map("updated_by") // 수정자
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // Relations
-  equip         EquipMaster @relation(fields: [equipId], references: [id])
+  equip EquipMaster @relation(fields: [equipId], references: [id])
 
   @@index([equipId])
   @@index([inspectType])
@@ -1240,19 +1489,23 @@ model EquipInspectLog {
 /// 작업지도서 테이블 - 품목/공정별 작업 지침
 model WorkInstruction {
   id          String    @id @default(cuid())
-  partId      String    @map("part_id")                // 품목 ID
-  processCode String?   @map("process_code")           // 공정 코드
-  title       String                                   // 제목
-  content     String?                                  // 내용 (텍스트)
-  imageUrl    String?   @map("image_url")              // 이미지 URL
-  revision    String    @default("A")                  // 리비전
+  partId      String    @map("part_id") // 품목 ID
+  processCode String?   @map("process_code") // 공정 코드
+  title       String // 제목
+  content     String? // 내용 (텍스트)
+  imageUrl    String?   @map("image_url") // 이미지 URL
+  revision    String    @default("A") // 리비전
   useYn       String    @default("Y") @map("use_yn")
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  part        PartMaster @relation(fields: [partId], references: [id])
+  part PartMaster @relation(fields: [partId], references: [id])
 
   @@index([partId])
   @@index([processCode])
@@ -1262,17 +1515,21 @@ model WorkInstruction {
 /// 창고이동규칙 - 창고 간 이동 허용 규칙
 model WarehouseTransferRule {
   id              String    @id @default(cuid())
-  fromWarehouseId String    @map("from_warehouse_id")  // 출발 창고 ID
-  toWarehouseId   String    @map("to_warehouse_id")    // 도착 창고 ID
-  allowYn         String    @default("Y") @map("allow_yn")  // 허용 여부
-  remark          String?                              // 비고
+  fromWarehouseId String    @map("from_warehouse_id") // 출발 창고 ID
+  toWarehouseId   String    @map("to_warehouse_id") // 도착 창고 ID
+  allowYn         String    @default("Y") @map("allow_yn") // 허용 여부
+  remark          String? // 비고
+  company         String?   @map("company") // 회사코드
+  plant           String?   @map("plant_cd") // 공장코드
+  createdBy       String?   @map("created_by") // 생성자
+  updatedBy       String?   @map("updated_by") // 수정자
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  fromWarehouse   Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
-  toWarehouse     Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
+  fromWarehouse Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
 
   @@unique([fromWarehouseId, toWarehouseId])
   @@index([fromWarehouseId])
@@ -1282,16 +1539,20 @@ model WarehouseTransferRule {
 
 /// 모델접미사 테이블 - 모델별 접미사 코드 관리
 model ModelSuffix {
-  id          String    @id @default(cuid())
-  modelCode   String    @map("model_code")             // 모델 코드
-  suffixCode  String    @map("suffix_code")            // 접미사 코드
-  suffixName  String    @map("suffix_name")            // 접미사명
-  customer    String?                                  // 고객사
-  remark      String?                                  // 비고
-  useYn       String    @default("Y") @map("use_yn")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id         String    @id @default(cuid())
+  modelCode  String    @map("model_code") // 모델 코드
+  suffixCode String    @map("suffix_code") // 접미사 코드
+  suffixName String    @map("suffix_name") // 접미사명
+  customer   String? // 고객사
+  remark     String? // 비고
+  useYn      String    @default("Y") @map("use_yn")
+  company    String?   @map("company") // 회사코드
+  plant      String?   @map("plant_cd") // 공장코드
+  createdBy  String?   @map("created_by") // 생성자
+  updatedBy  String?   @map("updated_by") // 수정자
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@unique([modelCode, suffixCode])
   @@index([modelCode])
@@ -1305,20 +1566,24 @@ model ModelSuffix {
 /// 구매발주 테이블 - 자재 구매 발주 관리
 model PurchaseOrder {
   id          String    @id @default(cuid())
-  poNo        String    @unique @map("po_no")          // PO 번호
-  partnerId   String?   @map("partner_id")             // 거래처 ID
-  partnerName String?   @map("partner_name")           // 거래처명
-  orderDate   DateTime? @map("order_date") @db.Date    // 발주일
-  dueDate     DateTime? @map("due_date") @db.Date      // 납기일
-  status      String    @default("DRAFT")              // 상태 (DRAFT, CONFIRMED, PARTIAL, RECEIVED, CLOSED)
-  totalAmount Decimal?  @map("total_amount") @db.Decimal(14, 2)  // 총 금액
-  remark      String?                                  // 비고
+  poNo        String    @unique @map("po_no") // PO 번호
+  partnerId   String?   @map("partner_id") // 거래처 ID
+  partnerName String?   @map("partner_name") // 거래처명
+  orderDate   DateTime? @map("order_date") @db.Date // 발주일
+  dueDate     DateTime? @map("due_date") @db.Date // 납기일
+  status      String    @default("DRAFT") // 상태 (DRAFT, CONFIRMED, PARTIAL, RECEIVED, CLOSED)
+  totalAmount Decimal?  @map("total_amount") @db.Decimal(14, 2) // 총 금액
+  remark      String? // 비고
+  company     String?   @map("company") // 회사코드
+  plant       String?   @map("plant_cd") // 공장코드
+  createdBy   String?   @map("created_by") // 생성자
+  updatedBy   String?   @map("updated_by") // 수정자
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  items       PurchaseOrderItem[]
+  items PurchaseOrderItem[]
 
   @@index([status])
   @@index([orderDate])
@@ -1327,19 +1592,23 @@ model PurchaseOrder {
 
 /// 구매발주 품목 테이블 - PO 상세 품목
 model PurchaseOrderItem {
-  id          String    @id @default(cuid())
-  poId        String    @map("po_id")                  // PO ID
-  partId      String    @map("part_id")                // 품목 ID
-  orderQty    Int       @map("order_qty")              // 발주 수량
-  receivedQty Int       @default(0) @map("received_qty")  // 입고 수량
-  unitPrice   Decimal?  @map("unit_price") @db.Decimal(12, 4)  // 단가
-  remark      String?                                  // 비고
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String   @id @default(cuid())
+  poId        String   @map("po_id") // PO ID
+  partId      String   @map("part_id") // 품목 ID
+  orderQty    Int      @map("order_qty") // 발주 수량
+  receivedQty Int      @default(0) @map("received_qty") // 입고 수량
+  unitPrice   Decimal? @map("unit_price") @db.Decimal(12, 4) // 단가
+  remark      String? // 비고
+  company     String?  @map("company") // 회사코드
+  plant       String?  @map("plant_cd") // 공장코드
+  createdBy   String?  @map("created_by") // 생성자
+  updatedBy   String?  @map("updated_by") // 수정자
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // Relations
-  po          PurchaseOrder @relation(fields: [poId], references: [id])
-  part        PartMaster    @relation(fields: [partId], references: [id])
+  po   PurchaseOrder @relation(fields: [poId], references: [id])
+  part PartMaster    @relation(fields: [partId], references: [id])
 
   @@index([poId])
   @@index([partId])
@@ -1348,20 +1617,24 @@ model PurchaseOrderItem {
 
 /// IQC 검사이력 테이블 - 수입검사 결과 기록
 model IqcLog {
-  id          String    @id @default(cuid())
-  lotId       String?   @map("lot_id")                 // LOT ID
-  lotNo       String?   @map("lot_no")                 // LOT 번호
-  partId      String    @map("part_id")                // 품목 ID
-  inspectType String    @default("INITIAL") @map("inspect_type")  // 검사 유형 (INITIAL, RETEST)
-  result      String    @default("PASS")               // 결과 (PASS, FAIL)
-  details     Json?                                    // 검사 상세 (항목별 결과 JSON)
-  inspectorName String? @map("inspector_name")         // 검사자명
-  inspectDate DateTime  @default(now()) @map("inspect_date") @db.Timestamptz(6)
-  remark      String?                                  // 비고
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id            String   @id @default(cuid())
+  lotId         String?  @map("lot_id") // LOT ID
+  lotNo         String?  @map("lot_no") // LOT 번호
+  partId        String   @map("part_id") // 품목 ID
+  inspectType   String   @default("INITIAL") @map("inspect_type") // 검사 유형 (INITIAL, RETEST)
+  result        String   @default("PASS") // 결과 (PASS, FAIL)
+  details       Json? // 검사 상세 (항목별 결과 JSON)
+  inspectorName String?  @map("inspector_name") // 검사자명
+  inspectDate   DateTime @default(now()) @map("inspect_date") @db.Timestamptz(6)
+  remark        String? // 비고
+  company       String?  @map("company") // 회사코드
+  plant         String?  @map("plant_cd") // 공장코드
+  createdBy     String?  @map("created_by") // 생성자
+  updatedBy     String?  @map("updated_by") // 수정자
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // Relations
-  part        PartMaster @relation(fields: [partId], references: [id])
+  part PartMaster @relation(fields: [partId], references: [id])
 
   @@index([partId])
   @@index([lotNo])
@@ -1376,21 +1649,25 @@ model IqcLog {
 
 /// 출하지시 테이블 - 출하 지시 관리
 model ShipmentOrder {
-  id            String    @id @default(cuid())
-  shipOrderNo   String    @unique @map("ship_order_no")  // 출하지시 번호
-  customerId    String?   @map("customer_id")            // 고객 ID (PartnerMaster 참조)
-  customerName  String?   @map("customer_name")          // 고객명
-  dueDate       DateTime? @map("due_date") @db.Date      // 납기일
-  shipDate      DateTime? @map("ship_date") @db.Date     // 출하예정일
-  status        String    @default("DRAFT")              // 상태 (DRAFT, CONFIRMED, SHIPPING, SHIPPED)
-  remark        String?                                  // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  shipOrderNo  String    @unique @map("ship_order_no") // 출하지시 번호
+  customerId   String?   @map("customer_id") // 고객 ID (PartnerMaster 참조)
+  customerName String?   @map("customer_name") // 고객명
+  dueDate      DateTime? @map("due_date") @db.Date // 납기일
+  shipDate     DateTime? @map("ship_date") @db.Date // 출하예정일
+  status       String    @default("DRAFT") // 상태 (DRAFT, CONFIRMED, SHIPPING, SHIPPED)
+  remark       String? // 비고
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  items         ShipmentOrderItem[]
-  returns       ShipmentReturn[]
+  items   ShipmentOrderItem[]
+  returns ShipmentReturn[]
 
   @@index([status])
   @@index([dueDate])
@@ -1399,18 +1676,22 @@ model ShipmentOrder {
 
 /// 출하지시 품목 테이블
 model ShipmentOrderItem {
-  id            String    @id @default(cuid())
-  shipOrderId   String    @map("ship_order_id")          // 출하지시 ID
-  partId        String    @map("part_id")                // 품목 ID
-  orderQty      Int       @map("order_qty")              // 지시 수량
-  shippedQty    Int       @default(0) @map("shipped_qty")  // 출하 수량
-  remark        String?                                  // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String   @id @default(cuid())
+  shipOrderId String   @map("ship_order_id") // 출하지시 ID
+  partId      String   @map("part_id") // 품목 ID
+  orderQty    Int      @map("order_qty") // 지시 수량
+  shippedQty  Int      @default(0) @map("shipped_qty") // 출하 수량
+  remark      String? // 비고
+  company     String?  @map("company") // 회사코드
+  plant       String?  @map("plant_cd") // 공장코드
+  createdBy   String?  @map("created_by") // 생성자
+  updatedBy   String?  @map("updated_by") // 수정자
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // Relations
-  shipOrder     ShipmentOrder @relation(fields: [shipOrderId], references: [id])
-  part          PartMaster    @relation(fields: [partId], references: [id])
+  shipOrder ShipmentOrder @relation(fields: [shipOrderId], references: [id])
+  part      PartMaster    @relation(fields: [partId], references: [id])
 
   @@index([shipOrderId])
   @@index([partId])
@@ -1419,20 +1700,24 @@ model ShipmentOrderItem {
 
 /// 출하반품 테이블 - 출하 반품 관리
 model ShipmentReturn {
-  id            String    @id @default(cuid())
-  returnNo      String    @unique @map("return_no")      // 반품 번호
-  shipmentId    String?   @map("shipment_id")            // 출하지시 ID
-  returnDate    DateTime? @map("return_date") @db.Date   // 반품일
-  returnReason  String?   @map("return_reason")          // 반품 사유
-  status        String    @default("DRAFT")              // 상태 (DRAFT, CONFIRMED, COMPLETED)
-  remark        String?                                  // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  returnNo     String    @unique @map("return_no") // 반품 번호
+  shipmentId   String?   @map("shipment_id") // 출하지시 ID
+  returnDate   DateTime? @map("return_date") @db.Date // 반품일
+  returnReason String?   @map("return_reason") // 반품 사유
+  status       String    @default("DRAFT") // 상태 (DRAFT, CONFIRMED, COMPLETED)
+  remark       String? // 비고
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   // Relations
-  shipOrder     ShipmentOrder? @relation(fields: [shipmentId], references: [id])
-  items         ShipmentReturnItem[]
+  shipOrder ShipmentOrder?       @relation(fields: [shipmentId], references: [id])
+  items     ShipmentReturnItem[]
 
   @@index([shipmentId])
   @@index([status])
@@ -1441,18 +1726,22 @@ model ShipmentReturn {
 
 /// 출하반품 품목 테이블
 model ShipmentReturnItem {
-  id            String    @id @default(cuid())
-  returnId      String    @map("return_id")              // 반품 ID
-  partId        String    @map("part_id")                // 품목 ID
-  returnQty     Int       @map("return_qty")             // 반품 수량
-  disposalType  String    @default("RESTOCK") @map("disposal_type")  // 처리유형 (RESTOCK, SCRAP, REPAIR)
-  remark        String?                                  // 비고
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String   @id @default(cuid())
+  returnId     String   @map("return_id") // 반품 ID
+  partId       String   @map("part_id") // 품목 ID
+  returnQty    Int      @map("return_qty") // 반품 수량
+  disposalType String   @default("RESTOCK") @map("disposal_type") // 처리유형 (RESTOCK, SCRAP, REPAIR)
+  remark       String? // 비고
+  company      String?  @map("company") // 회사코드
+  plant        String?  @map("plant_cd") // 공장코드
+  createdBy    String?  @map("created_by") // 생성자
+  updatedBy    String?  @map("updated_by") // 수정자
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // Relations
-  return_       ShipmentReturn @relation(fields: [returnId], references: [id])
-  part          PartMaster     @relation(fields: [partId], references: [id])
+  return_ ShipmentReturn @relation(fields: [returnId], references: [id])
+  part    PartMaster     @relation(fields: [partId], references: [id])
 
   @@index([returnId])
   @@index([partId])
@@ -1466,21 +1755,25 @@ model ShipmentReturnItem {
 /// 고객발주 테이블 - 고객이 우리 회사에 발주한 주문
 /// 흐름: 고객발주(Customer PO) → 출하지시(ShipmentOrder) → 포장/팔레트 → 출하확정
 model CustomerOrder {
-  id            String    @id @default(cuid())
-  orderNo       String    @unique @map("order_no")       // 수주번호 (CO-YYYYMMDD-NNN)
-  customerId    String?   @map("customer_id")            // 거래처 ID (PartnerMaster)
-  customerName  String?   @map("customer_name")           // 고객명
-  orderDate     DateTime  @default(now()) @map("order_date") @db.Date  // 수주일
-  dueDate       DateTime? @map("due_date") @db.Date       // 납기일
-  status        String    @default("RECEIVED")            // RECEIVED/CONFIRMED/IN_PRODUCTION/PARTIAL_SHIP/SHIPPED/CLOSED
-  totalAmount   Decimal?  @map("total_amount") @db.Decimal(15,2)
-  currency      String?   @default("KRW")
-  remark        String?
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  orderNo      String    @unique @map("order_no") // 수주번호 (CO-YYYYMMDD-NNN)
+  customerId   String?   @map("customer_id") // 거래처 ID (PartnerMaster)
+  customerName String?   @map("customer_name") // 고객명
+  orderDate    DateTime  @default(now()) @map("order_date") @db.Date // 수주일
+  dueDate      DateTime? @map("due_date") @db.Date // 납기일
+  status       String    @default("RECEIVED") // RECEIVED/CONFIRMED/IN_PRODUCTION/PARTIAL_SHIP/SHIPPED/CLOSED
+  totalAmount  Decimal?  @map("total_amount") @db.Decimal(15, 2)
+  currency     String?   @default("KRW")
+  remark       String?
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  createdBy    String?   @map("created_by") // 생성자
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  items         CustomerOrderItem[]
+  items CustomerOrderItem[]
 
   @@index([status])
   @@index([orderDate])
@@ -1490,17 +1783,20 @@ model CustomerOrder {
 
 /// 라벨 디자인 템플릿 테이블 - 카테고리별 바코드 라벨 설정 저장
 model LabelTemplate {
-  id            String    @id @default(cuid())
-  templateName  String    @map("template_name")              // 템플릿 이름
-  category      String                                       // 카테고리 (equip, jig, worker, part)
-  designData    Json      @map("design_data")                // 라벨 디자인 JSON (LabelDesign)
-  isDefault     Boolean   @default(false) @map("is_default") // 기본 템플릿 여부
-  remark        String?                                      // 비고
-  createdBy     String?   @map("created_by")                 // 생성자
-  useYn         String    @default("Y") @map("use_yn")
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  templateName String    @map("template_name") // 템플릿 이름
+  category     String // 카테고리 (equip, jig, worker, part)
+  designData   Json      @map("design_data") // 라벨 디자인 JSON (LabelDesign)
+  isDefault    Boolean   @default(false) @map("is_default") // 기본 템플릿 여부
+  remark       String? // 비고
+  createdBy    String?   @map("created_by") // 생성자
+  useYn        String    @default("Y") @map("use_yn")
+  company      String?   @map("company") // 회사코드
+  plant        String?   @map("plant_cd") // 공장코드
+  updatedBy    String?   @map("updated_by") // 수정자
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@unique([templateName, category])
   @@index([category])
@@ -1510,18 +1806,22 @@ model LabelTemplate {
 
 /// 고객발주 품목 테이블
 model CustomerOrderItem {
-  id            String    @id @default(cuid())
-  orderId       String    @map("order_id")
-  partId        String    @map("part_id")
-  orderQty      Int       @map("order_qty")              // 수주 수량
-  shippedQty    Int       @default(0) @map("shipped_qty") // 출하 수량
-  unitPrice     Decimal?  @map("unit_price") @db.Decimal(15,2)
-  remark        String?
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id         String   @id @default(cuid())
+  orderId    String   @map("order_id")
+  partId     String   @map("part_id")
+  orderQty   Int      @map("order_qty") // 수주 수량
+  shippedQty Int      @default(0) @map("shipped_qty") // 출하 수량
+  unitPrice  Decimal? @map("unit_price") @db.Decimal(15, 2)
+  remark     String?
+  company    String?  @map("company") // 회사코드
+  plant      String?  @map("plant_cd") // 공장코드
+  createdBy  String?  @map("created_by") // 생성자
+  updatedBy  String?  @map("updated_by") // 수정자
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  order         CustomerOrder @relation(fields: [orderId], references: [id])
-  part          PartMaster    @relation(fields: [partId], references: [id])
+  order CustomerOrder @relation(fields: [orderId], references: [id])
+  part  PartMaster    @relation(fields: [partId], references: [id])
 
   @@index([orderId])
   @@index([partId])

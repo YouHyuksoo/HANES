@@ -35,7 +35,7 @@ export class ProdResultService {
   /**
    * 생산실적 목록 조회
    */
-  async findAll(query: ProdResultQueryDto) {
+  async findAll(query: ProdResultQueryDto, company?: string) {
     const {
       page = 1,
       limit = 10,
@@ -52,6 +52,7 @@ export class ProdResultService {
 
     const where = {
       deletedAt: null,
+      ...(company && { company }),
       ...(jobOrderId && { jobOrderId }),
       ...(equipId && { equipId }),
       ...(workerId && { workerId }),
@@ -60,7 +61,7 @@ export class ProdResultService {
       ...(status && { status }),
       ...(startTimeFrom || startTimeTo
         ? {
-            startTime: {
+            startAt: {
               ...(startTimeFrom && { gte: new Date(startTimeFrom) }),
               ...(startTimeTo && { lte: new Date(startTimeTo) }),
             },
@@ -232,8 +233,8 @@ export class ProdResultService {
         processCode: dto.processCode,
         goodQty: dto.goodQty ?? 0,
         defectQty: dto.defectQty ?? 0,
-        startTime: dto.startTime ? new Date(dto.startTime) : new Date(),
-        endTime: dto.endTime ? new Date(dto.endTime) : null,
+        startAt: dto.startAt ? new Date(dto.startAt) : new Date(),
+        endAt: dto.endAt ? new Date(dto.endAt) : null,
         cycleTime: dto.cycleTime,
         status: 'RUNNING',
         remark: dto.remark,
@@ -270,7 +271,7 @@ export class ProdResultService {
 
     // DONE 상태에서는 일부 필드만 수정 가능
     if (prodResult.status === 'DONE') {
-      if (dto.jobOrderId || dto.equipId || dto.workerId || dto.startTime) {
+      if (dto.jobOrderId || dto.equipId || dto.workerId || dto.startAt) {
         throw new BadRequestException(`완료된 실적의 핵심 정보는 수정할 수 없습니다.`);
       }
     }
@@ -284,8 +285,8 @@ export class ProdResultService {
         ...(dto.processCode !== undefined && { processCode: dto.processCode }),
         ...(dto.goodQty !== undefined && { goodQty: dto.goodQty }),
         ...(dto.defectQty !== undefined && { defectQty: dto.defectQty }),
-        ...(dto.startTime !== undefined && { startTime: new Date(dto.startTime) }),
-        ...(dto.endTime !== undefined && { endTime: new Date(dto.endTime) }),
+        ...(dto.startAt !== undefined && { startAt: new Date(dto.startAt) }),
+        ...(dto.endAt !== undefined && { endAt: new Date(dto.endAt) }),
         ...(dto.cycleTime !== undefined && { cycleTime: dto.cycleTime }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.remark !== undefined && { remark: dto.remark }),
@@ -342,7 +343,7 @@ export class ProdResultService {
       where: { id },
       data: {
         status: 'DONE',
-        endTime: dto.endTime ? new Date(dto.endTime) : new Date(),
+        endAt: dto.endAt ? new Date(dto.endAt) : new Date(),
         ...(dto.goodQty !== undefined && { goodQty: dto.goodQty }),
         ...(dto.defectQty !== undefined && { defectQty: dto.defectQty }),
         ...(dto.remark && { remark: dto.remark }),
@@ -421,7 +422,7 @@ export class ProdResultService {
     };
 
     if (dateFrom || dateTo) {
-      where.startTime = {
+      where.startAt = {
         ...(dateFrom && { gte: new Date(dateFrom) }),
         ...(dateTo && { lte: new Date(dateTo) }),
       };
@@ -465,7 +466,7 @@ export class ProdResultService {
     };
 
     if (dateFrom || dateTo) {
-      where.startTime = {
+      where.startAt = {
         ...(dateFrom && { gte: new Date(dateFrom) }),
         ...(dateTo && { lte: new Date(dateTo) }),
       };
@@ -506,13 +507,13 @@ export class ProdResultService {
       where: {
         deletedAt: null,
         status: { not: 'CANCELED' },
-        startTime: {
+        startAt: {
           gte: new Date(dateFrom),
           lte: new Date(dateTo),
         },
       },
       select: {
-        startTime: true,
+        startAt: true,
         goodQty: true,
         defectQty: true,
       },
@@ -522,8 +523,8 @@ export class ProdResultService {
     const dailyMap = new Map<string, { goodQty: number; defectQty: number; count: number }>();
 
     results.forEach((r) => {
-      if (r.startTime) {
-        const dateKey = r.startTime.toISOString().split('T')[0];
+      if (r.startAt) {
+        const dateKey = r.startAt.toISOString().split('T')[0];
         const current = dailyMap.get(dateKey) || { goodQty: 0, defectQty: 0, count: 0 };
         current.goodQty += r.goodQty;
         current.defectQty += r.defectQty;
