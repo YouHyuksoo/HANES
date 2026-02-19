@@ -41,10 +41,11 @@ DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[N]-[REGION].pool
 | pgbouncer | Transaction pooler는 `?pgbouncer=true` 필수 |
 
 ### 4. 현재 프로젝트 정보
-- **Project ID**: `YOUR_PROJECT_REF`
-- **Project Name**: `harness-mes`
-- **Region**: `ap-northeast-2`
-- **Pooler 주소**: `YOUR_POOLER_HOST`
+- **Project ID**: Supabase Dashboard에서 확인
+- **Project Name**: Supabase Dashboard에서 확인
+- **Region**: Supabase Dashboard에서 확인
+- **Pooler 주소**: Supabase Dashboard에서 확인
+- ⚠️ **절대 이 파일에 실제 값을 기입하지 말 것! (Git에 커밋됨)**
 
 ---
 
