@@ -9,9 +9,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'WAREHOUSES' })
-@Index(['WAREHOUSE_TYPE'])
-@Index(['PLANT_CODE'])
-@Index(['LINE_CODE'])
+@Index(['warehouseType'])
+@Index(['plantCode'])
+@Index(['lineCode'])
 export class Warehouse {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
@@ -37,8 +37,8 @@ export class Warehouse {
   @Column({ name: 'VENDOR_ID', length: 50, nullable: true })
   vendorId: string | null;
 
-  @Column({ name: 'IS_DEFAULT', type: 'boolean', default: false })
-  isDefault: boolean;
+  @Column({ name: 'IS_DEFAULT', type: 'char', length: 1, default: 'N' })
+  isDefault: string;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;

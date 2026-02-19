@@ -76,7 +76,7 @@ export class PlantQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(1000)
   limit?: number = 10;
 
   @ApiPropertyOptional({ enum: PLANT_TYPE_VALUES })

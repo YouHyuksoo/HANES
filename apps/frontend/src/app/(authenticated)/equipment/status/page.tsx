@@ -20,11 +20,13 @@ function EquipStatusPage() {
   const { t } = useTranslation();
 
   // 실제 API 호출
-  const { data: response, isLoading, refetch } = useApiQuery<Equipment[]>(
+  const { data: response, isLoading, refetch } = useApiQuery<any>(
     ['equipment', 'list'],
-    '/equipment'
+    '/equipment/equips'
   );
-  const equipments = response?.data || [];
+  // Paged response: { data: { data: [], total, page, limit } }
+  const equipments = (response?.data?.data as Equipment[]) || [];
+  console.log('Equipment API Response:', response);
 
   const equipTypeOptions = [
     { value: '', label: t('equipment.status.allTypes') },

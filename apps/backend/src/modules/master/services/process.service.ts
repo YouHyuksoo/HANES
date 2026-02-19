@@ -1,76 +1,91 @@
 /**
  * @file src/modules/master/services/process.service.ts
- * @description 공정마스터 비즈니스 로직 서비스
- *
- * 초보자 가이드:
- * 1. **findAll**: 페이징/검색/필터 조회
- * 2. **create**: 중복 코드 체크 후 생성
- * 3. **delete**: 소프트 삭제 (deletedAt 설정)
+ * @description 공정마스터 비즈니스 로직 서비스 - TypeORM
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { ProcessMaster } from '../../../entities/process-master.entity';
 import { CreateProcessDto, UpdateProcessDto, ProcessQueryDto } from '../dto/process.dto';
 
 @Injectable()
 export class ProcessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(ProcessMaster)
+    private readonly processRepository: Repository<ProcessMaster>,
+  ) {}
 
   async findAll(query: ProcessQueryDto) {
     const { page = 1, limit = 10, search, processType, useYn } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(processType && { processType }),
-      ...(useYn && { useYn }),
-      ...(search && {
-        OR: [
-          { processCode: { contains: search, mode: 'insensitive' as const } },
-          { processName: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    const queryBuilder = this.processRepository.createQueryBuilder('process')
+      .where('process.deletedAt IS NULL');
+
+    if (processType) {
+      queryBuilder.andWhere('process.processType = :processType', { processType });
+    }
+
+    if (useYn) {
+      queryBuilder.andWhere('process.useYn = :useYn', { useYn });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(process.processCode) LIKE UPPER(:search) OR UPPER(process.processName) LIKE UPPER(:search))',
+        { search: `%${search}%` }
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.processMaster.findMany({ where, skip, take: limit, orderBy: { sortOrder: 'asc' } }),
-      this.prisma.processMaster.count({ where }),
+      queryBuilder
+        .orderBy('process.sortOrder', 'ASC')
+        .addOrderBy('process.processCode', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
   }
 
   async findById(id: string) {
-    const item = await this.prisma.processMaster.findFirst({ where: { id, deletedAt: null } });
-    if (!item) throw new NotFoundException(`공정을 찾을 수 없습니다: ${id}`);
-    return item;
+    const process = await this.processRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+    if (!process) throw new NotFoundException(`공정을 찾을 수 없습니다: ${id}`);
+    return process;
   }
 
   async create(dto: CreateProcessDto) {
-    const existing = await this.prisma.processMaster.findFirst({
-      where: { processCode: dto.processCode, deletedAt: null },
+    const existing = await this.processRepository.findOne({
+      where: { processCode: dto.processCode, deletedAt: IsNull() },
     });
     if (existing) throw new ConflictException(`이미 존재하는 공정 코드입니다: ${dto.processCode}`);
 
-    return this.prisma.processMaster.create({
-      data: {
-        processCode: dto.processCode,
-        processName: dto.processName,
-        processType: dto.processType,
-        sortOrder: dto.sortOrder ?? 0,
-        remark: dto.remark,
-        useYn: dto.useYn ?? 'Y',
-      },
+    const process = this.processRepository.create({
+      processCode: dto.processCode,
+      processName: dto.processName,
+      processType: dto.processType,
+      sortOrder: dto.sortOrder ?? 0,
+      remark: dto.remark,
+      useYn: dto.useYn ?? 'Y',
     });
+
+    return this.processRepository.save(process);
   }
 
   async update(id: string, dto: UpdateProcessDto) {
     await this.findById(id);
-    return this.prisma.processMaster.update({ where: { id }, data: dto });
+    await this.processRepository.update(id, dto);
+    return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    return this.prisma.processMaster.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.processRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 }

@@ -7,14 +7,14 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'STOCK_TRANSACTIONS' })
-@Index(['TRANS_TYPE'])
-@Index(['TRANS_DATE'])
-@Index(['FROM_WAREHOUSE_ID'])
-@Index(['TO_WAREHOUSE_ID'])
-@Index(['PART_ID'])
-@Index(['LOT_ID'])
-@Index(['REF_TYPE', 'REF_ID'])
-@Index(['CANCEL_REF_ID'])
+@Index(['transType'])
+@Index(['transDate'])
+@Index(['fromWarehouseId'])
+@Index(['toWarehouseId'])
+@Index(['partId'])
+@Index(['lotId'])
+@Index(['refType', 'refId'])
+@Index(['cancelRefId'])
 export class StockTransaction {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

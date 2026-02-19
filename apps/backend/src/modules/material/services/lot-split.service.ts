@@ -1,96 +1,261 @@
 /**
  * @file src/modules/material/services/lot-split.service.ts
- * @description 자재 LOT 분할 비즈니스 로직
- *
- * 초보자 가이드:
- * 1. **분할**: 하나의 LOT에서 일부 수량을 분리하여 새 LOT 생성
- * 2. **추적성**: parentLotId로 분할 이력 추적 가능
+ * @description 자재 LOT 분할 비즈니스 로직 (TypeORM)
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource, IsNull, Like } from 'typeorm';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
 
 @Injectable()
 export class LotSplitService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(MatStock)
+    private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(StockTransaction)
+    private readonly stockTransactionRepository: Repository<StockTransaction>,
+    private readonly dataSource: DataSource,
+  ) {}
 
-  /** 분할 가능한 LOT 목록 조회 (currentQty > 0) */
   async findSplittableLots(query: LotSplitQueryDto) {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      currentQty: { gt: 0 },
-      status: 'NORMAL',
-      ...(search && {
-        OR: [
-          { lotNo: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
+    // 분할 가능한 LOT: 재고가 있고, DEPLETED 상태가 아닌 LOT
+    const where: any = {
+      deletedAt: IsNull(),
+      currentQty: { $gt: 1 } as any, // 1개 이상 재고가 있는 LOT
+      status: { $ne: 'DEPLETED' } as any,
     };
 
+    if (search) {
+      where.lotNo = Like(`%${search}%`);
+    }
+
     const [data, total] = await Promise.all([
-      this.prisma.lot.findMany({
+      this.matLotRepository.find({
         where,
         skip,
         take: limit,
-        include: { part: { select: { id: true, partCode: true, partName: true, unit: true } } },
-        orderBy: { createdAt: 'desc' },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.lot.count({ where }),
+      this.matLotRepository.count({ where }),
     ]);
 
-    const flattened = data.map((lot) => ({
-      ...lot,
-      partCode: lot.part?.partCode,
-      partName: lot.part?.partName,
-      unit: lot.part?.unit,
-      part: undefined,
-    }));
+    // part 정보 조회 및 중첩 객체 평면화
+    const partIds = data.map((lot) => lot.partId).filter(Boolean);
+    const parts = await this.partMasterRepository.findByIds(partIds);
+    const partMap = new Map(parts.map((p) => [p.id, p]));
 
-    return { data: flattened, total, page, limit };
+    // 재고 정보 조회
+    const lotIds = data.map((lot) => lot.id);
+    const stocks = await this.matStockRepository.find({
+      where: { lotId: { $in: lotIds } as any },
+    });
+    const stockMap = new Map(stocks.map((s) => [s.lotId, s]));
+
+    const flattenedData = data.map((lot) => {
+      const part = partMap.get(lot.partId);
+      const stock = stockMap.get(lot.id);
+      return {
+        ...lot,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        unit: part?.unit,
+        warehouseCode: stock?.warehouseCode,
+      };
+    });
+
+    return { data: flattenedData, total, page, limit };
   }
 
-  /** LOT 분할 실행 */
   async split(dto: LotSplitDto) {
-    const sourceLot = await this.prisma.lot.findFirst({
-      where: { id: dto.sourceLotId, deletedAt: null },
-      include: { part: true },
+    const { sourceLotId, splitQty, newLotNo, remark } = dto;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 원본 LOT 조회
+      const sourceLot = await queryRunner.manager.findOne(MatLot, {
+        where: { id: sourceLotId, deletedAt: IsNull() },
+      });
+
+      if (!sourceLot) {
+        throw new NotFoundException(`원본 LOT을 찾을 수 없습니다: ${sourceLotId}`);
+      }
+
+      if (sourceLot.currentQty < splitQty) {
+        throw new BadRequestException(`분할 수량이 현재 재고보다 많습니다. 현재: ${sourceLot.currentQty}, 요청: ${splitQty}`);
+      }
+
+      if (sourceLot.status === 'HOLD') {
+        throw new BadRequestException('HOLD 상태인 LOT은 분할할 수 없습니다.');
+      }
+
+      if (sourceLot.status === 'DEPLETED') {
+        throw new BadRequestException('소진된 LOT은 분할할 수 없습니다.');
+      }
+
+      // 품목 정보 조회
+      const part = await queryRunner.manager.findOne(PartMaster, {
+        where: { id: sourceLot.partId },
+      });
+      if (!part) {
+        throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.partId}`);
+      }
+
+      // 새 LOT 번호 생성 (미지정 시 자동 생성)
+      const generatedLotNo = newLotNo || (await this.generateLotNo(sourceLot.lotNo));
+
+      // 중복 LOT 번호 확인
+      const existingLot = await queryRunner.manager.findOne(MatLot, {
+        where: { lotNo: generatedLotNo, deletedAt: IsNull() },
+      });
+      if (existingLot) {
+        throw new BadRequestException(`이미 존재하는 LOT 번호입니다: ${generatedLotNo}`);
+      }
+
+      // 원본 LOT 재고 차감
+      const newSourceQty = sourceLot.currentQty - splitQty;
+      await queryRunner.manager.update(MatLot, sourceLotId, {
+        currentQty: newSourceQty,
+        status: newSourceQty === 0 ? 'DEPLETED' : sourceLot.status,
+      });
+
+      // 새 LOT 생성
+      const newLot = queryRunner.manager.create(MatLot, {
+        lotNo: generatedLotNo,
+        partId: sourceLot.partId,
+        initQty: splitQty,
+        currentQty: splitQty,
+        recvDate: new Date(),
+        expireDate: sourceLot.expireDate,
+        origin: sourceLot.origin,
+        vendor: sourceLot.vendor,
+        invoiceNo: sourceLot.invoiceNo,
+        poNo: sourceLot.poNo,
+        iqcStatus: sourceLot.iqcStatus,
+        status: 'NORMAL',
+      });
+      await queryRunner.manager.save(newLot);
+
+      // 재고 정보도 분할 (원본 LOT의 재고가 있는 경우)
+      const sourceStock = await queryRunner.manager.findOne(MatStock, {
+        where: { lotId: sourceLotId },
+      });
+
+      if (sourceStock) {
+        // 원본 재고 차감
+        const newSourceStockQty = sourceStock.qty - splitQty;
+        await queryRunner.manager.update(MatStock, sourceStock.id, {
+          qty: newSourceStockQty,
+          availableQty: newSourceStockQty - sourceStock.reservedQty,
+        });
+
+        // 새 재고 생성
+        const newStock = queryRunner.manager.create(MatStock, {
+          warehouseCode: sourceStock.warehouseCode,
+          locationCode: sourceStock.locationCode,
+          partId: sourceStock.partId,
+          lotId: newLot.id,
+          qty: splitQty,
+          availableQty: splitQty,
+          reservedQty: 0,
+        });
+        await queryRunner.manager.save(newStock);
+      }
+
+      // 트랜잭션 이력 생성
+      const transNo = await this.generateTransNo();
+      await queryRunner.manager.save(StockTransaction, {
+        transNo,
+        transType: 'LOT_SPLIT',
+        transDate: new Date(),
+        partId: sourceLot.partId,
+        lotId: sourceLotId,
+        qty: splitQty,
+        refType: 'LOT_SPLIT',
+        refId: newLot.id,
+        remark: remark || `LOT 분할: ${sourceLot.lotNo} → ${generatedLotNo}`,
+        status: 'DONE',
+      });
+
+      await queryRunner.commitTransaction();
+
+      return {
+        id: newLot.id,
+        parentLotId: sourceLotId,
+        sourceLotNo: sourceLot.lotNo,
+        newLotNo: generatedLotNo,
+        splitQty,
+        partId: sourceLot.partId,
+        partCode: part.partCode,
+        partName: part.partName,
+        sourceRemainingQty: newSourceQty,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * LOT 번호 생성
+   * 원본 LOT 번호 기반으로 새 번호 생성
+   */
+  private async generateLotNo(sourceLotNo: string): Promise<string> {
+    const baseLotNo = sourceLotNo.length > 10 ? sourceLotNo.substring(0, 10) : sourceLotNo;
+    const prefix = `${baseLotNo}-S`;
+
+    // 기존 분할 LOT 검색
+    const existingLots = await this.matLotRepository.find({
+      where: { lotNo: Like(`${prefix}%`) },
+      order: { lotNo: 'DESC' },
     });
-    if (!sourceLot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.sourceLotId}`);
-    if (sourceLot.currentQty < dto.splitQty) {
-      throw new BadRequestException(`분할 수량(${dto.splitQty})이 현재 수량(${sourceLot.currentQty})을 초과합니다.`);
+
+    let seq = 1;
+    if (existingLots.length > 0) {
+      const lastLot = existingLots[0];
+      const match = lastLot.lotNo.match(/-S(\d+)$/);
+      if (match) {
+        seq = parseInt(match[1], 10) + 1;
+      }
     }
 
-    const newLotNo = dto.newLotNo || `${sourceLot.lotNo}-S${Date.now().toString(36).toUpperCase()}`;
+    return `${prefix}${String(seq).padStart(3, '0')}`;
+  }
 
-    return this.prisma.$transaction(async (tx) => {
-      await tx.lot.update({
-        where: { id: sourceLot.id },
-        data: { currentQty: sourceLot.currentQty - dto.splitQty },
-      });
+  /**
+   * 트랜잭션 번호 생성
+   */
+  private async generateTransNo(): Promise<string> {
+    const today = new Date();
+    const prefix = `SPL${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
-      const newLot = await tx.lot.create({
-        data: {
-          lotNo: newLotNo,
-          partId: sourceLot.partId,
-          partType: sourceLot.partType,
-          initQty: dto.splitQty,
-          currentQty: dto.splitQty,
-          recvDate: sourceLot.recvDate,
-          expireDate: sourceLot.expireDate,
-          origin: sourceLot.origin,
-          vendor: sourceLot.vendor,
-          parentLotId: sourceLot.id,
-          iqcStatus: sourceLot.iqcStatus,
-          status: 'NORMAL',
-        },
-        include: { part: true },
-      });
-
-      return newLot;
+    const lastTrans = await this.stockTransactionRepository.findOne({
+      where: { transNo: Like(`${prefix}%`) },
+      order: { transNo: 'DESC' },
     });
+
+    let seq = 1;
+    if (lastTrans) {
+      const lastSeq = parseInt(lastTrans.transNo.slice(-5), 10);
+      seq = lastSeq + 1;
+    }
+
+    return `${prefix}${String(seq).padStart(5, '0')}`;
   }
 }

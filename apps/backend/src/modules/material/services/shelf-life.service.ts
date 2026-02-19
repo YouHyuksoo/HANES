@@ -1,72 +1,101 @@
 /**
  * @file src/modules/material/services/shelf-life.service.ts
- * @description 유수명자재 조회 서비스 - 유효기한이 있는 LOT의 만료 현황
+ * @description 유수명자재 조회 서비스 - 유효기한이 있는 LOT의 만료 현황 (TypeORM)
  */
 
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Raw, In } from 'typeorm';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { ShelfLifeQueryDto } from '../dto/shelf-life.dto';
 
 @Injectable()
 export class ShelfLifeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+  ) {}
 
   async findAll(query: ShelfLifeQueryDto) {
     const { page = 1, limit = 10, search, expiryStatus, nearExpiryDays = 30 } = query;
     const skip = (page - 1) * limit;
-    const now = new Date();
-    const nearDate = new Date(now.getTime() + nearExpiryDays * 24 * 60 * 60 * 1000);
 
-    const where: Record<string, unknown> = {
-      deletedAt: null,
-      expireDate: { not: null },
-      currentQty: { gt: 0 },
-      ...(search && {
-        OR: [
-          { lotNo: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
+    const where: any = {
+      deletedAt: IsNull(),
+      // 유효기한이 있는 LOT만 조회
+      expireDate: Raw((alias) => `${alias} IS NOT NULL`),
     };
 
-    if (expiryStatus === 'EXPIRED') {
-      where.expireDate = { lt: now };
-    } else if (expiryStatus === 'NEAR_EXPIRY') {
-      where.expireDate = { gte: now, lte: nearDate };
-    } else if (expiryStatus === 'VALID') {
-      where.expireDate = { gt: nearDate };
-    }
-
     const [data, total] = await Promise.all([
-      this.prisma.lot.findMany({
+      this.matLotRepository.find({
         where,
         skip,
         take: limit,
-        include: { part: { select: { id: true, partCode: true, partName: true, unit: true } } },
-        orderBy: { expireDate: 'asc' },
+        order: { expireDate: 'ASC' },
       }),
-      this.prisma.lot.count({ where }),
+      this.matLotRepository.count({ where }),
     ]);
 
-    const enriched = data.map((lot) => {
-      const expire = lot.expireDate ? new Date(lot.expireDate) : null;
-      let expiryLabel = 'VALID';
-      let remainDays = 0;
-      if (expire) {
-        remainDays = Math.ceil((expire.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        if (remainDays < 0) expiryLabel = 'EXPIRED';
-        else if (remainDays <= nearExpiryDays) expiryLabel = 'NEAR_EXPIRY';
+    // part 정보 조회
+    const partIds = data.map((lot) => lot.partId).filter(Boolean);
+    const parts = await this.partMasterRepository.findByIds(partIds);
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const nearExpiryDate = new Date();
+    nearExpiryDate.setDate(today.getDate() + nearExpiryDays);
+    nearExpiryDate.setHours(0, 0, 0, 0);
+
+    // 만료 상태 계산
+    let result = data.map((lot) => {
+      const part = partMap.get(lot.partId);
+      const expireDate = lot.expireDate ? new Date(lot.expireDate) : null;
+      let status: 'EXPIRED' | 'NEAR_EXPIRY' | 'VALID' = 'VALID';
+      let daysUntilExpiry: number | null = null;
+
+      if (expireDate) {
+        expireDate.setHours(0, 0, 0, 0);
+        daysUntilExpiry = Math.ceil((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilExpiry < 0) {
+          status = 'EXPIRED';
+        } else if (daysUntilExpiry <= nearExpiryDays) {
+          status = 'NEAR_EXPIRY';
+        }
       }
+
       return {
         ...lot,
-        expiryLabel,
-        remainDays,
-        partCode: lot.part?.partCode,
-        partName: lot.part?.partName,
-        unit: lot.part?.unit,
-        part: undefined,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        unit: part?.unit,
+        expiryStatus: status,
+        daysUntilExpiry,
       };
     });
 
-    return { data: enriched, total, page, limit };
+    // 만료 상태 필터링
+    if (expiryStatus) {
+      result = result.filter((item) => item.expiryStatus === expiryStatus);
+    }
+
+    // 검색어 필터링
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.lotNo?.toLowerCase().includes(searchLower) ||
+          item.partCode?.toLowerCase().includes(searchLower) ||
+          item.partName?.toLowerCase().includes(searchLower),
+      );
+    }
+
+    return { data: result, total, page, limit };
   }
 }
+

@@ -7,13 +7,15 @@ import {
   DeleteDateColumn,
   Index,
   Unique,
+  OneToMany,
 } from 'typeorm';
+import { ProdResult } from './prod-result.entity';
 
 @Entity({ name: 'JOB_ORDERS' })
-@Unique(['ORDER_NO'])
-@Index(['STATUS'])
-@Index(['PLAN_DATE'])
-@Index(['LINE_CODE'])
+@Unique(['orderNo'])
+@Index(['status'])
+@Index(['planDate'])
+@Index(['lineCode'])
 export class JobOrder {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
@@ -77,4 +79,7 @@ export class JobOrder {
 
   @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
   deletedAt: Date | null;
+
+  @OneToMany(() => ProdResult, (prodResult) => prodResult.jobOrder)
+  prodResults: ProdResult[];
 }

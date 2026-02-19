@@ -8,9 +8,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CUSTOMS_LOTS' })
-@Index(['ENTRY_ID'])
-@Index(['LOT_NO'])
-@Index(['STATUS'])
+@Index(['entryId'])
+@Index(['lotNo'])
+@Index(['status'])
 export class CustomsLot {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

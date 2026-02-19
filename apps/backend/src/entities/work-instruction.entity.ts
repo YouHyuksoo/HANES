@@ -9,8 +9,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'WORK_INSTRUCTIONS' })
-@Index(['PART_ID'])
-@Index(['PROCESS_CODE'])
+@Index(['partId'])
+@Index(['processCode'])
 export class WorkInstruction {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

@@ -1,74 +1,160 @@
 /**
  * @file src/modules/material/services/hold.service.ts
- * @description 재고홀드 비즈니스 로직 - LOT 상태를 HOLD로 변경/해제
+ * @description 재고홀드 비즈니스 로직 - LOT 상태를 HOLD로 변경/해제 (TypeORM)
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Like } from 'typeorm';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { HoldActionDto, ReleaseHoldDto, HoldQueryDto } from '../dto/hold.dto';
 
 @Injectable()
 export class HoldService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(MatStock)
+    private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
+  ) {}
 
   async findAll(query: HoldQueryDto) {
     const { page = 1, limit = 10, search, status } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      currentQty: { gt: 0 },
-      ...(status ? { status } : { status: { in: ['HOLD', 'NORMAL'] } }),
-      ...(search && {
-        OR: [
-          { lotNo: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
+    const where: any = {
+      deletedAt: IsNull(),
     };
 
+    if (status) {
+      where.status = status;
+    }
+
+    // 검색어로 LOT 번호 또는 품목 코드 검색
+    if (search) {
+      // 먼저 품목 검색
+      const parts = await this.partMasterRepository.find({
+        where: [
+          { partCode: Like(`%${search}%`) },
+          { partName: Like(`%${search}%`) },
+        ],
+      });
+      const partIds = parts.map((p) => p.id);
+
+      where.lotNo = Like(`%${search}%`);
+      if (partIds.length > 0) {
+        // partId 조건 추가 (OR 조건을 위해 별도 처리 필요)
+      }
+    }
+
     const [data, total] = await Promise.all([
-      this.prisma.lot.findMany({
+      this.matLotRepository.find({
         where,
         skip,
         take: limit,
-        include: { part: { select: { id: true, partCode: true, partName: true, unit: true } } },
-        orderBy: { updatedAt: 'desc' },
+        order: { createdAt: 'DESC' },
       }),
-      this.prisma.lot.count({ where }),
+      this.matLotRepository.count({ where }),
     ]);
 
-    const flattened = data.map((lot) => ({
-      ...lot,
-      partCode: lot.part?.partCode,
-      partName: lot.part?.partName,
-      unit: lot.part?.unit,
-      part: undefined,
-    }));
+    // part 정보 조회 및 중첩 객체 평면화
+    const partIds = data.map((lot) => lot.partId).filter(Boolean);
+    const parts = await this.partMasterRepository.findByIds(partIds);
+    const partMap = new Map(parts.map((p) => [p.id, p]));
 
-    return { data: flattened, total, page, limit };
+    // 재고 정보 조회
+    const lotIds = data.map((lot) => lot.id);
+    const stocks = await this.matStockRepository.find({
+      where: { lotId: { $in: lotIds } as any },
+    });
+    const stockMap = new Map(stocks.map((s) => [s.lotId, s]));
+
+    const flattenedData = data.map((lot) => {
+      const part = partMap.get(lot.partId);
+      const stock = stockMap.get(lot.id);
+      return {
+        ...lot,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        unit: part?.unit,
+        warehouseCode: stock?.warehouseCode,
+      };
+    });
+
+    return { data: flattenedData, total, page, limit };
   }
 
   async hold(dto: HoldActionDto) {
-    const lot = await this.prisma.lot.findFirst({ where: { id: dto.lotId, deletedAt: null } });
-    if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotId}`);
-    if (lot.status === 'HOLD') throw new BadRequestException('이미 HOLD 상태입니다.');
+    const { lotId, reason } = dto;
 
-    return this.prisma.lot.update({
-      where: { id: dto.lotId },
-      data: { status: 'HOLD' },
-      include: { part: true },
+    const lot = await this.matLotRepository.findOne({
+      where: { id: lotId, deletedAt: IsNull() },
     });
+
+    if (!lot) {
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+    }
+
+    if (lot.status === 'HOLD') {
+      throw new BadRequestException('이미 HOLD 상태인 LOT입니다.');
+    }
+
+    if (lot.status === 'DEPLETED') {
+      throw new BadRequestException('소진된 LOT은 HOLD할 수 없습니다.');
+    }
+
+    // HOLD 상태로 변경
+    await this.matLotRepository.update(lotId, {
+      status: 'HOLD',
+    });
+
+    const updatedLot = await this.matLotRepository.findOne({ where: { id: lotId } });
+    const part = await this.partMasterRepository.findOne({ where: { id: updatedLot!.partId } });
+
+    return {
+      id: lotId,
+      status: 'HOLD',
+      lotNo: updatedLot?.lotNo,
+      partCode: part?.partCode,
+      partName: part?.partName,
+      reason,
+    };
   }
 
   async release(dto: ReleaseHoldDto) {
-    const lot = await this.prisma.lot.findFirst({ where: { id: dto.lotId, deletedAt: null } });
-    if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotId}`);
-    if (lot.status !== 'HOLD') throw new BadRequestException('HOLD 상태가 아닙니다.');
+    const { lotId, reason } = dto;
 
-    return this.prisma.lot.update({
-      where: { id: dto.lotId },
-      data: { status: 'NORMAL' },
-      include: { part: true },
+    const lot = await this.matLotRepository.findOne({
+      where: { id: lotId, deletedAt: IsNull() },
     });
+
+    if (!lot) {
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+    }
+
+    if (lot.status !== 'HOLD') {
+      throw new BadRequestException('HOLD 상태가 아닌 LOT입니다.');
+    }
+
+    // NORMAL 상태로 변경
+    await this.matLotRepository.update(lotId, {
+      status: 'NORMAL',
+    });
+
+    const updatedLot = await this.matLotRepository.findOne({ where: { id: lotId } });
+    const part = await this.partMasterRepository.findOne({ where: { id: updatedLot!.partId } });
+
+    return {
+      id: lotId,
+      status: 'NORMAL',
+      lotNo: updatedLot?.lotNo,
+      partCode: part?.partCode,
+      partName: part?.partName,
+      reason,
+    };
   }
 }

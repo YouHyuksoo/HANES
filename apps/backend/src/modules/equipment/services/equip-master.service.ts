@@ -23,7 +23,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like } from 'typeorm';
+import { Repository, IsNull, Like, In } from 'typeorm';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import {
   CreateEquipMasterDto,
@@ -317,7 +317,7 @@ export class EquipMasterService {
   async getMaintenanceEquipments() {
     return this.equipMasterRepository.find({
       where: {
-        status: 'MAINT' || 'STOP', // TypeORM In operator
+        status: In(['MAINT', 'STOP']),
         useYn: 'Y',
         deletedAt: IsNull(),
       },

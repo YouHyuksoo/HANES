@@ -7,8 +7,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'REPAIR_LOGS' })
-@Index(['DEFECT_LOG_ID'])
-@Index(['WORKER_ID'])
+@Index(['defectLogId'])
+@Index(['workerId'])
 export class RepairLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

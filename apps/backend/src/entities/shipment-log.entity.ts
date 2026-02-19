@@ -10,10 +10,10 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'SHIPMENT_LOGS' })
-@Unique(['SHIP_NO'])
-@Index(['STATUS'])
-@Index(['SHIP_DATE'])
-@Index(['CUSTOMER'])
+@Unique(['shipNo'])
+@Index(['status'])
+@Index(['shipDate'])
+@Index(['customer'])
 export class ShipmentLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

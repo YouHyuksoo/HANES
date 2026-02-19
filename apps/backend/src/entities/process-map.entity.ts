@@ -10,9 +10,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'PROCESS_MAPS' })
-@Unique(['PART_ID', 'SEQ'])
-@Index(['PART_ID'])
-@Index(['PROCESS_TYPE'])
+@Unique(['partId', 'seq'])
+@Index(['partId'])
+@Index(['processType'])
 export class ProcessMap {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

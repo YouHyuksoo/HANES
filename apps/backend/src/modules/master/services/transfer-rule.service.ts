@@ -1,92 +1,97 @@
 /**
  * @file src/modules/master/services/transfer-rule.service.ts
- * @description 창고이동규칙 비즈니스 로직 서비스
- *
- * 초보자 가이드:
- * 1. **findAll**: 출발/도착 창고 기반 규칙 조회
- * 2. **include**: 창고명 조회를 위해 warehouse relation 포함
+ * @description 창고이동규칙 비즈니스 로직 서비스 - TypeORM
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { WarehouseTransferRule } from '../../../entities/warehouse-transfer-rule.entity';
 import { CreateTransferRuleDto, UpdateTransferRuleDto, TransferRuleQueryDto } from '../dto/transfer-rule.dto';
 
 @Injectable()
 export class TransferRuleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(WarehouseTransferRule)
+    private readonly transferRuleRepository: Repository<WarehouseTransferRule>,
+  ) {}
 
   async findAll(query: TransferRuleQueryDto) {
-    const { page = 1, limit = 10, fromWarehouseId, toWarehouseId, search, allowYn } = query;
+    const { page = 1, limit = 10, search, fromWarehouseId, toWarehouseId, allowYn } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(fromWarehouseId && { fromWarehouseId }),
-      ...(toWarehouseId && { toWarehouseId }),
-      ...(allowYn && { allowYn }),
-      ...(search && {
-        OR: [
-          { remark: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    const queryBuilder = this.transferRuleRepository.createQueryBuilder('rule')
+      .where('rule.deletedAt IS NULL');
+
+    if (fromWarehouseId) {
+      queryBuilder.andWhere('rule.fromWarehouseId = :fromWarehouseId', { fromWarehouseId });
+    }
+
+    if (toWarehouseId) {
+      queryBuilder.andWhere('rule.toWarehouseId = :toWarehouseId', { toWarehouseId });
+    }
+
+    if (allowYn) {
+      queryBuilder.andWhere('rule.allowYn = :allowYn', { allowYn });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(rule.fromWarehouseId) LIKE UPPER(:search) OR UPPER(rule.toWarehouseId) LIKE UPPER(:search) OR UPPER(rule.remark) LIKE UPPER(:search))',
+        { search: `%${search}%` }
+      );
+    }
 
     const [data, total] = await Promise.all([
-      this.prisma.warehouseTransferRule.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          fromWarehouse: { select: { warehouseCode: true, warehouseName: true } },
-          toWarehouse: { select: { warehouseCode: true, warehouseName: true } },
-        },
-      }),
-      this.prisma.warehouseTransferRule.count({ where }),
+      queryBuilder
+        .orderBy('rule.fromWarehouseId', 'ASC')
+        .addOrderBy('rule.toWarehouseId', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
 
     return { data, total, page, limit };
   }
 
   async findById(id: string) {
-    const item = await this.prisma.warehouseTransferRule.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        fromWarehouse: { select: { warehouseCode: true, warehouseName: true } },
-        toWarehouse: { select: { warehouseCode: true, warehouseName: true } },
-      },
+    const rule = await this.transferRuleRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
-    if (!item) throw new NotFoundException(`창고이동규칙을 찾을 수 없습니다: ${id}`);
-    return item;
+    if (!rule) throw new NotFoundException(`창고이동규칙을 찾을 수 없습니다: ${id}`);
+    return rule;
   }
 
   async create(dto: CreateTransferRuleDto) {
-    const existing = await this.prisma.warehouseTransferRule.findFirst({
+    const existing = await this.transferRuleRepository.findOne({
       where: {
         fromWarehouseId: dto.fromWarehouseId,
         toWarehouseId: dto.toWarehouseId,
-        deletedAt: null,
+        deletedAt: IsNull(),
       },
     });
-    if (existing) throw new ConflictException('이미 존재하는 창고이동규칙입니다.');
+    if (existing) throw new ConflictException(`이미 존재하는 창고이동규칙입니다: ${dto.fromWarehouseId} -> ${dto.toWarehouseId}`);
 
-    return this.prisma.warehouseTransferRule.create({
-      data: {
-        fromWarehouseId: dto.fromWarehouseId,
-        toWarehouseId: dto.toWarehouseId,
-        allowYn: dto.allowYn ?? 'Y',
-        remark: dto.remark,
-      },
+    const rule = this.transferRuleRepository.create({
+      fromWarehouseId: dto.fromWarehouseId,
+      toWarehouseId: dto.toWarehouseId,
+      allowYn: dto.allowYn ?? 'Y',
+      remark: dto.remark,
     });
+
+    return this.transferRuleRepository.save(rule);
   }
 
   async update(id: string, dto: UpdateTransferRuleDto) {
     await this.findById(id);
-    return this.prisma.warehouseTransferRule.update({ where: { id }, data: dto });
+    await this.transferRuleRepository.update(id, dto);
+    return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    return this.prisma.warehouseTransferRule.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.transferRuleRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 }

@@ -27,6 +27,7 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { JobOrderController } from './controllers/job-order.controller';
 import { JobOrderService } from './services/job-order.service';
 import { ProdResultController } from './controllers/prod-result.controller';
@@ -35,8 +36,21 @@ import { ProductionViewsController } from './controllers/production-views.contro
 import { ProductionViewsService } from './services/production-views.service';
 import { InventoryModule } from '../inventory/inventory.module';
 
+// Entities
+import { JobOrder } from '../../entities/job-order.entity';
+import { ProdResult } from '../../entities/prod-result.entity';
+import { PartMaster } from '../../entities/part-master.entity';
+import { EquipMaster } from '../../entities/equip-master.entity';
+import { User } from '../../entities/user.entity';
+import { InspectResult } from '../../entities/inspect-result.entity';
+import { BoxMaster } from '../../entities/box-master.entity';
+import { Stock } from '../../entities/stock.entity';
+
 @Module({
-  imports: [InventoryModule],
+  imports: [
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, User, InspectResult, BoxMaster, Stock]),
+    InventoryModule,
+  ],
   controllers: [
     JobOrderController,
     ProdResultController,

@@ -11,7 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource } from 'typeorm';
+import { Repository, IsNull, DataSource, In } from 'typeorm';
 import { SubconOrder } from '../../../entities/subcon-order.entity';
 import { SubconDelivery } from '../../../entities/subcon-delivery.entity';
 import { SubconReceive } from '../../../entities/subcon-receive.entity';
@@ -408,13 +408,13 @@ export class OutsourcingService {
       this.subconOrderRepository.count({ where: { deletedAt: IsNull() } }),
       this.subconOrderRepository.count({
         where: {
-          status: ['ORDERED', 'DELIVERED', 'PARTIAL_RECV'],
+          status: In(['ORDERED', 'DELIVERED', 'PARTIAL_RECV']),
           deletedAt: IsNull(),
         },
       }),
       this.subconOrderRepository.count({
         where: {
-          status: ['DELIVERED', 'PARTIAL_RECV'],
+          status: In(['DELIVERED', 'PARTIAL_RECV']),
           deletedAt: IsNull(),
         },
       }),
@@ -432,7 +432,7 @@ export class OutsourcingService {
   async getVendorStock() {
     const orders = await this.subconOrderRepository.find({
       where: {
-        status: ['DELIVERED', 'PARTIAL_RECV'],
+        status: In(['DELIVERED', 'PARTIAL_RECV']),
         deletedAt: IsNull(),
       },
     });

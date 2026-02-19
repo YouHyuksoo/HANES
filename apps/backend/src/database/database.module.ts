@@ -24,8 +24,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         username: configService.get<string>('ORACLE_USER', 'HNSMES'),
         password: configService.get<string>('ORACLE_PASSWORD', 'your-oracle-password'),
         serviceName: configService.get<string>('ORACLE_SERVICE_NAME', 'XEPDB'),
-        synchronize: configService.get<string>('NODE_ENV') !== 'production',
-        logging: configService.get<string>('NODE_ENV') !== 'production' ? ['query', 'error'] : ['error'],
+        synchronize: false, // Disabled - manual migrations only
+        logging: true, // Enable all query logging for debugging
         logger: 'advanced-console',
         maxQueryExecutionTime: 1000,
         entities: [__dirname + '/../entities/*.entity{.ts,.js}'],

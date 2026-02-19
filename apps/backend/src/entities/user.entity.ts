@@ -8,9 +8,9 @@ import {
   Index,
 } from 'typeorm';
 
-@Entity({ name: 'users' })
-@Index(['ROLE'])
-@Index(['STATUS'])
+@Entity({ name: 'USERS' })
+@Index(['role'])
+@Index(['status'])
 export class User {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

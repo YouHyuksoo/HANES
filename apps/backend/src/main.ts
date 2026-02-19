@@ -46,10 +46,12 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // 글로벌 인터셉터 - 로깅 및 응답 변환
-  app.useGlobalInterceptors(
-    new LoggingInterceptor(),
-    new TransformInterceptor(),
-  );
+  // 프로덕션에서는 로깅 최소화
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!isProduction) {
+    app.useGlobalInterceptors(new LoggingInterceptor());
+  }
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   // Swagger 설정
   const swaggerConfig = new DocumentBuilder()
@@ -83,8 +85,8 @@ async function bootstrap() {
     },
   });
 
-  // 서버 시작
-  const port = process.env.PORT ?? 3003;
+  // 서버 시작 (포트 3003 고정)
+  const port = 3003;
   await app.listen(port);
 
   logger.log(`Application is running on: http://localhost:${port}`);

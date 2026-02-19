@@ -75,4 +75,5 @@ export * from './user-auth.entity';
 export * from './comm-config.entity';
 export * from './inter-log.entity';
 export * from './label-template.entity';
+export * from './model-suffix.entity';
 export * from './work-instruction.entity';

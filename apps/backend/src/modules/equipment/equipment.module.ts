@@ -27,6 +27,7 @@ import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master
 import { EquipInspectLog } from '../../entities/equip-inspect-log.entity';
 import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../entities/consumable-log.entity';
+import { User } from '../../entities/user.entity';
 import { EquipMasterController } from './controllers/equip-master.controller';
 import { ConsumableController, ConsumableLogController } from './controllers/consumable.controller';
 import { DailyInspectController } from './controllers/daily-inspect.controller';
@@ -44,6 +45,7 @@ import { EquipInspectService } from './services/equip-inspect.service';
       EquipInspectLog,
       ConsumableMaster,
       ConsumableLog,
+      User,
     ]),
   ],
   controllers: [

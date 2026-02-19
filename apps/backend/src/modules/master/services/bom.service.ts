@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, IsNull, LessThanOrEqual, MoreThanOrEqual, In } from 'typeorm';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
@@ -36,14 +36,15 @@ export class BomService {
 
   /** BOM에 등재된 모품목(부모품목) 목록 + 자품목 수 */
   async findParents(search?: string, effectiveDate?: string) {
-    let queryBuilder = this.bomRepository.createQueryBuilder('bom')
-      .select('bom.parentPartId', 'parentPartId')
-      .addSelect('COUNT(bom.id)', 'bomCount')
-      .where('bom.deletedAt IS NULL')
-      .andWhere('bom.useYn = :useYn', { useYn: 'Y' })
-      .groupBy('bom.parentPartId');
+    try {
+      let queryBuilder = this.bomRepository.createQueryBuilder('bom')
+        .select('bom.parentPartId', 'parentPartId')
+        .addSelect('COUNT(bom.id)', 'bomCount')
+        .where('bom.deletedAt IS NULL')
+        .andWhere('bom.useYn = :useYn', { useYn: 'Y' })
+        .groupBy('bom.parentPartId');
 
-    queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
+      queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
 
     if (search) {
       // 부모 품목 정보 조회를 위해 PartMaster와 조인
@@ -61,7 +62,7 @@ export class BomService {
 
     const parentIds = grouped.map((g) => g.parentPartId);
     const parents = await this.partRepository.find({
-      where: { id: parentIds as any, deletedAt: IsNull() },
+      where: { id: In(parentIds), deletedAt: IsNull() },
       select: ['id', 'partCode', 'partName', 'partNo', 'partType'],
       order: { partCode: 'asc' },
     });
@@ -71,6 +72,10 @@ export class BomService {
       ...p,
       bomCount: countMap.get(p.id) || 0,
     }));
+    } catch (error) {
+      console.error('[BomService.findParents] Error:', error);
+      throw error;
+    }
   }
 
   async findAll(query: BomQueryDto, company?: string) {
@@ -137,47 +142,102 @@ export class BomService {
       .getMany();
   }
 
-  /** 재귀 트리 BOM 구조 조회 (depth 제한 + 유효일자 필터) */
+  /** 
+   * Oracle CONNECT BY로 BOM 계층 조회 (단일 쿼리)
+   * START WITH: 시작 부모 품목
+   * CONNECT BY PRIOR: 자식으로 재귀 탐색
+   * LEVEL: 계층 깊이
+   */
   async findHierarchy(parentPartId: string, depth: number = 3, effectiveDate?: string) {
-    const buildTree = async (partId: string, currentDepth: number): Promise<any[]> => {
-      if (currentDepth > depth) return [];
+    const dateFilter = effectiveDate 
+      ? `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE('${effectiveDate}', 'YYYY-MM-DD'))
+         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE('${effectiveDate}', 'YYYY-MM-DD'))`
+      : '';
 
-      let queryBuilder = this.bomRepository.createQueryBuilder('bom')
-        .leftJoinAndSelect(PartMaster, 'childPart', 'childPart.id = bom.childPartId')
-        .where('bom.parentPartId = :partId', { partId })
-        .andWhere('bom.deletedAt IS NULL')
-        .andWhere('bom.useYn = :useYn', { useYn: 'Y' });
+    const query = `
+      SELECT 
+        b.ID as id,
+        b.PARENT_PART_ID as parentPartId,
+        b.CHILD_PART_ID as childPartId,
+        b.QTY_PER as qtyPer,
+        b.SEQ as seq,
+        b.REVISION as revision,
+        b.OPER as processCode,
+        b.SIDE as side,
+        b.VALID_FROM as validFrom,
+        b.VALID_TO as validTo,
+        b.USE_YN as useYn,
+        p.PART_CODE as partCode,
+        p.PART_NAME as partName,
+        p.PART_NO as partNo,
+        p.PART_TYPE as partType,
+        p.UNIT as unit,
+        LEVEL as lvl
+      FROM BOM_MASTERS b
+      JOIN PART_MASTERS p ON b.CHILD_PART_ID = p.ID
+      WHERE b.DELETED_AT IS NULL 
+        AND b.USE_YN = 'Y'
+        ${dateFilter}
+      START WITH b.PARENT_PART_ID = '${parentPartId}'
+      CONNECT BY PRIOR b.CHILD_PART_ID = b.PARENT_PART_ID
+        AND LEVEL <= ${depth}
+        AND b.DELETED_AT IS NULL
+        AND b.USE_YN = 'Y'
+        ${dateFilter}
+      ORDER SIBLINGS BY b.SEQ ASC
+    `;
 
-      queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
+    const rawResults = await this.bomRepository.query(query);
+    
+    // 평면 데이터를 트리 구조로 변환
+    return this.buildTreeFromFlatData(rawResults);
+  }
 
-      const children = await queryBuilder
-        .orderBy('bom.seq', 'ASC')
-        .getRawMany();
+  /** 평면 데이터를 트리 구조로 변환 */
+  private buildTreeFromFlatData(rows: any[]): any[] {
+    const map = new Map<string, any>();
+    const roots: any[] = [];
 
-      return Promise.all(
-        children.map(async (child) => ({
-          id: child.bom_id,
-          level: currentDepth,
-          partCode: child.childPart_partCode,
-          partNo: child.childPart_partNo,
-          partName: child.childPart_partName,
-          partType: child.childPart_partType,
-          qtyPer: Number(child.bom_qtyPer),
-          unit: child.childPart_unit,
-          revision: child.bom_revision,
-          seq: child.bom_seq,
-          processCode: child.bom_processCode,
-          side: child.bom_side,
-          validFrom: child.bom_validFrom,
-          validTo: child.bom_validTo,
-          useYn: child.bom_useYn,
-          childPartId: child.bom_childPartId,
-          children: await buildTree(child.bom_childPartId, currentDepth + 1),
-        })),
-      );
-    };
+    // 먼저 모든 노드를 맵에 저장
+    for (const row of rows) {
+      const node = {
+        id: row.ID || row.id,
+        level: Number(row.LVL || row.lvl),
+        partCode: row.PARTCODE || row.partCode,
+        partNo: row.PARTNO || row.partNo,
+        partName: row.PARTNAME || row.partName,
+        partType: row.PARTTYPE || row.partType,
+        qtyPer: Number(row.QTYPER || row.qtyPer),
+        unit: row.UNIT || row.unit,
+        revision: row.REVISION || row.revision,
+        seq: Number(row.SEQ || row.seq),
+        processCode: row.PROCESSCODE || row.processCode,
+        side: row.SIDE || row.side,
+        validFrom: row.VALIDFROM || row.validFrom,
+        validTo: row.VALIDTO || row.validTo,
+        useYn: row.USEYN || row.useYn,
+        childPartId: row.CHILDPARTID || row.childPartId,
+        children: [],
+      };
+      map.set(node.id, node);
+    }
 
-    return buildTree(parentPartId, 1);
+    // 부모-자식 관계 설정
+    for (const row of rows) {
+      const nodeId = row.ID || row.id;
+      const parentId = row.PARENTPARTID || row.parentPartId;
+      const node = map.get(nodeId);
+      
+      // parentId가 현재 row들 중에 있는지 확인
+      const parent = map.get(parentId);
+      if (parent && parent.id !== node.id) {
+        parent.children.push(node);
+      } else if (node.level === 1) {
+        roots.push(node);
+      }
+    }
+
+    return roots;
   }
 
   async create(dto: CreateBomDto) {

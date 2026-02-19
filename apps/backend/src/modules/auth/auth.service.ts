@@ -32,19 +32,30 @@ export class AuthService {
    * @returns userId를 토큰으로 사용
    */
   async login(dto: LoginDto) {
+    this.logger.debug(`Login attempt: email=${dto.email}`);
+    
     const user = await this.userRepository.findOne({
       where: { email: dto.email },
     });
 
+    this.logger.debug(`User found: ${user ? 'YES' : 'NO'}`);
+    
     if (!user) {
+      this.logger.warn(`Login failed: User not found - ${dto.email}`);
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
 
+    this.logger.debug(`User status: ${user.status}, Role: ${user.role}`);
+
     if (user.status !== 'ACTIVE') {
+      this.logger.warn(`Login failed: Inactive account - ${dto.email}, status=${user.status}`);
       throw new UnauthorizedException('비활성화된 계정입니다. 관리자에게 문의하세요.');
     }
 
+    this.logger.debug(`Password check: DB='${user.password}', Input='${dto.password}'`);
+    
     if (user.password !== dto.password) {
+      this.logger.warn(`Login failed: Password mismatch - ${dto.email}`);
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
 

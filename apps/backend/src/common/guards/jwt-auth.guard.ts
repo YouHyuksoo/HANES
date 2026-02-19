@@ -15,8 +15,10 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Request } from 'express';
-import { PrismaService } from '../../prisma/prisma.service';
+import { User } from '../../entities/user.entity';
 
 /**
  * 인증된 사용자 정보 인터페이스
@@ -39,7 +41,10 @@ export interface AuthenticatedRequest extends Request {
 export class JwtAuthGuard implements CanActivate {
   private readonly logger = new Logger(JwtAuthGuard.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -51,9 +56,9 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       // DB에서 userId로 사용자 조회
-      const user = await this.prisma.user.findUnique({
+      const user = await this.userRepository.findOne({
         where: { id: token },
-        select: { id: true, email: true, role: true, status: true, company: true },
+        select: ['id', 'email', 'role', 'status', 'company'],
       });
 
       if (!user || user.status !== 'ACTIVE') {

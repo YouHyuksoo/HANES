@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'COMM_CONFIGS' })
-@Index(['COMM_TYPE'])
+@Index(['commType'])
 export class CommConfig {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

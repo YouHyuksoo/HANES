@@ -85,7 +85,7 @@ function LabelPage() {
     setLoading(true);
     try {
       const { url, mapFn } = categoryApiMap[cat];
-      const res = await api.get(url, { params: { limit: 500, useYn: "Y" } });
+      const res = await api.get(url, { params: { limit: 100, useYn: "Y" } });
       const raw = res.data?.data ?? res.data;
       const list = Array.isArray(raw) ? raw : raw?.data ?? [];
       setItems(list.map(mapFn));

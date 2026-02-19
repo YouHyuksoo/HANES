@@ -24,6 +24,8 @@ export class WorkerService {
     const { page = 1, limit = 10, search, dept, useYn } = query;
     const skip = (page - 1) * limit;
 
+    console.log(`[WorkerService.findAll] query=`, JSON.stringify(query), ', company=', company);
+
     const queryBuilder = this.workerRepository.createQueryBuilder('worker')
       .where('worker.deletedAt IS NULL');
 
@@ -54,6 +56,8 @@ export class WorkerService {
         .getMany(),
       queryBuilder.getCount(),
     ]);
+
+    console.log(`[WorkerService.findAll] total=${total}, data.length=${data.length}`);
 
     // Parse processIds from CLOB string to array
     const parsedData = data.map(worker => ({

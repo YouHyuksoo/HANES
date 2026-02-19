@@ -7,9 +7,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'MAT_ISSUES' })
-@Index(['JOB_ORDER_ID'])
-@Index(['LOT_ID'])
-@Index(['ISSUE_TYPE'])
+@Index(['jobOrderId'])
+@Index(['lotId'])
+@Index(['issueType'])
 export class MatIssue {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

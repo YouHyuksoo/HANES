@@ -7,9 +7,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CUSTOMS_USAGE_REPORTS' })
-@Index(['CUSTOMS_LOT_ID'])
-@Index(['STATUS'])
-@Index(['USAGE_DATE'])
+@Index(['customsLotId'])
+@Index(['status'])
+@Index(['usageDate'])
 export class CustomsUsageReport {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

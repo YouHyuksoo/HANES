@@ -1,122 +1,163 @@
 /**
  * @file src/modules/material/services/receipt-cancel.service.ts
- * @description 입고취소 비즈니스 로직 - StockTransaction 역분개 처리
- *
- * 초보자 가이드:
- * 1. **역분개**: 원래 입고 트랜잭션의 반대 트랜잭션을 생성
- * 2. **cancelRefId**: 역분개 트랜잭션은 원본 ID를 참조
+ * @description 입고취소 비즈니스 로직 - StockTransaction 역분개 처리 (TypeORM)
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource, IsNull, Between } from 'typeorm';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-cancel.dto';
 
 @Injectable()
 export class ReceiptCancelService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  /** 취소 가능한 입고 트랜잭션 목록 */
+  constructor(
+    @InjectRepository(StockTransaction)
+    private readonly stockTransactionRepository: Repository<StockTransaction>,
+    @InjectRepository(MatStock)
+    private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(PurchaseOrderItem)
+    private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
+    private readonly dataSource: DataSource,
+  ) {}
   async findCancellable(query: ReceiptCancelQueryDto) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      transType: { in: ['MAT_IN', 'MISC_IN'] },
-      status: 'DONE',
-      ...(search && {
-        OR: [
-          { transNo: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-      ...(fromDate && { transDate: { gte: new Date(fromDate) } }),
-      ...(toDate && { transDate: { ...((fromDate && { gte: new Date(fromDate) }) || {}), lte: new Date(toDate) } }),
+    const where: any = {
+      transType: 'RECEIPT',
+      cancelRefId: IsNull(),
     };
 
+    if (fromDate && toDate) {
+      where.transDate = Between(new Date(fromDate), new Date(toDate));
+    }
+
     const [data, total] = await Promise.all([
-      this.prisma.stockTransaction.findMany({
+      this.stockTransactionRepository.find({
         where,
         skip,
         take: limit,
-        include: {
-          part: { select: { id: true, partCode: true, partName: true, unit: true } },
-          lot: { select: { id: true, lotNo: true } },
-          toWarehouse: { select: { id: true, warehouseCode: true, warehouseName: true } },
-        },
-        orderBy: { transDate: 'desc' },
+        order: { transDate: 'DESC' },
       }),
-      this.prisma.stockTransaction.count({ where }),
+      this.stockTransactionRepository.count({ where }),
     ]);
 
-    const flattenedData = data.map((item) => ({
-      ...item,
-      partCode: item.part?.partCode,
-      partName: item.part?.partName,
-      unit: item.part?.unit,
-      lotNo: item.lot?.lotNo,
-      warehouseCode: item.toWarehouse?.warehouseCode,
-      warehouseName: item.toWarehouse?.warehouseName,
-      part: undefined,
-      lot: undefined,
-      toWarehouse: undefined,
-    }));
-
-    return { data: flattenedData, total, page, limit };
+    return { data, total, page, limit };
   }
 
-  /** 입고 취소 (역분개) */
   async cancel(dto: CreateReceiptCancelDto) {
-    const original = await this.prisma.stockTransaction.findFirst({
-      where: { id: dto.transactionId },
-    });
-    if (!original) throw new NotFoundException(`트랜잭션을 찾을 수 없습니다: ${dto.transactionId}`);
-    if (original.status === 'CANCELED') throw new BadRequestException('이미 취소된 트랜잭션입니다.');
+    const { transactionId, reason, workerId } = dto;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const cancelTransNo = `${original.transNo}-C`;
-
-    return this.prisma.$transaction(async (tx) => {
-      await tx.stockTransaction.update({
-        where: { id: dto.transactionId },
-        data: { status: 'CANCELED' },
+    try {
+      // 원본 트랜잭션 조회
+      const originalTransaction = await queryRunner.manager.findOne(StockTransaction, {
+        where: { id: transactionId },
       });
 
-      const cancelTx = await tx.stockTransaction.create({
-        data: {
-          transNo: cancelTransNo,
-          transType: `${original.transType}_CANCEL`,
-          fromWarehouseId: original.toWarehouseId,
-          toWarehouseId: original.fromWarehouseId,
-          partId: original.partId,
-          lotId: original.lotId,
-          qty: -original.qty,
-          remark: dto.reason,
-          workerId: dto.workerId,
-          cancelRefId: original.id,
-          refType: 'CANCEL',
-        },
-        include: { part: true, lot: true },
+      if (!originalTransaction) {
+        throw new NotFoundException(`입고 트랜잭션을 찾을 수 없습니다: ${transactionId}`);
+      }
+
+      if (originalTransaction.cancelRefId) {
+        throw new BadRequestException('이미 취소된 트랜잭션입니다.');
+      }
+
+      if (originalTransaction.transType !== 'RECEIPT') {
+        throw new BadRequestException('입고 트랜잭션만 취소할 수 있습니다.');
+      }
+
+      const { partId, lotId, toWarehouseId, qty } = originalTransaction;
+
+      if (!toWarehouseId) {
+        throw new BadRequestException('입고 창고 정보가 없습니다.');
+      }
+
+      // 재고 확인 및 차감
+      const stock = await queryRunner.manager.findOne(MatStock, {
+        where: { partId, warehouseCode: toWarehouseId, ...(lotId && { lotId }) },
       });
 
-      const flattenedCancelTx = {
-        ...cancelTx,
-        partCode: cancelTx.part?.partCode,
-        partName: cancelTx.part?.partName,
-        unit: cancelTx.part?.unit,
-        lotNo: cancelTx.lot?.lotNo,
-        part: undefined,
-        lot: undefined,
-      };
+      if (!stock || stock.qty < qty) {
+        throw new BadRequestException(`취소할 재고가 부족합니다. 현재 재고: ${stock?.qty ?? 0}`);
+      }
 
-      if (original.lotId) {
-        const lot = await tx.lot.findFirst({ where: { id: original.lotId } });
+      // 재고 차감
+      await queryRunner.manager.update(MatStock, stock.id, {
+        qty: stock.qty - qty,
+        availableQty: stock.availableQty - qty,
+      });
+
+      // LOT 수량 복원
+      if (lotId) {
+        const lot = await queryRunner.manager.findOne(MatLot, {
+          where: { id: lotId, deletedAt: IsNull() },
+        });
+
         if (lot) {
-          await tx.lot.update({
-            where: { id: original.lotId },
-            data: { currentQty: Math.max(0, lot.currentQty - original.qty) },
+          await queryRunner.manager.update(MatLot, lot.id, {
+            currentQty: lot.currentQty - qty,
           });
         }
       }
 
-      return flattenedCancelTx;
-    });
+      // PO 품목 입고량 감소
+      if (originalTransaction.refId && originalTransaction.refType === 'PO') {
+        const poItem = await queryRunner.manager.findOne(PurchaseOrderItem, {
+          where: { id: originalTransaction.refId },
+        });
+
+        if (poItem) {
+          await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
+            receivedQty: Math.max(0, poItem.receivedQty - qty),
+          });
+        }
+      }
+
+      // 역분개 트랜잭션 생성
+      const cancelTransaction = queryRunner.manager.create(StockTransaction, {
+        transNo: `RC-${Date.now()}`,
+        transType: 'RECEIPT_CANCEL',
+        transDate: new Date(),
+        fromWarehouseId: toWarehouseId,
+        partId,
+        lotId,
+        qty: -qty,
+        refType: 'TRANSACTION',
+        refId: originalTransaction.id,
+        workerId,
+        remark: reason,
+      });
+
+      const savedCancelTrans = await queryRunner.manager.save(cancelTransaction);
+
+      // 원본 트랜잭션에 취소 참조 설정
+      await queryRunner.manager.update(StockTransaction, originalTransaction.id, {
+        cancelRefId: savedCancelTrans.id,
+      });
+
+      await queryRunner.commitTransaction();
+
+      return {
+        id: savedCancelTrans.id,
+        transactionId,
+        cancelled: true,
+        cancelTransactionId: savedCancelTrans.id,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }
+

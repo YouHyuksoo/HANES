@@ -1,94 +1,92 @@
 /**
  * @file src/modules/master/services/work-instruction.service.ts
- * @description 작업지도서 비즈니스 로직 서비스
- *
- * 초보자 가이드:
- * 1. **findAll**: partId, processCode 기반 작업지도서 조회
- * 2. **include**: 품목명 조회를 위해 part relation 포함
+ * @description 작업지도서 비즈니스 로직 서비스 - TypeORM
  */
 
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { WorkInstruction } from '../../../entities/work-instruction.entity';
 import { CreateWorkInstructionDto, UpdateWorkInstructionDto, WorkInstructionQueryDto } from '../dto/work-instruction.dto';
 
 @Injectable()
 export class WorkInstructionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(WorkInstruction)
+    private readonly workInstructionRepository: Repository<WorkInstruction>,
+  ) {}
 
   async findAll(query: WorkInstructionQueryDto) {
-    const { page = 1, limit = 10, partId, processCode, search, useYn } = query;
+    const { page = 1, limit = 10, search, partId, processCode, useYn } = query;
     const skip = (page - 1) * limit;
 
-    const where = {
-      deletedAt: null,
-      ...(partId && { partId }),
-      ...(processCode && { processCode }),
-      ...(useYn && { useYn }),
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' as const } },
-          { content: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-    };
+    const queryBuilder = this.workInstructionRepository.createQueryBuilder('wi')
+      .where('wi.deletedAt IS NULL');
 
-    const [items, total] = await Promise.all([
-      this.prisma.workInstruction.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: { part: { select: { partCode: true, partName: true } } },
-      }),
-      this.prisma.workInstruction.count({ where }),
+    if (partId) {
+      queryBuilder.andWhere('wi.partId = :partId', { partId });
+    }
+
+    if (processCode) {
+      queryBuilder.andWhere('wi.processCode = :processCode', { processCode });
+    }
+
+    if (useYn) {
+      queryBuilder.andWhere('wi.useYn = :useYn', { useYn });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(UPPER(wi.partId) LIKE UPPER(:search) OR UPPER(wi.title) LIKE UPPER(:search) OR UPPER(wi.processCode) LIKE UPPER(:search))',
+        { search: `%${search}%` }
+      );
+    }
+
+    const [data, total] = await Promise.all([
+      queryBuilder
+        .orderBy('wi.partId', 'ASC')
+        .addOrderBy('wi.processCode', 'ASC')
+        .addOrderBy('wi.revision', 'DESC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      queryBuilder.getCount(),
     ]);
-
-    // 평면화
-    const data = items.map(item => ({
-      ...item,
-      partCode: item.part?.partCode || null,
-      partName: item.part?.partName || null,
-    }));
 
     return { data, total, page, limit };
   }
 
   async findById(id: string) {
-    const item = await this.prisma.workInstruction.findFirst({
-      where: { id, deletedAt: null },
-      include: { part: { select: { partCode: true, partName: true } } },
+    const workInstruction = await this.workInstructionRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
-    if (!item) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
-    
-    // 평면화
-    return {
-      ...item,
-      partCode: item.part?.partCode || null,
-      partName: item.part?.partName || null,
-    };
+    if (!workInstruction) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
+    return workInstruction;
   }
 
   async create(dto: CreateWorkInstructionDto) {
-    return this.prisma.workInstruction.create({
-      data: {
-        partId: dto.partId,
-        processCode: dto.processCode,
-        title: dto.title,
-        content: dto.content,
-        imageUrl: dto.imageUrl,
-        revision: dto.revision ?? 'A',
-        useYn: dto.useYn ?? 'Y',
-      },
+    const workInstruction = this.workInstructionRepository.create({
+      partId: dto.partId,
+      processCode: dto.processCode,
+      title: dto.title,
+      content: dto.content,
+      imageUrl: dto.imageUrl,
+      revision: dto.revision ?? 'A',
+      useYn: dto.useYn ?? 'Y',
     });
+
+    return this.workInstructionRepository.save(workInstruction);
   }
 
   async update(id: string, dto: UpdateWorkInstructionDto) {
     await this.findById(id);
-    return this.prisma.workInstruction.update({ where: { id }, data: dto });
+    await this.workInstructionRepository.update(id, dto);
+    return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    return this.prisma.workInstruction.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.workInstructionRepository.update(id, { deletedAt: new Date() });
+    return { id, deletedAt: new Date() };
   }
 }

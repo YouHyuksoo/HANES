@@ -96,7 +96,7 @@ export class MatStockService {
 
   async findByPartAndWarehouse(partId: string, warehouseCode: string, lotId?: string) {
     const stock = await this.matStockRepository.findOne({
-      where: { partId, warehouseCode, lotId: lotId ?? null },
+      where: { partId, warehouseCode, ...(lotId && { lotId }) },
     });
 
     if (!stock) return null;
@@ -150,7 +150,7 @@ export class MatStockService {
     try {
       // 기존 재고 조회 또는 생성
       let stock = await queryRunner.manager.findOne(MatStock, {
-        where: { partId, warehouseCode, lotId: lotId ?? null },
+        where: { partId, warehouseCode, ...(lotId && { lotId }) },
       });
 
       const beforeQty = stock?.qty ?? 0;
@@ -214,7 +214,7 @@ export class MatStockService {
     try {
       // 출고 창고 재고 확인
       const fromStock = await queryRunner.manager.findOne(MatStock, {
-        where: { partId, warehouseCode: fromWarehouseCode, lotId: lotId ?? null },
+        where: { partId, warehouseCode: fromWarehouseCode, ...(lotId && { lotId }) },
       });
 
       if (!fromStock || fromStock.qty < qty) {
@@ -229,7 +229,7 @@ export class MatStockService {
 
       // 입고 창고 재고 확인 또는 생성
       let toStock = await queryRunner.manager.findOne(MatStock, {
-        where: { partId, warehouseCode: toWarehouseCode, lotId: lotId ?? null },
+        where: { partId, warehouseCode: toWarehouseCode, ...(lotId && { lotId }) },
       });
 
       if (toStock) {

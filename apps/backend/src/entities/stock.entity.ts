@@ -9,10 +9,10 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'STOCKS' })
-@Unique(['WAREHOUSE_ID', 'PART_ID', 'LOT_ID'])
-@Index(['WAREHOUSE_ID'])
-@Index(['PART_ID'])
-@Index(['LOT_ID'])
+@Unique(['warehouseId', 'partId', 'lotId'])
+@Index(['warehouseId'])
+@Index(['partId'])
+@Index(['lotId'])
 export class Stock {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

@@ -9,9 +9,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'SUBCON_RECEIVES' })
-@Unique(['RECEIVE_NO'])
-@Index(['ORDER_ID'])
-@Index(['RECEIVE_DATE'])
+@Unique(['receiveNo'])
+@Index(['orderId'])
+@Index(['receivedAt'])
 export class SubconReceive {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

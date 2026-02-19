@@ -9,8 +9,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'USER_AUTHS' })
-@Unique(['USER_ID', 'MENU_CODE'])
-@Index(['USER_ID'])
+@Unique(['userId', 'menuCode'])
+@Index(['userId'])
 export class UserAuth {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'WORKER_MASTERS' })
-@Unique(['WORKER_CODE'])
-@Index(['DEPT'])
+@Unique(['workerCode'])
+@Index(['dept'])
 export class WorkerMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

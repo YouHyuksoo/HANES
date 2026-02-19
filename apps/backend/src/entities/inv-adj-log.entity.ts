@@ -7,9 +7,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'INV_ADJ_LOGS' })
-@Index(['WAREHOUSE_CODE'])
-@Index(['PART_ID'])
-@Index(['ADJ_TYPE'])
+@Index(['warehouseCode'])
+@Index(['partId'])
+@Index(['adjType'])
 export class InvAdjLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

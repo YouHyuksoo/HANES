@@ -9,9 +9,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'EQUIP_MASTERS' })
-@Index(['EQUIP_TYPE'])
-@Index(['LINE_CODE'])
-@Index(['STATUS'])
+@Index(['equipType'])
+@Index(['lineCode'])
+@Index(['status'])
 export class EquipMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

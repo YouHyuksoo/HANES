@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'IQC_ITEM_MASTERS' })
-@Unique(['PART_ID', 'SEQ'])
-@Index(['PART_ID'])
+@Unique(['partId', 'seq'])
+@Index(['partId'])
 export class IqcItemMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

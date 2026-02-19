@@ -10,9 +10,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'PROD_LINE_MASTERS' })
-@Unique(['LINE_CODE'])
-@Index(['LINE_TYPE'])
-@Index(['OPER'])
+@Unique(['lineCode'])
+@Index(['lineType'])
+@Index(['oper'])
 export class ProdLineMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

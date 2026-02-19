@@ -9,9 +9,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'MAT_STOCKS' })
-@Unique(['WAREHOUSE_CODE', 'PART_ID', 'LOT_ID'])
-@Index(['WAREHOUSE_CODE'])
-@Index(['PART_ID'])
+@Unique(['warehouseCode', 'partId', 'lotId'])
+@Index(['warehouseCode'])
+@Index(['partId'])
 export class MatStock {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

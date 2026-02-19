@@ -36,6 +36,7 @@ import { PartMaster } from '../../entities/part-master.entity';
 import { Warehouse } from '../../entities/warehouse.entity';
 import { InvAdjLog } from '../../entities/inv-adj-log.entity';
 import { JobOrder } from '../../entities/job-order.entity';
+import { IqcLog } from '../../entities/iqc-log.entity';
 
 // 기존 컨트롤러/서비스
 import { MatLotController } from './controllers/mat-lot.controller';
@@ -89,6 +90,7 @@ import { ReceivingService } from './services/receiving.service';
       Warehouse,
       InvAdjLog,
       JobOrder,
+      IqcLog,
     ]),
   ],
   controllers: [

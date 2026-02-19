@@ -1,76 +1,68 @@
 /**
  * @file src/modules/inventory/services/warehouse.service.ts
- * @description 창고 마스터 서비스
+ * @description 창고 마스터 서비스 (TypeORM)
  */
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { Stock } from '../../../entities/stock.entity';
 import { CreateWarehouseDto, UpdateWarehouseDto } from '../dto/inventory.dto';
 
 @Injectable()
 export class WarehouseService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(Stock)
+    private readonly stockRepository: Repository<Stock>,
+    private readonly dataSource: DataSource,
+  ) {}
 
   /**
    * 창고 목록 조회
    */
   async findAll(warehouseType?: string) {
-    const where: any = { deletedAt: null };
-    if (warehouseType) where.warehouseType = warehouseType;
+    const where: any = {
+      deletedAt: IsNull(),
+    };
 
-    return this.prisma.warehouse.findMany({
-      where,
-      orderBy: [{ warehouseType: 'asc' }, { warehouseCode: 'asc' }],
-    });
+    if (warehouseType) {
+      where.warehouseType = warehouseType;
+    }
+
+    const [data, total] = await Promise.all([
+      this.warehouseRepository.find({
+        where,
+        order: { warehouseCode: 'ASC' },
+      }),
+      this.warehouseRepository.count({ where }),
+    ]);
+
+    return { data, total, page: 1, limit: total };
   }
 
   /**
    * 창고 상세 조회
    */
   async findOne(id: string) {
-    const warehouse = await this.prisma.warehouse.findUnique({
-      where: { id },
-      include: {
-        stocks: {
-          where: { qty: { gt: 0 } },
-          include: { part: true, lot: true },
-          take: 10,
-        },
-      },
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id, deletedAt: IsNull() },
     });
 
     if (!warehouse) {
       throw new NotFoundException('창고를 찾을 수 없습니다.');
     }
 
-    // stocks 평면화
-    const flattenedStocks = warehouse.stocks.map(stock => ({
-      id: stock.id,
-      qty: stock.qty,
-      reservedQty: stock.reservedQty,
-      availableQty: stock.availableQty,
-      // 품목 정보 평면화
-      partId: stock.part?.id || null,
-      partCode: stock.part?.partCode || null,
-      partName: stock.part?.partName || null,
-      partType: stock.part?.partType || null,
-      unit: stock.part?.unit || null,
-      // LOT 정보 평면화
-      lotId: stock.lot?.id || null,
-      lotNo: stock.lot?.lotNo || null,
-    }));
-
-    return {
-      ...warehouse,
-      stocks: flattenedStocks,
-    };
+    return warehouse;
   }
 
   /**
    * 창고 코드로 조회
    */
   async findByCode(warehouseCode: string) {
-    return this.prisma.warehouse.findUnique({
-      where: { warehouseCode },
+    return this.warehouseRepository.findOne({
+      where: { warehouseCode, deletedAt: IsNull() },
     });
   }
 
@@ -78,149 +70,195 @@ export class WarehouseService {
    * 창고 생성
    */
   async create(dto: CreateWarehouseDto) {
-    // 중복 체크
-    const existing = await this.findByCode(dto.warehouseCode);
+    // 중복 코드 확인
+    const existing = await this.warehouseRepository.findOne({
+      where: { warehouseCode: dto.warehouseCode },
+    });
+
     if (existing) {
       throw new ConflictException('이미 존재하는 창고 코드입니다.');
     }
 
-    // 기본 창고 설정 시 기존 기본 창고 해제
-    if (dto.isDefault) {
-      await this.prisma.warehouse.updateMany({
-        where: { warehouseType: dto.warehouseType, isDefault: true },
-        data: { isDefault: false },
-      });
-    }
-
-    return this.prisma.warehouse.create({
-      data: dto,
+    const warehouse = this.warehouseRepository.create({
+      warehouseCode: dto.warehouseCode,
+      warehouseName: dto.warehouseName,
+      warehouseType: dto.warehouseType,
+      plantCode: dto.plantCode || null,
+      lineCode: dto.lineCode || null,
+      processCode: dto.processCode || null,
+      vendorId: dto.vendorId || null,
+      isDefault: dto.isDefault ? 'Y' : 'N',
+      useYn: 'Y',
     });
+
+    return this.warehouseRepository.save(warehouse);
   }
 
   /**
    * 창고 수정
    */
   async update(id: string, dto: UpdateWarehouseDto) {
-    const warehouse = await this.prisma.warehouse.findUnique({ where: { id } });
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+
     if (!warehouse) {
       throw new NotFoundException('창고를 찾을 수 없습니다.');
     }
 
-    // 기본 창고 설정 시 기존 기본 창고 해제
-    if (dto.isDefault) {
-      await this.prisma.warehouse.updateMany({
-        where: {
-          warehouseType: dto.warehouseType || warehouse.warehouseType,
-          isDefault: true,
-          id: { not: id },
-        },
-        data: { isDefault: false },
-      });
-    }
-
-    return this.prisma.warehouse.update({
-      where: { id },
-      data: dto,
+    await this.warehouseRepository.update(id, {
+      ...(dto.warehouseName && { warehouseName: dto.warehouseName }),
+      ...(dto.warehouseType && { warehouseType: dto.warehouseType }),
+      ...(dto.plantCode !== undefined && { plantCode: dto.plantCode || null }),
+      ...(dto.lineCode !== undefined && { lineCode: dto.lineCode || null }),
+      ...(dto.processCode !== undefined && { processCode: dto.processCode || null }),
+      ...(dto.isDefault !== undefined && { isDefault: dto.isDefault ? 'Y' : 'N' }),
+      ...(dto.useYn && { useYn: dto.useYn }),
     });
+
+    return this.warehouseRepository.findOne({ where: { id } });
   }
 
   /**
    * 창고 삭제 (소프트 삭제)
    */
   async remove(id: string) {
-    const warehouse = await this.prisma.warehouse.findUnique({ where: { id } });
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+
     if (!warehouse) {
       throw new NotFoundException('창고를 찾을 수 없습니다.');
     }
 
-    // 재고가 있으면 삭제 불가
-    const stockCount = await this.prisma.stock.count({
-      where: { warehouseId: id, qty: { gt: 0 } },
+    // 해당 창고에 재고가 있는지 확인
+    const stockCount = await this.stockRepository.count({
+      where: { warehouseId: id },
     });
 
     if (stockCount > 0) {
-      throw new ConflictException('재고가 있는 창고는 삭제할 수 없습니다.');
+      throw new ConflictException('해당 창고에 재고가 존재하여 삭제할 수 없습니다.');
     }
 
-    return this.prisma.warehouse.update({
-      where: { id },
-      data: { deletedAt: new Date(), useYn: 'N' },
-    });
+    await this.warehouseRepository.softDelete(id);
+
+    return { id, deleted: true };
   }
 
   /**
-   * 창고 유형별 기본 창고 조회
+   * 기본 창고 조회 (유형별)
    */
   async getDefaultWarehouse(warehouseType: string) {
-    return this.prisma.warehouse.findFirst({
-      where: { warehouseType, isDefault: true, useYn: 'Y' },
+    return this.warehouseRepository.findOne({
+      where: {
+        warehouseType,
+        isDefault: 'Y',
+        useYn: 'Y',
+        deletedAt: IsNull(),
+      },
     });
   }
 
   /**
-   * 공정재공 창고 조회/생성 (라인+공정 기준)
+   * 공정재공 창고 조회 또는 생성
    */
   async getOrCreateFloorWarehouse(lineCode: string, processCode: string) {
     const warehouseCode = `FLOOR_${lineCode}_${processCode}`;
 
-    let warehouse = await this.findByCode(warehouseCode);
+    let warehouse = await this.warehouseRepository.findOne({
+      where: { warehouseCode },
+    });
 
     if (!warehouse) {
-      warehouse = await this.prisma.warehouse.create({
-        data: {
-          warehouseCode,
-          warehouseName: `공정재공-${lineCode}-${processCode}`,
-          warehouseType: 'FLOOR',
-          lineCode,
-          processCode,
-        },
+      warehouse = this.warehouseRepository.create({
+        warehouseCode,
+        warehouseName: `${lineCode} ${processCode} 공정재공`,
+        warehouseType: 'WIP',
+        lineCode,
+        processCode,
+        useYn: 'Y',
+        isDefault: 'N',
       });
+
+      warehouse = await this.warehouseRepository.save(warehouse);
     }
 
     return warehouse;
   }
 
   /**
-   * 외주처 창고 조회/생성
+   * 외주 창고 조회 또는 생성
    */
   async getOrCreateSubconWarehouse(vendorId: string, vendorName: string) {
     const warehouseCode = `SUBCON_${vendorId}`;
 
-    let warehouse = await this.findByCode(warehouseCode);
+    let warehouse = await this.warehouseRepository.findOne({
+      where: { warehouseCode },
+    });
 
     if (!warehouse) {
-      warehouse = await this.prisma.warehouse.create({
-        data: {
-          warehouseCode,
-          warehouseName: `외주-${vendorName}`,
-          warehouseType: 'SUBCON',
-          vendorId,
-        },
+      warehouse = this.warehouseRepository.create({
+        warehouseCode,
+        warehouseName: `${vendorName} 외주`,
+        warehouseType: 'SUBCON',
+        vendorId,
+        useYn: 'Y',
+        isDefault: 'N',
       });
+
+      warehouse = await this.warehouseRepository.save(warehouse);
     }
 
     return warehouse;
   }
 
   /**
-   * 초기 창고 데이터 생성 (시스템 초기화용)
+   * 기본 창고 초기화
    */
   async initDefaultWarehouses() {
-    const defaults = [
-      { warehouseCode: 'WH-RAW', warehouseName: '원자재 창고', warehouseType: 'RAW', isDefault: true },
-      { warehouseCode: 'WH-WIP', warehouseName: '반제품 창고', warehouseType: 'WIP', isDefault: true },
-      { warehouseCode: 'WH-FG', warehouseName: '완제품 창고', warehouseType: 'FG', isDefault: true },
-      { warehouseCode: 'WH-DEFECT', warehouseName: '불량 창고', warehouseType: 'DEFECT', isDefault: true },
-      { warehouseCode: 'WH-SCRAP', warehouseName: '폐기 창고', warehouseType: 'SCRAP', isDefault: true },
+    const defaultWarehouses = [
+      // 원자재 창고
+      { code: 'RM_MAIN', name: '원자재 메인창고', type: 'RM', isDefault: true },
+      { code: 'RM_SUB', name: '원자재 서브창고', type: 'RM', isDefault: false },
+      // 반제품 창고
+      { code: 'WIP_MAIN', name: '반제품 메인창고', type: 'WIP', isDefault: true },
+      // 완제품 창고
+      { code: 'FG_MAIN', name: '완제품 메인창고', type: 'FG', isDefault: true },
+      { code: 'FG_SHIP', name: '출하대기창고', type: 'FG', isDefault: false },
+      // 불량 창고
+      { code: 'DEFECT', name: '불량품창고', type: 'DEFECT', isDefault: true },
+      // 폐기 창고
+      { code: 'SCRAP', name: '폐기창고', type: 'SCRAP', isDefault: true },
+      // 외주 창고
+      { code: 'SUBCON_MAIN', name: '외주 메인창고', type: 'SUBCON', isDefault: true },
     ];
 
-    for (const wh of defaults) {
-      const existing = await this.findByCode(wh.warehouseCode);
+    const results = [];
+
+    for (const wh of defaultWarehouses) {
+      const existing = await this.warehouseRepository.findOne({
+        where: { warehouseCode: wh.code },
+      });
+
       if (!existing) {
-        await this.prisma.warehouse.create({ data: wh });
+        const warehouse = this.warehouseRepository.create({
+          warehouseCode: wh.code,
+          warehouseName: wh.name,
+          warehouseType: wh.type,
+          isDefault: wh.isDefault ? 'Y' : 'N',
+          useYn: 'Y',
+        });
+
+        const saved = await this.warehouseRepository.save(warehouse) as Warehouse;
+        results.push({ code: wh.code, status: 'created', id: saved.id });
+      } else {
+        results.push({ code: wh.code, status: 'exists', id: existing.id });
       }
     }
 
-    return { message: '기본 창고 초기화 완료' };
+    return {
+      message: '기본 창고 초기화 완료',
+      results,
+    };
   }
 }

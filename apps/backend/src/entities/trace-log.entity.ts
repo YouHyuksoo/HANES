@@ -7,12 +7,12 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'TRACE_LOGS' })
-@Index(['PALLET_ID'])
-@Index(['BOX_ID'])
-@Index(['LOT_ID'])
-@Index(['MAT_LOT_ID'])
-@Index(['SERIAL_NO'])
-@Index(['EVENT_TYPE'])
+@Index(['palletId'])
+@Index(['boxId'])
+@Index(['lotId'])
+@Index(['matLotId'])
+@Index(['serialNo'])
+@Index(['eventType'])
 export class TraceLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

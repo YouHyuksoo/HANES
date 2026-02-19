@@ -10,9 +10,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'LABEL_TEMPLATES' })
-@Unique(['TEMPLATE_NAME', 'CATEGORY'])
-@Index(['CATEGORY'])
-@Index(['IS_DEFAULT'])
+@Unique(['templateName', 'category'])
+@Index(['category'])
+@Index(['isDefault'])
 export class LabelTemplate {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

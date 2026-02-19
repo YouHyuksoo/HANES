@@ -251,6 +251,6 @@ export class ComCodeService {
    */
   async deleteByGroupCode(groupCode: string) {
     const result = await this.comCodeRepository.delete({ groupCode });
-    return { deleted: result.affected || 0 };
+    return { count: result.affected || 0 };
   }
 }

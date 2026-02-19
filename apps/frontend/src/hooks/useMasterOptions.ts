@@ -67,7 +67,7 @@ export function useWarehouseOptions(warehouseType?: string) {
  * @param partType - 'RAW' | 'PRODUCT' 등 (미지정 시 전체)
  */
 export function usePartOptions(partType?: string) {
-  const params = new URLSearchParams({ limit: "500" });
+  const params = new URLSearchParams({ limit: "100" });
   if (partType) params.set("partType", partType);
 
   const { data, isLoading } = useApiQuery<PartItem[]>(
@@ -113,7 +113,7 @@ export function useWorkerOptions() {
  * @param partnerType - 'SUPPLIER' | 'CUSTOMER' (미지정 시 전체)
  */
 export function usePartnerOptions(partnerType?: "SUPPLIER" | "CUSTOMER") {
-  const params = new URLSearchParams({ limit: "500" });
+  const params = new URLSearchParams({ limit: "100" });
   if (partnerType) params.set("partnerType", partnerType);
 
   const { data, isLoading } = useApiQuery<PartnerItem[]>(

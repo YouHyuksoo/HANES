@@ -10,9 +10,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'COM_CODES' })
-@Unique(['GROUP_CODE', 'DETAIL_CODE'])
-@Index(['GROUP_CODE'])
-@Index(['PARENT_CODE'])
+@Unique(['groupCode', 'detailCode'])
+@Index(['groupCode'])
+@Index(['parentCode'])
 export class ComCode {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

@@ -6,28 +6,31 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
-@Entity({ name: 'WAREHOUSE_TRANSFER_RULES' })
-@Unique(['fromWarehouseId', 'toWarehouseId'])
-@Index(['fromWarehouseId'])
-@Index(['toWarehouseId'])
-export class WarehouseTransferRule {
+@Entity({ name: 'MODEL_SUFFIXES' })
+@Index(['modelCode'])
+export class ModelSuffix {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
 
-  @Column({ name: 'FROM_WAREHOUSE_ID', length: 50 })
-  fromWarehouseId: string;
+  @Column({ name: 'MODEL_CODE', length: 100 })
+  modelCode: string;
 
-  @Column({ name: 'TO_WAREHOUSE_ID', length: 50 })
-  toWarehouseId: string;
+  @Column({ name: 'SUFFIX_CODE', length: 50 })
+  suffixCode: string;
 
-  @Column({ name: 'ALLOW_YN', length: 1, default: 'Y' })
-  allowYn: string;
+  @Column({ name: 'SUFFIX_NAME', length: 200 })
+  suffixName: string;
+
+  @Column({ name: 'CUSTOMER', length: 100, nullable: true })
+  customer: string | null;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
+
+  @Column({ name: 'USE_YN', length: 1, default: 'Y' })
+  useYn: string;
 
   @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;

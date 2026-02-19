@@ -53,8 +53,16 @@ import { CompanyMaster } from '../../entities/company-master.entity';
 import { DepartmentMaster } from '../../entities/department-master.entity';
 import { Plant } from '../../entities/plant.entity';
 import { ProcessMap } from '../../entities/process-map.entity';
+import { ProcessMaster } from '../../entities/process-master.entity';
+import { ProdLineMaster } from '../../entities/prod-line-master.entity';
+import { WarehouseTransferRule } from '../../entities/warehouse-transfer-rule.entity';
+import { WorkInstruction } from '../../entities/work-instruction.entity';
 import { WorkerMaster } from '../../entities/worker-master.entity';
 import { PartnerMaster } from '../../entities/partner-master.entity';
+import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
+import { IqcItemMaster } from '../../entities/iqc-item-master.entity';
+import { LabelTemplate } from '../../entities/label-template.entity';
+import { ModelSuffix } from '../../entities/model-suffix.entity';
 
 @Module({
   imports: [
@@ -66,8 +74,16 @@ import { PartnerMaster } from '../../entities/partner-master.entity';
       DepartmentMaster,
       Plant,
       ProcessMap,
+      ProcessMaster,
+      ProdLineMaster,
+      WarehouseTransferRule,
+      WorkInstruction,
       WorkerMaster,
       PartnerMaster,
+      EquipInspectItemMaster,
+      IqcItemMaster,
+      LabelTemplate,
+      ModelSuffix,
     ]),
   ],
   controllers: [

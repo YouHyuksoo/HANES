@@ -7,8 +7,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CONSUMABLE_LOGS' })
-@Index(['CONSUMABLE_ID'])
-@Index(['LOG_TYPE'])
+@Index(['consumableId'])
+@Index(['logType'])
 export class ConsumableLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

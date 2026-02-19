@@ -30,7 +30,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource } from 'typeorm';
+import { Repository, IsNull, DataSource, In } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { User } from '../../../entities/user.entity';
@@ -537,7 +537,7 @@ export class ConsumableService {
   async findWarningConsumables() {
     return this.consumableMasterRepository.find({
       where: {
-        status: 'WARNING' || 'REPLACE', // Using In for multiple values
+        status: In(['WARNING', 'REPLACE']),
         useYn: 'Y',
         deletedAt: IsNull(),
       },

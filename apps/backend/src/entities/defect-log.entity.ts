@@ -6,18 +6,25 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { ProdResult } from './prod-result.entity';
 
 @Entity({ name: 'DEFECT_LOGS' })
-@Index(['PROD_RESULT_ID'])
-@Index(['DEFECT_CODE'])
-@Index(['STATUS'])
+@Index(['prodResultId'])
+@Index(['defectCode'])
+@Index(['status'])
 export class DefectLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
 
   @Column({ name: 'PROD_RESULT_ID', length: 255 })
   prodResultId: string;
+
+  @ManyToOne(() => ProdResult, (prodResult) => prodResult.defectLogs)
+  @JoinColumn({ name: 'PROD_RESULT_ID' })
+  prodResult: ProdResult;
 
   @Column({ name: 'DEFECT_CODE', length: 50 })
   defectCode: string;

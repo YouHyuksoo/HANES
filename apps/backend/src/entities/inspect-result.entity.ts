@@ -4,18 +4,25 @@ import {
   Column,
   CreateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { ProdResult } from './prod-result.entity';
 
 @Entity({ name: 'INSPECT_RESULTS' })
-@Index(['PROD_RESULT_ID'])
-@Index(['PASS_YN'])
-@Index(['SERIAL_NO'])
+@Index(['prodResultId'])
+@Index(['passYn'])
+@Index(['serialNo'])
 export class InspectResult {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
 
   @Column({ name: 'PROD_RESULT_ID', length: 255 })
   prodResultId: string;
+
+  @ManyToOne(() => ProdResult, (prodResult) => prodResult.inspectResults)
+  @JoinColumn({ name: 'PROD_RESULT_ID' })
+  prodResult: ProdResult;
 
   @Column({ name: 'SERIAL_NO', length: 255, nullable: true })
   serialNo: string | null;

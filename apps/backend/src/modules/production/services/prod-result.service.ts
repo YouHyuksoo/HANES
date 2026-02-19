@@ -106,22 +106,6 @@ export class ProdResultService {
           remark: true,
           createdAt: true,
           updatedAt: true,
-          jobOrder: {
-            id: true,
-            orderNo: true,
-            planQty: true,
-            status: true,
-          },
-          equip: {
-            id: true,
-            equipCode: true,
-            equipName: true,
-          },
-          worker: {
-            id: true,
-            name: true,
-            empNo: true,
-          },
         },
       }),
       this.prodResultRepository.count({ where }),
@@ -182,16 +166,6 @@ export class ProdResultService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        equip: {
-          id: true,
-          equipCode: true,
-          equipName: true,
-        },
-        worker: {
-          id: true,
-          name: true,
-          empNo: true,
-        },
       },
     });
   }
@@ -269,19 +243,6 @@ export class ProdResultService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        jobOrder: {
-          id: true,
-          orderNo: true,
-        },
-        equip: {
-          id: true,
-          equipCode: true,
-          equipName: true,
-        },
-        worker: {
-          id: true,
-          name: true,
-        },
       },
     });
   }
@@ -333,19 +294,6 @@ export class ProdResultService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        jobOrder: {
-          id: true,
-          orderNo: true,
-        },
-        equip: {
-          id: true,
-          equipCode: true,
-          equipName: true,
-        },
-        worker: {
-          id: true,
-          name: true,
-        },
       },
     });
   }
@@ -404,10 +352,6 @@ export class ProdResultService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        jobOrder: {
-          id: true,
-          orderNo: true,
-        },
       },
     });
   }

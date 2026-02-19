@@ -107,12 +107,6 @@ export class JobOrderService {
           remark: true,
           createdAt: true,
           updatedAt: true,
-          part: {
-            id: true,
-            partCode: true,
-            partName: true,
-            partType: true,
-          },
         },
       }),
       this.jobOrderRepository.count({ where }),
@@ -129,9 +123,7 @@ export class JobOrderService {
       where: { id, deletedAt: IsNull() },
       relations: ['part', 'prodResults'],
       order: {
-        prodResults: {
-          createdAt: 'DESC',
-        },
+        createdAt: 'DESC',
       },
     });
 
@@ -215,11 +207,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
     });
   }
@@ -265,11 +252,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
     });
   }
@@ -340,11 +322,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
     });
   }
@@ -383,11 +360,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
     });
   }
@@ -443,11 +415,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
     });
   }
@@ -495,11 +462,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
     });
   }
@@ -535,11 +497,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
     });
   }
@@ -587,11 +544,6 @@ export class JobOrderService {
         remark: true,
         createdAt: true,
         updatedAt: true,
-        part: {
-          id: true,
-          partCode: true,
-          partName: true,
-        },
       },
       order: { endAt: 'ASC' },
     });
@@ -603,7 +555,7 @@ export class JobOrderService {
   async markAsSynced(ids: string[]) {
     await this.jobOrderRepository.update(ids, { erpSyncYn: 'Y' });
 
-    return { affected: ids.length };
+    return { count: ids.length };
   }
 
   // ===== 통계/집계 =====

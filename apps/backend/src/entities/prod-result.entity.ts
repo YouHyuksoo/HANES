@@ -6,19 +6,29 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { InspectResult } from './inspect-result.entity';
+import { DefectLog } from './defect-log.entity';
+import { JobOrder } from './job-order.entity';
 
 @Entity({ name: 'PROD_RESULTS' })
-@Index(['JOB_ORDER_ID'])
-@Index(['EQUIP_ID'])
-@Index(['WORKER_ID'])
-@Index(['STATUS'])
+@Index(['jobOrderId'])
+@Index(['equipId'])
+@Index(['workerId'])
+@Index(['status'])
 export class ProdResult {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
 
   @Column({ name: 'JOB_ORDER_ID', length: 255 })
   jobOrderId: string;
+
+  @ManyToOne(() => JobOrder, (jobOrder) => jobOrder.prodResults)
+  @JoinColumn({ name: 'JOB_ORDER_ID' })
+  jobOrder: JobOrder;
 
   @Column({ name: 'EQUIP_ID', length: 255, nullable: true })
   equipId: string | null;
@@ -73,4 +83,10 @@ export class ProdResult {
 
   @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
   deletedAt: Date | null;
+
+  @OneToMany(() => InspectResult, (inspectResult) => inspectResult.prodResult)
+  inspectResults: InspectResult[];
+
+  @OneToMany(() => DefectLog, (defectLog) => defectLog.prodResult)
+  defectLogs: DefectLog[];
 }

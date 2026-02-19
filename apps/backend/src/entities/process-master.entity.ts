@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'PROCESS_MASTERS' })
-@Unique(['PROCESS_CODE'])
-@Index(['PROCESS_TYPE'])
+@Unique(['processCode'])
+@Index(['processType'])
 export class ProcessMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

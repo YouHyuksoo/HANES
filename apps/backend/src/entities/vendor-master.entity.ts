@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'VENDOR_MASTERS' })
-@Index(['VENDOR_TYPE'])
+@Index(['vendorType'])
 export class VendorMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

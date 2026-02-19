@@ -9,7 +9,7 @@
  * 2. **effectiveDate**: 적용일/완료일 기준 필터링 (validFrom <= date AND validTo >= date)
  * 3. **접기/펼치기**: 하위 자재가 있는 항목은 클릭으로 전개/접기 가능
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, ChevronRight, ChevronDown, Package, Boxes, CircleDot } from "lucide-react";
 import { Button, Modal, Input } from "@/components/ui";
@@ -190,7 +190,7 @@ function BomTreeRows({
         const validTo = item.validTo ? new Date(item.validTo).toISOString().split("T")[0] : "-";
 
         return (
-          <BomTreeRowGroup key={item.id}>
+          <Fragment key={item.id}>
             <tr className={`border-b border-border last:border-b-0 transition-colors hover:bg-primary/5 ${idx % 2 === 0 ? "bg-surface" : "bg-background/50"}`}>
               <td className="px-4 py-2.5 border-r border-border">
                 <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[11px] font-bold ${levelColor}`}>{item.level}</span>
@@ -223,18 +223,16 @@ function BomTreeRows({
               <td className="px-4 py-2.5 text-center text-xs text-text font-mono whitespace-nowrap">{validTo}</td>
             </tr>
             {hasChildren && isExpanded && (
-              <BomTreeRows items={item.children!} expanded={expanded} onToggle={onToggle}
+              <BomTreeRows key={`${item.id}-children`} items={item.children!} expanded={expanded} onToggle={onToggle}
                 bomRoutingLinks={bomRoutingLinks} onUnlinkRouting={onUnlinkRouting}
                 onOpenLinkModal={onOpenLinkModal} parentCode={parentCode}
                 t={t} depth={depth + 1} breadcrumb={itemBreadcrumb} />
             )}
-          </BomTreeRowGroup>
+          </Fragment>
         );
       })}
     </>
   );
 }
 
-function BomTreeRowGroup({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
+

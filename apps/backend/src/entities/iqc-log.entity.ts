@@ -7,10 +7,10 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'IQC_LOGS' })
-@Index(['PART_ID'])
-@Index(['LOT_NO'])
-@Index(['INSPECT_TYPE'])
-@Index(['RESULT'])
+@Index(['partId'])
+@Index(['lotNo'])
+@Index(['inspectType'])
+@Index(['result'])
 export class IqcLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

@@ -13,9 +13,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'PLANTS' })
-@Unique(['PLANT_CODE', 'SHOP_CODE', 'LINE_CODE', 'CELL_CODE'])
-@Index(['PLANT_TYPE'])
-@Index(['PARENT_ID'])
+@Unique(['plantCode', 'shopCode', 'lineCode', 'cellCode'])
+@Index(['plantType'])
+@Index(['parentId'])
 export class Plant {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

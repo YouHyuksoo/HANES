@@ -7,9 +7,9 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'INTER_LOGS' })
-@Index(['DIRECTION', 'MESSAGE_TYPE'])
-@Index(['STATUS'])
-@Index(['INTERFACE_ID'])
+@Index(['direction', 'messageType'])
+@Index(['status'])
+@Index(['interfaceId'])
 export class InterLog {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

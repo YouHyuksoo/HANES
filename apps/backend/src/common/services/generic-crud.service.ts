@@ -73,13 +73,16 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
       this.repository.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
     return {
       data,
       meta: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
       },
     };
   }
@@ -122,7 +125,8 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
     };
 
     const entity = this.repository.create(data);
-    return this.repository.save(entity);
+    const saved = await this.repository.save(entity);
+    return Array.isArray(saved) ? saved[0] : saved;
   }
 
   /**

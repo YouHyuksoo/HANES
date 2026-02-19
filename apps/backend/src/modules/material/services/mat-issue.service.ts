@@ -172,9 +172,12 @@ export class MatIssueService {
   }
 
   async cancel(id: string, reason?: string) {
-    const issue = await this.findById(id);
+    const rawIssue = await this.matIssueRepository.findOne({ where: { id } });
+    if (!rawIssue) {
+      throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${id}`);
+    }
 
-    if (issue.status !== 'DONE') {
+    if (rawIssue.status !== 'DONE') {
       throw new BadRequestException('이미 취소된 출고입니다.');
     }
 
@@ -187,25 +190,25 @@ export class MatIssueService {
       await queryRunner.manager.update(MatIssue, id, { status: 'CANCELED', remark: reason });
 
       // LOT 재고 복구
-      if (issue.lotId) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { id: issue.lotId } });
+      if (rawIssue.lotId) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { id: rawIssue.lotId } });
         if (lot) {
           await queryRunner.manager.update(MatLot, lot.id, {
-            currentQty: lot.currentQty + issue.issueQty,
+            currentQty: lot.currentQty + rawIssue.issueQty,
             status: 'NORMAL',
           });
         }
       }
 
       // 창고 재고 복구 (stock이 있는 경우)
-      const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { lotId: issue.lotId },
-      });
+      const stock = rawIssue.lotId ? await queryRunner.manager.findOne(MatStock, {
+        where: { lotId: rawIssue.lotId },
+      }) : null;
 
       if (stock) {
         await queryRunner.manager.update(MatStock, stock.id, {
-          qty: stock.qty + issue.issueQty,
-          availableQty: stock.availableQty + issue.issueQty,
+          qty: stock.qty + rawIssue.issueQty,
+          availableQty: stock.availableQty + rawIssue.issueQty,
         });
       }
 

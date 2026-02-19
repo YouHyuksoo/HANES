@@ -9,11 +9,11 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'LOTS' })
-@Index(['PART_ID'])
-@Index(['PART_TYPE'])
-@Index(['STATUS'])
-@Index(['IQC_STATUS'])
-@Index(['JOB_ORDER_ID'])
+@Index(['partId'])
+@Index(['partType'])
+@Index(['status'])
+@Index(['iqcStatus'])
+@Index(['jobOrderId'])
 export class Lot {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

@@ -9,8 +9,8 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CONSUMABLE_MASTERS' })
-@Index(['CATEGORY'])
-@Index(['STATUS'])
+@Index(['category'])
+@Index(['status'])
 export class ConsumableMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;

@@ -574,7 +574,7 @@ export class ShipmentService {
       { erpSyncYn: 'Y' }
     );
 
-    return { updated: ids.length };
+    return { count: ids.length };
   }
 
   // ===== 통계/집계 =====
