@@ -18,50 +18,18 @@ jobs:
         run: |
           echo "=== Current User ==="
           whoami
-          echo "=== Working Directory ==="
-          cd
-          echo "=== Node/npm info ==="
-          node --version
-          npm --version
-          echo "=== npm global prefix ==="
-          npm prefix -g
         shell: cmd
 
       - name: Configure Git safe directory
         run: git config --global --add safe.directory C:/Project/HANES
 
-      - name: Stop HANES processes and release file locks
+      - name: Stop HANES processes only
         run: |
           set PM2_HOME=C:\Users\Administrator\.pm2
-          echo === Stopping HANES PM2 processes ===
           pm2 stop hanes-frontend 2>nul || echo "hanes-frontend not running"
           pm2 stop hanes-backend 2>nul || echo "hanes-backend not running"
           pm2 delete hanes-frontend 2>nul || echo "hanes-frontend not registered"
           pm2 delete hanes-backend 2>nul || echo "hanes-backend not registered"
-          echo === Killing any node processes on HANES ports (3002, 3003) ===
-          for /f "tokens=5" %%P in ('netstat -ano ^| findstr :3002 ^| findstr LISTENING') do taskkill /F /PID %%P 2>nul
-          for /f "tokens=5" %%P in ('netstat -ano ^| findstr :3003 ^| findstr LISTENING') do taskkill /F /PID %%P 2>nul
-          timeout /t 3 /nobreak >nul
-        shell: cmd
-        continue-on-error: true
-
-      - name: Fix directory permissions
-        run: |
-          echo === Fixing .git permissions ===
-          icacls "C:\Project\HANES\.git" /grant:r "%USERNAME%:(OI)(CI)F" /T /Q 2>nul || echo "icacls .git skipped"
-          attrib -R "C:\Project\HANES\.git\*.*" /S 2>nul || echo "attrib .git skipped"
-          echo === Fixing node_modules permissions ===
-          if exist "C:\Project\HANES\node_modules" (
-            icacls "C:\Project\HANES\node_modules" /grant:r "%USERNAME%:(OI)(CI)F" /T /Q 2>nul || echo "icacls node_modules skipped"
-          )
-        shell: cmd
-        continue-on-error: true
-
-      - name: Clean git lock files
-        run: |
-          del /F /Q "C:\Project\HANES\.git\index.lock" 2>nul || echo "no index.lock"
-          del /F /Q "C:\Project\HANES\.git\FETCH_HEAD.lock" 2>nul || echo "no FETCH_HEAD.lock"
-          del /F /Q "C:\Project\HANES\.git\FETCH_HEAD" 2>nul || echo "no FETCH_HEAD"
         shell: cmd
         continue-on-error: true
 
@@ -69,40 +37,21 @@ jobs:
         run: |
           git fetch origin main
           git reset --hard origin/main
-          git clean -fd
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
         shell: cmd
 
-      - name: Verify pnpm
-        run: |
-          for /f "delims=" %%i in ('npm prefix -g') do set "PATH=%%i;%PATH%"
-          pnpm --version
-        shell: cmd
-
-      - name: Install dependencies (pnpm)
-        run: |
-          for /f "delims=" %%i in ('npm prefix -g') do set "PATH=%%i;%PATH%"
-          pnpm install --frozen-lockfile
-        shell: cmd
-
-      - name: Build all packages
-        run: |
-          for /f "delims=" %%i in ('npm prefix -g') do set "PATH=%%i;%PATH%"
-          pnpm build
-        shell: cmd
-
-      - name: Create logs directory
-        run: if not exist "C:\Project\HANES\logs" mkdir "C:\Project\HANES\logs"
+      - name: Build
+        run: pnpm build
         shell: cmd
 
       - name: Restart PM2 via scheduled task
         run: |
-          echo === Scheduling HANES PM2 restart ===
           schtasks /delete /tn "HANES_PM2" /f 2>nul
           schtasks /create /tn "HANES_PM2" /tr "C:\Project\HANES\scripts\pm2-restart.cmd" /sc once /st 00:00 /ru Administrator /rl highest /f
           schtasks /run /tn "HANES_PM2"
-          echo === Waiting for PM2 to start ===
           timeout /t 10 /nobreak >nul
-          echo === Verifying PM2 status ===
           set PM2_HOME=C:\Users\Administrator\.pm2
           pm2 list || echo "PM2 list check done"
         shell: cmd
