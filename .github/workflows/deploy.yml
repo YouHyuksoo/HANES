@@ -50,8 +50,10 @@ jobs:
         run: |
           $env:PM2_HOME = "C:\Users\Administrator\.pm2"
           if (!(Test-Path "C:\Project\HANES\logs")) { New-Item -ItemType Directory -Path "C:\Project\HANES\logs" | Out-Null }
-          pm2 delete hanes-frontend 2>$null; $true
-          pm2 delete hanes-backend 2>$null; $true
+          $ErrorActionPreference = 'SilentlyContinue'
+          pm2 delete hanes-frontend 2>&1 | Out-Null
+          pm2 delete hanes-backend 2>&1 | Out-Null
+          $ErrorActionPreference = 'Stop'
           Set-Location C:\Project\HANES
           pm2 start ecosystem.config.js --update-env
           pm2 save
