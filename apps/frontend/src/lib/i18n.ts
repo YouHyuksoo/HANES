@@ -1,6 +1,6 @@
 /**
  * @file src/lib/i18n.ts
- * @description i18next 다국어 설정 파일 - 한국어, 영어, 중국어 지원
+ * @description i18next 다국어 설정 파일 - 한국어, 영어, 중국어, 베트남어 지원
  *
  * 초보자 가이드:
  * 1. **i18next**: 다국어 지원 라이브러리
@@ -22,12 +22,14 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import ko from "@/locales/ko.json";
 import en from "@/locales/en.json";
 import zh from "@/locales/zh.json";
+import vi from "@/locales/vi.json";
 
 /** 지원하는 언어 목록 */
 export const supportedLanguages = [
   { code: "ko", name: "한국어", flag: "🇰🇷" },
   { code: "en", name: "English", flag: "🇺🇸" },
   { code: "zh", name: "中文", flag: "🇨🇳" },
+  { code: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
 ] as const;
 
 /** 언어 코드 타입 */
@@ -38,6 +40,7 @@ const resources = {
   ko: { translation: ko },
   en: { translation: en },
   zh: { translation: zh },
+  vi: { translation: vi },
 };
 
 i18n
