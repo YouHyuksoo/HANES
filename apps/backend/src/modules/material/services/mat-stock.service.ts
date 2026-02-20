@@ -94,6 +94,44 @@ export class MatStockService {
     return { data: result, total, page, limit };
   }
 
+  /** 출고 가능 재고 조회 (IQC PASS + 잔량 > 0 인 LOT만) */
+  async findAvailable(query: StockQueryDto) {
+    const { page = 1, limit = 10, partId, warehouseCode, search } = query;
+    const where: any = { ...(partId && { partId }), ...(warehouseCode && { warehouseCode }) };
+
+    const stocks = await this.matStockRepository.find({
+      where, skip: (page - 1) * limit, take: limit, order: { updatedAt: 'DESC' },
+    });
+
+    const lotIds = stocks.map((s) => s.lotId).filter(Boolean) as string[];
+    const partIds = stocks.map((s) => s.partId).filter(Boolean);
+    const [lots, parts] = await Promise.all([
+      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
+      partIds.length > 0 ? this.partMasterRepository.findByIds(partIds) : Promise.resolve([]),
+    ]);
+    const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+
+    let result = stocks.map((stock) => {
+      const lot = stock.lotId ? lotMap.get(stock.lotId) : null;
+      const part = partMap.get(stock.partId);
+      return {
+        ...stock,
+        partCode: part?.partCode ?? null, partName: part?.partName ?? null,
+        unit: part?.unit ?? null, lotNo: lot?.lotNo ?? null,
+        iqcStatus: lot?.iqcStatus ?? null, currentQty: lot?.currentQty ?? stock.qty,
+      };
+    }).filter((s) => s.iqcStatus === 'PASS' && s.currentQty > 0);
+
+    if (search) {
+      const s = search.toLowerCase();
+      result = result.filter((r) =>
+        r.partCode?.toLowerCase().includes(s) || r.partName?.toLowerCase().includes(s) ||
+        r.lotNo?.toLowerCase().includes(s));
+    }
+    return { data: result, total: result.length, page, limit };
+  }
+
   async findByPartAndWarehouse(partId: string, warehouseCode: string, lotId?: string) {
     const stock = await this.matStockRepository.findOne({
       where: { partId, warehouseCode, ...(lotId && { lotId }) },

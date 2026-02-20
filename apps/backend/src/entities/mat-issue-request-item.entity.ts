@@ -1,0 +1,51 @@
+/**
+ * @file entities/mat-issue-request-item.entity.ts
+ * @description 자재 출고요청 품목 엔티티 (MAT_ISSUE_REQUEST_ITEMS 테이블)
+ *
+ * 초보자 가이드:
+ * - MatIssueRequest의 상세 품목 테이블
+ * - requestId로 헤더(MAT_ISSUE_REQUESTS)와 연결
+ * - partId로 품목 마스터(PART_MASTERS)와 연결
+ * - requestQty: 요청 수량, issuedQty: 실제 출고된 수량
+ */
+
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
+
+@Entity({ name: 'MAT_ISSUE_REQUEST_ITEMS' })
+@Index(['requestId'])
+@Index(['partId'])
+export class MatIssueRequestItem {
+  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
+  id: string;
+
+  @Column({ name: 'REQUEST_ID', length: 50 })
+  requestId: string;
+
+  @Column({ name: 'PART_ID', length: 50 })
+  partId: string;
+
+  @Column({ name: 'REQUEST_QTY', type: 'int' })
+  requestQty: number;
+
+  @Column({ name: 'ISSUED_QTY', type: 'int', default: 0 })
+  issuedQty: number;
+
+  @Column({ name: 'UNIT', length: 20 })
+  unit: string;
+
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string | null;
+
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
+  updatedAt: Date;
+}

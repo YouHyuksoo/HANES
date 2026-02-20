@@ -7,6 +7,7 @@ import { Controller, Get, Post, Body, Param, Query, HttpCode, HttpStatus } from 
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MatIssueService } from '../services/mat-issue.service';
 import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
+import { ScanIssueDto } from '../dto/scan-issue.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('자재관리 - 출고')
@@ -19,6 +20,14 @@ export class MatIssueController {
   async findAll(@Query() query: MatIssueQueryDto) {
     const result = await this.matIssueService.findAll(query);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Post('scan')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '바코드 스캔 출고 (LOT 전량)' })
+  async scanIssue(@Body() dto: ScanIssueDto) {
+    const data = await this.matIssueService.scanIssue(dto);
+    return ResponseUtil.success(data, '스캔 출고가 완료되었습니다.');
   }
 
   @Get(':id')

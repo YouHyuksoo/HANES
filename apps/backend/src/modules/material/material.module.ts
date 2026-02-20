@@ -37,6 +37,8 @@ import { Warehouse } from '../../entities/warehouse.entity';
 import { InvAdjLog } from '../../entities/inv-adj-log.entity';
 import { JobOrder } from '../../entities/job-order.entity';
 import { IqcLog } from '../../entities/iqc-log.entity';
+import { MatIssueRequest } from '../../entities/mat-issue-request.entity';
+import { MatIssueRequestItem } from '../../entities/mat-issue-request-item.entity';
 
 // 기존 컨트롤러/서비스
 import { MatLotController } from './controllers/mat-lot.controller';
@@ -73,6 +75,8 @@ import { ArrivalController } from './controllers/arrival.controller';
 import { ArrivalService } from './services/arrival.service';
 import { ReceivingController } from './controllers/receiving.controller';
 import { ReceivingService } from './services/receiving.service';
+import { IssueRequestController } from './controllers/issue-request.controller';
+import { IssueRequestService } from './services/issue-request.service';
 
 @Module({
   imports: [
@@ -91,6 +95,8 @@ import { ReceivingService } from './services/receiving.service';
       InvAdjLog,
       JobOrder,
       IqcLog,
+      MatIssueRequest,
+      MatIssueRequestItem,
     ]),
   ],
   controllers: [
@@ -110,6 +116,7 @@ import { ReceivingService } from './services/receiving.service';
     ReceiptCancelController,
     ArrivalController,
     ReceivingController,
+    IssueRequestController,
   ],
   providers: [
     MatLotService,
@@ -128,12 +135,14 @@ import { ReceivingService } from './services/receiving.service';
     ReceiptCancelService,
     ArrivalService,
     ReceivingService,
+    IssueRequestService,
   ],
   exports: [
     MatLotService,
     MatStockService,
     MatIssueService,
     PurchaseOrderService,
+    IssueRequestService,
   ],
 })
 export class MaterialModule {}

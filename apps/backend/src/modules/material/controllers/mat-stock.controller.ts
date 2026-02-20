@@ -21,6 +21,13 @@ export class MatStockController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
+  @Get('available')
+  @ApiOperation({ summary: '출고 가능 재고 조회 (IQC PASS만)' })
+  async findAvailable(@Query() query: StockQueryDto) {
+    const result = await this.matStockService.findAvailable(query);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
   @Get('summary/:partId')
   @ApiOperation({ summary: '품목별 재고 요약' })
   @ApiParam({ name: 'partId', description: '품목 ID' })

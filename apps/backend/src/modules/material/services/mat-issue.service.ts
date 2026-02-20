@@ -17,6 +17,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
+import { ScanIssueDto } from '../dto/scan-issue.dto';
 
 @Injectable()
 export class MatIssueService {
@@ -169,6 +170,50 @@ export class MatIssueService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * 바코드 스캔 출고 (LOT 전량 출고)
+   * - lotNo로 LOT 조회 → IQC/소진 검증 → 전량 출고 → 품목 정보 반환
+   */
+  async scanIssue(dto: ScanIssueDto) {
+    const lot = await this.matLotRepository.findOne({
+      where: { lotNo: dto.lotNo, deletedAt: IsNull() },
+    });
+    if (!lot) {
+      throw new BadRequestException(`LOT을 찾을 수 없습니다: ${dto.lotNo}`);
+    }
+    if (lot.iqcStatus !== 'PASS') {
+      throw new BadRequestException(
+        `IQC 미합격 LOT입니다: ${dto.lotNo} (상태: ${lot.iqcStatus})`,
+      );
+    }
+    if (lot.status === 'DEPLETED' || lot.currentQty <= 0) {
+      throw new BadRequestException(
+        `이미 소진된 LOT입니다: ${dto.lotNo}`,
+      );
+    }
+
+    const result = await this.create({
+      warehouseCode: dto.warehouseCode,
+      issueType: dto.issueType ?? 'PROD',
+      items: [{ lotId: lot.id, issueQty: lot.currentQty }],
+      workerId: dto.workerId,
+      remark: dto.remark ?? `바코드 스캔 출고: ${dto.lotNo}`,
+    });
+
+    const part = await this.partMasterRepository.findOne({
+      where: { id: lot.partId },
+    });
+
+    return {
+      ...result[0],
+      lotNo: lot.lotNo,
+      issuedQty: lot.currentQty,
+      partCode: part?.partCode,
+      partName: part?.partName,
+      unit: part?.unit,
+    };
   }
 
   async cancel(id: string, reason?: string) {

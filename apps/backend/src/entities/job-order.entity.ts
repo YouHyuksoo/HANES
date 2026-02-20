@@ -8,8 +8,11 @@ import {
   Index,
   Unique,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ProdResult } from './prod-result.entity';
+import { PartMaster } from './part-master.entity';
 
 @Entity({ name: 'JOB_ORDERS' })
 @Unique(['orderNo'])
@@ -25,6 +28,10 @@ export class JobOrder {
 
   @Column({ name: 'PART_ID', length: 255 })
   partId: string;
+
+  @ManyToOne(() => PartMaster, { nullable: true })
+  @JoinColumn({ name: 'PART_ID' })
+  part: PartMaster | null;
 
   @Column({ name: 'LINE_CODE', length: 255, nullable: true })
   lineCode: string | null;

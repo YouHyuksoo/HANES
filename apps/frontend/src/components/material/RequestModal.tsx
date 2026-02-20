@@ -1,34 +1,46 @@
 "use client";
 
 /**
- * @file src/pages/material/issue-request/components/RequestModal.tsx
+ * @file src/components/material/RequestModal.tsx
  * @description 출고요청 모달 - 복수 품목 동시 요청 (장바구니 패턴)
  *
  * 초보자 가이드:
- * 1. **품목 검색**: 검색어로 품목을 찾아 현재고 확인
+ * 1. **품목 검색**: 검색어로 API 호출하여 품목을 찾아 현재고 확인
  * 2. **요청 목록**: [+]로 추가, [x]로 삭제, 수량 입력
  * 3. **현재고 초과 경고**: 요청수량이 현재고를 넘으면 경고 표시
+ * 4. **handleSubmit**: POST /material/issue-requests API 호출로 출고요청 생성
  */
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Plus, X, AlertTriangle } from 'lucide-react';
+import { Search, Plus, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { Modal, Button, Input, Select } from '@/components/ui';
+import { api } from '@/services/api';
+import { useInvalidateQueries } from '@/hooks/useApi';
 import type { StockItem, RequestItem } from '@/hooks/material/useIssueRequestData';
 
 interface RequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  searchStockItems: (query: string) => StockItem[];
+  searchStockItems: (query: string) => Promise<StockItem[]>;
   workOrderOptions: { value: string; label: string }[];
 }
 
-export default function RequestModal({ isOpen, onClose, searchStockItems, workOrderOptions }: RequestModalProps) {
+export default function RequestModal({
+  isOpen,
+  onClose,
+  searchStockItems,
+  workOrderOptions,
+}: RequestModalProps) {
   const { t } = useTranslation();
+  const invalidate = useInvalidateQueries();
   const [workOrderNo, setWorkOrderNo] = useState('');
-  const [reason, setReason] = useState('생산투입');
+  const [remark, setRemark] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockItem[]>([]);
   const [requestItems, setRequestItems] = useState<RequestItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const reasonOptions = [
     { value: '생산투입', label: t('material.request.reasonProduction') },
@@ -37,8 +49,18 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
     { value: '기타', label: t('material.request.reasonOther') },
   ];
 
-  const handleSearch = useCallback(() => {
-    setSearchResults(searchStockItems(searchQuery));
+  /** 품목 검색 (비동기 API 호출) */
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const results = await searchStockItems(searchQuery);
+      setSearchResults(results);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
   }, [searchQuery, searchStockItems]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -49,7 +71,14 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
     if (requestItems.some((r) => r.partCode === item.partCode)) return;
     setRequestItems((prev) => [
       ...prev,
-      { partCode: item.partCode, partName: item.partName, unit: item.unit, currentStock: item.currentStock, requestQty: 0 },
+      {
+        partId: item.id,
+        partCode: item.partCode,
+        partName: item.partName,
+        unit: item.unit,
+        currentStock: item.currentStock,
+        requestQty: 0,
+      },
     ]);
   };
 
@@ -59,30 +88,62 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
 
   const updateQty = (partCode: string, qty: number) => {
     setRequestItems((prev) =>
-      prev.map((r) => r.partCode === partCode ? { ...r, requestQty: qty } : r)
+      prev.map((r) => (r.partCode === partCode ? { ...r, requestQty: qty } : r)),
     );
   };
 
-  const handleSubmit = () => {
-    const totalQty = requestItems.reduce((sum, r) => sum + r.requestQty, 0);
-    console.log('출고요청 등록:', { workOrderNo, reason, items: requestItems, totalQty });
-    handleClose();
+  /** 출고요청 등록 - POST /material/issue-requests */
+  const handleSubmit = async () => {
+    setErrorMessage('');
+    setIsSubmitting(true);
+    try {
+      const body = {
+        jobOrderId: workOrderNo || undefined,
+        items: requestItems.map((item) => ({
+          partId: item.partId ?? item.partCode,
+          requestQty: item.requestQty,
+          unit: item.unit,
+        })),
+        remark: remark || undefined,
+      };
+      await api.post('/material/issue-requests', body);
+      invalidate(['issue-request-data']);
+      invalidate(['issue-requests']);
+      handleClose();
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || t('common.errorOccurred', { defaultValue: '요청 처리 중 오류가 발생했습니다.' });
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     setWorkOrderNo('');
-    setReason('생산투입');
+    setRemark('');
     setSearchQuery('');
     setSearchResults([]);
     setRequestItems([]);
+    setErrorMessage('');
     onClose();
   };
 
-  const canSubmit = workOrderNo && requestItems.length > 0 && requestItems.every((r) => r.requestQty > 0);
+  const canSubmit =
+    requestItems.length > 0 && requestItems.every((r) => r.requestQty > 0) && !isSubmitting;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={t('material.request.modalTitle')} size="lg">
       <div className="space-y-4">
+        {/* 에러 메시지 */}
+        {errorMessage && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* 기본 정보 */}
         <div className="grid grid-cols-2 gap-4">
           <Select
@@ -95,15 +156,17 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
           <Select
             label={t('material.request.reasonLabel')}
             options={reasonOptions}
-            value={reason}
-            onChange={setReason}
+            value={remark || '생산투입'}
+            onChange={setRemark}
             fullWidth
           />
         </div>
 
         {/* 품목 검색 */}
         <div>
-          <label className="block text-sm font-medium text-text mb-1">{t('material.request.searchLabel')}</label>
+          <label className="block text-sm font-medium text-text mb-1">
+            {t('material.request.searchLabel')}
+          </label>
           <div className="flex gap-2">
             <Input
               placeholder={t('material.request.searchPartPlaceholder')}
@@ -113,7 +176,9 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
               leftIcon={<Search className="w-4 h-4" />}
               fullWidth
             />
-            <Button variant="secondary" onClick={handleSearch}>{t('common.search')}</Button>
+            <Button variant="secondary" onClick={handleSearch} disabled={isSearching}>
+              {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : t('common.search')}
+            </Button>
           </div>
         </div>
 
@@ -127,28 +192,51 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
               <table className="w-full text-sm">
                 <thead className="bg-background/50">
                   <tr>
-                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">{t('common.partCode')}</th>
-                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">{t('common.partName')}</th>
-                    <th className="text-right px-3 py-1.5 text-text-muted font-medium">{t('material.request.currentStock')}</th>
-                    <th className="text-center px-3 py-1.5 text-text-muted font-medium">{t('common.unit')}</th>
+                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">
+                      {t('common.partCode')}
+                    </th>
+                    <th className="text-left px-3 py-1.5 text-text-muted font-medium">
+                      {t('common.partName')}
+                    </th>
+                    <th className="text-right px-3 py-1.5 text-text-muted font-medium">
+                      {t('material.request.currentStock')}
+                    </th>
+                    <th className="text-center px-3 py-1.5 text-text-muted font-medium">
+                      {t('common.unit')}
+                    </th>
                     <th className="text-center px-3 py-1.5 w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {searchResults.map((item) => {
-                    const alreadyAdded = requestItems.some((r) => r.partCode === item.partCode);
+                    const alreadyAdded = requestItems.some(
+                      (r) => r.partCode === item.partCode,
+                    );
                     return (
-                      <tr key={item.partCode} className="border-t border-border hover:bg-background/30">
+                      <tr
+                        key={item.partCode}
+                        className="border-t border-border hover:bg-background/30"
+                      >
                         <td className="px-3 py-1.5 font-mono text-xs">{item.partCode}</td>
                         <td className="px-3 py-1.5">{item.partName}</td>
-                        <td className="px-3 py-1.5 text-right font-medium">{item.currentStock.toLocaleString()}</td>
+                        <td className="px-3 py-1.5 text-right font-medium">
+                          {item.currentStock.toLocaleString()}
+                        </td>
                         <td className="px-3 py-1.5 text-center text-text-muted">{item.unit}</td>
                         <td className="px-3 py-1.5 text-center">
                           <button
                             onClick={() => addItem(item)}
                             disabled={alreadyAdded}
-                            className={`p-1 rounded ${alreadyAdded ? 'text-text-muted opacity-50' : 'text-primary hover:bg-primary/10'}`}
-                            title={alreadyAdded ? t('material.request.alreadyAdded') : t('material.request.addToRequest')}
+                            className={`p-1 rounded ${
+                              alreadyAdded
+                                ? 'text-text-muted opacity-50'
+                                : 'text-primary hover:bg-primary/10'
+                            }`}
+                            title={
+                              alreadyAdded
+                                ? t('material.request.alreadyAdded')
+                                : t('material.request.addToRequest')
+                            }
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -172,9 +260,15 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
               <thead className="bg-background/50">
                 <tr>
                   <th className="text-left px-3 py-1.5 text-text-muted font-medium w-8">#</th>
-                  <th className="text-left px-3 py-1.5 text-text-muted font-medium">{t('common.partName')}</th>
-                  <th className="text-right px-3 py-1.5 text-text-muted font-medium">{t('material.request.currentStock')}</th>
-                  <th className="text-center px-3 py-1.5 text-text-muted font-medium w-32">{t('material.request.requestQtyLabel')}</th>
+                  <th className="text-left px-3 py-1.5 text-text-muted font-medium">
+                    {t('common.partName')}
+                  </th>
+                  <th className="text-right px-3 py-1.5 text-text-muted font-medium">
+                    {t('material.request.currentStock')}
+                  </th>
+                  <th className="text-center px-3 py-1.5 text-text-muted font-medium w-32">
+                    {t('material.request.requestQtyLabel')}
+                  </th>
                   <th className="text-center px-3 py-1.5 w-10"></th>
                 </tr>
               </thead>
@@ -188,7 +282,9 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
                         <span>{item.partName}</span>
                         <span className="ml-2 text-xs text-text-muted">({item.unit})</span>
                       </td>
-                      <td className="px-3 py-1.5 text-right font-medium">{item.currentStock.toLocaleString()}</td>
+                      <td className="px-3 py-1.5 text-right font-medium">
+                        {item.currentStock.toLocaleString()}
+                      </td>
                       <td className="px-3 py-1.5">
                         <div className="flex items-center gap-1">
                           <input
@@ -200,11 +296,16 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
                               ${overStock ? 'border-red-400' : 'border-border'}`}
                             placeholder="0"
                           />
-                          {overStock && <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />}
+                          {overStock && (
+                            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                          )}
                         </div>
                       </td>
                       <td className="px-3 py-1.5 text-center">
-                        <button onClick={() => removeItem(item.partCode)} className="p-1 text-red-400 hover:text-red-600 rounded">
+                        <button
+                          onClick={() => removeItem(item.partCode)}
+                          className="p-1 text-red-400 hover:text-red-600 rounded"
+                        >
                           <X className="w-4 h-4" />
                         </button>
                       </td>
@@ -218,9 +319,16 @@ export default function RequestModal({ isOpen, onClose, searchStockItems, workOr
 
         {/* 버튼 */}
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
-          <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
+          <Button variant="secondary" onClick={handleClose}>
+            {t('common.cancel')}
+          </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
-            <Plus className="w-4 h-4 mr-1" /> {t('material.request.registerRequest')}
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-1" />
+            )}
+            {t('material.request.registerRequest')}
           </Button>
         </div>
       </div>
