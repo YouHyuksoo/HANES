@@ -62,10 +62,9 @@ jobs:
           git clean -fd
         shell: cmd
 
-      - name: Enable pnpm via corepack
+      - name: Install pnpm
         run: |
-          corepack enable
-          corepack prepare pnpm@10.28.1 --activate
+          npm install -g pnpm@10.28.1
           pnpm --version
         shell: cmd
 
