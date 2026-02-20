@@ -1,0 +1,65 @@
+name: Deploy HANES MES to Windows Server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    defaults:
+      run:
+        working-directory: C:\Project\HANES
+
+    steps:
+      - name: Check current user
+        run: |
+          echo "=== Current User ==="
+          whoami
+          echo "=== PM2 Home ==="
+          echo %PM2_HOME%
+        shell: cmd
+
+      - name: Configure Git safe directory
+        run: git config --global --add safe.directory C:/Project/HANES
+
+      - name: Stop HANES processes only
+        run: |
+          set PM2_HOME=C:\Users\Administrator\.pm2
+          echo "=== Stopping HANES processes only (not killing PM2) ==="
+          pm2 stop hanes-frontend 2>nul || echo "hanes-frontend not running"
+          pm2 stop hanes-backend 2>nul || echo "hanes-backend not running"
+          pm2 delete hanes-frontend 2>nul || echo "hanes-frontend not registered"
+          pm2 delete hanes-backend 2>nul || echo "hanes-backend not registered"
+        shell: cmd
+        continue-on-error: true
+
+      - name: Pull latest code
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Create logs directory
+        run: if not exist "C:\Project\HANES\logs" mkdir "C:\Project\HANES\logs"
+        shell: cmd
+
+      - name: Restart PM2 via scheduled task
+        run: |
+          echo "=== Scheduling HANES PM2 restart (detached from runner) ==="
+          schtasks /delete /tn "HANES_PM2" /f 2>nul
+          schtasks /create /tn "HANES_PM2" /tr "C:\Project\HANES\scripts\pm2-restart.cmd" /sc once /st 00:00 /ru Administrator /rl highest /f
+          schtasks /run /tn "HANES_PM2"
+          echo "=== Waiting for PM2 to start ==="
+          timeout /t 10 /nobreak >nul
+          echo "=== Verifying PM2 status ==="
+          set PM2_HOME=C:\Users\Administrator\.pm2
+          pm2 list || echo "PM2 list check done"
+        shell: cmd
