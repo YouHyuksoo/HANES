@@ -50,8 +50,8 @@ jobs:
         run: |
           set PM2_HOME=C:\Users\Administrator\.pm2
           if not exist "C:\Project\HANES\logs" mkdir "C:\Project\HANES\logs"
-          pm2 delete hanes-frontend 2>nul
-          pm2 delete hanes-backend 2>nul
+          pm2 delete hanes-frontend 2>nul || echo "skip"
+          pm2 delete hanes-backend 2>nul || echo "skip"
           cd /d C:\Project\HANES
           pm2 start ecosystem.config.js --update-env
           pm2 save
