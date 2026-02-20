@@ -19,7 +19,7 @@ import LabelCanvas from "./components/LabelCanvas";
 import LabelPreview from "./components/LabelPreview";
 import TemplateManager from "./components/TemplateManager";
 import LabelGrid from "./components/LabelGrid";
-import { LabelCategory, LabelItem, LabelDesign, DEFAULT_DESIGN } from "./types";
+import { LabelCategory, LabelItem, LabelDesign, DEFAULT_DESIGN, MAT_LOT_DEFAULT_DESIGN } from "./types";
 import { api } from "@/services/api";
 
 const categories: { key: LabelCategory; labelKey: string }[] = [
@@ -27,6 +27,7 @@ const categories: { key: LabelCategory; labelKey: string }[] = [
   { key: "jig", labelKey: "master.label.catJig" },
   { key: "worker", labelKey: "master.label.catWorker" },
   { key: "part", labelKey: "master.label.catPart" },
+  { key: "mat_lot", labelKey: "master.label.catMatLot" },
 ];
 
 /** 카테고리별 API 경로 및 필드 매핑 */
@@ -70,6 +71,10 @@ const categoryApiMap: Record<LabelCategory, {
       sub: (item.partType as string) || "",
     }),
   },
+  mat_lot: {
+    url: "",
+    mapFn: () => ({ id: "", code: "", name: "" }),
+  },
 };
 
 function LabelPage() {
@@ -82,6 +87,11 @@ function LabelPage() {
 
   /** 카테고리 변경 시 API 데이터 로드 */
   const fetchItems = useCallback(async (cat: LabelCategory) => {
+    if (cat === "mat_lot") {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { url, mapFn } = categoryApiMap[cat];
@@ -106,6 +116,7 @@ function LabelPage() {
   const handleCategoryChange = useCallback((cat: LabelCategory) => {
     setCategory(cat);
     setSelectedIds(new Set());
+    setDesign(cat === "mat_lot" ? MAT_LOT_DEFAULT_DESIGN : DEFAULT_DESIGN);
   }, []);
 
   return (
@@ -137,7 +148,17 @@ function LabelPage() {
       <div className="grid grid-cols-12 gap-6">
         {/* 좌측: 항목 선택 */}
         <div className="col-span-4">
-          <LabelGrid items={items} selectedIds={selectedIds} onSelectionChange={setSelectedIds} loading={loading} />
+          {category === "mat_lot" ? (
+            <Card><CardContent>
+              <div className="flex flex-col items-center justify-center h-48 text-text-muted">
+                <Tag className="w-10 h-10 mb-3 text-primary/40" />
+                <p className="text-sm font-medium">{t("master.label.matLotDesignOnly")}</p>
+                <p className="text-xs mt-1">{t("master.label.matLotDesignHint")}</p>
+              </div>
+            </CardContent></Card>
+          ) : (
+            <LabelGrid items={items} selectedIds={selectedIds} onSelectionChange={setSelectedIds} loading={loading} />
+          )}
         </div>
 
         {/* 중앙: 디자인 설정 + 템플릿 관리 */}

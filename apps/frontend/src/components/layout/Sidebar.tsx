@@ -60,6 +60,7 @@ export const menuItems: MenuItem[] = [
     children: [
       { id: "mat-arrival", labelKey: "menu.material.arrival", path: "/material/arrival" },
       { id: "mat-iqc", labelKey: "menu.material.iqc", path: "/material/iqc" },
+      { id: "mat-receive-label", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
       { id: "mat-receive", labelKey: "menu.material.receive", path: "/material/receive" },
       { id: "mat-request", labelKey: "menu.material.request", path: "/material/request" },
       { id: "mat-issue", labelKey: "menu.material.issue", path: "/material/issue" },

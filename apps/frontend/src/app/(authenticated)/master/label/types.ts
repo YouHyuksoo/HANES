@@ -7,7 +7,7 @@
 export type BarcodeFormat = "qrcode" | "datamatrix" | "code39" | "code128";
 
 /** 라벨 카테고리 */
-export type LabelCategory = "equip" | "jig" | "worker" | "part";
+export type LabelCategory = "equip" | "jig" | "worker" | "part" | "mat_lot";
 
 /** 라벨 출력 대상 아이템 */
 export interface LabelItem {
@@ -51,6 +51,16 @@ export const DEFAULT_DESIGN: LabelDesign = {
   codeText: { enabled: true, x: 35, y: 25, fontSize: 10, fontFamily: "monospace", bold: true, align: "center" },
   nameText: { enabled: true, x: 35, y: 32, fontSize: 8, fontFamily: "sans-serif", bold: false, align: "center" },
   subText: { enabled: false, x: 35, y: 37, fontSize: 7, fontFamily: "sans-serif", bold: false, align: "center" },
+};
+
+/** 자재롯트 라벨 기본 디자인 */
+export const MAT_LOT_DEFAULT_DESIGN: LabelDesign = {
+  labelWidth: 70,
+  labelHeight: 50,
+  barcode: { format: "qrcode", x: 15, y: 3, size: 20 },
+  codeText: { enabled: true, x: 50, y: 5, fontSize: 9, fontFamily: "monospace", bold: true, align: "center" },
+  nameText: { enabled: true, x: 50, y: 15, fontSize: 8, fontFamily: "sans-serif", bold: false, align: "center" },
+  subText: { enabled: true, x: 50, y: 25, fontSize: 7, fontFamily: "sans-serif", bold: false, align: "center" },
 };
 
 /** 바코드 형식 옵션 */
