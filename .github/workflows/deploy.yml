@@ -46,12 +46,15 @@ jobs:
         run: pnpm build
         shell: cmd
 
-      - name: Restart PM2 via scheduled task
+      - name: Start HANES PM2 processes
         run: |
-          schtasks /delete /tn "HANES_PM2" /f 2>nul
-          schtasks /create /tn "HANES_PM2" /tr "C:\Project\HANES\scripts\pm2-restart.cmd" /sc once /st 00:00 /ru HS_ADMIN /rl highest /f
-          schtasks /run /tn "HANES_PM2"
-          timeout /t 10 /nobreak >nul
           set PM2_HOME=C:\Users\Administrator\.pm2
-          pm2 list || echo "PM2 list check done"
+          if not exist "C:\Project\HANES\logs" mkdir "C:\Project\HANES\logs"
+          pm2 delete hanes-frontend 2>nul
+          pm2 delete hanes-backend 2>nul
+          cd /d C:\Project\HANES
+          pm2 start ecosystem.config.js --update-env
+          pm2 save
+          timeout /t 5 /nobreak >nul
+          pm2 list
         shell: cmd
