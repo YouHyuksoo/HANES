@@ -49,7 +49,7 @@ jobs:
       - name: Restart PM2 via scheduled task
         run: |
           schtasks /delete /tn "HANES_PM2" /f 2>nul
-          schtasks /create /tn "HANES_PM2" /tr "C:\Project\HANES\scripts\pm2-restart.cmd" /sc once /st 00:00 /ru Administrator /rl highest /f
+          schtasks /create /tn "HANES_PM2" /tr "C:\Project\HANES\scripts\pm2-restart.cmd" /sc once /st 00:00 /ru HS_ADMIN /rl highest /f
           schtasks /run /tn "HANES_PM2"
           timeout /t 10 /nobreak >nul
           set PM2_HOME=C:\Users\Administrator\.pm2
