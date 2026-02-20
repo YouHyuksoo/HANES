@@ -1081,6 +1081,11 @@
       "title": "Material Issuing",
       "subtitle": "Process material issuing.",
       "description": "Process material issuing.",
+      "tab": {
+        "request": "Issue Requests",
+        "manual": "Manual Issue",
+        "scan": "Barcode Scan"
+      },
       "stats": {
         "requested": "Requested",
         "approved": "Approved",
@@ -1107,7 +1112,21 @@
       "issueAction": "Issue",
       "approveAction": "Approve",
       "rejectAction": "Reject",
-      "processAction": "Process Issue"
+      "processAction": "Process Issue",
+      "approveConfirmMsg": "Do you want to approve this issue request?",
+      "rejectReasonMsg": "Please enter a reason for rejection.",
+      "rejectReasonPlaceholder": "Enter rejection reason...",
+      "totalIssueQty": "Total Issue Qty",
+      "availableQty": "Available Qty",
+      "noAvailableStock": "No available stock for issuing.",
+      "issueConfirmMsg": "Issue {{count}} item(s) (total {{qty}})?",
+      "scanPlaceholder": "Scan or enter LOT number...",
+      "scanResult": "LOT Lookup Result",
+      "currentQty": "Current Qty",
+      "fullIssue": "Full Issue",
+      "scanHistoryTitle": "Today's Scan Issue History",
+      "noScanHistory": "No scan issue history.",
+      "scanTime": "Time"
     },
     "stock": {
       "title": "Material Stock",

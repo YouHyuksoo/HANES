@@ -1081,6 +1081,11 @@
       "title": "出库管理",
       "subtitle": "处理物料出库。",
       "description": "处理物料出库。",
+      "tab": {
+        "request": "出库申请处理",
+        "manual": "手动出库",
+        "scan": "条码扫描"
+      },
       "stats": {
         "requested": "已申请",
         "approved": "已审批",
@@ -1107,7 +1112,21 @@
       "issueAction": "出库",
       "approveAction": "批准",
       "rejectAction": "驳回",
-      "processAction": "出库处理"
+      "processAction": "出库处理",
+      "approveConfirmMsg": "是否批准此出库申请？",
+      "rejectReasonMsg": "请输入驳回原因。",
+      "rejectReasonPlaceholder": "输入驳回原因...",
+      "totalIssueQty": "总出库数量",
+      "availableQty": "可用数量",
+      "noAvailableStock": "没有可出库的库存。",
+      "issueConfirmMsg": "确定出库 {{count}} 项（共 {{qty}}）？",
+      "scanPlaceholder": "扫描或输入LOT号...",
+      "scanResult": "LOT查询结果",
+      "currentQty": "当前数量",
+      "fullIssue": "全量出库",
+      "scanHistoryTitle": "今日扫描出库记录",
+      "noScanHistory": "没有扫描出库记录。",
+      "scanTime": "时间"
     },
     "stock": {
       "title": "物料库存",

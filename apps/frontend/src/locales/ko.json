@@ -147,6 +147,7 @@
     "material": "자재관리",
     "material.arrival": "입하관리",
     "material.iqc": "수입검사(IQC)",
+    "material.receiveLabel": "입고라벨발행",
     "material.receive": "입고관리",
     "material.request": "출고요청관리",
     "material.issue": "출고관리",
@@ -873,6 +874,9 @@
       "catJig": "지그/금형",
       "catWorker": "작업자",
       "catPart": "품목",
+      "catMatLot": "자재롯트라벨",
+      "matLotDesignOnly": "자재롯트 라벨 디자인 전용",
+      "matLotDesignHint": "디자인을 설정하고 템플릿으로 저장하세요. 발행은 자재관리 > 입고라벨발행에서 진행합니다.",
       "barcodeFormat": "바코드 형식",
       "labelSize": "라벨 크기",
       "showName": "명칭 표시",
@@ -1078,6 +1082,22 @@
       "confirmReceiving": "입고확정",
       "confirmTitle": "입고확정"
     },
+    "receiveLabel": {
+      "title": "입고라벨 발행",
+      "subtitle": "IQC 합격 LOT를 선택하여 자재롯트 라벨을 발행합니다.",
+      "printTitle": "자재롯트 라벨 인쇄",
+      "printLabel": "라벨 발행",
+      "qty": "수량",
+      "labelCount": "라벨매수",
+      "sheets": "장",
+      "searchPlaceholder": "LOT번호, 품목코드, 품목명, 거래처 검색...",
+      "stats": {
+        "totalLots": "전체 LOT",
+        "totalQty": "전체 수량",
+        "selectedLots": "선택 LOT",
+        "selectedLabels": "발행 라벨수"
+      }
+    },
     "request": {
       "title": "출고요청",
       "subtitle": "자재 출고 요청을 관리합니다.",
@@ -1118,6 +1138,11 @@
       "title": "출고관리",
       "subtitle": "자재 출고를 처리합니다.",
       "description": "자재 출고를 처리합니다.",
+      "tab": {
+        "request": "출고요청처리",
+        "manual": "수동출고",
+        "scan": "바코드스캔"
+      },
       "stats": {
         "requested": "요청",
         "approved": "승인",
@@ -1144,7 +1169,21 @@
       "issueAction": "출고",
       "approveAction": "승인",
       "rejectAction": "반려",
-      "processAction": "출고처리"
+      "processAction": "출고처리",
+      "approveConfirmMsg": "이 출고요청을 승인하시겠습니까?",
+      "rejectReasonMsg": "반려 사유를 입력해주세요.",
+      "rejectReasonPlaceholder": "반려 사유 입력...",
+      "totalIssueQty": "총 출고수량",
+      "availableQty": "가용수량",
+      "noAvailableStock": "출고 가능한 재고가 없습니다.",
+      "issueConfirmMsg": "선택한 {{count}}건 (총 {{qty}})을 출고 처리하시겠습니까?",
+      "scanPlaceholder": "LOT 번호를 스캔하거나 입력하세요...",
+      "scanResult": "LOT 조회 결과",
+      "currentQty": "현재수량",
+      "fullIssue": "전량출고",
+      "scanHistoryTitle": "금일 스캔 출고 이력",
+      "noScanHistory": "스캔 출고 이력이 없습니다.",
+      "scanTime": "시간"
     },
     "stock": {
       "title": "자재재고현황",

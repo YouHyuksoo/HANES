@@ -1081,6 +1081,11 @@
       "title": "Quản lý xuất kho",
       "subtitle": "Xử lý xuất kho vật tư.",
       "description": "Xử lý xuất kho vật tư.",
+      "tab": {
+        "request": "Xử lý yêu cầu xuất",
+        "manual": "Xuất thủ công",
+        "scan": "Quét mã vạch"
+      },
       "stats": {
         "requested": "Đã yêu cầu",
         "approved": "Đã phê duyệt",
@@ -1107,7 +1112,21 @@
       "issueAction": "Xuất kho",
       "approveAction": "Phê duyệt",
       "rejectAction": "Từ chối",
-      "processAction": "Xử lý xuất"
+      "processAction": "Xử lý xuất",
+      "approveConfirmMsg": "Bạn có muốn phê duyệt yêu cầu xuất kho này?",
+      "rejectReasonMsg": "Vui lòng nhập lý do từ chối.",
+      "rejectReasonPlaceholder": "Nhập lý do từ chối...",
+      "totalIssueQty": "Tổng SL xuất",
+      "availableQty": "SL khả dụng",
+      "noAvailableStock": "Không có hàng tồn kho khả dụng để xuất.",
+      "issueConfirmMsg": "Xuất {{count}} mục (tổng {{qty}})?",
+      "scanPlaceholder": "Quét hoặc nhập số LOT...",
+      "scanResult": "Kết quả tra cứu LOT",
+      "currentQty": "SL hiện tại",
+      "fullIssue": "Xuất toàn bộ",
+      "scanHistoryTitle": "Lịch sử xuất kho quét hôm nay",
+      "noScanHistory": "Không có lịch sử xuất kho quét.",
+      "scanTime": "Thời gian"
     },
     "stock": {
       "title": "Tồn kho vật tư",
