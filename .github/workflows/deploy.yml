@@ -45,10 +45,15 @@ jobs:
         shell: cmd
         continue-on-error: true
 
-      - name: Fix git directory permissions
+      - name: Fix directory permissions
         run: |
-          icacls "C:\Project\HANES\.git" /grant:r "%USERNAME%:(OI)(CI)F" /T /Q 2>nul || echo "icacls skipped"
-          attrib -R "C:\Project\HANES\.git\*.*" /S 2>nul || echo "attrib skipped"
+          echo === Fixing .git permissions ===
+          icacls "C:\Project\HANES\.git" /grant:r "%USERNAME%:(OI)(CI)F" /T /Q 2>nul || echo "icacls .git skipped"
+          attrib -R "C:\Project\HANES\.git\*.*" /S 2>nul || echo "attrib .git skipped"
+          echo === Fixing node_modules permissions ===
+          if exist "C:\Project\HANES\node_modules" (
+            icacls "C:\Project\HANES\node_modules" /grant:r "%USERNAME%:(OI)(CI)F" /T /Q 2>nul || echo "icacls node_modules skipped"
+          )
         shell: cmd
         continue-on-error: true
 
@@ -67,18 +72,13 @@ jobs:
           git clean -fd
         shell: cmd
 
-      - name: Setup pnpm
+      - name: Verify pnpm
         run: |
-          echo === Installing pnpm globally ===
-          call npm install -g pnpm@10.28.1
-          echo === Refreshing PATH ===
-          for /f "delims=" %%i in ('npm prefix -g') do set "NPM_GLOBAL=%%i"
-          set "PATH=%NPM_GLOBAL%;%PATH%"
-          echo NPM_GLOBAL=%NPM_GLOBAL%
+          for /f "delims=" %%i in ('npm prefix -g') do set "PATH=%%i;%PATH%"
           pnpm --version
         shell: cmd
 
-      - name: Install dependencies
+      - name: Install dependencies (pnpm)
         run: |
           for /f "delims=" %%i in ('npm prefix -g') do set "PATH=%%i;%PATH%"
           pnpm install --frozen-lockfile
