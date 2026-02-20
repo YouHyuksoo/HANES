@@ -20,6 +20,11 @@ jobs:
           whoami
           echo "=== Working Directory ==="
           cd
+          echo "=== Node/npm info ==="
+          node --version
+          npm --version
+          echo "=== npm global prefix ==="
+          npm prefix -g
         shell: cmd
 
       - name: Configure Git safe directory
@@ -62,18 +67,27 @@ jobs:
           git clean -fd
         shell: cmd
 
-      - name: Install pnpm
+      - name: Setup pnpm
         run: |
-          npm install -g pnpm@10.28.1
+          echo === Installing pnpm globally ===
+          call npm install -g pnpm@10.28.1
+          echo === Refreshing PATH ===
+          for /f "delims=" %%i in ('npm prefix -g') do set "NPM_GLOBAL=%%i"
+          set "PATH=%NPM_GLOBAL%;%PATH%"
+          echo NPM_GLOBAL=%NPM_GLOBAL%
           pnpm --version
         shell: cmd
 
-      - name: Install dependencies (pnpm)
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: |
+          for /f "delims=" %%i in ('npm prefix -g') do set "PATH=%%i;%PATH%"
+          pnpm install --frozen-lockfile
         shell: cmd
 
       - name: Build all packages
-        run: pnpm build
+        run: |
+          for /f "delims=" %%i in ('npm prefix -g') do set "PATH=%%i;%PATH%"
+          pnpm build
         shell: cmd
 
       - name: Create logs directory
