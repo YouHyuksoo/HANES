@@ -39,20 +39,29 @@ interface PartnerItem {
   partnerType: string;
 }
 
+/** 백엔드 findAll 응답: { data: T[], total, page, limit } */
+interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 /**
  * 창고 목록을 SelectOption[]으로 반환
  * @param warehouseType - 'RAW' | 'PRODUCT' | 'WIP' 등 (미지정 시 전체)
  */
 export function useWarehouseOptions(warehouseType?: string) {
   const params = warehouseType ? `?warehouseType=${warehouseType}` : "";
-  const { data, isLoading } = useApiQuery<WarehouseItem[]>(
+  const { data, isLoading } = useApiQuery<PaginatedResponse<WarehouseItem>>(
     ["warehouses", warehouseType ?? "all"],
     `/inventory/warehouses${params}`,
     { staleTime: 5 * 60 * 1000 },
   );
 
   const options = useMemo<SelectOption[]>(() => {
-    const list = data?.data ?? [];
+    const raw = data?.data;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((w) => ({
       value: w.id,
       label: w.warehouseName,
@@ -70,14 +79,15 @@ export function usePartOptions(partType?: string) {
   const params = new URLSearchParams({ limit: "100" });
   if (partType) params.set("partType", partType);
 
-  const { data, isLoading } = useApiQuery<PartItem[]>(
+  const { data, isLoading } = useApiQuery<PaginatedResponse<PartItem>>(
     ["parts", "options", partType ?? "all"],
     `/master/parts?${params.toString()}`,
     { staleTime: 5 * 60 * 1000 },
   );
 
   const options = useMemo<SelectOption[]>(() => {
-    const list = data?.data ?? [];
+    const raw = data?.data;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((p) => ({
       value: p.id,
       label: `${p.partCode} - ${p.partName}`,
@@ -91,14 +101,15 @@ export function usePartOptions(partType?: string) {
  * 작업자 목록을 SelectOption[]으로 반환
  */
 export function useWorkerOptions() {
-  const { data, isLoading } = useApiQuery<WorkerItem[]>(
+  const { data, isLoading } = useApiQuery<PaginatedResponse<WorkerItem>>(
     ["workers", "options"],
     "/master/workers?limit=100",
     { staleTime: 5 * 60 * 1000 },
   );
 
   const options = useMemo<SelectOption[]>(() => {
-    const list = data?.data ?? [];
+    const raw = data?.data;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((w) => ({
       value: w.id,
       label: w.workerName,
@@ -116,14 +127,15 @@ export function usePartnerOptions(partnerType?: "SUPPLIER" | "CUSTOMER") {
   const params = new URLSearchParams({ limit: "100" });
   if (partnerType) params.set("partnerType", partnerType);
 
-  const { data, isLoading } = useApiQuery<PartnerItem[]>(
+  const { data, isLoading } = useApiQuery<PaginatedResponse<PartnerItem>>(
     ["partners", "options", partnerType ?? "all"],
     `/master/partners?${params.toString()}`,
     { staleTime: 5 * 60 * 1000 },
   );
 
   const options = useMemo<SelectOption[]>(() => {
-    const list = data?.data ?? [];
+    const raw = data?.data;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((p) => ({
       value: p.partnerCode,
       label: `${p.partnerCode} - ${p.partnerName}`,
