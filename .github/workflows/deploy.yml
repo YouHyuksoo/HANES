@@ -18,21 +18,40 @@ jobs:
         run: |
           echo "=== Current User ==="
           whoami
-          echo "=== PM2 Home ==="
-          echo %PM2_HOME%
+          echo "=== Working Directory ==="
+          cd
         shell: cmd
 
       - name: Configure Git safe directory
         run: git config --global --add safe.directory C:/Project/HANES
 
-      - name: Stop HANES processes only
+      - name: Stop HANES processes and release file locks
         run: |
           set PM2_HOME=C:\Users\Administrator\.pm2
-          echo "=== Stopping HANES processes only (not killing PM2) ==="
+          echo === Stopping HANES PM2 processes ===
           pm2 stop hanes-frontend 2>nul || echo "hanes-frontend not running"
           pm2 stop hanes-backend 2>nul || echo "hanes-backend not running"
           pm2 delete hanes-frontend 2>nul || echo "hanes-frontend not registered"
           pm2 delete hanes-backend 2>nul || echo "hanes-backend not registered"
+          echo === Killing any node processes on HANES ports (3002, 3003) ===
+          for /f "tokens=5" %%P in ('netstat -ano ^| findstr :3002 ^| findstr LISTENING') do taskkill /F /PID %%P 2>nul
+          for /f "tokens=5" %%P in ('netstat -ano ^| findstr :3003 ^| findstr LISTENING') do taskkill /F /PID %%P 2>nul
+          timeout /t 3 /nobreak >nul
+        shell: cmd
+        continue-on-error: true
+
+      - name: Fix git directory permissions
+        run: |
+          icacls "C:\Project\HANES\.git" /grant:r "%USERNAME%:(OI)(CI)F" /T /Q 2>nul || echo "icacls skipped"
+          attrib -R "C:\Project\HANES\.git\*.*" /S 2>nul || echo "attrib skipped"
+        shell: cmd
+        continue-on-error: true
+
+      - name: Clean git lock files
+        run: |
+          del /F /Q "C:\Project\HANES\.git\index.lock" 2>nul || echo "no index.lock"
+          del /F /Q "C:\Project\HANES\.git\FETCH_HEAD.lock" 2>nul || echo "no FETCH_HEAD.lock"
+          del /F /Q "C:\Project\HANES\.git\FETCH_HEAD" 2>nul || echo "no FETCH_HEAD"
         shell: cmd
         continue-on-error: true
 
@@ -40,12 +59,16 @@ jobs:
         run: |
           git fetch origin main
           git reset --hard origin/main
+          git clean -fd
+        shell: cmd
 
       - name: Install dependencies (pnpm)
         run: pnpm install --frozen-lockfile
+        shell: cmd
 
       - name: Build all packages
         run: pnpm build
+        shell: cmd
 
       - name: Create logs directory
         run: if not exist "C:\Project\HANES\logs" mkdir "C:\Project\HANES\logs"
@@ -53,13 +76,13 @@ jobs:
 
       - name: Restart PM2 via scheduled task
         run: |
-          echo "=== Scheduling HANES PM2 restart (detached from runner) ==="
+          echo === Scheduling HANES PM2 restart ===
           schtasks /delete /tn "HANES_PM2" /f 2>nul
           schtasks /create /tn "HANES_PM2" /tr "C:\Project\HANES\scripts\pm2-restart.cmd" /sc once /st 00:00 /ru Administrator /rl highest /f
           schtasks /run /tn "HANES_PM2"
-          echo "=== Waiting for PM2 to start ==="
+          echo === Waiting for PM2 to start ===
           timeout /t 10 /nobreak >nul
-          echo "=== Verifying PM2 status ==="
+          echo === Verifying PM2 status ===
           set PM2_HOME=C:\Users\Administrator\.pm2
           pm2 list || echo "PM2 list check done"
         shell: cmd
