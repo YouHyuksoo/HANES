@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HANES MES — DataGrid Design Playground</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;height:100vh;overflow:hidden}
+
+/* Panel */
+.panel{width:310px;min-width:280px;background:#1e293b;border-right:1px solid #334155;display:flex;flex-direction:column;overflow-y:auto}
+.panel-section{padding:10px 14px;border-bottom:1px solid #334155}
+.panel-section h3{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.panel-section h3 .tag{font-size:8px;background:#334155;padding:1px 5px;border-radius:8px;color:#64748b}
+
+/* Presets */
+.preset-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px}
+.preset-btn{padding:5px 10px;border:1px solid #475569;border-radius:5px;background:#1e293b;color:#cbd5e1;font-size:10px;cursor:pointer;transition:.15s}
+.preset-btn:hover{border-color:#60a5fa;color:#93c5fd}
+.preset-btn.active{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+
+/* Controls */
+.ctrl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ctrl-label{font-size:11px;color:#94a3b8;flex-shrink:0}
+.ctrl-value{font-size:10px;color:#60a5fa;min-width:36px;text-align:right;font-family:'Cascadia Code','Fira Code',monospace}
+.ctrl-row input[type=range]{flex:1;margin:0 8px;accent-color:#3b82f6;height:4px}
+.ctrl-row input[type=color]{width:28px;height:22px;border:1px solid #475569;border-radius:4px;background:none;cursor:pointer;padding:0}
+.ctrl-row select{background:#0f172a;border:1px solid #475569;border-radius:4px;color:#e2e8f0;padding:3px 6px;font-size:10px}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.toggle-row label{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px;cursor:pointer}
+.toggle-row input{accent-color:#3b82f6}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#1e293b;border-bottom:1px solid #334155}
+.toolbar .title{font-size:14px;font-weight:700;color:#f1f5f9;flex:1}.toolbar .title span{color:#3b82f6}
+
+/* Theme toggle */
+.theme-toggle{display:flex;border:1px solid #475569;border-radius:5px;overflow:hidden}
+.theme-btn{padding:4px 10px;font-size:10px;cursor:pointer;border:none;background:#1e293b;color:#94a3b8;transition:.15s}
+.theme-btn.active{background:#3b82f6;color:#fff}
+
+/* Preview */
+.preview-area{flex:1;display:flex;align-items:stretch;justify-content:center;overflow:auto;padding:20px}
+.preview-container{width:100%;max-width:1100px}
+.preview-bg{border-radius:12px;padding:20px;transition:background .3s}
+
+/* Prompt */
+.prompt-area{background:#1e293b;border-top:1px solid #334155;padding:8px 14px;max-height:130px;overflow-y:auto}
+.prompt-area .prompt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.prompt-area h3{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8}
+.copy-btn{padding:3px 10px;border:1px solid #475569;border-radius:5px;background:#1e293b;color:#cbd5e1;cursor:pointer;font-size:10px}
+.copy-btn:hover{border-color:#10b981;color:#6ee7b7}
+.copy-btn.copied{border-color:#10b981;color:#10b981}
+.prompt-text{font-family:'Cascadia Code','Fira Code',monospace;font-size:10px;color:#94a3b8;white-space:pre-wrap;line-height:1.5}
+
+/* DataGrid Preview Styles (dynamic) */
+.dg-wrapper{border-radius:var(--dg-radius);overflow:hidden;border:var(--dg-border-width) solid var(--dg-border-color)}
+.dg-table{width:100%;border-collapse:collapse;font-size:var(--dg-font-size)}
+.dg-table thead{position:sticky;top:0;z-index:2}
+.dg-table th{padding:var(--dg-header-py) var(--dg-header-px);font-weight:var(--dg-header-weight);text-align:left;background:var(--dg-header-bg);color:var(--dg-header-text);border-bottom:var(--dg-border-width) solid var(--dg-border-color);border-right:var(--dg-border-width) solid var(--dg-col-border-color);white-space:nowrap;position:relative;user-select:none}
+.dg-table th:last-child{border-right:none}
+.dg-table th .sort-icon{opacity:.3;margin-left:4px;font-size:.8em}
+.dg-table th.sorted .sort-icon{opacity:1;color:var(--dg-primary)}
+.dg-table td{padding:var(--dg-cell-py) var(--dg-cell-px);color:var(--dg-cell-text);border-bottom:var(--dg-border-width) solid var(--dg-row-border-color);border-right:var(--dg-border-width) solid var(--dg-col-border-color);white-space:nowrap}
+.dg-table td:last-child{border-right:none}
+.dg-table tbody tr:last-child td{border-bottom:none}
+.dg-table tbody tr{transition:background .1s}
+.dg-table tbody tr:hover{background:var(--dg-hover-bg) !important}
+.dg-table tbody tr.even{background:var(--dg-even-bg)}
+.dg-table tbody tr.odd{background:var(--dg-odd-bg)}
+.dg-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+.dg-table td.center{text-align:center}
+.dg-table .resize-handle{position:absolute;right:0;top:0;bottom:0;width:3px;cursor:col-resize;background:transparent}
+.dg-table th:hover .resize-handle{background:var(--dg-primary)}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;padding:1px 8px;border-radius:9999px;font-size:.7em;font-weight:600;letter-spacing:.02em}
+.badge-wait{background:#fef3c7;color:#92400e}.badge-run{background:#dbeafe;color:#1e40af}
+.badge-done{background:#dcfce7;color:#166534}.badge-cancel{background:#fee2e2;color:#991b1b}
+.badge-pause{background:#f3e8ff;color:#6b21a8}
+
+/* Pagination preview */
+.dg-pagination{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;font-size:var(--dg-font-size);color:var(--dg-cell-text)}
+.dg-pagination .pg-info{opacity:.6}
+.dg-pagination .pg-btns{display:flex;gap:2px}
+.dg-pagination .pg-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--dg-border-color);background:transparent;color:var(--dg-cell-text);cursor:pointer;font-size:.85em}
+.dg-pagination .pg-btn.active{background:var(--dg-primary);color:#fff;border-color:var(--dg-primary)}
+.dg-pagination .pg-btn:hover:not(.active){background:var(--dg-hover-bg)}
+
+/* Filter row */
+.filter-row th{padding:2px 3px !important;background:var(--dg-header-bg);border-bottom:var(--dg-border-width) solid var(--dg-border-color)}
+.filter-input{width:100%;height:22px;padding:0 5px;font-size:calc(var(--dg-font-size) - 1px);background:var(--dg-odd-bg);border:1px solid var(--dg-border-color);border-radius:3px;color:var(--dg-cell-text)}
+</style>
+</head>
+<body>
+
+<!-- Panel -->
+<div class="panel">
+  <div class="panel-section">
+    <h3>Presets <span class="tag">click to apply</span></h3>
+    <div class="preset-row" id="presets"></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Density & Size</h3>
+    <div class="ctrl-row"><span class="ctrl-label">Header Padding Y</span><input type="range" min="2" max="16" value="6" oninput="set('headerPy',+this.value)"><span class="ctrl-value" id="v-headerPy">6px</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Header Padding X</span><input type="range" min="4" max="20" value="12" oninput="set('headerPx',+this.value)"><span class="ctrl-value" id="v-headerPx">12px</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Cell Padding Y</span><input type="range" min="1" max="14" value="4" oninput="set('cellPy',+this.value)"><span class="ctrl-value" id="v-cellPy">4px</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Cell Padding X</span><input type="range" min="4" max="20" value="12" oninput="set('cellPx',+this.value)"><span class="ctrl-value" id="v-cellPx">12px</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Font Size</span><input type="range" min="10" max="16" value="12" oninput="set('fontSize',+this.value)"><span class="ctrl-value" id="v-fontSize">12px</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Header Weight</span>
+      <select onchange="set('headerWeight',this.value)"><option value="500">Medium</option><option value="600" selected>Semibold</option><option value="700">Bold</option><option value="400">Normal</option></select></div>
+    <div class="ctrl-row"><span class="ctrl-label">Border Radius</span><input type="range" min="0" max="16" value="8" oninput="set('radius',+this.value)"><span class="ctrl-value" id="v-radius">8px</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Border Width</span><input type="range" min="0" max="3" step="0.5" value="1" oninput="set('borderWidth',+this.value)"><span class="ctrl-value" id="v-borderWidth">1px</span></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Colors — Header</h3>
+    <div class="ctrl-row"><span class="ctrl-label">Header BG</span><input type="color" value="#f8fafc" oninput="set('headerBg',this.value)"><span class="ctrl-value" id="v-headerBg">#f8fafc</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Header Text</span><input type="color" value="#334155" oninput="set('headerText',this.value)"><span class="ctrl-value" id="v-headerText">#334155</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Primary</span><input type="color" value="#3b82f6" oninput="set('primary',this.value)"><span class="ctrl-value" id="v-primary">#3b82f6</span></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Colors — Body</h3>
+    <div class="ctrl-row"><span class="ctrl-label">Even Row BG</span><input type="color" value="#f1f5f9" oninput="set('evenBg',this.value)"><span class="ctrl-value" id="v-evenBg">#f1f5f9</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Odd Row BG</span><input type="color" value="#ffffff" oninput="set('oddBg',this.value)"><span class="ctrl-value" id="v-oddBg">#ffffff</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Cell Text</span><input type="color" value="#1e293b" oninput="set('cellText',this.value)"><span class="ctrl-value" id="v-cellText">#1e293b</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Hover BG</span><input type="color" value="#e0f2fe" oninput="set('hoverBg',this.value)"><span class="ctrl-value" id="v-hoverBg">#e0f2fe</span></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Colors — Border</h3>
+    <div class="ctrl-row"><span class="ctrl-label">Outer Border</span><input type="color" value="#e2e8f0" oninput="set('borderColor',this.value)"><span class="ctrl-value" id="v-borderColor">#e2e8f0</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Row Border</span><input type="color" value="#e2e8f0" oninput="set('rowBorderColor',this.value)"><span class="ctrl-value" id="v-rowBorderColor">#e2e8f0</span></div>
+    <div class="ctrl-row"><span class="ctrl-label">Col Border</span><input type="color" value="#f1f5f9" oninput="set('colBorderColor',this.value)"><span class="ctrl-value" id="v-colBorderColor">#f1f5f9</span></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Features</h3>
+    <div class="toggle-row"><label><input type="checkbox" checked onchange="set('stripe',this.checked)">Zebra Stripe</label></div>
+    <div class="toggle-row"><label><input type="checkbox" checked onchange="set('colBorders',this.checked)">Column Borders</label></div>
+    <div class="toggle-row"><label><input type="checkbox" checked onchange="set('resizeHandle',this.checked)">Resize Handle</label></div>
+    <div class="toggle-row"><label><input type="checkbox" checked onchange="set('filterRow',this.checked)">Filter Row</label></div>
+    <div class="toggle-row"><label><input type="checkbox" checked onchange="set('pagination',this.checked)">Pagination</label></div>
+    <div class="toggle-row"><label><input type="checkbox" checked onchange="set('sortIcons',this.checked)">Sort Icons</label></div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="toolbar">
+    <div class="title"><span>DataGrid</span> Design Playground</div>
+    <div class="theme-toggle">
+      <button class="theme-btn active" id="btn-light" onclick="setTheme('light')">Light</button>
+      <button class="theme-btn" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+    </div>
+  </div>
+
+  <div class="preview-area">
+    <div class="preview-container">
+      <div class="preview-bg" id="previewBg">
+        <div id="gridPreview"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prompt-area">
+    <div class="prompt-header"><h3>Generated Prompt</h3><button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy</button></div>
+    <div class="prompt-text" id="promptText"></div>
+  </div>
+</div>
+
+<script>
+/** @file HANES MES DataGrid Design Playground */
+
+const SAMPLE_DATA = [
+  { no:1, orderNo:'JO-2026-0215', partCode:'WH-101-A', partName:'Engine Harness Assy', planQty:500, goodQty:482, defectQty:18, status:'DONE', planDate:'2026-02-15', lineCode:'L-01' },
+  { no:2, orderNo:'JO-2026-0216', partCode:'WH-202-B', partName:'Door Wiring LH', planQty:300, goodQty:245, defectQty:5, status:'RUNNING', planDate:'2026-02-16', lineCode:'L-02' },
+  { no:3, orderNo:'JO-2026-0217', partCode:'WH-303-C', partName:'Instrument Panel Harness', planQty:200, goodQty:0, defectQty:0, status:'WAITING', planDate:'2026-02-17', lineCode:'L-01' },
+  { no:4, orderNo:'JO-2026-0218', partCode:'WH-404-D', partName:'Body Harness Main', planQty:150, goodQty:150, defectQty:3, status:'DONE', planDate:'2026-02-18', lineCode:'L-03' },
+  { no:5, orderNo:'JO-2026-0219', partCode:'WH-505-E', partName:'Floor Wiring Sub', planQty:400, goodQty:120, defectQty:8, status:'PAUSED', planDate:'2026-02-19', lineCode:'L-02' },
+  { no:6, orderNo:'JO-2026-0220', partCode:'WH-606-F', partName:'Trunk Lid Harness', planQty:250, goodQty:0, defectQty:0, status:'WAITING', planDate:'2026-02-20', lineCode:'L-01' },
+  { no:7, orderNo:'JO-2026-0221', partCode:'WH-707-G', partName:'Roof Wiring Assy', planQty:180, goodQty:0, defectQty:0, status:'CANCELED', planDate:'2026-02-21', lineCode:'L-03' },
+  { no:8, orderNo:'JO-2026-0222', partCode:'WH-808-H', partName:'ABS Sensor Cable', planQty:600, goodQty:378, defectQty:12, status:'RUNNING', planDate:'2026-02-22', lineCode:'L-02' },
+];
+
+const COLS = [
+  { key:'no', label:'No', w:45, align:'center' },
+  { key:'orderNo', label:'작업지시번호', w:130 },
+  { key:'partCode', label:'품목코드', w:100 },
+  { key:'partName', label:'품목명', w:190 },
+  { key:'lineCode', label:'라인', w:60, align:'center' },
+  { key:'planDate', label:'계획일', w:100, align:'center' },
+  { key:'planQty', label:'계획수량', w:80, align:'right' },
+  { key:'goodQty', label:'양품', w:60, align:'right' },
+  { key:'defectQty', label:'불량', w:60, align:'right' },
+  { key:'status', label:'상태', w:90, align:'center', badge:true },
+];
+
+const DEFAULTS = {
+  headerPy:6, headerPx:12, cellPy:4, cellPx:12, fontSize:12,
+  headerWeight:'600', radius:8, borderWidth:1,
+  headerBg:'#f8fafc', headerText:'#334155', primary:'#3b82f6',
+  evenBg:'#f1f5f9', oddBg:'#ffffff', cellText:'#1e293b', hoverBg:'#e0f2fe',
+  borderColor:'#e2e8f0', rowBorderColor:'#e2e8f0', colBorderColor:'#f1f5f9',
+  stripe:true, colBorders:true, resizeHandle:true, filterRow:true, pagination:true, sortIcons:true,
+  theme:'light'
+};
+
+const DARK_OVERRIDES = {
+  headerBg:'#1e293b', headerText:'#e2e8f0', evenBg:'#0f172a', oddBg:'#1e293b',
+  cellText:'#e2e8f0', hoverBg:'#1e3a5f', borderColor:'#334155', rowBorderColor:'#334155', colBorderColor:'#1e293b'
+};
+
+const PRESETS = {
+  'Default':      { ...DEFAULTS },
+  'Compact':      { headerPy:3, headerPx:8, cellPy:2, cellPx:8, fontSize:11, radius:4, borderWidth:0.5 },
+  'Comfortable':  { headerPy:10, headerPx:16, cellPy:8, cellPx:16, fontSize:14, radius:12, headerWeight:'700' },
+  'Minimal':      { borderWidth:0, radius:0, colBorders:false, stripe:false, resizeHandle:false, filterRow:false, headerBg:'#ffffff', evenBg:'#ffffff', oddBg:'#ffffff', rowBorderColor:'#f1f5f9' },
+  'Bordered':     { colBorders:true, borderWidth:1, stripe:false, evenBg:'#ffffff', oddBg:'#ffffff', colBorderColor:'#e2e8f0', rowBorderColor:'#e2e8f0' },
+};
+
+const state = { ...DEFAULTS };
+
+function set(key, val) {
+  state[key] = val;
+  const el = document.getElementById('v-'+key);
+  if (el) el.textContent = typeof val === 'number' ? val + 'px' : val;
+  renderPreview();
+  updatePrompt();
+}
+
+function setTheme(t) {
+  state.theme = t;
+  document.getElementById('btn-light').classList.toggle('active', t==='light');
+  document.getElementById('btn-dark').classList.toggle('active', t==='dark');
+  if (t === 'dark') {
+    Object.entries(DARK_OVERRIDES).forEach(([k,v]) => set(k, v));
+    // Update color inputs
+    document.querySelectorAll('input[type=color]').forEach(inp => {
+      const key = inp.getAttribute('oninput')?.match(/set\('(\w+)'/)?.[1];
+      if (key && state[key]) inp.value = state[key];
+    });
+  } else {
+    Object.entries(DEFAULTS).forEach(([k,v]) => {
+      if (typeof v === 'string' && v.startsWith('#')) set(k, v);
+    });
+    document.querySelectorAll('input[type=color]').forEach(inp => {
+      const key = inp.getAttribute('oninput')?.match(/set\('(\w+)'/)?.[1];
+      if (key && DEFAULTS[key]) inp.value = DEFAULTS[key];
+    });
+  }
+  renderPreview();
+}
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  Object.entries(DEFAULTS).forEach(([k,v]) => state[k] = v); // reset
+  Object.entries(p).forEach(([k,v]) => state[k] = v);
+  // Sync all inputs
+  document.querySelectorAll('input[type=range]').forEach(inp => {
+    const key = inp.getAttribute('oninput')?.match(/set\('(\w+)'/)?.[1];
+    if (key && state[key] !== undefined) inp.value = state[key];
+  });
+  document.querySelectorAll('input[type=color]').forEach(inp => {
+    const key = inp.getAttribute('oninput')?.match(/set\('(\w+)'/)?.[1];
+    if (key && state[key]) inp.value = state[key];
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(inp => {
+    const key = inp.getAttribute('onchange')?.match(/set\('(\w+)'/)?.[1];
+    if (key && state[key] !== undefined) inp.checked = state[key];
+  });
+  document.querySelectorAll('select').forEach(sel => {
+    const key = sel.getAttribute('onchange')?.match(/set\('(\w+)'/)?.[1];
+    if (key && state[key] !== undefined) sel.value = state[key];
+  });
+  Object.keys(state).forEach(k => {
+    const el = document.getElementById('v-'+k);
+    if (el) el.textContent = typeof state[k] === 'number' ? state[k]+'px' : state[k];
+  });
+  // Update preset buttons
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.textContent===name));
+  renderPreview();
+  updatePrompt();
+}
+
+function statusBadge(s) {
+  const map = { WAITING:'badge-wait', RUNNING:'badge-run', DONE:'badge-done', CANCELED:'badge-cancel', PAUSED:'badge-pause' };
+  const labels = { WAITING:'대기', RUNNING:'진행중', DONE:'완료', CANCELED:'취소', PAUSED:'일시정지' };
+  return `<span class="badge ${map[s]||''}">${labels[s]||s}</span>`;
+}
+
+function renderPreview() {
+  const el = document.getElementById('gridPreview');
+  const bg = document.getElementById('previewBg');
+  bg.style.background = state.theme === 'dark' ? '#0f172a' : '#f8fafc';
+
+  const css = `
+    --dg-header-py:${state.headerPy}px; --dg-header-px:${state.headerPx}px;
+    --dg-cell-py:${state.cellPy}px; --dg-cell-px:${state.cellPx}px;
+    --dg-font-size:${state.fontSize}px;
+    --dg-header-weight:${state.headerWeight}; --dg-radius:${state.radius}px; --dg-border-width:${state.borderWidth}px;
+    --dg-header-bg:${state.headerBg}; --dg-header-text:${state.headerText}; --dg-primary:${state.primary};
+    --dg-even-bg:${state.evenBg}; --dg-odd-bg:${state.oddBg}; --dg-cell-text:${state.cellText}; --dg-hover-bg:${state.hoverBg};
+    --dg-border-color:${state.borderColor}; --dg-row-border-color:${state.rowBorderColor};
+    --dg-col-border-color:${state.colBorders ? state.colBorderColor : 'transparent'};
+  `;
+
+  let h = `<div class="dg-wrapper" style="${css}"><table class="dg-table"><thead><tr>`;
+  COLS.forEach((c,i) => {
+    const sorted = i===6;
+    h += `<th class="${sorted?'sorted':''}" style="width:${c.w}px;${c.align?'text-align:'+c.align:''}">`;
+    h += c.label;
+    if (state.sortIcons) h += `<span class="sort-icon">${sorted?'▲':'⇅'}</span>`;
+    if (state.resizeHandle) h += `<div class="resize-handle"></div>`;
+    h += `</th>`;
+  });
+  h += `</tr>`;
+
+  if (state.filterRow) {
+    h += `<tr class="filter-row">`;
+    COLS.forEach(c => {
+      h += `<th><input class="filter-input" placeholder="${c.key==='status'?'전체':'검색...'}" ${c.key==='status'?'list="status-opts"':''}></th>`;
+    });
+    h += `</tr>`;
+  }
+  h += `</thead><tbody>`;
+
+  SAMPLE_DATA.forEach((row, i) => {
+    const cls = state.stripe ? (i%2===0 ? 'even' : 'odd') : 'odd';
+    h += `<tr class="${cls}">`;
+    COLS.forEach(c => {
+      const val = row[c.key];
+      const align = c.align || (typeof val === 'number' ? 'right' : 'left');
+      const alignCls = align==='right'?'num':align==='center'?'center':'';
+      if (c.badge) {
+        h += `<td class="center">${statusBadge(val)}</td>`;
+      } else {
+        const display = typeof val === 'number' ? val.toLocaleString() : val;
+        h += `<td class="${alignCls}">${display}</td>`;
+      }
+    });
+    h += `</tr>`;
+  });
+
+  h += `</tbody></table></div>`;
+
+  if (state.pagination) {
+    h += `<div class="dg-pagination" style="color:${state.cellText}">`;
+    h += `<div class="pg-info">전체 8건</div>`;
+    h += `<div style="display:flex;align-items:center;gap:8px">`;
+    h += `<div class="pg-btns"><button class="pg-btn">«</button><button class="pg-btn">‹</button>`;
+    h += `<button class="pg-btn active" style="--dg-primary:${state.primary}">1</button>`;
+    h += `<button class="pg-btn">›</button><button class="pg-btn">»</button></div>`;
+    h += `<select style="height:22px;padding:0 4px;font-size:${state.fontSize-1}px;background:${state.oddBg};border:1px solid ${state.borderColor};border-radius:4px;color:${state.cellText}">`;
+    h += `<option>20건</option><option selected>50건</option><option>100건</option></select>`;
+    h += `</div></div>`;
+  }
+
+  el.innerHTML = h;
+}
+
+function updatePrompt() {
+  const parts = [];
+  const D = DEFAULTS;
+
+  if (state.headerPy!==D.headerPy||state.cellPy!==D.cellPy)
+    parts.push(`density: header ${state.headerPy}px / cell ${state.cellPy}px vertical padding${state.cellPy<=3?' (compact)':state.cellPy>=8?' (comfortable)':''}`);
+  if (state.cellPx!==D.cellPx)
+    parts.push(`cell horizontal padding: ${state.cellPx}px`);
+  if (state.fontSize!==D.fontSize)
+    parts.push(`font size: ${state.fontSize}px`);
+  if (state.headerWeight!==D.headerWeight)
+    parts.push(`header font-weight: ${state.headerWeight}`);
+  if (state.radius!==D.radius)
+    parts.push(`border-radius: ${state.radius}px`);
+  if (state.borderWidth!==D.borderWidth)
+    parts.push(`border-width: ${state.borderWidth}px`);
+  if (state.headerBg!==D.headerBg)
+    parts.push(`header background: ${state.headerBg}`);
+  if (state.headerText!==D.headerText)
+    parts.push(`header text color: ${state.headerText}`);
+  if (state.evenBg!==D.evenBg||state.oddBg!==D.oddBg)
+    parts.push(`row backgrounds: even=${state.evenBg}, odd=${state.oddBg}`);
+  if (state.hoverBg!==D.hoverBg)
+    parts.push(`hover highlight: ${state.hoverBg}`);
+  if (state.borderColor!==D.borderColor)
+    parts.push(`border color: ${state.borderColor}`);
+  if (!state.stripe) parts.push('disable zebra striping');
+  if (!state.colBorders) parts.push('remove vertical column borders');
+  if (!state.filterRow) parts.push('hide filter row by default');
+  if (!state.pagination) parts.push('hide pagination');
+  if (!state.sortIcons) parts.push('hide sort icons');
+  if (!state.resizeHandle) parts.push('disable column resize handles');
+
+  let text;
+  if (parts.length === 0) {
+    text = 'HANES MES DataGrid — 현재 기본 스타일을 사용 중입니다. 컨트롤을 조정하여 디자인을 탐색하세요.';
+  } else {
+    text = `HANES MES DataGrid 스타일을 다음과 같이 업데이트해 주세요:\n\n${parts.map(p=>'• '+p).join('\n')}`;
+    if (state.theme==='dark') text += '\n\n(다크 모드 기준 색상입니다)';
+  }
+  document.getElementById('promptText').textContent = text;
+}
+
+function copyPrompt() {
+  const t = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(t);
+  const b = document.getElementById('copyBtn');
+  b.textContent='Copied!'; b.classList.add('copied');
+  setTimeout(()=>{b.textContent='Copy';b.classList.remove('copied');},1500);
+}
+
+// Build presets
+document.getElementById('presets').innerHTML = Object.keys(PRESETS).map(k =>
+  `<button class="preset-btn${k==='Default'?' active':''}" onclick="applyPreset('${k}')">${k}</button>`
+).join('');
+
+// Init
+renderPreview();
+updatePrompt();
+</script>
+</body>
+</html>

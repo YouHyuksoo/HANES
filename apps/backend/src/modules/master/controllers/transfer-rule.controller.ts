@@ -11,6 +11,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { TransferRuleService } from '../services/transfer-rule.service';
 import { CreateTransferRuleDto, UpdateTransferRuleDto, TransferRuleQueryDto } from '../dto/transfer-rule.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -22,8 +23,8 @@ export class TransferRuleController {
 
   @Get()
   @ApiOperation({ summary: '창고이동규칙 목록 조회' })
-  async findAll(@Query() query: TransferRuleQueryDto) {
-    const result = await this.transferRuleService.findAll(query);
+  async findAll(@Query() query: TransferRuleQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.transferRuleService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

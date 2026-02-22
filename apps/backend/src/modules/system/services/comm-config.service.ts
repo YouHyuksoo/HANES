@@ -33,12 +33,14 @@ export class CommConfigService {
   ) {}
 
   /** 목록 조회 (페이지네이션 + 필터) */
-  async findAll(query: CommConfigQueryDto) {
+  async findAll(query: CommConfigQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 20, commType, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (commType) where.commType = commType;

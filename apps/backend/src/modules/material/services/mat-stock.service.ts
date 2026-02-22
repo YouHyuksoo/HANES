@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -31,7 +31,7 @@ export class MatStockService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(query: StockQueryDto) {
+  async findAll(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partId, warehouseCode, locationCode, search, lowStockOnly } = query;
     const skip = (page - 1) * limit;
 
@@ -39,6 +39,8 @@ export class MatStockService {
       ...(partId && { partId }),
       ...(warehouseCode && { warehouseCode }),
       ...(locationCode && { locationCode }),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     const [data, total] = await Promise.all([
@@ -56,24 +58,46 @@ export class MatStockService {
     const lotIds = data.map((stock) => stock.lotId).filter(Boolean) as string[];
     
     const [parts, lots] = await Promise.all([
-      this.partMasterRepository.findByIds(partIds),
-      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
+      this.partMasterRepository.find({ where: { id: In(partIds) } }),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
     ]);
     
     const partMap = new Map(parts.map((p) => [p.id, p]));
     const lotMap = new Map(lots.map((l) => [l.id, l]));
 
     // 안전재고 미달 필터링 및 중첩 객체 평면화
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     let result = data.map((stock) => {
       const part = partMap.get(stock.partId);
       const lot = stock.lotId ? lotMap.get(stock.lotId) : null;
+
+      // 제조일자 기반 경과일수/남은유효기간 계산
+      const manufactureDate = lot?.manufactureDate ? new Date(lot.manufactureDate) : null;
+      const expireDate = lot?.expireDate ? new Date(lot.expireDate) : null;
+      let elapsedDays: number | null = null;
+      let remainingDays: number | null = null;
+
+      if (manufactureDate) {
+        elapsedDays = Math.floor((today.getTime() - manufactureDate.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      if (expireDate) {
+        remainingDays = Math.floor((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
       return {
         ...stock,
         partCode: part?.partCode,
         partName: part?.partName,
         unit: part?.unit,
         safetyStock: part?.safetyStock,
+        expiryDays: part?.expiryDate || 0,
         lotNo: lot?.lotNo,
+        manufactureDate: lot?.manufactureDate || null,
+        expireDate: lot?.expireDate || null,
+        elapsedDays,
+        remainingDays,
       };
     });
 
@@ -95,9 +119,9 @@ export class MatStockService {
   }
 
   /** 출고 가능 재고 조회 (IQC PASS + 잔량 > 0 인 LOT만) */
-  async findAvailable(query: StockQueryDto) {
+  async findAvailable(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partId, warehouseCode, search } = query;
-    const where: any = { ...(partId && { partId }), ...(warehouseCode && { warehouseCode }) };
+    const where: any = { ...(partId && { partId }), ...(warehouseCode && { warehouseCode }), ...(company && { company }), ...(plant && { plant }) };
 
     const stocks = await this.matStockRepository.find({
       where, skip: (page - 1) * limit, take: limit, order: { updatedAt: 'DESC' },
@@ -106,8 +130,8 @@ export class MatStockService {
     const lotIds = stocks.map((s) => s.lotId).filter(Boolean) as string[];
     const partIds = stocks.map((s) => s.partId).filter(Boolean);
     const [lots, parts] = await Promise.all([
-      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
-      partIds.length > 0 ? this.partMasterRepository.findByIds(partIds) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
+      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
     ]);
     const lotMap = new Map(lots.map((l) => [l.id, l]));
     const partMap = new Map(parts.map((p) => [p.id, p]));
@@ -119,9 +143,10 @@ export class MatStockService {
         ...stock,
         partCode: part?.partCode ?? null, partName: part?.partName ?? null,
         unit: part?.unit ?? null, lotNo: lot?.lotNo ?? null,
-        iqcStatus: lot?.iqcStatus ?? null, currentQty: lot?.currentQty ?? stock.qty,
+        iqcStatus: lot?.iqcStatus ?? null, lotStatus: lot?.status ?? null,
+        currentQty: lot?.currentQty ?? stock.qty,
       };
-    }).filter((s) => s.iqcStatus === 'PASS' && s.currentQty > 0);
+    }).filter((s) => s.iqcStatus === 'PASS' && s.currentQty > 0 && s.lotStatus !== 'HOLD');
 
     if (search) {
       const s = search.toLowerCase();
@@ -163,7 +188,7 @@ export class MatStockService {
     const lotIds = stocks.map((stock) => stock.lotId).filter(Boolean) as string[];
     const [part, lots] = await Promise.all([
       this.partMasterRepository.findOne({ where: { id: partId } }),
-      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
     ]);
     const lotMap = new Map(lots.map((l) => [l.id, l]));
 

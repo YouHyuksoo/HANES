@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { History, RefreshCw, Search, Download, XCircle, ArrowDownToLine, ArrowUpFromLine, CalendarCheck, Calendar } from 'lucide-react';
+import { History, RefreshCw, Search, XCircle, ArrowDownToLine, ArrowUpFromLine, CalendarCheck } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -258,7 +258,6 @@ export default function TransactionPage() {
           <p className="text-text-muted mt-1">{t('inventory.transaction.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('common.excel')}</Button>
           <Button variant="secondary" size="sm" onClick={fetchTransactions}><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
         </div>
       </div>
@@ -272,25 +271,28 @@ export default function TransactionPage() {
 
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input placeholder={t('inventory.transaction.searchTransNo')} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-            </div>
-            <Select options={TRANS_TYPES} value={filters.transType} onChange={(v) => setFilters({ ...filters, transType: v })} placeholder={t('inventory.transaction.transType')} />
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-text-muted" />
-              <Input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} className="w-36" />
-              <span className="text-text-muted">~</span>
-              <Input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} className="w-36" />
-            </div>
-            <Button variant="secondary" onClick={fetchTransactions}><RefreshCw className="w-4 h-4" /></Button>
-          </div>
           <DataGrid
             data={transactions}
             columns={columns}
             isLoading={loading}
-            pageSize={10}
             emptyMessage={t('inventory.transaction.emptyMessage')}
+            enableExport
+            exportFileName="거래내역"
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t('inventory.transaction.searchTransNo')} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <Select options={TRANS_TYPES} value={filters.transType} onChange={(v) => setFilters({ ...filters, transType: v })} placeholder={t('inventory.transaction.transType')} />
+                <div className="w-36 flex-shrink-0">
+                  <Input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} fullWidth />
+                </div>
+                <Button variant="secondary" onClick={fetchTransactions}><RefreshCw className="w-4 h-4" /></Button>
+              </div>
+            }
           />
         </CardContent>
       </Card>

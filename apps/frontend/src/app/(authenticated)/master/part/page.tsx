@@ -10,61 +10,93 @@
  * 3. **CRUD**: 추가/수정/삭제 모두 API를 통해 DB에 반영
  */
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Search, Download, Package, FlaskConical, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import { Plus, Edit2, Trash2, Search, Package, RefreshCw } from "lucide-react";
+import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { createPartColumns, createUnitColumn } from "@/lib/table-utils";
-import { Part, PartIqcLink, seedPartIqcLinks, PART_TYPE_COLORS, PRODUCT_TYPE_OPTIONS } from "./types";
-import { INSPECT_METHOD_COLORS, seedIqcGroups } from "../iqc-item/types";
-import IqcSettingModal from "./components/IqcSettingModal";
-import PartFormModal from "./components/PartFormModal";
+import { Part, PART_TYPE_COLORS, PRODUCT_TYPE_OPTIONS } from "./types";
+import { INSPECT_METHOD_COLORS } from "../iqc-item/types";
+import PartFormPanel from "./components/PartFormPanel";
+
+/** IQC 연결 정보 (API 응답) */
+interface IqcLinkInfo {
+  partId: string;
+  group?: { groupCode: string; groupName: string; inspectMethod: string; sampleQty?: number | null };
+  partner?: { partnerCode: string; partnerName: string } | null;
+}
 
 export default function PartPage() {
   const { t } = useTranslation();
   const [parts, setParts] = useState<Part[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [iqcLinks, setIqcLinks] = useState<PartIqcLink[]>(seedPartIqcLinks);
+  const [iqcLinkMap, setIqcLinkMap] = useState<Record<string, IqcLinkInfo[]>>({});
   const [searchText, setSearchText] = useState("");
   const [partTypeFilter, setPartTypeFilter] = useState("");
-  const [page, setPage] = useState(1);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
-  const [iqcTarget, setIqcTarget] = useState<Part | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
+  const panelAnimateRef = useRef(true);
 
-  const PAGE_SIZE = 20;
-
-  /** DB에서 품목 목록 조회 */
+  /** DB에서 품목 목록 + IQC 연결 정보 조회 */
   const fetchParts = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string | number> = { page, limit: PAGE_SIZE };
+      const params: Record<string, string | number> = { limit: 5000 };
       if (partTypeFilter) params.partType = partTypeFilter;
       if (searchText) params.search = searchText;
 
-      const res = await api.get("/master/parts", { params });
-      const body = res.data;
-      if (body.success) {
-        setParts(body.data || []);
-        setTotal(body.meta?.total || 0);
+      const [partsRes, linksRes] = await Promise.all([
+        api.get("/master/parts", { params }),
+        api.get("/master/iqc-part-links", { params: { limit: 5000 } }),
+      ]);
+
+      const partsBody = partsRes.data;
+      if (partsBody.success) {
+        setParts(partsBody.data || []);
+        setTotal(partsBody.meta?.total || 0);
+      }
+
+      const linksBody = linksRes.data;
+      if (linksBody.success) {
+        const map: Record<string, IqcLinkInfo[]> = {};
+        (linksBody.data || []).forEach((link: IqcLinkInfo & { part?: { id: string } }) => {
+          const pid = link.partId || link.part?.id;
+          if (pid) {
+            if (!map[pid]) map[pid] = [];
+            map[pid].push(link);
+          }
+        });
+        setIqcLinkMap(map);
       }
     } catch {
       setParts([]);
     } finally {
       setLoading(false);
     }
-  }, [page, partTypeFilter, searchText]);
+  }, [partTypeFilter, searchText]);
 
   useEffect(() => { fetchParts(); }, [fetchParts]);
 
-  /** 검색 시 page를 1로 리셋 */
-  const handleSearch = (val: string) => { setSearchText(val); setPage(1); };
-  const handleTypeFilter = (val: string) => { setPartTypeFilter(val); setPage(1); };
+  const handleSearch = (val: string) => { setSearchText(val); };
+  const handleTypeFilter = (val: string) => { setPartTypeFilter(val); };
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/master/parts/${deleteTarget.id}`);
+      fetchParts();
+    } catch (e: any) {
+      console.error("Delete failed:", e);
+    } finally {
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, fetchParts]);
 
   const partTypeOptions = useMemo(() => [
     { value: "", label: t("common.all") },
@@ -91,21 +123,22 @@ export default function PartPage() {
     return map;
   }, []);
 
-  const getIqcLink = (partCode: string) => iqcLinks.find(l => l.partCode === partCode);
-
-  const handleIqcSave = (link: PartIqcLink) => {
-    setIqcLinks(prev => {
-      const idx = prev.findIndex(l => l.partCode === link.partCode);
-      if (idx >= 0) return prev.map((l, i) => i === idx ? link : l);
-      return [...prev, link];
-    });
-  };
-
-  const handleIqcUnlink = (partCode: string) => {
-    setIqcLinks(prev => prev.filter(l => l.partCode !== partCode));
-  };
 
   const columns = useMemo<ColumnDef<Part>[]>(() => [
+    {
+      id: "actions", header: t("common.actions"), size: 80,
+      meta: { align: "center" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     { accessorKey: "partNo", header: t("master.part.partNo", "품번"), size: 120 },
     ...createPartColumns<Part>(t).map(col => ({ ...col, size: 140 })),
     {
@@ -138,87 +171,102 @@ export default function PartPage() {
     },
     { accessorKey: "tactTime", header: t("master.part.tactTime", "택타임"), size: 65, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}s` : "-"; } },
     { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
+    { accessorKey: "packUnit", header: t("master.part.packUnit", "포장단위"), size: 70, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "storageLocation", header: t("master.part.storageLocation", "적재위치"), size: 90, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "vendor", header: t("master.part.vendor"), size: 90, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "customer", header: t("master.part.customer"), size: 90, cell: ({ getValue }) => getValue() || "-" },
     {
-      id: "iqcSetup", header: t("master.part.iqc.header", "IQC설정"), size: 80,
+      id: "iqcSetup", header: t("master.part.iqc.header", "IQC검사"), size: 100,
       cell: ({ row }) => {
         if (row.original.iqcYn !== "Y") return <span className="text-xs text-text-muted">-</span>;
-        const link = getIqcLink(row.original.partCode);
-        if (!link) return (
-          <button onClick={() => setIqcTarget(row.original)} className="text-xs text-primary hover:underline">
-            {t("master.part.iqc.setup", "설정")}
-          </button>
-        );
-        const group = seedIqcGroups.find(g => g.groupCode === link.groupCode);
-        if (!group) return <span className="text-xs text-text-muted">-</span>;
+        const links = iqcLinkMap[row.original.id];
+        if (!links || links.length === 0) return <span className="text-xs text-text-muted">{t("master.part.iqc.notLinked", "미연결")}</span>;
+        const first = links[0];
+        if (!first.group) return <span className="text-xs text-text-muted">-</span>;
         return (
-          <button onClick={() => setIqcTarget(row.original)} className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[group.inspectMethod]}`}>
-            {methodLabels[group.inspectMethod]}{group.inspectMethod === "SAMPLE" && group.sampleQty ? `(${group.sampleQty})` : ""}
-          </button>
+          <span className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[first.group.inspectMethod] || ""}`}>
+            {methodLabels[first.group.inspectMethod]}
+            {first.group.inspectMethod === "SAMPLE" && first.group.sampleQty ? ` (${first.group.sampleQty})` : ""}
+            {links.length > 1 ? ` +${links.length - 1}` : ""}
+          </span>
         );
       },
     },
-    {
-      id: "actions", header: t("common.actions"), size: 70,
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => { setEditingPart(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          {row.original.iqcYn === "Y" && (
-            <button onClick={() => setIqcTarget(row.original)} className="p-1 hover:bg-surface rounded" title="IQC">
-              <FlaskConical className="w-4 h-4 text-purple-500" />
-            </button>
-          )}
-        </div>
-      ),
-    },
-  ], [t, typeLabels, methodLabels, productTypeLabels, iqcLinks]);
+  ], [t, typeLabels, methodLabels, productTypeLabels, iqcLinkMap, isPanelOpen]);
+
+  const handlePanelClose = useCallback(() => {
+    setIsPanelOpen(false);
+    setEditingPart(null);
+    panelAnimateRef.current = true;
+  }, []);
+
+  const handlePanelSave = useCallback(() => {
+    fetchParts();
+  }, [fetchParts]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Package className="w-7 h-7 text-primary" />{t("master.part.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("master.part.subtitle")} ({total}건)</p>
+    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+      {/* 좌측: 메인 콘텐츠 */}
+      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Package className="w-7 h-7 text-primary" />{t("master.part.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("master.part.subtitle")} ({total}건)</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchParts}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(null); setIsPanelOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" />{t("master.part.addPart")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchParts}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-          </Button>
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t("common.excel")}</Button>
-          <Button size="sm" onClick={() => { setEditingPart(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" />{t("master.part.addPart")}
-          </Button>
-        </div>
+
+        <Card><CardContent>
+          <DataGrid
+            data={parts}
+            columns={columns}
+            isLoading={loading}
+            enableExport
+            enableColumnPinning
+            exportFileName={t("master.part.title")}
+            onRowClick={(row) => { if (isPanelOpen) setEditingPart(row); }}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("master.part.searchPlaceholder")} value={searchText}
+                    onChange={e => handleSearch(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <Select options={partTypeOptions} value={partTypeFilter} onChange={handleTypeFilter} fullWidth />
+                </div>
+              </div>
+            }
+          />
+        </CardContent></Card>
       </div>
 
-      <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1">
-            <Input placeholder={t("master.part.searchPlaceholder")} value={searchText}
-              onChange={e => handleSearch(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />} fullWidth />
-          </div>
-          <div className="w-40">
-            <Select options={partTypeOptions} value={partTypeFilter} onChange={handleTypeFilter} fullWidth />
-          </div>
-        </div>
-        <DataGrid data={parts} columns={columns} pageSize={PAGE_SIZE} />
-      </CardContent></Card>
-
-      {/* 품목 추가/수정 모달 */}
-      <PartFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
-        editingPart={editingPart} onSave={fetchParts} />
-
-      {/* IQC 검사기준 설정 모달 */}
-      {iqcTarget && (
-        <IqcSettingModal isOpen={!!iqcTarget} onClose={() => setIqcTarget(null)} part={iqcTarget}
-          currentLink={getIqcLink(iqcTarget.partCode)} onSave={handleIqcSave} onUnlink={handleIqcUnlink} />
+      {/* 우측: 품목 추가/수정 슬라이드 패널 */}
+      {isPanelOpen && (
+        <PartFormPanel
+          editingPart={editingPart}
+          onClose={handlePanelClose}
+          onSave={handlePanelSave}
+          animate={panelAnimateRef.current}
+        />
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        variant="danger"
+        message={`'${deleteTarget?.partCode || ""} (${deleteTarget?.partName || ""})'을(를) 삭제하시겠습니까?`}
+      />
     </div>
   );
 }

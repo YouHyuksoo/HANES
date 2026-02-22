@@ -58,21 +58,21 @@ export default function EquipAssignTab() {
   }, []);
 
   return (
-    <div className="grid grid-cols-12 gap-6">
+    <div className="grid grid-cols-12 gap-6 min-h-0 flex-1">
       {/* 좌측: 설비 목록 */}
-      <div className="col-span-4">
-        <Card>
-          <CardHeader title={t("master.equipInspect.equipList", "설비 목록")} subtitle={t("master.equipInspect.selectEquip", "점검 설비 선택")} />
-          <CardContent>
+      <div className="col-span-4 flex flex-col min-h-0">
+        <Card padding="none" className="flex-1 flex flex-col min-h-0">
+          <CardHeader title={t("master.equipInspect.equipList", "설비 목록")} subtitle={t("master.equipInspect.selectEquip", "점검 설비 선택")} className="px-4 pt-4" />
+          <CardContent className="flex-1 flex flex-col min-h-0 px-4 pb-4">
             <Input
               placeholder={t("master.equipInspect.searchPlaceholder")}
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               leftIcon={<Search className="w-4 h-4" />}
               fullWidth
-              className="mb-3"
+              className="mb-3 shrink-0"
             />
-            <div className="space-y-1 max-h-[calc(100vh-360px)] overflow-y-auto">
+            <div className="space-y-1 flex-1 overflow-y-auto min-h-0">
               {filteredEquips.map(equip => (
                 <button
                   key={equip.id}

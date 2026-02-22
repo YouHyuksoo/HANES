@@ -9,6 +9,7 @@ import { MatIssueService } from '../services/mat-issue.service';
 import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 import { ScanIssueDto } from '../dto/scan-issue.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 출고')
 @Controller('material/issues')
@@ -17,8 +18,8 @@ export class MatIssueController {
 
   @Get()
   @ApiOperation({ summary: '출고 이력 조회' })
-  async findAll(@Query() query: MatIssueQueryDto) {
-    const result = await this.matIssueService.findAll(query);
+  async findAll(@Query() query: MatIssueQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.matIssueService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

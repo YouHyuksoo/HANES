@@ -10,11 +10,12 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Warehouse, ArrowRightLeft } from 'lucide-react';
+import { Warehouse, ArrowRightLeft, MapPin } from 'lucide-react';
 import WarehouseList from './components/WarehouseList';
 import TransferRuleList from './components/TransferRuleList';
+import LocationList from './components/LocationList';
 
-type TabType = 'warehouse' | 'transfer-rule';
+type TabType = 'warehouse' | 'location' | 'transfer-rule';
 
 export default function WarehousePage() {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ export default function WarehousePage() {
 
   const tabs: { key: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: 'warehouse', label: t('inventory.warehouse.title'), icon: Warehouse },
+    { key: 'location', label: t('inventory.location.title'), icon: MapPin },
     { key: 'transfer-rule', label: t('master.transferRule.title'), icon: ArrowRightLeft },
   ];
 
@@ -54,6 +56,7 @@ export default function WarehousePage() {
 
       {/* 탭 컨텐츠 */}
       {activeTab === 'warehouse' && <WarehouseList />}
+      {activeTab === 'location' && <LocationList />}
       {activeTab === 'transfer-rule' && <TransferRuleList />}
     </div>
   );

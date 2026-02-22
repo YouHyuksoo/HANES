@@ -21,9 +21,9 @@ export default function EquipInspectPage() {
   const [activeTab, setActiveTab] = useState<TabValue>("assign");
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="flex flex-col animate-fade-in h-[calc(100vh-var(--header-height)-var(--tab-bar-height)-48px)]">
       {/* 헤더 */}
-      <div>
+      <div className="shrink-0 mb-4">
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
           <Wrench className="w-7 h-7 text-primary" />
           {t("master.equipInspect.title")}
@@ -32,7 +32,7 @@ export default function EquipInspectPage() {
       </div>
 
       {/* 탭 네비게이션 */}
-      <div className="border-b border-border">
+      <div className="border-b border-border shrink-0">
         <div className="flex gap-1">
           <button
             onClick={() => setActiveTab("assign")}
@@ -58,7 +58,7 @@ export default function EquipInspectPage() {
       </div>
 
       {/* 탭 컨텐츠 */}
-      <div>
+      <div className="flex-1 flex flex-col min-h-0 mt-4">
         {activeTab === "assign" && <EquipAssignTab />}
         {activeTab === "master" && <ItemMasterTab />}
       </div>

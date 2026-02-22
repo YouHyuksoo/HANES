@@ -121,6 +121,20 @@ export default function ItemMasterTab() {
   };
 
   const columns: ColumnDef<InspectItemMaster>[] = useMemo(() => [
+    {
+      id: "actions", header: "", size: 80,
+      meta: { align: "center" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     { accessorKey: "itemCode", header: t("master.equipInspect.itemCode"), size: 120 },
     { accessorKey: "itemName", header: t("master.equipInspect.itemName"), size: 180 },
     {
@@ -149,19 +163,6 @@ export default function ItemMasterTab() {
     {
       accessorKey: "cycle", header: t("master.equipInspect.cycle"), size: 80,
       cell: ({ getValue }) => cycleLabels[getValue() as string] || getValue(),
-    },
-    {
-      id: "actions", header: "", size: 80,
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
     },
   ], [t, inspectTypeLabels, cycleLabels]);
 

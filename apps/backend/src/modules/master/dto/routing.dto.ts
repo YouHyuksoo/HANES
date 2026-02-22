@@ -56,6 +56,42 @@ export class CreateRoutingDto {
   @IsNumber()
   setupTime?: number;
 
+  @ApiPropertyOptional({ description: '전선길이 (mm)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  wireLength?: number;
+
+  @ApiPropertyOptional({ description: '탈피길이 (mm)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  stripLength?: number;
+
+  @ApiPropertyOptional({ description: '압착높이 (mm)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  crimpHeight?: number;
+
+  @ApiPropertyOptional({ description: '압착폭 (mm)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  crimpWidth?: number;
+
+  @ApiPropertyOptional({ description: '융착조건' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  weldCondition?: string;
+
+  @ApiPropertyOptional({ description: '기타 공정 파라미터 (JSON)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  processParams?: string;
+
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
@@ -73,13 +109,13 @@ export class RoutingQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '품목 ID 필터' })
   @IsOptional()

@@ -16,7 +16,7 @@ export class ProdLineService {
     private readonly prodLineRepository: Repository<ProdLineMaster>,
   ) {}
 
-  async findAll(query: ProdLineQueryDto, company?: string) {
+  async findAll(query: ProdLineQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, useYn } = query;
     const skip = (page - 1) * limit;
 
@@ -25,6 +25,9 @@ export class ProdLineService {
 
     if (company) {
       queryBuilder.andWhere('prodLine.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('prodLine.plant = :plant', { plant });
     }
 
     if (useYn) {

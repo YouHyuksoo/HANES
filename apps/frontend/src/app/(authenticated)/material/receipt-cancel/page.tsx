@@ -6,16 +6,17 @@
  *
  * 초보자 가이드:
  * 1. **역분개**: 원래 입고의 반대 트랜잭션을 생성하여 입고 취소
- * 2. **취소 가능**: DONE 상태인 MAT_IN, MISC_IN 유형만 취소 가능
+ * 2. **취소 가능**: cancelRefId 없는 RECEIPT 유형만 취소 가능
+ * 3. API: GET /material/receipt-cancel, POST /material/receipt-cancel
  */
 
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { RotateCcw, Search, RefreshCw, XCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { createPartColumns } from '@/lib/table-utils';
-import { ColumnDef } from '@tanstack/react-table';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { RotateCcw, Search, RefreshCw, XCircle } from "lucide-react";
+import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import api from "@/services/api";
 
 interface ReceiptTransaction {
   id: string;
@@ -29,83 +30,201 @@ interface ReceiptTransaction {
   unit: string;
   transDate: string;
   status: string;
+  cancelRefId?: string;
 }
 
-const mockData: ReceiptTransaction[] = [
-  { id: '1', transNo: 'MAT-IN-001', transType: 'MAT_IN', partCode: 'WIRE-001', partName: 'AWG18 적색', lotNo: 'L20260201-A01', warehouseName: '자재창고A', qty: 5000, unit: 'M', transDate: '2026-02-01', status: 'DONE' },
-  { id: '2', transNo: 'MAT-IN-002', transType: 'MAT_IN', partCode: 'TERM-001', partName: '단자 110형', lotNo: 'L20260201-B01', warehouseName: '자재창고B', qty: 10000, unit: 'EA', transDate: '2026-02-01', status: 'DONE' },
-  { id: '3', transNo: 'MISC-001', transType: 'MISC_IN', partCode: 'CONN-001', partName: '커넥터 6핀', lotNo: 'L20260203-A01', warehouseName: '자재창고A', qty: 500, unit: 'EA', transDate: '2026-02-03', status: 'DONE' },
-  { id: '4', transNo: 'MAT-IN-003', transType: 'MAT_IN', partCode: 'WIRE-002', partName: 'AWG20 흑색', lotNo: 'L20260205-B01', warehouseName: '자재창고A', qty: 3000, unit: 'M', transDate: '2026-02-05', status: 'CANCELED' },
-];
-
 const statusColors: Record<string, string> = {
-  DONE: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  CANCELED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  DONE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  CANCELED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
-function ReceiptCancelPage() {
+export default function ReceiptCancelPage() {
   const { t } = useTranslation();
-  const [searchText, setSearchText] = useState('');
+
+  const [data, setData] = useState<ReceiptTransaction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<ReceiptTransaction | null>(null);
+  const [reason, setReason] = useState("");
 
-  const filteredData = useMemo(() => {
-    return mockData.filter(item => {
-      if (!searchText) return true;
-      const s = searchText.toLowerCase();
-      return item.transNo.toLowerCase().includes(s) || item.partName.toLowerCase().includes(s) || item.lotNo.toLowerCase().includes(s);
-    });
-  }, [searchText]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "5000" };
+      if (searchText) params.search = searchText;
+      if (startDate) params.fromDate = startDate;
+      if (endDate) params.toDate = endDate;
+      const res = await api.get("/material/receipt-cancel", { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, startDate, endDate]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const stats = useMemo(() => ({
+    total: data.length,
+    cancellable: data.filter(d => !d.cancelRefId && d.status !== "CANCELED").length,
+    canceled: data.filter(d => d.status === "CANCELED" || d.cancelRefId).length,
+  }), [data]);
+
+  const handleCancel = useCallback(async () => {
+    if (!selectedTx || !reason) return;
+    setSaving(true);
+    try {
+      await api.post("/material/receipt-cancel", {
+        transactionId: selectedTx.id,
+        reason,
+      });
+      setIsModalOpen(false);
+      setReason("");
+      setSelectedTx(null);
+      fetchData();
+    } catch (e) {
+      console.error("Cancel failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedTx, reason, fetchData]);
 
   const columns = useMemo<ColumnDef<ReceiptTransaction>[]>(() => [
-    { accessorKey: 'transNo', header: t('material.receiptCancel.transNo'), size: 140 },
-    { accessorKey: 'transType', header: t('material.receiptCancel.transType'), size: 80, cell: ({ getValue }) => <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">{getValue() as string}</span> },
-    ...createPartColumns<ReceiptTransaction>(t),
-    { accessorKey: 'lotNo', header: 'LOT No.', size: 150 },
-    { accessorKey: 'warehouseName', header: t('material.receiptCancel.warehouse'), size: 100 },
-    { accessorKey: 'qty', header: t('material.receiptCancel.qty'), size: 100, cell: ({ row }) => <span className="font-medium">{row.original.qty.toLocaleString()} {row.original.unit}</span> },
-    { accessorKey: 'transDate', header: t('material.receiptCancel.transDate'), size: 100 },
-    { accessorKey: 'status', header: t('common.status'), size: 80, cell: ({ getValue }) => {
-      const s = getValue() as string;
-      return <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[s] || ''}`}>{s}</span>;
-    }},
-    { id: 'actions', header: '', size: 80, cell: ({ row }) => {
-      if (row.original.status === 'CANCELED') return null;
-      return (
-        <Button size="sm" variant="secondary" onClick={() => { setSelectedTx(row.original); setIsModalOpen(true); }}>
-          <XCircle className="w-4 h-4 mr-1" />{t('material.receiptCancel.cancel')}
-        </Button>
-      );
-    }},
+    {
+      accessorKey: "transDate", header: t("material.receiptCancel.transDate"), size: 100,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+    },
+    {
+      accessorKey: "transNo", header: t("material.receiptCancel.transNo"), size: 150,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: "transType", header: t("material.receiptCancel.transType"), size: 90,
+      cell: ({ getValue }) => (
+        <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+          {getValue() as string}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "partName", header: t("common.partName"), size: 140,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "lotNo", header: "LOT No.", size: 150,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "warehouseName", header: t("material.receiptCancel.warehouse"), size: 100,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "qty", header: t("material.receiptCancel.qty"), size: 100,
+      meta: { align: "right" as const },
+      cell: ({ row }) => (
+        <span className="font-medium text-green-600 dark:text-green-400">
+          +{row.original.qty.toLocaleString()} {row.original.unit || ""}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status", header: t("common.status"), size: 80,
+      cell: ({ getValue }) => {
+        const s = getValue() as string;
+        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
+      },
+    },
+    {
+      id: "actions", header: "", size: 90,
+      cell: ({ row }) => {
+        if (row.original.status === "CANCELED" || row.original.cancelRefId) return null;
+        return (
+          <Button size="sm" variant="secondary" onClick={() => {
+            setSelectedTx(row.original);
+            setReason("");
+            setIsModalOpen(true);
+          }}>
+            <XCircle className="w-4 h-4 mr-1" />{t("material.receiptCancel.cancel")}
+          </Button>
+        );
+      },
+    },
   ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><RotateCcw className="w-7 h-7 text-primary" />{t('material.receiptCancel.title')}</h1>
-          <p className="text-text-muted mt-1">{t('material.receiptCancel.subtitle')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <RotateCcw className="w-7 h-7 text-primary" />
+            {t("material.receiptCancel.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("material.receiptCancel.subtitle")}</p>
         </div>
-        <Button variant="secondary" size="sm"><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
       </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <StatCard label={t("material.receiptCancel.stats.total")} value={stats.total} icon={RotateCcw} color="blue" />
+        <StatCard label={t("material.receiptCancel.stats.cancellable")} value={stats.cancellable} icon={XCircle} color="yellow" />
+        <StatCard label={t("material.receiptCancel.stats.canceled")} value={stats.canceled} icon={RotateCcw} color="red" />
+      </div>
+
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('material.receiptCancel.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.receiptCancel.title")}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("material.receiptCancel.searchPlaceholder")}
+                  value={searchText} onChange={e => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date"
+                  value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date"
+                  value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('material.receiptCancel.cancelTitle')} size="sm">
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
+        title={t("material.receiptCancel.cancelTitle")} size="lg">
         {selectedTx && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex justify-between border-b border-border pb-2"><span className="text-text-muted">{t('material.receiptCancel.transNo')}</span><span className="font-medium">{selectedTx.transNo}</span></div>
-              <div className="flex justify-between border-b border-border pb-2"><span className="text-text-muted">{t('material.receiptCancel.qty')}</span><span className="font-medium">{selectedTx.qty.toLocaleString()} {selectedTx.unit}</span></div>
+            <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-text-muted">{t("material.receiptCancel.transNo")}:</span> <span className="font-mono font-medium">{selectedTx.transNo}</span></div>
+                <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedTx.partCode}</span></div>
+                <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedTx.partName}</div>
+                <div><span className="text-text-muted">{t("material.receiptCancel.qty")}:</span> <span className="font-medium text-red-600 dark:text-red-400">{selectedTx.qty.toLocaleString()} {selectedTx.unit || ""}</span></div>
+              </div>
             </div>
-            <Input label={t('material.receiptCancel.reason')} placeholder={t('material.receiptCancel.reasonPlaceholder')} fullWidth />
+            <Input label={t("material.receiptCancel.reason")} placeholder={t("material.receiptCancel.reasonPlaceholder")}
+              value={reason} onChange={e => setReason(e.target.value)} fullWidth />
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-              <Button variant="primary"><XCircle className="w-4 h-4 mr-1" />{t('material.receiptCancel.confirm')}</Button>
+              <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={handleCancel} disabled={saving || !reason}>
+                {saving ? t("common.saving") : <><XCircle className="w-4 h-4 mr-1" />{t("material.receiptCancel.confirm")}</>}
+              </Button>
             </div>
           </div>
         )}
@@ -113,5 +232,3 @@ function ReceiptCancelPage() {
     </div>
   );
 }
-
-export default ReceiptCancelPage;

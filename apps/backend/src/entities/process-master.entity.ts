@@ -25,6 +25,12 @@ export class ProcessMaster {
   @Column({ name: 'PROCESS_TYPE', length: 255 })
   processType: string;
 
+  @Column({ name: 'PROCESS_CATEGORY', length: 50, nullable: true })
+  processCategory: string | null;
+
+  @Column({ name: 'SAMPLE_INSPECT_YN', length: 1, default: 'N' })
+  sampleInspectYn: string;
+
   @Column({ name: 'SORT_ORDER', type: 'int', default: 0 })
   sortOrder: number;
 

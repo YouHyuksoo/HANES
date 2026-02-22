@@ -17,8 +17,9 @@ import ReceivingTable from '@/components/consumables/ReceivingTable';
 import ReceivingModal from '@/components/consumables/ReceivingModal';
 import ReceivingReturnModal from '@/components/consumables/ReceivingReturnModal';
 import { useReceivingData } from '@/hooks/consumables/useReceivingData';
+import api from '@/services/api';
 
-function ReceivingPage() {
+export default function ReceivingPage() {
   const { t } = useTranslation();
   const [isReceivingModalOpen, setIsReceivingModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
@@ -26,14 +27,24 @@ function ReceivingPage() {
     data, searchTerm, setSearchTerm, typeFilter, setTypeFilter, todayStats, refresh,
   } = useReceivingData();
 
-  const handleReceivingSubmit = (formData: any) => {
-    // TODO: API 호출
-    console.log('입고 등록:', { ...formData, logType: 'IN' });
+  const handleReceivingSubmit = async (formData: any) => {
+    try {
+      await api.post("/consumables/receiving", { ...formData, logType: "IN" });
+      setIsReceivingModalOpen(false);
+      refresh();
+    } catch (e) {
+      console.error("Receiving submit failed:", e);
+    }
   };
 
-  const handleReturnSubmit = (formData: any) => {
-    // TODO: API 호출
-    console.log('입고반품 등록:', { ...formData, logType: 'IN_RETURN' });
+  const handleReturnSubmit = async (formData: any) => {
+    try {
+      await api.post("/consumables/receiving", { ...formData, logType: "IN_RETURN" });
+      setIsReturnModalOpen(false);
+      refresh();
+    } catch (e) {
+      console.error("Return submit failed:", e);
+    }
   };
 
   return (
@@ -69,31 +80,37 @@ function ReceivingPage() {
       {/* 필터 + 테이블 */}
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t('consumables.receiving.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
-            </div>
-            <Select
-              options={[
-                { value: '', label: t('consumables.receiving.allTypes') },
-                { value: 'IN', label: t('consumables.receiving.typeIn') },
-                { value: 'IN_RETURN', label: t('consumables.receiving.typeInReturn') },
-              ]}
-              value={typeFilter}
-              onChange={setTypeFilter}
-              placeholder="유형"
-            />
-            <Button variant="secondary" onClick={refresh}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-          <ReceivingTable data={data} />
+          <ReceivingTable
+            data={data}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t('consumables.receiving.searchPlaceholder')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Select
+                    options={[
+                      { value: '', label: t('consumables.receiving.allTypes') },
+                      { value: 'IN', label: t('consumables.receiving.typeIn') },
+                      { value: 'IN_RETURN', label: t('consumables.receiving.typeInReturn') },
+                    ]}
+                    value={typeFilter}
+                    onChange={setTypeFilter}
+                    fullWidth
+                  />
+                </div>
+                <Button variant="secondary" size="sm" onClick={refresh} className="flex-shrink-0">
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
 
@@ -111,5 +128,3 @@ function ReceivingPage() {
     </div>
   );
 }
-
-export default ReceivingPage;

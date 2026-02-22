@@ -28,6 +28,18 @@ export class CreateProcessDto {
   @MaxLength(50)
   processType: string;
 
+  @ApiPropertyOptional({ description: '공정 대분류 (ASSY, INSP 등)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  processCategory?: string;
+
+  @ApiPropertyOptional({ description: '샘플검사 필요여부', default: 'N' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  sampleInspectYn?: string;
+
   @ApiPropertyOptional({ description: '정렬 순서', default: 0 })
   @IsOptional()
   @Type(() => Number)
@@ -58,13 +70,13 @@ export class ProcessQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional()
   @IsOptional()

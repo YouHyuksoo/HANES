@@ -16,13 +16,17 @@ export class PlantService {
     private readonly plantRepository: Repository<Plant>,
   ) {}
 
-  async findAll(query: PlantQueryDto) {
+  async findAll(query: PlantQueryDto, company?: string) {
     const { page = 1, limit = 10, plantType, search, useYn, parentId } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.plantRepository.createQueryBuilder('plant')
       .leftJoinAndSelect('plant.parent', 'parent')
       .where('plant.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('plant.company = :company', { company });
+    }
 
     if (plantType) {
       queryBuilder.andWhere('plant.plantType = :plantType', { plantType });
@@ -132,4 +136,5 @@ export class PlantService {
       order: { sortOrder: 'asc' },
     });
   }
+
 }

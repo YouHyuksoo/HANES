@@ -38,9 +38,8 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -72,9 +71,8 @@ export class ShipmentController {
   @Get()
   @ApiOperation({ summary: '출하 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: ShipmentQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.shipmentService.findAll(query, company);
+  async findAll(@Query() query: ShipmentQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.shipmentService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -124,6 +122,27 @@ export class ShipmentController {
   @ApiResponse({ status: 404, description: '출하 없음' })
   async findById(@Param('id') id: string) {
     const data = await this.shipmentService.findById(id);
+    return ResponseUtil.success(data);
+  }
+
+  @Get(':id/pallets')
+  @ApiOperation({ summary: '출하 팔레트 목록', description: '출하에 할당된 팔레트 및 박스 목록 조회' })
+  @ApiParam({ name: 'id', description: '출하 ID' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiResponse({ status: 404, description: '출하 없음' })
+  async getShipmentPallets(@Param('id') id: string) {
+    const data = await this.shipmentService.getShipmentPallets(id);
+    return ResponseUtil.success(data);
+  }
+
+  @Post(':id/verify-pallet')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '팔레트 바코드 스캔 검증', description: '스캔한 팔레트 바코드가 이 출하에 속하는지 확인' })
+  @ApiParam({ name: 'id', description: '출하 ID' })
+  @ApiBody({ schema: { type: 'object', properties: { palletNo: { type: 'string', description: '스캔한 팔레트 번호' } } } })
+  @ApiResponse({ status: 200, description: '검증 결과 반환' })
+  async verifyPalletBarcode(@Param('id') id: string, @Body('palletNo') palletNo: string) {
+    const data = await this.shipmentService.verifyPalletBarcode(id, palletNo);
     return ResponseUtil.success(data);
   }
 

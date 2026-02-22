@@ -11,9 +11,9 @@
  */
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, RefreshCw, Building } from "lucide-react";
+import { Plus, Edit2, Trash2, RefreshCw, Building, Search } from "lucide-react";
 import {
-  Card, CardHeader, CardContent, Button, Input, Modal, ConfirmModal, Select,
+  Card, CardContent, Button, Input, Modal, ConfirmModal, Select,
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -223,14 +223,8 @@ function DepartmentPage() {
           <p className="text-text-muted mt-1">{t("system.department.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Input
-            placeholder={t("system.department.searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-48"
-          />
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
           </Button>
           <Button size="sm" onClick={openCreateModal}>
             <Plus className="w-4 h-4 mr-1" /> {t("system.department.addDepartment")}
@@ -239,17 +233,22 @@ function DepartmentPage() {
       </div>
 
       <Card>
-        <CardHeader
-          title={t("system.department.departmentList")}
-          subtitle={t("system.department.totalCount", { count: departments.length })}
-        />
         <CardContent>
           <DataGrid
             data={departments}
             columns={columns}
-            pageSize={15}
             isLoading={loading}
             emptyMessage={t("system.department.emptyMessage")}
+            enableExport
+            exportFileName={t("system.department.title")}
+            toolbarLeft={
+              <Input
+                placeholder={t("system.department.searchPlaceholder")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />}
+              />
+            }
           />
         </CardContent>
       </Card>

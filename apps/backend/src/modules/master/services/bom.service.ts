@@ -63,7 +63,7 @@ export class BomService {
     const parentIds = grouped.map((g) => g.parentPartId);
     const parents = await this.partRepository.find({
       where: { id: In(parentIds), deletedAt: IsNull() },
-      select: ['id', 'partCode', 'partName', 'partNo', 'partType'],
+      select: ['id', 'partCode', 'partName', 'partNo', 'partType', 'spec', 'unit', 'customer', 'remark'],
       order: { partCode: 'asc' },
     });
 
@@ -78,7 +78,7 @@ export class BomService {
     }
   }
 
-  async findAll(query: BomQueryDto, company?: string) {
+  async findAll(query: BomQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, parentPartId, childPartId, revision } = query;
     const skip = (page - 1) * limit;
 
@@ -89,6 +89,9 @@ export class BomService {
 
     if (company) {
       queryBuilder.andWhere('bom.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('bom.plant = :plant', { plant });
     }
 
     if (parentPartId) {
@@ -149,13 +152,28 @@ export class BomService {
    * LEVEL: 계층 깊이
    */
   async findHierarchy(parentPartId: string, depth: number = 3, effectiveDate?: string) {
-    const dateFilter = effectiveDate 
-      ? `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE('${effectiveDate}', 'YYYY-MM-DD'))
-         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE('${effectiveDate}', 'YYYY-MM-DD'))`
-      : '';
+    const safeDepth = Math.min(Math.max(Math.floor(Number(depth) || 3), 1), 10);
+    const params: string[] = [];
+
+    let dateFilter = '';
+    if (effectiveDate) {
+      params.push(effectiveDate, effectiveDate);
+      dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
+         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+    }
+
+    const parentIdx = params.length + 1;
+    params.push(parentPartId);
+
+    let dateFilterConnect = '';
+    if (effectiveDate) {
+      params.push(effectiveDate, effectiveDate);
+      dateFilterConnect = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
+         AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+    }
 
     const query = `
-      SELECT 
+      SELECT
         b.ID as id,
         b.PARENT_PART_ID as parentPartId,
         b.CHILD_PART_ID as childPartId,
@@ -175,19 +193,19 @@ export class BomService {
         LEVEL as lvl
       FROM BOM_MASTERS b
       JOIN PART_MASTERS p ON b.CHILD_PART_ID = p.ID
-      WHERE b.DELETED_AT IS NULL 
+      WHERE b.DELETED_AT IS NULL
         AND b.USE_YN = 'Y'
         ${dateFilter}
-      START WITH b.PARENT_PART_ID = '${parentPartId}'
+      START WITH b.PARENT_PART_ID = :${parentIdx}
       CONNECT BY PRIOR b.CHILD_PART_ID = b.PARENT_PART_ID
-        AND LEVEL <= ${depth}
+        AND LEVEL <= ${safeDepth}
         AND b.DELETED_AT IS NULL
         AND b.USE_YN = 'Y'
-        ${dateFilter}
+        ${dateFilterConnect}
       ORDER SIBLINGS BY b.SEQ ASC
     `;
 
-    const rawResults = await this.bomRepository.query(query);
+    const rawResults = await this.bomRepository.query(query, params);
     
     // 평면 데이터를 트리 구조로 변환
     return this.buildTreeFromFlatData(rawResults);

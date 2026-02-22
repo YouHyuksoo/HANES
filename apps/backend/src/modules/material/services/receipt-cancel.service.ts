@@ -25,13 +25,15 @@ export class ReceiptCancelService {
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
     private readonly dataSource: DataSource,
   ) {}
-  async findCancellable(query: ReceiptCancelQueryDto) {
+  async findCancellable(query: ReceiptCancelQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       transType: 'RECEIPT',
       cancelRefId: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (fromDate && toDate) {

@@ -6,6 +6,7 @@
     "edit": "Edit",
     "add": "Add",
     "search": "Search",
+    "period": "Period",
     "refresh": "Refresh",
     "reset": "Reset",
     "export": "Export",
@@ -14,6 +15,7 @@
     "close": "Close",
     "loading": "Loading...",
     "saving": "Saving...",
+    "uploading": "Uploading...",
     "noData": "No data available",
     "error": "An error occurred",
     "success": "Successfully processed",
@@ -56,7 +58,9 @@
     "totalQty": "Total Qty",
     "createdAt": "Created At",
     "selected": "Selected",
-    "won": "KRW"
+    "won": "KRW",
+    "useYn": "Use Y/N",
+    "clear": "Clear"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -126,7 +130,7 @@
     "master.worker.workerList": "Worker List",
     "master.worker.totalCount": "Total {{count}} records",
     "master.worker.emptyMessage": "No workers registered.",
-    "master.iqcItem": "IQC Inspect Item Mgmt",
+    "master.iqcItem": "IQC Items/Groups",
     "master.iqcItem.itemCode": "Item Code",
     "master.iqcItem.judgeMethod": "Judge Method",
     "master.iqcItem.visual": "Visual",
@@ -140,28 +144,36 @@
     "master.warehouse": "Warehouse Mgmt",
     "master.company": "Company Mgmt",
     "master.label": "Label Mgmt",
+    "master.vendorBarcode": "Vendor Barcode Mapping",
+    "matInventory": "Material Inventory",
+    "productInventory": "Product Inventory",
     "inventory": "Inventory",
-    "inventory.stock": "Stock Status Inquiry",
-    "inventory.transaction": "Transaction Inquiry",
-    "inventory.lot": "LOT Traceability",
+    "inventory.matStock": "Material Stock Status",
+    "inventory.stock": "Total Stock Status",
+    "inventory.productStock": "Product Stock Status",
+    "inventory.transaction": "Material Transaction History",
+    "inventory.lot": "Material LOT Traceability",
+    "inventory.productPhysicalInv": "Product Physical Inventory",
+    "inventory.productPhysicalInvHistory": "Product Inventory History",
+    "inventory.matPhysicalInv": "Material Physical Inv Mgmt",
+    "inventory.matPhysicalInvHistory": "Material Physical Inv History",
     "material": "Material",
     "material.arrival": "Arrival",
     "material.iqc": "IQC Inspection",
     "material.receive": "Receiving",
     "material.request": "Issue Request Mgmt",
     "material.issue": "Issuing",
-    "material.stock": "Stock Status Inquiry",
     "material.lot": "LOT Management",
     "material.po": "Purchase Order",
     "material.poStatus": "PO Status Inquiry",
     "material.iqcHistory": "IQC History",
     "material.lotSplit": "Lot Split Mgmt",
+    "material.lotMerge": "Lot Merge",
     "material.shelfLife": "Shelf Life Mgmt",
     "material.hold": "Stock Hold Mgmt",
     "material.scrap": "Material Scrap Process",
     "material.adjustment": "Stock Adjust Process",
     "material.miscReceipt": "Misc Receipt Mgmt",
-    "material.physicalInv": "Physical Inventory Mgmt",
     "material.receiptCancel": "Receipt Cancel Process",
     "cutting": "Cutting",
     "cutting.order": "Work Order",
@@ -170,6 +182,9 @@
     "crimping.order": "Work Order",
     "crimping.result": "Work Result",
     "crimping.mold": "Mold Management",
+    "purchasing": "Purchasing",
+    "purchasing.po": "Purchase Order",
+    "purchasing.poStatus": "PO Status Inquiry",
     "production": "Production",
     "production.order": "Work Order Mgmt",
     "production.result": "Production Result Inquiry",
@@ -179,6 +194,7 @@
     "production.inputInspect": "Input (Inspect)",
     "production.inputEquip": "Input (Equip)",
     "production.sampleInspect": "Sample Inspect Inquiry",
+    "production.resultSummary": "Production Result Summary",
     "production.packResult": "Pack Result",
     "production.wipStock": "WIP/Product Stock Inquiry",
     "inspection": "Continuity Test",
@@ -188,6 +204,8 @@
     "quality.defect": "Defect Management",
     "quality.inspect": "Inspection",
     "quality.trace": "Traceability",
+    "quality.oqc": "OQC Inspection",
+    "quality.oqcHistory": "OQC History",
     "equipment": "Equipment",
     "equipment.master": "Equipment Master Mgmt",
     "equipment.status": "Operation Status Inquiry",
@@ -226,7 +244,8 @@
     "system": "System",
     "system.department": "Department",
     "system.users": "User Management",
-    "system.commConfig": "Comm Config Mgmt"
+    "system.commConfig": "Comm Config Mgmt",
+    "system.config": "System Config"
   },
   "header": {
     "theme": "Theme",
@@ -257,6 +276,9 @@
     "registerFailed": "Registration failed.",
     "emailRequired": "Email *",
     "passwordRequired": "Password *",
+    "plant": "Plant",
+    "selectPlant": "Select a plant",
+    "plantRequired": "Plant selection is required",
     "branding": {
       "title": "HARNESS MES",
       "subtitle": "Manufacturing Execution System",
@@ -280,6 +302,7 @@
     "line": "Line",
     "planQty": "Plan Qty",
     "actualQty": "Actual Qty",
+    "completedQty": "Completed Qty",
     "progress": "Progress",
     "status": "Status",
     "statusWaiting": "Waiting",
@@ -287,9 +310,21 @@
     "statusCompleted": "Completed"
   },
   "inventory": {
+    "matStock": {
+      "title": "Material Stock Status",
+      "description": "View material stock status by warehouse and part."
+    },
+    "matPhysicalInv": {
+      "title": "Material Physical Inventory",
+      "description": "Compare system stock with actual count and apply adjustments."
+    },
+    "matPhysicalInvHistory": {
+      "title": "Material Physical Inventory History",
+      "description": "View material physical inventory count history."
+    },
     "stock": {
-      "title": "Stock Status",
-      "subtitle": "View real-time inventory by warehouse and part.",
+      "title": "Product Stock Status",
+      "subtitle": "View real-time product (WIP/FG) stock by warehouse.",
       "totalStock": "Total Stock",
       "availableStock": "Available Stock",
       "partCount": "Part Count",
@@ -347,6 +382,20 @@
       "defectWarehouse": "Defect Warehouse",
       "scrapWarehouse": "Scrap Warehouse",
       "subconWarehouse": "Subcontractor"
+    },
+    "location": {
+      "title": "Location",
+      "searchPlaceholder": "Search location code, name...",
+      "locationCode": "Location Code",
+      "locationName": "Location Name",
+      "zone": "Zone",
+      "rowNo": "Row",
+      "colNo": "Column",
+      "levelNo": "Level",
+      "addLocation": "Add Location",
+      "editLocation": "Edit Location",
+      "deleteLocation": "Delete Location",
+      "deleteConfirm": "Are you sure you want to delete this location?"
     },
     "transaction": {
       "title": "Transaction History",
@@ -424,6 +473,44 @@
       "tabHistory": "History",
       "noStock": "No stock",
       "noHistory": "No history"
+    },
+    "productPhysicalInv": {
+      "title": "Product Physical Inventory",
+      "subtitle": "Count actual product/WIP stock and apply differences.",
+      "warehouse": "Warehouse",
+      "systemQty": "System Qty",
+      "countedQty": "Counted Qty",
+      "diffQty": "Difference",
+      "lastCountDate": "Last Count Date",
+      "applyCount": "Apply Count",
+      "confirmMessage": "Apply {{count}} count results?",
+      "searchPlaceholder": "Search by part code or name...",
+      "stats": {
+        "total": "Total Items",
+        "counted": "Counted",
+        "mismatch": "Mismatch",
+        "matched": "Matched"
+      }
+    },
+    "productPhysicalInvHistory": {
+      "title": "Product Inventory History",
+      "subtitle": "View product/WIP physical inventory count history.",
+      "warehouse": "Warehouse",
+      "countDate": "Count Date",
+      "systemQty": "System Qty",
+      "countedQty": "Counted Qty",
+      "diffQty": "Difference",
+      "reason": "Reason",
+      "inspector": "Inspector",
+      "searchPlaceholder": "Search by part code or name...",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "stats": {
+        "total": "Total Count",
+        "positive": "Increase (Surplus)",
+        "negative": "Decrease (Shortage)",
+        "matched": "Matched"
+      }
     }
   },
   "system": {
@@ -467,6 +554,14 @@
       "role": "Role",
       "status": "Status",
       "lastLogin": "Last Login",
+      "photo": "Photo",
+      "addPhoto": "Add Photo",
+      "changePhoto": "Change Photo",
+      "photoHint": "JPG, PNG (Max 5MB)",
+      "photoCrop": "Crop Photo",
+      "rotate": "Rotate",
+      "photoTypeError": "Only image files are allowed.",
+      "photoSizeError": "File size must be 5MB or less.",
       "roleAdmin": "Admin",
       "roleManager": "Manager",
       "roleOperator": "Operator",
@@ -507,12 +602,36 @@
       "stopBits": "Stop Bits",
       "parity": "Parity",
       "flowControl": "Flow Control",
+      "lineEnding": "Line Ending (CR/LF)",
       "hostLabel": "Host (IP)",
       "hostPlaceholder": "e.g. 192.168.1.100",
       "portLabel": "Port",
       "portPlaceholder": "e.g. 502",
       "extraSettings": "{{type}} Extra Settings"
+    },
+    "config": {
+      "title": "System Settings",
+      "description": "Configure system operation options.",
+      "group": { "all": "All", "MATERIAL": "Material", "PRODUCTION": "Production", "QUALITY": "Quality", "SYSTEM": "System" },
+      "save": "Save Settings",
+      "saveSuccess": "Settings saved successfully.",
+      "addNew": "Add Setting",
+      "noChanges": "No changes to save.",
+      "changedCount": "{{count}} items changed",
+      "confirmDelete": "Delete this setting?"
     }
+  },
+  "serialTest": {
+    "title": "Serial Port Test",
+    "connectedStatus": "Connected",
+    "disconnectedStatus": "Disconnected",
+    "connectBtn": "Connect",
+    "disconnectBtn": "Disconnect",
+    "sendBtn": "Send",
+    "clearBtn": "Clear",
+    "sendPlaceholderHex": "HEX data (e.g. 01 03 00 00 00 01)",
+    "sendPlaceholderAscii": "ASCII text (e.g. HELLO)",
+    "logEmpty": "Connect to see received/sent data here"
   },
   "master": {
     "part": {
@@ -673,7 +792,14 @@
       "typePkg": "Packing",
       "addProcess": "Add Process",
       "editProcess": "Edit Process",
-      "searchPlaceholder": "Search process code, name..."
+      "searchPlaceholder": "Search process code, name...",
+      "processCategory": "Category",
+      "sampleInspectYn": "Sample Inspect",
+      "catAssy": "Assembly",
+      "catInsp": "Inspection",
+      "catCutting": "Cutting",
+      "catWelding": "Welding",
+      "catPacking": "Packing"
     },
     "routing": {
       "title": "Routing Management",
@@ -692,7 +818,14 @@
       "partSelect": "Select Part",
       "equipTypePlaceholder": "Select equipment type",
       "stdTimeSec": "Std Time (sec)",
-      "setupTimeSec": "Setup Time (sec)"
+      "setupTimeSec": "Setup Time (sec)",
+      "wireLength": "Wire Length (mm)",
+      "stripLength": "Strip Length (mm)",
+      "crimpHeight": "Crimp Height (mm)",
+      "crimpWidth": "Crimp Width (mm)",
+      "weldCondition": "Weld Condition",
+      "weldConditionPlaceholder": "Enter welding conditions (temp, time, pressure)",
+      "processDetailTitle": "Process Detail Parameters"
     },
     "worker": {
       "title": "Worker Management",
@@ -726,8 +859,8 @@
       "deleteConfirm": " will be deleted. Are you sure?"
     },
     "iqcItem": {
-      "title": "IQC Inspection Items",
-      "subtitle": "Register and manage incoming inspection items.",
+      "title": "IQC Inspection Items/Groups",
+      "subtitle": "Register inspection items and manage inspection groups.",
       "seq": "Seq",
       "inspectItem": "Inspection Item",
       "spec": "Spec/Criteria",
@@ -737,7 +870,52 @@
       "editItem": "Edit Item",
       "searchPlaceholder": "Search part code, inspection item...",
       "partSelect": "Select Part",
-      "retestCycle": "Retest Cycle (days)"
+      "retestCycle": "Retest Cycle (days)",
+      "visual": "Visual",
+      "measureMethod": "Measure",
+      "judgeMethod": "Judge Method",
+      "itemCode": "Item Code",
+      "revision": "Rev",
+      "deleteItem": "Delete Inspect Item",
+      "deleteConfirm": "Are you sure you want to delete this inspect item?",
+      "tabItems": "Inspect Items"
+    },
+    "iqcGroup": {
+      "tabItems": "Inspection Items",
+      "tabGroups": "Inspection Groups",
+      "groupCode": "Group Code",
+      "groupName": "Group Name",
+      "inspectMethod": "Inspect Method",
+      "methodFull": "Full Inspection",
+      "methodSample": "Sample Inspection",
+      "methodSkip": "Skip",
+      "sampleQty": "Sample Qty",
+      "itemCount": "Items",
+      "addGroup": "Add Group",
+      "editGroup": "Edit Group",
+      "searchPlaceholder": "Search group code/name...",
+      "groupInfo": "Group Info",
+      "selectItems": "Select Items",
+      "selectedItems": "Selected Items",
+      "itemSearchPlaceholder": "Search item code/name..."
+    },
+    "iqcLink": {
+      "tabLinks": "Linkage",
+      "addLink": "Add Link",
+      "editLink": "Edit Link",
+      "partCode": "Part Code",
+      "partName": "Part Name",
+      "partner": "Vendor (Supplier)",
+      "group": "Inspect Group",
+      "partSelect": "Select Part",
+      "partPlaceholder": "Select a part",
+      "partnerSelect": "Vendor (Supplier)",
+      "allVendors": "All (Default)",
+      "groupSelect": "Inspect Group",
+      "groupPlaceholder": "Select an inspection group",
+      "defaultLabel": "Default (All)",
+      "remarkPlaceholder": "Remark (optional)",
+      "searchPlaceholder": "Search part code/name/vendor..."
     },
     "equipInspect": {
       "title": "Equipment Inspection Items",
@@ -796,9 +974,16 @@
       "editDoc": "Edit Instruction",
       "searchPlaceholder": "Search title, part code, process code...",
       "revision": "Revision",
-      "imageUrl": "Image URL",
+      "imageUrl": "Or enter URL directly",
       "content": "Content",
-      "contentPlaceholder": "Enter work instruction content..."
+      "contentPlaceholder": "Enter work instruction content...",
+      "attachment": "Attachment",
+      "dropFile": "Drag & drop or click to upload",
+      "fileTypes": "Images (JPG, PNG), PDF, Documents (Max 10MB)",
+      "preview": "Preview",
+      "openNewTab": "Open in new tab",
+      "clickToDownload": "Click to download",
+      "noContent": "No content registered."
     },
     "transferRule": {
       "title": "Transfer Rules",
@@ -891,7 +1076,34 @@
       "addCompany": "Add Company",
       "editCompany": "Edit Company",
       "searchPlaceholder": "Search company code, name, biz no...",
-      "selectCompany": "Select a company"
+      "selectCompany": "Select a company",
+      "plantSection": "Plants",
+      "plantCode": "Plant Code",
+      "plantName": "Plant Name",
+      "addPlant": "Add Plant",
+      "noPlant": "No plants registered."
+    },
+    "vendorBarcode": {
+      "title": "Vendor Barcode Mapping",
+      "subtitle": "Map vendor barcodes to MES part numbers for automatic matching",
+      "vendorBarcode": "Vendor Barcode",
+      "partCode": "Part Code",
+      "partName": "Part Name",
+      "vendorCode": "Vendor Code",
+      "vendorName": "Vendor Name",
+      "matchType": "Match Type",
+      "matchExact": "Exact",
+      "matchPrefix": "Prefix",
+      "matchRegex": "Regex",
+      "mappingRule": "Mapping Rule",
+      "useYn": "Active",
+      "addMapping": "Add Mapping",
+      "editMapping": "Edit Mapping",
+      "searchPlaceholder": "Search barcode, part code, part name...",
+      "confirmDelete": "Are you sure you want to delete this mapping?",
+      "createSuccess": "Barcode mapping created successfully.",
+      "updateSuccess": "Barcode mapping updated successfully.",
+      "deleteSuccess": "Barcode mapping deleted successfully."
     }
   },
   "material": {
@@ -956,7 +1168,8 @@
         "remainingQty": "Remaining",
         "orderQty": "Order Qty",
         "receivedQty": "Received Qty",
-        "inputQty": "This Qty"
+        "inputQty": "This Qty",
+        "manufactureDate": "Manufacture Date"
       },
       "selectPoDesc": "Select a PO available for arrival.",
       "selectWarehouse": "Select warehouse",
@@ -1002,7 +1215,15 @@
       "inspectorPlaceholder": "Enter inspector name",
       "remarkPlaceholder": "Inspection remarks",
       "passed": "Pass",
-      "failed": "Fail"
+      "failed": "Fail",
+      "inspectItem": "Inspect Item",
+      "spec": "Spec",
+      "measuredValue": "Measured Value",
+      "judgment": "Judgment",
+      "overallJudge": "Overall Judgment",
+      "noInspectItems": "No IQC inspection items registered for this part. Please judge manually.",
+      "submitFailed": "Submit as Fail",
+      "submitPassed": "Submit as Pass"
     },
     "receive": {
       "title": "Material Receiving",
@@ -1148,13 +1369,24 @@
         "quantity": "Quantity",
         "safetyStock": "Safety Stock",
         "status": "Status",
-        "lastUpdated": "Last Updated"
+        "lastUpdated": "Last Updated",
+        "manufactureDate": "Mfg Date",
+        "elapsedDays": "Elapsed Days",
+        "remainingDays": "Remaining Life",
+        "shelfLifeStatus": "Shelf Life",
+        "dayUnit": "d"
+      },
+      "shelfLife": {
+        "expired": "Expired",
+        "imminent": "Imminent",
+        "normal": "Normal"
       },
       "stats": {
         "totalItems": "Total Items",
         "totalQuantity": "Total Quantity",
         "belowSafety": "Below Safety",
-        "warningLevel": "Warning Level"
+        "warningLevel": "Warning Level",
+        "expiryWarning": "Expiry Warning"
       },
       "searchPlaceholder": "Search part code, name..."
     },
@@ -1231,6 +1463,12 @@
       "inspector": "Inspector",
       "inspectDate": "Inspect Date",
       "searchPlaceholder": "Search LOT no, part name...",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "pass": "Pass",
+      "fail": "Fail",
+      "initial": "Initial",
+      "retest": "Retest",
       "stats": {
         "total": "Total Inspections",
         "pass": "Pass",
@@ -1252,7 +1490,31 @@
       "newLotNoPlaceholder": "Auto-generate or enter manually",
       "remark": "Remark",
       "remarkPlaceholder": "Enter split reason",
-      "searchPlaceholder": "Search LOT no, part name..."
+      "searchPlaceholder": "Search LOT no, part name...",
+      "stats": {
+        "total": "Total LOTs",
+        "totalQty": "Total Qty"
+      }
+    },
+    "lotMerge": {
+      "title": "Lot Merge",
+      "subtitle": "Select and merge lots of the same part.",
+      "lotNo": "Lot No.",
+      "vendor": "Vendor",
+      "expireDate": "Expiry Date",
+      "mergeSelected": "Merge Selected",
+      "selectedCount": "Selected Lots",
+      "totalQty": "Total Qty",
+      "targetLot": "Target Lot",
+      "mergingLots": "Merging Lots",
+      "ready": "Ready to merge",
+      "partMismatch": "Part mismatch",
+      "partMismatchWarning": "Cannot merge lots of different parts. Please select lots of the same part.",
+      "clearSelection": "Clear Selection",
+      "confirmTitle": "Confirm Lot Merge",
+      "confirmMessage": "Merge the selected lots? Source lots will be marked as DEPLETED.",
+      "confirmMerge": "Confirm Merge",
+      "searchPlaceholder": "Search lot number..."
     },
     "shelfLife": {
       "title": "Shelf Life Material",
@@ -1260,6 +1522,7 @@
       "partCode": "Part Code",
       "partName": "Part Name",
       "currentQty": "Current Qty",
+      "vendor": "Vendor",
       "expireDate": "Expiry Date",
       "remainDays": "Remaining Days",
       "days": " days",
@@ -1308,7 +1571,14 @@
       "warehouse": "Warehouse",
       "lotId": "LOT ID",
       "lotIdPlaceholder": "Enter LOT ID",
-      "searchPlaceholder": "Search trans no, LOT no, part name..."
+      "searchPlaceholder": "Search trans no, LOT no, part name...",
+      "totalCount": "Total Scrap Count",
+      "totalQty": "Total Scrap Qty",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "stockSelect": "Select Stock (Part-LOT)",
+      "availableQty": "Available Qty",
+      "max": "Max"
     },
     "adjustment": {
       "title": "Stock Adjustment",
@@ -1327,7 +1597,16 @@
       "createdBy": "Created By",
       "createdAt": "Created At",
       "register": "Register Adjustment",
-      "searchPlaceholder": "Search part code, name, reason..."
+      "searchPlaceholder": "Search part code, name, reason...",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "partSearch": "Part Search",
+      "partSearchPlaceholder": "Enter part code or name (2+ chars)",
+      "stats": {
+        "total": "Total Adjustments",
+        "increase": "Increases",
+        "decrease": "Decreases"
+      }
     },
     "miscReceipt": {
       "title": "Misc Receipt",
@@ -1341,7 +1620,15 @@
       "remarkPlaceholder": "Enter receipt reason",
       "transDate": "Trans Date",
       "register": "Register Misc Receipt",
-      "searchPlaceholder": "Search trans no, part name, remark..."
+      "searchPlaceholder": "Search trans no, part name, remark...",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "partSearch": "Part Search",
+      "partSearchPlaceholder": "Enter part code or name (2+ chars)...",
+      "stats": {
+        "total": "Total Misc Receipts",
+        "totalQty": "Total Qty"
+      }
     },
     "physicalInv": {
       "title": "Physical Inventory",
@@ -1363,6 +1650,27 @@
         "counted": "Counted",
         "mismatch": "Mismatch",
         "matched": "Matched"
+      },
+      "confirmMessage": "Apply {{count}} physical inventory count results?"
+    },
+    "physicalInvHistory": {
+      "title": "Physical Inventory History",
+      "subtitle": "View physical inventory count history.",
+      "warehouse": "Warehouse",
+      "countDate": "Count Date",
+      "systemQty": "Book Qty",
+      "countedQty": "Counted Qty",
+      "diffQty": "Difference",
+      "reason": "Reason",
+      "inspector": "Inspector",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "searchPlaceholder": "Search by part code, name...",
+      "stats": {
+        "total": "Total Count",
+        "positive": "Surplus (+)",
+        "negative": "Shortage (-)",
+        "matched": "Matched (0)"
       }
     },
     "receiptCancel": {
@@ -1380,7 +1688,14 @@
       "reason": "Cancel Reason",
       "reasonPlaceholder": "Enter cancellation reason",
       "confirm": "Confirm Cancel",
-      "searchPlaceholder": "Search trans no, part name, LOT no..."
+      "searchPlaceholder": "Search trans no, part name, LOT no...",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "stats": {
+        "total": "Total Receipts",
+        "cancellable": "Cancellable",
+        "canceled": "Canceled"
+      }
     }
   },
   "cutting": {
@@ -1534,7 +1849,23 @@
       "processCRIMP": "Crimping",
       "processASSY": "Assembly",
       "processINSP": "Inspection",
-      "processPACK": "Packing"
+      "processPACK": "Packing",
+      "create": "Create Job Order",
+      "createTitle": "Create Job Order",
+      "partType": "Part Type",
+      "planDate": "Plan Date",
+      "priority": "Priority",
+      "autoCreateChildren": "Auto-create sub-assembly job orders from BOM",
+      "treeView": "Tree View",
+      "listView": "List View",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "stats": {
+        "total": "Total",
+        "waiting": "Waiting",
+        "running": "Running",
+        "done": "Done"
+      }
     },
     "result": {
       "title": "Production Result",
@@ -1761,7 +2092,38 @@
       "judgment": "Judgment",
       "inspector": "Inspector",
       "remark": "Remark",
-      "searchPlaceholder": "Search LOT no, part name..."
+      "searchPlaceholder": "Search by order no, part name, inspector...",
+      "inputBtn": "Input Inspection",
+      "inputTitle": "Semi-finished Product Sample Inspection Input",
+      "sampleNo": "Sample#",
+      "measuredValue": "Measured Value",
+      "specUpper": "Upper Limit",
+      "specLower": "Lower Limit",
+      "sampleCount": "Sample Count",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "inspectTypePlaceholder": "Visual, Dimensional, etc."
+    },
+    "resultSummary": {
+      "title": "Production Result Summary",
+      "description": "Integrated summary of plan/good/defect/yield by product",
+      "partType": "Part Type",
+      "planQty": "Plan Qty",
+      "goodQty": "Good Qty",
+      "defectQty": "Defect Qty",
+      "achieveRate": "Achieve Rate",
+      "yieldRate": "Yield Rate",
+      "defectRate": "Defect Rate",
+      "orderCount": "Orders",
+      "searchPlaceholder": "Search by part code, part name...",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "stats": {
+        "planTotal": "Total Plan Qty",
+        "goodTotal": "Total Good Qty",
+        "defectTotal": "Total Defect Qty",
+        "yieldRate": "Overall Yield Rate"
+      }
     },
     "packResult": {
       "title": "Pack Result",
@@ -1948,6 +2310,48 @@
       "resultCol": "Result",
       "enterSerialOrLot": "Enter serial or LOT number",
       "canCheckHistory": "You can check the full manufacturing history and 4M info."
+    },
+    "oqc": {
+      "title": "OQC Inspection",
+      "description": "Verify product quality before shipment and determine pass/fail.",
+      "historyTitle": "OQC History",
+      "historyDescription": "View completed OQC inspection history.",
+      "inspectTitle": "OQC Inspection Execution",
+      "createRequest": "OQC Request",
+      "requestNo": "Request No.",
+      "requestDate": "Request Date",
+      "customer": "Customer",
+      "customerPlaceholder": "Enter customer name",
+      "boxCount": "Box Count",
+      "totalQty": "Total Qty",
+      "sampleSize": "Sample Size",
+      "sampleSizePlaceholder": "Enter sample size",
+      "inspector": "Inspector",
+      "inspectorPlaceholder": "Enter inspector name",
+      "inspectDate": "Inspect Date",
+      "result": "Result",
+      "pass": "Pass",
+      "fail": "Fail",
+      "passRate": "Pass Rate",
+      "statusPending": "Pending",
+      "statusPass": "Pass",
+      "statusFail": "Fail",
+      "statTotal": "Total Requests",
+      "statPending": "Pending",
+      "statPass": "Pass",
+      "statFail": "Fail",
+      "searchPlaceholder": "Search request no, part code, part name...",
+      "selectPart": "Select Part",
+      "selectPartPlaceholder": "Select a part",
+      "availableBoxes": "Available Boxes",
+      "selectedInfo": "Selected {{boxCount}} boxes, Total qty {{totalQty}}",
+      "linkedBoxes": "Linked Box List",
+      "boxNo": "Box No.",
+      "qty": "Qty",
+      "sample": "Sample",
+      "isSample": "Is Sample",
+      "sampleYes": "Sample",
+      "remarkPlaceholder": "Enter remark"
     }
   },
   "equipment": {
@@ -2277,7 +2681,22 @@
       "driver": "Driver",
       "driverPlaceholder": "Enter driver name",
       "destination": "Destination",
-      "destinationPlaceholder": "Enter destination"
+      "destinationPlaceholder": "Enter destination",
+      "allCustomers": "All Customers"
+    },
+    "scan": {
+      "title": "Shipment Scan Verification",
+      "scanPlaceholder": "Scan pallet barcode...",
+      "verify": "Verify",
+      "verified": "Verified",
+      "progress": "Verification Progress",
+      "confirmShip": "Confirm Shipment",
+      "alreadyVerified": "Pallet already verified.",
+      "palletNotFound": "Pallet not found.",
+      "wrongShipment": "Pallet does not belong to this shipment.",
+      "verifyFailed": "Verification failed.",
+      "confirmFailed": "Shipment confirmation failed.",
+      "noPallets": "No pallets assigned to this shipment."
     }
   },
   "customs": {
@@ -2664,6 +3083,7 @@
     "VENDOR_TYPE": { "SUBCON": "Subcontractor", "SUPPLIER": "Supplier" },
     "WAREHOUSE_TYPE_DTO": { "RAW": "Raw Material", "WIP": "WIP", "FG": "Finished Goods", "FLOOR": "Floor", "DEFECT": "Defect", "SCRAP": "Scrap", "SUBCON": "Subcontractor" },
     "IQC_STATUS": { "PENDING": "Pending", "PASS": "Pass", "FAIL": "Fail", "HOLD": "Hold" },
+    "OQC_STATUS": { "PENDING": "Pending", "IN_PROGRESS": "In Progress", "PASS": "Pass", "FAIL": "Fail" },
     "MAT_LOT_STATUS": { "NORMAL": "Normal", "HOLD": "Hold", "DEPLETED": "Depleted" },
     "ISSUE_TYPE": { "PROD": "Production", "SUBCON": "Subcontract", "SAMPLE": "Sample", "ADJ": "Adjustment" },
     "TRANSACTION_TYPE": { "MAT_IN": "Material In", "MAT_IN_CANCEL": "Material In Cancel", "MAT_OUT": "Material Out", "MAT_OUT_CANCEL": "Material Out Cancel", "WIP_IN": "WIP In", "WIP_IN_CANCEL": "WIP In Cancel", "WIP_OUT": "WIP Out", "WIP_OUT_CANCEL": "WIP Out Cancel", "FG_IN": "FG In", "FG_IN_CANCEL": "FG In Cancel", "FG_OUT": "FG Out", "FG_OUT_CANCEL": "FG Out Cancel", "SUBCON_OUT": "Subcon Out", "SUBCON_OUT_CANCEL": "Subcon Out Cancel", "SUBCON_IN": "Subcon In", "SUBCON_IN_CANCEL": "Subcon In Cancel", "PROD_CONSUME": "Production Consume", "PROD_CONSUME_CANCEL": "Production Consume Cancel", "TRANSFER": "Transfer", "TRANSFER_CANCEL": "Transfer Cancel", "ADJ_PLUS": "Adjustment Plus", "ADJ_MINUS": "Adjustment Minus", "SCRAP": "Scrap" },
@@ -2763,5 +3183,21 @@
     "INSPECT_CHECK_TYPE": "Inspection Check Type",
     "INSPECT_JUDGE": "Inspection Judgment",
     "JUDGE_YN": "Pass/Fail"
+  },
+  "export": {
+    "title": "Export",
+    "formatLabel": "Select format",
+    "excel": "Excel",
+    "pdf": "PDF",
+    "csv": "CSV",
+    "html": "HTML",
+    "markdown": "Markdown",
+    "txt": "Text"
+  },
+  "tabs": {
+    "close": "Close",
+    "closeOthers": "Close Others",
+    "closeAll": "Close All",
+    "pinnedTooltip": "Pinned tab (cannot close)"
   }
 }

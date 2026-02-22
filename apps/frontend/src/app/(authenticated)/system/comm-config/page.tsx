@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -23,6 +23,7 @@ import {
   Trash2,
   Cable,
   Network,
+  Activity,
 } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
 import StatCard from "@/components/ui/StatCard";
@@ -31,6 +32,7 @@ import Select from "@/components/ui/Select";
 import Input from "@/components/ui/Input";
 import Modal, { ConfirmModal } from "@/components/ui/Modal";
 import CommConfigForm from "@/components/system/CommConfigForm";
+import SerialTestModal from "@/components/system/SerialTestModal";
 import {
   useCommConfigData,
   CommConfig,
@@ -48,6 +50,7 @@ const TYPE_BADGE: Record<string, { bg: string; text: string }> = {
 
 export default function CommConfigPage() {
   const { t } = useTranslation();
+  const [testTarget, setTestTarget] = useState<CommConfig | null>(null);
 
   const FILTER_OPTIONS = useMemo(() => [
     { value: "", label: t('common.all') },
@@ -161,9 +164,18 @@ export default function CommConfigPage() {
       {
         id: "actions",
         header: t('common.actions'),
-        size: 100,
+        size: 130,
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
+            {row.original.commType === "SERIAL" && (
+              <button
+                onClick={() => setTestTarget(row.original)}
+                className="p-1.5 rounded hover:bg-background text-text-muted hover:text-blue-600 transition-colors"
+                title={t('serialTest.title')}
+              >
+                <Activity className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => openEditModal(row.original)}
               className="p-1.5 rounded hover:bg-background text-text-muted hover:text-primary transition-colors"
@@ -239,7 +251,6 @@ export default function CommConfigPage() {
       <DataGrid
         data={configs}
         columns={columns}
-        pageSize={15}
         isLoading={loading}
         enableColumnResizing
       />
@@ -275,6 +286,13 @@ export default function CommConfigPage() {
         title={t('system.commConfig.deleteConfig')}
         message={t('system.commConfig.deleteConfirm', { name: deleteTarget?.configName })}
         variant="danger"
+      />
+
+      {/* 시리얼 통신 테스트 모달 */}
+      <SerialTestModal
+        isOpen={!!testTarget}
+        onClose={() => setTestTarget(null)}
+        config={testTarget}
       />
     </div>
   );

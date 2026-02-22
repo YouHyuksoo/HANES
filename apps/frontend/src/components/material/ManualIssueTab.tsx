@@ -145,30 +145,6 @@ export default function ManualIssueTab() {
     <>
       <Card>
         <CardContent>
-          {/* 필터 영역 */}
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t('material.stock.searchPlaceholder', { defaultValue: '품목코드, 품목명, LOT번호 검색...' })}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
-            </div>
-            <div className="w-44">
-              <Select
-                options={warehouseOptions}
-                value={warehouseFilter}
-                onChange={setWarehouseFilter}
-                fullWidth
-              />
-            </div>
-            <Button variant="secondary" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-
           {/* 에러 메시지 */}
           {errorMsg && (
             <div className="flex items-center gap-2 p-3 mb-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-lg text-sm">
@@ -181,9 +157,34 @@ export default function ManualIssueTab() {
           <DataGrid
             data={availableStocks}
             columns={columns}
-            pageSize={15}
             isLoading={isLoading}
+            enableExport
+            exportFileName={t('material.issue.manualIssue', { defaultValue: '수동출고' })}
             emptyMessage={t('material.issue.noAvailableStock', { defaultValue: '출고 가능한 재고가 없습니다.' })}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t('material.stock.searchPlaceholder', { defaultValue: '품목코드, 품목명, LOT번호 검색...' })}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-44 flex-shrink-0">
+                  <Select
+                    options={warehouseOptions}
+                    value={warehouseFilter}
+                    onChange={setWarehouseFilter}
+                    fullWidth
+                  />
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => refetch()} className="flex-shrink-0">
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+            }
           />
 
           {/* 하단 선택 요약 + 출고 버튼 */}

@@ -95,41 +95,27 @@ function EquipStatusPage() {
         <StatCard label={t('equipment.stop')} value={stats.STOP || 0} icon={Settings} color="red" />
       </div>
 
-      {/* 필터 */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder={t('common.search')}
-                value={filters.searchTerm}
-                onChange={(e) => filters.setSearchTerm(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-              />
-            </div>
-            <Select
-              value={filters.statusFilter}
-              onChange={filters.setStatusFilter}
-              options={statusOptions}
-            />
-            <Button variant="outline" onClick={resetFilters}>
-              {t('common.reset')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* 데이터 그리드 */}
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-4">
           <DataGrid
             columns={columns}
             data={filteredData}
             isLoading={isLoading}
+            enableExport
+            exportFileName={t('equipment.status.title')}
             onRowClick={(row) => {
               setSelectedEquipment(row);
               setIsEditModalOpen(true);
             }}
+            toolbarLeft={
+              <div className="flex gap-2 items-center">
+                <Input placeholder={t('common.search')} value={filters.searchTerm}
+                  onChange={(e) => filters.setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
+                <Select value={filters.statusFilter} onChange={filters.setStatusFilter} options={statusOptions} />
+                <Button variant="outline" onClick={resetFilters}>{t('common.reset')}</Button>
+              </div>
+            }
           />
         </CardContent>
       </Card>

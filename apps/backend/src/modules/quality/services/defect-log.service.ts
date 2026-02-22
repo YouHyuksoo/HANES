@@ -54,7 +54,7 @@ export class DefectLogService {
   /**
    * 불량로그 목록 조회 (페이지네이션)
    */
-  async findAll(query: DefectLogQueryDto, company?: string) {
+  async findAll(query: DefectLogQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 20,
@@ -70,6 +70,7 @@ export class DefectLogService {
     const where: any = {
       deletedAt: IsNull(),
       ...(company && { company }),
+      ...(plant && { plant }),
       ...(prodResultId && { prodResultId }),
       ...(defectCode && { defectCode }),
       ...(status && { status }),

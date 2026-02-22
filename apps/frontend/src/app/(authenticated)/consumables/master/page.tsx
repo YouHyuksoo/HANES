@@ -1,135 +1,144 @@
 "use client";
 
 /**
- * @file src/pages/consumables/MasterPage.tsx
- * @description 소모품 마스터 관리 페이지
+ * @file src/app/(authenticated)/consumables/master/page.tsx
+ * @description 소모품 마스터 관리 페이지 — DB API 연동
+ *
+ * 초보자 가이드:
+ * 1. **목록 조회**: GET /consumables (페이지네이션, 검색, 카테고리 필터)
+ * 2. **통계 카드**: GET /consumables/summary (전체/경고/교체 건수)
+ * 3. **등록/수정**: ConsumableMasterModal 컴포넌트에서 처리
+ * 4. **삭제**: DELETE /consumables/:id (소프트 삭제)
  */
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, RefreshCw, Search, Wrench, AlertTriangle, XCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select, StatCard, ComCodeBadge } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
-
-interface Consumable {
-  id: string;
-  consumableCode: string;
-  name: string;
-  category: string;
-  expectedLife: number;
-  currentCount: number;
-  warningCount: number;
-  location: string;
-  vendor: string;
-  status: string;
-  lifePercentage: number;
-}
-
-const mockData: Consumable[] = [
-  {
-    id: '1',
-    consumableCode: 'MOLD-001',
-    name: '압착금형 A타입',
-    category: 'MOLD',
-    expectedLife: 100000,
-    currentCount: 85000,
-    warningCount: 80000,
-    location: '금형창고 A-1',
-    vendor: '금형공업',
-    status: 'WARNING',
-    lifePercentage: 85,
-  },
-  {
-    id: '2',
-    consumableCode: 'MOLD-002',
-    name: '압착금형 B타입',
-    category: 'MOLD',
-    expectedLife: 100000,
-    currentCount: 45000,
-    warningCount: 80000,
-    location: '금형창고 A-2',
-    vendor: '금형공업',
-    status: 'NORMAL',
-    lifePercentage: 45,
-  },
-  {
-    id: '3',
-    consumableCode: 'JIG-001',
-    name: '조립지그 001',
-    category: 'JIG',
-    expectedLife: 50000,
-    currentCount: 48000,
-    warningCount: 40000,
-    location: '조립라인 B',
-    vendor: 'JIG제작소',
-    status: 'WARNING',
-    lifePercentage: 96,
-  },
-  {
-    id: '4',
-    consumableCode: 'TOOL-001',
-    name: '절단날 표준형',
-    category: 'TOOL',
-    expectedLife: 10000,
-    currentCount: 10500,
-    warningCount: 8000,
-    location: '공구창고',
-    vendor: '공구상사',
-    status: 'REPLACE',
-    lifePercentage: 105,
-  },
-];
-
-/* statusColors → ComCodeBadge가 DB attr1에서 색상 자동 로드 */
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  Plus, Edit2, RefreshCw, Search, Wrench, AlertTriangle, XCircle, Trash2,
+} from "lucide-react";
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import { useComCodeOptions } from "@/hooks/useComCode";
+import api from "@/services/api";
+import ConsumableMasterModal, {
+  type ConsumableItem,
+  type ConsumableFormValues,
+} from "@/components/consumables/ConsumableMasterModal";
 
 function ConsumableMasterPage() {
   const { t } = useTranslation();
+  const categoryOptions = useComCodeOptions("CONSUMABLE_CATEGORY");
 
-  /* categoryLabels, statusLabels → ComCodeBadge로 대체 */
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Consumable | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [data, setData] = useState<ConsumableItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [stats, setStats] = useState({ total: 0, warning: 0, replace: 0 });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<ConsumableItem | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const filteredData = useMemo(() => {
-    return mockData.filter((item) => {
-      const matchSearch = !searchTerm ||
-        item.consumableCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchCategory = !categoryFilter || item.category === categoryFilter;
-      return matchSearch && matchCategory;
-    });
-  }, [searchTerm, categoryFilter]);
+  /* 카테고리 필터 옵션 (전체 + 공통코드) */
+  const filterOptions = useMemo(
+    () => [{ value: "", label: t("consumables.master.allCategories") }, ...categoryOptions],
+    [t, categoryOptions],
+  );
 
-  const columns = useMemo<ColumnDef<Consumable>[]>(
+  /* 목록 조회 */
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string | number> = { limit: 100, useYn: "Y" };
+      if (categoryFilter) params.category = categoryFilter;
+      if (searchTerm) params.search = searchTerm;
+
+      const res = await api.get("/consumables", { params });
+      if (res.data.success) setData(res.data.data || []);
+    } catch {
+      /* 에러는 api 인터셉터에서 처리 */
+    } finally {
+      setLoading(false);
+    }
+  }, [categoryFilter, searchTerm]);
+
+  /* 통계 조회 */
+  const fetchSummary = useCallback(async () => {
+    try {
+      const res = await api.get("/consumables/summary");
+      if (res.data.success) setStats(res.data.data);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    fetchSummary();
+  }, [fetchData, fetchSummary]);
+
+  /* 등록/수정 */
+  const handleSubmit = async (form: ConsumableFormValues) => {
+    setSaving(true);
+    try {
+      if (editing) {
+        await api.put(`/consumables/${editing.id}`, form);
+      } else {
+        await api.post("/consumables", form);
+      }
+      setModalOpen(false);
+      fetchData();
+      fetchSummary();
+    } catch {
+      /* 에러는 인터셉터 처리 */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /* 삭제 */
+  const handleDelete = async (id: string) => {
+    if (!confirm(t("common.confirmDelete", "삭제하시겠습니까?"))) return;
+    try {
+      await api.delete(`/consumables/${id}`);
+      fetchData();
+      fetchSummary();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  /* 컬럼 정의 */
+  const columns = useMemo<ColumnDef<ConsumableItem>[]>(
     () => [
-      { accessorKey: 'consumableCode', header: t('consumables.master.code'), size: 110 },
-      { accessorKey: 'name', header: t('consumables.master.name'), size: 140 },
+      { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 120 },
+      { accessorKey: "consumableName", header: t("consumables.master.name"), size: 170 },
       {
-        accessorKey: 'category',
-        header: t('consumables.master.category'),
-        size: 70,
+        accessorKey: "category",
+        header: t("consumables.master.category"),
+        size: 80,
         cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />,
       },
       {
-        accessorKey: 'currentCount',
-        header: t('consumables.master.currentCount'),
-        size: 90,
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        accessorKey: "currentCount",
+        header: t("consumables.master.currentCount"),
+        size: 100,
+        cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
       },
       {
-        accessorKey: 'expectedLife',
-        header: t('consumables.master.expectedLife'),
-        size: 90,
-        cell: ({ getValue }) => (getValue() as number).toLocaleString(),
+        accessorKey: "expectedLife",
+        header: t("consumables.master.expectedLife"),
+        size: 100,
+        cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
       },
       {
-        accessorKey: 'lifePercentage',
-        header: t('consumables.master.life'),
-        size: 120,
+        id: "lifePercentage",
+        header: t("consumables.master.life"),
+        size: 130,
         cell: ({ row }) => {
-          const pct = row.original.lifePercentage;
-          const color = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-yellow-500' : 'bg-green-500';
+          const { currentCount, expectedLife } = row.original;
+          if (!expectedLife) return "-";
+          const pct = Math.round((currentCount / expectedLife) * 100);
+          const color = pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-yellow-500" : "bg-green-500";
           return (
             <div className="flex items-center gap-2">
               <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
@@ -140,103 +149,92 @@ function ConsumableMasterPage() {
           );
         },
       },
-      { accessorKey: 'location', header: t('consumables.master.location'), size: 100 },
-      { accessorKey: 'vendor', header: t('consumables.master.vendor'), size: 90 },
+      { accessorKey: "location", header: t("consumables.master.location"), size: 110 },
+      { accessorKey: "vendor", header: t("consumables.master.vendor"), size: 100 },
       {
-        accessorKey: 'status',
-        header: t('common.status'),
+        accessorKey: "status",
+        header: t("common.status"),
         size: 90,
         cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} />,
       },
       {
-        id: 'actions',
-        header: t('common.manage'),
-        size: 80,
+        id: "actions",
+        header: t("common.manage"),
+        size: 90,
         cell: ({ row }) => (
-          <button
-            onClick={() => { setSelectedItem(row.original); setIsModalOpen(true); }}
-            className="p-1 hover:bg-surface rounded"
-          >
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={() => { setEditing(row.original); setModalOpen(true); }}
+              className="p-1 hover:bg-surface rounded"
+            >
+              <Edit2 className="w-4 h-4 text-primary" />
+            </button>
+            <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded">
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
         ),
       },
     ],
-    [t]
+    [t],
   );
-
-  const stats = useMemo(() => ({
-    total: mockData.length,
-    warning: mockData.filter((d) => d.status === 'WARNING').length,
-    replace: mockData.filter((d) => d.status === 'REPLACE').length,
-  }), []);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Wrench className="w-7 h-7 text-primary" />{t('consumables.master.title')}</h1>
-          <p className="text-text-muted mt-1">{t('consumables.master.description')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Wrench className="w-7 h-7 text-primary" />
+            {t("consumables.master.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("consumables.master.description")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
+          <Button variant="secondary" size="sm" onClick={() => { fetchData(); fetchSummary(); }}>
+            <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
           </Button>
-          <Button size="sm" onClick={() => { setSelectedItem(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> {t('consumables.master.register')}
+          <Button size="sm" onClick={() => { setEditing(null); setModalOpen(true); }}>
+            <Plus className="w-4 h-4 mr-1" /> {t("consumables.master.register")}
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label={t('consumables.master.totalConsumables')} value={stats.total} icon={Wrench} color="blue" />
-        <StatCard label={t('consumables.master.statusWarning')} value={stats.warning} icon={AlertTriangle} color="yellow" />
-        <StatCard label={t('consumables.master.statusReplace')} value={stats.replace} icon={XCircle} color="red" />
+        <StatCard label={t("consumables.master.totalConsumables")} value={stats.total} icon={Wrench} color="blue" />
+        <StatCard label={t("consumables.master.statusWarning")} value={stats.warning} icon={AlertTriangle} color="yellow" />
+        <StatCard label={t("consumables.master.statusReplace")} value={stats.replace} icon={XCircle} color="red" />
       </div>
 
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input placeholder={t('consumables.master.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-            </div>
-            <Select options={[{ value: '', label: t('consumables.master.allCategories') }, { value: 'MOLD', label: t('consumables.master.mold') }, { value: 'JIG', label: t('consumables.master.jig') }, { value: 'TOOL', label: t('consumables.master.tool') }]} value={categoryFilter} onChange={setCategoryFilter} placeholder={t('consumables.master.category')} />
-            <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-          </div>
-          <DataGrid data={filteredData} columns={columns} pageSize={10} />
+          <DataGrid
+            data={data}
+            columns={columns}
+            isLoading={loading}
+            enableExport
+            exportFileName={t("consumables.master.title")}
+            toolbarLeft={
+              <div className="flex gap-2 items-center">
+                <Input placeholder={t("consumables.master.searchPlaceholder")}
+                  value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} />
+                <Select options={filterOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder={t("consumables.master.category")} />
+                <Button variant="secondary" onClick={() => { fetchData(); fetchSummary(); }}>
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
 
-      {/* 등록/수정 모달 */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedItem ? t('consumables.master.editConsumable') : t('consumables.master.register')}
-        size="md"
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <Input label={t('consumables.master.code')} placeholder="MOLD-001" defaultValue={selectedItem?.consumableCode} fullWidth />
-          <Select
-            label={t('consumables.master.category')}
-            options={[
-              { value: 'MOLD', label: t('consumables.master.mold') },
-              { value: 'JIG', label: t('consumables.master.jig') },
-              { value: 'TOOL', label: t('consumables.master.tool') },
-            ]}
-            defaultValue={selectedItem?.category || 'MOLD'}
-            fullWidth
-          />
-          <Input label={t('consumables.master.name')} placeholder="압착금형 A타입" defaultValue={selectedItem?.name} fullWidth className="col-span-2" />
-          <Input label={t('consumables.master.expectedLifeCount')} type="number" placeholder="100000" defaultValue={selectedItem?.expectedLife?.toString()} fullWidth />
-          <Input label={t('consumables.master.warningThreshold')} type="number" placeholder="80000" defaultValue={selectedItem?.warningCount?.toString()} fullWidth />
-          <Input label={t('consumables.master.location')} placeholder="금형창고 A-1" defaultValue={selectedItem?.location} fullWidth />
-          <Input label={t('consumables.master.vendor')} placeholder="금형공업" defaultValue={selectedItem?.vendor} fullWidth />
-        </div>
-        <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button>{selectedItem ? t('common.edit') : t('common.register')}</Button>
-        </div>
-      </Modal>
+      <ConsumableMasterModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
+        item={editing}
+        loading={saving}
+      />
     </div>
   );
 }

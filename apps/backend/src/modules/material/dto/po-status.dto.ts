@@ -15,13 +15,13 @@ export class PoStatusQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional()
   @IsOptional()

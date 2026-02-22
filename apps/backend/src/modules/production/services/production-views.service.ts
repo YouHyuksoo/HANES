@@ -16,7 +16,7 @@ import { Repository, IsNull, Between, ILike, In } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
-import { Stock } from '../../../entities/stock.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
 import {
   ProgressQueryDto,
   SampleInspectQueryDto,
@@ -33,21 +33,26 @@ export class ProductionViewsService {
     private readonly inspectResultRepository: Repository<InspectResult>,
     @InjectRepository(BoxMaster)
     private readonly boxMasterRepository: Repository<BoxMaster>,
-    @InjectRepository(Stock)
-    private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(MatStock)
+    private readonly stockRepository: Repository<MatStock>,
   ) {}
 
   /**
    * 작업지시 진행현황 조회 (대시보드)
    */
-  async getProgress(query: ProgressQueryDto) {
+  async getProgress(query: ProgressQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 20, status, planDateFrom, planDateTo, search } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.jobOrderRepository
       .createQueryBuilder('jo')
       .leftJoinAndSelect('jo.part', 'p')
-      .where('jo.deletedAt IS NULL')
+      .where('jo.deletedAt IS NULL');
+
+    if (company) queryBuilder.andWhere('jo.company = :company', { company });
+    if (plant) queryBuilder.andWhere('jo.plant = :plant', { plant });
+
+    queryBuilder
       .orderBy('jo.priority', 'ASC')
       .addOrderBy('jo.planDate', 'ASC')
       .skip(skip)
@@ -82,7 +87,7 @@ export class ProductionViewsService {
   /**
    * 샘플검사이력 조회
    */
-  async getSampleInspect(query: SampleInspectQueryDto) {
+  async getSampleInspect(query: SampleInspectQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, passYn, dateFrom, dateTo, search } = query;
     const skip = (page - 1) * limit;
 
@@ -121,7 +126,7 @@ export class ProductionViewsService {
   /**
    * 포장실적 조회
    */
-  async getPackResult(query: PackResultQueryDto) {
+  async getPackResult(query: PackResultQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, dateFrom, dateTo, search } = query;
     const skip = (page - 1) * limit;
 
@@ -180,7 +185,7 @@ export class ProductionViewsService {
   /**
    * 반제품/제품 재고 조회
    */
-  async getWipStock(query: WipStockQueryDto) {
+  async getWipStock(query: WipStockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partType, search } = query;
     const skip = (page - 1) * limit;
 

@@ -28,6 +28,8 @@ import { EquipInspectLog } from '../../entities/equip-inspect-log.entity';
 import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../entities/consumable-log.entity';
 import { User } from '../../entities/user.entity';
+import { ProdLineMaster } from '../../entities/prod-line-master.entity';
+import { ProcessMaster } from '../../entities/process-master.entity';
 import { EquipMasterController } from './controllers/equip-master.controller';
 import { ConsumableController, ConsumableLogController } from './controllers/consumable.controller';
 import { DailyInspectController } from './controllers/daily-inspect.controller';
@@ -46,6 +48,8 @@ import { EquipInspectService } from './services/equip-inspect.service';
       ConsumableMaster,
       ConsumableLog,
       User,
+      ProdLineMaster,
+      ProcessMaster,
     ]),
   ],
   controllers: [

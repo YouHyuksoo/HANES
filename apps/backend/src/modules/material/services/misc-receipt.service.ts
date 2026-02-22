@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, IsNull, Like } from 'typeorm';
+import { Repository, DataSource, Between, IsNull, Like, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -29,12 +29,14 @@ export class MiscReceiptService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(query: MiscReceiptQueryDto) {
+  async findAll(query: MiscReceiptQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       transType: 'MISC_IN',
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (fromDate && toDate) {
@@ -56,6 +58,9 @@ export class MiscReceiptService {
 
       const queryBuilder = this.stockTransactionRepository.createQueryBuilder('trans')
         .where('trans.transType = :transType', { transType: 'MISC_IN' });
+
+      if (company) queryBuilder.andWhere('trans.company = :company', { company });
+      if (plant) queryBuilder.andWhere('trans.plant = :plant', { plant });
 
       if (fromDate && toDate) {
         queryBuilder.andWhere('trans.transDate BETWEEN :fromDate AND :toDate', {
@@ -99,9 +104,9 @@ export class MiscReceiptService {
       .filter(Boolean) as string[];
 
     const [parts, lots, warehouses] = await Promise.all([
-      this.partMasterRepository.findByIds(partIds),
-      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
-      warehouseIds.length > 0 ? this.warehouseRepository.findByIds(warehouseIds) : Promise.resolve([]),
+      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
+      warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { id: In(warehouseIds) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.id, p]));

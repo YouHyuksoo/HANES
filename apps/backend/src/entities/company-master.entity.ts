@@ -5,14 +5,16 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'COMPANY_MASTERS' })
+@Unique(['companyCode', 'plant'])
 export class CompanyMaster {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
 
-  @Column({ name: 'COMPANY_CODE', length: 50, unique: true })
+  @Column({ name: 'COMPANY_CODE', length: 50 })
   companyCode: string;
 
   @Column({ name: 'COMPANY_NAME', length: 100 })

@@ -1,15 +1,21 @@
 "use client";
 
 /**
- * @file src/pages/customs/EntryPage.tsx
+ * @file src/app/(authenticated)/customs/entry/page.tsx
  * @description 보세 수입신고 관리 페이지
+ *
+ * 초보자 가이드:
+ * 1. **수입신고**: 보세구역으로 들어오는 자재의 통관 절차 관리
+ * 2. **상태 흐름**: PENDING(대기) -> CLEARED(통관) -> RELEASED(반출)
+ * 3. API: GET/POST/PUT /customs/entries
  */
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Plus, Edit2, Eye, RefreshCw, FileText, Search, CheckCircle, Package, Layers } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Plus, Edit2, Eye, RefreshCw, FileText, Search, CheckCircle, Package, Layers } from "lucide-react";
+import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import api from "@/services/api";
 
 interface CustomsEntry {
   id: string;
@@ -26,191 +32,163 @@ interface CustomsEntry {
   lotCount: number;
 }
 
-const mockData: CustomsEntry[] = [
-  {
-    id: '1',
-    entryNo: 'IMP20250125001',
-    blNo: 'MSCU1234567',
-    invoiceNo: 'INV-2025-001',
-    declarationDate: '2025-01-25',
-    clearanceDate: '2025-01-26',
-    origin: 'CN',
-    hsCode: '8544.30',
-    totalAmount: 15000,
-    currency: 'USD',
-    status: 'CLEARED',
-    lotCount: 5,
-  },
-  {
-    id: '2',
-    entryNo: 'IMP20250124001',
-    blNo: 'COSCO9876543',
-    invoiceNo: 'INV-2025-002',
-    declarationDate: '2025-01-24',
-    clearanceDate: null,
-    origin: 'JP',
-    hsCode: '8536.90',
-    totalAmount: 8500,
-    currency: 'USD',
-    status: 'PENDING',
-    lotCount: 3,
-  },
-];
-
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  CLEARED: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  RELEASED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
+  CLEARED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+  RELEASED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
 };
 
-function CustomsEntryPage() {
+export default function CustomsEntryPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<CustomsEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const statusLabels: Record<string, string> = {
-    PENDING: t('customs.entry.statusPending'),
-    CLEARED: t('customs.entry.statusCleared'),
-    RELEASED: t('customs.entry.statusReleased'),
-  };
+  const statusLabels: Record<string, string> = useMemo(() => ({
+    PENDING: t("customs.entry.statusPending"),
+    CLEARED: t("customs.entry.statusCleared"),
+    RELEASED: t("customs.entry.statusReleased"),
+  }), [t]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<CustomsEntry | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [form, setForm] = useState({ entryNo: "", blNo: "", invoiceNo: "", origin: "", hsCode: "", totalAmount: "", currency: "USD", declarationDate: "", clearanceDate: "", status: "PENDING" });
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return mockData;
-    return mockData.filter(
-      (item) =>
-        item.entryNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.blNo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "5000" };
+      if (searchTerm) params.search = searchTerm;
+      const res = await api.get("/customs/entries", { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
   }, [searchTerm]);
 
-  const columns = useMemo<ColumnDef<CustomsEntry>[]>(
-    () => [
-      { accessorKey: 'entryNo', header: t('customs.entry.entryNo'), size: 140 },
-      { accessorKey: 'blNo', header: t('customs.entry.blNo'), size: 120 },
-      { accessorKey: 'invoiceNo', header: t('customs.entry.invoiceNo'), size: 120 },
-      { accessorKey: 'declarationDate', header: t('customs.entry.declarationDate'), size: 100 },
-      { accessorKey: 'clearanceDate', header: t('customs.entry.clearanceDate'), size: 100,
-        cell: ({ getValue }) => getValue() || '-'
-      },
-      { accessorKey: 'origin', header: t('customs.entry.origin'), size: 70 },
-      { accessorKey: 'hsCode', header: t('customs.entry.hsCode'), size: 90 },
-      {
-        accessorKey: 'totalAmount',
-        header: t('customs.entry.amount'),
-        size: 100,
-        cell: ({ row }) => `${row.original.totalAmount.toLocaleString()} ${row.original.currency}`,
-      },
-      {
-        accessorKey: 'status',
-        header: t('common.status'),
-        size: 90,
-        cell: ({ getValue }) => {
-          const status = getValue() as string;
-          return (
-            <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>
-              {statusLabels[status]}
-            </span>
-          );
-        },
-      },
-      { accessorKey: 'lotCount', header: t('customs.entry.lotCount'), size: 70 },
-      {
-        id: 'actions',
-        header: t('common.manage'),
-        size: 100,
-        cell: ({ row }) => (
-          <div className="flex gap-1">
-            <button
-              onClick={() => { setSelectedEntry(row.original); setIsModalOpen(true); }}
-              className="p-1 hover:bg-surface rounded"
-              title={t('common.detail')}
-            >
-              <Eye className="w-4 h-4 text-primary" />
-            </button>
-            <button className="p-1 hover:bg-surface rounded" title={t('common.edit')}>
-              <Edit2 className="w-4 h-4 text-text-muted" />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [t]
-  );
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const openEdit = useCallback((entry: CustomsEntry) => {
+    setSelectedEntry(entry);
+    setForm({ entryNo: entry.entryNo, blNo: entry.blNo, invoiceNo: entry.invoiceNo, origin: entry.origin, hsCode: entry.hsCode, totalAmount: String(entry.totalAmount), currency: entry.currency, declarationDate: entry.declarationDate, clearanceDate: entry.clearanceDate || "", status: entry.status });
+    setIsModalOpen(true);
+  }, []);
+
+  const openCreate = useCallback(() => {
+    setSelectedEntry(null);
+    setForm({ entryNo: "", blNo: "", invoiceNo: "", origin: "", hsCode: "", totalAmount: "", currency: "USD", declarationDate: "", clearanceDate: "", status: "PENDING" });
+    setIsModalOpen(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      if (selectedEntry) {
+        await api.put(`/customs/entries/${selectedEntry.id}`, form);
+      } else {
+        await api.post("/customs/entries", form);
+      }
+      setIsModalOpen(false);
+      fetchData();
+    } catch (e) {
+      console.error("Save failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedEntry, form, fetchData]);
+
+  const stats = useMemo(() => ({
+    pending: data.filter((d) => d.status === "PENDING").length,
+    cleared: data.filter((d) => d.status === "CLEARED").length,
+    released: data.filter((d) => d.status === "RELEASED").length,
+    totalLots: data.reduce((s, d) => s + d.lotCount, 0),
+  }), [data]);
+
+  const columns = useMemo<ColumnDef<CustomsEntry>[]>(() => [
+    { accessorKey: "entryNo", header: t("customs.entry.entryNo"), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: "blNo", header: t("customs.entry.blNo"), size: 120, meta: { filterType: "text" as const } },
+    { accessorKey: "invoiceNo", header: t("customs.entry.invoiceNo"), size: 120, meta: { filterType: "text" as const } },
+    { accessorKey: "declarationDate", header: t("customs.entry.declarationDate"), size: 100 },
+    { accessorKey: "clearanceDate", header: t("customs.entry.clearanceDate"), size: 100, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "origin", header: t("customs.entry.origin"), size: 70 },
+    { accessorKey: "hsCode", header: t("customs.entry.hsCode"), size: 90 },
+    { accessorKey: "totalAmount", header: t("customs.entry.amount"), size: 100, cell: ({ row }) => `${row.original.totalAmount.toLocaleString()} ${row.original.currency}` },
+    {
+      accessorKey: "status", header: t("common.status"), size: 90,
+      cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[s]}`}>{statusLabels[s]}</span>; },
+    },
+    { accessorKey: "lotCount", header: t("customs.entry.lotCount"), size: 70 },
+    {
+      id: "actions", header: t("common.manage"), size: 100,
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Edit2 className="w-4 h-4 text-primary" /></button>
+        </div>
+      ),
+    },
+  ], [t, statusLabels, openEdit]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><FileText className="w-7 h-7 text-primary" />{t('customs.entry.title')}</h1>
-          <p className="text-text-muted mt-1">{t('customs.entry.description')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><FileText className="w-7 h-7 text-primary" />{t("customs.entry.title")}</h1>
+          <p className="text-text-muted mt-1">{t("customs.entry.description")}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm">
-            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
-          </Button>
-          <Button size="sm" onClick={() => { setSelectedEntry(null); setIsModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> {t('customs.entry.register')}
-          </Button>
-        </div>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-1" /> {t("customs.entry.register")}
+        </Button>
       </div>
 
-      {/* 요약 카드 */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t('customs.entry.statusPending')} value={3} icon={FileText} color="yellow" />
-        <StatCard label={t('customs.entry.statusCleared')} value={12} icon={CheckCircle} color="blue" />
-        <StatCard label={t('customs.entry.statusReleased')} value={45} icon={Package} color="green" />
-        <StatCard label={t('customs.entry.bondedLot')} value={28} icon={Layers} color="purple" />
+        <StatCard label={t("customs.entry.statusPending")} value={stats.pending} icon={FileText} color="yellow" />
+        <StatCard label={t("customs.entry.statusCleared")} value={stats.cleared} icon={CheckCircle} color="blue" />
+        <StatCard label={t("customs.entry.statusReleased")} value={stats.released} icon={Package} color="green" />
+        <StatCard label={t("customs.entry.bondedLot")} value={stats.totalLots} icon={Layers} color="purple" />
       </div>
 
-      <Card>
-        <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input placeholder={t('customs.entry.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+      <Card><CardContent>
+        <DataGrid
+          data={data}
+          columns={columns}
+          isLoading={loading}
+          enableColumnFilter
+          enableExport
+          exportFileName={t("customs.entry.title")}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("customs.entry.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
             </div>
-            <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-          </div>
-          <DataGrid data={filteredData} columns={columns} pageSize={10} />
-        </CardContent>
-      </Card>
+          }
+        />
+      </CardContent></Card>
 
-      {/* 등록/수정 모달 */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedEntry ? t('customs.entry.detail') : t('customs.entry.register')}
-        size="lg"
-      >
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={selectedEntry ? t("customs.entry.detail") : t("customs.entry.register")} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t('customs.entry.entryNo')} placeholder="IMP20250125001" defaultValue={selectedEntry?.entryNo} fullWidth />
-          <Input label={t('customs.entry.blNo')} placeholder="MSCU1234567" defaultValue={selectedEntry?.blNo} fullWidth />
-          <Input label={t('customs.entry.invoiceNo')} placeholder="INV-2025-001" defaultValue={selectedEntry?.invoiceNo} fullWidth />
-          <Input label={t('customs.entry.origin')} placeholder="CN" defaultValue={selectedEntry?.origin} fullWidth />
-          <Input label={t('customs.entry.hsCode')} placeholder="8544.30" defaultValue={selectedEntry?.hsCode} fullWidth />
-          <Input label={t('customs.entry.amount')} type="number" placeholder="15000" defaultValue={selectedEntry?.totalAmount?.toString()} fullWidth />
-          <Input label={t('customs.entry.currency')} placeholder="USD" defaultValue={selectedEntry?.currency} fullWidth />
-          <Input label={t('customs.entry.declarationDate')} type="date" defaultValue={selectedEntry?.declarationDate} fullWidth />
-          <Input label={t('customs.entry.clearanceDate')} type="date" defaultValue={selectedEntry?.clearanceDate || ''} fullWidth />
-          <Select
-            label={t('common.status')}
-            options={[
-              { value: 'PENDING', label: t('customs.entry.statusPending') },
-              { value: 'CLEARED', label: t('customs.entry.statusCleared') },
-              { value: 'RELEASED', label: t('customs.entry.statusReleased') },
-            ]}
-            defaultValue={selectedEntry?.status || 'PENDING'}
-            fullWidth
-          />
+          <Input label={t("customs.entry.entryNo")} placeholder="IMP20250125001" value={form.entryNo} onChange={(e) => setForm((p) => ({ ...p, entryNo: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.blNo")} placeholder="MSCU1234567" value={form.blNo} onChange={(e) => setForm((p) => ({ ...p, blNo: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.invoiceNo")} placeholder="INV-2025-001" value={form.invoiceNo} onChange={(e) => setForm((p) => ({ ...p, invoiceNo: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.origin")} placeholder="CN" value={form.origin} onChange={(e) => setForm((p) => ({ ...p, origin: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.hsCode")} placeholder="8544.30" value={form.hsCode} onChange={(e) => setForm((p) => ({ ...p, hsCode: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.amount")} type="number" placeholder="15000" value={form.totalAmount} onChange={(e) => setForm((p) => ({ ...p, totalAmount: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.currency")} placeholder="USD" value={form.currency} onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.declarationDate")} type="date" value={form.declarationDate} onChange={(e) => setForm((p) => ({ ...p, declarationDate: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.clearanceDate")} type="date" value={form.clearanceDate} onChange={(e) => setForm((p) => ({ ...p, clearanceDate: e.target.value }))} fullWidth />
+          <Select label={t("common.status")} options={[{ value: "PENDING", label: t("customs.entry.statusPending") }, { value: "CLEARED", label: t("customs.entry.statusCleared") }, { value: "RELEASED", label: t("customs.entry.statusReleased") }]} value={form.status} onChange={(v) => setForm((p) => ({ ...p, status: v }))} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button>{selectedEntry ? t('common.edit') : t('common.register')}</Button>
+          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : selectedEntry ? t("common.edit") : t("common.register")}</Button>
         </div>
       </Modal>
     </div>
   );
 }
-
-export default CustomsEntryPage;

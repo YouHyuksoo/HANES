@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { MatStockService } from '../services/mat-stock.service';
 import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 재고')
 @Controller('material/stocks')
@@ -16,15 +17,15 @@ export class MatStockController {
 
   @Get()
   @ApiOperation({ summary: '재고 목록 조회' })
-  async findAll(@Query() query: StockQueryDto) {
-    const result = await this.matStockService.findAll(query);
+  async findAll(@Query() query: StockQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.matStockService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get('available')
   @ApiOperation({ summary: '출고 가능 재고 조회 (IQC PASS만)' })
-  async findAvailable(@Query() query: StockQueryDto) {
-    const result = await this.matStockService.findAvailable(query);
+  async findAvailable(@Query() query: StockQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.matStockService.findAvailable(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -38,8 +39,8 @@ export class MatStockController {
 
   @Get('warehouse/:warehouseCode')
   @ApiOperation({ summary: '창고별 재고 조회' })
-  async findByWarehouse(@Param('warehouseCode') warehouseCode: string, @Query() query: StockQueryDto) {
-    const result = await this.matStockService.findAll({ ...query, warehouseCode });
+  async findByWarehouse(@Param('warehouseCode') warehouseCode: string, @Query() query: StockQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.matStockService.findAll({ ...query, warehouseCode }, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

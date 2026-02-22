@@ -31,6 +31,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -60,8 +61,8 @@ export class OutsourcingController {
   @Get('vendors')
   @ApiOperation({ summary: '외주처 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAllVendors(@Query() query: VendorQueryDto) {
-    const result = await this.outsourcingService.findAllVendors(query);
+  async findAllVendors(@Query() query: VendorQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.outsourcingService.findAllVendors(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -107,8 +108,8 @@ export class OutsourcingController {
   @Get('orders')
   @ApiOperation({ summary: '외주발주 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAllOrders(@Query() query: SubconOrderQueryDto) {
-    const result = await this.outsourcingService.findAllOrders(query);
+  async findAllOrders(@Query() query: SubconOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.outsourcingService.findAllOrders(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

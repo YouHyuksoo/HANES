@@ -6,7 +6,9 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
+import { EquipBomRel } from './equip-bom-rel.entity';
 
 @Entity({ name: 'EQUIP_MASTERS' })
 @Index(['equipType'])
@@ -33,6 +35,9 @@ export class EquipMaster {
 
   @Column({ name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string | null;
+
+  @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
+  processCode: string | null;
 
   @Column({ name: 'IP_ADDRESS', length: 50, nullable: true })
   ipAddress: string | null;
@@ -76,6 +81,10 @@ export class EquipMaster {
 
   @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
   deletedAt: Date | null;
+
+  // Relations
+  @OneToMany(() => EquipBomRel, (rel) => rel.equipment)
+  bomRels: EquipBomRel[];
 
   // Helper method to parse commConfig from JSON string
   getCommConfigObject(): Record<string, unknown> | null {

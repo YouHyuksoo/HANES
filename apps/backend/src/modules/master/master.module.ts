@@ -28,8 +28,14 @@ import { WorkerController } from './controllers/worker.controller';
 import { WorkerService } from './services/worker.service';
 import { IqcItemController } from './controllers/iqc-item.controller';
 import { IqcItemService } from './services/iqc-item.service';
+import { IqcGroupController } from './controllers/iqc-group.controller';
+import { IqcGroupService } from './services/iqc-group.service';
+import { IqcPartLinkController } from './controllers/iqc-part-link.controller';
+import { IqcPartLinkService } from './services/iqc-part-link.service';
 import { EquipInspectController } from './controllers/equip-inspect.controller';
 import { EquipInspectService } from './services/equip-inspect.service';
+import { EquipBomController } from './controllers/equip-bom.controller';
+import { EquipBomService } from './services/equip-bom.service';
 import { WorkInstructionController } from './controllers/work-instruction.controller';
 import { WorkInstructionService } from './services/work-instruction.service';
 import { TransferRuleController } from './controllers/transfer-rule.controller';
@@ -44,6 +50,10 @@ import { CompanyController } from './controllers/company.controller';
 import { CompanyService } from './services/company.service';
 import { DepartmentController } from './controllers/department.controller';
 import { DepartmentService } from './services/department.service';
+import { VendorBarcodeMappingController } from './controllers/vendor-barcode-mapping.controller';
+import { VendorBarcodeMappingService } from './services/vendor-barcode-mapping.service';
+import { IqcItemPoolController } from './controllers/iqc-item-pool.controller';
+import { IqcItemPoolService } from './services/iqc-item-pool.service';
 
 // TypeORM Entities
 import { PartMaster } from '../../entities/part-master.entity';
@@ -61,8 +71,15 @@ import { WorkerMaster } from '../../entities/worker-master.entity';
 import { PartnerMaster } from '../../entities/partner-master.entity';
 import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
 import { IqcItemMaster } from '../../entities/iqc-item-master.entity';
+import { IqcGroup } from '../../entities/iqc-group.entity';
+import { IqcGroupItem } from '../../entities/iqc-group-item.entity';
+import { IqcPartLink } from '../../entities/iqc-part-link.entity';
 import { LabelTemplate } from '../../entities/label-template.entity';
+import { EquipBomItem } from '../../entities/equip-bom-item.entity';
+import { EquipBomRel } from '../../entities/equip-bom-rel.entity';
 import { ModelSuffix } from '../../entities/model-suffix.entity';
+import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.entity';
+import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
 
 @Module({
   imports: [
@@ -82,8 +99,15 @@ import { ModelSuffix } from '../../entities/model-suffix.entity';
       PartnerMaster,
       EquipInspectItemMaster,
       IqcItemMaster,
+      IqcGroup,
+      IqcGroupItem,
+      IqcPartLink,
       LabelTemplate,
       ModelSuffix,
+      EquipBomItem,
+      EquipBomRel,
+      VendorBarcodeMapping,
+      IqcItemPool,
     ]),
   ],
   controllers: [
@@ -96,7 +120,10 @@ import { ModelSuffix } from '../../entities/model-suffix.entity';
     RoutingController,
     WorkerController,
     IqcItemController,
+    IqcGroupController,
+    IqcPartLinkController,
     EquipInspectController,
+    EquipBomController,
     WorkInstructionController,
     TransferRuleController,
     ModelSuffixController,
@@ -104,6 +131,8 @@ import { ModelSuffix } from '../../entities/model-suffix.entity';
     ProdLineController,
     CompanyController,
     DepartmentController,
+    VendorBarcodeMappingController,
+    IqcItemPoolController,
   ],
   providers: [
     ComCodeService,
@@ -115,7 +144,10 @@ import { ModelSuffix } from '../../entities/model-suffix.entity';
     RoutingService,
     WorkerService,
     IqcItemService,
+    IqcGroupService,
+    IqcPartLinkService,
     EquipInspectService,
+    EquipBomService,
     WorkInstructionService,
     TransferRuleService,
     ModelSuffixService,
@@ -123,6 +155,8 @@ import { ModelSuffix } from '../../entities/model-suffix.entity';
     ProdLineService,
     CompanyService,
     DepartmentService,
+    VendorBarcodeMappingService,
+    IqcItemPoolService,
   ],
   exports: [
     ComCodeService,
@@ -134,7 +168,10 @@ import { ModelSuffix } from '../../entities/model-suffix.entity';
     RoutingService,
     WorkerService,
     IqcItemService,
+    IqcGroupService,
+    IqcPartLinkService,
     EquipInspectService,
+    EquipBomService,
     WorkInstructionService,
     TransferRuleService,
     ModelSuffixService,
@@ -142,6 +179,8 @@ import { ModelSuffix } from '../../entities/model-suffix.entity';
     ProdLineService,
     CompanyService,
     DepartmentService,
+    VendorBarcodeMappingService,
+    IqcItemPoolService,
   ],
 })
 export class MasterModule {}

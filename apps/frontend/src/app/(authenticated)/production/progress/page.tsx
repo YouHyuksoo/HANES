@@ -7,19 +7,16 @@
  * 초보자 가이드:
  * 1. **목적**: 현재 작업지시들의 진행 상태를 한눈에 파악
  * 2. **StatCard**: 상태별 건수 요약 (대기/진행/완료/전체)
- * 3. **DataGrid**: 작업지시별 상세 진행률 표시
+ * 3. API: GET /production/job-orders
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, BarChart3, Clock, Play, CheckCircle, ListChecks, Calendar } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
-import { createPartColumns } from '@/lib/table-utils';
-
-/** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
-const getToday = () => new Date().toISOString().slice(0, 10);
+import api from '@/services/api';
 
 interface ProgressItem {
   id: string;
@@ -36,16 +33,13 @@ interface ProgressItem {
   priority: number;
 }
 
-const mockData: ProgressItem[] = [
-  { id: '1', orderNo: 'JO-20250126-001', partCode: 'H-001', partName: '메인 하네스 A', lineCode: 'L1', planQty: 500, goodQty: 0, defectQty: 0, progress: 0, status: 'WAITING', planDate: '2025-01-26', priority: 1 },
-  { id: '2', orderNo: 'JO-20250126-002', partCode: 'H-002', partName: '서브 하네스 B', lineCode: 'L2', planQty: 300, goodQty: 150, defectQty: 5, progress: 50, status: 'RUNNING', planDate: '2025-01-26', priority: 2 },
-  { id: '3', orderNo: 'JO-20250125-001', partCode: 'H-003', partName: '도어 하네스 C', lineCode: 'L1', planQty: 200, goodQty: 200, defectQty: 5, progress: 100, status: 'DONE', planDate: '2025-01-25', priority: 3 },
-  { id: '4', orderNo: 'JO-20250126-003', partCode: 'H-004', partName: '엔진룸 하네스 D', lineCode: 'L3', planQty: 100, goodQty: 40, defectQty: 2, progress: 40, status: 'RUNNING', planDate: '2025-01-26', priority: 2 },
-  { id: '5', orderNo: 'JO-20250126-004', partCode: 'H-005', partName: '트렁크 하네스 E', lineCode: 'L2', planQty: 400, goodQty: 280, defectQty: 2, progress: 70, status: 'RUNNING', planDate: '2025-01-26', priority: 1 },
-];
+/** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
+const getToday = () => new Date().toISOString().slice(0, 10);
 
-function ProgressPage() {
+export default function ProgressPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<ProgressItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [planDateFrom, setPlanDateFrom] = useState(getToday());
@@ -56,24 +50,36 @@ function ProgressPage() {
     { value: '', label: t('common.allStatus') }, ...comCodeStatusOptions
   ], [t, comCodeStatusOptions]);
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    const matchSearch = !searchText || item.orderNo.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
-    const matchStatus = !statusFilter || item.status === statusFilter;
-    const matchDateFrom = !planDateFrom || item.planDate >= planDateFrom;
-    const matchDateTo = !planDateTo || item.planDate <= planDateTo;
-    return matchSearch && matchStatus && matchDateFrom && matchDateTo;
-  }), [searchText, statusFilter, planDateFrom, planDateTo]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '5000' };
+      if (searchText) params.search = searchText;
+      if (statusFilter) params.status = statusFilter;
+      if (planDateFrom) params.planDateFrom = planDateFrom;
+      if (planDateTo) params.planDateTo = planDateTo;
+      const res = await api.get('/production/job-orders', { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, statusFilter, planDateFrom, planDateTo]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    total: mockData.length,
-    waiting: mockData.filter(d => d.status === 'WAITING').length,
-    running: mockData.filter(d => d.status === 'RUNNING').length,
-    done: mockData.filter(d => d.status === 'DONE').length,
-  }), []);
+    total: data.length,
+    waiting: data.filter(d => d.status === 'WAIT' || d.status === 'WAITING').length,
+    running: data.filter(d => d.status === 'RUNNING').length,
+    done: data.filter(d => d.status === 'DONE').length,
+  }), [data]);
 
   const columns = useMemo<ColumnDef<ProgressItem>[]>(() => [
-    { accessorKey: 'orderNo', header: t('production.progress.orderNo'), size: 160 },
-    ...createPartColumns<ProgressItem>(t),
+    { accessorKey: 'orderNo', header: t('production.progress.orderNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'lineCode', header: t('production.progress.line'), size: 70 },
     { accessorKey: 'planQty', header: t('production.progress.planQty'), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'goodQty', header: t('production.progress.goodQty'), size: 90, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{(getValue() as number).toLocaleString()}</span> },
@@ -81,11 +87,12 @@ function ProgressPage() {
     {
       id: 'progress', header: t('production.progress.progressRate'), size: 140,
       cell: ({ row }) => {
-        const p = row.original.progress;
+        const { planQty, goodQty } = row.original;
+        const p = planQty > 0 ? Math.min(Math.round((goodQty / planQty) * 100), 100) : 0;
         return (
           <div className="flex items-center gap-2">
             <div className="flex-1 h-2 bg-background rounded-full overflow-hidden">
-              <div className={`h-full rounded-full transition-all ${p >= 100 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${Math.min(p, 100)}%` }} />
+              <div className={`h-full rounded-full transition-all ${p >= 100 ? 'bg-green-500' : 'bg-primary'}`} style={{ width: `${p}%` }} />
             </div>
             <span className="text-xs text-text-muted w-10">{p}%</span>
           </div>
@@ -111,26 +118,28 @@ function ProgressPage() {
         <StatCard label={t('production.progress.statusDone')} value={stats.done} icon={CheckCircle} color="purple" />
       </div>
       <Card><CardContent>
-        <div className="flex flex-wrap gap-4 mb-4 items-end">
-          <div className="flex-1 min-w-[200px]"><Input placeholder={t('production.progress.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="flex items-center gap-2">
-            <div className="w-40">
-              <label className="block text-xs text-text-muted mb-1">{t('production.progress.planDateFrom')}</label>
-              <Input type="date" value={planDateFrom} onChange={e => setPlanDateFrom(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t('production.progress.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t('production.progress.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date" value={planDateFrom} onChange={e => setPlanDateFrom(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date" value={planDateTo} onChange={e => setPlanDateTo(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
-            <span className="text-text-muted mt-4">~</span>
-            <div className="w-40">
-              <label className="block text-xs text-text-muted mb-1">{t('production.progress.planDateTo')}</label>
-              <Input type="date" value={planDateTo} onChange={e => setPlanDateTo(e.target.value)} leftIcon={<Calendar className="w-4 h-4" />} fullWidth />
-            </div>
-          </div>
-          <div className="w-36"><Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+          } />
       </CardContent></Card>
     </div>
   );
 }
-
-export default ProgressPage;

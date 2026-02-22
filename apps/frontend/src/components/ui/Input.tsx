@@ -42,7 +42,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const baseInputStyles = `
       h-10 px-3
       bg-surface
-      border border-border rounded-[var(--radius)]
+      border border-gray-400 dark:border-gray-500 rounded-[var(--radius)]
       text-text placeholder:text-text-muted
       font-data text-sm
       transition-all duration-200

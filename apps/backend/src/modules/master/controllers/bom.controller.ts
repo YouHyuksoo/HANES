@@ -8,8 +8,8 @@
  * 3. **CRUD**: 추가/수정/삭제 모두 DB에 반영
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { BomService } from '../services/bom.service';
 import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
@@ -59,9 +59,8 @@ export class BomController {
 
   @Get()
   @ApiOperation({ summary: 'BOM 목록 조회' })
-  async findAll(@Query() query: BomQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.bomService.findAll(query, company);
+  async findAll(@Query() query: BomQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.bomService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

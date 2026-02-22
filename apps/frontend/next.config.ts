@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: "http://localhost:3003/api/v1/:path*",
       },
+      {
+        source: "/uploads/:path*",
+        destination: "http://localhost:3003/uploads/:path*",
+      },
     ];
   },
 };

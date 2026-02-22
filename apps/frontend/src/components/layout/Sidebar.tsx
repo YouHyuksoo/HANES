@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck, Database,
   FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog, ClipboardCheck,
+  ShoppingCart,
 } from "lucide-react";
 import SidebarMenu from "./SidebarMenu";
 
@@ -33,50 +34,61 @@ export const menuItems: MenuItem[] = [
     children: [
       { id: "mst-part", labelKey: "menu.master.part", path: "/master/part" },
       { id: "mst-bom", labelKey: "menu.master.bom", path: "/master/bom" },
-      { id: "mst-code", labelKey: "menu.master.code", path: "/master/code" },
+
       { id: "mst-partner", labelKey: "menu.master.partner", path: "/master/partner" },
       { id: "mst-prod-line", labelKey: "menu.master.prodLine", path: "/master/prod-line" },
-      { id: "mst-process", labelKey: "menu.master.process", path: "/master/process" },
-      { id: "mst-routing", labelKey: "menu.master.routing", path: "/master/routing" },
       { id: "mst-worker", labelKey: "menu.master.worker", path: "/master/worker" },
-      { id: "mst-iqc-item", labelKey: "menu.master.iqcItem", path: "/master/iqc-item" },
-      { id: "mst-box", labelKey: "menu.master.box", path: "/master/box" },
+
+
       { id: "mst-work-inst", labelKey: "menu.master.workInstruction", path: "/master/work-instruction" },
       { id: "mst-warehouse", labelKey: "menu.master.warehouse", path: "/master/warehouse" },
-      { id: "mst-model-suffix", labelKey: "menu.master.modelSuffix", path: "/master/model-suffix" },
+
       { id: "mst-label", labelKey: "menu.master.label", path: "/master/label" },
+      { id: "mst-vendor-barcode", labelKey: "menu.master.vendorBarcode", path: "/master/vendor-barcode" },
     ],
   },
   {
-    id: "inventory", labelKey: "menu.inventory", icon: Warehouse,
+    id: "inventory", labelKey: "menu.matInventory", icon: Warehouse,
     children: [
-      { id: "inv-stock", labelKey: "menu.inventory.stock", path: "/inventory/stock" },
+      { id: "inv-mat-stock", labelKey: "menu.inventory.matStock", path: "/inventory/material-stock" },
       { id: "inv-transaction", labelKey: "menu.inventory.transaction", path: "/inventory/transaction" },
       { id: "inv-lot", labelKey: "menu.inventory.lot", path: "/inventory/lot" },
+      { id: "inv-mat-physical-inv", labelKey: "menu.inventory.matPhysicalInv", path: "/inventory/material-physical-inv" },
+      { id: "inv-mat-physical-inv-history", labelKey: "menu.inventory.matPhysicalInvHistory", path: "/inventory/material-physical-inv-history" },
+    ],
+  },
+  {
+    id: "product-inventory", labelKey: "menu.productInventory", icon: ClipboardCheck,
+    children: [
+      { id: "inv-stock", labelKey: "menu.inventory.productStock", path: "/inventory/stock" },
+      { id: "inv-product-physical-inv", labelKey: "menu.inventory.productPhysicalInv", path: "/inventory/product-physical-inv" },
+      { id: "inv-product-physical-inv-history", labelKey: "menu.inventory.productPhysicalInvHistory", path: "/inventory/product-physical-inv-history" },
     ],
   },
   {
     id: "material", labelKey: "menu.material", icon: Package,
     children: [
       { id: "mat-arrival", labelKey: "menu.material.arrival", path: "/material/arrival" },
-      { id: "mat-iqc", labelKey: "menu.material.iqc", path: "/material/iqc" },
       { id: "mat-receive-label", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
       { id: "mat-receive", labelKey: "menu.material.receive", path: "/material/receive" },
       { id: "mat-request", labelKey: "menu.material.request", path: "/material/request" },
       { id: "mat-issue", labelKey: "menu.material.issue", path: "/material/issue" },
-      { id: "mat-stock", labelKey: "menu.material.stock", path: "/material/stock" },
       { id: "mat-lot", labelKey: "menu.material.lot", path: "/material/lot" },
-      { id: "mat-po", labelKey: "menu.material.po", path: "/material/po" },
-      { id: "mat-po-status", labelKey: "menu.material.poStatus", path: "/material/po-status" },
-      { id: "mat-iqc-history", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },
       { id: "mat-lot-split", labelKey: "menu.material.lotSplit", path: "/material/lot-split" },
+      { id: "mat-lot-merge", labelKey: "menu.material.lotMerge", path: "/material/lot-merge" },
       { id: "mat-shelf-life", labelKey: "menu.material.shelfLife", path: "/material/shelf-life" },
       { id: "mat-hold", labelKey: "menu.material.hold", path: "/material/hold" },
       { id: "mat-scrap", labelKey: "menu.material.scrap", path: "/material/scrap" },
       { id: "mat-adjustment", labelKey: "menu.material.adjustment", path: "/material/adjustment" },
       { id: "mat-misc-receipt", labelKey: "menu.material.miscReceipt", path: "/material/misc-receipt" },
-      { id: "mat-physical-inv", labelKey: "menu.material.physicalInv", path: "/material/physical-inv" },
       { id: "mat-receipt-cancel", labelKey: "menu.material.receiptCancel", path: "/material/receipt-cancel" },
+    ],
+  },
+  {
+    id: "purchasing", labelKey: "menu.purchasing", icon: ShoppingCart,
+    children: [
+      { id: "pur-po", labelKey: "menu.purchasing.po", path: "/material/po" },
+      { id: "pur-po-status", labelKey: "menu.purchasing.poStatus", path: "/material/po-status" },
     ],
   },
   {
@@ -90,6 +102,7 @@ export const menuItems: MenuItem[] = [
       { id: "prod-input-inspect", labelKey: "menu.production.inputInspect", path: "/production/input-inspect" },
       { id: "prod-input-equip", labelKey: "menu.production.inputEquip", path: "/production/input-equip" },
       { id: "prod-sample-inspect", labelKey: "menu.production.sampleInspect", path: "/production/sample-inspect" },
+      { id: "prod-result-summary", labelKey: "menu.production.resultSummary", path: "/production/result-summary" },
       { id: "prod-pack-result", labelKey: "menu.production.packResult", path: "/production/pack-result" },
       { id: "prod-wip-stock", labelKey: "menu.production.wipStock", path: "/production/wip-stock" },
     ],
@@ -104,9 +117,14 @@ export const menuItems: MenuItem[] = [
   {
     id: "quality", labelKey: "menu.quality", icon: Shield,
     children: [
+      { id: "qc-iqc", labelKey: "menu.material.iqc", path: "/material/iqc" },
+      { id: "qc-iqc-history", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },
       { id: "qc-defect", labelKey: "menu.quality.defect", path: "/quality/defect" },
       { id: "qc-inspect", labelKey: "menu.quality.inspect", path: "/quality/inspect" },
       { id: "qc-trace", labelKey: "menu.quality.trace", path: "/quality/trace" },
+      { id: "qc-iqc-item", labelKey: "menu.master.iqcItem", path: "/master/iqc-item" },
+      { id: "qc-oqc", labelKey: "menu.quality.oqc", path: "/quality/oqc" },
+      { id: "qc-oqc-history", labelKey: "menu.quality.oqcHistory", path: "/quality/oqc-history" },
     ],
   },
   {
@@ -176,6 +194,8 @@ export const menuItems: MenuItem[] = [
       { id: "sys-dept", labelKey: "menu.system.department", path: "/system/department" },
       { id: "sys-user", labelKey: "menu.system.users", path: "/system/users" },
       { id: "sys-comm", labelKey: "menu.system.commConfig", path: "/system/comm-config" },
+      { id: "sys-config", labelKey: "menu.system.config", path: "/system/config" },
+      { id: "sys-code", labelKey: "menu.master.code", path: "/master/code" },
     ],
   },
 ];

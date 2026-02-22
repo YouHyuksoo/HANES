@@ -41,7 +41,7 @@ import { CONSUMABLE_CATEGORY_VALUES, CONSUMABLE_STATUS_VALUES, CONSUMABLE_LOG_TY
 /**
  * 소모품마스터 생성 DTO
  */
-export class CreateConsumableDto {
+export class EquipCreateConsumableDto {
   @ApiProperty({ description: '소모품 코드', example: 'MOLD-001', maxLength: 50 })
   @IsString()
   @MaxLength(50)
@@ -132,7 +132,7 @@ export class CreateConsumableDto {
 /**
  * 소모품마스터 수정 DTO
  */
-export class UpdateConsumableDto extends PartialType(CreateConsumableDto) {}
+export class EquipUpdateConsumableDto extends PartialType(EquipCreateConsumableDto) {}
 
 /**
  * 소모품마스터 목록 조회 쿼리 DTO
@@ -145,13 +145,13 @@ export class ConsumableQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 20, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 5000, minimum: 1, maximum: 10000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '카테고리', enum: CONSUMABLE_CATEGORY_VALUES })
   @IsOptional()
@@ -190,7 +190,7 @@ export class ConsumableQueryDto {
 /**
  * 소모품 로그 생성 DTO
  */
-export class CreateConsumableLogDto {
+export class EquipCreateConsumableLogDto {
   @ApiProperty({ description: '소모품 ID', example: 'clx1234567890' })
   @IsString()
   consumableId: string;
@@ -266,13 +266,13 @@ export class ConsumableLogQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 20, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 5000, minimum: 1, maximum: 10000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '소모품 ID' })
   @IsOptional()

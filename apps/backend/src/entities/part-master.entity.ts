@@ -72,6 +72,12 @@ export class PartMaster {
   @Column({ name: 'EXPIRY_DATE', type: 'int', default: 0 })
   expiryDate: number;
 
+  @Column({ name: 'PACK_UNIT', length: 50, nullable: true })
+  packUnit: string | null;
+
+  @Column({ name: 'STORAGE_LOCATION', length: 100, nullable: true })
+  storageLocation: string | null;
+
   @Column({ name: 'REMARKS', length: 500, nullable: true })
   remark: string | null;
 

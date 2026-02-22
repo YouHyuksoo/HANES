@@ -4,7 +4,7 @@
  * @file src/pages/consumables/stock/components/StockTable.tsx
  * @description 소모품 재고현황 테이블 컴포넌트
  */
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -13,9 +13,11 @@ import type { ConsumableStock } from '@/hooks/consumables/useStockData';
 
 interface StockTableProps {
   data: ConsumableStock[];
+  toolbarLeft?: ReactNode;
+  isLoading?: boolean;
 }
 
-function StockTable({ data }: StockTableProps) {
+function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
   const { t } = useTranslation();
 
   const columns = useMemo<ColumnDef<ConsumableStock>[]>(
@@ -102,7 +104,7 @@ function StockTable({ data }: StockTableProps) {
     [t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="consumable_stock" toolbarLeft={toolbarLeft} />;
 }
 
 export default StockTable;

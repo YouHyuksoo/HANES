@@ -95,6 +95,12 @@ export class CreateCommConfigDto {
   @IsIn([...FLOW_CONTROL_VALUES])
   flowControl?: string;
 
+  @ApiPropertyOptional({ description: '라인엔딩', enum: ['NONE', 'CR', 'LF', 'CRLF'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['NONE', 'CR', 'LF', 'CRLF'])
+  lineEnding?: string;
+
   @ApiPropertyOptional({ description: '프로토콜별 추가 설정 (JSON)' })
   @IsOptional()
   @IsObject()
@@ -173,6 +179,12 @@ export class UpdateCommConfigDto {
   @IsIn([...FLOW_CONTROL_VALUES])
   flowControl?: string;
 
+  @ApiPropertyOptional({ description: '라인엔딩' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['NONE', 'CR', 'LF', 'CRLF'])
+  lineEnding?: string;
+
   @ApiPropertyOptional({ description: '프로토콜별 추가 설정 (JSON)' })
   @IsOptional()
   @IsObject()
@@ -194,13 +206,13 @@ export class CommConfigQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 20 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '통신 유형 필터', enum: COMM_TYPE_VALUES })
   @IsOptional()

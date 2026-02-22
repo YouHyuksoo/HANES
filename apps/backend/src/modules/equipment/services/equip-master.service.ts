@@ -25,6 +25,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Like, In } from 'typeorm';
 import { EquipMaster } from '../../../entities/equip-master.entity';
+import { ProdLineMaster } from '../../../entities/prod-line-master.entity';
+import { ProcessMaster } from '../../../entities/process-master.entity';
 import {
   CreateEquipMasterDto,
   UpdateEquipMasterDto,
@@ -39,6 +41,10 @@ export class EquipMasterService {
   constructor(
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepository: Repository<EquipMaster>,
+    @InjectRepository(ProdLineMaster)
+    private readonly lineRepository: Repository<ProdLineMaster>,
+    @InjectRepository(ProcessMaster)
+    private readonly processRepository: Repository<ProcessMaster>,
   ) {}
 
   // =============================================
@@ -57,6 +63,7 @@ export class EquipMasterService {
       status,
       useYn,
       search,
+      company,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -68,6 +75,8 @@ export class EquipMasterService {
     if (lineCode) where.lineCode = lineCode;
     if (status) where.status = status;
     if (useYn) where.useYn = useYn;
+    if (company) where.company = company;
+    if (query.plant) where.plant = query.plant;
 
     if (search) {
       where.equipCode = Like(`%${search}%`);
@@ -150,6 +159,7 @@ export class EquipMasterService {
       modelName: dto.modelName,
       maker: dto.maker,
       lineCode: dto.lineCode,
+      processCode: dto.processCode,
       ipAddress: dto.ipAddress,
       port: dto.port,
       commType: dto.commType,
@@ -191,6 +201,7 @@ export class EquipMasterService {
     if (dto.modelName !== undefined) updateData.modelName = dto.modelName;
     if (dto.maker !== undefined) updateData.maker = dto.maker;
     if (dto.lineCode !== undefined) updateData.lineCode = dto.lineCode;
+    if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
     if (dto.ipAddress !== undefined) updateData.ipAddress = dto.ipAddress;
     if (dto.port !== undefined) updateData.port = dto.port;
     if (dto.commType !== undefined) updateData.commType = dto.commType;
@@ -322,6 +333,32 @@ export class EquipMasterService {
         deletedAt: IsNull(),
       },
       order: { updatedAt: 'DESC' },
+    });
+  }
+
+  // =============================================
+  // 라인 및 공정 정보
+  // =============================================
+
+  /**
+   * 라인 목록 조회 (설비 선택용)
+   */
+  async getLines() {
+    return this.lineRepository.find({
+      where: { useYn: 'Y', deletedAt: IsNull() },
+      select: ['lineCode', 'lineName', 'lineType', 'oper'],
+      order: { lineCode: 'ASC' },
+    });
+  }
+
+  /**
+   * 공정 목록 조회 (설비 선택용)
+   */
+  async getProcesses() {
+    return this.processRepository.find({
+      where: { useYn: 'Y', deletedAt: IsNull() },
+      select: ['processCode', 'processName', 'processType', 'processCategory'],
+      order: { sortOrder: 'ASC', processCode: 'ASC' },
     });
   }
 }

@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ReceivingService } from '../services/receiving.service';
 import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 입고관리')
 @Controller('material/receiving')
@@ -22,22 +23,22 @@ export class ReceivingController {
 
   @Get()
   @ApiOperation({ summary: '입고 이력 조회' })
-  async findAll(@Query() query: ReceivingQueryDto) {
-    const result = await this.receivingService.findAll(query);
+  async findAll(@Query() query: ReceivingQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.receivingService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get('stats')
   @ApiOperation({ summary: '입고 통계' })
-  async getStats() {
-    const data = await this.receivingService.getStats();
+  async getStats(@Company() company: string, @Plant() plant: string) {
+    const data = await this.receivingService.getStats(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('receivable')
   @ApiOperation({ summary: '입고 가능 LOT 목록 (IQC 합격 + 미입고)' })
-  async findReceivable() {
-    const data = await this.receivingService.findReceivable();
+  async findReceivable(@Company() company: string, @Plant() plant: string) {
+    const data = await this.receivingService.findReceivable(company, plant);
     return ResponseUtil.success(data);
   }
 

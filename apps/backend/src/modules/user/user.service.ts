@@ -49,6 +49,7 @@ export class UserService {
         'dept',
         'role',
         'status',
+        'photoUrl',
         'lastLoginAt',
         'createdAt',
       ],
@@ -68,6 +69,7 @@ export class UserService {
         'dept',
         'role',
         'status',
+        'photoUrl',
         'lastLoginAt',
         'createdAt',
         'updatedAt',
@@ -112,6 +114,7 @@ export class UserService {
       dept: savedUser.dept,
       role: savedUser.role,
       status: savedUser.status,
+      photoUrl: savedUser.photoUrl,
       createdAt: savedUser.createdAt,
     };
   }
@@ -132,6 +135,7 @@ export class UserService {
         'dept',
         'role',
         'status',
+        'photoUrl',
         'createdAt',
         'updatedAt',
       ],
@@ -150,5 +154,19 @@ export class UserService {
 
     this.logger.log(`User deleted: ${id}`);
     return { message: '사용자가 삭제되었습니다.' };
+  }
+
+  /** 사진 URL 업데이트 */
+  async updatePhoto(id: string, photoUrl: string | null) {
+    const user = await this.findOne(id);
+    
+    await this.userRepository.update(id, { photoUrl });
+    
+    this.logger.log(`User photo updated: ${user.email}`);
+    return { 
+      id, 
+      photoUrl,
+      message: photoUrl ? '사진이 업로드되었습니다.' : '사진이 삭제되었습니다.' 
+    };
   }
 }

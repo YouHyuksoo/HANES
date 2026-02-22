@@ -26,7 +26,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
         : { serviceName: this.configService.get<string>('ORACLE_SERVICE_NAME', 'ORCL') }
       ),
       entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
-      synchronize: !isProduction, // 프로덕션에서는 반드시 false
+      synchronize: false, // Oracle PK 충돌 방지 - 스키마 변경은 SQL로 직접 관리
       logging: !isProduction ? ['query', 'error'] : ['error'],
       logger: 'advanced-console',
       maxQueryExecutionTime: 1000,

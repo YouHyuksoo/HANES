@@ -16,7 +16,7 @@ export class DepartmentService {
     private readonly departmentRepository: Repository<DepartmentMaster>,
   ) {}
 
-  async findAll(query: DepartmentQueryDto, company?: string) {
+  async findAll(query: DepartmentQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, useYn } = query;
     const skip = (page - 1) * limit;
 
@@ -25,6 +25,9 @@ export class DepartmentService {
 
     if (company) {
       queryBuilder.andWhere('dept.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('dept.plant = :plant', { plant });
     }
 
     if (useYn) {

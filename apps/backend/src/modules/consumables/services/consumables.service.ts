@@ -54,7 +54,7 @@ export class ConsumablesService {
   /**
    * 소모품 목록 조회 (페이지네이션)
    */
-  async findAll(query?: ConsumableQueryDto, company?: string) {
+  async findAll(query?: ConsumableQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 10,
@@ -71,6 +71,9 @@ export class ConsumablesService {
 
     if (company) {
       where.company = company;
+    }
+    if (plant) {
+      where.plant = plant;
     }
     if (category) {
       where.category = category;

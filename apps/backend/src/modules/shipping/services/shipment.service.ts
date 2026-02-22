@@ -56,7 +56,7 @@ export class ShipmentService {
   /**
    * 출하 목록 조회
    */
-  async findAll(query: ShipmentQueryDto, company?: string) {
+  async findAll(query: ShipmentQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 10,
@@ -72,6 +72,7 @@ export class ShipmentService {
     const where: any = {
       deletedAt: IsNull(),
       ...(company && { company }),
+      ...(plant && { plant }),
       ...(shipNo && { shipNo: ILike(`%${shipNo}%`) }),
       ...(customer && { customer: ILike(`%${customer}%`) }),
       ...(status && { status }),
@@ -394,12 +395,38 @@ export class ShipmentService {
 
   /**
    * 출하 상태 변경: LOADED -> SHIPPED
+   * OQC 검증: oqcStatus=FAIL 또는 PENDING인 박스가 있으면 출하 차단
+   * (oqcStatus=null은 허용 — OQC는 선택적)
    */
   async markAsShipped(id: string) {
     const shipment = await this.findById(id);
 
     if (shipment.status !== 'LOADED') {
       throw new BadRequestException(`현재 상태(${shipment.status})에서는 출하 처리할 수 없습니다. LOADED 상태여야 합니다.`);
+    }
+
+    // OQC 검증: 팔레트 내 박스 중 oqcStatus가 FAIL 또는 PENDING이면 출하 차단
+    const pallets = await this.palletRepository.find({
+      where: { shipmentId: id, deletedAt: IsNull() },
+      select: ['id'],
+    });
+
+    const palletIds = pallets.map(p => p.id);
+    if (palletIds.length > 0) {
+      const failedBoxes = await this.boxRepository
+        .createQueryBuilder('box')
+        .where('box.palletId IN (:...palletIds)', { palletIds })
+        .andWhere('box.deletedAt IS NULL')
+        .andWhere('box.oqcStatus IN (:...blockedStatuses)', { blockedStatuses: ['FAIL', 'PENDING'] })
+        .select(['box.id', 'box.boxNo', 'box.oqcStatus'])
+        .getMany();
+
+      if (failedBoxes.length > 0) {
+        const failList = failedBoxes.map(b => `${b.boxNo}(${b.oqcStatus})`).join(', ');
+        throw new BadRequestException(
+          `OQC 미완료/불합격 박스가 포함되어 출하할 수 없습니다: ${failList}`,
+        );
+      }
     }
 
     // 트랜잭션으로 출하 상태 및 팔레트/박스 상태 업데이트
@@ -416,12 +443,6 @@ export class ShipmentService {
       );
 
       // 박스 상태 업데이트
-      const pallets = await queryRunner.manager.find(PalletMaster, {
-        where: { shipmentId: id, deletedAt: IsNull() },
-        select: ['id'],
-      });
-
-      const palletIds = pallets.map(p => p.id);
       if (palletIds.length > 0) {
         await queryRunner.manager.update(
           BoxMaster,
@@ -689,6 +710,61 @@ export class ShipmentService {
     return {
       period: { startDate, endDate },
       customerStats: Array.from(customerStats.values()).sort((a, b) => b.totalQty - a.totalQty),
+    };
+  }
+
+  /**
+   * 출하에 할당된 팔레트 목록 조회
+   */
+  async getShipmentPallets(id: string) {
+    await this.findById(id); // 존재 확인
+
+    const pallets = await this.palletRepository.find({
+      where: { shipmentId: id, deletedAt: IsNull() },
+      order: { palletNo: 'ASC' },
+    });
+
+    // 각 팔레트의 박스 목록도 조회
+    const result = await Promise.all(
+      pallets.map(async (pallet) => {
+        const boxes = await this.boxRepository.find({
+          where: { palletId: pallet.id, deletedAt: IsNull() },
+          order: { boxNo: 'ASC' },
+          select: ['id', 'boxNo', 'partId', 'qty', 'status'],
+        });
+        return { ...pallet, boxes };
+      }),
+    );
+
+    return result;
+  }
+
+  /**
+   * 팔레트 바코드 스캔 검증
+   * 스캔한 팔레트 번호가 출하에 속하는지 확인
+   */
+  async verifyPalletBarcode(id: string, palletNo: string) {
+    await this.findById(id); // 존재 확인
+
+    const pallet = await this.palletRepository.findOne({
+      where: { palletNo, deletedAt: IsNull() },
+    });
+
+    if (!pallet) {
+      return { verified: false, reason: 'NOT_FOUND', palletNo };
+    }
+
+    if (pallet.shipmentId !== id) {
+      return { verified: false, reason: 'WRONG_SHIPMENT', palletNo };
+    }
+
+    return {
+      verified: true,
+      palletNo: pallet.palletNo,
+      palletId: pallet.id,
+      boxCount: pallet.boxCount,
+      totalQty: pallet.totalQty,
+      status: pallet.status,
     };
   }
 

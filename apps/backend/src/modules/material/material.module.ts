@@ -27,8 +27,6 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { MatLot } from '../../entities/mat-lot.entity';
 import { MatStock } from '../../entities/mat-stock.entity';
 import { MatIssue } from '../../entities/mat-issue.entity';
-import { Lot } from '../../entities/lot.entity';
-import { Stock } from '../../entities/stock.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
 import { PurchaseOrder } from '../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../entities/purchase-order-item.entity';
@@ -57,6 +55,8 @@ import { IqcHistoryController } from './controllers/iqc-history.controller';
 import { IqcHistoryService } from './services/iqc-history.service';
 import { LotSplitController } from './controllers/lot-split.controller';
 import { LotSplitService } from './services/lot-split.service';
+import { LotMergeController } from './controllers/lot-merge.controller';
+import { LotMergeService } from './services/lot-merge.service';
 import { ShelfLifeController } from './controllers/shelf-life.controller';
 import { ShelfLifeService } from './services/shelf-life.service';
 import { HoldController } from './controllers/hold.controller';
@@ -85,8 +85,6 @@ import { IssueRequestService } from './services/issue-request.service';
       MatLot,
       MatStock,
       MatIssue,
-      Lot,
-      Stock,
       StockTransaction,
       PurchaseOrder,
       PurchaseOrderItem,
@@ -107,6 +105,7 @@ import { IssueRequestService } from './services/issue-request.service';
     PoStatusController,
     IqcHistoryController,
     LotSplitController,
+    LotMergeController,
     ShelfLifeController,
     HoldController,
     ScrapController,
@@ -126,6 +125,7 @@ import { IssueRequestService } from './services/issue-request.service';
     PoStatusService,
     IqcHistoryService,
     LotSplitService,
+    LotMergeService,
     ShelfLifeService,
     HoldService,
     ScrapService,

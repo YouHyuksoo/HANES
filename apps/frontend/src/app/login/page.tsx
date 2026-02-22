@@ -25,6 +25,11 @@ interface CompanyOption {
   companyName: string;
 }
 
+interface PlantOption {
+  plantCode: string;
+  plantName: string;
+}
+
 type TabType = 'login' | 'register';
 
 function LoginPage() {
@@ -38,6 +43,11 @@ function LoginPage() {
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [companyLoading, setCompanyLoading] = useState(true);
+
+  // 사업장 목록
+  const [plants, setPlants] = useState<PlantOption[]>([]);
+  const [selectedPlant, setSelectedPlant] = useState('');
+  const [plantLoading, setPlantLoading] = useState(false);
 
   // 로그인 폼
   const [loginEmail, setLoginEmail] = useState('');
@@ -56,6 +66,28 @@ function LoginPage() {
       .finally(() => setCompanyLoading(false));
   }, []);
 
+  // 회사 선택 시 해당 사업장 목록 조회
+  useEffect(() => {
+    if (!selectedCompany) {
+      setPlants([]);
+      setSelectedPlant('');
+      return;
+    }
+    setPlantLoading(true);
+    api.get(`/master/companies/public/plants?company=${selectedCompany}`)
+      .then((res) => {
+        const list = res.data?.data || [];
+        setPlants(list);
+        if (list.length > 0) setSelectedPlant(list[0].plantCode);
+        else setSelectedPlant('');
+      })
+      .catch(() => {
+        setPlants([]);
+        setSelectedPlant('');
+      })
+      .finally(() => setPlantLoading(false));
+  }, [selectedCompany]);
+
   // 회원가입 폼
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -67,7 +99,7 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     try {
-      await login(loginEmail, loginPassword, selectedCompany);
+      await login(loginEmail, loginPassword, selectedCompany, selectedPlant);
       router.replace('/dashboard');
     } catch (err) {
       const axiosErr = err as AxiosError<{ message: string }>;
@@ -157,6 +189,15 @@ function LoginPage() {
                 value={selectedCompany}
                 onChange={setSelectedCompany}
                 placeholder={companyLoading ? t('common.loading') : t('master.company.selectCompany')}
+                fullWidth
+              />
+
+              <Select
+                label={t('auth.plant')}
+                options={plants.map((p) => ({ value: p.plantCode, label: `${p.plantName} (${p.plantCode})` }))}
+                value={selectedPlant}
+                onChange={setSelectedPlant}
+                placeholder={plantLoading ? t('common.loading') : t('auth.selectPlant')}
                 fullWidth
               />
 

@@ -12,6 +12,7 @@
 import { useState } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import TabBar from "./TabBar";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -42,6 +43,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           ${collapsed ? "lg:pl-[var(--sidebar-collapsed-width)]" : "lg:pl-[var(--sidebar-width)]"}
         `}
       >
+        <TabBar />
         <div className="p-4 lg:p-6">
           {children}
         </div>

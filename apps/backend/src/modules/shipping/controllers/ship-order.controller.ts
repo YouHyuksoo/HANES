@@ -26,6 +26,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { ShipOrderService } from '../services/ship-order.service';
 import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dto/ship-order.dto';
@@ -39,8 +40,8 @@ export class ShipOrderController {
   @Get()
   @ApiOperation({ summary: '출하지시 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: ShipOrderQueryDto) {
-    const result = await this.shipOrderService.findAll(query);
+  async findAll(@Query() query: ShipOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.shipOrderService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

@@ -70,13 +70,13 @@ export class PalletQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 10, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 5000, minimum: 1, maximum: 10000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '팔레트번호 검색' })
   @IsOptional()

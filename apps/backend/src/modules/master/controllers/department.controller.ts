@@ -3,8 +3,8 @@
  * @description 부서마스터 CRUD API 컨트롤러
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { DepartmentService } from '../services/department.service';
 import { CreateDepartmentDto, UpdateDepartmentDto, DepartmentQueryDto } from '../dto/department.dto';
@@ -17,9 +17,8 @@ export class DepartmentController {
 
   @Get()
   @ApiOperation({ summary: '부서 목록 조회' })
-  async findAll(@Query() query: DepartmentQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.departmentService.findAll(query, company);
+  async findAll(@Query() query: DepartmentQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.departmentService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

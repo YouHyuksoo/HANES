@@ -84,6 +84,19 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       ),
     },
     {
+      id: 'manufactureDate',
+      header: t('material.arrival.col.manufactureDate'),
+      size: 140,
+      cell: ({ row }) => (
+        <Input
+          type="date"
+          value={inputs[row.original.id]?.manufactureDate || ''}
+          onChange={(e) => onInputChange(row.original.id, 'manufactureDate', e.target.value)}
+          className="w-[130px]"
+        />
+      ),
+    },
+    {
       id: 'inputQty',
       header: t('material.receive.col.inputQty'),
       size: 100,

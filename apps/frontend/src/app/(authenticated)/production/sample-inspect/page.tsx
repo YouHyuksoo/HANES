@@ -2,123 +2,194 @@
 
 /**
  * @file src/app/(authenticated)/production/sample-inspect/page.tsx
- * @description 샘플검사이력 페이지 - InspectResult 조회 전용
+ * @description 반제품 샘플검사 페이지 - 이력 조회 + 신규 입력 기능
  *
  * 초보자 가이드:
- * 1. **목적**: 과거 검사 결과 이력을 조회하는 페이지
- * 2. **필터**: 합격/불합격, 기간, 검색어로 필터링
- * 3. **조회 전용**: 데이터 수정 없이 이력만 확인
+ * 1. **이력 조회**: API 연동 샘플검사 이력 (날짜, 합불, 검색 필터)
+ * 2. **신규 입력**: 모달에서 작업지시 선택 → 샘플별 측정값 입력
+ * 3. **통계**: 총검사/합격/불합격/합격률 StatCard
  */
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Download, FlaskConical, CheckCircle, XCircle, Calendar, BarChart3 } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
-import { useComCodeOptions } from '@/hooks/useComCode';
-import { createPartColumns } from '@/lib/table-utils';
 
-interface SampleInspect {
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Search, RefreshCw, FlaskConical, CheckCircle, XCircle, BarChart3, Plus } from "lucide-react";
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import { useComCodeOptions } from "@/hooks/useComCode";
+import api from "@/services/api";
+import SampleInspectInputModal from "./components/SampleInspectInputModal";
+
+interface SampleInspectRow {
   id: string;
-  lotNo: string;
+  jobOrderId: string;
   orderNo: string;
   partCode: string;
   partName: string;
-  inspectType: string;
-  sampleQty: number;
-  passQty: number;
-  failQty: number;
-  passYn: string;
   inspectDate: string;
-  inspector: string;
+  inspectorName: string;
+  inspectType: string;
+  sampleNo: number;
+  measuredValue: string;
+  specUpper: string;
+  specLower: string;
+  passYn: string;
   remark: string;
 }
 
-const mockData: SampleInspect[] = [
-  { id: '1', lotNo: 'LOT-20250126-001', orderNo: 'JO-20250126-001', partCode: 'H-001', partName: '메인 하네스 A', inspectType: '외관검사', sampleQty: 10, passQty: 10, failQty: 0, passYn: 'Y', inspectDate: '2025-01-26', inspector: '검사원A', remark: '' },
-  { id: '2', lotNo: 'LOT-20250126-002', orderNo: 'JO-20250126-002', partCode: 'H-002', partName: '서브 하네스 B', inspectType: '치수검사', sampleQty: 5, passQty: 5, failQty: 0, passYn: 'Y', inspectDate: '2025-01-26', inspector: '검사원B', remark: '' },
-  { id: '3', lotNo: 'LOT-20250125-001', orderNo: 'JO-20250125-001', partCode: 'H-003', partName: '도어 하네스 C', inspectType: '전기검사', sampleQty: 10, passQty: 7, failQty: 3, passYn: 'N', inspectDate: '2025-01-25', inspector: '검사원A', remark: '단선 불량' },
-  { id: '4', lotNo: 'LOT-20250125-002', orderNo: 'JO-20250125-002', partCode: 'H-004', partName: '엔진룸 하네스 D', inspectType: '외관검사', sampleQty: 8, passQty: 8, failQty: 0, passYn: 'Y', inspectDate: '2025-01-25', inspector: '검사원C', remark: '' },
-  { id: '5', lotNo: 'LOT-20250124-001', orderNo: 'JO-20250124-001', partCode: 'H-005', partName: '트렁크 하네스 E', inspectType: '치수검사', sampleQty: 5, passQty: 4, failQty: 1, passYn: 'N', inspectDate: '2025-01-24', inspector: '검사원B', remark: '공차 초과' },
-];
-
-function SampleInspectPage() {
+export default function SampleInspectPage() {
   const { t } = useTranslation();
-  const [searchText, setSearchText] = useState('');
-  const [passFilter, setPassFilter] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const comCodeJudgeOptions = useComCodeOptions("JUDGE_YN");
 
-  const comCodeJudgeOptions = useComCodeOptions('JUDGE_YN');
+  const [data, setData] = useState<SampleInspectRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [passFilter, setPassFilter] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showInput, setShowInput] = useState(false);
+
   const passOptions = useMemo(() => [
-    { value: '', label: t('production.sampleInspect.allJudgment') }, ...comCodeJudgeOptions
+    { value: "", label: t("production.sampleInspect.allJudgment") }, ...comCodeJudgeOptions,
   ], [t, comCodeJudgeOptions]);
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    const matchSearch = !searchText || item.lotNo.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
-    const matchPass = !passFilter || item.passYn === passFilter;
-    const matchStart = !startDate || item.inspectDate >= startDate;
-    const matchEnd = !endDate || item.inspectDate <= endDate;
-    return matchSearch && matchPass && matchStart && matchEnd;
-  }), [searchText, passFilter, startDate, endDate]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = {};
+      if (searchText) params.search = searchText;
+      if (passFilter) params.passYn = passFilter;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      const res = await api.get("/production/sample-inspect-input", { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, passFilter, startDate, endDate]);
 
-  const stats = useMemo(() => ({
-    total: mockData.length,
-    pass: mockData.filter(d => d.passYn === 'Y').length,
-    fail: mockData.filter(d => d.passYn === 'N').length,
-    passRate: mockData.length > 0 ? Math.round((mockData.filter(d => d.passYn === 'Y').length / mockData.length) * 100) : 0,
-  }), []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<SampleInspect>[]>(() => [
-    { accessorKey: 'inspectDate', header: t('production.sampleInspect.inspectDate'), size: 100 },
-    { accessorKey: 'lotNo', header: t('production.sampleInspect.lotNo'), size: 160 },
-    { accessorKey: 'orderNo', header: t('production.sampleInspect.orderNo'), size: 160 },
-    ...createPartColumns<SampleInspect>(t),
-    { accessorKey: 'inspectType', header: t('production.sampleInspect.inspectType'), size: 90 },
-    { accessorKey: 'sampleQty', header: t('production.sampleInspect.sampleQty'), size: 70 },
-    { accessorKey: 'passQty', header: t('production.sampleInspect.passQty'), size: 70, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{getValue() as number}</span> },
-    { accessorKey: 'failQty', header: t('production.sampleInspect.failQty'), size: 70, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400">{getValue() as number}</span> },
+  const stats = useMemo(() => {
+    const total = data.length;
+    const pass = data.filter(d => d.passYn === "Y").length;
+    const fail = data.filter(d => d.passYn === "N").length;
+    const passRate = total > 0 ? Math.round((pass / total) * 100) : 0;
+    return { total, pass, fail, passRate };
+  }, [data]);
+
+  const columns = useMemo<ColumnDef<SampleInspectRow>[]>(() => [
     {
-      accessorKey: 'passYn', header: t('production.sampleInspect.judgment'), size: 80,
+      accessorKey: "inspectDate", header: t("production.sampleInspect.inspectDate"), size: 100,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+    },
+    {
+      accessorKey: "orderNo", header: t("production.sampleInspect.orderNo"), size: 160,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "partName", header: t("common.partName"), size: 140,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "inspectType", header: t("production.sampleInspect.inspectType"), size: 90,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "sampleNo", header: t("production.sampleInspect.sampleNo"), size: 60,
+      meta: { align: "center" as const },
+      cell: ({ getValue }) => <span className="font-mono">{getValue() as number}</span>,
+    },
+    {
+      accessorKey: "measuredValue", header: t("production.sampleInspect.measuredValue"), size: 90,
+      meta: { align: "right" as const },
+      cell: ({ getValue }) => <span className="font-mono">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "specLower", header: t("production.sampleInspect.specLower"), size: 70,
+      meta: { align: "right" as const },
+      cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "specUpper", header: t("production.sampleInspect.specUpper"), size: 70,
+      meta: { align: "right" as const },
+      cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "passYn", header: t("production.sampleInspect.judgment"), size: 80,
       cell: ({ getValue }) => <ComCodeBadge groupCode="JUDGE_YN" code={getValue() as string} />,
     },
-    { accessorKey: 'inspector', header: t('production.sampleInspect.inspector'), size: 80 },
-    { accessorKey: 'remark', header: t('production.sampleInspect.remark'), size: 120 },
+    {
+      accessorKey: "inspectorName", header: t("production.sampleInspect.inspector"), size: 80,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "remark", header: t("production.sampleInspect.remark"), size: 120,
+    },
   ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><FlaskConical className="w-7 h-7 text-primary" />{t('production.sampleInspect.title')}</h1>
-          <p className="text-text-muted mt-1">{t('production.sampleInspect.description')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <FlaskConical className="w-7 h-7 text-primary" />
+            {t("production.sampleInspect.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("production.sampleInspect.description")}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('production.sampleInspect.excelDownload')}</Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => setShowInput(true)}>
+            <Plus className="w-4 h-4 mr-1" /> {t("production.sampleInspect.inputBtn")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label={t('production.sampleInspect.totalInspect')} value={stats.total} icon={FlaskConical} color="blue" />
-        <StatCard label={t('production.sampleInspect.pass')} value={stats.pass} icon={CheckCircle} color="green" />
-        <StatCard label={t('production.sampleInspect.fail')} value={stats.fail} icon={XCircle} color="red" />
-        <StatCard label={t('production.sampleInspect.passRate')} value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
+        <StatCard label={t("production.sampleInspect.totalInspect")} value={stats.total} icon={FlaskConical} color="blue" />
+        <StatCard label={t("production.sampleInspect.pass")} value={stats.pass} icon={CheckCircle} color="green" />
+        <StatCard label={t("production.sampleInspect.fail")} value={stats.fail} icon={XCircle} color="red" />
+        <StatCard label={t("production.sampleInspect.passRate")} value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
       </div>
 
       <Card><CardContent>
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder={t('production.sampleInspect.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-32"><Select options={passOptions} value={passFilter} onChange={setPassFilter} fullWidth /></div>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-text-muted" />
-            <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-36" />
-            <span className="text-text-muted">~</span>
-            <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-36" />
-          </div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="샘플검사"
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("production.sampleInspect.searchPlaceholder")}
+                  value={searchText} onChange={e => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Select options={passOptions}
+                  value={passFilter} onChange={setPassFilter} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date"
+                  value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date"
+                  value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
+
+      <SampleInspectInputModal isOpen={showInput} onClose={() => setShowInput(false)} onCreated={fetchData} />
     </div>
   );
 }
-
-export default SampleInspectPage;

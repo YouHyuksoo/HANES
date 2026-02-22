@@ -55,6 +55,15 @@ export default function InspectItemPanel({ equip, links, allItems, onOpenLinkMod
   }, [equip, links, itemMap]);
 
   const columns = useMemo<ColumnDef<RowData>[]>(() => [
+    {
+      id: "actions", header: "", size: 50,
+      meta: { align: "center" as const },
+      cell: ({ row }) => (
+        <button onClick={() => onUnlink(row.original.linkId)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
+          <Trash2 className="w-4 h-4 text-red-500" />
+        </button>
+      ),
+    },
     { accessorKey: "seq", header: t("master.equipInspect.seq"), size: 50 },
     { accessorKey: "itemCode", header: t("master.equipInspect.itemCode", "항목코드"), size: 90 },
     { accessorKey: "itemName", header: t("master.equipInspect.itemName"), size: 160 },
@@ -69,14 +78,6 @@ export default function InspectItemPanel({ equip, links, allItems, onOpenLinkMod
     },
     { accessorKey: "criteria", header: t("master.equipInspect.criteria"), size: 160 },
     { accessorKey: "cycle", header: t("master.equipInspect.cycle"), size: 70 },
-    {
-      id: "actions", header: "", size: 50,
-      cell: ({ row }) => (
-        <button onClick={() => onUnlink(row.original.linkId)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
-          <Trash2 className="w-4 h-4 text-red-500" />
-        </button>
-      ),
-    },
   ], [t, onUnlink]);
 
   if (!equip) {
@@ -107,7 +108,7 @@ export default function InspectItemPanel({ equip, links, allItems, onOpenLinkMod
           <p className="text-xs mt-1">{t("master.equipInspect.addItemGuide", "상단 버튼으로 점검항목을 추가하세요")}</p>
         </div>
       ) : (
-        <DataGrid data={rows} columns={columns} pageSize={10} />
+        <DataGrid data={rows} columns={columns} enableExport exportFileName={`${equip.equipCode}_inspect_items`} />
       )}
     </>
   );

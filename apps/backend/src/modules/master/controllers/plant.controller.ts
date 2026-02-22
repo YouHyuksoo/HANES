@@ -5,6 +5,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { Company } from '../../../common/decorators/tenant.decorator';
 import { PlantService } from '../services/plant.service';
 import { CreatePlantDto, UpdatePlantDto, PlantQueryDto } from '../dto/plant.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -32,8 +33,8 @@ export class PlantController {
 
   @Get()
   @ApiOperation({ summary: '목록 조회' })
-  async findAll(@Query() query: PlantQueryDto) {
-    const result = await this.plantService.findAll(query);
+  async findAll(@Query() query: PlantQueryDto, @Company() company: string) {
+    const result = await this.plantService.findAll(query, company);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

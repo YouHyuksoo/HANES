@@ -36,16 +36,15 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse as SwaggerResponse } from '@nestjs/swagger';
 import { ConsumableService } from '../services/consumable.service';
 import {
-  CreateConsumableDto,
-  UpdateConsumableDto,
+  EquipCreateConsumableDto,
+  EquipUpdateConsumableDto,
   ConsumableQueryDto,
-  CreateConsumableLogDto,
+  EquipCreateConsumableLogDto,
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
@@ -110,9 +109,8 @@ export class ConsumableController {
   @Get()
   @ApiOperation({ summary: '소모품 목록 조회' })
   @SwaggerResponse({ status: 200, description: '소모품 목록 조회 성공' })
-  async findAll(@Query() query: ConsumableQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.consumableService.findAll(query, company);
+  async findAll(@Query() query: ConsumableQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.consumableService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -129,7 +127,7 @@ export class ConsumableController {
   @ApiOperation({ summary: '소모품 생성' })
   @SwaggerResponse({ status: 201, description: '소모품 생성 성공' })
   @SwaggerResponse({ status: 409, description: '중복된 소모품 코드' })
-  async create(@Body() dto: CreateConsumableDto) {
+  async create(@Body() dto: EquipCreateConsumableDto) {
     const data = await this.consumableService.create(dto);
     return ResponseUtil.success(data, '소모품이 생성되었습니다.');
   }
@@ -139,7 +137,7 @@ export class ConsumableController {
   @ApiParam({ name: 'id', description: '소모품 ID' })
   @SwaggerResponse({ status: 200, description: '소모품 수정 성공' })
   @SwaggerResponse({ status: 404, description: '소모품을 찾을 수 없음' })
-  async update(@Param('id') id: string, @Body() dto: UpdateConsumableDto) {
+  async update(@Param('id') id: string, @Body() dto: EquipUpdateConsumableDto) {
     const data = await this.consumableService.update(id, dto);
     return ResponseUtil.success(data, '소모품이 수정되었습니다.');
   }
@@ -215,7 +213,7 @@ export class ConsumableLogController {
   @ApiOperation({ summary: '소모품 로그 생성' })
   @SwaggerResponse({ status: 201, description: '소모품 로그 생성 성공' })
   @SwaggerResponse({ status: 404, description: '소모품을 찾을 수 없음' })
-  async createLog(@Body() dto: CreateConsumableLogDto) {
+  async createLog(@Body() dto: EquipCreateConsumableLogDto) {
     const data = await this.consumableService.createLog(dto);
     return ResponseUtil.success(data, '소모품 로그가 생성되었습니다.');
   }

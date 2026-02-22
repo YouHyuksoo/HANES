@@ -19,7 +19,7 @@ export const OracleDataSource = new DataSource({
   username: process.env.ORACLE_USER || 'HNSMES',
   password: process.env.ORACLE_PASSWORD || 'your-oracle-password',
   serviceName: process.env.ORACLE_SERVICE_NAME || 'XEPDB',
-  synchronize: process.env.NODE_ENV !== 'production',
+  synchronize: false, // Oracle PK 충돌 방지 - 스키마 변경은 SQL로 직접 관리
   logging: process.env.NODE_ENV !== 'production' ? ['query', 'error'] : ['error'],
   logger: 'advanced-console',
   entities: [__dirname + '/../entities/*.entity{.ts,.js}'],

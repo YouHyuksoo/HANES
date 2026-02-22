@@ -58,7 +58,7 @@ export class MatIssueService {
     };
   }
 
-  async findAll(query: MatIssueQueryDto) {
+  async findAll(query: MatIssueQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, jobOrderId, lotId, issueType, issueDateFrom, issueDateTo, status } = query;
     const skip = (page - 1) * limit;
 
@@ -67,6 +67,8 @@ export class MatIssueService {
       ...(lotId && { lotId }),
       ...(issueType && { issueType }),
       ...(status && { status }),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (issueDateFrom && issueDateTo) {
@@ -121,6 +123,10 @@ export class MatIssueService {
 
         if (lot.iqcStatus !== 'PASS') {
           throw new BadRequestException(`IQC 합격되지 않은 LOT입니다: ${lot.lotNo}`);
+        }
+
+        if (lot.status === 'HOLD') {
+          throw new BadRequestException(`홀드 상태인 LOT은 출고할 수 없습니다: ${lot.lotNo}`);
         }
 
         if (lot.currentQty < item.issueQty) {
@@ -186,6 +192,11 @@ export class MatIssueService {
     if (lot.iqcStatus !== 'PASS') {
       throw new BadRequestException(
         `IQC 미합격 LOT입니다: ${dto.lotNo} (상태: ${lot.iqcStatus})`,
+      );
+    }
+    if (lot.status === 'HOLD') {
+      throw new BadRequestException(
+        `홀드 상태인 LOT은 출고할 수 없습니다: ${dto.lotNo}`,
       );
     }
     if (lot.status === 'DEPLETED' || lot.currentQty <= 0) {

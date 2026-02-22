@@ -5,3 +5,4 @@
 
 export { BoxStatusBadge, PalletStatusBadge, ShipmentStatusBadge } from './StatusBadge';
 export type { BoxStatus, PalletStatus, ShipmentStatus } from './StatusBadge';
+export { default as ShipmentScanModal } from './ShipmentScanModal';

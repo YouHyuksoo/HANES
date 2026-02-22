@@ -25,7 +25,7 @@ export class EquipInspectService {
   ) {}
 
   /** 점검 목록 조회 */
-  async findAll(query: EquipInspectQueryDto) {
+  async findAll(query: EquipInspectQueryDto, company?: string, plant?: string) {
     const {
       page = 1, limit = 10, equipId, inspectType,
       overallResult, search, inspectDateFrom, inspectDateTo,
@@ -42,6 +42,12 @@ export class EquipInspectService {
         'equip.lineCode AS equip_lineCode',
       ]);
 
+    if (company) {
+      queryBuilder.andWhere('log.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('log.plant = :plant', { plant });
+    }
     if (equipId) {
       queryBuilder.andWhere('log.equipId = :equipId', { equipId });
     }

@@ -20,10 +20,10 @@ export {
 } from './dto/equip-master.dto';
 
 export {
-  CreateConsumableDto,
-  UpdateConsumableDto,
+  EquipCreateConsumableDto,
+  EquipUpdateConsumableDto,
   ConsumableQueryDto,
-  CreateConsumableLogDto,
+  EquipCreateConsumableLogDto,
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,

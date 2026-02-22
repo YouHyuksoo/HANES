@@ -6,6 +6,7 @@
     "edit": "编辑",
     "add": "添加",
     "search": "搜索",
+    "period": "期间",
     "refresh": "刷新",
     "reset": "重置",
     "export": "导出",
@@ -14,6 +15,7 @@
     "close": "关闭",
     "loading": "加载中...",
     "saving": "保存中...",
+    "uploading": "上传中...",
     "noData": "暂无数据",
     "error": "发生错误",
     "success": "处理成功",
@@ -56,7 +58,9 @@
     "totalQty": "总数量",
     "createdAt": "创建时间",
     "selected": "已选择",
-    "won": "韩元"
+    "won": "韩元",
+    "useYn": "使用与否",
+    "clear": "清除"
   },
   "menu": {
     "dashboard": "仪表盘",
@@ -126,7 +130,7 @@
     "master.worker.workerList": "员工列表",
     "master.worker.totalCount": "共 {{count}} 条",
     "master.worker.emptyMessage": "暂无员工信息。",
-    "master.iqcItem": "IQC检查项目管理",
+    "master.iqcItem": "IQC检查项目/组",
     "master.iqcItem.itemCode": "项目编号",
     "master.iqcItem.judgeMethod": "判定方法",
     "master.iqcItem.visual": "目视",
@@ -140,28 +144,36 @@
     "master.warehouse": "仓库管理",
     "master.company": "公司管理",
     "master.label": "标签管理",
+    "master.vendorBarcode": "供应商条码映射",
+    "matInventory": "材料库存管理",
+    "productInventory": "产品库存管理",
     "inventory": "库存管理",
-    "inventory.stock": "库存状况查询",
-    "inventory.transaction": "出入库历史查询",
-    "inventory.lot": "LOT追溯管理",
+    "inventory.matStock": "材料库存查询",
+    "inventory.stock": "总库存状况查询",
+    "inventory.productStock": "产品库存查询",
+    "inventory.transaction": "材料出入库历史查询",
+    "inventory.lot": "材料LOT追溯管理",
+    "inventory.productPhysicalInv": "产品盘点",
+    "inventory.productPhysicalInvHistory": "产品盘点历史",
+    "inventory.matPhysicalInv": "材料库存盘点管理",
+    "inventory.matPhysicalInvHistory": "材料库存盘点查询",
     "material": "物料管理",
     "material.arrival": "到货管理",
     "material.iqc": "来料检验(IQC)",
     "material.receive": "入库管理",
     "material.request": "出库申请管理",
     "material.issue": "出库管理",
-    "material.stock": "库存状况查询",
     "material.lot": "LOT管理",
     "material.po": "PO管理",
     "material.poStatus": "PO现况查询",
     "material.iqcHistory": "IQC历史查询",
     "material.lotSplit": "物料分割管理",
+    "material.lotMerge": "物料合并",
     "material.shelfLife": "保质期物料管理",
     "material.hold": "库存冻结管理",
     "material.scrap": "物料报废处理",
     "material.adjustment": "库存调整处理",
     "material.miscReceipt": "其他入库管理",
-    "material.physicalInv": "库存盘点管理",
     "material.receiptCancel": "入库取消处理",
     "cutting": "裁切工序",
     "cutting.order": "作业指示",
@@ -170,6 +182,9 @@
     "crimping.order": "作业指示",
     "crimping.result": "作业实绩",
     "crimping.mold": "模具管理",
+    "purchasing": "采购管理",
+    "purchasing.po": "PO管理",
+    "purchasing.poStatus": "PO现况查询",
     "production": "生产管理",
     "production.order": "作业指示管理",
     "production.result": "生产实绩查询",
@@ -179,6 +194,7 @@
     "production.inputInspect": "实绩录入(简单检查)",
     "production.inputEquip": "实绩录入(检测设备)",
     "production.sampleInspect": "抽样检查历史查询",
+    "production.resultSummary": "生产实绩综合查询",
     "production.packResult": "包装实绩查询",
     "production.wipStock": "半成品/成品库存查询",
     "inspection": "导通检测",
@@ -188,6 +204,8 @@
     "quality.defect": "不良管理",
     "quality.inspect": "检查管理",
     "quality.trace": "追溯查询",
+    "quality.oqc": "出货检查(OQC)",
+    "quality.oqcHistory": "出货检查记录",
     "equipment": "设备管理",
     "equipment.master": "设备主数据管理",
     "equipment.status": "运行状况查询",
@@ -226,7 +244,8 @@
     "system": "系统管理",
     "system.department": "部门管理",
     "system.users": "用户管理",
-    "system.commConfig": "通信设置管理"
+    "system.commConfig": "通信设置管理",
+    "system.config": "系统设置"
   },
   "header": {
     "theme": "主题",
@@ -257,6 +276,9 @@
     "registerFailed": "注册失败。",
     "emailRequired": "邮箱 *",
     "passwordRequired": "密码 *",
+    "plant": "事业所",
+    "selectPlant": "请选择事业所",
+    "plantRequired": "必须选择事业所",
     "branding": {
       "title": "HARNESS MES",
       "subtitle": "Manufacturing Execution System",
@@ -280,6 +302,7 @@
     "line": "产线",
     "planQty": "计划数量",
     "actualQty": "实际数量",
+    "completedQty": "完成数量",
     "progress": "进度",
     "status": "状态",
     "statusWaiting": "等待",
@@ -287,9 +310,21 @@
     "statusCompleted": "完成"
   },
   "inventory": {
+    "matStock": {
+      "title": "原材料库存状况",
+      "description": "按仓库/零件查看原材料库存状况。"
+    },
+    "matPhysicalInv": {
+      "title": "原材料盘点管理",
+      "description": "对比系统库存与实际数量并进行调整。"
+    },
+    "matPhysicalInvHistory": {
+      "title": "原材料盘点历史",
+      "description": "查看原材料盘点记录历史。"
+    },
     "stock": {
-      "title": "库存状况",
-      "subtitle": "按仓库/零件查看实时库存状况。",
+      "title": "产品库存状况",
+      "subtitle": "按仓库查看半成品/成品实时库存状况。",
       "totalStock": "总库存",
       "availableStock": "可用库存",
       "partCount": "零件数",
@@ -347,6 +382,20 @@
       "defectWarehouse": "不良品仓库",
       "scrapWarehouse": "废品仓库",
       "subconWarehouse": "外协方"
+    },
+    "location": {
+      "title": "库位",
+      "searchPlaceholder": "搜索库位代码、库位名...",
+      "locationCode": "库位代码",
+      "locationName": "库位名称",
+      "zone": "区域",
+      "rowNo": "行",
+      "colNo": "列",
+      "levelNo": "层",
+      "addLocation": "新增库位",
+      "editLocation": "编辑库位",
+      "deleteLocation": "删除库位",
+      "deleteConfirm": "确定要删除此库位吗？"
     },
     "transaction": {
       "title": "出入库历史",
@@ -424,6 +473,44 @@
       "tabHistory": "历史",
       "noStock": "无库存",
       "noHistory": "无历史"
+    },
+    "productPhysicalInv": {
+      "title": "产品盘点",
+      "subtitle": "对产品/半成品仓库进行盘点并反映差异。",
+      "warehouse": "仓库",
+      "systemQty": "账面数量",
+      "countedQty": "盘点数量",
+      "diffQty": "差异数量",
+      "lastCountDate": "最后盘点日",
+      "applyCount": "盘点反映",
+      "confirmMessage": "是否反映{{count}}条盘点结果？",
+      "searchPlaceholder": "搜索品目代码或名称...",
+      "stats": {
+        "total": "总品目",
+        "counted": "已盘点",
+        "mismatch": "差异发生",
+        "matched": "一致"
+      }
+    },
+    "productPhysicalInvHistory": {
+      "title": "产品盘点历史",
+      "subtitle": "查看产品/半成品盘点结果记录。",
+      "warehouse": "仓库",
+      "countDate": "盘点日期",
+      "systemQty": "账面数量",
+      "countedQty": "盘点数量",
+      "diffQty": "差异数量",
+      "reason": "原因",
+      "inspector": "盘点人",
+      "searchPlaceholder": "搜索品目代码或名称...",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "stats": {
+        "total": "总件数",
+        "positive": "增加（过剩）",
+        "negative": "减少（不足）",
+        "matched": "一致"
+      }
     }
   },
   "system": {
@@ -467,6 +554,14 @@
       "role": "角色",
       "status": "状态",
       "lastLogin": "最近登录",
+      "photo": "照片",
+      "addPhoto": "添加照片",
+      "changePhoto": "更换照片",
+      "photoHint": "JPG, PNG (最大5MB)",
+      "photoCrop": "裁剪照片",
+      "rotate": "旋转",
+      "photoTypeError": "只允许上传图片文件。",
+      "photoSizeError": "文件大小不能超过5MB。",
       "roleAdmin": "管理员",
       "roleManager": "经理",
       "roleOperator": "操作员",
@@ -507,12 +602,36 @@
       "stopBits": "停止位",
       "parity": "校验位",
       "flowControl": "流控制",
+      "lineEnding": "行结束符 (CR/LF)",
       "hostLabel": "主机（IP）",
       "hostPlaceholder": "例：192.168.1.100",
       "portLabel": "端口",
       "portPlaceholder": "例：502",
       "extraSettings": "{{type}}额外设置"
+    },
+    "config": {
+      "title": "环境设置",
+      "description": "设置系统运行所需的各种选项。",
+      "group": { "all": "全部", "MATERIAL": "材料管理", "PRODUCTION": "生产管理", "QUALITY": "质量管理", "SYSTEM": "系统" },
+      "save": "保存设置",
+      "saveSuccess": "设置已保存。",
+      "addNew": "添加设置",
+      "noChanges": "没有更改的设置。",
+      "changedCount": "{{count}}项已更改",
+      "confirmDelete": "确定要删除此设置吗？"
     }
+  },
+  "serialTest": {
+    "title": "串口通信测试",
+    "connectedStatus": "已连接",
+    "disconnectedStatus": "未连接",
+    "connectBtn": "连接",
+    "disconnectBtn": "断开",
+    "sendBtn": "发送",
+    "clearBtn": "清除",
+    "sendPlaceholderHex": "HEX数据（例：01 03 00 00 00 01）",
+    "sendPlaceholderAscii": "ASCII文本（例：HELLO）",
+    "logEmpty": "连接后接收/发送的数据将显示在这里"
   },
   "master": {
     "part": {
@@ -673,7 +792,14 @@
       "typePkg": "包装",
       "addProcess": "添加工序",
       "editProcess": "编辑工序",
-      "searchPlaceholder": "搜索工序代码、名称..."
+      "searchPlaceholder": "搜索工序代码、名称...",
+      "processCategory": "工序大类",
+      "sampleInspectYn": "抽检",
+      "catAssy": "组装",
+      "catInsp": "检查",
+      "catCutting": "切割",
+      "catWelding": "焊接",
+      "catPacking": "包装"
     },
     "routing": {
       "title": "工艺路线管理",
@@ -692,7 +818,14 @@
       "partSelect": "选择零件",
       "equipTypePlaceholder": "选择设备类型",
       "stdTimeSec": "标准时间(秒)",
-      "setupTimeSec": "换线时间(秒)"
+      "setupTimeSec": "换线时间(秒)",
+      "wireLength": "电线长度(mm)",
+      "stripLength": "剥皮长度(mm)",
+      "crimpHeight": "压接高度(mm)",
+      "crimpWidth": "压接宽度(mm)",
+      "weldCondition": "焊接条件",
+      "weldConditionPlaceholder": "输入焊接条件(温度、时间、压力等)",
+      "processDetailTitle": "工序详细参数"
     },
     "worker": {
       "title": "作业员管理",
@@ -726,8 +859,8 @@
       "deleteConfirm": "确定要删除吗？"
     },
     "iqcItem": {
-      "title": "IQC检查项目",
-      "subtitle": "注册和管理来料检查项目。",
+      "title": "IQC检查项目/组管理",
+      "subtitle": "注册检查项目并按检查组进行管理。",
       "seq": "序号",
       "inspectItem": "检查项目",
       "spec": "规格/基准",
@@ -737,7 +870,52 @@
       "editItem": "编辑项目",
       "searchPlaceholder": "搜索零件代码、检查项目...",
       "partSelect": "选择零件",
-      "retestCycle": "复检周期(天)"
+      "retestCycle": "复检周期(天)",
+      "visual": "目视",
+      "measureMethod": "测量",
+      "judgeMethod": "判定方法",
+      "itemCode": "项目代码",
+      "revision": "Rev",
+      "deleteItem": "删除检查项目",
+      "deleteConfirm": "确定要删除此检查项目吗？",
+      "tabItems": "检查项目"
+    },
+    "iqcGroup": {
+      "tabItems": "检查项目",
+      "tabGroups": "检查组",
+      "groupCode": "组代码",
+      "groupName": "组名称",
+      "inspectMethod": "检查方式",
+      "methodFull": "全数检查",
+      "methodSample": "抽样检查",
+      "methodSkip": "免检",
+      "sampleQty": "样品数量",
+      "itemCount": "项目数",
+      "addGroup": "添加组",
+      "editGroup": "编辑组",
+      "searchPlaceholder": "搜索组代码/名称...",
+      "groupInfo": "组信息",
+      "selectItems": "选择检查项目",
+      "selectedItems": "已选项目",
+      "itemSearchPlaceholder": "搜索项目代码/名称..."
+    },
+    "iqcLink": {
+      "tabLinks": "关联管理",
+      "addLink": "添加关联",
+      "editLink": "编辑关联",
+      "partCode": "零件代码",
+      "partName": "零件名称",
+      "partner": "供应商",
+      "group": "检查组",
+      "partSelect": "选择零件",
+      "partPlaceholder": "请选择零件",
+      "partnerSelect": "供应商",
+      "allVendors": "全部 (默认)",
+      "groupSelect": "检查组",
+      "groupPlaceholder": "请选择检查组",
+      "defaultLabel": "默认(全部)",
+      "remarkPlaceholder": "备注 (可选)",
+      "searchPlaceholder": "搜索零件代码/名称/供应商..."
     },
     "equipInspect": {
       "title": "设备点检项目",
@@ -796,9 +974,16 @@
       "editDoc": "编辑指导书",
       "searchPlaceholder": "搜索文档名、零件代码、工序代码...",
       "revision": "版本",
-      "imageUrl": "图片URL",
+      "imageUrl": "或直接输入URL",
       "content": "内容",
-      "contentPlaceholder": "请输入作业指导内容..."
+      "contentPlaceholder": "请输入作业指导内容...",
+      "attachment": "附件",
+      "dropFile": "拖放或点击上传文件",
+      "fileTypes": "图片(JPG, PNG), PDF, 文档 (最大10MB)",
+      "preview": "预览",
+      "openNewTab": "在新标签页中打开",
+      "clickToDownload": "点击下载",
+      "noContent": "没有注册的内容。"
     },
     "transferRule": {
       "title": "仓库移转规则",
@@ -891,7 +1076,34 @@
       "addCompany": "添加公司",
       "editCompany": "编辑公司",
       "searchPlaceholder": "搜索公司代码、名称、营业执照号...",
-      "selectCompany": "请选择公司"
+      "selectCompany": "请选择公司",
+      "plantSection": "工厂",
+      "plantCode": "工厂代码",
+      "plantName": "工厂名称",
+      "addPlant": "添加工厂",
+      "noPlant": "没有注册的工厂。"
+    },
+    "vendorBarcode": {
+      "title": "供应商条码映射",
+      "subtitle": "将供应商条码映射到MES物料编号以实现自动匹配",
+      "vendorBarcode": "供应商条码",
+      "partCode": "物料编号",
+      "partName": "物料名称",
+      "vendorCode": "供应商代码",
+      "vendorName": "供应商名称",
+      "matchType": "匹配类型",
+      "matchExact": "精确",
+      "matchPrefix": "前缀",
+      "matchRegex": "正则",
+      "mappingRule": "映射规则",
+      "useYn": "启用",
+      "addMapping": "添加映射",
+      "editMapping": "编辑映射",
+      "searchPlaceholder": "搜索条码、物料编号、物料名称...",
+      "confirmDelete": "确定要删除此映射吗？",
+      "createSuccess": "条码映射创建成功。",
+      "updateSuccess": "条码映射更新成功。",
+      "deleteSuccess": "条码映射删除成功。"
     }
   },
   "material": {
@@ -956,7 +1168,8 @@
         "remainingQty": "剩余数量",
         "orderQty": "订购数量",
         "receivedQty": "已收数量",
-        "inputQty": "本次数量"
+        "inputQty": "本次数量",
+        "manufactureDate": "生产日期"
       },
       "selectPoDesc": "请选择可到货的PO。",
       "selectWarehouse": "选择仓库",
@@ -1002,7 +1215,15 @@
       "inspectorPlaceholder": "请输入检查员姓名",
       "remarkPlaceholder": "检查备注",
       "passed": "合格",
-      "failed": "不合格"
+      "failed": "不合格",
+      "inspectItem": "检查项目",
+      "spec": "规格",
+      "measuredValue": "测量值",
+      "judgment": "判定",
+      "overallJudge": "综合判定",
+      "noInspectItems": "该品目没有登记的IQC检查项目，请手动判定合否。",
+      "submitFailed": "登记为不合格",
+      "submitPassed": "登记为合格"
     },
     "receive": {
       "title": "入库管理",
@@ -1148,13 +1369,24 @@
         "quantity": "数量",
         "safetyStock": "安全库存",
         "status": "状态",
-        "lastUpdated": "最后更新"
+        "lastUpdated": "最后更新",
+        "manufactureDate": "生产日期",
+        "elapsedDays": "经过天数",
+        "remainingDays": "剩余有效期",
+        "shelfLifeStatus": "有效期",
+        "dayUnit": "天"
+      },
+      "shelfLife": {
+        "expired": "过期",
+        "imminent": "即将到期",
+        "normal": "正常"
       },
       "stats": {
         "totalItems": "全部物品",
         "totalQuantity": "总数量",
         "belowSafety": "低于安全库存",
-        "warningLevel": "警告级别"
+        "warningLevel": "警告级别",
+        "expiryWarning": "有效期预警"
       },
       "searchPlaceholder": "搜索零件代码、名称..."
     },
@@ -1231,6 +1463,12 @@
       "inspector": "检验员",
       "inspectDate": "检验日期",
       "searchPlaceholder": "搜索LOT编号、零件名称...",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "pass": "合格",
+      "fail": "不合格",
+      "initial": "初检",
+      "retest": "复检",
       "stats": {
         "total": "总检验",
         "pass": "合格",
@@ -1252,7 +1490,31 @@
       "newLotNoPlaceholder": "自动生成或手动输入",
       "remark": "备注",
       "remarkPlaceholder": "输入分割原因",
-      "searchPlaceholder": "搜索LOT编号、零件名称..."
+      "searchPlaceholder": "搜索LOT编号、零件名称...",
+      "stats": {
+        "total": "全部LOT",
+        "totalQty": "总数量"
+      }
+    },
+    "lotMerge": {
+      "title": "物料合并",
+      "subtitle": "选择相同零件的LOT进行合并。",
+      "lotNo": "LOT编号",
+      "vendor": "供应商",
+      "expireDate": "有效期",
+      "mergeSelected": "合并所选",
+      "selectedCount": "已选LOT",
+      "totalQty": "合计数量",
+      "targetLot": "目标LOT",
+      "mergingLots": "合并LOT",
+      "ready": "可以合并",
+      "partMismatch": "零件不匹配",
+      "partMismatchWarning": "不同零件的LOT无法合并，请选择相同零件的LOT。",
+      "clearSelection": "清除选择",
+      "confirmTitle": "确认LOT合并",
+      "confirmMessage": "是否合并所选LOT？原LOT将标记为耗尽(DEPLETED)。",
+      "confirmMerge": "执行合并",
+      "searchPlaceholder": "搜索LOT编号..."
     },
     "shelfLife": {
       "title": "保质期物料",
@@ -1260,6 +1522,7 @@
       "partCode": "零件代码",
       "partName": "零件名称",
       "currentQty": "当前数量",
+      "vendor": "供应商",
       "expireDate": "到期日",
       "remainDays": "剩余天数",
       "days": "天",
@@ -1308,7 +1571,14 @@
       "warehouse": "仓库",
       "lotId": "LOT ID",
       "lotIdPlaceholder": "输入LOT ID",
-      "searchPlaceholder": "搜索处理编号、LOT编号、零件名称..."
+      "searchPlaceholder": "搜索处理编号、LOT编号、零件名称...",
+      "totalCount": "总废弃件数",
+      "totalQty": "总废弃数量",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "stockSelect": "选择库存 (品目-LOT)",
+      "availableQty": "可用数量",
+      "max": "最大"
     },
     "adjustment": {
       "title": "库存调整",
@@ -1327,7 +1597,16 @@
       "createdBy": "处理人",
       "createdAt": "处理日期",
       "register": "登记调整",
-      "searchPlaceholder": "搜索零件代码、名称、原因..."
+      "searchPlaceholder": "搜索零件代码、名称、原因...",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "partSearch": "品目搜索",
+      "partSearchPlaceholder": "输入品目代码或名称（2字以上）",
+      "stats": {
+        "total": "全部调整",
+        "increase": "增加",
+        "decrease": "减少"
+      }
     },
     "miscReceipt": {
       "title": "其他入库",
@@ -1341,7 +1620,15 @@
       "remarkPlaceholder": "请输入入库原因",
       "transDate": "处理日期",
       "register": "登记其他入库",
-      "searchPlaceholder": "搜索处理编号、零件名称、备注..."
+      "searchPlaceholder": "搜索处理编号、零件名称、备注...",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "partSearch": "品目搜索",
+      "partSearchPlaceholder": "输入品目代码或名称（2个字以上）...",
+      "stats": {
+        "total": "杂收总数",
+        "totalQty": "总数量"
+      }
     },
     "physicalInv": {
       "title": "库存盘点",
@@ -1363,6 +1650,27 @@
         "counted": "已盘点",
         "mismatch": "不一致",
         "matched": "一致"
+      },
+      "confirmMessage": "是否反映{{count}}条盘点结果?"
+    },
+    "physicalInvHistory": {
+      "title": "库存盘点查询",
+      "subtitle": "查询库存盘点历史记录。",
+      "warehouse": "仓库",
+      "countDate": "盘点日期",
+      "systemQty": "账面数量",
+      "countedQty": "盘点数量",
+      "diffQty": "差异数量",
+      "reason": "原因",
+      "inspector": "盘点人",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "searchPlaceholder": "搜索品目代码、品目名...",
+      "stats": {
+        "total": "总件数",
+        "positive": "盈余 (+)",
+        "negative": "短缺 (-)",
+        "matched": "一致 (0)"
       }
     },
     "receiptCancel": {
@@ -1380,7 +1688,14 @@
       "reason": "取消原因",
       "reasonPlaceholder": "请输入取消原因",
       "confirm": "确认取消",
-      "searchPlaceholder": "搜索事务编号、零件名称、LOT编号..."
+      "searchPlaceholder": "搜索事务编号、零件名称、LOT编号...",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "stats": {
+        "total": "全部入库",
+        "cancellable": "可取消",
+        "canceled": "已取消"
+      }
     }
   },
   "cutting": {
@@ -1534,7 +1849,23 @@
       "processCRIMP": "压接",
       "processASSY": "组装",
       "processINSP": "检查",
-      "processPACK": "包装"
+      "processPACK": "包装",
+      "create": "创建工单",
+      "createTitle": "创建工单",
+      "partType": "品目类型",
+      "planDate": "计划日期",
+      "priority": "优先级",
+      "autoCreateChildren": "基于BOM自动创建半成品工单",
+      "treeView": "树状图",
+      "listView": "列表视图",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "stats": {
+        "total": "全部",
+        "waiting": "等待",
+        "running": "进行中",
+        "done": "完成"
+      }
     },
     "result": {
       "title": "生产实绩查询",
@@ -1749,7 +2080,7 @@
       "fail": "不合格",
       "passRate": "合格率",
       "allJudgment": "全部判定",
-      "searchPlaceholder": "搜索LOT或品名...",
+      "searchPlaceholder": "搜索工单号、品名、检查员...",
       "inspectDate": "检查日期",
       "lotNo": "LOT号",
       "orderNo": "作业号",
@@ -1761,7 +2092,38 @@
       "failQty": "不合格数",
       "judgment": "判定",
       "inspector": "检查员",
-      "remark": "备注"
+      "remark": "备注",
+      "inputBtn": "检查录入",
+      "inputTitle": "半成品抽样检查录入",
+      "sampleNo": "样品#",
+      "measuredValue": "测量值",
+      "specUpper": "上限值",
+      "specLower": "下限值",
+      "sampleCount": "样品数",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "inspectTypePlaceholder": "外观检查、尺寸检查等"
+    },
+    "resultSummary": {
+      "title": "生产实绩综合查询",
+      "description": "按成品统计计划/良品/不良/良品率",
+      "partType": "品目类型",
+      "planQty": "计划数量",
+      "goodQty": "良品数量",
+      "defectQty": "不良数量",
+      "achieveRate": "达成率",
+      "yieldRate": "良品率",
+      "defectRate": "不良率",
+      "orderCount": "工单数",
+      "searchPlaceholder": "搜索品目代码、品名...",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "stats": {
+        "planTotal": "总计划数量",
+        "goodTotal": "总良品数量",
+        "defectTotal": "总不良数量",
+        "yieldRate": "整体良品率"
+      }
     },
     "packResult": {
       "title": "包装实绩查询",
@@ -1948,6 +2310,48 @@
       "resultCol": "结果",
       "enterSerialOrLot": "请输入序列号或LOT编号",
       "canCheckHistory": "可以查看产品的全部制造历史和4M信息。"
+    },
+    "oqc": {
+      "title": "出货检查(OQC)",
+      "description": "出货前验证产品质量，判定合格/不合格。",
+      "historyTitle": "出货检查记录",
+      "historyDescription": "查看已完成的OQC检查记录。",
+      "inspectTitle": "OQC检查执行",
+      "createRequest": "OQC委托",
+      "requestNo": "委托编号",
+      "requestDate": "委托日期",
+      "customer": "客户",
+      "customerPlaceholder": "输入客户名称",
+      "boxCount": "箱数",
+      "totalQty": "总数量",
+      "sampleSize": "样本数",
+      "sampleSizePlaceholder": "输入样本数量",
+      "inspector": "检查员",
+      "inspectorPlaceholder": "输入检查员姓名",
+      "inspectDate": "检查日期",
+      "result": "判定",
+      "pass": "合格",
+      "fail": "不合格",
+      "passRate": "合格率",
+      "statusPending": "待检",
+      "statusPass": "合格",
+      "statusFail": "不合格",
+      "statTotal": "总委托",
+      "statPending": "待检",
+      "statPass": "合格",
+      "statFail": "不合格",
+      "searchPlaceholder": "搜索委托编号、品番、品名...",
+      "selectPart": "选择品目",
+      "selectPartPlaceholder": "请选择品目",
+      "availableBoxes": "可检查箱",
+      "selectedInfo": "已选{{boxCount}}箱，总数量{{totalQty}}",
+      "linkedBoxes": "关联箱列表",
+      "boxNo": "箱号",
+      "qty": "数量",
+      "sample": "样本",
+      "isSample": "是否样本",
+      "sampleYes": "样本",
+      "remarkPlaceholder": "输入备注"
     }
   },
   "equipment": {
@@ -2277,7 +2681,22 @@
       "driver": "司机",
       "driverPlaceholder": "输入司机姓名",
       "destination": "目的地",
-      "destinationPlaceholder": "输入目的地"
+      "destinationPlaceholder": "输入目的地",
+      "allCustomers": "全部客户"
+    },
+    "scan": {
+      "title": "出货扫描验证",
+      "scanPlaceholder": "扫描托盘条码...",
+      "verify": "验证",
+      "verified": "已验证",
+      "progress": "验证进度",
+      "confirmShip": "确认出货",
+      "alreadyVerified": "该托盘已验证。",
+      "palletNotFound": "未找到该托盘。",
+      "wrongShipment": "该托盘不属于此出货。",
+      "verifyFailed": "验证失败。",
+      "confirmFailed": "出货确认失败。",
+      "noPallets": "此出货未分配托盘。"
     }
   },
   "customs": {
@@ -2664,6 +3083,7 @@
     "VENDOR_TYPE": { "SUBCON": "外包商", "SUPPLIER": "供应商" },
     "WAREHOUSE_TYPE_DTO": { "RAW": "原材料", "WIP": "半成品", "FG": "成品", "FLOOR": "现场", "DEFECT": "不良", "SCRAP": "废弃", "SUBCON": "外包" },
     "IQC_STATUS": { "PENDING": "等待", "PASS": "合格", "FAIL": "不合格", "HOLD": "保留" },
+    "OQC_STATUS": { "PENDING": "等待", "IN_PROGRESS": "检查中", "PASS": "合格", "FAIL": "不合格" },
     "MAT_LOT_STATUS": { "NORMAL": "正常", "HOLD": "保留", "DEPLETED": "耗尽" },
     "ISSUE_TYPE": { "PROD": "生产", "SUBCON": "外包", "SAMPLE": "样品", "ADJ": "调整" },
     "TRANSACTION_TYPE": { "MAT_IN": "材料入库", "MAT_IN_CANCEL": "材料入库取消", "MAT_OUT": "材料出库", "MAT_OUT_CANCEL": "材料出库取消", "WIP_IN": "半成品入库", "WIP_IN_CANCEL": "半成品入库取消", "WIP_OUT": "半成品出库", "WIP_OUT_CANCEL": "半成品出库取消", "FG_IN": "成品入库", "FG_IN_CANCEL": "成品入库取消", "FG_OUT": "成品出库", "FG_OUT_CANCEL": "成品出库取消", "SUBCON_OUT": "外包出库", "SUBCON_OUT_CANCEL": "外包出库取消", "SUBCON_IN": "外包入库", "SUBCON_IN_CANCEL": "外包入库取消", "PROD_CONSUME": "生产消耗", "PROD_CONSUME_CANCEL": "生产消耗取消", "TRANSFER": "移动", "TRANSFER_CANCEL": "移动取消", "ADJ_PLUS": "调整(+)", "ADJ_MINUS": "调整(-)", "SCRAP": "废弃" },
@@ -2763,5 +3183,21 @@
     "INSPECT_CHECK_TYPE": "点检类型",
     "INSPECT_JUDGE": "点检判定",
     "JUDGE_YN": "合格与否"
+  },
+  "export": {
+    "title": "导出",
+    "formatLabel": "选择文件格式",
+    "excel": "Excel",
+    "pdf": "PDF",
+    "csv": "CSV",
+    "html": "HTML",
+    "markdown": "Markdown",
+    "txt": "文本"
+  },
+  "tabs": {
+    "close": "关闭",
+    "closeOthers": "关闭其他",
+    "closeAll": "关闭所有",
+    "pinnedTooltip": "固定标签 (无法关闭)"
   }
 }

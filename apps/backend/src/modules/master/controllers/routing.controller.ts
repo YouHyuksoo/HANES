@@ -11,6 +11,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { RoutingService } from '../services/routing.service';
 import { CreateRoutingDto, UpdateRoutingDto, RoutingQueryDto } from '../dto/routing.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -22,8 +23,8 @@ export class RoutingController {
 
   @Get()
   @ApiOperation({ summary: '라우팅 목록 조회' })
-  async findAll(@Query() query: RoutingQueryDto) {
-    const result = await this.routingService.findAll(query);
+  async findAll(@Query() query: RoutingQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.routingService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

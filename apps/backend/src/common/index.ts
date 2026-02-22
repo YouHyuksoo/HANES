@@ -14,6 +14,9 @@ export * from './dto/base-query.dto';
 // Filters
 export * from './filters/http-exception.filter';
 
+// Decorators
+export * from './decorators/tenant.decorator';
+
 // Guards
 export * from './guards/jwt-auth.guard';
 

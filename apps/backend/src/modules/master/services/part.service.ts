@@ -16,7 +16,7 @@ export class PartService {
     private readonly partRepository: Repository<PartMaster>,
   ) {}
 
-  async findAll(query: PartQueryDto, company?: string) {
+  async findAll(query: PartQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 20, partType, search, customer, useYn } = query;
     const skip = (page - 1) * limit;
 
@@ -25,6 +25,9 @@ export class PartService {
 
     if (company) {
       queryBuilder.andWhere('p.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('p.plant = :plant', { plant });
     }
 
     if (partType) {

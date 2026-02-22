@@ -16,12 +16,19 @@ export class TransferRuleService {
     private readonly transferRuleRepository: Repository<WarehouseTransferRule>,
   ) {}
 
-  async findAll(query: TransferRuleQueryDto) {
+  async findAll(query: TransferRuleQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromWarehouseId, toWarehouseId, allowYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.transferRuleRepository.createQueryBuilder('rule')
       .where('rule.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('rule.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('rule.plant = :plant', { plant });
+    }
 
     if (fromWarehouseId) {
       queryBuilder.andWhere('rule.fromWarehouseId = :fromWarehouseId', { fromWarehouseId });

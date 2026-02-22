@@ -59,6 +59,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     tactTime: editingPart?.tactTime ?? 0,
     expiryDate: editingPart?.expiryDate ?? 0,
     iqcYn: editingPart?.iqcYn || "Y",
+    packUnit: editingPart?.packUnit || "",
+    storageLocation: editingPart?.storageLocation || "",
     remark: editingPart?.remark || "",
   }));
   const [saving, setSaving] = useState(false);
@@ -81,6 +83,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         vendor: form.vendor || undefined,
         customer: form.customer || undefined,
         remark: form.remark || undefined,
+        packUnit: form.packUnit || undefined,
+        storageLocation: form.storageLocation || undefined,
         lotUnitQty: form.lotUnitQty || undefined,
       };
 
@@ -156,6 +160,10 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
           value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
         <Input label={t("master.part.leadTime", "리드타임(일)")} type="number" placeholder="7"
           fullWidth />
+        <Input label={t("master.part.packUnit", "포장단위")} placeholder="EA, BOX, BAG"
+          value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
+        <Input label={t("master.part.storageLocation", "적재로케이션")} placeholder="A-01-02"
+          value={form.storageLocation} onChange={e => setField("storageLocation", e.target.value)} fullWidth />
       </div>
 
       {/* 비고 */}

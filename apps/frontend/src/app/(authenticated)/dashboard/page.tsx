@@ -8,23 +8,19 @@
  * 1. **KPI 카드**: 주요 지표를 카드 형태로 표시
  * 2. **최근 실적**: DataGrid로 테이블 표시
  * 3. **반응형**: 그리드 레이아웃으로 화면 크기에 따라 조정
+ * 4. API: GET /dashboard/kpi, GET /dashboard/recent-productions
  */
-import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  Factory,
-  Package,
-  Shield,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  LayoutDashboard,
-} from 'lucide-react';
-import { Card, CardHeader, CardContent } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
+  Factory, Package, Shield, AlertTriangle,
+  TrendingUp, TrendingDown, LayoutDashboard, RefreshCw,
+} from "lucide-react";
+import { Card, CardHeader, CardContent, Button } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import api from "@/services/api";
 
-// KPI 카드 컴포넌트
 interface KpiCardProps {
   title: string;
   value: string | number;
@@ -50,20 +46,10 @@ function KpiCard({ title, value, unit, change, changeLabel, icon: Icon, color }:
               {unit && <span className="text-xs text-text-muted">{unit}</span>}
             </div>
             {change !== undefined && (
-              <div
-                className={`
-                  flex items-center gap-1 mt-1 text-xs
-                  ${isPositive ? 'text-success' : ''}
-                  ${isNegative ? 'text-error' : ''}
-                  ${!isPositive && !isNegative ? 'text-text-muted' : ''}
-                `}
-              >
+              <div className={`flex items-center gap-1 mt-1 text-xs ${isPositive ? "text-success" : ""} ${isNegative ? "text-error" : ""} ${!isPositive && !isNegative ? "text-text-muted" : ""}`}>
                 {isPositive && <TrendingUp className="w-3 h-3" />}
                 {isNegative && <TrendingDown className="w-3 h-3" />}
-                <span>
-                  {isPositive && '+'}
-                  {change}% {changeLabel}
-                </span>
+                <span>{isPositive && "+"}{change}% {changeLabel}</span>
               </div>
             )}
           </div>
@@ -76,7 +62,13 @@ function KpiCard({ title, value, unit, change, changeLabel, icon: Icon, color }:
   );
 }
 
-// 샘플 데이터 타입
+interface KpiData {
+  todayProduction: { value: number; change: number };
+  inventoryStatus: { value: number; change: number };
+  qualityPassRate: { value: string; change: number };
+  interlockCount: { value: number; change: number };
+}
+
 interface RecentProduction {
   id: string;
   orderNo: string;
@@ -88,194 +80,115 @@ interface RecentProduction {
   status: string;
 }
 
-function DashboardPage() {
+const defaultKpi: KpiData = {
+  todayProduction: { value: 0, change: 0 },
+  inventoryStatus: { value: 0, change: 0 },
+  qualityPassRate: { value: "0", change: 0 },
+  interlockCount: { value: 0, change: 0 },
+};
+
+export default function DashboardPage() {
   const { t } = useTranslation();
+  const [kpi, setKpi] = useState<KpiData>(defaultKpi);
+  const [productions, setProductions] = useState<RecentProduction[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // 샘플 데이터
-  const recentProductions: RecentProduction[] = [
-    {
-      id: '1',
-      orderNo: 'WO-2026-0126-001',
-      partName: '메인 하네스 A타입',
-      line: 'LINE-01',
-      planQty: 500,
-      actualQty: 423,
-      progress: 84.6,
-      status: '진행중',
-    },
-    {
-      id: '2',
-      orderNo: 'WO-2026-0126-002',
-      partName: '서브 하네스 B타입',
-      line: 'LINE-02',
-      planQty: 300,
-      actualQty: 300,
-      progress: 100,
-      status: '완료',
-    },
-    {
-      id: '3',
-      orderNo: 'WO-2026-0126-003',
-      partName: '엔진룸 하네스',
-      line: 'LINE-01',
-      planQty: 200,
-      actualQty: 0,
-      progress: 0,
-      status: '대기',
-    },
-    {
-      id: '4',
-      orderNo: 'WO-2026-0126-004',
-      partName: '도어 하네스 L',
-      line: 'LINE-03',
-      planQty: 150,
-      actualQty: 89,
-      progress: 59.3,
-      status: '진행중',
-    },
-  ];
+  const statusDisplayMap: Record<string, string> = useMemo(() => ({
+    WAIT: t("dashboard.statusWaiting"),
+    RUNNING: t("dashboard.statusInProgress"),
+    DONE: t("dashboard.statusCompleted"),
+  }), [t]);
 
-  // 상태 표시 매핑 (데이터 값 -> 번역 키)
-  const statusDisplayMap: Record<string, string> = {
-    '대기': t('dashboard.statusWaiting'),
-    '진행중': t('dashboard.statusInProgress'),
-    '완료': t('dashboard.statusCompleted'),
-  };
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [kpiRes, prodRes] = await Promise.all([
+        api.get("/dashboard/kpi"),
+        api.get("/dashboard/recent-productions"),
+      ]);
+      setKpi(kpiRes.data?.data ?? defaultKpi);
+      setProductions(prodRes.data?.data ?? []);
+    } catch {
+      /* keep current state */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  // DataGrid 컬럼 정의
-  const columns = useMemo<ColumnDef<RecentProduction>[]>(
-    () => [
-      {
-        accessorKey: 'orderNo',
-        header: t('dashboard.orderNo'),
-      },
-      {
-        accessorKey: 'partName',
-        header: t('dashboard.partName'),
-      },
-      {
-        accessorKey: 'line',
-        header: t('dashboard.line'),
-      },
-      {
-        accessorKey: 'planQty',
-        header: t('dashboard.planQty'),
-        cell: ({ getValue }) => getValue<number>().toLocaleString(),
-      },
-      {
-        accessorKey: 'actualQty',
-        header: t('dashboard.actualQty'),
-        cell: ({ getValue }) => getValue<number>().toLocaleString(),
-      },
-      {
-        accessorKey: 'progress',
-        header: t('dashboard.progress'),
-        cell: ({ getValue }) => {
-          const value = getValue<number>();
-          return (
-            <div className="flex items-center gap-2">
-              <div className="w-20 h-2 bg-background rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${Math.min(value, 100)}%` }}
-                />
-              </div>
-              <span className="text-sm">{value.toFixed(1)}%</span>
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const columns = useMemo<ColumnDef<RecentProduction>[]>(() => [
+    { accessorKey: "orderNo", header: t("dashboard.orderNo"), size: 160 },
+    { accessorKey: "partName", header: t("dashboard.partName"), size: 180 },
+    { accessorKey: "line", header: t("dashboard.line"), size: 100 },
+    { accessorKey: "planQty", header: t("dashboard.planQty"), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "actualQty", header: t("dashboard.actualQty"), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    {
+      accessorKey: "progress", header: t("dashboard.progress"), size: 160,
+      cell: ({ getValue }) => {
+        const value = getValue() as number;
+        return (
+          <div className="flex items-center gap-2">
+            <div className="w-20 h-2 bg-background rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.min(value, 100)}%` }} />
             </div>
-          );
-        },
+            <span className="text-sm">{value.toFixed(1)}%</span>
+          </div>
+        );
       },
-      {
-        accessorKey: 'status',
-        header: t('dashboard.status'),
-        cell: ({ getValue }) => {
-          const status = getValue<string>();
-          const colorMap: Record<string, string> = {
-            대기: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-            진행중: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-            완료: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-          };
-          return (
-            <span
-              className={`
-                inline-flex px-2 py-1 text-xs font-medium rounded-full
-                ${colorMap[status] || ''}
-              `}
-            >
-              {statusDisplayMap[status] || status}
-            </span>
-          );
-        },
+    },
+    {
+      accessorKey: "status", header: t("dashboard.status"), size: 90,
+      cell: ({ getValue }) => {
+        const status = getValue() as string;
+        const colorMap: Record<string, string> = {
+          WAIT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+          RUNNING: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+          DONE: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+        };
+        return (
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${colorMap[status] || ""}`}>
+            {statusDisplayMap[status] || status}
+          </span>
+        );
       },
-    ],
-    [t, statusDisplayMap]
-  );
+    },
+  ], [t, statusDisplayMap]);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-xl font-bold text-text flex items-center gap-2"><LayoutDashboard className="w-7 h-7 text-primary" />{t('dashboard.title')}</h1>
-        <p className="text-text-muted mt-1">{t('dashboard.subtitle')}</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2"><LayoutDashboard className="w-7 h-7 text-primary" />{t("dashboard.title")}</h1>
+          <p className="text-text-muted mt-1">{t("dashboard.subtitle")}</p>
+        </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
+        </Button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          title={t('dashboard.todayProduction')}
-          value={1247}
-          unit="EA"
-          change={12.5}
-          changeLabel={t('common.vsYesterday')}
-          icon={Factory}
-          color="bg-primary"
-        />
-        <KpiCard
-          title={t('dashboard.inventoryStatus')}
-          value={8543}
-          unit="EA"
-          change={-3.2}
-          changeLabel={t('common.vsYesterday')}
-          icon={Package}
-          color="bg-secondary"
-        />
-        <KpiCard
-          title={t('dashboard.qualityPassRate')}
-          value="98.7"
-          unit="%"
-          change={0.5}
-          changeLabel={t('common.vsYesterday')}
-          icon={Shield}
-          color="bg-success"
-        />
-        <KpiCard
-          title={t('dashboard.interlockOccurrence')}
-          value={3}
-          unit={t('common.count')}
-          change={-50}
-          changeLabel={t('common.vsYesterday')}
-          icon={AlertTriangle}
-          color="bg-warning"
-        />
+        <KpiCard title={t("dashboard.todayProduction")} value={kpi.todayProduction.value} unit="EA" change={kpi.todayProduction.change} changeLabel={t("common.vsYesterday")} icon={Factory} color="bg-primary" />
+        <KpiCard title={t("dashboard.inventoryStatus")} value={kpi.inventoryStatus.value} unit="EA" change={kpi.inventoryStatus.change} changeLabel={t("common.vsYesterday")} icon={Package} color="bg-secondary" />
+        <KpiCard title={t("dashboard.qualityPassRate")} value={kpi.qualityPassRate.value} unit="%" change={kpi.qualityPassRate.change} changeLabel={t("common.vsYesterday")} icon={Shield} color="bg-success" />
+        <KpiCard title={t("dashboard.interlockOccurrence")} value={kpi.interlockCount.value} unit={t("common.count")} change={kpi.interlockCount.change} changeLabel={t("common.vsYesterday")} icon={AlertTriangle} color="bg-warning" />
       </div>
 
       {/* Recent Production Table */}
       <Card>
-        <CardHeader
-          title={t('dashboard.recentOrders')}
-          subtitle={t('dashboard.recentOrdersDesc')}
-        />
+        <CardHeader title={t("dashboard.recentOrders")} subtitle={t("dashboard.recentOrdersDesc")} />
         <CardContent>
           <DataGrid
-            data={recentProductions}
+            data={productions}
             columns={columns}
-            pageSize={5}
-            onRowClick={(row) => console.log('Row clicked:', row)}
+            isLoading={loading}
+            enableColumnFilter
+            enableExport
+            exportFileName={t("dashboard.recentOrders")}
           />
         </CardContent>
       </Card>
     </div>
   );
 }
-
-export default DashboardPage;

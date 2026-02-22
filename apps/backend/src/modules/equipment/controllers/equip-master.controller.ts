@@ -163,4 +163,24 @@ export class EquipMasterController {
     const data = await this.equipMasterService.changeStatus(id, dto);
     return ResponseUtil.success(data, '설비 상태가 변경되었습니다.');
   }
+
+  // =============================================
+  // 라인 및 공정 조회 API
+  // =============================================
+
+  @Get('metadata/lines')
+  @ApiOperation({ summary: '라인 목록 조회 (설비 선택용)' })
+  @SwaggerResponse({ status: 200, description: '라인 목록 조회 성공' })
+  async getLines() {
+    const data = await this.equipMasterService.getLines();
+    return ResponseUtil.success(data);
+  }
+
+  @Get('metadata/processes')
+  @ApiOperation({ summary: '공정 목록 조회 (설비 선택용)' })
+  @SwaggerResponse({ status: 200, description: '공정 목록 조회 성공' })
+  async getProcesses() {
+    const data = await this.equipMasterService.getProcesses();
+    return ResponseUtil.success(data);
+  }
 }

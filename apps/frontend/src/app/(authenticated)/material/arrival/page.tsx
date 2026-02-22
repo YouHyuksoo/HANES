@@ -118,28 +118,30 @@ export default function ArrivalPage() {
       {/* 필터 + 테이블 */}
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t('material.arrival.searchPlaceholder')}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
-            </div>
-            <div className="w-40">
-              <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
-            </div>
-            <Button variant="secondary" onClick={refresh}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-          {loading ? (
-            <div className="py-10 text-center text-text-muted">{t('common.loading')}</div>
-          ) : (
-            <ArrivalHistoryTable data={records} onCancel={(r) => setCancelTarget(r)} />
-          )}
+          <ArrivalHistoryTable
+            data={records}
+            isLoading={loading}
+            onCancel={(r) => setCancelTarget(r)}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t('material.arrival.searchPlaceholder')}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                </div>
+                <Button variant="secondary" size="sm" onClick={refresh} className="flex-shrink-0">
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
 

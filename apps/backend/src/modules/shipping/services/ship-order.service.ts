@@ -34,12 +34,14 @@ export class ShipOrderService {
   ) {}
 
   /** 출하지시 목록 조회 */
-  async findAll(query: ShipOrderQueryDto) {
+  async findAll(query: ShipOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
       ...(status && { status }),
       ...(search && {
         shipOrderNo: ILike(`%${search}%`),

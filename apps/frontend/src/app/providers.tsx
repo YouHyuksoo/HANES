@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
 import { useComCodes } from "@/hooks/useComCode";
 import { useThemeStore, listenSystemThemeChange } from "@/stores/themeStore";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
 import "@/lib/i18n";
 
 // React Query 클라이언트 설정
@@ -82,6 +83,18 @@ function ComCodePrefetch() {
   return null;
 }
 
+/** 환경설정 프리페치 - 인증된 상태에서만 호출 */
+function SysConfigPrefetch() {
+  const { isAuthenticated } = useAuthStore();
+  const { fetchConfigs, isLoaded } = useSysConfigStore();
+  useEffect(() => {
+    if (isAuthenticated && !isLoaded) {
+      fetchConfigs();
+    }
+  }, [isAuthenticated, isLoaded, fetchConfigs]);
+  return null;
+}
+
 /** HTML lang 속성 동기화 */
 function LanguageSync() {
   const { i18n } = useTranslation();
@@ -114,6 +127,7 @@ export function Providers({ children }: ProvidersProps) {
       <ThemeEffect />
       <AuthInitializer />
       <ComCodePrefetch />
+      <SysConfigPrefetch />
       <LanguageSync />
       {children}
     </QueryClientProvider>

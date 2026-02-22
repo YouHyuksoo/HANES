@@ -16,11 +16,18 @@ export class EquipInspectService {
     private readonly equipInspectRepository: Repository<EquipInspectItemMaster>,
   ) {}
 
-  async findAll(query: EquipInspectItemQueryDto) {
+  async findAll(query: EquipInspectItemQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, equipId, inspectType, search, useYn } = query;
 
     const queryBuilder = this.equipInspectRepository.createQueryBuilder('item')
       .where('item.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('item.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('item.plant = :plant', { plant });
+    }
 
     if (equipId) {
       queryBuilder.andWhere('item.equipId = :equipId', { equipId });

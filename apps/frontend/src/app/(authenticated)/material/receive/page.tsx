@@ -41,7 +41,13 @@ export default function ReceivingPage() {
       setReceivable(lots);
       const init: Record<string, ReceiveInput> = {};
       lots.forEach((lot) => {
-        init[lot.id] = { lotId: lot.id, qty: lot.remainingQty, warehouseId: lot.arrivalWarehouse?.id || '', selected: false };
+        init[lot.id] = {
+          lotId: lot.id,
+          qty: lot.remainingQty,
+          warehouseId: lot.arrivalWarehouse?.id || '',
+          manufactureDate: lot.manufactureDate ? String(lot.manufactureDate).slice(0, 10) : '',
+          selected: false,
+        };
       });
       setInputs(init);
     } catch { setReceivable([]); }
@@ -95,7 +101,10 @@ export default function ReceivingPage() {
     setSubmitting(true);
     try {
       await api.post('/material/receiving', {
-        items: selectedItems.map(({ lotId, qty, warehouseId }) => ({ lotId, qty, warehouseId })),
+        items: selectedItems.map(({ lotId, qty, warehouseId, manufactureDate }) => ({
+          lotId, qty, warehouseId,
+          ...(manufactureDate && { manufactureDate }),
+        })),
       });
       refresh();
     } catch { /* 에러는 API 인터셉터에서 처리 */ }

@@ -27,6 +27,7 @@ interface FormState {
   warehouseId: string;
   qty: string;
   lotNo: string;
+  manufactureDate: string;
   vendor: string;
   remark: string;
 }
@@ -36,6 +37,7 @@ const INITIAL_FORM: FormState = {
   warehouseId: '',
   qty: '',
   lotNo: '',
+  manufactureDate: '',
   vendor: '',
   remark: '',
 };
@@ -62,6 +64,7 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
         warehouseId: form.warehouseId,
         qty: Number(form.qty),
         lotNo: form.lotNo || undefined,
+        manufactureDate: form.manufactureDate || undefined,
         vendor: form.vendor || undefined,
         remark: form.remark || undefined,
       });
@@ -106,6 +109,13 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
           placeholder={t('material.arrival.lotNoPlaceholder')}
           value={form.lotNo}
           onChange={(e) => handleChange('lotNo', e.target.value)}
+          fullWidth
+        />
+        <Input
+          label={t('material.arrival.col.manufactureDate')}
+          type="date"
+          value={form.manufactureDate}
+          onChange={(e) => handleChange('manufactureDate', e.target.value)}
           fullWidth
         />
         <Input

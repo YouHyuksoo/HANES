@@ -41,6 +41,24 @@ export class ProcessMap {
   @Column({ name: 'SETUP_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
   setupTime: number | null;
 
+  @Column({ name: 'WIRE_LENGTH', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  wireLength: number | null;
+
+  @Column({ name: 'STRIP_LENGTH', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  stripLength: number | null;
+
+  @Column({ name: 'CRIMP_HEIGHT', type: 'decimal', precision: 10, scale: 3, nullable: true })
+  crimpHeight: number | null;
+
+  @Column({ name: 'CRIMP_WIDTH', type: 'decimal', precision: 10, scale: 3, nullable: true })
+  crimpWidth: number | null;
+
+  @Column({ name: 'WELD_CONDITION', length: 500, nullable: true })
+  weldCondition: string | null;
+
+  @Column({ name: 'PROCESS_PARAMS', length: 2000, nullable: true })
+  processParams: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

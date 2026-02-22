@@ -7,18 +7,20 @@
  * 초보자 가이드:
  * 1. **통합 조회**: 일상점검 + 정기점검 이력을 하나의 화면에서 조회
  * 2. **필터링**: 점검유형, 결과, 날짜 범위 등으로 필터링
- * 3. **조회 전용**: 등록/수정/삭제 없음
+ * 3. API: GET /equipment/inspect-history
  */
-import { useState, useMemo } from "react";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
-  ScrollText, Search, RefreshCw, Download, Calendar,
+  ScrollText, Search, RefreshCw,
   ClipboardCheck, CheckCircle, XCircle, AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
+import api from "@/services/api";
 
 interface InspectHistory {
   id: string;
@@ -31,18 +33,11 @@ interface InspectHistory {
   remark: string;
 }
 
-
-const mockData: InspectHistory[] = [
-  { id: "1", equipCode: "CUT-001", equipName: "절단기 1호", inspectType: "DAILY", inspectDate: "2025-02-01", inspectorName: "김점검", overallResult: "PASS", remark: "" },
-  { id: "2", equipCode: "CRM-002", equipName: "압착기 2호", inspectType: "DAILY", inspectDate: "2025-02-01", inspectorName: "이점검", overallResult: "FAIL", remark: "압착 압력 부족" },
-  { id: "3", equipCode: "CUT-001", equipName: "절단기 1호", inspectType: "PERIODIC", inspectDate: "2025-01-15", inspectorName: "김정비", overallResult: "PASS", remark: "월간 정기점검" },
-  { id: "4", equipCode: "CRM-001", equipName: "압착기 1호", inspectType: "PERIODIC", inspectDate: "2025-01-15", inspectorName: "이정비", overallResult: "CONDITIONAL", remark: "실린더 마모" },
-  { id: "5", equipCode: "ASM-001", equipName: "조립기 1호", inspectType: "DAILY", inspectDate: "2025-01-31", inspectorName: "박점검", overallResult: "PASS", remark: "" },
-  { id: "6", equipCode: "INS-001", equipName: "검사기 1호", inspectType: "PERIODIC", inspectDate: "2025-01-10", inspectorName: "김정비", overallResult: "FAIL", remark: "센서 교정 필요" },
-];
-
-function InspectHistoryPage() {
+export default function InspectHistoryPage() {
   const { t } = useTranslation();
+
+  const [data, setData] = useState<InspectHistory[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
@@ -50,64 +45,120 @@ function InspectHistoryPage() {
   const [dateTo, setDateTo] = useState("");
 
   const comCodeTypeOptions = useComCodeOptions("INSPECT_CHECK_TYPE");
-  const typeOptions = [{ value: "", label: t("equipment.inspectHistory.allType") }, ...comCodeTypeOptions];
-  const comCodeResultOptions = useComCodeOptions("INSPECT_JUDGE");
-  const resultOptions = [{ value: "", label: t("equipment.inspectHistory.allResult") }, ...comCodeResultOptions];
+  const typeOptions = useMemo(() => [
+    { value: "", label: t("equipment.inspectHistory.allType") },
+    ...comCodeTypeOptions,
+  ], [t, comCodeTypeOptions]);
 
-  const filteredData = useMemo(() => mockData.filter((item) => {
-    const matchSearch = !searchText || item.equipCode.toLowerCase().includes(searchText.toLowerCase()) || item.equipName.toLowerCase().includes(searchText.toLowerCase());
-    const matchType = !typeFilter || item.inspectType === typeFilter;
-    const matchResult = !resultFilter || item.overallResult === resultFilter;
-    const matchDateFrom = !dateFrom || item.inspectDate >= dateFrom;
-    const matchDateTo = !dateTo || item.inspectDate <= dateTo;
-    return matchSearch && matchType && matchResult && matchDateFrom && matchDateTo;
-  }), [searchText, typeFilter, resultFilter, dateFrom, dateTo]);
+  const comCodeResultOptions = useComCodeOptions("INSPECT_JUDGE");
+  const resultOptions = useMemo(() => [
+    { value: "", label: t("equipment.inspectHistory.allResult") },
+    ...comCodeResultOptions,
+  ], [t, comCodeResultOptions]);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "5000" };
+      if (searchText) params.search = searchText;
+      if (typeFilter) params.inspectType = typeFilter;
+      if (resultFilter) params.overallResult = resultFilter;
+      if (dateFrom) params.inspectDateFrom = dateFrom;
+      if (dateTo) params.inspectDateTo = dateTo;
+      const res = await api.get("/equipment/inspect-history", { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, typeFilter, resultFilter, dateFrom, dateTo]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    total: mockData.length, pass: mockData.filter((d) => d.overallResult === "PASS").length,
-    fail: mockData.filter((d) => d.overallResult === "FAIL").length,
-    conditional: mockData.filter((d) => d.overallResult === "CONDITIONAL").length,
-  }), []);
+    total: data.length,
+    pass: data.filter(d => d.overallResult === "PASS").length,
+    fail: data.filter(d => d.overallResult === "FAIL").length,
+    conditional: data.filter(d => d.overallResult === "CONDITIONAL").length,
+  }), [data]);
 
   const columns = useMemo<ColumnDef<InspectHistory>[]>(() => [
-    { accessorKey: "inspectDate", header: t("equipment.inspectHistory.inspectDate"), size: 100 },
-    { accessorKey: "inspectType", header: t("equipment.inspectHistory.inspectType"), size: 70, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_CHECK_TYPE" code={getValue() as string} /> },
-    { accessorKey: "equipCode", header: t("equipment.inspectHistory.equipCode"), size: 100 },
-    { accessorKey: "equipName", header: t("equipment.inspectHistory.equipName"), size: 120 },
-    { accessorKey: "inspectorName", header: t("equipment.inspectHistory.inspector"), size: 80 },
-    { accessorKey: "overallResult", header: t("equipment.inspectHistory.result"), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_JUDGE" code={getValue() as string} /> },
-    { accessorKey: "remark", header: t("common.remark"), size: 180 },
+    { accessorKey: "inspectDate", header: t("equipment.inspectHistory.inspectDate"), size: 110 },
+    {
+      accessorKey: "inspectType", header: t("equipment.inspectHistory.inspectType"), size: 80,
+      cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_CHECK_TYPE" code={getValue() as string} />,
+    },
+    {
+      accessorKey: "equipCode", header: t("equipment.inspectHistory.equipCode"), size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: "equipName", header: t("equipment.inspectHistory.equipName"), size: 140,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "inspectorName", header: t("equipment.inspectHistory.inspector"), size: 90,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "overallResult", header: t("equipment.inspectHistory.result"), size: 90,
+      cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_JUDGE" code={getValue() as string} />,
+    },
+    {
+      accessorKey: "remark", header: t("common.remark"), size: 180,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => (getValue() as string) || "-",
+    },
   ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ScrollText className="w-7 h-7 text-primary" />{t("equipment.inspectHistory.title")}</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <ScrollText className="w-7 h-7 text-primary" />{t("equipment.inspectHistory.title")}
+          </h1>
           <p className="text-text-muted mt-1">{t("equipment.inspectHistory.subtitle")}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t("equipment.inspectHistory.excelDownload")}</Button>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
+
       <div className="grid grid-cols-4 gap-3">
         <StatCard label={t("equipment.inspectHistory.statTotal")} value={stats.total} icon={ClipboardCheck} color="blue" />
         <StatCard label={t("equipment.inspectHistory.resultPass")} value={stats.pass} icon={CheckCircle} color="green" />
         <StatCard label={t("equipment.inspectHistory.resultFail")} value={stats.fail} icon={XCircle} color="red" />
         <StatCard label={t("equipment.inspectHistory.resultConditional")} value={stats.conditional} icon={AlertTriangle} color="yellow" />
       </div>
+
       <Card><CardContent>
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder={t("equipment.inspectHistory.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-32"><Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth /></div>
-          <div className="w-32"><Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth /></div>
-          <div className="flex items-center gap-1"><Calendar className="w-4 h-4 text-text-muted" /><Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" /></div>
-          <span className="text-text-muted self-center">~</span>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t("equipment.inspectHistory.title")}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("equipment.inspectHistory.searchPlaceholder")}
+                  value={searchText} onChange={e => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-32 flex-shrink-0">
+                <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
+              </div>
+              <div className="w-32 flex-shrink-0">
+                <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} fullWidth />
+              </div>
+            </div>
+          } />
       </CardContent></Card>
     </div>
   );
 }
-
-export default InspectHistoryPage;

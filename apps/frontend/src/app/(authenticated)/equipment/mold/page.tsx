@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Search, RefreshCw, Settings2, Package, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
-import { Card, CardHeader, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
+import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useApiQuery } from '@/hooks/useApi';
 import { useFilteredList } from '@/hooks/useFilteredList';
@@ -101,37 +101,26 @@ function MoldPage() {
         <StatCard label={t('crimping.mold.maint')} value={stats.MAINT || 0} icon={Settings2} color="purple" />
       </div>
 
-      {/* 필터 */}
       <Card>
-        <CardHeader className="p-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder={t('common.search')}
-                value={filters.searchTerm}
-                onChange={(e) => filters.setSearchTerm(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-              />
-            </div>
-            <Select
-              value={filters.statusFilter}
-              onChange={filters.setStatusFilter}
-              options={statusOptions}
-            />
-            <Button variant="outline" onClick={resetFilters}>
-              {t('common.reset')}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-4">
           <DataGrid
             columns={columns}
             data={filteredData}
             isLoading={isLoading}
+            enableExport
+            exportFileName={t('crimping.mold.title')}
             onRowClick={(row) => {
               setSelectedMold(row);
               setIsModalOpen(true);
             }}
+            toolbarLeft={
+              <div className="flex gap-2 items-center">
+                <Input placeholder={t('common.search')} value={filters.searchTerm}
+                  onChange={(e) => filters.setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
+                <Select value={filters.statusFilter} onChange={filters.setStatusFilter} options={statusOptions} />
+                <Button variant="outline" onClick={resetFilters}>{t('common.reset')}</Button>
+              </div>
+            }
           />
         </CardContent>
       </Card>

@@ -7,17 +7,19 @@
  * 초보자 가이드:
  * 1. **일상점검**: 매일 설비 가동 전/후 수행하는 기본 점검
  * 2. **결과**: PASS(합격), FAIL(불합격), CONDITIONAL(조건부)
- * 3. inspectType="DAILY" 고정
+ * 3. API: GET/POST/PUT/DELETE /equipment/daily-inspect
  */
-import { useState, useMemo } from "react";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   ClipboardCheck, Plus, Search, RefreshCw, Edit2, Trash2,
-  CheckCircle, XCircle, AlertTriangle, Calendar,
+  CheckCircle, XCircle, AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, StatCard, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import api from "@/services/api";
 
 interface DailyInspect {
   id: string;
@@ -29,101 +31,221 @@ interface DailyInspect {
   remark: string;
 }
 
-const resultKeys: Record<string, string> = { PASS: "equipment.dailyInspect.resultPass", FAIL: "equipment.dailyInspect.resultFail", CONDITIONAL: "equipment.dailyInspect.resultConditional" };
 const resultColors: Record<string, string> = {
   PASS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
   FAIL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
   CONDITIONAL: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
 };
 
-const mockData: DailyInspect[] = [
-  { id: "1", equipCode: "CUT-001", equipName: "절단기 1호", inspectDate: "2025-02-01", inspectorName: "김점검", overallResult: "PASS", remark: "" },
-  { id: "2", equipCode: "CRM-001", equipName: "압착기 1호", inspectDate: "2025-02-01", inspectorName: "이점검", overallResult: "PASS", remark: "" },
-  { id: "3", equipCode: "CRM-002", equipName: "압착기 2호", inspectDate: "2025-02-01", inspectorName: "이점검", overallResult: "FAIL", remark: "압착 압력 부족" },
-  { id: "4", equipCode: "ASM-001", equipName: "조립기 1호", inspectDate: "2025-02-01", inspectorName: "박점검", overallResult: "CONDITIONAL", remark: "소음 주시 필요" },
-  { id: "5", equipCode: "INS-001", equipName: "검사기 1호", inspectDate: "2025-01-31", inspectorName: "김점검", overallResult: "PASS", remark: "" },
-];
-
-function DailyInspectPage() {
+export default function DailyInspectPage() {
   const { t } = useTranslation();
+
+  const [data, setData] = useState<DailyInspect[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [resultFilter, setResultFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<DailyInspect | null>(null);
+  const [form, setForm] = useState({
+    equipId: "", inspectDate: "", inspectorName: "", overallResult: "PASS", remark: "",
+  });
+  const [deleteTarget, setDeleteTarget] = useState<DailyInspect | null>(null);
 
-  const resultOptions = [
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "5000" };
+      if (searchText) params.search = searchText;
+      if (resultFilter) params.overallResult = resultFilter;
+      if (dateFilter) params.inspectDateFrom = dateFilter;
+      const res = await api.get("/equipment/daily-inspect", { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, resultFilter, dateFilter]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const resultOptions = useMemo(() => [
     { value: "", label: t("equipment.dailyInspect.allResult") },
-    { value: "PASS", label: t("equipment.dailyInspect.resultPass") }, { value: "FAIL", label: t("equipment.dailyInspect.resultFail") }, { value: "CONDITIONAL", label: t("equipment.dailyInspect.resultConditional") },
-  ];
-
-  const filteredData = useMemo(() => mockData.filter((item) => {
-    const matchSearch = !searchText || item.equipCode.toLowerCase().includes(searchText.toLowerCase()) || item.equipName.toLowerCase().includes(searchText.toLowerCase());
-    return matchSearch && (!resultFilter || item.overallResult === resultFilter) && (!dateFilter || item.inspectDate === dateFilter);
-  }), [searchText, resultFilter, dateFilter]);
+    { value: "PASS", label: t("equipment.dailyInspect.resultPass") },
+    { value: "FAIL", label: t("equipment.dailyInspect.resultFail") },
+    { value: "CONDITIONAL", label: t("equipment.dailyInspect.resultConditional") },
+  ], [t]);
 
   const stats = useMemo(() => ({
-    total: mockData.length, pass: mockData.filter((d) => d.overallResult === "PASS").length,
-    fail: mockData.filter((d) => d.overallResult === "FAIL").length,
-    conditional: mockData.filter((d) => d.overallResult === "CONDITIONAL").length,
-  }), []);
+    total: data.length,
+    pass: data.filter(d => d.overallResult === "PASS").length,
+    fail: data.filter(d => d.overallResult === "FAIL").length,
+    conditional: data.filter(d => d.overallResult === "CONDITIONAL").length,
+  }), [data]);
+
+  const openCreate = useCallback(() => {
+    setEditingItem(null);
+    setForm({ equipId: "", inspectDate: new Date().toISOString().split("T")[0], inspectorName: "", overallResult: "PASS", remark: "" });
+    setIsModalOpen(true);
+  }, []);
+
+  const openEdit = useCallback((item: DailyInspect) => {
+    setEditingItem(item);
+    setForm({ equipId: item.id, inspectDate: item.inspectDate, inspectorName: item.inspectorName, overallResult: item.overallResult, remark: item.remark });
+    setIsModalOpen(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    if (!form.equipId || !form.inspectDate) return;
+    setSaving(true);
+    try {
+      if (editingItem) {
+        await api.put(`/equipment/daily-inspect/${editingItem.id}`, form);
+      } else {
+        await api.post("/equipment/daily-inspect", { ...form, inspectType: "DAILY" });
+      }
+      setIsModalOpen(false);
+      fetchData();
+    } catch (e) {
+      console.error("Save failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, [editingItem, form, fetchData]);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/equipment/daily-inspect/${deleteTarget.id}`);
+      fetchData();
+    } catch (e) {
+      console.error("Delete failed:", e);
+    } finally {
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<DailyInspect>[]>(() => [
-    { accessorKey: "inspectDate", header: t("equipment.dailyInspect.inspectDate"), size: 100 },
-    { accessorKey: "equipCode", header: t("equipment.dailyInspect.equipCode"), size: 100 },
-    { accessorKey: "equipName", header: t("equipment.dailyInspect.equipName"), size: 120 },
-    { accessorKey: "inspectorName", header: t("equipment.dailyInspect.inspector"), size: 80 },
-    { accessorKey: "overallResult", header: t("equipment.dailyInspect.result"), size: 80, cell: ({ getValue }) => { const r = getValue() as string; return <span className={`px-2 py-0.5 text-xs rounded-full ${resultColors[r] || ""}`}>{t(resultKeys[r])}</span>; } },
-    { accessorKey: "remark", header: t("common.remark"), size: 150 },
-    { id: "actions", header: t("common.actions"), size: 80, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
-      </div>
-    ) },
-  ], [t]);
+    { accessorKey: "inspectDate", header: t("equipment.dailyInspect.inspectDate"), size: 110 },
+    {
+      accessorKey: "equipCode", header: t("equipment.dailyInspect.equipCode"), size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: "equipName", header: t("equipment.dailyInspect.equipName"), size: 140,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "inspectorName", header: t("equipment.dailyInspect.inspector"), size: 90,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "overallResult", header: t("equipment.dailyInspect.result"), size: 90,
+      cell: ({ getValue }) => {
+        const r = getValue() as string;
+        const label = r === "PASS" ? t("equipment.dailyInspect.resultPass")
+          : r === "FAIL" ? t("equipment.dailyInspect.resultFail")
+          : t("equipment.dailyInspect.resultConditional");
+        return <span className={`px-2 py-0.5 text-xs rounded font-medium ${resultColors[r] || ""}`}>{label}</span>;
+      },
+    },
+    {
+      accessorKey: "remark", header: t("common.remark"), size: 160,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => (getValue() as string) || "-",
+    },
+    {
+      id: "actions", header: "", size: 80,
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
+  ], [t, openEdit]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardCheck className="w-7 h-7 text-primary" />{t("equipment.dailyInspect.title")}</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <ClipboardCheck className="w-7 h-7 text-primary" />{t("equipment.dailyInspect.title")}
+          </h1>
           <p className="text-text-muted mt-1">{t("equipment.dailyInspect.subtitle")}</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-1" />{t("common.register")}
+        </Button>
       </div>
+
       <div className="grid grid-cols-4 gap-3">
         <StatCard label={t("equipment.dailyInspect.statTotal")} value={stats.total} icon={ClipboardCheck} color="blue" />
         <StatCard label={t("equipment.dailyInspect.resultPass")} value={stats.pass} icon={CheckCircle} color="green" />
         <StatCard label={t("equipment.dailyInspect.resultFail")} value={stats.fail} icon={XCircle} color="red" />
         <StatCard label={t("equipment.dailyInspect.resultConditional")} value={stats.conditional} icon={AlertTriangle} color="yellow" />
       </div>
+
       <Card><CardContent>
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder={t("equipment.dailyInspect.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-36"><Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth /></div>
-          <div className="flex items-center gap-1"><Calendar className="w-4 h-4 text-text-muted" /><Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-36" /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t("equipment.dailyInspect.title")}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("equipment.dailyInspect.searchPlaceholder")}
+                  value={searchText} onChange={e => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("equipment.dailyInspect.editTitle") : t("equipment.dailyInspect.addTitle")} size="md">
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
+        title={editingItem ? t("equipment.dailyInspect.editTitle") : t("equipment.dailyInspect.addTitle")} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t("equipment.dailyInspect.equipCode")} placeholder="CUT-001" defaultValue={editingItem?.equipCode} fullWidth />
-            <Input label={t("equipment.dailyInspect.inspectDate")} type="date" defaultValue={editingItem?.inspectDate || new Date().toISOString().split("T")[0]} fullWidth />
-            <Input label={t("equipment.dailyInspect.inspector")} placeholder={t("equipment.dailyInspect.inspectorPlaceholder")} defaultValue={editingItem?.inspectorName} fullWidth />
-            <Select label={t("equipment.dailyInspect.overallResult")} options={resultOptions.slice(1)} value={editingItem?.overallResult || "PASS"} fullWidth />
+            <Input label={t("equipment.dailyInspect.equipCode")} placeholder="CUT-001"
+              value={form.equipId} onChange={e => setForm(p => ({ ...p, equipId: e.target.value }))} fullWidth />
+            <Input label={t("equipment.dailyInspect.inspectDate")} type="date"
+              value={form.inspectDate} onChange={e => setForm(p => ({ ...p, inspectDate: e.target.value }))} fullWidth />
+            <Input label={t("equipment.dailyInspect.inspector")} placeholder={t("equipment.dailyInspect.inspectorPlaceholder")}
+              value={form.inspectorName} onChange={e => setForm(p => ({ ...p, inspectorName: e.target.value }))} fullWidth />
+            <Select label={t("equipment.dailyInspect.overallResult")} options={resultOptions.slice(1)}
+              value={form.overallResult} onChange={v => setForm(p => ({ ...p, overallResult: v }))} fullWidth />
           </div>
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} defaultValue={editingItem?.remark} fullWidth />
+          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
+            value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={() => setIsModalOpen(false)}>{editingItem ? t("common.edit") : t("common.register")}</Button>
+            <Button onClick={handleSave} disabled={saving || !form.equipId || !form.inspectDate}>
+              {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
+            </Button>
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        variant="danger"
+        message={`'${deleteTarget?.equipName || ""}'을(를) 삭제하시겠습니까?`}
+      />
     </div>
   );
 }
-
-export default DailyInspectPage;

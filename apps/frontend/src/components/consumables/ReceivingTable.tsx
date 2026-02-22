@@ -4,7 +4,7 @@
  * @file src/pages/consumables/receiving/components/ReceivingTable.tsx
  * @description 입고 이력 테이블 컴포넌트
  */
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -17,9 +17,11 @@ const logTypeColors: Record<string, string> = {
 
 interface ReceivingTableProps {
   data: ReceivingLog[];
+  toolbarLeft?: ReactNode;
+  isLoading?: boolean;
 }
 
-function ReceivingTable({ data }: ReceivingTableProps) {
+function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
   const { t } = useTranslation();
 
   const logTypeLabels: Record<string, string> = {
@@ -93,7 +95,7 @@ function ReceivingTable({ data }: ReceivingTableProps) {
     [t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="consumable_receiving" toolbarLeft={toolbarLeft} />;
 }
 
 export default ReceivingTable;

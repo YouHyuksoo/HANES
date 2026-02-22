@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like } from 'typeorm';
+import { Repository, IsNull, Like, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
@@ -19,7 +19,7 @@ export class MatLotService {
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
 
-  async findAll(query: MatLotQueryDto) {
+  async findAll(query: MatLotQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partId, lotNo, vendor, iqcStatus, status } = query;
     const skip = (page - 1) * limit;
 
@@ -30,6 +30,8 @@ export class MatLotService {
       ...(vendor && { vendor: Like(`%${vendor}%`) }),
       ...(iqcStatus && { iqcStatus }),
       ...(status && { status }),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     const [data, total] = await Promise.all([
@@ -44,7 +46,9 @@ export class MatLotService {
 
     // part 정보 조회 및 중첩 객체 평면화
     const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     const flattenedData = data.map((lot) => {

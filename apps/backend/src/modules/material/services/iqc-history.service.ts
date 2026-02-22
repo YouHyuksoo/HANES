@@ -3,13 +3,13 @@
  * @description IQC 이력 조회 서비스 (TypeORM)
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like } from 'typeorm';
+import { Repository, Between, Like, In } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { IqcHistoryQueryDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto } from '../dto/iqc-history.dto';
 
 @Injectable()
 export class IqcHistoryService {
@@ -22,11 +22,14 @@ export class IqcHistoryService {
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
 
-  async findAll(query: IqcHistoryQueryDto) {
+  async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
 
     if (inspectType) {
       where.inspectType = inspectType;
@@ -61,6 +64,9 @@ export class IqcHistoryService {
 
       // 복합 조건으로 IQC 로그 검색
       const queryBuilder = this.iqcLogRepository.createQueryBuilder('iqc');
+
+      if (company) queryBuilder.andWhere('iqc.company = :company', { company });
+      if (plant) queryBuilder.andWhere('iqc.plant = :plant', { plant });
 
       if (inspectType) {
         queryBuilder.andWhere('iqc.inspectType = :inspectType', { inspectType });
@@ -114,8 +120,8 @@ export class IqcHistoryService {
     const lotIds = data.map((log) => log.lotId).filter(Boolean) as string[];
 
     const [parts, lots] = await Promise.all([
-      this.partMasterRepository.findByIds(partIds),
-      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
+      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.id, p]));
@@ -135,5 +141,45 @@ export class IqcHistoryService {
     });
 
     return { data: flattenedData, total, page, limit };
+  }
+
+  async createResult(dto: CreateIqcResultDto) {
+    const lot = await this.matLotRepository.findOne({
+      where: { id: dto.lotId },
+    });
+    if (!lot) {
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotId}`);
+    }
+
+    // LOT iqcStatus 업데이트
+    await this.matLotRepository.update(dto.lotId, {
+      iqcStatus: dto.result,
+    });
+
+    // IqcLog 생성
+    const log = this.iqcLogRepository.create({
+      lotId: dto.lotId,
+      lotNo: lot.lotNo,
+      partId: lot.partId,
+      inspectType: dto.inspectType || 'INITIAL',
+      result: dto.result,
+      details: dto.details || null,
+      inspectorName: dto.inspectorName || null,
+      remark: dto.remark || null,
+      inspectDate: new Date(),
+    });
+    const saved = await this.iqcLogRepository.save(log);
+
+    // part 정보 조회
+    const part = await this.partMasterRepository.findOne({
+      where: { id: lot.partId },
+    });
+
+    return {
+      ...saved,
+      lotNo: lot.lotNo,
+      partCode: part?.partCode,
+      partName: part?.partName,
+    };
   }
 }

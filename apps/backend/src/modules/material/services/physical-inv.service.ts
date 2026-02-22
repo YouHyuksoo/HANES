@@ -5,12 +5,12 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, DataSource, IsNull, In } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { CreatePhysicalInvDto, PhysicalInvQueryDto } from '../dto/physical-inv.dto';
+import { CreatePhysicalInvDto, PhysicalInvQueryDto, PhysicalInvHistoryQueryDto } from '../dto/physical-inv.dto';
 
 @Injectable()
 export class PhysicalInvService {
@@ -26,11 +26,14 @@ export class PhysicalInvService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findStocks(query: PhysicalInvQueryDto) {
+  async findStocks(query: PhysicalInvQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, warehouseId } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
     if (warehouseId) {
       where.warehouseCode = warehouseId;
     }
@@ -50,8 +53,8 @@ export class PhysicalInvService {
     const lotIds = data.map((stock) => stock.lotId).filter(Boolean) as string[];
 
     const [parts, lots] = await Promise.all([
-      this.partMasterRepository.findByIds(partIds),
-      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
+      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.id, p]));
@@ -79,6 +82,63 @@ export class PhysicalInvService {
     }
 
     return { data: result, total, page, limit };
+  }
+
+  async findHistory(query: PhysicalInvHistoryQueryDto, company?: string, plant?: string) {
+    const { page = 1, limit = 5000, search, warehouseCode, startDate, endDate } = query;
+
+    const qb = this.invAdjLogRepository
+      .createQueryBuilder('log')
+      .leftJoin(PartMaster, 'part', 'part.id = log.partId')
+      .leftJoin(MatLot, 'lot', 'lot.id = log.lotId')
+      .select([
+        'log.id AS "id"',
+        'log.warehouseCode AS "warehouseCode"',
+        'log.partId AS "partId"',
+        'part.partCode AS "partCode"',
+        'part.partName AS "partName"',
+        'part.unit AS "unit"',
+        'log.lotId AS "lotId"',
+        'lot.lotNo AS "lotNo"',
+        'log.beforeQty AS "beforeQty"',
+        'log.afterQty AS "afterQty"',
+        'log.diffQty AS "diffQty"',
+        'log.reason AS "reason"',
+        'log.createdBy AS "createdBy"',
+        'log.createdAt AS "createdAt"',
+      ])
+      .where('log.adjType = :adjType', { adjType: 'PHYSICAL_COUNT' });
+
+    if (company) qb.andWhere('log.company = :company', { company });
+    if (plant) qb.andWhere('log.plant = :plant', { plant });
+
+    if (warehouseCode) {
+      qb.andWhere('log.warehouseCode = :warehouseCode', { warehouseCode });
+    }
+    if (startDate) {
+      qb.andWhere('log.createdAt >= :startDate', { startDate: new Date(startDate) });
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1);
+      qb.andWhere('log.createdAt < :endDate', { endDate: end });
+    }
+    if (search) {
+      qb.andWhere(
+        '(LOWER(part.partCode) LIKE :search OR LOWER(part.partName) LIKE :search)',
+        { search: `%${search.toLowerCase()}%` },
+      );
+    }
+
+    qb.orderBy('log.createdAt', 'DESC');
+
+    const total = await qb.getCount();
+    const data = await qb
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany();
+
+    return { data, total, page, limit };
   }
 
   async applyCount(dto: CreatePhysicalInvDto) {

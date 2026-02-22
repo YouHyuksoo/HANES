@@ -3,11 +3,12 @@
  * @description IQC 이력 조회 전용 API 컨트롤러
  */
 
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IqcHistoryService } from '../services/iqc-history.service';
-import { IqcHistoryQueryDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto } from '../dto/iqc-history.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - IQC이력')
 @Controller('material/iqc-history')
@@ -16,8 +17,16 @@ export class IqcHistoryController {
 
   @Get()
   @ApiOperation({ summary: 'IQC 이력 목록 조회' })
-  async findAll(@Query() query: IqcHistoryQueryDto) {
-    const result = await this.iqcHistoryService.findAll(query);
+  async findAll(@Query() query: IqcHistoryQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.iqcHistoryService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'IQC 검사결과 등록 (LOT 상태 업데이트 + 이력 생성)' })
+  async createResult(@Body() dto: CreateIqcResultDto) {
+    const data = await this.iqcHistoryService.createResult(dto);
+    return ResponseUtil.success(data, 'IQC 검사결과가 등록되었습니다.');
   }
 }

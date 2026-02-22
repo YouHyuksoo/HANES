@@ -16,11 +16,18 @@ export class ModelSuffixService {
     private readonly modelSuffixRepository: Repository<ModelSuffix>,
   ) {}
 
-  async findAll(query: ModelSuffixQueryDto) {
+  async findAll(query: ModelSuffixQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, modelCode, customer, search, useYn } = query;
 
     const queryBuilder = this.modelSuffixRepository.createQueryBuilder('suffix')
       .where('suffix.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('suffix.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('suffix.plant = :plant', { plant });
+    }
 
     if (modelCode) {
       queryBuilder.andWhere('suffix.modelCode = :modelCode', { modelCode });

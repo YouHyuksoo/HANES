@@ -13,6 +13,8 @@ import {
 import { InspectResult } from './inspect-result.entity';
 import { DefectLog } from './defect-log.entity';
 import { JobOrder } from './job-order.entity';
+import { EquipMaster } from './equip-master.entity';
+import { WorkerMaster } from './worker-master.entity';
 
 @Entity({ name: 'PROD_RESULTS' })
 @Index(['jobOrderId'])
@@ -33,8 +35,16 @@ export class ProdResult {
   @Column({ name: 'EQUIP_ID', length: 255, nullable: true })
   equipId: string | null;
 
+  @ManyToOne(() => EquipMaster)
+  @JoinColumn({ name: 'EQUIP_ID' })
+  equip: EquipMaster | null;
+
   @Column({ name: 'WORKER_ID', length: 255, nullable: true })
   workerId: string | null;
+
+  @ManyToOne(() => WorkerMaster)
+  @JoinColumn({ name: 'WORKER_ID' })
+  worker: WorkerMaster | null;
 
   @Column({ name: 'LOT_NO', length: 255, nullable: true })
   lotNo: string | null;

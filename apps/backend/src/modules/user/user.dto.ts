@@ -42,6 +42,11 @@ export class CreateUserDto {
   @IsOptional()
   @IsIn(['ADMIN', 'MANAGER', 'OPERATOR', 'VIEWER'])
   role?: string;
+
+  @ApiPropertyOptional({ description: '사진 URL' })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
 }
 
 export class UpdateUserDto {
@@ -75,4 +80,9 @@ export class UpdateUserDto {
   @IsOptional()
   @IsIn(['ACTIVE', 'INACTIVE'])
   status?: string;
+
+  @ApiPropertyOptional({ description: '사진 URL' })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
 }

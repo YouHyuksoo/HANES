@@ -1,17 +1,15 @@
 "use client";
 
 /**
- * @file src/pages/material/StockPage.tsx
- * @description 재고현황 조회 페이지 - 창고별/품목별 재고 조회
+ * @file src/app/(authenticated)/material/stock/page.tsx
+ * @description 재고현황 조회 페이지 - 창고별/품목별 재고 + 제조일자 기반 유효기간 관리
  *
  * 초보자 가이드:
- * 1. **재고 목록**: 품목별 현재 재고 수량 표시
+ * 1. **재고 목록**: 품목별 현재 재고 수량 + 경과일수/남은유효기간 표시
  * 2. **창고 필터**: 창고별로 재고 필터링
- * 3. **재고 요약**: 총 품목수, 총 수량, 안전재고 미달 등 통계
- *
- * @improved 컬럼 유틸리티 적용으로 코드 간소화
+ * 3. **유효기간 배지**: 만료/임박/정상 상태 색상 표시
  */
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { useTranslation } from "react-i18next";
 import {
@@ -26,124 +24,60 @@ import {
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { StatCard } from "@/components/ui";
-import {
-  createPartColumns,
-  createDateTimeColumn,
-} from "@/lib/table-utils";
+import { useWarehouseOptions } from "@/hooks/useMasterOptions";
+import api from "@/services/api";
 
-/** 재고 인터페이스 */
-interface Stock {
+/** API 응답 재고 인터페이스 */
+interface StockItem {
   id: string;
-  partCode: string;
-  partName: string;
-  category: string;
-  warehouse: string;
-  location: string;
-  quantity: number;
-  safetyStock: number;
-  unit: string;
-  lastUpdated: string;
+  warehouseCode: string;
+  locationCode?: string | null;
+  partId: string;
+  lotId?: string | null;
+  qty: number;
+  reservedQty: number;
+  availableQty: number;
+  partCode?: string;
+  partName?: string;
+  unit?: string;
+  safetyStock?: number;
+  expiryDays?: number;
+  lotNo?: string | null;
+  manufactureDate?: string | null;
+  expireDate?: string | null;
+  elapsedDays?: number | null;
+  remainingDays?: number | null;
 }
 
-// Mock 데이터
-const mockStocks: Stock[] = [
-  {
-    id: "1",
-    partCode: "WIRE-001",
-    partName: "AWG18 적색",
-    category: "전선",
-    warehouse: "자재창고A",
-    location: "A-01-01",
-    quantity: 45000,
-    safetyStock: 10000,
-    unit: "M",
-    lastUpdated: "2025-01-26 09:00",
-  },
-  {
-    id: "2",
-    partCode: "WIRE-002",
-    partName: "AWG20 흑색",
-    category: "전선",
-    warehouse: "자재창고A",
-    location: "A-01-02",
-    quantity: 8000,
-    safetyStock: 10000,
-    unit: "M",
-    lastUpdated: "2025-01-26 08:30",
-  },
-  {
-    id: "3",
-    partCode: "TERM-001",
-    partName: "단자 110형",
-    category: "단자",
-    warehouse: "자재창고B",
-    location: "B-02-01",
-    quantity: 50000,
-    safetyStock: 20000,
-    unit: "EA",
-    lastUpdated: "2025-01-26 10:00",
-  },
-  {
-    id: "4",
-    partCode: "TERM-002",
-    partName: "단자 250형",
-    category: "단자",
-    warehouse: "자재창고B",
-    location: "B-02-02",
-    quantity: 15000,
-    safetyStock: 20000,
-    unit: "EA",
-    lastUpdated: "2025-01-25 17:00",
-  },
-  {
-    id: "5",
-    partCode: "CONN-001",
-    partName: "커넥터 6핀",
-    category: "커넥터",
-    warehouse: "자재창고A",
-    location: "A-03-01",
-    quantity: 12000,
-    safetyStock: 5000,
-    unit: "EA",
-    lastUpdated: "2025-01-26 11:00",
-  },
-  {
-    id: "6",
-    partCode: "CONN-002",
-    partName: "커넥터 12핀",
-    category: "커넥터",
-    warehouse: "자재창고A",
-    location: "A-03-02",
-    quantity: 3000,
-    safetyStock: 5000,
-    unit: "EA",
-    lastUpdated: "2025-01-26 09:30",
-  },
-  {
-    id: "7",
-    partCode: "TUBE-001",
-    partName: "수축튜브 5mm",
-    category: "부자재",
-    warehouse: "부자재창고",
-    location: "C-01-01",
-    quantity: 100000,
-    safetyStock: 30000,
-    unit: "M",
-    lastUpdated: "2025-01-25 15:00",
-  },
-  {
-    id: "8",
-    partCode: "TAPE-001",
-    partName: "절연테이프",
-    category: "부자재",
-    warehouse: "부자재창고",
-    location: "C-01-02",
-    quantity: 500,
-    safetyStock: 200,
-    unit: "ROLL",
-    lastUpdated: "2025-01-26 08:00",
-  },
-];
+/** 유효기간 상태 배지 */
+function ShelfLifeBadge({
+  remainingDays,
+  labels,
+}: {
+  remainingDays: number | null | undefined;
+  labels: { expired: string; imminent: string; normal: string };
+}) {
+  if (remainingDays == null) return <span className="text-text-muted">-</span>;
+
+  if (remainingDays <= 0) {
+    return (
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+        {labels.expired}
+      </span>
+    );
+  } else if (remainingDays <= 30) {
+    return (
+      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">
+        {labels.imminent}
+      </span>
+    );
+  }
+  return (
+    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+      {labels.normal}
+    </span>
+  );
+}
 
 /** 안전재고 대비 상태 표시 */
 function StockLevelBadge({
@@ -155,6 +89,7 @@ function StockLevelBadge({
   safetyStock: number;
   labels: { shortage: string; caution: string; normal: string };
 }) {
+  if (!safetyStock || safetyStock <= 0) return null;
   const ratio = quantity / safetyStock;
   if (ratio < 1) {
     return (
@@ -176,115 +111,56 @@ function StockLevelBadge({
   );
 }
 
-/** 재고 수량 컬럼 (단위 포함) */
-function createStockQtyColumn(t: ReturnType<typeof useTranslation>["t"]) {
-  return {
-    accessorKey: "quantity",
-    header: t("material.stock.columns.quantity"),
-    size: 100,
-    cell: ({ row }: { row: { original: Stock } }) => {
-      const stock = row.original;
-      return (
-        <span className="font-medium">
-          {stock.quantity.toLocaleString()} {stock.unit}
-        </span>
-      );
-    },
-    meta: { align: "right" as const },
-  };
-}
-
-/** 안전재고 컬럼 */
-function createSafetyStockColumn(t: ReturnType<typeof useTranslation>["t"]) {
-  return {
-    accessorKey: "safetyStock",
-    header: t("material.stock.columns.safetyStock"),
-    size: 100,
-    cell: ({ row }: { row: { original: Stock } }) => {
-      const stock = row.original;
-      return (
-        <span className="text-text-muted">
-          {stock.safetyStock.toLocaleString()} {stock.unit}
-        </span>
-      );
-    },
-    meta: { align: "right" as const },
-  };
-}
-
-/** 재고 상태 컬럼 */
-function createStockLevelColumn(
-  t: ReturnType<typeof useTranslation>["t"],
-  labels: { shortage: string; caution: string; normal: string }
-) {
-  return {
-    id: "level",
-    header: t("material.stock.columns.status"),
-    size: 80,
-    cell: ({ row }: { row: { original: Stock } }) => {
-      const stock = row.original;
-      return (
-        <StockLevelBadge
-          quantity={stock.quantity}
-          safetyStock={stock.safetyStock}
-          labels={labels}
-        />
-      );
-    },
-  };
-}
-
 function StockPage() {
   const { t } = useTranslation();
+  const { options: warehouseOpts } = useWarehouseOptions();
   const [warehouseFilter, setWarehouseFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [stocks, setStocks] = useState<StockItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const filteredStocks = useMemo(() => {
-    return mockStocks.filter((s) => {
-      const matchWarehouse =
-        !warehouseFilter || s.warehouse === warehouseFilter;
-      const matchCategory = !categoryFilter || s.category === categoryFilter;
-      const matchSearch =
-        !searchText ||
-        s.partCode.toLowerCase().includes(searchText.toLowerCase()) ||
-        s.partName.toLowerCase().includes(searchText.toLowerCase());
-      return matchWarehouse && matchCategory && matchSearch;
-    });
-  }, [warehouseFilter, categoryFilter, searchText]);
+  const fetchStocks = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/material/stocks", {
+        params: {
+          page: 1,
+          limit: 200,
+          ...(warehouseFilter && { warehouseCode: warehouseFilter }),
+          ...(searchText && { search: searchText }),
+        },
+      });
+      setStocks(res.data.data || []);
+    } catch {
+      setStocks([]);
+    }
+    setLoading(false);
+  }, [warehouseFilter, searchText]);
+
+  useEffect(() => {
+    fetchStocks();
+  }, [fetchStocks]);
 
   const stats = useMemo(
     () => ({
-      totalItems: mockStocks.length,
-      totalQuantity: mockStocks.reduce((sum, s) => sum + s.quantity, 0),
-      belowSafety: mockStocks.filter((s) => s.quantity < s.safetyStock).length,
-      warningLevel: mockStocks.filter(
-        (s) =>
-          s.quantity >= s.safetyStock && s.quantity < s.safetyStock * 1.5
+      totalItems: stocks.length,
+      totalQuantity: stocks.reduce((sum, s) => sum + s.qty, 0),
+      belowSafety: stocks.filter(
+        (s) => s.safetyStock && s.safetyStock > 0 && s.qty < s.safetyStock
+      ).length,
+      expiryWarning: stocks.filter(
+        (s) => s.remainingDays != null && s.remainingDays <= 30 && s.remainingDays > 0
       ).length,
     }),
-    []
+    [stocks]
   );
 
   const warehouseOptions = useMemo(
     () => [
       { value: "", label: t("material.stock.allWarehouse") },
-      { value: "자재창고A", label: "자재창고A" },
-      { value: "자재창고B", label: "자재창고B" },
-      { value: "부자재창고", label: "부자재창고" },
+      ...warehouseOpts,
     ],
-    [t]
-  );
-
-  const categoryOptions = useMemo(
-    () => [
-      { value: "", label: t("material.stock.allCategory") },
-      { value: "전선", label: "전선" },
-      { value: "단자", label: "단자" },
-      { value: "커넥터", label: "커넥터" },
-      { value: "부자재", label: "부자재" },
-    ],
-    [t]
+    [t, warehouseOpts]
   );
 
   const stockLevelLabels = useMemo(
@@ -296,51 +172,144 @@ function StockPage() {
     [t]
   );
 
-  // ✅ 개선된 컬럼 정의 (컬럼 유틸리티 사용)
-  const columns: ColumnDef<Stock>[] = useMemo(
+  const shelfLifeLabels = useMemo(
+    () => ({
+      expired: t("material.stock.shelfLife.expired"),
+      imminent: t("material.stock.shelfLife.imminent"),
+      normal: t("material.stock.shelfLife.normal"),
+    }),
+    [t]
+  );
+
+  /** 유효기간 행 배경색: 만료 → 붉은색, 10일 이내 → 노란색 */
+  const rowClassName = useCallback((row: StockItem) => {
+    if (row.remainingDays == null) return "";
+    if (row.remainingDays <= 0)
+      return "!bg-red-50 dark:!bg-red-950/40";
+    if (row.remainingDays <= 10)
+      return "!bg-yellow-50 dark:!bg-yellow-950/40";
+    return "";
+  }, []);
+
+  const columns: ColumnDef<StockItem>[] = useMemo(
     () => [
-      // 1. 품목 컬럼 (공통 유틸리티)
-      ...createPartColumns<Stock>(t),
-
-      // 2. 카테고리 (재고 전용)
       {
-        accessorKey: "category",
-        header: t("material.stock.columns.category"),
-        size: 80,
+        accessorKey: "partCode",
+        header: t("material.stock.columns.partCode"),
+        size: 110,
+        cell: ({ getValue }) => (
+          <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>
+        ),
       },
-
-      // 3. 창고 (재고 전용)
       {
-        accessorKey: "warehouse",
+        accessorKey: "partName",
+        header: t("material.stock.columns.partName"),
+        size: 140,
+      },
+      {
+        accessorKey: "lotNo",
+        header: t("material.col.lotNo"),
+        size: 150,
+        cell: ({ getValue }) => (
+          <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>
+        ),
+      },
+      {
+        accessorKey: "warehouseCode",
         header: t("material.stock.columns.warehouse"),
         size: 100,
       },
-
-      // 4. 위치 (재고 전용)
       {
-        accessorKey: "location",
-        header: t("material.stock.columns.location"),
-        size: 80,
+        accessorKey: "qty",
+        header: t("material.stock.columns.quantity"),
+        size: 90,
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.qty.toLocaleString()} {row.original.unit || ""}
+          </span>
+        ),
+        meta: { align: "right" as const },
       },
-
-      // 5. 재고 수량 (커스텀 유틸리티)
-      createStockQtyColumn(t),
-
-      // 6. 안전재고 (커스텀 유틸리티)
-      createSafetyStockColumn(t),
-
-      // 7. 상태 (커스텀 유틸리티)
-      createStockLevelColumn(t, stockLevelLabels),
-
-      // 8. 최종수정일 (공통 유틸리티)
-      createDateTimeColumn(
-        t,
-        "lastUpdated",
-        t("material.stock.columns.lastUpdated"),
-        { size: 150 }
-      ),
+      {
+        accessorKey: "safetyStock",
+        header: t("material.stock.columns.safetyStock"),
+        size: 90,
+        cell: ({ getValue }) => {
+          const val = getValue() as number;
+          return val ? (
+            <span className="text-text-muted">{val.toLocaleString()}</span>
+          ) : (
+            <span className="text-text-muted">-</span>
+          );
+        },
+        meta: { align: "right" as const },
+      },
+      {
+        id: "stockLevel",
+        header: t("material.stock.columns.status"),
+        size: 80,
+        cell: ({ row }) => (
+          <StockLevelBadge
+            quantity={row.original.qty}
+            safetyStock={row.original.safetyStock || 0}
+            labels={stockLevelLabels}
+          />
+        ),
+      },
+      {
+        id: "manufactureDate",
+        header: t("material.stock.columns.manufactureDate"),
+        size: 100,
+        cell: ({ row }) => {
+          const d = row.original.manufactureDate;
+          return d ? String(d).slice(0, 10) : "-";
+        },
+      },
+      {
+        id: "elapsedDays",
+        header: t("material.stock.columns.elapsedDays"),
+        size: 80,
+        cell: ({ row }) => {
+          const days = row.original.elapsedDays;
+          if (days == null) return "-";
+          return <span>{days}{t("material.stock.columns.dayUnit")}</span>;
+        },
+        meta: { align: "right" as const },
+      },
+      {
+        id: "remainingDays",
+        header: t("material.stock.columns.remainingDays"),
+        size: 100,
+        cell: ({ row }) => {
+          const days = row.original.remainingDays;
+          if (days == null) return "-";
+          const color =
+            days <= 0
+              ? "text-red-600 font-bold"
+              : days <= 30
+              ? "text-yellow-600 font-medium"
+              : "text-green-600";
+          return (
+            <span className={color}>
+              {days}{t("material.stock.columns.dayUnit")}
+            </span>
+          );
+        },
+        meta: { align: "right" as const },
+      },
+      {
+        id: "shelfLifeStatus",
+        header: t("material.stock.columns.shelfLifeStatus"),
+        size: 80,
+        cell: ({ row }) => (
+          <ShelfLifeBadge
+            remainingDays={row.original.remainingDays}
+            labels={shelfLifeLabels}
+          />
+        ),
+      },
     ],
-    [t, stockLevelLabels]
+    [t, stockLevelLabels, shelfLifeLabels]
   );
 
   return (
@@ -355,9 +324,11 @@ function StockPage() {
             {t("material.stock.description")}
           </p>
         </div>
-        <Button variant="secondary" size="sm">
-          <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchStocks}>
+            <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
@@ -380,8 +351,8 @@ function StockPage() {
           color="red"
         />
         <StatCard
-          label={t("material.stock.stats.warningLevel")}
-          value={stats.warningLevel}
+          label={t("material.stock.stats.expiryWarning")}
+          value={stats.expiryWarning}
           icon={TrendingUp}
           color="yellow"
         />
@@ -389,34 +360,34 @@ function StockPage() {
 
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t("material.stock.searchPlaceholder")}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
+          {loading ? (
+            <div className="py-10 text-center text-text-muted">
+              {t("common.loading")}
             </div>
-            <div className="w-40">
-              <Select
-                options={warehouseOptions}
-                value={warehouseFilter}
-                onChange={setWarehouseFilter}
-                fullWidth
-              />
-            </div>
-            <div className="w-40">
-              <Select
-                options={categoryOptions}
-                value={categoryFilter}
-                onChange={setCategoryFilter}
-                fullWidth
-              />
-            </div>
-          </div>
-          <DataGrid data={filteredStocks} columns={columns} pageSize={10} />
+          ) : (
+            <DataGrid data={stocks} columns={columns} isLoading={loading} enableColumnFilter rowClassName={rowClassName} enableExport exportFileName={t("material.stock.title")}
+              toolbarLeft={
+                <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      placeholder={t("material.stock.searchPlaceholder")}
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      leftIcon={<Search className="w-4 h-4" />}
+                      fullWidth
+                    />
+                  </div>
+                  <div className="w-40 flex-shrink-0">
+                    <Select
+                      options={warehouseOptions}
+                      value={warehouseFilter}
+                      onChange={setWarehouseFilter}
+                      fullWidth
+                    />
+                  </div>
+                </div>
+              } />
+          )}
         </CardContent>
       </Card>
     </div>

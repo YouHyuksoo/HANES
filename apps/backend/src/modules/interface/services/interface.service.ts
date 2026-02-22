@@ -10,7 +10,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, MoreThanOrEqual } from 'typeorm';
+import { Repository, IsNull, MoreThanOrEqual, Between } from 'typeorm';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -43,20 +43,18 @@ export class InterfaceService {
   // 인터페이스 로그 관리
   // ============================================================================
 
-  async findAllLogs(query: InterLogQueryDto, company?: string) {
+  async findAllLogs(query: InterLogQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, direction, messageType, status, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {
       ...(company && { company }),
+      ...(plant && { plant }),
       ...(direction && { direction }),
       ...(messageType && { messageType }),
       ...(status && { status }),
       ...(startDate && endDate && {
-        createdAt: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate),
-        },
+        createdAt: Between(new Date(startDate), new Date(endDate)),
       }),
     };
 

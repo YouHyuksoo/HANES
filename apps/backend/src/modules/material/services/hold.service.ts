@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like } from 'typeorm';
+import { Repository, IsNull, Like, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -22,12 +22,14 @@ export class HoldService {
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
 
-  async findAll(query: HoldQueryDto) {
+  async findAll(query: HoldQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (status) {
@@ -63,14 +65,16 @@ export class HoldService {
 
     // part 정보 조회 및 중첩 객체 평면화
     const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     // 재고 정보 조회
     const lotIds = data.map((lot) => lot.id);
-    const stocks = await this.matStockRepository.find({
-      where: { lotId: { $in: lotIds } as any },
-    });
+    const stocks = lotIds.length > 0
+      ? await this.matStockRepository.find({ where: { lotId: In(lotIds) } })
+      : [];
     const stockMap = new Map(stocks.map((s) => [s.lotId, s]));
 
     const flattenedData = data.map((lot) => {

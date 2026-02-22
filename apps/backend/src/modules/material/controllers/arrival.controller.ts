@@ -22,6 +22,7 @@ import {
   CancelArrivalDto,
 } from '../dto/arrival.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 입하관리')
 @Controller('material/arrivals')
@@ -30,22 +31,22 @@ export class ArrivalController {
 
   @Get()
   @ApiOperation({ summary: '입하 이력 조회' })
-  async findAll(@Query() query: ArrivalQueryDto) {
-    const result = await this.arrivalService.findAll(query);
+  async findAll(@Query() query: ArrivalQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.arrivalService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get('stats')
   @ApiOperation({ summary: '입하 통계' })
-  async getStats() {
-    const data = await this.arrivalService.getStats();
+  async getStats(@Company() company: string, @Plant() plant: string) {
+    const data = await this.arrivalService.getStats(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('receivable-pos')
   @ApiOperation({ summary: '입하 가능 PO 목록 조회' })
-  async findReceivablePOs() {
-    const data = await this.arrivalService.findReceivablePOs();
+  async findReceivablePOs(@Company() company: string, @Plant() plant: string) {
+    const data = await this.arrivalService.findReceivablePOs(company, plant);
     return ResponseUtil.success(data);
   }
 

@@ -38,13 +38,14 @@ export default function GroupList({ groups, selectedGroup, onSelect, isLoading }
   }, [groups, search, t]);
 
   return (
-    <Card>
+    <Card padding="none" className="flex-1 flex flex-col min-h-0">
       <CardHeader
         title={t("master.code.groupCode")}
         subtitle={`${groups.length}${t("master.code.groupsCount", { defaultValue: "개 그룹" })}`}
+        className="px-4 pt-4"
       />
-      <CardContent>
-        <div className="relative mb-3">
+      <CardContent className="flex-1 flex flex-col min-h-0 px-4 pb-4">
+        <div className="relative mb-3 shrink-0">
           <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-text-muted" />
           <input
             type="text"
@@ -55,7 +56,7 @@ export default function GroupList({ groups, selectedGroup, onSelect, isLoading }
           />
         </div>
 
-        <div className="space-y-0.5 max-h-[calc(100vh-320px)] overflow-y-auto">
+        <div className="space-y-0.5 flex-1 overflow-y-auto min-h-0">
           {isLoading ? (
             <div className="py-8 text-center text-text-muted text-sm">
               {t("common.loading", { defaultValue: "로딩중..." })}

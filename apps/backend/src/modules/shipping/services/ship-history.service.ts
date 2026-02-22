@@ -28,12 +28,14 @@ export class ShipHistoryService {
   ) {}
 
   /** 출하이력 목록 조회 */
-  async findAll(query: ShipHistoryQueryDto) {
+  async findAll(query: ShipHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, shipDateFrom, shipDateTo, customerName } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
       ...(status && { status }),
       ...(customerName && { customerName: ILike(`%${customerName}%`) }),
       ...(search && {

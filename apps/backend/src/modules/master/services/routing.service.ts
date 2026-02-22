@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { ProcessMap } from '../../../entities/process-map.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateRoutingDto, UpdateRoutingDto, RoutingQueryDto } from '../dto/routing.dto';
@@ -24,12 +24,19 @@ export class RoutingService {
     private readonly partRepository: Repository<PartMaster>,
   ) {}
 
-  async findAll(query: RoutingQueryDto) {
+  async findAll(query: RoutingQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partId, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.routingRepository.createQueryBuilder('routing')
       .where('routing.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('routing.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('routing.plant = :plant', { plant });
+    }
 
     if (partId) {
       queryBuilder.andWhere('routing.partId = :partId', { partId });
@@ -57,11 +64,13 @@ export class RoutingService {
     ]);
 
     // Fetch part information for each routing item
-    const partIds = items.map(item => item.partId).filter(Boolean);
-    const parts = await this.partRepository.find({
-      where: { id: partIds as any },
-      select: ['id', 'partCode', 'partName'],
-    });
+    const partIds = [...new Set(items.map(item => item.partId).filter(Boolean))];
+    const parts = partIds.length > 0
+      ? await this.partRepository.find({
+          where: { id: In(partIds) },
+          select: ['id', 'partCode', 'partName'],
+        })
+      : [];
 
     const partMap = new Map(parts.map(p => [p.id, p]));
 
@@ -102,6 +111,12 @@ export class RoutingService {
       equipType: dto.equipType,
       stdTime: dto.stdTime,
       setupTime: dto.setupTime,
+      wireLength: dto.wireLength,
+      stripLength: dto.stripLength,
+      crimpHeight: dto.crimpHeight,
+      crimpWidth: dto.crimpWidth,
+      weldCondition: dto.weldCondition,
+      processParams: dto.processParams,
       useYn: dto.useYn ?? 'Y',
     });
 

@@ -199,8 +199,6 @@ export default function IssueFromRequestModal({
         <DataGrid
           data={issueRows}
           columns={columns}
-          pageSize={20}
-          showPagination={false}
           isLoading={isLoading}
           emptyMessage={t('common.noData')}
         />

@@ -38,12 +38,14 @@ export class CustomerOrderService {
   ) {}
 
   /** 고객발주 목록 조회 */
-  async findAll(query: CustomerOrderQueryDto) {
+  async findAll(query: CustomerOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
       ...(status && { status }),
       ...(search && {
         orderNo: ILike(`%${search}%`),

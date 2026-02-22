@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HANES MES — Code Map Explorer</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: system-ui,-apple-system,sans-serif; background:#0f172a; color:#e2e8f0; display:flex; height:100vh; overflow:hidden; }
+
+  /* Left Panel */
+  .panel { width:300px; min-width:260px; background:#1e293b; border-right:1px solid #334155; display:flex; flex-direction:column; overflow:hidden; }
+  .panel-section { padding:12px 14px; border-bottom:1px solid #334155; }
+  .panel-section h3 { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:#94a3b8; margin-bottom:8px; }
+
+  /* Presets */
+  .preset-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .preset-btn { padding:6px 8px; border:1px solid #475569; border-radius:6px; background:#1e293b; color:#cbd5e1; font-size:11px; cursor:pointer; transition:.15s; text-align:center; }
+  .preset-btn:hover { border-color:#60a5fa; color:#93c5fd; }
+  .preset-btn.active { background:#1e3a5f; border-color:#3b82f6; color:#93c5fd; }
+
+  /* Checkboxes */
+  .check-group { display:flex; flex-direction:column; gap:4px; }
+  .check-item { display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; padding:2px 0; }
+  .check-item input { accent-color:#3b82f6; cursor:pointer; }
+  .color-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .line-sample { width:20px; height:2px; display:inline-block; border-radius:1px; }
+
+  /* Comments */
+  .comments-area { flex:1; overflow-y:auto; padding:10px 14px; }
+  .comments-area h3 { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:#94a3b8; margin-bottom:8px; }
+  .comment-item { background:#0f172a; border:1px solid #334155; border-radius:6px; padding:8px 10px; margin-bottom:6px; font-size:11px; position:relative; }
+  .comment-item .target { color:#60a5fa; font-weight:600; }
+  .comment-item .file { color:#64748b; font-size:10px; }
+  .comment-item .text { color:#cbd5e1; margin-top:4px; }
+  .comment-item .del-btn { position:absolute; top:6px; right:8px; background:none; border:none; color:#64748b; cursor:pointer; font-size:14px; }
+  .comment-item .del-btn:hover { color:#f87171; }
+  .no-comments { color:#64748b; font-size:12px; font-style:italic; }
+
+  /* Main Area */
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* Toolbar */
+  .toolbar { display:flex; align-items:center; gap:8px; padding:8px 14px; background:#1e293b; border-bottom:1px solid #334155; }
+  .toolbar .title { font-size:14px; font-weight:700; color:#f1f5f9; flex:1; }
+  .toolbar .title span { color:#60a5fa; }
+  .zoom-btn { width:28px; height:28px; border:1px solid #475569; border-radius:6px; background:#1e293b; color:#cbd5e1; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .zoom-btn:hover { border-color:#60a5fa; color:#93c5fd; }
+  .zoom-label { font-size:11px; color:#64748b; min-width:40px; text-align:center; }
+
+  /* SVG Canvas */
+  .canvas-wrap { flex:1; position:relative; overflow:hidden; background:#0f172a; }
+  .canvas-wrap svg { width:100%; height:100%; }
+
+  /* Legend */
+  .legend { position:absolute; bottom:10px; left:10px; background:rgba(30,41,59,.92); border:1px solid #334155; border-radius:8px; padding:10px 14px; }
+  .legend h4 { font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:#64748b; margin-bottom:6px; }
+  .legend-row { display:flex; align-items:center; gap:6px; font-size:11px; color:#94a3b8; margin-bottom:3px; }
+
+  /* Prompt */
+  .prompt-area { background:#1e293b; border-top:1px solid #334155; padding:10px 14px; max-height:160px; overflow-y:auto; }
+  .prompt-area .prompt-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .prompt-area h3 { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:#94a3b8; }
+  .copy-btn { padding:4px 12px; border:1px solid #475569; border-radius:6px; background:#1e293b; color:#cbd5e1; cursor:pointer; font-size:11px; }
+  .copy-btn:hover { border-color:#10b981; color:#6ee7b7; }
+  .copy-btn.copied { border-color:#10b981; color:#10b981; }
+  .prompt-text { font-family:'Cascadia Code','Fira Code',monospace; font-size:11px; color:#94a3b8; white-space:pre-wrap; line-height:1.5; }
+
+  /* Modal */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:100; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:#1e293b; border:1px solid #475569; border-radius:12px; padding:20px; width:400px; max-width:90vw; }
+  .modal h3 { font-size:14px; color:#f1f5f9; margin-bottom:4px; }
+  .modal .modal-file { font-size:11px; color:#64748b; margin-bottom:12px; }
+  .modal textarea { width:100%; height:80px; background:#0f172a; border:1px solid #475569; border-radius:6px; color:#e2e8f0; padding:8px; font-size:12px; font-family:system-ui; resize:vertical; }
+  .modal textarea:focus { outline:none; border-color:#3b82f6; }
+  .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+  .modal-actions button { padding:6px 16px; border-radius:6px; font-size:12px; cursor:pointer; border:1px solid #475569; }
+  .modal-actions .cancel { background:transparent; color:#94a3b8; }
+  .modal-actions .save { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+  .modal-actions .save:hover { background:#2563eb; }
+
+  /* Tooltip */
+  .tooltip { position:fixed; background:#334155; border:1px solid #475569; border-radius:6px; padding:6px 10px; font-size:11px; color:#e2e8f0; pointer-events:none; z-index:50; display:none; max-width:280px; }
+  .tooltip .tt-label { font-weight:600; color:#93c5fd; }
+  .tooltip .tt-file { color:#64748b; font-size:10px; }
+  .tooltip .tt-detail { color:#94a3b8; margin-top:3px; font-size:10px; }
+</style>
+</head>
+<body>
+
+<!-- Left Panel -->
+<div class="panel">
+  <div class="panel-section">
+    <h3>View Presets</h3>
+    <div class="preset-grid" id="presets"></div>
+  </div>
+  <div class="panel-section">
+    <h3>Layers</h3>
+    <div class="check-group" id="layers"></div>
+  </div>
+  <div class="panel-section">
+    <h3>Connection Types</h3>
+    <div class="check-group" id="connTypes"></div>
+  </div>
+  <div class="comments-area">
+    <h3>Comments (<span id="commentCount">0</span>)</h3>
+    <div id="commentList"><p class="no-comments">Click a node to add comments</p></div>
+  </div>
+</div>
+
+<!-- Main Area -->
+<div class="main">
+  <div class="toolbar">
+    <div class="title"><span>HANES MES</span> — Code Map Explorer</div>
+    <button class="zoom-btn" onclick="zoom(-1)">−</button>
+    <span class="zoom-label" id="zoomLabel">100%</span>
+    <button class="zoom-btn" onclick="zoom(1)">+</button>
+    <button class="zoom-btn" onclick="zoom(0)" title="Reset">⌂</button>
+  </div>
+  <div class="canvas-wrap" id="canvasWrap">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend">
+      <h4>Legend</h4>
+      <div class="legend-row"><span class="color-dot" style="background:#93c5fd"></span> Frontend Pages</div>
+      <div class="legend-row"><span class="color-dot" style="background:#7dd3fc"></span> Frontend Core</div>
+      <div class="legend-row"><span class="color-dot" style="background:#a5b4fc"></span> API Proxy</div>
+      <div class="legend-row"><span class="color-dot" style="background:#fcd34d"></span> Backend Modules</div>
+      <div class="legend-row"><span class="color-dot" style="background:#86efac"></span> Backend Core</div>
+      <div class="legend-row"><span class="color-dot" style="background:#c4b5fd"></span> Entity / ORM</div>
+      <div class="legend-row"><span class="color-dot" style="background:#f9a8d4"></span> Database</div>
+    </div>
+  </div>
+
+  <div class="prompt-area">
+    <div class="prompt-header">
+      <h3>Generated Prompt</h3>
+      <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy</button>
+    </div>
+    <div class="prompt-text" id="promptText">HANES MES 전체 시스템 아키텍처를 표시 중입니다. 노드를 클릭하여 피드백을 추가하세요.</div>
+  </div>
+</div>
+
+<!-- Comment Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle"></h3>
+    <div class="modal-file" id="modalFile"></div>
+    <textarea id="modalText" placeholder="이 컴포넌트에 대한 피드백이나 질문을 입력하세요..."></textarea>
+    <div class="modal-actions">
+      <button class="cancel" onclick="closeModal()">취소</button>
+      <button class="save" onclick="saveComment()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <div class="tt-label"></div>
+  <div class="tt-file"></div>
+  <div class="tt-detail"></div>
+</div>
+
+<script>
+/** @file HANES MES Code Map Explorer - Interactive architecture visualization */
+
+/* ===================== DATA ===================== */
+const LAYERS = {
+  pages:    { label: 'Frontend Pages',  color: '#93c5fd', fill: '#1e3a5f', stroke: '#3b82f6' },
+  frontend: { label: 'Frontend Core',  color: '#7dd3fc', fill: '#164e63', stroke: '#06b6d4' },
+  proxy:    { label: 'API Proxy',       color: '#a5b4fc', fill: '#312e81', stroke: '#6366f1' },
+  backend:  { label: 'Backend Modules', color: '#fcd34d', fill: '#713f12', stroke: '#eab308' },
+  core:     { label: 'Backend Core',    color: '#86efac', fill: '#14532d', stroke: '#22c55e' },
+  entity:   { label: 'Entity / ORM',    color: '#c4b5fd', fill: '#3b0764', stroke: '#a855f7' },
+  database: { label: 'Database',        color: '#f9a8d4', fill: '#831843', stroke: '#ec4899' }
+};
+
+const CONN_TYPES = {
+  'data-flow':  { label: 'Data Flow (HTTP/SQL)',  color: '#3b82f6', dash: '' },
+  'dependency': { label: 'Dependency (import)',    color: '#6b7280', dash: '4,3' },
+  'event':      { label: 'Event / State',          color: '#f59e0b', dash: '6,3' },
+  'inject':     { label: 'DI / Interceptor',       color: '#10b981', dash: '8,4' }
+};
+
+const W = 150, H = 48;
+
+const nodes = [
+  // Row 1: Frontend Pages (y:40)
+  { id:'pg-dashboard',   label:'Dashboard',      subtitle:'dashboard/page.tsx',        detail:'메인 대시보드, 통계 카드, 차트', x:50,   y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-master',      label:'기준정보 (16p)',  subtitle:'master/*/page.tsx',          detail:'BOM, 품목, 공정, 라우팅, 거래처, 창고 등 16개 페이지', x:220, y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-material',    label:'자재관리 (21p)',  subtitle:'material/*/page.tsx',        detail:'입고, 출고, LOT, IQC, 재고, 발주 등 21개 페이지', x:390, y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-production',  label:'생산관리 (11p)',  subtitle:'production/*/page.tsx',      detail:'작업지시, 실적입력, 진행현황, 포장 등 11개 페이지', x:560, y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-equipment',   label:'설비관리 (6p)',   subtitle:'equipment/*/page.tsx',       detail:'일상/정기 점검, PM, 금형, 현황 등 6개 페이지', x:730, y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-quality',     label:'품질관리 (3p)',   subtitle:'quality/*/page.tsx',         detail:'불량, 검사, 추적성 3개 페이지', x:900, y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-shipping',    label:'출하관리 (8p)',   subtitle:'shipping/*/page.tsx',        detail:'고객발주, 출하지시, 포장, 팔렛, 반품 등 8개 페이지', x:1070,y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-inventory',   label:'재고관리 (5p)',   subtitle:'inventory/*/page.tsx',       detail:'LOT재고, 재고현황, 수불, 실사 5개 페이지', x:1240,y:40, w:W, h:H, layer:'pages' },
+  { id:'pg-system',      label:'시스템 (4p)',     subtitle:'system/*/page.tsx',          detail:'사용자, 부서, 환경설정, 통신설정 4개 페이지', x:1410,y:40, w:W, h:H, layer:'pages' },
+
+  // Row 2: Frontend Core (y:150)
+  { id:'data-grid',      label:'DataGrid',        subtitle:'components/data-grid/',      detail:'TanStack Table 기반 공통 테이블, 정렬/필터/페이징/엑셀 내보내기', x:80,  y:150, w:130, h:H, layer:'frontend' },
+  { id:'com-code',       label:'ComCodeBadge',    subtitle:'components/ui/ComCodeBadge', detail:'공통코드 배지 + useComCodeOptions/Label 훅', x:240, y:150, w:130, h:H, layer:'frontend' },
+  { id:'layout',         label:'Layout / Sidebar', subtitle:'components/layout/',        detail:'MainLayout, Sidebar, Header, LanguageSwitcher', x:400, y:150, w:140, h:H, layer:'frontend' },
+  { id:'auth-guard',     label:'AuthGuard',        subtitle:'components/layout/AuthGuard',detail:'JWT 토큰 검증, 미인증 시 /login 리다이렉트', x:570, y:150, w:130, h:H, layer:'frontend' },
+  { id:'zustand',        label:'Zustand (7 stores)',subtitle:'stores/*.ts',              detail:'authStore, themeStore, sysConfigStore, productionInputStore 등', x:730, y:150, w:W, h:H, layer:'frontend' },
+  { id:'react-query',    label:'useApi / RQ',      subtitle:'hooks/useApi.ts',           detail:'useApiQuery, useApiMutation, usePaginatedQuery (staleTime 5m)', x:910, y:150, w:130, h:H, layer:'frontend' },
+  { id:'i18n',           label:'i18n (4 lang)',     subtitle:'locales/{ko,en,zh,vi}.json',detail:'한국어, 영어, 중국어, 베트남어 다국어 지원', x:1070,y:150, w:130, h:H, layer:'frontend' },
+  { id:'domain-hooks',   label:'Domain Hooks',     subtitle:'hooks/material/*.ts',       detail:'useIqcData, useArrivalData, useIssueData 등 도메인별 훅', x:1230,y:150, w:130, h:H, layer:'frontend' },
+  { id:'axios',          label:'Axios Instance',   subtitle:'services/api.ts',           detail:'Bearer 토큰 + X-Company 헤더 자동 추가, 401 리다이렉트', x:1390,y:150, w:130, h:H, layer:'frontend' },
+
+  // Row 3: API Proxy (y:260)
+  { id:'nextjs-proxy',   label:'Next.js Rewrites', subtitle:'next.config.ts',            detail:'/api/* → localhost:3003/api/v1/* 프록시 (CORS 우회)', x:680, y:260, w:200, h:H, layer:'proxy' },
+
+  // Row 4: Backend Modules (y:370)
+  { id:'api-auth',       label:'Auth Module',      subtitle:'modules/auth/',             detail:'login, logout, JWT 발급/갱신', x:50,   y:370, w:W, h:H, layer:'backend' },
+  { id:'api-master',     label:'Master (22 ctrl)', subtitle:'modules/master/',           detail:'BOM, 품목, 공정, 라우팅, 거래처, 창고, IQC그룹 등', x:220, y:370, w:W, h:H, layer:'backend' },
+  { id:'api-material',   label:'Material (19 ctrl)',subtitle:'modules/material/',        detail:'입고, 출고, LOT, IQC, 재고, 발주 등', x:390, y:370, w:W, h:H, layer:'backend' },
+  { id:'api-production', label:'Production (4)',    subtitle:'modules/production/',       detail:'작업지시, 생산실적, 샘플검사, 생산뷰', x:560, y:370, w:W, h:H, layer:'backend' },
+  { id:'api-equipment',  label:'Equipment (5)',     subtitle:'modules/equipment/',        detail:'설비마스터, 소모품, 일상/정기점검, 점검이력', x:730, y:370, w:W, h:H, layer:'backend' },
+  { id:'api-quality',    label:'Quality (2)',       subtitle:'modules/quality/',          detail:'불량로그, 검사결과', x:900, y:370, w:W, h:H, layer:'backend' },
+  { id:'api-shipping',   label:'Shipping (7)',      subtitle:'modules/shipping/',         detail:'고객발주, 출하지시, 포장, 팔렛, 반품 등', x:1070,y:370, w:W, h:H, layer:'backend' },
+  { id:'api-inventory',  label:'Inventory (3)',     subtitle:'modules/inventory/',        detail:'재고, 실사, 창고위치', x:1240,y:370, w:W, h:H, layer:'backend' },
+  { id:'api-system',     label:'System (2)',        subtitle:'modules/system/',           detail:'통신설정, 시스템환경설정', x:1410,y:370, w:W, h:H, layer:'backend' },
+
+  // Row 5: Backend Core (y:480)
+  { id:'transform',      label:'Transform Intcptr', subtitle:'common/interceptors/',     detail:'응답을 { success, data, timestamp } 형태로 래핑', x:200, y:480, w:160, h:H, layer:'core' },
+  { id:'jwt-guard',      label:'JWT Auth Guard',    subtitle:'common/guards/',           detail:'Bearer 토큰 검증, 사용자 컨텍스트 추출', x:430, y:480, w:W, h:H, layer:'core' },
+  { id:'exception',      label:'Exception Filter',  subtitle:'common/filters/',          detail:'전역 HTTP 예외 처리, 에러 응답 표준화', x:650, y:480, w:W, h:H, layer:'core' },
+  { id:'base-dto',       label:'Base DTOs',         subtitle:'common/dto/',              detail:'PaginationQueryDto, DateRangeQueryDto, BaseListQueryDto', x:870, y:480, w:W, h:H, layer:'core' },
+  { id:'crud-service',   label:'Generic CRUD',      subtitle:'common/services/',         detail:'공통 CRUD 베이스 서비스 (findAll, findOne, create, update, delete)', x:1090,y:480, w:W, h:H, layer:'core' },
+
+  // Row 6: Entities (y:590)
+  { id:'entities',       label:'TypeORM Entities (69)', subtitle:'entities/*.entity.ts',  detail:'part-master, job-order, lot, mat-lot, prod-result, equip-master 등 69개 엔티티', x:500, y:590, w:240, h:52, layer:'entity' },
+  { id:'migrations',     label:'Migrations',        subtitle:'database/migrations/',     detail:'SQL + TypeScript 마이그레이션 (synchronize: false)', x:820, y:590, w:W, h:H, layer:'entity' },
+
+  // Row 7: Database (y:700)
+  { id:'oracle-db',      label:'Oracle Database',   subtitle:'oracledb driver',          detail:'poolMax:10, poolMin:2, poolPingInterval:10s 자동 재연결', x:600, y:700, w:200, h:52, layer:'database' },
+];
+
+const connections = [
+  // Pages → Frontend Core
+  { from:'pg-dashboard',  to:'data-grid',    type:'dependency' },
+  { from:'pg-dashboard',  to:'react-query',  type:'data-flow',  label:'API 호출' },
+  { from:'pg-master',     to:'data-grid',    type:'dependency' },
+  { from:'pg-master',     to:'com-code',     type:'dependency' },
+  { from:'pg-master',     to:'react-query',  type:'data-flow' },
+  { from:'pg-material',   to:'data-grid',    type:'dependency' },
+  { from:'pg-material',   to:'domain-hooks', type:'dependency' },
+  { from:'pg-material',   to:'react-query',  type:'data-flow' },
+  { from:'pg-production', to:'data-grid',    type:'dependency' },
+  { from:'pg-production', to:'zustand',      type:'event',      label:'생산입력 상태' },
+  { from:'pg-production', to:'react-query',  type:'data-flow' },
+  { from:'pg-equipment',  to:'data-grid',    type:'dependency' },
+  { from:'pg-equipment',  to:'react-query',  type:'data-flow' },
+  { from:'pg-quality',    to:'data-grid',    type:'dependency' },
+  { from:'pg-quality',    to:'react-query',  type:'data-flow' },
+  { from:'pg-shipping',   to:'data-grid',    type:'dependency' },
+  { from:'pg-shipping',   to:'react-query',  type:'data-flow' },
+  { from:'pg-inventory',  to:'data-grid',    type:'dependency' },
+  { from:'pg-inventory',  to:'react-query',  type:'data-flow' },
+  { from:'pg-system',     to:'zustand',      type:'event',      label:'sysConfig' },
+  { from:'pg-system',     to:'react-query',  type:'data-flow' },
+
+  // Layout / Auth
+  { from:'layout',       to:'auth-guard',   type:'dependency' },
+  { from:'auth-guard',   to:'zustand',      type:'event',      label:'authStore' },
+  { from:'auth-guard',   to:'axios',        type:'dependency' },
+  { from:'react-query',  to:'axios',        type:'data-flow',  label:'HTTP 요청' },
+  { from:'domain-hooks', to:'react-query',  type:'dependency' },
+
+  // Axios → Proxy
+  { from:'axios',        to:'nextjs-proxy', type:'data-flow',  label:'/api/*' },
+
+  // Proxy → Backend
+  { from:'nextjs-proxy', to:'api-auth',      type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-master',    type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-material',  type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-production',type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-equipment', type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-quality',   type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-shipping',  type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-inventory', type:'data-flow' },
+  { from:'nextjs-proxy', to:'api-system',    type:'data-flow' },
+
+  // Backend Core → Modules (inject)
+  { from:'transform',   to:'api-master',    type:'inject' },
+  { from:'transform',   to:'api-material',  type:'inject' },
+  { from:'transform',   to:'api-production',type:'inject' },
+  { from:'jwt-guard',   to:'api-auth',      type:'inject' },
+  { from:'jwt-guard',   to:'api-master',    type:'inject' },
+  { from:'exception',   to:'api-material',  type:'inject' },
+  { from:'base-dto',    to:'api-master',    type:'dependency' },
+  { from:'base-dto',    to:'api-material',  type:'dependency' },
+  { from:'crud-service',to:'api-master',    type:'dependency' },
+  { from:'crud-service',to:'api-material',  type:'dependency' },
+  { from:'crud-service',to:'api-production',type:'dependency' },
+
+  // Backend → Entities
+  { from:'api-auth',      to:'entities', type:'dependency' },
+  { from:'api-master',    to:'entities', type:'dependency' },
+  { from:'api-material',  to:'entities', type:'dependency' },
+  { from:'api-production',to:'entities', type:'dependency' },
+  { from:'api-equipment', to:'entities', type:'dependency' },
+  { from:'api-quality',   to:'entities', type:'dependency' },
+  { from:'api-shipping',  to:'entities', type:'dependency' },
+  { from:'api-inventory', to:'entities', type:'dependency' },
+  { from:'api-system',    to:'entities', type:'dependency' },
+
+  // Entities → DB
+  { from:'entities',  to:'oracle-db',  type:'data-flow', label:'TypeORM' },
+  { from:'migrations',to:'oracle-db',  type:'data-flow', label:'DDL' },
+  { from:'migrations',to:'entities',   type:'dependency' },
+];
+
+const PRESETS = {
+  'Full System':    { layers: Object.keys(LAYERS), conns: Object.keys(CONN_TYPES) },
+  'Data Flow':      { layers: ['pages','frontend','proxy','backend','entity','database'], conns: ['data-flow'] },
+  'Frontend Only':  { layers: ['pages','frontend','proxy'], conns: ['data-flow','dependency','event'] },
+  'Backend Only':   { layers: ['proxy','backend','core','entity','database'], conns: ['data-flow','dependency','inject'] },
+  'Auth Flow':      { layers: ['pages','frontend','proxy','backend','core'], conns: ['data-flow','event','inject'], highlight: ['auth-guard','zustand','axios','nextjs-proxy','api-auth','jwt-guard'] },
+  'Production':     { layers: ['pages','frontend','proxy','backend','entity','database'], conns: ['data-flow','dependency','event'], highlight: ['pg-production','zustand','react-query','axios','nextjs-proxy','api-production','entities','oracle-db'] },
+};
+
+/* ===================== STATE ===================== */
+const state = {
+  layers: {},
+  conns: {},
+  comments: [],
+  zoom: 1,
+  panX: 0, panY: 0,
+  activePreset: 'Full System',
+  modalNode: null,
+  highlight: null,
+  dragging: false, dragStartX: 0, dragStartY: 0, dragPanX: 0, dragPanY: 0
+};
+
+// Init
+Object.keys(LAYERS).forEach(k => state.layers[k] = true);
+Object.keys(CONN_TYPES).forEach(k => state.conns[k] = true);
+
+/* ===================== RENDERING ===================== */
+const svg = document.getElementById('svg');
+const wrap = document.getElementById('canvasWrap');
+
+function render() {
+  const vw = 1600, vh = 800;
+  svg.setAttribute('viewBox', `${-state.panX/state.zoom} ${-state.panY/state.zoom} ${vw/state.zoom} ${vh/state.zoom}`);
+
+  let html = `<defs>`;
+  Object.entries(CONN_TYPES).forEach(([k,v]) => {
+    html += `<marker id="arrow-${k}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="${v.color}" opacity="0.7"/></marker>`;
+  });
+  html += `</defs>`;
+
+  // Connections
+  connections.forEach(c => {
+    if (!state.conns[c.type]) return;
+    const from = nodes.find(n => n.id === c.from);
+    const to = nodes.find(n => n.id === c.to);
+    if (!from || !to) return;
+    if (!state.layers[from.layer] || !state.layers[to.layer]) return;
+
+    const ct = CONN_TYPES[c.type];
+    const x1 = from.x + from.w/2, y1 = from.y + from.h;
+    const x2 = to.x + to.w/2, y2 = to.y;
+    const dy = (y2 - y1);
+    const cy1 = y1 + dy * 0.4, cy2 = y2 - dy * 0.4;
+
+    const isHl = state.highlight ? (state.highlight.includes(from.id) && state.highlight.includes(to.id)) : true;
+    const op = isHl ? 0.5 : 0.1;
+
+    html += `<path d="M${x1},${y1} C${x1},${cy1} ${x2},${cy2} ${x2},${y2}"
+      fill="none" stroke="${ct.color}" stroke-width="1.5" opacity="${op}"
+      stroke-dasharray="${ct.dash}" marker-end="url(#arrow-${c.type})"/>`;
+
+    if (c.label && isHl) {
+      const mx = (x1+x2)/2, my = (y1+y2)/2;
+      html += `<text x="${mx}" y="${my-4}" text-anchor="middle" fill="${ct.color}" font-size="9" opacity="0.7">${c.label}</text>`;
+    }
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    if (!state.layers[n.layer]) return;
+    const L = LAYERS[n.layer];
+    const hasComment = state.comments.some(c => c.target === n.id);
+    const isHl = state.highlight ? state.highlight.includes(n.id) : true;
+    const op = isHl ? 1 : 0.25;
+
+    html += `<g class="node" data-id="${n.id}" style="cursor:pointer;opacity:${op}"
+      onmouseenter="showTip(event,'${n.id}')" onmouseleave="hideTip()"
+      onclick="openModal('${n.id}')">`;
+    html += `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="8"
+      fill="${L.fill}" stroke="${hasComment ? '#f59e0b' : L.stroke}" stroke-width="${hasComment ? 2.5 : 1.2}"/>`;
+    html += `<text x="${n.x + n.w/2}" y="${n.y + n.h/2 - 5}" text-anchor="middle" fill="${L.color}" font-size="11" font-weight="600">${n.label}</text>`;
+    html += `<text x="${n.x + n.w/2}" y="${n.y + n.h/2 + 9}" text-anchor="middle" fill="#64748b" font-size="8.5">${n.subtitle}</text>`;
+    if (hasComment) {
+      html += `<circle cx="${n.x + n.w - 6}" cy="${n.y + 6}" r="5" fill="#f59e0b"/>`;
+      html += `<text x="${n.x + n.w - 6}" y="${n.y + 9}" text-anchor="middle" fill="#0f172a" font-size="7" font-weight="700">${state.comments.filter(c=>c.target===n.id).length}</text>`;
+    }
+    html += `</g>`;
+  });
+
+  svg.innerHTML = html;
+  updatePrompt();
+}
+
+/* ===================== CONTROLS ===================== */
+function buildControls() {
+  // Presets
+  const pg = document.getElementById('presets');
+  pg.innerHTML = Object.keys(PRESETS).map(k =>
+    `<button class="preset-btn${state.activePreset===k?' active':''}" onclick="applyPreset('${k}')">${k}</button>`
+  ).join('');
+
+  // Layers
+  const lg = document.getElementById('layers');
+  lg.innerHTML = Object.entries(LAYERS).map(([k,v]) =>
+    `<label class="check-item"><input type="checkbox" ${state.layers[k]?'checked':''} onchange="toggleLayer('${k}',this.checked)">
+    <span class="color-dot" style="background:${v.color}"></span>${v.label}</label>`
+  ).join('');
+
+  // Connection types
+  const cg = document.getElementById('connTypes');
+  cg.innerHTML = Object.entries(CONN_TYPES).map(([k,v]) =>
+    `<label class="check-item"><input type="checkbox" ${state.conns[k]?'checked':''} onchange="toggleConn('${k}',this.checked)">
+    <span class="line-sample" style="background:${v.color}"></span>${v.label}</label>`
+  ).join('');
+}
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  state.activePreset = name;
+  Object.keys(LAYERS).forEach(k => state.layers[k] = p.layers.includes(k));
+  Object.keys(CONN_TYPES).forEach(k => state.conns[k] = p.conns.includes(k));
+  state.highlight = p.highlight || null;
+  buildControls();
+  render();
+}
+
+function toggleLayer(k, v) { state.layers[k] = v; state.activePreset = ''; buildControls(); render(); }
+function toggleConn(k, v)  { state.conns[k] = v;  state.activePreset = ''; buildControls(); render(); }
+
+/* ===================== ZOOM & PAN ===================== */
+function zoom(dir) {
+  if (dir === 0) { state.zoom = 1; state.panX = 0; state.panY = 0; }
+  else state.zoom = Math.max(0.3, Math.min(3, state.zoom + dir * 0.15));
+  document.getElementById('zoomLabel').textContent = Math.round(state.zoom * 100) + '%';
+  render();
+}
+
+wrap.addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+wrap.addEventListener('mousedown', e => {
+  if (e.target.closest('.node')) return;
+  state.dragging = true; state.dragStartX = e.clientX; state.dragStartY = e.clientY;
+  state.dragPanX = state.panX; state.dragPanY = state.panY;
+  wrap.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+  if (!state.dragging) return;
+  state.panX = state.dragPanX + (e.clientX - state.dragStartX);
+  state.panY = state.dragPanY + (e.clientY - state.dragStartY);
+  render();
+});
+window.addEventListener('mouseup', () => { state.dragging = false; wrap.style.cursor = ''; });
+
+/* ===================== TOOLTIP ===================== */
+const tip = document.getElementById('tooltip');
+function showTip(e, id) {
+  const n = nodes.find(n => n.id === id);
+  if (!n) return;
+  tip.querySelector('.tt-label').textContent = n.label;
+  tip.querySelector('.tt-file').textContent = n.subtitle;
+  tip.querySelector('.tt-detail').textContent = n.detail;
+  tip.style.display = 'block';
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top = (e.clientY - 10) + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+
+/* ===================== COMMENTS ===================== */
+function openModal(id) {
+  const n = nodes.find(n => n.id === id);
+  if (!n) return;
+  state.modalNode = n;
+  document.getElementById('modalTitle').textContent = n.label;
+  document.getElementById('modalFile').textContent = n.subtitle;
+  document.getElementById('modalText').value = '';
+  document.getElementById('modal').classList.add('show');
+  setTimeout(() => document.getElementById('modalText').focus(), 100);
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); state.modalNode = null; }
+function saveComment() {
+  const text = document.getElementById('modalText').value.trim();
+  if (!text || !state.modalNode) return;
+  state.comments.push({ id: Date.now(), target: state.modalNode.id, targetLabel: state.modalNode.label, targetFile: state.modalNode.subtitle, text });
+  closeModal();
+  renderComments();
+  render();
+}
+function deleteComment(id) {
+  state.comments = state.comments.filter(c => c.id !== id);
+  renderComments();
+  render();
+}
+function renderComments() {
+  const el = document.getElementById('commentList');
+  document.getElementById('commentCount').textContent = state.comments.length;
+  if (!state.comments.length) { el.innerHTML = '<p class="no-comments">노드를 클릭하여 코멘트를 추가하세요</p>'; return; }
+  el.innerHTML = state.comments.map(c =>
+    `<div class="comment-item"><span class="target">${c.targetLabel}</span> <span class="file">${c.targetFile}</span>
+    <div class="text">${c.text}</div><button class="del-btn" onclick="deleteComment(${c.id})">×</button></div>`
+  ).join('');
+}
+
+// Enter to save
+document.getElementById('modalText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveComment(); } });
+document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+
+/* ===================== PROMPT ===================== */
+function updatePrompt() {
+  const visibleLayers = Object.entries(state.layers).filter(([,v]) => v).map(([k]) => LAYERS[k].label);
+  let text = `HANES MES 아키텍처 — ${state.activePreset || 'Custom View'}\n`;
+  text += `표시 레이어: ${visibleLayers.join(', ')}\n`;
+
+  if (state.comments.length) {
+    text += `\n--- 컴포넌트 피드백 ---\n`;
+    state.comments.forEach(c => {
+      text += `\n**${c.targetLabel}** (${c.targetFile}):\n${c.text}\n`;
+    });
+  } else {
+    text += `\n노드를 클릭하여 특정 컴포넌트에 대한 피드백을 추가하세요.`;
+  }
+  document.getElementById('promptText').textContent = text;
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById('copyBtn');
+  btn.textContent = 'Copied!'; btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+}
+
+/* ===================== INIT ===================== */
+buildControls();
+render();
+</script>
+</body>
+</html>

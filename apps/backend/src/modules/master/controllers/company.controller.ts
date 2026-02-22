@@ -12,7 +12,7 @@
  */
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { CompanyService } from '../services/company.service';
 import { CreateCompanyDto, UpdateCompanyDto, CompanyQueryDto } from '../dto/company.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -27,6 +27,15 @@ export class CompanyController {
   @ApiOperation({ summary: '활성 회사 목록 (인증 불필요)' })
   async findPublic() {
     const data = await this.companyService.findPublic();
+    return ResponseUtil.success(data);
+  }
+
+  /** 공개 API — 회사별 사업장 목록 (로그인 페이지용, 인증 불필요) */
+  @Get('public/plants')
+  @ApiOperation({ summary: '회사별 사업장 목록 (인증 불필요)' })
+  @ApiQuery({ name: 'company', required: true, description: '회사 코드' })
+  async findPlantsByCompany(@Query('company') company: string) {
+    const data = await this.companyService.findPlantsByCompany(company);
     return ResponseUtil.success(data);
   }
 

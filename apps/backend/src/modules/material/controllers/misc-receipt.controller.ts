@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MiscReceiptService } from '../services/misc-receipt.service';
 import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 기타입고')
 @Controller('material/misc-receipt')
@@ -16,8 +17,8 @@ export class MiscReceiptController {
 
   @Get()
   @ApiOperation({ summary: '기타입고 이력 조회' })
-  async findAll(@Query() query: MiscReceiptQueryDto) {
-    const result = await this.miscReceiptService.findAll(query);
+  async findAll(@Query() query: MiscReceiptQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.miscReceiptService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

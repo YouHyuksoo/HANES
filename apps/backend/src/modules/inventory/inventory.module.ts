@@ -14,19 +14,25 @@
  */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Stock } from '../../entities/stock.entity';
+import { MatStock } from '../../entities/mat-stock.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
-import { Lot } from '../../entities/lot.entity';
+import { MatLot } from '../../entities/mat-lot.entity';
 import { Warehouse } from '../../entities/warehouse.entity';
 import { PartMaster } from '../../entities/part-master.entity';
+import { InvAdjLog } from '../../entities/inv-adj-log.entity';
+import { WarehouseLocation } from '../../entities/warehouse-location.entity';
 import { InventoryController } from './inventory.controller';
+import { ProductPhysicalInvController } from './controllers/product-physical-inv.controller';
+import { WarehouseLocationController } from './controllers/warehouse-location.controller';
 import { InventoryService } from './services/inventory.service';
 import { WarehouseService } from './services/warehouse.service';
+import { ProductPhysicalInvService } from './services/product-physical-inv.service';
+import { WarehouseLocationService } from './services/warehouse-location.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Stock, StockTransaction, Lot, Warehouse, PartMaster])],
-  controllers: [InventoryController],
-  providers: [InventoryService, WarehouseService],
-  exports: [InventoryService, WarehouseService],
+  imports: [TypeOrmModule.forFeature([MatStock, StockTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation])],
+  controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController],
+  providers: [InventoryService, WarehouseService, ProductPhysicalInvService, WarehouseLocationService],
+  exports: [InventoryService, WarehouseService, ProductPhysicalInvService, WarehouseLocationService],
 })
 export class InventoryModule {}

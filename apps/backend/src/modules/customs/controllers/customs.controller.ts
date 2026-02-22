@@ -28,6 +28,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -57,8 +58,8 @@ export class CustomsController {
   @Get('entries')
   @ApiOperation({ summary: '수입신고 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAllEntries(@Query() query: CustomsEntryQueryDto) {
-    const result = await this.customsService.findAllEntries(query);
+  async findAllEntries(@Query() query: CustomsEntryQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.customsService.findAllEntries(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -142,8 +143,8 @@ export class CustomsController {
   @Get('usage')
   @ApiOperation({ summary: '사용신고 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAllUsageReports(@Query() query: UsageReportQueryDto) {
-    const result = await this.customsService.findAllUsageReports(query);
+  async findAllUsageReports(@Query() query: UsageReportQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.customsService.findAllUsageReports(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

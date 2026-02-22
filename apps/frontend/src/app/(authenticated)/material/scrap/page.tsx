@@ -2,91 +2,170 @@
 
 /**
  * @file src/app/(authenticated)/material/scrap/page.tsx
- * @description 자재폐기 페이지 - 불량/만료 자재 폐기 처리
+ * @description 자재폐기 페이지 - 불량/만료 자재 폐기 처리 + 이력 조회
  *
  * 초보자 가이드:
- * 1. **폐기**: LOT에서 수량을 차감하고 StockTransaction(SCRAP) 기록
- * 2. **사유 필수**: 폐기 시 반드시 사유 입력
+ * 1. **폐기 등록**: LOT/창고/수량/사유 입력 → POST /inventory/scrap
+ * 2. **이력 조회**: StockTransaction(transType=SCRAP) 조회
+ * 3. **재고 자동 차감**: 폐기 시 Stock.qty 감소, Lot.currentQty 감소
  */
 
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Trash, Search, RefreshCw, Plus } from 'lucide-react';
-import { Card, CardContent, Button, Input, Modal } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
-import { createPartColumns } from '@/lib/table-utils';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { Trash, Search, RefreshCw, Plus, AlertTriangle } from "lucide-react";
+import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import { useWarehouseOptions } from "@/hooks/useMasterOptions";
+import api from "@/services/api";
+import ScrapRegisterModal from "./components/ScrapRegisterModal";
 
 interface ScrapRecord {
   id: string;
   transNo: string;
-  lotNo: string;
-  partCode: string;
-  partName: string;
-  qty: number;
-  unit: string;
-  reason: string;
   transDate: string;
+  partId: string;
+  partCode?: string;
+  partName?: string;
+  lotNo?: string;
+  qty: number;
+  warehouseName?: string;
+  remark: string;
+  status: string;
 }
 
-const mockData: ScrapRecord[] = [
-  { id: '1', transNo: 'SCR-001', lotNo: 'L20260101-A01', partCode: 'CHEM-001', partName: '접착제 A형', qty: 50, unit: 'KG', reason: '유효기한 만료', transDate: '2026-02-01' },
-  { id: '2', transNo: 'SCR-002', lotNo: 'L20260110-B01', partCode: 'WIRE-003', partName: 'AWG22 백색', qty: 200, unit: 'M', reason: '품질 불량', transDate: '2026-02-05' },
-  { id: '3', transNo: 'SCR-003', lotNo: 'L20260115-C01', partCode: 'SEAL-001', partName: '실리콘 패킹', qty: 100, unit: 'EA', reason: '파손', transDate: '2026-02-10' },
-];
-
-function ScrapPage() {
+export default function ScrapPage() {
   const { t } = useTranslation();
-  const [searchText, setSearchText] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filteredData = useMemo(() => {
-    return mockData.filter(item => {
-      if (!searchText) return true;
-      const s = searchText.toLowerCase();
-      return item.transNo.toLowerCase().includes(s) || item.lotNo.toLowerCase().includes(s) || item.partName.toLowerCase().includes(s);
-    });
-  }, [searchText]);
+  const [data, setData] = useState<ScrapRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showRegister, setShowRegister] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { transType: "SCRAP", limit: "5000" };
+      if (searchText) params.search = searchText;
+      if (startDate) params.dateFrom = startDate;
+      if (endDate) params.dateTo = endDate;
+      const res = await api.get("/inventory/transactions", { params });
+      const raw = res.data?.data ?? [];
+      setData(raw.map((r: any) => ({
+        id: r.id,
+        transNo: r.transNo,
+        transDate: r.transDate,
+        partId: r.partId,
+        partCode: r.part?.partCode || "",
+        partName: r.part?.partName || "",
+        lotNo: r.lot?.lotNo || r.lotId || "",
+        qty: Math.abs(r.qty),
+        warehouseName: r.fromWarehouse?.warehouseName || "",
+        remark: r.remark || "",
+        status: r.status,
+      })));
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, startDate, endDate]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const stats = useMemo(() => {
+    const total = data.length;
+    const totalQty = data.reduce((s, d) => s + d.qty, 0);
+    return { total, totalQty };
+  }, [data]);
 
   const columns = useMemo<ColumnDef<ScrapRecord>[]>(() => [
-    { accessorKey: 'transNo', header: t('material.scrap.transNo'), size: 120 },
-    { accessorKey: 'lotNo', header: 'LOT No.', size: 160 },
-    ...createPartColumns<ScrapRecord>(t),
-    { accessorKey: 'qty', header: t('material.scrap.qty'), size: 100, cell: ({ row }) => <span className="text-red-600 font-medium">-{row.original.qty.toLocaleString()} {row.original.unit}</span> },
-    { accessorKey: 'reason', header: t('material.scrap.reason'), size: 150 },
-    { accessorKey: 'transDate', header: t('material.scrap.transDate'), size: 110 },
+    {
+      accessorKey: "transDate", header: t("material.scrap.transDate"), size: 100,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+    },
+    {
+      accessorKey: "transNo", header: t("material.scrap.transNo"), size: 150,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "partName", header: t("common.partName"), size: 150,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "lotNo", header: "LOT No.", size: 160,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "qty", header: t("material.scrap.qty"), size: 90,
+      meta: { align: "right" as const },
+      cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">-{(getValue() as number).toLocaleString()}</span>,
+    },
+    {
+      accessorKey: "warehouseName", header: t("material.scrap.warehouse"), size: 100,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "remark", header: t("material.scrap.reason"), size: 180,
+      meta: { filterType: "text" as const },
+    },
   ], [t]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Trash className="w-7 h-7 text-primary" />{t('material.scrap.title')}</h1>
-          <p className="text-text-muted mt-1">{t('material.scrap.subtitle')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Trash className="w-7 h-7 text-primary" />
+            {t("material.scrap.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("material.scrap.subtitle")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4 mr-1" />{t('material.scrap.register')}</Button>
+        <Button size="sm" onClick={() => setShowRegister(true)}>
+          <Plus className="w-4 h-4 mr-1" /> {t("material.scrap.register")}
+        </Button>
       </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard label={t("material.scrap.totalCount")} value={stats.total} icon={Trash} color="red" />
+        <StatCard label={t("material.scrap.totalQty")} value={stats.totalQty.toLocaleString()} icon={AlertTriangle} color="yellow" />
+      </div>
+
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('material.scrap.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.scrap.title")}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("material.scrap.searchPlaceholder")}
+                  value={searchText} onChange={e => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date"
+                  value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date"
+                  value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('material.scrap.register')} size="md">
-        <div className="grid grid-cols-2 gap-4">
-          <Input label={t('material.scrap.lotId')} placeholder={t('material.scrap.lotIdPlaceholder')} fullWidth />
-          <Input label={t('material.scrap.warehouse')} placeholder={t('material.scrap.warehouse')} fullWidth />
-          <Input label={t('material.scrap.qty')} type="number" placeholder="0" fullWidth />
-          <div className="col-span-2"><Input label={t('material.scrap.reason')} placeholder={t('material.scrap.reasonPlaceholder')} fullWidth /></div>
-        </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-          <Button>{t('material.scrap.register')}</Button>
-        </div>
-      </Modal>
+
+      <ScrapRegisterModal isOpen={showRegister} onClose={() => setShowRegister(false)} onCreated={fetchData} />
     </div>
   );
 }
-
-export default ScrapPage;

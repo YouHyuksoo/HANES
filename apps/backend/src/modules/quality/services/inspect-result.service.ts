@@ -44,7 +44,7 @@ export class InspectResultService {
   /**
    * 검사실적 목록 조회 (페이지네이션)
    */
-  async findAll(query: InspectResultQueryDto, company?: string) {
+  async findAll(query: InspectResultQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 20,
@@ -59,6 +59,7 @@ export class InspectResultService {
 
     const where: any = {
       ...(company && { company }),
+      ...(plant && { plant }),
       ...(prodResultId && { prodResultId }),
       ...(serialNo && { serialNo: ILike(`%${serialNo}%`) }),
       ...(inspectType && { inspectType }),

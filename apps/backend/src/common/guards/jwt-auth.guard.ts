@@ -28,6 +28,7 @@ export interface AuthenticatedUser {
   email: string;
   role?: string;
   company?: string;
+  plant?: string;
 }
 
 /**
@@ -65,8 +66,9 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('유효하지 않은 토큰입니다.');
       }
 
-      // X-Company 헤더에서 회사 코드 추출 (프론트엔드가 설정)
+      // X-Company, X-Plant 헤더에서 회사/사업장 코드 추출 (프론트엔드가 설정)
       const companyHeader = request.headers['x-company'] as string | undefined;
+      const plantHeader = request.headers['x-plant'] as string | undefined;
 
       // 요청 객체에 사용자 정보 추가
       (request as AuthenticatedRequest).user = {
@@ -74,6 +76,7 @@ export class JwtAuthGuard implements CanActivate {
         email: user.email,
         role: user.role,
         company: companyHeader || user.company || undefined,
+        plant: plantHeader || undefined,
       };
 
       this.logger.debug(`User authenticated: ${user.email}`);

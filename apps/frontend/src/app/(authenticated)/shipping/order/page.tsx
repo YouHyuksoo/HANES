@@ -7,76 +7,132 @@
  * 초보자 가이드:
  * 1. **출하지시**: 고객사에 출하할 품목과 수량을 지정하는 지시서
  * 2. **상태 흐름**: DRAFT -> CONFIRMED -> SHIPPING -> SHIPPED
- * 3. **품목**: 하나의 출하지시에 여러 품목이 포함될 수 있음
+ * 3. API: GET/POST/PUT/DELETE /shipping/ship-orders
  */
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2,
   FileText, Clock, CheckCircle, Truck,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, Select, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
+import api from "@/services/api";
 
 interface ShipOrder {
   id: string;
   shipOrderNo: string;
   customerName: string;
+  customerId: string;
   dueDate: string;
   shipDate: string;
   status: string;
   itemCount: number;
   totalQty: number;
+  remark: string;
 }
 
-
-const mockData: ShipOrder[] = [
-  { id: "1", shipOrderNo: "SO-20250201-001", customerName: "현대자동차", dueDate: "2025-02-05", shipDate: "2025-02-03", status: "DRAFT", itemCount: 3, totalQty: 1500 },
-  { id: "2", shipOrderNo: "SO-20250201-002", customerName: "기아자동차", dueDate: "2025-02-07", shipDate: "2025-02-06", status: "CONFIRMED", itemCount: 2, totalQty: 800 },
-  { id: "3", shipOrderNo: "SO-20250130-001", customerName: "GM코리아", dueDate: "2025-02-03", shipDate: "2025-02-02", status: "SHIPPING", itemCount: 4, totalQty: 2000 },
-  { id: "4", shipOrderNo: "SO-20250128-001", customerName: "현대자동차", dueDate: "2025-01-31", shipDate: "2025-01-30", status: "SHIPPED", itemCount: 2, totalQty: 1200 },
-];
-
-function ShipOrderPage() {
+export default function ShipOrderPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<ShipOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShipOrder | null>(null);
+  const [form, setForm] = useState({ shipOrderNo: "", customerId: "", dueDate: "", shipDate: "", remark: "" });
+  const [deleteTarget, setDeleteTarget] = useState<ShipOrder | null>(null);
 
   const comCodeStatusOptions = useComCodeOptions("SHIP_ORDER_STATUS");
   const { options: customerOptions } = usePartnerOptions("CUSTOMER");
-  const statusOptions = [{ value: "", label: t("common.allStatus") }, ...comCodeStatusOptions];
+  const statusOptions = useMemo(() => [
+    { value: "", label: t("common.allStatus") }, ...comCodeStatusOptions
+  ], [t, comCodeStatusOptions]);
 
-  const filteredData = useMemo(() => mockData.filter((item) => {
-    const matchSearch = !searchText || item.shipOrderNo.toLowerCase().includes(searchText.toLowerCase()) || item.customerName.toLowerCase().includes(searchText.toLowerCase());
-    return matchSearch && (!statusFilter || item.status === statusFilter);
-  }), [searchText, statusFilter]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "5000" };
+      if (searchText) params.search = searchText;
+      if (statusFilter) params.status = statusFilter;
+      const res = await api.get("/shipping/ship-orders", { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, statusFilter]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    total: mockData.length, draft: mockData.filter((d) => d.status === "DRAFT").length,
-    confirmed: mockData.filter((d) => d.status === "CONFIRMED").length,
-    shipped: mockData.filter((d) => d.status === "SHIPPED" || d.status === "SHIPPING").length,
-  }), []);
+    total: data.length,
+    draft: data.filter((d) => d.status === "DRAFT").length,
+    confirmed: data.filter((d) => d.status === "CONFIRMED").length,
+    shipped: data.filter((d) => d.status === "SHIPPED" || d.status === "SHIPPING").length,
+  }), [data]);
+
+  const openCreate = useCallback(() => {
+    setEditingItem(null);
+    setForm({ shipOrderNo: "", customerId: "", dueDate: "", shipDate: "", remark: "" });
+    setIsModalOpen(true);
+  }, []);
+
+  const openEdit = useCallback((item: ShipOrder) => {
+    setEditingItem(item);
+    setForm({ shipOrderNo: item.shipOrderNo, customerId: item.customerId || "", dueDate: item.dueDate, shipDate: item.shipDate, remark: item.remark || "" });
+    setIsModalOpen(true);
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      if (editingItem) {
+        await api.put(`/shipping/ship-orders/${editingItem.id}`, form);
+      } else {
+        await api.post("/shipping/ship-orders", form);
+      }
+      setIsModalOpen(false);
+      fetchData();
+    } catch (e) {
+      console.error("Save failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, [editingItem, form, fetchData]);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/shipping/ship-orders/${deleteTarget.id}`);
+      fetchData();
+    } catch (e) {
+      console.error("Delete failed:", e);
+    } finally {
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<ShipOrder>[]>(() => [
-    { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160 },
-    { accessorKey: "customerName", header: t("shipping.shipOrder.customer"), size: 120 },
+    { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
+    { accessorKey: "customerName", header: t("shipping.shipOrder.customer"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "dueDate", header: t("shipping.shipOrder.dueDate"), size: 100 },
     { accessorKey: "shipDate", header: t("shipping.shipOrder.shipDate"), size: 100 },
     { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 90, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
-    { id: "actions", header: t("common.actions"), size: 80, cell: ({ row }) => (
+    { id: "actions", header: "", size: 80, cell: ({ row }) => (
       <div className="flex gap-1">
-        <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
+        <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     ) },
-  ], [t]);
+  ], [t, openEdit]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -85,7 +141,7 @@ function ShipOrderPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardList className="w-7 h-7 text-primary" />{t("shipping.shipOrder.title")}</h1>
           <p className="text-text-muted mt-1">{t("shipping.shipOrder.subtitle")}</p>
         </div>
-        <Button size="sm" onClick={() => { setEditingItem(null); setIsModalOpen(true); }}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
+        <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
       </div>
       <div className="grid grid-cols-4 gap-3">
         <StatCard label={t("shipping.shipOrder.statTotal")} value={stats.total} icon={FileText} color="blue" />
@@ -94,30 +150,51 @@ function ShipOrderPage() {
         <StatCard label={t("shipping.shipOrder.statusShipped")} value={stats.shipped} icon={Truck} color="purple" />
       </div>
       <Card><CardContent>
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder={t("shipping.shipOrder.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-40"><Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t("shipping.shipOrder.title")}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("shipping.shipOrder.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("shipping.shipOrder.editTitle") : t("shipping.shipOrder.addTitle")} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t("shipping.shipOrder.shipOrderNo")} placeholder="SO-YYYYMMDD-NNN" defaultValue={editingItem?.shipOrderNo} fullWidth />
-            <Select label={t("shipping.shipOrder.customer")} options={customerOptions} value={editingItem?.customerName ?? ""} onChange={() => {}} fullWidth />
-            <Input label={t("shipping.shipOrder.dueDate")} type="date" defaultValue={editingItem?.dueDate} fullWidth />
-            <Input label={t("shipping.shipOrder.shipDate")} type="date" defaultValue={editingItem?.shipDate} fullWidth />
+            <Input label={t("shipping.shipOrder.shipOrderNo")} placeholder="SO-YYYYMMDD-NNN"
+              value={form.shipOrderNo} onChange={e => setForm(p => ({ ...p, shipOrderNo: e.target.value }))} fullWidth />
+            <Select label={t("shipping.shipOrder.customer")} options={customerOptions}
+              value={form.customerId} onChange={v => setForm(p => ({ ...p, customerId: v }))} fullWidth />
+            <Input label={t("shipping.shipOrder.dueDate")} type="date"
+              value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} fullWidth />
+            <Input label={t("shipping.shipOrder.shipDate")} type="date"
+              value={form.shipDate} onChange={e => setForm(p => ({ ...p, shipDate: e.target.value }))} fullWidth />
           </div>
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} fullWidth />
+          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
+            value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={() => setIsModalOpen(false)}>{editingItem ? t("common.edit") : t("common.register")}</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
+            </Button>
           </div>
         </div>
       </Modal>
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        variant="danger"
+        message={`'${deleteTarget?.shipOrderNo || ""}'을(를) 삭제하시겠습니까?`}
+      />
     </div>
   );
 }
-
-export default ShipOrderPage;

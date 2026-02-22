@@ -290,20 +290,29 @@ export default function LotPage() {
 
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input placeholder={t('inventory.lot.searchLotNo')} value={filters.lotNo} onChange={(e) => setFilters({ ...filters, lotNo: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-            </div>
-            <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} placeholder={t('inventory.lot.partType')} />
-            <Select options={LOT_STATUS} value={filters.status} onChange={(v) => setFilters({ ...filters, status: v })} placeholder={t('common.status')} />
-            <Button variant="secondary" onClick={fetchLots}><RefreshCw className="w-4 h-4" /></Button>
-          </div>
           <DataGrid
             data={filteredLots}
             columns={columns}
             isLoading={loading}
-            pageSize={10}
+            enableExport
+            exportFileName={t('inventory.lot.title')}
             emptyMessage={t('inventory.lot.emptyMessage')}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t('inventory.lot.searchLotNo')} value={filters.lotNo} onChange={(e) => setFilters({ ...filters, lotNo: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-32 flex-shrink-0">
+                  <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} fullWidth />
+                </div>
+                <div className="w-32 flex-shrink-0">
+                  <Select options={LOT_STATUS} value={filters.status} onChange={(v) => setFilters({ ...filters, status: v })} fullWidth />
+                </div>
+                <Button variant="secondary" size="sm" onClick={fetchLots} className="flex-shrink-0">
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            }
           />
         </CardContent>
       </Card>

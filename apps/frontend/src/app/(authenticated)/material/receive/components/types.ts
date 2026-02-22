@@ -32,6 +32,9 @@ export interface ReceivableLot {
   initQty: number;
   currentQty: number;
   recvDate?: string | null;
+  manufactureDate?: string | null;
+  expireDate?: string | null;
+  expiryDays?: number;
   poNo?: string | null;
   vendor?: string | null;
   iqcStatus: string;
@@ -67,5 +70,6 @@ export interface ReceiveInput {
   lotId: string;
   qty: number;
   warehouseId: string;
+  manufactureDate: string;
   selected: boolean;
 }

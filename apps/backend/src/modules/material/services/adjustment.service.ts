@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Like, Between } from 'typeorm';
+import { Repository, DataSource, IsNull, Like, Between, In } from 'typeorm';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -29,11 +29,14 @@ export class AdjustmentService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(query: AdjustmentQueryDto) {
+  async findAll(query: AdjustmentQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
 
     if (search) {
       where.warehouseCode = Like(`%${search}%`);
@@ -55,7 +58,9 @@ export class AdjustmentService {
 
     // part 정보 조회 및 중첩 객체 평면화
     const partIds = data.map((log) => log.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     const flattenedData = data.map((log) => {

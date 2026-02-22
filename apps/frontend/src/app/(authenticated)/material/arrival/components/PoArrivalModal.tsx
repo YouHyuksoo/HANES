@@ -171,6 +171,19 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       ),
     },
     {
+      id: 'manufactureDate',
+      header: t('material.arrival.col.manufactureDate'),
+      size: 140,
+      cell: ({ row }) => (
+        <Input
+          type="date"
+          value={inputs[row.original.id]?.manufactureDate || ''}
+          onChange={(e) => updateInput(row.original.id, 'manufactureDate', e.target.value)}
+          className="w-[130px]"
+        />
+      ),
+    },
+    {
       id: 'warehouse',
       header: t('material.arrival.col.warehouse'),
       size: 130,
@@ -198,6 +211,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
                 data={poList}
                 columns={poColumns}
                 pageSize={10}
+                isLoading={loading}
                 onRowClick={(row) => handleSelectPO(row)}
               />
             </div>
@@ -217,7 +231,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
             <div className="py-10 text-center text-text-muted">{t('common.loading')}</div>
           ) : (
             <div className="max-h-[400px] overflow-auto">
-              <DataGrid data={poItems} columns={itemColumns} pageSize={50} />
+              <DataGrid data={poItems} columns={itemColumns} pageSize={50} isLoading={loading} />
             </div>
           )}
           <div className="flex justify-end gap-2 pt-4 border-t border-border mt-4">

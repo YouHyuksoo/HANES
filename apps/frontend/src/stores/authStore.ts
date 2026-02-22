@@ -27,10 +27,11 @@ interface AuthState {
   user: AuthUser | null;
   token: string | null;
   selectedCompany: string;
+  selectedPlant: string;
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  login: (email: string, password: string, company?: string) => Promise<void>;
+  login: (email: string, password: string, company?: string, plant?: string) => Promise<void>;
   register: (data: {
     email: string;
     password: string;
@@ -41,6 +42,7 @@ interface AuthState {
   logout: () => void;
   fetchMe: () => Promise<void>;
   setCompany: (company: string) => void;
+  setPlant: (plant: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -49,10 +51,11 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       selectedCompany: "",
+      selectedPlant: "",
       isAuthenticated: false,
       isLoading: false,
 
-      login: async (email: string, password: string, company?: string) => {
+      login: async (email: string, password: string, company?: string, plant?: string) => {
         set({ isLoading: true });
         try {
           const res = await api.post("/auth/login", { email, password, company });
@@ -65,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
             user,
             token,
             selectedCompany: company || user.company || "",
+            selectedPlant: plant || "",
             isAuthenticated: true,
             isLoading: false,
           });
@@ -101,12 +105,17 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           token: null,
           selectedCompany: "",
+          selectedPlant: "",
           isAuthenticated: false,
         });
       },
 
       setCompany: (company: string) => {
         set({ selectedCompany: company });
+      },
+
+      setPlant: (plant: string) => {
+        set({ selectedPlant: plant });
       },
 
       fetchMe: async () => {
@@ -139,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         selectedCompany: state.selectedCompany,
+        selectedPlant: state.selectedPlant,
         isAuthenticated: state.isAuthenticated,
       }),
     },

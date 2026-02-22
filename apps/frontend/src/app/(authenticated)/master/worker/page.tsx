@@ -7,41 +7,19 @@
  * 초보자 가이드:
  * 1. **작업자 목록**: DataGrid에 사진/아바타 + 유형 배지 표시
  * 2. **API 연동**: /master/workers 엔드포인트 사용
- * 3. **사진등록**: 크롭 모달로 위치 조정 후 DataURL 저장
+ * 3. **우측 패널**: 추가/수정 폼은 우측 슬라이드 패널에서 처리
  */
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, RefreshCw, Users } from "lucide-react";
-import { Card, CardHeader, CardContent, Button, Input, Modal, ConfirmModal, Select } from "@/components/ui";
+import { Plus, Edit2, Trash2, RefreshCw, Users, Search } from "lucide-react";
+import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
-import WorkerPhotoUpload from "@/components/worker/WorkerPhotoUpload";
 import { Worker } from "./types";
-import { ComCodeBadge } from "@/components/ui";
-import { useComCodeOptions } from "@/hooks/useComCode";
 import { api } from "@/services/api";
-
-interface FormState {
-  workerCode: string;
-  workerName: string;
-  engName: string;
-  dept: string;
-  position: string;
-  phone: string;
-  email: string;
-  hireDate: string;
-  quitDate: string;
-  qrCode: string;
-  remark: string;
-  useYn: string;
-}
-
-const EMPTY_FORM: FormState = {
-  workerCode: "", workerName: "", engName: "", dept: "", position: "",
-  phone: "", email: "", hireDate: "", quitDate: "", qrCode: "", remark: "", useYn: "Y",
-};
+import WorkerFormPanel from "./components/WorkerFormPanel";
 
 export default function WorkerPage() {
   const { t } = useTranslation();
@@ -50,14 +28,10 @@ export default function WorkerPage() {
   const [searchText, setSearchText] = useState("");
   const [useYnFilter, setUseYnFilter] = useState("");
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Worker | null>(null);
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [formError, setFormError] = useState("");
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Worker | null>(null);
-
-  const comCodeTypeOptions = useComCodeOptions("WORKER_TYPE");
+  const panelAnimateRef = useRef(true);
 
   const useYnOptions = useMemo(() => [
     { value: "", label: t("common.all") },
@@ -82,74 +56,42 @@ export default function WorkerPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const openModal = (worker: Worker | null) => {
-    setEditing(worker);
-    setForm({
-      workerCode: worker?.workerCode ?? "",
-      workerName: worker?.workerName ?? "",
-      engName: worker?.engName ?? "",
-      dept: worker?.dept ?? "",
-      position: worker?.position ?? "",
-      phone: worker?.phone ?? "",
-      email: worker?.email ?? "",
-      hireDate: worker?.hireDate ?? "",
-      quitDate: worker?.quitDate ?? "",
-      qrCode: worker?.qrCode ?? "",
-      remark: worker?.remark ?? "",
-      useYn: worker?.useYn ?? "Y",
-    });
-    setPhotoUrl(worker?.photoUrl ?? null);
-    setFormError("");
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => { setIsModalOpen(false); setEditing(null); setForm(EMPTY_FORM); setPhotoUrl(null); };
-
-  const handleSave = async () => {
-    setFormError("");
-    if (!form.workerCode.trim() || !form.workerName.trim()) {
-      setFormError(t("common.requiredField", "필수 항목을 입력하세요."));
-      return;
-    }
-    try {
-      const payload = {
-        workerCode: form.workerCode.trim(),
-        workerName: form.workerName.trim(),
-        engName: form.engName.trim() || undefined,
-        dept: form.dept.trim() || undefined,
-        position: form.position.trim() || undefined,
-        phone: form.phone.trim() || undefined,
-        email: form.email.trim() || undefined,
-        hireDate: form.hireDate.trim() || undefined,
-        quitDate: form.quitDate.trim() || undefined,
-        qrCode: form.qrCode.trim() || undefined,
-        photoUrl: photoUrl || undefined,
-        remark: form.remark.trim() || undefined,
-        useYn: form.useYn,
-      };
-      if (editing) {
-        await api.put(`/master/workers/${editing.id}`, payload);
-      } else {
-        await api.post("/master/workers", payload);
-      }
-      setIsModalOpen(false);
-      fetchData();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setFormError(error.response?.data?.message || t("common.saveFailed"));
-    }
-  };
-
-  const handleDelete = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/master/workers/${deleteTarget.id}`);
-      setDeleteTarget(null);
       fetchData();
     } catch { /* ignore */ }
-  };
+    finally {
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, fetchData]);
+
+  const handlePanelClose = useCallback(() => {
+    setIsPanelOpen(false);
+    setEditingWorker(null);
+    panelAnimateRef.current = true;
+  }, []);
+
+  const handlePanelSave = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   const columns = useMemo<ColumnDef<Worker>[]>(() => [
+    {
+      id: "actions", header: t("common.actions"), size: 80,
+      meta: { align: "center" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingWorker(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     {
       id: "photo", header: t("master.worker.photo", "사진"), size: 60,
       cell: ({ row }) => <WorkerAvatar name={row.original.workerName} dept={row.original.dept ?? ""} photoUrl={row.original.photoUrl} />,
@@ -175,98 +117,73 @@ export default function WorkerPage() {
         );
       },
     },
-    {
-      id: "actions", header: t("common.actions"), size: 80,
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => openModal(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
-        </div>
-      ),
-    },
-  ], [t]);
+  ], [t, isPanelOpen]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Users className="w-7 h-7 text-primary" />{t("master.worker.title", "작업자 관리")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("master.worker.subtitle", "작업자 등록 및 관리")}</p>
-        </div>
-        <div className="flex gap-2">
-          <Input
-            placeholder={t("master.worker.searchPlaceholder", "코드/이름 검색")}
-            value={searchText} onChange={e => setSearchText(e.target.value)}
-            className="w-48"
-          />
-          <div className="w-28">
-            <Select options={useYnOptions} value={useYnFilter} onChange={setUseYnFilter} fullWidth />
+    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Users className="w-7 h-7 text-primary" />{t("master.worker.title", "작업자 관리")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("master.worker.subtitle", "작업자 등록 및 관리")}</p>
           </div>
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={() => openModal(null)}>
-            <Plus className="w-4 h-4 mr-1" />{t("master.worker.addWorker", "작업자 추가")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingWorker(null); setIsPanelOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" />{t("master.worker.addWorker", "작업자 추가")}
+            </Button>
+          </div>
         </div>
+
+        <Card>
+          <CardContent>
+            <DataGrid
+              data={workers}
+              columns={columns}
+              isLoading={loading}
+              emptyMessage={t("master.worker.emptyMessage", "등록된 작업자가 없습니다.")}
+              enableColumnPinning
+              enableExport
+              exportFileName={t("master.worker.title", "작업자 관리")}
+              onRowClick={(row) => { if (isPanelOpen) setEditingWorker(row); }}
+              toolbarLeft={
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder={t("master.worker.searchPlaceholder", "코드/이름 검색")}
+                    value={searchText}
+                    onChange={e => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                  />
+                  <div className="w-28 flex-shrink-0">
+                    <Select options={useYnOptions} value={useYnFilter} onChange={setUseYnFilter} fullWidth />
+                  </div>
+                </div>
+              }
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      <Card>
-        <CardHeader
-          title={t("master.worker.workerList", "작업자 목록")}
-          subtitle={t("master.worker.totalCount", { count: workers.length, defaultValue: `총 ${workers.length}건` })}
+      {isPanelOpen && (
+        <WorkerFormPanel
+          editingWorker={editingWorker}
+          onClose={handlePanelClose}
+          onSave={handlePanelSave}
+          animate={panelAnimateRef.current}
         />
-        <CardContent>
-          <DataGrid data={workers} columns={columns} pageSize={15} isLoading={loading} emptyMessage={t("master.worker.emptyMessage", "등록된 작업자가 없습니다.")} />
-        </CardContent>
-      </Card>
+      )}
 
-      {/* 추가/수정 모달 */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title={editing ? t("master.worker.editWorker", "작업자 수정") : t("master.worker.addWorker", "작업자 추가")} size="lg">
-        <div className="space-y-4">
-          {formError && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
-              {formError}
-            </div>
-          )}
-          <div className="flex gap-6">
-            <div className="shrink-0"><WorkerPhotoUpload value={photoUrl} onChange={setPhotoUrl} /></div>
-            <div className="flex-1 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input label={t("master.worker.workerCode", "작업자코드")} value={form.workerCode} onChange={e => setForm(p => ({ ...p, workerCode: e.target.value }))} fullWidth disabled={!!editing} required />
-                <Input label={t("master.worker.workerName", "작업자명")} value={form.workerName} onChange={e => setForm(p => ({ ...p, workerName: e.target.value }))} fullWidth required />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label={t("master.worker.engName", "영문명")} value={form.engName} onChange={e => setForm(p => ({ ...p, engName: e.target.value }))} fullWidth />
-                <Input label={t("master.worker.dept", "부서")} value={form.dept} onChange={e => setForm(p => ({ ...p, dept: e.target.value }))} fullWidth />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label={t("master.worker.position", "직급")} value={form.position} onChange={e => setForm(p => ({ ...p, position: e.target.value }))} fullWidth />
-                <Input label={t("master.worker.phone", "전화번호")} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} fullWidth />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label={t("master.worker.email", "이메일")} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} fullWidth />
-                <Input label={t("master.worker.qrCode", "QR코드")} value={form.qrCode} onChange={e => setForm(p => ({ ...p, qrCode: e.target.value }))} fullWidth />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <Input label={t("master.worker.hireDate", "입사일")} placeholder="YYYYMMDD" value={form.hireDate} onChange={e => setForm(p => ({ ...p, hireDate: e.target.value }))} fullWidth />
-                <Input label={t("master.worker.quitDate", "퇴사일")} placeholder="YYYYMMDD" value={form.quitDate} onChange={e => setForm(p => ({ ...p, quitDate: e.target.value }))} fullWidth />
-                <Select label={t("master.worker.use", "사용")} options={[{ value: "Y", label: t("common.yes", "사용") }, { value: "N", label: t("common.no", "미사용") }]} value={form.useYn} onChange={v => setForm(p => ({ ...p, useYn: v }))} fullWidth />
-              </div>
-              <Input label={t("master.worker.remark", "비고")} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
-            <Button onClick={handleSave}>{editing ? t("common.edit") : t("common.add")}</Button>
-          </div>
-        </div>
-      </Modal>
-
-      <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete}
-        title={t("common.delete")} message={`${deleteTarget?.workerName} (${deleteTarget?.workerCode})${t("master.worker.deleteConfirm", "을(를) 삭제하시겠습니까?")}`} variant="danger" />
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        variant="danger"
+        message={`'${deleteTarget?.workerName || ""}'을(를) 삭제하시겠습니까?`}
+      />
     </div>
   );
 }

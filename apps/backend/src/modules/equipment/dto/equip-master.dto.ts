@@ -75,6 +75,12 @@ export class CreateEquipMasterDto {
   @MaxLength(50)
   lineCode?: string;
 
+  @ApiPropertyOptional({ description: '소속 공정 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  processCode?: string;
+
   @ApiPropertyOptional({ description: 'IP 주소', example: '192.168.1.100' })
   @IsOptional()
   @ValidateIf((o) => o.ipAddress !== null && o.ipAddress !== '')
@@ -164,13 +170,13 @@ export class EquipMasterQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 20, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 5000, minimum: 1, maximum: 10000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '설비 유형', enum: EQUIP_TYPE_VALUES })
   @IsOptional()
@@ -199,4 +205,14 @@ export class EquipMasterQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: '회사 코드' })
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @ApiPropertyOptional({ description: '플랜트 코드' })
+  @IsOptional()
+  @IsString()
+  plant?: string;
 }

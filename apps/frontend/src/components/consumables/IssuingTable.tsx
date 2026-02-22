@@ -4,7 +4,7 @@
  * @file src/pages/consumables/issuing/components/IssuingTable.tsx
  * @description 출고 이력 테이블 컴포넌트
  */
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -17,9 +17,11 @@ const logTypeColors: Record<string, string> = {
 
 interface IssuingTableProps {
   data: IssuingLog[];
+  toolbarLeft?: ReactNode;
+  isLoading?: boolean;
 }
 
-function IssuingTable({ data }: IssuingTableProps) {
+function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
   const { t } = useTranslation();
 
   const logTypeLabels: Record<string, string> = {
@@ -101,7 +103,7 @@ function IssuingTable({ data }: IssuingTableProps) {
     [t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="consumable_issuing" toolbarLeft={toolbarLeft} />;
 }
 
 export default IssuingTable;

@@ -4,7 +4,7 @@
  * @file src/pages/material/iqc/components/IqcTable.tsx
  * @description IQC 검사 대상 목록 테이블 컴포넌트
  */
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClipboardCheck } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
@@ -16,9 +16,11 @@ import type { IqcStatus } from '@/components/material';
 interface IqcTableProps {
   data: IqcItem[];
   onInspect: (item: IqcItem) => void;
+  toolbarLeft?: ReactNode;
+  isLoading?: boolean;
 }
 
-export default function IqcTable({ data, onInspect }: IqcTableProps) {
+export default function IqcTable({ data, onInspect, toolbarLeft, isLoading }: IqcTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IqcItem>[]>(
     () => [
@@ -75,5 +77,5 @@ export default function IqcTable({ data, onInspect }: IqcTableProps) {
     [onInspect, t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="iqc_inspection" toolbarLeft={toolbarLeft} />;
 }

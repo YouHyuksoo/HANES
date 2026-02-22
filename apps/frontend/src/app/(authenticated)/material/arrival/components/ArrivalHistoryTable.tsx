@@ -10,7 +10,7 @@
  * 3. **취소 버튼**: DONE 상태의 MAT_IN만 취소 가능
  */
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import { XCircle } from 'lucide-react';
@@ -20,10 +20,12 @@ import type { ArrivalRecord } from './types';
 
 interface ArrivalHistoryTableProps {
   data: ArrivalRecord[];
+  isLoading?: boolean;
+  toolbarLeft?: ReactNode;
   onCancel: (record: ArrivalRecord) => void;
 }
 
-export default function ArrivalHistoryTable({ data, onCancel }: ArrivalHistoryTableProps) {
+export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCancel }: ArrivalHistoryTableProps) {
   const { t } = useTranslation();
 
   const columns = useMemo<ColumnDef<ArrivalRecord>[]>(() => [
@@ -118,5 +120,5 @@ export default function ArrivalHistoryTable({ data, onCancel }: ArrivalHistoryTa
     },
   ], [t, onCancel]);
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="arrival_history" toolbarLeft={toolbarLeft} />;
 }

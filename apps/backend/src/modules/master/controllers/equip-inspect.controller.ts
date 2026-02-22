@@ -11,6 +11,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { EquipInspectService } from '../services/equip-inspect.service';
 import { CreateEquipInspectItemDto, UpdateEquipInspectItemDto, EquipInspectItemQueryDto } from '../dto/equip-inspect.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -22,8 +23,8 @@ export class EquipInspectController {
 
   @Get()
   @ApiOperation({ summary: '설비점검항목 목록 조회' })
-  async findAll(@Query() query: EquipInspectItemQueryDto) {
-    const result = await this.equipInspectService.findAll(query);
+  async findAll(@Query() query: EquipInspectItemQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.equipInspectService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

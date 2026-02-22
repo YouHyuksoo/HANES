@@ -65,11 +65,20 @@ export class CreateJobOrderDto {
   @Max(10)
   priority?: number;
 
+  @ApiPropertyOptional({ description: '상위 작업지시 ID (반제품 자동생성 시)' })
+  @IsOptional()
+  @IsString()
+  parentId?: string;
+
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   remark?: string;
+
+  @ApiPropertyOptional({ description: 'BOM 기반 반제품 작업지시 자동생성 여부', default: false })
+  @IsOptional()
+  autoCreateChildren?: boolean;
 }
 
 /**
@@ -129,13 +138,18 @@ export class JobOrderQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 10, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 5000, minimum: 1, maximum: 10000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
+
+  @ApiPropertyOptional({ description: '통합 검색 (작업지시번호/품목코드/품목명)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @ApiPropertyOptional({ description: '작업지시번호 검색' })
   @IsOptional()

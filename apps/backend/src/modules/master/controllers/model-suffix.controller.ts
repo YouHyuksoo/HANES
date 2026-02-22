@@ -11,6 +11,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ModelSuffixService } from '../services/model-suffix.service';
 import { CreateModelSuffixDto, UpdateModelSuffixDto, ModelSuffixQueryDto } from '../dto/model-suffix.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -22,8 +23,8 @@ export class ModelSuffixController {
 
   @Get()
   @ApiOperation({ summary: '모델접미사 목록 조회' })
-  async findAll(@Query() query: ModelSuffixQueryDto) {
-    const result = await this.modelSuffixService.findAll(query);
+  async findAll(@Query() query: ModelSuffixQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.modelSuffixService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

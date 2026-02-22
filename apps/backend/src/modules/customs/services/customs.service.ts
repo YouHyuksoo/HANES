@@ -44,7 +44,7 @@ export class CustomsService {
   // 수입신고 (Customs Entry)
   // ============================================================================
 
-  async findAllEntries(query: CustomsEntryQueryDto) {
+  async findAllEntries(query: CustomsEntryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, status, search, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
@@ -82,6 +82,12 @@ export class CustomsService {
       ])
       .where('ce.deletedAt IS NULL');
 
+    if (company) {
+      queryBuilder.andWhere('ce.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('ce.plant = :plant', { plant });
+    }
     if (status) {
       queryBuilder.andWhere('ce.status = :status', { status });
     }
@@ -290,7 +296,7 @@ export class CustomsService {
   // 사용신고 (Usage Report)
   // ============================================================================
 
-  async findAllUsageReports(query: UsageReportQueryDto) {
+  async findAllUsageReports(query: UsageReportQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, status, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
@@ -300,6 +306,12 @@ export class CustomsService {
       .leftJoinAndSelect(CustomsEntry, 'ce', 'ce.ID = cl.ENTRY_ID')
       .where('1=1');
 
+    if (company) {
+      queryBuilder.andWhere('cur.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('cur.plant = :plant', { plant });
+    }
     if (status) {
       queryBuilder.andWhere('cur.status = :status', { status });
     }

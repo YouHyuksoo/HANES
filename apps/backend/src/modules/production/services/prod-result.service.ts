@@ -49,7 +49,7 @@ export class ProdResultService {
   /**
    * 생산실적 목록 조회
    */
-  async findAll(query: ProdResultQueryDto, company?: string) {
+  async findAll(query: ProdResultQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 10,
@@ -67,6 +67,7 @@ export class ProdResultService {
     const where: any = {
       deletedAt: IsNull(),
       ...(company && { company }),
+      ...(plant && { plant }),
       ...(jobOrderId && { jobOrderId }),
       ...(equipId && { equipId }),
       ...(workerId && { workerId }),
@@ -528,5 +529,72 @@ export class ProdResultService {
         resultCount: data.count,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /**
+   * 완제품 기준 생산실적 통합 조회
+   * - 품목별로 계획수량, 양품, 불량, 양품률을 집계
+   */
+  async getSummaryByProduct(dateFrom?: string, dateTo?: string, search?: string) {
+    const qb = this.prodResultRepository
+      .createQueryBuilder('pr')
+      .leftJoin('pr.jobOrder', 'jo')
+      .leftJoin('jo.part', 'p')
+      .select([
+        'p.id AS "partId"',
+        'p.partCode AS "partCode"',
+        'p.partName AS "partName"',
+        'p.partType AS "partType"',
+        'SUM(jo.planQty) AS "totalPlanQty"',
+        'SUM(pr.goodQty) AS "totalGoodQty"',
+        'SUM(pr.defectQty) AS "totalDefectQty"',
+        'COUNT(DISTINCT jo.id) AS "orderCount"',
+        'COUNT(pr.id) AS "resultCount"',
+      ])
+      .where('pr.deletedAt IS NULL')
+      .andWhere('pr.status != :status', { status: 'CANCELED' })
+      .andWhere('jo.deletedAt IS NULL')
+      .groupBy('p.id')
+      .addGroupBy('p.partCode')
+      .addGroupBy('p.partName')
+      .addGroupBy('p.partType')
+      .orderBy('"totalGoodQty"', 'DESC');
+
+    if (dateFrom) {
+      qb.andWhere('pr.startAt >= :dateFrom', { dateFrom: new Date(dateFrom) });
+    }
+    if (dateTo) {
+      qb.andWhere('pr.startAt <= :dateTo', { dateTo: new Date(dateTo) });
+    }
+    if (search) {
+      qb.andWhere(
+        '(p.partCode LIKE :search OR p.partName LIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const raw = await qb.getRawMany();
+
+    return raw.map((r) => {
+      const totalGoodQty = parseInt(r.totalGoodQty) || 0;
+      const totalDefectQty = parseInt(r.totalDefectQty) || 0;
+      const totalQty = totalGoodQty + totalDefectQty;
+      const totalPlanQty = parseInt(r.totalPlanQty) || 0;
+      return {
+        partId: r.partId,
+        partCode: r.partCode,
+        partName: r.partName,
+        partType: r.partType,
+        totalPlanQty,
+        totalGoodQty,
+        totalDefectQty,
+        totalQty,
+        defectRate: totalQty > 0 ? Math.round((totalDefectQty / totalQty) * 1000) / 10 : 0,
+        yieldRate: totalQty > 0 ? Math.round((totalGoodQty / totalQty) * 1000) / 10 : 0,
+        achieveRate: totalPlanQty > 0 ? Math.round((totalGoodQty / totalPlanQty) * 1000) / 10 : 0,
+        orderCount: parseInt(r.orderCount) || 0,
+        resultCount: parseInt(r.resultCount) || 0,
+      };
+    });
   }
 }

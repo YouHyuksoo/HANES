@@ -26,11 +26,14 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // 선택된 회사코드를 X-Company 헤더에 추가
+    // 선택된 회사코드/사업장코드를 X-Company, X-Plant 헤더에 추가
     try {
       const authData = JSON.parse(localStorage.getItem("harness-auth") || "{}");
       if (authData?.state?.selectedCompany) {
         config.headers["X-Company"] = authData.state.selectedCompany;
+      }
+      if (authData?.state?.selectedPlant) {
+        config.headers["X-Plant"] = authData.state.selectedPlant;
       }
     } catch {
       // JSON 파싱 실패 시 무시

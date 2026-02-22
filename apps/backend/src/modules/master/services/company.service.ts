@@ -52,13 +52,30 @@ export class CompanyService {
     return { data, total, page, limit };
   }
 
-  /** 공개 API — 활성 회사 목록 (로그인 페이지용, 인증 불필요) */
+  /** 공개 API — 활성 회사 목록 (로그인 페이지용, 인증 불필요, 중복 제거) */
   async findPublic() {
-    return this.companyRepository.find({
-      where: { useYn: 'Y', deletedAt: IsNull() },
-      select: ['companyCode', 'companyName'],
-      order: { companyCode: 'asc' },
+    const rows = await this.companyRepository
+      .createQueryBuilder('c')
+      .select('c.companyCode', 'companyCode')
+      .addSelect('MIN(c.companyName)', 'companyName')
+      .where('c.useYn = :useYn', { useYn: 'Y' })
+      .andWhere('c.deletedAt IS NULL')
+      .groupBy('c.companyCode')
+      .orderBy('c.companyCode', 'ASC')
+      .getRawMany();
+    return rows;
+  }
+
+  /** 공개 API — 회사별 사업장 목록 (로그인 페이지용, 인증 불필요) */
+  async findPlantsByCompany(companyCode: string) {
+    const rows = await this.companyRepository.find({
+      where: { companyCode, useYn: 'Y', deletedAt: IsNull() },
+      select: ['plant', 'companyName'],
+      order: { plant: 'asc' },
     });
+    return rows
+      .filter((r) => r.plant)
+      .map((r) => ({ plantCode: r.plant, plantName: r.plant }));
   }
 
   /** 상세 조회 */

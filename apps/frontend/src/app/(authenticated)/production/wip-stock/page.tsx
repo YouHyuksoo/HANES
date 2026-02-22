@@ -7,21 +7,21 @@
  * 초보자 가이드:
  * 1. **목적**: 반제품(WIP)과 완제품(FG) 재고 현황 조회
  * 2. **partType**: WIP(반제품), FG(완제품) 필터링
- * 3. **조회 전용**: 재고 수량과 위치 확인
+ * 3. API: GET /production/wip-stock
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Download, Warehouse, Package, Box, Layers } from 'lucide-react';
+import { Search, RefreshCw, Warehouse, Package, Box, Layers } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
-import { createPartColumns } from '@/lib/table-utils';
+import api from '@/services/api';
 
 interface WipStock {
   id: string;
   partCode: string;
   partName: string;
-  partType: 'WIP' | 'FG';
+  partType: string;
   whCode: string;
   whName: string;
   qty: number;
@@ -30,17 +30,10 @@ interface WipStock {
   updatedAt: string;
 }
 
-const mockData: WipStock[] = [
-  { id: '1', partCode: 'WIP-001', partName: '1차 조립 반제품', partType: 'WIP', whCode: 'WH-WIP', whName: 'WIP 창고', qty: 500, unit: 'EA', lotNo: 'LOT-W-001', updatedAt: '2025-01-26' },
-  { id: '2', partCode: 'WIP-002', partName: '2차 조립 반제품', partType: 'WIP', whCode: 'WH-WIP', whName: 'WIP 창고', qty: 300, unit: 'EA', lotNo: 'LOT-W-002', updatedAt: '2025-01-26' },
-  { id: '3', partCode: 'FG-001', partName: '메인 하네스 A (완제품)', partType: 'FG', whCode: 'WH-FG', whName: '완제품 창고', qty: 200, unit: 'EA', lotNo: 'LOT-F-001', updatedAt: '2025-01-26' },
-  { id: '4', partCode: 'FG-002', partName: '서브 하네스 B (완제품)', partType: 'FG', whCode: 'WH-FG', whName: '완제품 창고', qty: 150, unit: 'EA', lotNo: 'LOT-F-002', updatedAt: '2025-01-25' },
-  { id: '5', partCode: 'WIP-003', partName: '특수 조립 반제품', partType: 'WIP', whCode: 'WH-WIP', whName: 'WIP 창고', qty: 80, unit: 'EA', lotNo: 'LOT-W-003', updatedAt: '2025-01-25' },
-  { id: '6', partCode: 'FG-003', partName: '도어 하네스 C (완제품)', partType: 'FG', whCode: 'WH-FG', whName: '완제품 창고', qty: 400, unit: 'EA', lotNo: 'LOT-F-003', updatedAt: '2025-01-24' },
-];
-
-function WipStockPage() {
+export default function WipStockPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<WipStock[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
 
@@ -50,21 +43,33 @@ function WipStockPage() {
     { value: 'FG', label: t('production.wipStock.fg') },
   ], [t]);
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    const matchSearch = !searchText || item.partCode.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
-    const matchType = !typeFilter || item.partType === typeFilter;
-    return matchSearch && matchType;
-  }), [searchText, typeFilter]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '5000' };
+      if (searchText) params.search = searchText;
+      if (typeFilter) params.partType = typeFilter;
+      const res = await api.get('/production/wip-stock', { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, typeFilter]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    totalItems: mockData.length,
-    wipQty: mockData.filter(d => d.partType === 'WIP').reduce((s, r) => s + r.qty, 0),
-    fgQty: mockData.filter(d => d.partType === 'FG').reduce((s, r) => s + r.qty, 0),
-    totalQty: mockData.reduce((s, r) => s + r.qty, 0),
-  }), []);
+    totalItems: data.length,
+    wipQty: data.filter(d => d.partType === 'WIP').reduce((s, r) => s + r.qty, 0),
+    fgQty: data.filter(d => d.partType === 'FG').reduce((s, r) => s + r.qty, 0),
+    totalQty: data.reduce((s, r) => s + r.qty, 0),
+  }), [data]);
 
   const columns = useMemo<ColumnDef<WipStock>[]>(() => [
-    ...createPartColumns<WipStock>(t),
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
+    { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'partType', header: t('production.wipStock.type'), size: 90,
       cell: ({ getValue }) => {
@@ -77,7 +82,7 @@ function WipStockPage() {
     { accessorKey: 'whName', header: t('production.wipStock.warehouse'), size: 110 },
     { accessorKey: 'qty', header: t('production.wipStock.stockQty'), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'unit', header: t('production.wipStock.unit'), size: 60 },
-    { accessorKey: 'lotNo', header: t('production.wipStock.lotNo'), size: 130 },
+    { accessorKey: 'lotNo', header: t('production.wipStock.lotNo'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'updatedAt', header: t('production.wipStock.updatedAt'), size: 110 },
   ], [t]);
 
@@ -88,7 +93,6 @@ function WipStockPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Warehouse className="w-7 h-7 text-primary" />{t('production.wipStock.title')}</h1>
           <p className="text-text-muted mt-1">{t('production.wipStock.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('production.wipStock.excelDownload')}</Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -99,15 +103,22 @@ function WipStockPage() {
       </div>
 
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('production.wipStock.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-40"><Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t('production.wipStock.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t('production.wipStock.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-40 flex-shrink-0">
+                <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
     </div>
   );
 }
-
-export default WipStockPage;

@@ -36,6 +36,30 @@ export default function CodeDetailGrid({
   const columns = useMemo<ColumnDef<ComCodeDetail>[]>(
     () => [
       {
+        id: "actions",
+        header: t("common.actions"),
+        size: 90,
+        meta: { align: "center" as const },
+        cell: ({ row }) => (
+          <div className="flex gap-1">
+            <button
+              onClick={() => onEdit(row.original)}
+              className="p-1 hover:bg-surface rounded"
+              title={t("common.edit")}
+            >
+              <Edit2 className="w-4 h-4 text-primary" />
+            </button>
+            <button
+              onClick={() => onDelete(row.original)}
+              className="p-1 hover:bg-surface rounded"
+              title={t("common.delete")}
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+        ),
+      },
+      {
         accessorKey: "detailCode",
         header: t("master.code.detailCode"),
         size: 140,
@@ -92,47 +116,19 @@ export default function CodeDetailGrid({
           </span>
         ),
       },
-      {
-        id: "actions",
-        header: t("common.actions"),
-        size: 90,
-        cell: ({ row }) => (
-          <div className="flex gap-1">
-            <button
-              onClick={() => onEdit(row.original)}
-              className="p-1 hover:bg-surface rounded"
-              title={t("common.edit")}
-            >
-              <Edit2 className="w-4 h-4 text-primary" />
-            </button>
-            <button
-              onClick={() => onDelete(row.original)}
-              className="p-1 hover:bg-surface rounded"
-              title={t("common.delete")}
-            >
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </button>
-          </div>
-        ),
-      },
     ],
     [t, onEdit, onDelete],
   );
 
   return (
-    <Card>
+    <Card padding="none" className="flex-1 flex flex-col min-h-0">
       <CardHeader
         title={`${groupCode || "..."} — ${t(`comCodeGroup.${groupCode}`, { defaultValue: groupCode })}`}
         subtitle={`${codes.length}${t("master.code.codesCount")}`}
+        className="px-4 pt-4"
       />
-      <CardContent>
-        {isLoading ? (
-          <div className="py-16 text-center text-text-muted">
-            {t("common.loading", { defaultValue: "로딩중..." })}
-          </div>
-        ) : (
-          <DataGrid data={codes} columns={columns} pageSize={20} />
-        )}
+      <CardContent className="flex-1 flex flex-col min-h-0 px-4 pb-4">
+        <DataGrid data={codes} columns={columns} isLoading={isLoading} enableExport exportFileName={`${groupCode}_codes`} />
       </CardContent>
     </Card>
   );

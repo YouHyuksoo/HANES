@@ -36,6 +36,9 @@ export class User {
   @Column({ name: 'STATUS', length: 50, default: 'ACTIVE' })
   status: string;
 
+  @Column({ name: 'PHOTO_URL', length: 500, nullable: true })
+  photoUrl: string | null;
+
   @Column({ name: 'LAST_LOGIN', type: 'timestamp', nullable: true })
   lastLoginAt: Date | null;
 

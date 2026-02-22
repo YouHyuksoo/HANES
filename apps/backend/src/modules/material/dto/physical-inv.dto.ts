@@ -45,13 +45,13 @@ export class PhysicalInvQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -62,4 +62,41 @@ export class PhysicalInvQueryDto {
   @IsOptional()
   @IsString()
   warehouseId?: string;
+}
+
+export class PhysicalInvHistoryQueryDto {
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ default: 5000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10000)
+  limit?: number = 5000;
+
+  @ApiPropertyOptional({ description: '검색어 (품목코드/품목명)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: '창고코드 필터' })
+  @IsOptional()
+  @IsString()
+  warehouseCode?: string;
+
+  @ApiPropertyOptional({ description: '시작일 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ description: '종료일 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
 }

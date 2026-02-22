@@ -23,11 +23,18 @@ export class LabelTemplateService {
     private readonly labelTemplateRepository: Repository<LabelTemplate>,
   ) {}
 
-  async findAll(query: LabelTemplateQueryDto) {
+  async findAll(query: LabelTemplateQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, category, search } = query;
 
     const queryBuilder = this.labelTemplateRepository.createQueryBuilder('template')
       .where('template.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('template.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('template.plant = :plant', { plant });
+    }
 
     if (category) {
       queryBuilder.andWhere('template.category = :category', { category });

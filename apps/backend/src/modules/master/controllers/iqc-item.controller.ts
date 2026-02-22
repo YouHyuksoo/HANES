@@ -11,6 +11,7 @@
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { IqcItemService } from '../services/iqc-item.service';
 import { CreateIqcItemDto, UpdateIqcItemDto, IqcItemQueryDto } from '../dto/iqc-item.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -22,8 +23,8 @@ export class IqcItemController {
 
   @Get()
   @ApiOperation({ summary: 'IQC 검사항목 목록 조회' })
-  async findAll(@Query() query: IqcItemQueryDto) {
-    const result = await this.iqcItemService.findAll(query);
+  async findAll(@Query() query: IqcItemQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.iqcItemService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

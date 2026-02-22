@@ -16,7 +16,7 @@ export class PartnerService {
     private readonly partnerRepository: Repository<PartnerMaster>,
   ) {}
 
-  async findAll(query: PartnerQueryDto, company?: string) {
+  async findAll(query: PartnerQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partnerType, search, useYn } = query;
     const skip = (page - 1) * limit;
 
@@ -25,6 +25,9 @@ export class PartnerService {
 
     if (company) {
       queryBuilder.andWhere('partner.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('partner.plant = :plant', { plant });
     }
 
     if (partnerType) {

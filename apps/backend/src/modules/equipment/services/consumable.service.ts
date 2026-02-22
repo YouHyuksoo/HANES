@@ -35,10 +35,10 @@ import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { User } from '../../../entities/user.entity';
 import {
-  CreateConsumableDto,
-  UpdateConsumableDto,
+  EquipCreateConsumableDto,
+  EquipUpdateConsumableDto,
   ConsumableQueryDto,
-  CreateConsumableLogDto,
+  EquipCreateConsumableLogDto,
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
@@ -65,7 +65,7 @@ export class ConsumableService {
   /**
    * 소모품 목록 조회 (페이지네이션)
    */
-  async findAll(query: ConsumableQueryDto, company?: string) {
+  async findAll(query: ConsumableQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 20,
@@ -83,6 +83,9 @@ export class ConsumableService {
 
     if (company) {
       queryBuilder.andWhere('consumable.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('consumable.plant = :plant', { plant });
     }
     if (category) {
       queryBuilder.andWhere('consumable.category = :category', { category });
@@ -178,7 +181,7 @@ export class ConsumableService {
   /**
    * 소모품 생성
    */
-  async create(dto: CreateConsumableDto) {
+  async create(dto: EquipCreateConsumableDto) {
     // 중복 코드 확인
     const existing = await this.consumableMasterRepository.findOne({
       where: { consumableCode: dto.consumableCode, deletedAt: IsNull() },
@@ -210,7 +213,7 @@ export class ConsumableService {
   /**
    * 소모품 수정
    */
-  async update(id: string, dto: UpdateConsumableDto) {
+  async update(id: string, dto: EquipUpdateConsumableDto) {
     await this.findById(id);
 
     // 코드 변경 시 중복 확인
@@ -361,7 +364,7 @@ export class ConsumableService {
   /**
    * 소모품 로그 생성
    */
-  async createLog(dto: CreateConsumableLogDto) {
+  async createLog(dto: EquipCreateConsumableLogDto) {
     // 소모품 존재 확인
     const consumable = await this.findById(dto.consumableId);
 

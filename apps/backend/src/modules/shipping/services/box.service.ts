@@ -27,6 +27,7 @@ import { Repository, IsNull, ILike, DataSource } from 'typeorm';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
 import {
   CreateBoxDto,
   UpdateBoxDto,
@@ -47,13 +48,15 @@ export class BoxService {
     private readonly palletRepository: Repository<PalletMaster>,
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
+    @InjectRepository(MatLot)
+    private readonly lotRepository: Repository<MatLot>,
     private readonly dataSource: DataSource,
   ) {}
 
   /**
    * 박스 목록 조회
    */
-  async findAll(query: BoxQueryDto, company?: string) {
+  async findAll(query: BoxQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 10,
@@ -68,6 +71,7 @@ export class BoxService {
     const where: any = {
       deletedAt: IsNull(),
       ...(company && { company }),
+      ...(plant && { plant }),
       ...(boxNo && { boxNo: ILike(`%${boxNo}%`) }),
       ...(partId && { partId }),
       ...(palletId && { palletId }),
@@ -217,6 +221,25 @@ export class BoxService {
     const duplicates = dto.serials.filter(s => existingSerials.includes(s));
     if (duplicates.length > 0) {
       throw new ConflictException(`이미 존재하는 시리얼입니다: ${duplicates.join(', ')}`);
+    }
+
+    // 혼입방지: 시리얼(LOT)의 품목이 박스의 품목과 일치하는지 검증
+    for (const serial of dto.serials) {
+      const lot = await this.lotRepository.findOne({ where: { lotNo: serial } });
+      if (lot && lot.partId !== box.partId) {
+        throw new BadRequestException(
+          `혼입방지: 시리얼 "${serial}"의 품목이 박스 품목과 다릅니다.`,
+        );
+      }
+    }
+
+    // 과포장방지: 품목의 포장단위 초과 검증
+    const part = await this.partRepository.findOne({ where: { id: box.partId } });
+    const packUnit = part?.packUnit ? parseInt(part.packUnit, 10) : 0;
+    if (packUnit > 0 && existingSerials.length + dto.serials.length > packUnit) {
+      throw new BadRequestException(
+        `과포장방지: 포장단위(${packUnit}개)를 초과합니다. 현재 ${existingSerials.length}개 + 추가 ${dto.serials.length}개`,
+      );
     }
 
     // 새로운 시리얼 목록

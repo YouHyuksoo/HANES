@@ -49,6 +49,7 @@ import { ShipmentReturnItem } from '../../entities/shipment-return-item.entity';
 import { CustomerOrder } from '../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../entities/customer-order-item.entity';
 import { PartMaster } from '../../entities/part-master.entity';
+import { MatLot } from '../../entities/mat-lot.entity';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { PartMaster } from '../../entities/part-master.entity';
       CustomerOrder,
       CustomerOrderItem,
       PartMaster,
+      MatLot,
     ]),
     InventoryModule,
   ],

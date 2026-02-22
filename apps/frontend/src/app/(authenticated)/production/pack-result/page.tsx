@@ -7,15 +7,15 @@
  * 초보자 가이드:
  * 1. **목적**: 포장 완료된 박스 실적을 조회
  * 2. **BoxMaster**: 박스번호, LOT번호, 포장수량 등 관리
- * 3. **조회 전용**: 포장 결과만 확인하는 페이지
+ * 3. API: GET /production/pack-results
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Download, BoxIcon, Package, Calendar, Layers, Truck } from 'lucide-react';
+import { Search, RefreshCw, BoxIcon, Package, Layers, Truck } from 'lucide-react';
 import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
-import { createPartColumns } from '@/lib/table-utils';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import api from '@/services/api';
 
 interface PackResult {
   id: string;
@@ -31,42 +31,48 @@ interface PackResult {
   remark: string;
 }
 
-const mockData: PackResult[] = [
-  { id: '1', boxNo: 'BOX-20250126-001', lotNo: 'LOT-20250126-001', partCode: 'H-001', partName: '메인 하네스 A', packQty: 50, boxType: 'A형', packDate: '2025-01-26', packer: '포장원A', destination: '현대자동차 울산', remark: '' },
-  { id: '2', boxNo: 'BOX-20250126-002', lotNo: 'LOT-20250126-001', partCode: 'H-001', partName: '메인 하네스 A', packQty: 50, boxType: 'A형', packDate: '2025-01-26', packer: '포장원A', destination: '현대자동차 울산', remark: '' },
-  { id: '3', boxNo: 'BOX-20250126-003', lotNo: 'LOT-20250126-002', partCode: 'H-002', partName: '서브 하네스 B', packQty: 30, boxType: 'B형', packDate: '2025-01-26', packer: '포장원B', destination: '기아 광주', remark: '' },
-  { id: '4', boxNo: 'BOX-20250125-001', lotNo: 'LOT-20250125-001', partCode: 'H-003', partName: '도어 하네스 C', packQty: 40, boxType: 'A형', packDate: '2025-01-25', packer: '포장원A', destination: '현대자동차 아산', remark: '특별 포장' },
-  { id: '5', boxNo: 'BOX-20250125-002', lotNo: 'LOT-20250125-002', partCode: 'H-004', partName: '엔진룸 하네스 D', packQty: 25, boxType: 'C형', packDate: '2025-01-25', packer: '포장원C', destination: '현대자동차 울산', remark: '' },
-];
-
-function PackResultPage() {
+export default function PackResultPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<PackResult[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    const matchSearch = !searchText || item.boxNo.toLowerCase().includes(searchText.toLowerCase()) || item.lotNo.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
-    const matchStart = !startDate || item.packDate >= startDate;
-    const matchEnd = !endDate || item.packDate <= endDate;
-    return matchSearch && matchStart && matchEnd;
-  }), [searchText, startDate, endDate]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '5000' };
+      if (searchText) params.search = searchText;
+      if (startDate) params.packDateFrom = startDate;
+      if (endDate) params.packDateTo = endDate;
+      const res = await api.get('/production/pack-results', { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, startDate, endDate]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    totalBox: mockData.length,
-    totalQty: mockData.reduce((s, r) => s + r.packQty, 0),
-    destinations: new Set(mockData.map(d => d.destination)).size,
-  }), []);
+    totalBox: data.length,
+    totalQty: data.reduce((s, r) => s + r.packQty, 0),
+    destinations: new Set(data.map(d => d.destination)).size,
+  }), [data]);
 
   const columns = useMemo<ColumnDef<PackResult>[]>(() => [
     { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 100 },
-    { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170 },
-    { accessorKey: 'lotNo', header: t('production.packResult.lotNo'), size: 160 },
-    ...createPartColumns<PackResult>(t),
+    { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170, meta: { filterType: 'text' as const } },
+    { accessorKey: 'lotNo', header: t('production.packResult.lotNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
+    { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'boxType', header: t('production.packResult.boxType'), size: 80 },
     { accessorKey: 'packer', header: t('production.packResult.packer'), size: 80 },
-    { accessorKey: 'destination', header: t('production.packResult.destination'), size: 140 },
+    { accessorKey: 'destination', header: t('production.packResult.destination'), size: 140, meta: { filterType: 'text' as const } },
     { accessorKey: 'remark', header: t('production.packResult.remark'), size: 100 },
   ], [t]);
 
@@ -77,7 +83,6 @@ function PackResultPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><BoxIcon className="w-7 h-7 text-primary" />{t('production.packResult.title')}</h1>
           <p className="text-text-muted mt-1">{t('production.packResult.description')}</p>
         </div>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4 mr-1" />{t('production.packResult.excelDownload')}</Button>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -87,20 +92,25 @@ function PackResultPage() {
       </div>
 
       <Card><CardContent>
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="flex-1 min-w-[200px]"><Input placeholder={t('production.packResult.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-text-muted" />
-            <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-36" />
-            <span className="text-text-muted">~</span>
-            <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-36" />
-          </div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t('production.packResult.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t('production.packResult.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} fullWidth />
+              </div>
+              <div className="w-36 flex-shrink-0">
+                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
     </div>
   );
 }
-
-export default PackResultPage;

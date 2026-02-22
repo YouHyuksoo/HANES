@@ -26,6 +26,16 @@ export class JobOrder {
   @Column({ name: 'ORDER_NO', length: 255, unique: true })
   orderNo: string;
 
+  @Column({ name: 'PARENT_ID', length: 36, nullable: true })
+  parentId: string | null;
+
+  @ManyToOne(() => JobOrder, (jo) => jo.children, { nullable: true })
+  @JoinColumn({ name: 'PARENT_ID' })
+  parent: JobOrder | null;
+
+  @OneToMany(() => JobOrder, (jo) => jo.parent)
+  children: JobOrder[];
+
   @Column({ name: 'PART_ID', length: 255 })
   partId: string;
 

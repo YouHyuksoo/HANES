@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { MenuItem } from "./Sidebar";
+import { useTabStore } from "@/stores/tabStore";
 
 interface SidebarMenuProps {
   items: MenuItem[];
@@ -26,6 +27,13 @@ interface SidebarMenuProps {
 export default function SidebarMenu({
   items, collapsed, pathname, expandedMenus, onToggleMenu, isMenuActive, onClose, t,
 }: SidebarMenuProps) {
+  const addTab = useTabStore((s) => s.addTab);
+
+  const handleMenuClick = (menuItem: { id: string; path: string; labelKey: string }, parentId: string) => {
+    addTab({ id: menuItem.id, path: menuItem.path, labelKey: menuItem.labelKey, parentId });
+    onClose?.();
+  };
+
   return (
     <ul className="space-y-1">
       {items.map((item) => (
@@ -34,7 +42,7 @@ export default function SidebarMenu({
           {item.path && !item.children ? (
             <Link
               href={item.path}
-              onClick={onClose}
+              onClick={() => handleMenuClick(item as { id: string; path: string; labelKey: string }, item.id)}
               title={collapsed ? t(item.labelKey) : undefined}
               className={`
                 flex items-center gap-3 py-2.5 rounded-[var(--radius)]
@@ -77,7 +85,7 @@ export default function SidebarMenu({
                     <li key={child.id}>
                       <Link
                         href={child.path}
-                        onClick={onClose}
+                        onClick={() => handleMenuClick(child, item.id)}
                         className={`
                           block px-3 py-2 rounded-[var(--radius)] text-sm transition-colors duration-200
                           ${pathname === child.path

@@ -3,8 +3,8 @@
  * @description 거래처마스터 CRUD API 컨트롤러
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Req } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { PartnerService } from '../services/partner.service';
 import { CreatePartnerDto, UpdatePartnerDto, PartnerQueryDto } from '../dto/partner.dto';
@@ -40,9 +40,8 @@ export class PartnerController {
 
   @Get()
   @ApiOperation({ summary: '거래처 목록 조회' })
-  async findAll(@Query() query: PartnerQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.partnerService.findAll(query, company);
+  async findAll(@Query() query: PartnerQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.partnerService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

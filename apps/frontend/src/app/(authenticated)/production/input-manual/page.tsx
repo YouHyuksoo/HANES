@@ -6,16 +6,19 @@
  * 
  * 상태 관리: Zustand persist로 localStorage에 저장 (페이지 이동 후에도 유지)
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Save, HandMetal, Package, CheckCircle, XCircle, UserPlus, X, ClipboardList, Trash2 } from 'lucide-react';
+import { Search, RefreshCw, Save, HandMetal, Package, CheckCircle, XCircle, UserPlus, X, ClipboardList, Trash2, Plug, Unplug } from 'lucide-react';
 import { Card, CardContent, Button, Input, StatCard, Modal } from '@/components/ui';
+import api from '@/services/api';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
 import type { Worker } from '@/components/worker/WorkerSelector';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useInputManualStore } from '@/stores/inputManualStore';
+import { useCommConfigsByType } from '@/hooks/system/useCommConfigData';
+import { useSerialTest } from '@/hooks/system/useSerialTest';
 
 interface ManualResult {
   id: string;
@@ -31,14 +34,11 @@ interface ManualResult {
   remark: string;
 }
 
-const mockData: ManualResult[] = [
-  { id: '1', orderNo: 'JO-20250126-001', partName: '메인 하네스 A', workerName: '김작업', lotNo: 'LOT-20250126-001', goodQty: 100, defectQty: 3, workDate: '2025-01-26', startAt: '09:00', endAt: '12:00', remark: '' },
-  { id: '2', orderNo: 'JO-20250126-002', partName: '서브 하네스 B', workerName: '이작업', lotNo: 'LOT-20250126-002', goodQty: 80, defectQty: 1, workDate: '2025-01-26', startAt: '13:00', endAt: '17:00', remark: '정상' },
-  { id: '3', orderNo: 'JO-20250125-001', partName: '도어 하네스 C', workerName: '박작업', lotNo: 'LOT-20250125-001', goodQty: 200, defectQty: 5, workDate: '2025-01-25', startAt: '08:00', endAt: '17:00', remark: '' },
-];
-
-function InputManualPage() {
+export default function InputManualPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<ManualResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
@@ -53,28 +53,78 @@ function InputManualPage() {
     clearSelection 
   } = useInputManualStore();
   
-  const [form, setForm] = useState({ 
-    orderNo: '', 
-    workerName: '', 
-    lotNo: '', 
-    goodQty: '', 
-    defectQty: '', 
-    startAt: '', 
-    endAt: '', 
-    remark: '' 
+  // 시리얼 바코드 스캐너 연결
+  const { configs: serialConfigs } = useCommConfigsByType('SERIAL');
+  const [selectedConfigId, setSelectedConfigId] = useState<string>('');
+  const selectedConfig = useMemo(
+    () => serialConfigs.find(c => c.id === selectedConfigId) ?? null,
+    [serialConfigs, selectedConfigId]
+  );
+
+  // 첫 번째 시리얼 설정 자동 선택
+  useEffect(() => {
+    if (serialConfigs.length > 0 && !selectedConfigId) {
+      setSelectedConfigId(serialConfigs[0].id);
+    }
+  }, [serialConfigs, selectedConfigId]);
+
+  // 수신 버퍼 (바코드 스캐너 데이터 조립용)
+  const scanBufferRef = useRef('');
+  const scanTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const handleSerialData = useCallback((ascii: string) => {
+    // 바코드 스캐너: 데이터가 여러 청크로 올 수 있으므로 버퍼에 모은 후 일정 시간 뒤 처리
+    scanBufferRef.current += ascii.replace(/[^\x20-\x7E]/g, '');
+    if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
+    scanTimerRef.current = setTimeout(() => {
+      const scanned = scanBufferRef.current.trim();
+      if (scanned) {
+        setForm(prev => ({ ...prev, lotNo: scanned }));
+        // 모달이 열려있으면 LOT필드에 반영
+        if (lotNoRef.current) lotNoRef.current.value = scanned;
+      }
+      scanBufferRef.current = '';
+    }, 150);
+  }, []);
+
+  const { connected: serialConnected, error: serialError, connect: serialConnect, disconnect: serialDisconnect } =
+    useSerialTest(selectedConfig, { onData: handleSerialData });
+
+  const lotNoRef = useRef<HTMLInputElement>(null);
+  const goodQtyRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState({
+    orderNo: '',
+    workerName: '',
+    lotNo: '',
+    goodQty: '',
+    defectQty: '',
+    startAt: '',
+    endAt: '',
+    remark: ''
   });
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    if (!searchText) return true;
-    return item.orderNo.toLowerCase().includes(searchText.toLowerCase()) || 
-           item.partName.toLowerCase().includes(searchText.toLowerCase());
-  }), [searchText]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '5000' };
+      if (searchText) params.lotNo = searchText;
+      if (selectedJobOrder) params.jobOrderId = selectedJobOrder.id;
+      const res = await api.get('/production/prod-results', { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, selectedJobOrder]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => {
-    const totalGood = mockData.reduce((s, r) => s + r.goodQty, 0);
-    const totalDefect = mockData.reduce((s, r) => s + r.defectQty, 0);
-    return { count: mockData.length, totalGood, totalDefect };
-  }, []);
+    const totalGood = data.reduce((s, r) => s + r.goodQty, 0);
+    const totalDefect = data.reduce((s, r) => s + r.defectQty, 0);
+    return { count: data.length, totalGood, totalDefect };
+  }, [data]);
 
   /** 작업지시 선택 확인 */
   const handleJobOrderConfirm = (jobOrder: JobOrder) => {
@@ -90,34 +140,39 @@ function InputManualPage() {
   };
 
   /** 실적 저장 */
-  const handleSubmit = () => {
-    if (!selectedJobOrder) {
-      alert(t('production.inputManual.pleaseSelectJobOrder'));
-      return;
+  const handleSubmit = useCallback(async () => {
+    if (!selectedJobOrder || !selectedWorker) return;
+    setSaving(true);
+    try {
+      await api.post('/production/prod-results', {
+        jobOrderId: selectedJobOrder.id,
+        workerId: selectedWorker.id,
+        lotNo: form.lotNo || undefined,
+        goodQty: Number(form.goodQty) || 0,
+        defectQty: Number(form.defectQty) || 0,
+        startAt: form.startAt ? `${new Date().toISOString().split('T')[0]}T${form.startAt}` : undefined,
+        endAt: form.endAt ? `${new Date().toISOString().split('T')[0]}T${form.endAt}` : undefined,
+        remark: form.remark || undefined,
+      });
+      setIsModalOpen(false);
+      setForm({ orderNo: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', startAt: '', endAt: '', remark: '' });
+      fetchData();
+    } catch (e) {
+      console.error('Save failed:', e);
+    } finally {
+      setSaving(false);
     }
-    if (!selectedWorker) {
-      alert(t('production.inputManual.pleaseSelectWorker'));
-      return;
-    }
-    console.log('수작업 실적 저장:', { 
-      jobOrder: selectedJobOrder, 
-      worker: selectedWorker, 
-      form 
-    });
-    setIsModalOpen(false);
-    // Reset form
-    setForm({ orderNo: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', startAt: '', endAt: '', remark: '' });
-  };
+  }, [selectedJobOrder, selectedWorker, form, fetchData]);
 
   /** 실적 입력 모달 열기 */
-  const handleOpenInputModal = () => {
+  const handleOpenInputModal = useCallback(() => {
     if (!selectedJobOrder) {
-      alert(t('production.inputManual.pleaseSelectJobOrderFirst'));
       setIsJobOrderModalOpen(true);
       return;
     }
     setIsModalOpen(true);
-  };
+    setTimeout(() => lotNoRef.current?.focus(), 100);
+  }, [selectedJobOrder]);
 
   const columns = useMemo<ColumnDef<ManualResult>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputManual.orderNo'), size: 160 },
@@ -137,30 +192,61 @@ function InputManualPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><HandMetal className="w-7 h-7 text-primary" />{t('production.inputManual.title')}</h1>
           <p className="text-text-muted mt-1">{t('production.inputManual.description')}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* 시리얼 바코드 스캐너 연결 */}
+          {serialConfigs.length > 0 && (
+            <div className="flex items-center gap-1.5 mr-2">
+              {serialConfigs.length > 1 && (
+                <select
+                  className="h-8 px-2 text-xs rounded-[var(--radius)] border border-gray-400 dark:border-gray-500 bg-background text-text"
+                  value={selectedConfigId}
+                  onChange={e => setSelectedConfigId(e.target.value)}
+                  disabled={serialConnected}
+                >
+                  {serialConfigs.map(c => (
+                    <option key={c.id} value={c.id}>{c.configName}</option>
+                  ))}
+                </select>
+              )}
+              {serialConnected ? (
+                <Button variant="outline" size="sm" onClick={serialDisconnect}
+                  className="border-green-400 text-green-600 dark:text-green-400">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-1.5" />
+                  <Unplug className="w-3.5 h-3.5 mr-1" />
+                  {selectedConfig?.configName ?? t('serialTest.disconnectBtn')}
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={serialConnect}>
+                  <Plug className="w-3.5 h-3.5 mr-1" />
+                  {t('serialTest.connectBtn')}
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* 전체 초기화 버튼 (선택된 것이 있을 때만 표시) */}
           {(selectedJobOrder || selectedWorker) && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={clearSelection}
               className="text-red-500 border-red-200 hover:bg-red-50"
             >
               <Trash2 className="w-4 h-4 mr-1" />{t('common.clear')}
             </Button>
           )}
-          <Button 
-            variant="secondary" 
-            size="sm" 
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setIsJobOrderModalOpen(true)}
             className={selectedJobOrder ? 'border-primary text-primary' : ''}
           >
             <ClipboardList className="w-4 h-4 mr-1" />
             {selectedJobOrder ? selectedJobOrder.orderNo : t('production.inputManual.selectJobOrder')}
           </Button>
-          <Button 
-            variant="secondary" 
-            size="sm" 
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setIsWorkerModalOpen(true)}
             className={selectedWorker ? 'border-primary text-primary' : ''}
           >
@@ -172,6 +258,13 @@ function InputManualPage() {
           </Button>
         </div>
       </div>
+
+      {/* 시리얼 연결 에러 */}
+      {serialError && (
+        <div className="p-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-[var(--radius)]">
+          {serialError}
+        </div>
+      )}
 
       {/* 작업지시 + 작업자 정보 영역 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -287,11 +380,19 @@ function InputManualPage() {
 
       {/* 실적 목록 */}
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('production.inputManual.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t('production.inputManual.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t('production.inputManual.searchPlaceholder')} value={searchText}
+                  onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
 
       {/* 실적 입력 모달 */}
@@ -313,11 +414,12 @@ function InputManualPage() {
               fullWidth 
               disabled 
             />
-            <Input 
-              label={t('production.inputManual.lotNo')} 
-              value={form.lotNo} 
-              onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} 
-              fullWidth 
+            <Input
+              ref={lotNoRef}
+              label={t('production.inputManual.lotNo')}
+              value={form.lotNo}
+              onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))}
+              fullWidth
             />
             <Input 
               label={t('production.inputManual.goodQty')} 
@@ -356,8 +458,8 @@ function InputManualPage() {
           />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleSubmit}>
-              <Save className="w-4 h-4 mr-1" />{t('common.save')}
+            <Button onClick={handleSubmit} disabled={saving || !selectedJobOrder || !selectedWorker}>
+              {saving ? t('common.saving') : <><Save className="w-4 h-4 mr-1" />{t('common.save')}</>}
             </Button>
           </div>
         </div>
@@ -380,5 +482,3 @@ function InputManualPage() {
     </div>
   );
 }
-
-export default InputManualPage;

@@ -6,6 +6,7 @@
     "edit": "수정",
     "add": "추가",
     "search": "검색",
+    "period": "기간",
     "refresh": "새로고침",
     "reset": "초기화",
     "export": "내보내기",
@@ -14,6 +15,7 @@
     "close": "닫기",
     "loading": "로딩 중...",
     "saving": "저장 중...",
+    "uploading": "업로드 중...",
     "noData": "데이터가 없습니다",
     "error": "오류가 발생했습니다",
     "success": "성공적으로 처리되었습니다",
@@ -56,7 +58,9 @@
     "totalQty": "총수량",
     "createdAt": "등록일시",
     "selected": "선택됨",
-    "won": "원"
+    "won": "원",
+    "useYn": "사용여부",
+    "clear": "초기화"
   },
   "menu": {
     "dashboard": "대시보드",
@@ -126,7 +130,7 @@
     "master.worker.workerList": "작업자 목록",
     "master.worker.totalCount": "총 {{count}}건",
     "master.worker.emptyMessage": "등록된 작업자가 없습니다.",
-    "master.iqcItem": "IQC검사항목관리",
+    "master.iqcItem": "IQC검사항목/그룹",
     "master.iqcItem.itemCode": "항목코드",
     "master.iqcItem.judgeMethod": "판정방법",
     "master.iqcItem.visual": "육안",
@@ -140,10 +144,19 @@
     "master.warehouse": "창고관리",
     "master.company": "회사관리",
     "master.label": "라벨관리",
+    "master.vendorBarcode": "제조사 바코드 매핑",
+    "matInventory": "자재재고관리",
+    "productInventory": "제품재고관리",
     "inventory": "재고관리",
-    "inventory.stock": "재고현황조회",
-    "inventory.transaction": "수불이력조회",
-    "inventory.lot": "LOT추적관리",
+    "inventory.matStock": "자재재고현황조회",
+    "inventory.stock": "총재고현황조회",
+    "inventory.productStock": "제품재고현황조회",
+    "inventory.transaction": "자재수불이력조회",
+    "inventory.lot": "자재LOT추적관리",
+    "inventory.productPhysicalInv": "제품재고실사관리",
+    "inventory.productPhysicalInvHistory": "제품재고실사조회",
+    "inventory.matPhysicalInv": "자재재고실사관리",
+    "inventory.matPhysicalInvHistory": "자재재고실사조회",
     "material": "자재관리",
     "material.arrival": "입하관리",
     "material.iqc": "수입검사(IQC)",
@@ -151,18 +164,17 @@
     "material.receive": "입고관리",
     "material.request": "출고요청관리",
     "material.issue": "출고관리",
-    "material.stock": "재고현황조회",
     "material.lot": "LOT관리",
     "material.po": "PO관리",
     "material.poStatus": "PO현황조회",
     "material.iqcHistory": "IQC이력조회",
     "material.lotSplit": "자재분할관리",
+    "material.lotMerge": "자재병합관리",
     "material.shelfLife": "유수명자재관리",
     "material.hold": "재고홀드관리",
     "material.scrap": "자재폐기처리",
     "material.adjustment": "재고보정처리",
     "material.miscReceipt": "기타입고관리",
-    "material.physicalInv": "재고실사관리",
     "material.receiptCancel": "입고취소처리",
     "cutting": "절단공정",
     "cutting.order": "작업지시",
@@ -171,6 +183,9 @@
     "crimping.order": "작업지시",
     "crimping.result": "작업실적",
     "crimping.mold": "금형관리",
+    "purchasing": "자재주문관리",
+    "purchasing.po": "PO관리",
+    "purchasing.poStatus": "PO현황조회",
     "production": "생산관리",
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
@@ -180,6 +195,7 @@
     "production.inputInspect": "실적입력(단순검사)",
     "production.inputEquip": "실적입력(검사장비)",
     "production.sampleInspect": "샘플검사이력조회",
+    "production.resultSummary": "작업실적통합조회",
     "production.packResult": "포장실적조회",
     "production.wipStock": "반제품/제품재고조회",
     "inspection": "통전검사",
@@ -189,6 +205,8 @@
     "quality.defect": "불량관리",
     "quality.inspect": "검사관리",
     "quality.trace": "추적성조회",
+    "quality.oqc": "출하검사(OQC)",
+    "quality.oqcHistory": "출하검사이력",
     "equipment": "설비관리",
     "equipment.master": "설비마스터관리",
     "equipment.status": "가동현황조회",
@@ -198,7 +216,7 @@
     "equipment.inspectHistory": "점검이력조회",
     "equipment.mold": "금형관리",
     "shipping": "출하관리",
-    "shipping.pack": "포장관리",
+    "shipping.pack": "제품포장관리",
     "shipping.pallet": "팔레트적재관리",
     "shipping.confirm": "출하확정처리",
     "shipping.order": "출하지시등록",
@@ -227,7 +245,8 @@
     "system": "시스템관리",
     "system.department": "부서관리",
     "system.users": "사용자관리",
-    "system.commConfig": "통신설정관리"
+    "system.commConfig": "통신설정관리",
+    "system.config": "환경설정"
   },
   "header": {
     "theme": "테마",
@@ -258,6 +277,9 @@
     "registerFailed": "회원가입에 실패했습니다.",
     "emailRequired": "이메일 *",
     "passwordRequired": "비밀번호 *",
+    "plant": "사업장",
+    "selectPlant": "사업장을 선택하세요",
+    "plantRequired": "사업장 선택은 필수입니다",
     "branding": {
       "title": "HARNESS MES",
       "subtitle": "Manufacturing Execution System",
@@ -281,6 +303,7 @@
     "line": "라인",
     "planQty": "계획수량",
     "actualQty": "실적수량",
+    "completedQty": "완료수량",
     "progress": "진행률",
     "status": "상태",
     "statusWaiting": "대기",
@@ -288,9 +311,21 @@
     "statusCompleted": "완료"
   },
   "inventory": {
+    "matStock": {
+      "title": "자재재고현황 조회",
+      "description": "창고별/품목별 자재 재고 현황을 조회합니다."
+    },
+    "matPhysicalInv": {
+      "title": "자재재고실사 관리",
+      "description": "자재 재고의 시스템 수량과 실제 수량을 대사하고 반영합니다."
+    },
+    "matPhysicalInvHistory": {
+      "title": "자재재고실사 조회",
+      "description": "자재 재고실사 결과 이력을 조회합니다."
+    },
     "stock": {
-      "title": "재고 현황",
-      "subtitle": "창고별/품목별 실시간 재고 현황을 조회합니다.",
+      "title": "제품재고 현황",
+      "subtitle": "제품(반제품/완제품) 창고별 실시간 재고 현황을 조회합니다.",
       "totalStock": "총 재고",
       "availableStock": "가용 재고",
       "partCount": "품목 수",
@@ -348,6 +383,20 @@
       "defectWarehouse": "불량 창고",
       "scrapWarehouse": "폐기 창고",
       "subconWarehouse": "외주처"
+    },
+    "location": {
+      "title": "로케이션",
+      "searchPlaceholder": "로케이션코드, 로케이션명 검색...",
+      "locationCode": "로케이션코드",
+      "locationName": "로케이션명",
+      "zone": "존(구역)",
+      "rowNo": "행",
+      "colNo": "열",
+      "levelNo": "단(층)",
+      "addLocation": "로케이션 등록",
+      "editLocation": "로케이션 수정",
+      "deleteLocation": "로케이션 삭제",
+      "deleteConfirm": "이 로케이션을 삭제하시겠습니까?"
     },
     "transaction": {
       "title": "수불 이력",
@@ -425,6 +474,44 @@
       "tabHistory": "이력",
       "noStock": "재고 없음",
       "noHistory": "이력 없음"
+    },
+    "productPhysicalInv": {
+      "title": "제품 재고실사",
+      "subtitle": "제품/반제품 창고의 재고를 실사하고 차이를 반영합니다.",
+      "warehouse": "창고",
+      "systemQty": "장부수량",
+      "countedQty": "실사수량",
+      "diffQty": "차이수량",
+      "lastCountDate": "최종실사일",
+      "applyCount": "실사반영",
+      "confirmMessage": "총 {{count}}건의 실사 결과를 반영하시겠습니까?",
+      "searchPlaceholder": "품목코드 또는 품목명 검색...",
+      "stats": {
+        "total": "전체 품목",
+        "counted": "실사완료",
+        "mismatch": "차이발생",
+        "matched": "일치"
+      }
+    },
+    "productPhysicalInvHistory": {
+      "title": "제품 재고실사 이력",
+      "subtitle": "제품/반제품 재고실사 결과 내역을 조회합니다.",
+      "warehouse": "창고",
+      "countDate": "실사일시",
+      "systemQty": "장부수량",
+      "countedQty": "실사수량",
+      "diffQty": "차이수량",
+      "reason": "사유",
+      "inspector": "실사자",
+      "searchPlaceholder": "품목코드 또는 품목명 검색...",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "stats": {
+        "total": "전체 건수",
+        "positive": "증가 (과잉)",
+        "negative": "감소 (부족)",
+        "matched": "일치"
+      }
     }
   },
   "system": {
@@ -468,6 +555,14 @@
       "role": "역할",
       "status": "상태",
       "lastLogin": "최근 로그인",
+      "photo": "사진",
+      "addPhoto": "사진 등록",
+      "changePhoto": "사진 변경",
+      "photoHint": "JPG, PNG (최대 5MB)",
+      "photoCrop": "사진 크롭",
+      "rotate": "회전",
+      "photoTypeError": "이미지 파일만 업로드 가능합니다.",
+      "photoSizeError": "파일 크기는 5MB 이하여야 합니다.",
       "roleAdmin": "관리자",
       "roleManager": "매니저",
       "roleOperator": "작업자",
@@ -508,12 +603,42 @@
       "stopBits": "스톱 비트",
       "parity": "패리티",
       "flowControl": "흐름 제어",
+      "lineEnding": "라인엔딩 (CR/LF)",
       "hostLabel": "호스트 (IP)",
       "hostPlaceholder": "예: 192.168.1.100",
       "portLabel": "포트",
       "portPlaceholder": "예: 502",
       "extraSettings": "{{type}} 추가 설정"
+    },
+    "config": {
+      "title": "환경설정",
+      "description": "시스템 운영에 필요한 각종 옵션을 설정합니다.",
+      "group": {
+        "all": "전체",
+        "MATERIAL": "자재관리",
+        "PRODUCTION": "생산관리",
+        "QUALITY": "품질관리",
+        "SYSTEM": "시스템"
+      },
+      "save": "설정 저장",
+      "saveSuccess": "설정이 저장되었습니다.",
+      "addNew": "설정 추가",
+      "noChanges": "변경된 설정이 없습니다.",
+      "changedCount": "{{count}}개 항목 변경됨",
+      "confirmDelete": "이 설정을 삭제하시겠습니까?"
     }
+  },
+  "serialTest": {
+    "title": "시리얼 통신 테스트",
+    "connectedStatus": "연결됨",
+    "disconnectedStatus": "연결 안됨",
+    "connectBtn": "연결",
+    "disconnectBtn": "연결 해제",
+    "sendBtn": "전송",
+    "clearBtn": "지움",
+    "sendPlaceholderHex": "HEX 데이터 입력 (예: 01 03 00 00 00 01)",
+    "sendPlaceholderAscii": "ASCII 텍스트 입력 (예: HELLO)",
+    "logEmpty": "연결 후 수신/전송 데이터가 여기에 표시됩니다"
   },
   "equipment": {
     "title": "설비 관리",
@@ -609,7 +734,18 @@
       "routingCount": "공정수",
       "effectiveDate": "기준일자",
       "validFrom": "적용일",
-      "validTo": "완료일"
+      "validTo": "완료일",
+      "seq": "순서",
+      "side": "사이드",
+      "oper": "공정",
+      "processCode": "공정코드",
+      "deleteConfirm": "이 BOM 항목을 삭제하시겠습니까?",
+      "saveSuccess": "BOM이 저장되었습니다.",
+      "deleteSuccess": "BOM이 삭제되었습니다.",
+      "selectChildPart": "자품목을 선택하세요",
+      "noRoutingData": "라우팅 데이터가 없습니다",
+      "routingViewTarget": "라우팅 조회 대상",
+      "viewAllRouting": "전체 라우팅 보기"
     },
     "equip": {
       "title": "설비마스터",
@@ -711,7 +847,14 @@
       "typePkg": "포장",
       "addProcess": "공정 추가",
       "editProcess": "공정 수정",
-      "searchPlaceholder": "공정코드, 공정명 검색..."
+      "searchPlaceholder": "공정코드, 공정명 검색...",
+      "processCategory": "공정 대분류",
+      "sampleInspectYn": "샘플검사",
+      "catAssy": "조립",
+      "catInsp": "검사",
+      "catCutting": "절단",
+      "catWelding": "융착",
+      "catPacking": "포장"
     },
     "routing": {
       "title": "라우팅관리",
@@ -730,7 +873,18 @@
       "partSelect": "품목 선택",
       "equipTypePlaceholder": "설비유형 선택",
       "stdTimeSec": "표준시간(초)",
-      "setupTimeSec": "셋업시간(초)"
+      "setupTimeSec": "셋업시간(초)",
+      "wireLength": "전선길이(mm)",
+      "stripLength": "탈피길이(mm)",
+      "crimpHeight": "압착높이(mm)",
+      "crimpWidth": "압착폭(mm)",
+      "weldCondition": "융착조건",
+      "weldConditionPlaceholder": "온도, 시간, 압력 등 융착 조건 입력",
+      "processDetailTitle": "공정 상세 파라미터",
+      "deleteConfirm": "이 라우팅 항목을 삭제하시겠습니까?",
+      "saveSuccess": "라우팅이 저장되었습니다.",
+      "deleteSuccess": "라우팅이 삭제되었습니다.",
+      "processCount": "공정"
     },
     "worker": {
       "title": "작업자관리",
@@ -764,8 +918,8 @@
       "deleteConfirm": "을(를) 삭제하시겠습니까?"
     },
     "iqcItem": {
-      "title": "IQC 검사항목",
-      "subtitle": "수입검사 항목을 등록하고 관리합니다.",
+      "title": "IQC 검사항목/그룹 관리",
+      "subtitle": "수입검사 항목을 등록하고, 검사그룹으로 묶어 관리합니다.",
       "seq": "순번",
       "inspectItem": "검사항목",
       "spec": "규격/기준",
@@ -775,7 +929,52 @@
       "editItem": "항목 수정",
       "searchPlaceholder": "품목코드, 검사항목 검색...",
       "partSelect": "품목 선택",
-      "retestCycle": "재검주기(일)"
+      "retestCycle": "재검주기(일)",
+      "visual": "육안",
+      "measureMethod": "계측",
+      "judgeMethod": "판정방법",
+      "itemCode": "항목코드",
+      "revision": "Rev",
+      "deleteItem": "검사항목 삭제",
+      "deleteConfirm": "이 검사항목을 삭제하시겠습니까?",
+      "tabItems": "검사항목"
+    },
+    "iqcGroup": {
+      "tabItems": "검사항목",
+      "tabGroups": "검사그룹",
+      "groupCode": "그룹코드",
+      "groupName": "그룹명",
+      "inspectMethod": "검사형태",
+      "methodFull": "전수검사",
+      "methodSample": "샘플검사",
+      "methodSkip": "무검사",
+      "sampleQty": "샘플 수량",
+      "itemCount": "항목수",
+      "addGroup": "그룹 추가",
+      "editGroup": "그룹 수정",
+      "searchPlaceholder": "그룹코드/그룹명 검색...",
+      "groupInfo": "그룹 정보",
+      "selectItems": "검사항목 선택",
+      "selectedItems": "선택된 항목",
+      "itemSearchPlaceholder": "항목코드/항목명 검색..."
+    },
+    "iqcLink": {
+      "tabLinks": "연결관리",
+      "addLink": "연결 추가",
+      "editLink": "연결 수정",
+      "partCode": "품목코드",
+      "partName": "품목명",
+      "partner": "거래처(공급상)",
+      "group": "검사그룹",
+      "partSelect": "품목 선택",
+      "partPlaceholder": "품목을 선택하세요",
+      "partnerSelect": "거래처(공급상)",
+      "allVendors": "전체 (기본)",
+      "groupSelect": "검사그룹",
+      "groupPlaceholder": "검사그룹을 선택하세요",
+      "defaultLabel": "기본(전체)",
+      "remarkPlaceholder": "비고 (선택사항)",
+      "searchPlaceholder": "품목코드/품목명/거래처명 검색..."
     },
     "equipInspect": {
       "title": "설비점검항목",
@@ -834,9 +1033,16 @@
       "editDoc": "작업지도서 수정",
       "searchPlaceholder": "문서명, 품목코드, 공정코드 검색...",
       "revision": "리비전",
-      "imageUrl": "이미지 URL",
+      "imageUrl": "또는 URL 직접 입력",
       "content": "내용",
-      "contentPlaceholder": "작업 지침 내용을 입력하세요..."
+      "contentPlaceholder": "작업 지침 내용을 입력하세요...",
+      "attachment": "첨부파일",
+      "dropFile": "파일을 드래그하거나 클릭하여 업로드",
+      "fileTypes": "이미지(JPG, PNG), PDF, 문서 (최대 10MB)",
+      "preview": "미리보기",
+      "openNewTab": "새 탭에서 열기",
+      "clickToDownload": "클릭하여 다운로드",
+      "noContent": "등록된 내용이 없습니다."
     },
     "transferRule": {
       "title": "창고이동규칙",
@@ -932,7 +1138,34 @@
       "addCompany": "회사 추가",
       "editCompany": "회사 수정",
       "searchPlaceholder": "회사코드, 회사명, 사업자번호 검색...",
-      "selectCompany": "회사를 선택하세요"
+      "selectCompany": "회사를 선택하세요",
+      "plantSection": "사업장",
+      "plantCode": "사업장코드",
+      "plantName": "사업장명",
+      "addPlant": "사업장 추가",
+      "noPlant": "등록된 사업장이 없습니다."
+    },
+    "vendorBarcode": {
+      "title": "제조사 바코드 매핑",
+      "subtitle": "제조사 바코드를 MES 품번과 매핑하여 자동 변환",
+      "vendorBarcode": "제조사 바코드",
+      "partCode": "품번",
+      "partName": "품명",
+      "vendorCode": "제조사 코드",
+      "vendorName": "제조사명",
+      "matchType": "매칭 유형",
+      "matchExact": "정확 일치",
+      "matchPrefix": "접두사",
+      "matchRegex": "정규식",
+      "mappingRule": "매핑 규칙",
+      "useYn": "사용여부",
+      "addMapping": "매핑 추가",
+      "editMapping": "매핑 수정",
+      "searchPlaceholder": "바코드, 품번, 품명 검색...",
+      "confirmDelete": "이 매핑을 삭제하시겠습니까?",
+      "createSuccess": "바코드 매핑이 생성되었습니다.",
+      "updateSuccess": "바코드 매핑이 수정되었습니다.",
+      "deleteSuccess": "바코드 매핑이 삭제되었습니다."
     }
   },
   "material": {
@@ -997,7 +1230,8 @@
         "remainingQty": "잔량",
         "orderQty": "발주수량",
         "receivedQty": "기입하수량",
-        "inputQty": "이번 수량"
+        "inputQty": "이번 수량",
+        "manufactureDate": "제조일자"
       },
       "selectPoDesc": "입하 가능한 PO를 선택해주세요.",
       "selectWarehouse": "창고 선택",
@@ -1043,7 +1277,15 @@
       "inspectorPlaceholder": "검사자명 입력",
       "remarkPlaceholder": "검사 비고사항",
       "passed": "합격",
-      "failed": "불합격"
+      "failed": "불합격",
+      "inspectItem": "검사항목",
+      "spec": "규격",
+      "measuredValue": "측정값",
+      "judgment": "판정",
+      "overallJudge": "종합판정",
+      "noInspectItems": "이 품목에 등록된 IQC 검사항목이 없습니다. 수동으로 합불 판정해주세요.",
+      "submitFailed": "불합격 등록",
+      "submitPassed": "합격 등록"
     },
     "receive": {
       "title": "입고관리",
@@ -1205,13 +1447,24 @@
         "quantity": "수량",
         "safetyStock": "안전재고",
         "status": "상태",
-        "lastUpdated": "최종수정"
+        "lastUpdated": "최종수정",
+        "manufactureDate": "제조일자",
+        "elapsedDays": "경과일수",
+        "remainingDays": "남은유효기간",
+        "shelfLifeStatus": "유효기간",
+        "dayUnit": "일"
+      },
+      "shelfLife": {
+        "expired": "만료",
+        "imminent": "임박",
+        "normal": "정상"
       },
       "stats": {
         "totalItems": "전체 품목",
         "totalQuantity": "총 수량",
         "belowSafety": "안전재고 미달",
-        "warningLevel": "경고수준"
+        "warningLevel": "경고수준",
+        "expiryWarning": "유효기간 임박"
       },
       "searchPlaceholder": "품목코드, 품목명 검색..."
     },
@@ -1288,6 +1541,12 @@
       "inspector": "검사자",
       "inspectDate": "검사일시",
       "searchPlaceholder": "LOT번호, 품목명 검색...",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "pass": "합격",
+      "fail": "불합격",
+      "initial": "초도검사",
+      "retest": "재검사",
       "stats": {
         "total": "전체검사",
         "pass": "합격",
@@ -1309,7 +1568,31 @@
       "newLotNoPlaceholder": "자동생성 또는 직접 입력",
       "remark": "비고",
       "remarkPlaceholder": "분할 사유 입력",
-      "searchPlaceholder": "LOT번호, 품목명 검색..."
+      "searchPlaceholder": "LOT번호, 품목명 검색...",
+      "stats": {
+        "total": "전체LOT",
+        "totalQty": "총수량"
+      }
+    },
+    "lotMerge": {
+      "title": "자재병합",
+      "subtitle": "같은 품목의 LOT을 선택하여 병합합니다.",
+      "lotNo": "LOT번호",
+      "vendor": "공급처",
+      "expireDate": "유효기한",
+      "mergeSelected": "선택 병합",
+      "selectedCount": "선택 LOT",
+      "totalQty": "합산 수량",
+      "targetLot": "대상 LOT",
+      "mergingLots": "병합 LOT",
+      "ready": "병합 가능",
+      "partMismatch": "품목 불일치",
+      "partMismatchWarning": "서로 다른 품목의 LOT은 병합할 수 없습니다. 같은 품목의 LOT만 선택해주세요.",
+      "clearSelection": "선택 해제",
+      "confirmTitle": "LOT 병합 확인",
+      "confirmMessage": "아래 LOT들을 병합하시겠습니까? 원본 LOT은 소진(DEPLETED) 처리됩니다.",
+      "confirmMerge": "병합 실행",
+      "searchPlaceholder": "LOT번호 검색..."
     },
     "shelfLife": {
       "title": "유수명자재",
@@ -1317,6 +1600,7 @@
       "partCode": "품목코드",
       "partName": "품목명",
       "currentQty": "현재수량",
+      "vendor": "공급처",
       "expireDate": "만료일",
       "remainDays": "잔여일수",
       "days": "일",
@@ -1365,7 +1649,14 @@
       "warehouse": "창고",
       "lotId": "LOT ID",
       "lotIdPlaceholder": "LOT ID 입력",
-      "searchPlaceholder": "처리번호, LOT번호, 품목명 검색..."
+      "searchPlaceholder": "처리번호, LOT번호, 품목명 검색...",
+      "totalCount": "총 폐기건수",
+      "totalQty": "총 폐기수량",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "stockSelect": "재고 선택 (품목-LOT)",
+      "availableQty": "가용수량",
+      "max": "최대"
     },
     "adjustment": {
       "title": "재고보정",
@@ -1384,7 +1675,16 @@
       "createdBy": "처리자",
       "createdAt": "처리일",
       "register": "보정등록",
-      "searchPlaceholder": "품목코드, 품목명, 사유 검색..."
+      "searchPlaceholder": "품목코드, 품목명, 사유 검색...",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "partSearch": "품목 검색",
+      "partSearchPlaceholder": "품목코드 또는 품목명 입력 (2자 이상)",
+      "stats": {
+        "total": "전체 보정",
+        "increase": "증가 보정",
+        "decrease": "감소 보정"
+      }
     },
     "miscReceipt": {
       "title": "기타입고",
@@ -1398,7 +1698,15 @@
       "remarkPlaceholder": "입고 사유를 입력하세요",
       "transDate": "처리일",
       "register": "기타입고 등록",
-      "searchPlaceholder": "처리번호, 품목명, 비고 검색..."
+      "searchPlaceholder": "처리번호, 품목명, 비고 검색...",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "partSearch": "품목 검색",
+      "partSearchPlaceholder": "품목코드 또는 품목명 입력 (2자 이상)...",
+      "stats": {
+        "total": "총 기타입고 건수",
+        "totalQty": "총 입고수량"
+      }
     },
     "physicalInv": {
       "title": "재고실사",
@@ -1415,11 +1723,32 @@
       "warehouseB": "자재창고B",
       "subMaterialWarehouse": "부자재창고",
       "searchPlaceholder": "품목코드, 품목명 검색...",
+      "confirmMessage": "{{count}}건의 실사 결과를 반영하시겠습니까?",
       "stats": {
         "total": "전체",
         "counted": "실사완료",
         "mismatch": "불일치",
         "matched": "일치"
+      }
+    },
+    "physicalInvHistory": {
+      "title": "재고실사 조회",
+      "subtitle": "재고실사 이력을 조회합니다.",
+      "warehouse": "창고",
+      "countDate": "실사일시",
+      "systemQty": "장부수량",
+      "countedQty": "실사수량",
+      "diffQty": "차이수량",
+      "reason": "사유",
+      "inspector": "실사자",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "searchPlaceholder": "품목코드, 품목명 검색...",
+      "stats": {
+        "total": "전체 건수",
+        "positive": "과잉 (+)",
+        "negative": "부족 (-)",
+        "matched": "일치 (0)"
       }
     },
     "receiptCancel": {
@@ -1437,7 +1766,14 @@
       "reason": "취소사유",
       "reasonPlaceholder": "취소 사유를 입력하세요",
       "confirm": "취소확정",
-      "searchPlaceholder": "트랜잭션번호, 품목명, LOT번호 검색..."
+      "searchPlaceholder": "트랜잭션번호, 품목명, LOT번호 검색...",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "stats": {
+        "total": "전체 입고",
+        "cancellable": "취소가능",
+        "canceled": "취소완료"
+      }
     }
   },
   "cutting": {
@@ -1591,7 +1927,23 @@
       "processCRIMP": "압착",
       "processASSY": "조립",
       "processINSP": "검사",
-      "processPACK": "포장"
+      "processPACK": "포장",
+      "create": "작업지시 생성",
+      "createTitle": "작업지시 생성",
+      "partType": "품목유형",
+      "planDate": "계획일",
+      "priority": "우선순위",
+      "autoCreateChildren": "BOM 기반 반제품 작업지시 자동생성",
+      "treeView": "트리뷰",
+      "listView": "목록뷰",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "stats": {
+        "total": "전체",
+        "waiting": "대기",
+        "running": "진행중",
+        "done": "완료"
+      }
     },
     "result": {
       "title": "생산실적 조회",
@@ -1818,7 +2170,38 @@
       "judgment": "판정",
       "inspector": "검사원",
       "remark": "비고",
-      "searchPlaceholder": "LOT번호, 품목명 검색..."
+      "searchPlaceholder": "작업지시번호, 품목명, 검사자 검색...",
+      "inputBtn": "검사 입력",
+      "inputTitle": "반제품 샘플검사 입력",
+      "sampleNo": "샘플#",
+      "measuredValue": "측정값",
+      "specUpper": "상한치",
+      "specLower": "하한치",
+      "sampleCount": "샘플 수",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "inspectTypePlaceholder": "외관검사, 치수검사 등"
+    },
+    "resultSummary": {
+      "title": "작업실적 통합조회",
+      "description": "완제품별 계획/양품/불량/양품률을 통합 집계합니다",
+      "partType": "품목유형",
+      "planQty": "계획수량",
+      "goodQty": "양품수량",
+      "defectQty": "불량수량",
+      "achieveRate": "달성률",
+      "yieldRate": "양품률",
+      "defectRate": "불량률",
+      "orderCount": "작업지시",
+      "searchPlaceholder": "품목코드, 품목명 검색...",
+      "startDate": "시작일",
+      "endDate": "종료일",
+      "stats": {
+        "planTotal": "총 계획수량",
+        "goodTotal": "총 양품수량",
+        "defectTotal": "총 불량수량",
+        "yieldRate": "전체 양품률"
+      }
     },
     "packResult": {
       "title": "포장실적조회",
@@ -2005,6 +2388,48 @@
       "resultCol": "결과",
       "enterSerialOrLot": "시리얼번호 또는 LOT번호를 입력하세요",
       "canCheckHistory": "제품의 전체 제조 이력과 4M 정보를 확인할 수 있습니다."
+    },
+    "oqc": {
+      "title": "출하검사(OQC)",
+      "description": "출하 전 제품 품질을 검증하고 합격 여부를 판정합니다.",
+      "historyTitle": "출하검사이력",
+      "historyDescription": "완료된 OQC 검사 이력을 조회합니다.",
+      "inspectTitle": "OQC 검사 실행",
+      "createRequest": "OQC 의뢰",
+      "requestNo": "의뢰번호",
+      "requestDate": "의뢰일",
+      "customer": "고객사",
+      "customerPlaceholder": "고객사명 입력",
+      "boxCount": "박스수",
+      "totalQty": "총수량",
+      "sampleSize": "샘플수",
+      "sampleSizePlaceholder": "샘플 수량 입력",
+      "inspector": "검사자",
+      "inspectorPlaceholder": "검사자명 입력",
+      "inspectDate": "검사일시",
+      "result": "판정",
+      "pass": "합격",
+      "fail": "불합격",
+      "passRate": "합격률",
+      "statusPending": "대기",
+      "statusPass": "합격",
+      "statusFail": "불합격",
+      "statTotal": "총 의뢰",
+      "statPending": "대기",
+      "statPass": "합격",
+      "statFail": "불합격",
+      "searchPlaceholder": "의뢰번호, 품번, 품명 검색...",
+      "selectPart": "품목 선택",
+      "selectPartPlaceholder": "품목을 선택하세요",
+      "availableBoxes": "검사 가능 박스",
+      "selectedInfo": "선택 박스 {{boxCount}}개, 총수량 {{totalQty}}",
+      "linkedBoxes": "연결된 박스 목록",
+      "boxNo": "박스번호",
+      "qty": "수량",
+      "sample": "샘플",
+      "isSample": "샘플여부",
+      "sampleYes": "샘플",
+      "remarkPlaceholder": "비고 입력"
     }
   },
   "equipment": {
@@ -2254,7 +2679,7 @@
       "searchPlaceholder": "수주번호, 고객사 검색..."
     },
     "pack": {
-      "title": "포장관리",
+      "title": "제품포장관리",
       "subtitle": "제품 포장을 관리합니다.",
       "description": "제품 포장 및 박스를 관리합니다.",
       "createBox": "박스 생성",
@@ -2317,7 +2742,22 @@
       "driver": "운전자",
       "driverPlaceholder": "운전자명 입력",
       "destination": "도착지",
-      "destinationPlaceholder": "도착지 입력"
+      "destinationPlaceholder": "도착지 입력",
+      "allCustomers": "전체 고객사"
+    },
+    "scan": {
+      "title": "출하 스캔 검증",
+      "scanPlaceholder": "팔레트 바코드를 스캔하세요...",
+      "verify": "검증",
+      "verified": "검증완료",
+      "progress": "검증 진행",
+      "confirmShip": "출하 확정",
+      "alreadyVerified": "이미 검증된 팔레트입니다.",
+      "palletNotFound": "등록되지 않은 팔레트입니다.",
+      "wrongShipment": "이 출하에 속하지 않는 팔레트입니다.",
+      "verifyFailed": "검증에 실패했습니다.",
+      "confirmFailed": "출하 확정에 실패했습니다.",
+      "noPallets": "이 출하에 할당된 팔레트가 없습니다."
     }
   },
   "customs": {
@@ -2704,6 +3144,7 @@
     "VENDOR_TYPE": { "SUBCON": "외주사", "SUPPLIER": "공급사" },
     "WAREHOUSE_TYPE_DTO": { "RAW": "원자재", "WIP": "반제품", "FG": "완제품", "FLOOR": "현장", "DEFECT": "불량", "SCRAP": "폐기", "SUBCON": "외주" },
     "IQC_STATUS": { "PENDING": "대기", "PASS": "합격", "FAIL": "불합격", "HOLD": "보류" },
+    "OQC_STATUS": { "PENDING": "대기", "IN_PROGRESS": "검사중", "PASS": "합격", "FAIL": "불합격" },
     "MAT_LOT_STATUS": { "NORMAL": "정상", "HOLD": "보류", "DEPLETED": "소진" },
     "ISSUE_TYPE": { "PROD": "생산", "SUBCON": "외주", "SAMPLE": "샘플", "ADJ": "조정" },
     "TRANSACTION_TYPE": { "MAT_IN": "자재입고", "MAT_IN_CANCEL": "자재입고취소", "MAT_OUT": "자재출고", "MAT_OUT_CANCEL": "자재출고취소", "WIP_IN": "반제품입고", "WIP_IN_CANCEL": "반제품입고취소", "WIP_OUT": "반제품출고", "WIP_OUT_CANCEL": "반제품출고취소", "FG_IN": "완제품입고", "FG_IN_CANCEL": "완제품입고취소", "FG_OUT": "완제품출고", "FG_OUT_CANCEL": "완제품출고취소", "SUBCON_OUT": "외주출고", "SUBCON_OUT_CANCEL": "외주출고취소", "SUBCON_IN": "외주입고", "SUBCON_IN_CANCEL": "외주입고취소", "PROD_CONSUME": "생산소비", "PROD_CONSUME_CANCEL": "생산소비취소", "TRANSFER": "이동", "TRANSFER_CANCEL": "이동취소", "ADJ_PLUS": "조정(+)", "ADJ_MINUS": "조정(-)", "SCRAP": "폐기" },
@@ -2803,5 +3244,21 @@
     "INSPECT_CHECK_TYPE": "점검유형",
     "INSPECT_JUDGE": "점검판정",
     "JUDGE_YN": "합격여부"
+  },
+  "export": {
+    "title": "내보내기",
+    "formatLabel": "파일 형식 선택",
+    "excel": "Excel",
+    "pdf": "PDF",
+    "csv": "CSV",
+    "html": "HTML",
+    "markdown": "Markdown",
+    "txt": "텍스트"
+  },
+  "tabs": {
+    "close": "닫기",
+    "closeOthers": "다른 탭 닫기",
+    "closeAll": "모든 탭 닫기",
+    "pinnedTooltip": "고정 탭 (닫기 불가)"
   }
 }

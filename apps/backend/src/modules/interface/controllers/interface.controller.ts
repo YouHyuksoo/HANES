@@ -25,9 +25,8 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -55,9 +54,8 @@ export class InterfaceController {
   @Get('logs')
   @ApiOperation({ summary: '인터페이스 로그 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAllLogs(@Query() query: InterLogQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.interfaceService.findAllLogs(query, company);
+  async findAllLogs(@Query() query: InterLogQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.interfaceService.findAllLogs(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

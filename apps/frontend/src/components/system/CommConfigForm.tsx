@@ -64,6 +64,13 @@ const FLOW_CONTROL_OPTIONS = [
   { value: "RTSCTS", label: "RTS/CTS" },
 ];
 
+const LINE_ENDING_OPTIONS = [
+  { value: "NONE", label: "None" },
+  { value: "CR", label: "CR (\\r)" },
+  { value: "LF", label: "LF (\\n)" },
+  { value: "CRLF", label: "CR+LF (\\r\\n)" },
+];
+
 /** 통신 유형에 따른 extraConfig 키 설명 */
 const EXTRA_CONFIG_FIELDS: Record<string, { key: string; label: string; placeholder: string }[]> = {
   MQTT: [
@@ -194,7 +201,7 @@ export default function CommConfigForm({
               fullWidth
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Select
               label={t('system.commConfig.parity')}
               options={PARITY_OPTIONS}
@@ -207,6 +214,13 @@ export default function CommConfigForm({
               options={FLOW_CONTROL_OPTIONS}
               value={formData.flowControl}
               onChange={(v) => onChange("flowControl", v)}
+              fullWidth
+            />
+            <Select
+              label={t('system.commConfig.lineEnding')}
+              options={LINE_ENDING_OPTIONS}
+              value={formData.lineEnding}
+              onChange={(v) => onChange("lineEnding", v)}
               fullWidth
             />
           </div>

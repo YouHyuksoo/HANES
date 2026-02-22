@@ -20,7 +20,7 @@ export class WorkerService {
     private readonly workerRepository: Repository<WorkerMaster>,
   ) {}
 
-  async findAll(query: WorkerQueryDto, company?: string) {
+  async findAll(query: WorkerQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, dept, useYn } = query;
     const skip = (page - 1) * limit;
 
@@ -31,6 +31,9 @@ export class WorkerService {
 
     if (company) {
       queryBuilder.andWhere('worker.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('worker.plant = :plant', { plant });
     }
 
     if (dept) {

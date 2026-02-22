@@ -68,29 +68,30 @@ function IssueRequestPage() {
       {/* 필터 + 테이블 */}
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t('material.request.searchPlaceholder')}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
-            </div>
-            <div className="w-40">
-              <Select
-                options={statusOptions}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                fullWidth
-              />
-            </div>
-            <Button variant="secondary">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-          <RequestTable data={filteredRequests} />
+          <RequestTable
+            data={filteredRequests}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t('material.request.searchPlaceholder')}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <Select
+                    options={statusOptions}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    fullWidth
+                  />
+                </div>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
 

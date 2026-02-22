@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ShelfLifeService } from '../services/shelf-life.service';
 import { ShelfLifeQueryDto } from '../dto/shelf-life.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 유수명자재')
 @Controller('material/shelf-life')
@@ -16,8 +17,8 @@ export class ShelfLifeController {
 
   @Get()
   @ApiOperation({ summary: '유수명자재 목록 조회' })
-  async findAll(@Query() query: ShelfLifeQueryDto) {
-    const result = await this.shelfLifeService.findAll(query);
+  async findAll(@Query() query: ShelfLifeQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.shelfLifeService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 }

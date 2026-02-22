@@ -120,8 +120,8 @@ function LabelPage() {
   }, []);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
+    <div className="flex flex-col animate-fade-in h-[calc(100vh-var(--header-height)-var(--tab-bar-height)-48px)]">
+      <div className="shrink-0 mb-4">
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
           <Tag className="w-7 h-7 text-primary" />{t("master.label.title")}
         </h1>
@@ -129,7 +129,7 @@ function LabelPage() {
       </div>
 
       {/* 카테고리 탭 */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border shrink-0">
         {categories.map((cat) => (
           <button
             key={cat.key}
@@ -145,9 +145,9 @@ function LabelPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-6 min-h-0 flex-1 mt-4">
         {/* 좌측: 항목 선택 */}
-        <div className="col-span-4">
+        <div className="col-span-4 flex flex-col min-h-0">
           {category === "mat_lot" ? (
             <Card><CardContent>
               <div className="flex flex-col items-center justify-center h-48 text-text-muted">
@@ -162,14 +162,12 @@ function LabelPage() {
         </div>
 
         {/* 중앙: 디자인 설정 + 템플릿 관리 */}
-        <div className="col-span-4 space-y-4">
+        <div className="col-span-4 space-y-4 overflow-y-auto min-h-0">
           <Card><CardContent>
             <h3 className="text-sm font-semibold text-text flex items-center gap-2 mb-3">
               <Palette className="w-4 h-4 text-primary" />{t("master.label.designer")}
             </h3>
-            <div className="overflow-auto max-h-[400px]">
-              <LabelDesigner design={design} onChange={setDesign} />
-            </div>
+            <LabelDesigner design={design} onChange={setDesign} />
           </CardContent></Card>
 
           <Card><CardContent>
@@ -178,7 +176,7 @@ function LabelPage() {
         </div>
 
         {/* 우측: 미리보기 + 인쇄 */}
-        <div className="col-span-4 space-y-4">
+        <div className="col-span-4 space-y-4 overflow-y-auto min-h-0">
           <Card><CardContent>
             <h3 className="text-sm font-semibold text-text mb-3">{t("master.label.preview")}</h3>
             <div className="flex justify-center py-4">

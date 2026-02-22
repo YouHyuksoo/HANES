@@ -16,40 +16,71 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
-  getPaginationRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   flexRender,
   ColumnDef,
   SortingState,
   ColumnFiltersState,
   ColumnOrderState,
   ColumnSizingState,
+  ColumnPinningState,
+  PaginationState,
   Header,
   Cell,
+  Column,
 } from '@tanstack/react-table';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { flushSync } from 'react-dom';
-import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, GripVertical, X, Pin, PinOff } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import ExportDropdown from './ExportDropdown';
 
 // 컬럼 메타 타입 확장
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
     align?: 'left' | 'center' | 'right';
+    /** 컬럼 필터 타입: text(기본), select(드롭다운), none(필터 없음) */
+    filterType?: 'text' | 'select' | 'none';
+    /** select 필터용 옵션 목록 (미지정 시 데이터에서 자동 추출) */
+    filterOptions?: { value: string; label: string }[];
+    /** 필터 placeholder */
+    filterPlaceholder?: string;
   }
 }
+
+/** 페이지 크기 옵션 */
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 200, 500];
 
 export interface DataGridProps<T> {
   data: T[];
   columns: ColumnDef<T, unknown>[];
+  /** 페이지 당 표시 행 수 (기본: 50) */
   pageSize?: number;
-  showPagination?: boolean;
   isLoading?: boolean;
   emptyMessage?: string;
   onRowClick?: (row: T) => void;
   enableColumnResizing?: boolean;
   enableColumnReordering?: boolean;
   columnResizeMode?: 'onChange' | 'onEnd';
+  /** 컬럼별 필터 표시 여부 (기본: true) */
+  enableColumnFilter?: boolean;
+  /** DataGrid 최대 높이 — 초과 시 스크롤 (예: "calc(100vh - 300px)") */
+  maxHeight?: string;
+  /** 행 배경색 조건부 렌더링 */
+  rowClassName?: (row: T, index: number) => string;
+  /** 데이터 내보내기 드롭다운 표시 여부 (기본: false) */
+  enableExport?: boolean;
+  /** 내보내기 파일명 (확장자 제외, 기본: "export") */
+  exportFileName?: string;
+  /** 내보내기 시 제외할 컬럼 ID 목록 (기본: ['actions', 'select']) */
+  exportExcludeColumns?: string[];
+  /** 상단 툴바 왼쪽에 표시할 커스텀 콘텐츠 (검색, 필터 셀렉트 등) */
+  toolbarLeft?: React.ReactNode;
+  /** 컬럼 고정(틀 고정) 활성화 (기본: false) */
+  enableColumnPinning?: boolean;
+  /** 초기 고정 컬럼 설정 (예: { left: ['col1', 'col2'] }) */
+  defaultPinnedColumns?: { left?: string[]; right?: string[] };
 }
 
 // 날짜 패턴 감지 (YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD, DD-MM-YYYY 등)
@@ -103,23 +134,49 @@ function getAlignmentClass(align: 'left' | 'center' | 'right'): string {
 function DataGrid<T>({
   data,
   columns,
-  pageSize = 10,
-  showPagination = true,
+  pageSize: initialPageSize = 50,
   isLoading = false,
   emptyMessage = '데이터가 없습니다.',
   onRowClick,
   enableColumnResizing = true,
   enableColumnReordering = true,
   columnResizeMode = 'onChange',
+  enableColumnFilter = true,
+  maxHeight,
+  rowClassName,
+  enableExport = false,
+  exportFileName = "export",
+  exportExcludeColumns,
+  toolbarLeft,
+  enableColumnPinning = false,
+  defaultPinnedColumns,
 }: DataGridProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(
+    defaultPinnedColumns ?? {}
+  );
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: initialPageSize,
+  });
+
+  // 스크롤 컨테이너 ref
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // 드래그 앤 드롭 상태
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+
+  // 필터 행 표시 여부
+  const [showFilterRow, setShowFilterRow] = useState(false);
+
+  // 필터 변경 시 첫 페이지로 이동
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, pageIndex: 0 }));
+  }, [columnFilters]);
 
   const table = useReactTable({
     data,
@@ -129,23 +186,26 @@ function DataGrid<T>({
       columnFilters,
       columnOrder,
       columnSizing,
+      columnPinning,
+      pagination,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnOrderChange: setColumnOrder,
     onColumnSizingChange: setColumnSizing,
+    onColumnPinningChange: setColumnPinning,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
     enableColumnResizing,
     columnResizeMode,
-    initialState: {
-      pagination: {
-        pageSize,
-      },
-    },
+    enablePinning: enableColumnPinning,
   });
+
+  // 활성 필터 수
+  const activeFilterCount = columnFilters.length;
 
   // 컬럼 순서 초기화
   useEffect(() => {
@@ -324,44 +384,219 @@ function DataGrid<T>({
     );
   };
 
+  // 컬럼 필터 입력 컴포넌트
+  const ColumnFilter = ({ column, data: allData }: { column: Column<T, unknown>; data: T[] }) => {
+    const meta = column.columnDef.meta;
+    const filterType = meta?.filterType ?? 'text';
+
+    if (filterType === 'none' || column.id === 'actions' || column.id === 'select') return null;
+
+    const filterValue = (column.getFilterValue() as string) ?? '';
+
+    if (filterType === 'select') {
+      const options = meta?.filterOptions ?? (() => {
+        const vals = new Set<string>();
+        allData.forEach((row) => {
+          const v = (row as Record<string, unknown>)[column.id];
+          if (v != null && v !== '') vals.add(String(v));
+        });
+        return Array.from(vals).sort().map((v) => ({ value: v, label: v }));
+      })();
+
+      return (
+        <select
+          value={filterValue}
+          onChange={(e) => column.setFilterValue(e.target.value || undefined)}
+          className="w-full h-7 px-1 text-xs bg-surface border border-border rounded text-text focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">{meta?.filterPlaceholder ?? '전체'}</option>
+          {(Array.isArray(options) ? options : []).map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        type="text"
+        value={filterValue}
+        onChange={(e) => column.setFilterValue(e.target.value || undefined)}
+        placeholder={meta?.filterPlaceholder ?? '검색...'}
+        className="w-full h-7 px-2 text-xs bg-surface border border-border rounded text-text placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+      />
+    );
+  };
+
   return (
     <div className="w-full">
-      {/* Table Container */}
-      <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
+      {/* Toolbar — 좌: 커스텀 콘텐츠 / 우: 내보내기 + 필터 */}
+      {(toolbarLeft || enableExport || enableColumnFilter) && (
+        <div className="flex items-center justify-between gap-3 mb-1.5">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {toolbarLeft}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {enableExport && (
+              <ExportDropdown
+                data={activeFilterCount > 0
+                  ? table.getPrePaginationRowModel().rows.map((r) => r.original)
+                  : data}
+                columns={columns}
+                fileName={exportFileName}
+                excludeColumns={exportExcludeColumns}
+              />
+            )}
+            {enableColumnFilter && (
+              <>
+                {activeFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setColumnFilters([])}
+                    className="text-xs text-text-muted hover:text-error"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    필터 초기화
+                  </Button>
+                )}
+                <Button
+                  variant={showFilterRow ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowFilterRow((v) => !v)}
+                  className="text-xs"
+                >
+                  필터 {showFilterRow ? 'OFF' : 'ON'}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Table Container (with scroll handles) */}
+      <div className="relative group/scroll">
+        {/* 좌측 스크롤 핸들 */}
+        <div
+          className="absolute left-0 top-0 bottom-0 w-4 z-20 cursor-pointer opacity-0 group-hover/scroll:opacity-100 transition-opacity duration-200"
+          onMouseEnter={(e) => {
+            const container = scrollContainerRef.current;
+            if (!container || container.scrollLeft <= 0) return;
+            const id = setInterval(() => {
+              if (!container || container.scrollLeft <= 0) { clearInterval(id); return; }
+              container.scrollLeft -= 8;
+            }, 16);
+            (e.currentTarget as HTMLElement).dataset.scrollId = String(id);
+          }}
+          onMouseLeave={(e) => {
+            const id = (e.currentTarget as HTMLElement).dataset.scrollId;
+            if (id) clearInterval(Number(id));
+          }}
+        >
+          <div className="h-full w-full flex items-center justify-center bg-gradient-to-r from-black/15 dark:from-white/15 to-transparent rounded-l-[var(--radius)]">
+            <ChevronLeft className="w-3.5 h-3.5 text-text-muted" />
+          </div>
+        </div>
+
+        {/* 우측 스크롤 핸들 */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-4 z-20 cursor-pointer opacity-0 group-hover/scroll:opacity-100 transition-opacity duration-200"
+          onMouseEnter={(e) => {
+            const container = scrollContainerRef.current;
+            if (!container) return;
+            const maxScroll = container.scrollWidth - container.clientWidth;
+            if (container.scrollLeft >= maxScroll) return;
+            const id = setInterval(() => {
+              if (!container) return;
+              const max = container.scrollWidth - container.clientWidth;
+              if (container.scrollLeft >= max) { clearInterval(id); return; }
+              container.scrollLeft += 8;
+            }, 16);
+            (e.currentTarget as HTMLElement).dataset.scrollId = String(id);
+          }}
+          onMouseLeave={(e) => {
+            const id = (e.currentTarget as HTMLElement).dataset.scrollId;
+            if (id) clearInterval(Number(id));
+          }}
+        >
+          <div className="h-full w-full flex items-center justify-center bg-gradient-to-l from-black/15 dark:from-white/15 to-transparent rounded-r-[var(--radius)]">
+            <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
+          </div>
+        </div>
+
+        <div
+          ref={scrollContainerRef}
+          className="relative overflow-auto rounded-[var(--radius)] border border-border"
+          style={maxHeight ? { maxHeight } : undefined}
+        >
+          {/* 로딩 오버레이 */}
+          {isLoading && (
+            <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/60 dark:bg-background/70 backdrop-blur-[1px]">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative w-10 h-10">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+                  <div className="absolute inset-1.5 rounded-full border-2 border-transparent border-b-primary/60 animate-spin [animation-direction:reverse] [animation-duration:0.8s]" />
+                </div>
+                <span className="text-xs text-text-muted font-medium tracking-wide">데이터 조회 중...</span>
+              </div>
+            </div>
+          )}
         <table
-          className="font-data text-sm"
+          className="font-data text-xs"
           style={{
             minWidth: '100%',
             width: 'max-content',
           }}
         >
           {/* Header */}
-          <thead className="bg-background">
+          <thead className="bg-background sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const isDragging = draggedColumn === header.id;
                   const isDropTarget = dropTarget === header.id;
                   const headerAlign = getHeaderAlignment(header);
+                  const pinned = header.column.getIsPinned();
+                  const isLastLeftPinned = pinned === 'left' && header.column.getIsLastColumn('left');
+                  const isFirstRightPinned = pinned === 'right' && header.column.getIsFirstColumn('right');
+                  const canDrag = enableColumnReordering && !header.column.getIsResizing() && !pinned;
 
                   return (
                     <th
                       key={header.id}
                       className={`
-                        group/resize relative px-4 py-3 font-semibold text-text
+                        group/resize relative px-3 py-1.5 font-semibold text-text
                         border-b border-r border-border last:border-r-0
                         whitespace-nowrap
                         transition-all duration-150
                         ${getAlignmentClass(headerAlign)}
                         ${isDragging ? 'opacity-50 bg-primary/10' : ''}
                         ${isDropTarget ? 'bg-primary/20 border-l-2 border-l-primary' : ''}
+                        ${pinned ? 'bg-background dark:bg-background' : ''}
                       `}
                       style={{
                         width: columnSizing[header.id] ? header.getSize() : 'auto',
                         minWidth: header.column.columnDef.minSize ?? 50,
+                        ...(pinned === 'left' ? {
+                          position: 'sticky',
+                          left: header.column.getStart('left'),
+                          zIndex: 12,
+                        } : {}),
+                        ...(pinned === 'right' ? {
+                          position: 'sticky',
+                          right: header.column.getAfter('right'),
+                          zIndex: 12,
+                        } : {}),
+                        ...(isLastLeftPinned ? {
+                          boxShadow: '4px 0 8px -2px rgba(0,0,0,0.1)',
+                        } : {}),
+                        ...(isFirstRightPinned ? {
+                          boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.1)',
+                        } : {}),
                       }}
-                      draggable={enableColumnReordering && !header.column.getIsResizing()}
-                      onDragStart={(e) => handleDragStart(e, header.id)}
+                      draggable={canDrag}
+                      onDragStart={(e) => canDrag && handleDragStart(e, header.id)}
                       onDragOver={(e) => handleDragOver(e, header.id)}
                       onDragEnd={handleDragEnd}
                       onDrop={(e) => handleDrop(e, header.id)}
@@ -369,11 +604,27 @@ function DataGrid<T>({
                     >
                       {header.isPlaceholder ? null : (
                         <div className={`flex items-center gap-1 ${headerAlign === 'right' ? 'justify-end' : headerAlign === 'center' ? 'justify-center' : 'justify-start'}`}>
-                          {/* 드래그 핸들 */}
-                          {enableColumnReordering && (
+                          {/* 드래그 핸들 (고정 컬럼은 숨김) */}
+                          {enableColumnReordering && !pinned && (
                             <GripVertical
                               className="w-4 h-4 text-text-muted cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 flex-shrink-0"
                             />
+                          )}
+
+                          {/* 핀 고정/해제 버튼 */}
+                          {enableColumnPinning && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                header.column.pin(pinned ? false : 'left');
+                              }}
+                              className={`flex-shrink-0 p-0.5 rounded hover:bg-primary/10 transition-colors ${pinned ? 'text-primary' : 'text-text-muted opacity-0 group-hover/resize:opacity-50 hover:!opacity-100'}`}
+                              title={pinned ? '고정 해제' : '컬럼 고정'}
+                            >
+                              {pinned
+                                ? <PinOff className="w-3.5 h-3.5" />
+                                : <Pin className="w-3.5 h-3.5" />}
+                            </button>
                           )}
 
                           {/* 헤더 내용 */}
@@ -408,31 +659,56 @@ function DataGrid<T>({
                 })}
               </tr>
             ))}
+
+            {/* 컬럼 필터 행 */}
+            {enableColumnFilter && showFilterRow && (
+              <tr className="bg-surface/80">
+                {table.getHeaderGroups()[0]?.headers.map((header) => {
+                  const pinned = header.column.getIsPinned();
+                  const isLastLeftPinned = pinned === 'left' && header.column.getIsLastColumn('left');
+                  const isFirstRightPinned = pinned === 'right' && header.column.getIsFirstColumn('right');
+
+                  return (
+                    <th
+                      key={`filter-${header.id}`}
+                      className={`px-1 py-1 border-b border-r border-border last:border-r-0 ${pinned ? 'bg-surface dark:bg-surface' : ''}`}
+                      style={{
+                        ...(pinned === 'left' ? {
+                          position: 'sticky',
+                          left: header.column.getStart('left'),
+                          zIndex: 12,
+                        } : {}),
+                        ...(pinned === 'right' ? {
+                          position: 'sticky',
+                          right: header.column.getAfter('right'),
+                          zIndex: 12,
+                        } : {}),
+                        ...(isLastLeftPinned ? {
+                          boxShadow: '4px 0 8px -2px rgba(0,0,0,0.1)',
+                        } : {}),
+                        ...(isFirstRightPinned ? {
+                          boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.1)',
+                        } : {}),
+                      }}
+                    >
+                      <ColumnFilter column={header.column} data={data} />
+                    </th>
+                  );
+                })}
+              </tr>
+            )}
           </thead>
 
           {/* Body */}
           <tbody>
-            {isLoading ? (
-              // 로딩 상태
-              <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center text-text-muted"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    로딩 중...
-                  </div>
-                </td>
-              </tr>
-            ) : table.getRowModel().rows.length === 0 ? (
+            {table.getRowModel().rows.length === 0 ? (
               // 빈 데이터
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-12 text-center text-text-muted"
+                  className="px-3 py-16 text-center text-text-muted"
                 >
-                  {emptyMessage}
+                  {isLoading ? '\u00A0' : emptyMessage}
                 </td>
               </tr>
             ) : (
@@ -447,18 +723,43 @@ function DataGrid<T>({
                     ${index % 2 === 0 ? 'bg-surface' : 'bg-background/50'}
                     ${onRowClick ? 'cursor-pointer' : ''}
                     hover:bg-primary/5
+                    ${rowClassName?.(row.original, index) ?? ''}
                   `}
                 >
                   {row.getVisibleCells().map((cell) => {
                     const cellAlign = getCellAlignment(cell);
+                    const pinned = cell.column.getIsPinned();
+                    const isLastLeftPinned = pinned === 'left' && cell.column.getIsLastColumn('left');
+                    const isFirstRightPinned = pinned === 'right' && cell.column.getIsFirstColumn('right');
+                    const pinnedBg = pinned
+                      ? (index % 2 === 0
+                        ? 'bg-surface dark:bg-surface'
+                        : 'bg-background dark:bg-background')
+                      : '';
 
                     return (
                       <td
                         key={cell.id}
-                        className={`px-4 py-3 text-text whitespace-nowrap ${getAlignmentClass(cellAlign)}`}
+                        className={`px-3 py-1 text-text whitespace-nowrap ${getAlignmentClass(cellAlign)} ${pinnedBg}`}
                         style={{
                           width: columnSizing[cell.column.id] ? cell.column.getSize() : 'auto',
                           minWidth: cell.column.columnDef.minSize ?? 50,
+                          ...(pinned === 'left' ? {
+                            position: 'sticky',
+                            left: cell.column.getStart('left'),
+                            zIndex: 11,
+                          } : {}),
+                          ...(pinned === 'right' ? {
+                            position: 'sticky',
+                            right: cell.column.getAfter('right'),
+                            zIndex: 11,
+                          } : {}),
+                          ...(isLastLeftPinned ? {
+                            boxShadow: '4px 0 8px -2px rgba(0,0,0,0.1)',
+                          } : {}),
+                          ...(isFirstRightPinned ? {
+                            boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.1)',
+                          } : {}),
                         }}
                       >
                         {flexRender(
@@ -473,42 +774,93 @@ function DataGrid<T>({
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
-      {/* Pagination */}
-      {showPagination && data.length > 0 && (
-        <div className="flex items-center justify-between mt-4">
+      {/* Footer — 건수 + 페이지네이션 + 페이지 크기 */}
+      {data.length > 0 && (
+        <div className="flex items-center justify-between mt-2 px-1">
+          {/* 좌: 건수 */}
           <div className="text-sm text-text-muted">
-            전체 {table.getFilteredRowModel().rows.length}건 중{' '}
-            {table.getState().pagination.pageIndex * pageSize + 1} -{' '}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * pageSize,
-              table.getFilteredRowModel().rows.length
-            )}
-            건 표시
+            {activeFilterCount > 0
+              ? `${table.getFilteredRowModel().rows.length} / ${data.length}건 (필터 적용)`
+              : `전체 ${data.length}건`}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+          {/* 중앙+우: 페이지네이션 + 페이지 크기 */}
+          <div className="flex items-center gap-4">
+            {/* 페이지네이션 */}
+            {table.getPageCount() > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="p-1 rounded hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text"
+                  title="이전 페이지"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {(() => {
+                  const currentPage = table.getState().pagination.pageIndex;
+                  const totalPages = table.getPageCount();
+                  const pages: (number | string)[] = [];
+
+                  if (totalPages <= 7) {
+                    for (let i = 0; i < totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(0);
+                    if (currentPage > 3) pages.push('...');
+                    const start = Math.max(1, currentPage - 1);
+                    const end = Math.min(totalPages - 2, currentPage + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (currentPage < totalPages - 4) pages.push('...');
+                    pages.push(totalPages - 1);
+                  }
+
+                  return pages.map((page, idx) =>
+                    page === '...' ? (
+                      <span key={`ellipsis-${idx}`} className="px-1 text-xs text-text-muted">…</span>
+                    ) : (
+                      <button
+                        key={page}
+                        onClick={() => table.setPageIndex(page as number)}
+                        className={`min-w-[28px] h-7 px-1.5 text-xs rounded font-medium transition-colors ${
+                          currentPage === page
+                            ? 'bg-primary text-white'
+                            : 'text-text-muted hover:bg-card-hover hover:text-text'
+                        }`}
+                      >
+                        {(page as number) + 1}
+                      </button>
+                    )
+                  );
+                })()}
+
+                <button
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="p-1 rounded hover:bg-card-hover disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text"
+                  title="다음 페이지"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* 페이지 크기 드롭다운 */}
+            <select
+              value={pagination.pageSize}
+              onChange={(e) => {
+                const newSize = Number(e.target.value);
+                setPagination({ pageIndex: 0, pageSize: newSize });
+              }}
+              className="h-7 px-2 text-xs bg-surface border border-border rounded text-text focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              이전
-            </Button>
-            <span className="text-sm text-text px-2">
-              {table.getState().pagination.pageIndex + 1} /{' '}
-              {table.getPageCount()}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              다음
-            </Button>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>{size}건</option>
+              ))}
+            </select>
           </div>
         </div>
       )}

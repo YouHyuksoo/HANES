@@ -2,112 +2,249 @@
 
 /**
  * @file src/app/(authenticated)/material/physical-inv/page.tsx
- * @description 재고실사 페이지 - 시스템 재고 vs 실제 재고 대사
+ * @description 재고실사 페이지 - 시스템 재고 vs 실제 재고 대사 + 반영
  *
  * 초보자 가이드:
- * 1. **실사**: 실제 재고를 세어 시스템 수량과 비교
- * 2. **반영**: 차이가 있으면 InvAdjLog에 기록하고 Stock 수량 업데이트
+ * 1. **실사 대상**: API에서 MatStock 목록 조회 (창고/검색 필터)
+ * 2. **실사수량 입력**: 각 행의 countedQty 칸에 실제 수량 입력
+ * 3. **반영**: 입력 완료 후 [실사반영] 버튼 → 차이분 InvAdjLog 기록 + Stock 업데이트
  */
 
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCircle } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
-import { createPartColumns } from '@/lib/table-utils';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCircle,
+} from "lucide-react";
+import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import { useWarehouseOptions } from "@/hooks/useMasterOptions";
+import api from "@/services/api";
 
-interface PhysicalInvItem {
+interface StockForCount {
   id: string;
-  warehouseName: string;
-  partCode: string;
-  partName: string;
-  lotNo: string;
-  systemQty: number;
+  warehouseCode: string;
+  partId: string;
+  partCode?: string;
+  partName?: string;
+  lotId?: string;
+  lotNo?: string;
+  qty: number;
+  unit?: string;
+  lastCountAt?: string;
+  /** 사용자 입력 실사수량 */
   countedQty: number | null;
-  diffQty: number | null;
-  unit: string;
-  lastCountDate: string | null;
 }
 
-const mockData: PhysicalInvItem[] = [
-  { id: '1', warehouseName: '자재창고A', partCode: 'WIRE-001', partName: 'AWG18 적색', lotNo: 'L20260201-A01', systemQty: 5000, countedQty: 4950, diffQty: -50, unit: 'M', lastCountDate: '2026-01-15' },
-  { id: '2', warehouseName: '자재창고A', partCode: 'CONN-001', partName: '커넥터 6핀', lotNo: 'L20260203-A01', systemQty: 2000, countedQty: 2000, diffQty: 0, unit: 'EA', lastCountDate: '2026-01-15' },
-  { id: '3', warehouseName: '자재창고B', partCode: 'TERM-001', partName: '단자 110형', lotNo: 'L20260201-B01', systemQty: 10000, countedQty: null, diffQty: null, unit: 'EA', lastCountDate: null },
-  { id: '4', warehouseName: '자재창고B', partCode: 'TERM-002', partName: '단자 250형', lotNo: 'L20260205-B01', systemQty: 8000, countedQty: 7800, diffQty: -200, unit: 'EA', lastCountDate: '2026-01-20' },
-  { id: '5', warehouseName: '부자재창고', partCode: 'TUBE-001', partName: '수축튜브 5mm', lotNo: 'L20260210-D01', systemQty: 100000, countedQty: 100500, diffQty: 500, unit: 'M', lastCountDate: '2026-02-01' },
-];
-
-function PhysicalInvPage() {
+export default function PhysicalInvPage() {
   const { t } = useTranslation();
-  const [searchText, setSearchText] = useState('');
-  const [warehouseFilter, setWarehouseFilter] = useState('');
+  const { options: warehouseOpts } = useWarehouseOptions();
 
-  const warehouseOptions = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: '자재창고A', label: t('material.physicalInv.warehouseA') },
-    { value: '자재창고B', label: t('material.physicalInv.warehouseB') },
-    { value: '부자재창고', label: t('material.physicalInv.subMaterialWarehouse') },
-  ], [t]);
+  const [data, setData] = useState<StockForCount[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [warehouseFilter, setWarehouseFilter] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const filteredData = useMemo(() => {
-    return mockData.filter(item => {
-      const matchWarehouse = !warehouseFilter || item.warehouseName === warehouseFilter;
-      const matchSearch = !searchText || item.partCode.toLowerCase().includes(searchText.toLowerCase()) || item.partName.toLowerCase().includes(searchText.toLowerCase());
-      return matchWarehouse && matchSearch;
-    });
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "5000" };
+      if (searchText) params.search = searchText;
+      if (warehouseFilter) params.warehouseId = warehouseFilter;
+      const res = await api.get("/material/physical-inv", { params });
+      const rows = (res.data?.data ?? []).map((s: any) => ({
+        ...s,
+        countedQty: null,
+      }));
+      setData(rows);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
   }, [searchText, warehouseFilter]);
 
-  const stats = useMemo(() => ({
-    total: mockData.length,
-    counted: mockData.filter(d => d.countedQty !== null).length,
-    mismatch: mockData.filter(d => d.diffQty !== null && d.diffQty !== 0).length,
-    matched: mockData.filter(d => d.diffQty === 0).length,
-  }), []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<PhysicalInvItem>[]>(() => [
-    { accessorKey: 'warehouseName', header: t('material.physicalInv.warehouse'), size: 100 },
-    ...createPartColumns<PhysicalInvItem>(t),
-    { accessorKey: 'lotNo', header: 'LOT No.', size: 150 },
-    { accessorKey: 'systemQty', header: t('material.physicalInv.systemQty'), size: 100, cell: ({ row }) => <span>{row.original.systemQty.toLocaleString()} {row.original.unit}</span> },
-    { accessorKey: 'countedQty', header: t('material.physicalInv.countedQty'), size: 100, cell: ({ getValue, row }) => {
-      const v = getValue() as number | null;
-      return v !== null ? <span className="font-medium">{v.toLocaleString()} {row.original.unit}</span> : <span className="text-text-muted">-</span>;
-    }},
-    { accessorKey: 'diffQty', header: t('material.physicalInv.diffQty'), size: 80, cell: ({ getValue }) => {
-      const v = getValue() as number | null;
-      if (v === null) return <span className="text-text-muted">-</span>;
-      if (v === 0) return <span className="text-green-600">0</span>;
-      return <span className={v > 0 ? 'text-blue-600 font-medium' : 'text-red-600 font-medium'}>{v > 0 ? '+' : ''}{v}</span>;
-    }},
-    { accessorKey: 'lastCountDate', header: t('material.physicalInv.lastCountDate'), size: 110, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
-  ], [t]);
+  const warehouseOptions = useMemo(() => [
+    { value: "", label: t("common.all") },
+    ...warehouseOpts,
+  ], [t, warehouseOpts]);
+
+  const updateCountedQty = useCallback((id: string, value: number | null) => {
+    setData(prev => prev.map(row =>
+      row.id === id ? { ...row, countedQty: value } : row
+    ));
+  }, []);
+
+  const countedItems = useMemo(() => data.filter(d => d.countedQty !== null), [data]);
+  const mismatchItems = useMemo(() =>
+    countedItems.filter(d => d.countedQty !== d.qty), [countedItems]);
+
+  const stats = useMemo(() => ({
+    total: data.length,
+    counted: countedItems.length,
+    mismatch: mismatchItems.length,
+    matched: countedItems.filter(d => d.countedQty === d.qty).length,
+  }), [data, countedItems, mismatchItems]);
+
+  const handleApply = useCallback(async () => {
+    if (countedItems.length === 0) return;
+    setSaving(true);
+    try {
+      await api.post("/material/physical-inv", {
+        items: countedItems.map(item => ({
+          stockId: item.id,
+          countedQty: item.countedQty!,
+          remark: "재고실사",
+        })),
+      });
+      setShowConfirm(false);
+      fetchData();
+    } catch (e) {
+      console.error("Apply failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  }, [countedItems, fetchData]);
+
+  const columns = useMemo<ColumnDef<StockForCount>[]>(() => [
+    {
+      accessorKey: "warehouseCode", header: t("material.physicalInv.warehouse"), size: 100,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "partName", header: t("common.partName"), size: 140,
+      meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "lotNo", header: "LOT No.", size: 150,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>,
+    },
+    {
+      accessorKey: "qty", header: t("material.physicalInv.systemQty"), size: 100,
+      cell: ({ row }) => <span>{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
+      meta: { align: "right" as const },
+    },
+    {
+      id: "countedQty", header: t("material.physicalInv.countedQty"), size: 120,
+      meta: { filterType: "none" as const },
+      cell: ({ row }) => (
+        <input
+          type="number"
+          className="w-full px-2 py-1 text-sm border border-border rounded bg-surface text-text text-right focus:outline-none focus:ring-1 focus:ring-primary"
+          value={row.original.countedQty ?? ""}
+          placeholder="-"
+          onChange={(e) => {
+            const v = e.target.value;
+            updateCountedQty(row.original.id, v === "" ? null : Number(v));
+          }}
+        />
+      ),
+    },
+    {
+      id: "diffQty", header: t("material.physicalInv.diffQty"), size: 90,
+      cell: ({ row }) => {
+        const { qty, countedQty } = row.original;
+        if (countedQty === null) return <span className="text-text-muted">-</span>;
+        const diff = countedQty - qty;
+        if (diff === 0) return <span className="text-green-600">0</span>;
+        const cls = diff > 0 ? "text-blue-600 font-medium" : "text-red-600 font-medium";
+        return <span className={cls}>{diff > 0 ? "+" : ""}{diff.toLocaleString()}</span>;
+      },
+      meta: { align: "right" as const },
+    },
+    {
+      accessorKey: "lastCountAt", header: t("material.physicalInv.lastCountDate"), size: 110,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v ? new Date(v).toLocaleDateString() : <span className="text-text-muted">-</span>;
+      },
+    },
+  ], [t, updateCountedQty]);
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardList className="w-7 h-7 text-primary" />{t('material.physicalInv.title')}</h1>
-          <p className="text-text-muted mt-1">{t('material.physicalInv.subtitle')}</p>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <ClipboardList className="w-7 h-7 text-primary" />
+            {t("material.physicalInv.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("material.physicalInv.subtitle")}</p>
         </div>
-        <Button size="sm"><CheckSquare className="w-4 h-4 mr-1" />{t('material.physicalInv.applyCount')}</Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => setShowConfirm(true)} disabled={countedItems.length === 0}>
+            <CheckSquare className="w-4 h-4 mr-1" />
+            {t("material.physicalInv.applyCount")} ({countedItems.length})
+          </Button>
+        </div>
       </div>
+
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t('material.physicalInv.stats.total')} value={stats.total} icon={ClipboardList} color="blue" />
-        <StatCard label={t('material.physicalInv.stats.counted')} value={stats.counted} icon={CheckSquare} color="purple" />
-        <StatCard label={t('material.physicalInv.stats.mismatch')} value={stats.mismatch} icon={AlertTriangle} color="red" />
-        <StatCard label={t('material.physicalInv.stats.matched')} value={stats.matched} icon={CheckCircle} color="green" />
+        <StatCard label={t("material.physicalInv.stats.total")} value={stats.total} icon={ClipboardList} color="blue" />
+        <StatCard label={t("material.physicalInv.stats.counted")} value={stats.counted} icon={CheckSquare} color="purple" />
+        <StatCard label={t("material.physicalInv.stats.mismatch")} value={stats.mismatch} icon={AlertTriangle} color="red" />
+        <StatCard label={t("material.physicalInv.stats.matched")} value={stats.matched} icon={CheckCircle} color="green" />
       </div>
+
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('material.physicalInv.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <div className="w-40"><Select options={warehouseOptions} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="실사현황"
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("material.physicalInv.searchPlaceholder")}
+                  value={searchText} onChange={e => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <div className="w-40 flex-shrink-0">
+                <Select options={warehouseOptions} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
+
+      {/* 실사반영 확인 모달 */}
+      <Modal isOpen={showConfirm} onClose={() => setShowConfirm(false)}
+        title={t("material.physicalInv.applyCount")} size="lg">
+        <div className="space-y-4">
+          <p className="text-text">{t("material.physicalInv.confirmMessage", { count: countedItems.length })}</p>
+          {mismatchItems.length > 0 && (
+            <div className="bg-surface-alt dark:bg-surface rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
+              {mismatchItems.map(item => (
+                <div key={item.id} className="flex justify-between text-sm border-b border-border pb-1">
+                  <span className="text-text">{item.partCode} — {item.partName}</span>
+                  <span className={
+                    (item.countedQty! - item.qty) > 0
+                      ? "text-blue-600 font-medium"
+                      : "text-red-600 font-medium"
+                  }>
+                    {item.qty} → {item.countedQty} ({(item.countedQty! - item.qty) > 0 ? "+" : ""}
+                    {item.countedQty! - item.qty})
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end gap-2 pt-6">
+          <Button variant="secondary" onClick={() => setShowConfirm(false)}>{t("common.cancel")}</Button>
+          <Button onClick={handleApply} disabled={saving}>
+            {saving ? t("common.saving") : t("material.physicalInv.applyCount")}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
-
-export default PhysicalInvPage;

@@ -24,6 +24,7 @@ export interface CommConfig {
   stopBits?: string;
   parity?: string;
   flowControl?: string;
+  lineEnding?: string;
   extraConfig?: Record<string, unknown>;
   useYn: string;
   createdAt: string;
@@ -43,6 +44,7 @@ export interface CommConfigFormData {
   stopBits: string;
   parity: string;
   flowControl: string;
+  lineEnding: string;
   extraConfig: Record<string, unknown>;
   useYn: string;
 }
@@ -60,6 +62,7 @@ export const INITIAL_FORM: CommConfigFormData = {
   stopBits: "1",
   parity: "NONE",
   flowControl: "NONE",
+  lineEnding: "NONE",
   extraConfig: {},
   useYn: "Y",
 };
@@ -133,6 +136,7 @@ export function useCommConfigData() {
       stopBits: config.stopBits || "1",
       parity: config.parity || "NONE",
       flowControl: config.flowControl || "NONE",
+      lineEnding: config.lineEnding || "NONE",
       extraConfig: (config.extraConfig as Record<string, unknown>) || {},
       useYn: config.useYn,
     });
@@ -170,6 +174,7 @@ export function useCommConfigData() {
       payload.stopBits = formData.stopBits || undefined;
       payload.parity = formData.parity || undefined;
       payload.flowControl = formData.flowControl || undefined;
+      payload.lineEnding = formData.lineEnding || "NONE";
     } else {
       payload.host = formData.host || undefined;
       payload.port = formData.port ? Number(formData.port) : undefined;

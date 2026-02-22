@@ -31,6 +31,9 @@ export class MatLot {
   @Column({ name: 'RECV_DATE', type: 'date', nullable: true })
   recvDate: Date | null;
 
+  @Column({ name: 'MANUFACTURE_DATE', type: 'date', nullable: true })
+  manufactureDate: Date | null;
+
   @Column({ name: 'EXPIRE_DATE', type: 'date', nullable: true })
   expireDate: Date | null;
 

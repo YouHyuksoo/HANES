@@ -6,7 +6,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull } from 'typeorm';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { Stock } from '../../../entities/stock.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
 import { CreateWarehouseDto, UpdateWarehouseDto } from '../dto/inventory.dto';
 
 @Injectable()
@@ -14,17 +14,19 @@ export class WarehouseService {
   constructor(
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(Stock)
-    private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(MatStock)
+    private readonly stockRepository: Repository<MatStock>,
     private readonly dataSource: DataSource,
   ) {}
 
   /**
    * 창고 목록 조회
    */
-  async findAll(warehouseType?: string) {
+  async findAll(warehouseType?: string, company?: string, plant?: string) {
     const where: any = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (warehouseType) {
@@ -133,7 +135,7 @@ export class WarehouseService {
 
     // 해당 창고에 재고가 있는지 확인
     const stockCount = await this.stockRepository.count({
-      where: { warehouseId: id },
+      where: { warehouseCode: warehouse.warehouseCode },
     });
 
     if (stockCount > 0) {

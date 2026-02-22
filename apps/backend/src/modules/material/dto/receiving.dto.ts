@@ -30,6 +30,11 @@ export class ReceiveItemDto {
   @IsString()
   warehouseId: string;
 
+  @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD) - 수정 시 유효기한 재계산' })
+  @IsOptional()
+  @IsDateString()
+  manufactureDate?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()
@@ -60,13 +65,13 @@ export class ReceivingQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '검색어' })
   @IsOptional()

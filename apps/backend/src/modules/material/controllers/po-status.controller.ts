@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PoStatusService } from '../services/po-status.service';
 import { PoStatusQueryDto } from '../dto/po-status.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - PO현황')
 @Controller('material/po-status')
@@ -16,8 +17,8 @@ export class PoStatusController {
 
   @Get()
   @ApiOperation({ summary: 'PO 현황 목록 조회' })
-  async findAll(@Query() query: PoStatusQueryDto) {
-    const result = await this.poStatusService.findAll(query);
+  async findAll(@Query() query: PoStatusQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.poStatusService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 }

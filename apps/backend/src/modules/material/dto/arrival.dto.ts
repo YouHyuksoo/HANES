@@ -40,6 +40,11 @@ export class ArrivalItemDto {
   @MaxLength(50)
   lotNo?: string;
 
+  @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  manufactureDate?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()
@@ -92,6 +97,11 @@ export class CreateManualArrivalDto {
   @MaxLength(50)
   lotNo?: string;
 
+  @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  manufactureDate?: string;
+
   @ApiPropertyOptional({ description: '공급업체' })
   @IsOptional()
   @IsString()
@@ -119,13 +129,13 @@ export class ArrivalQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '검색어 (transNo, 품목코드, PO번호)' })
   @IsOptional()

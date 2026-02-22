@@ -14,8 +14,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, In, Between, DataSource } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
-import { Lot } from '../../../entities/lot.entity';
-import { Stock } from '../../../entities/stock.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -33,10 +33,10 @@ export class ArrivalService {
     private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
     @InjectRepository(PurchaseOrderItem)
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
-    @InjectRepository(Lot)
-    private readonly lotRepository: Repository<Lot>,
-    @InjectRepository(Stock)
-    private readonly stockRepository: Repository<Stock>,
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(MatStock)
+    private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(PartMaster)
@@ -47,12 +47,16 @@ export class ArrivalService {
   ) {}
 
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
-  async findReceivablePOs() {
+  async findReceivablePOs(company?: string, plant?: string) {
+    const where: any = {
+      status: In(['CONFIRMED', 'PARTIAL']),
+      deletedAt: IsNull(),
+    };
+    if (company) where.company = company;
+    if (plant) where.plant = plant;
+
     const pos = await this.purchaseOrderRepository.find({
-      where: {
-        status: In(['CONFIRMED', 'PARTIAL']),
-        deletedAt: IsNull(),
-      },
+      where,
       order: { orderDate: 'DESC' },
     });
 
@@ -63,7 +67,9 @@ export class ArrivalService {
     });
 
     const partIds = items.map((item) => item.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     // PO별 아이템 그룹화
@@ -108,7 +114,9 @@ export class ArrivalService {
     });
 
     const partIds = items.map((item: PurchaseOrderItem) => item.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p: PartMaster) => [p.id, p]));
 
     return {
@@ -162,14 +170,23 @@ export class ArrivalService {
         const transNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
         const lotNo = item.lotNo || `L${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
-        // 1. LOT 생성
-        const lot = queryRunner.manager.create(Lot, {
+        // 1. LOT 생성 (제조일자 + 유효기한 자동 계산)
+        const part = await this.partMasterRepository.findOne({ where: { id: item.partId } });
+        const mfgDate = item.manufactureDate ? new Date(item.manufactureDate) : null;
+        let expDate: Date | null = null;
+        if (mfgDate && part?.expiryDate && part.expiryDate > 0) {
+          expDate = new Date(mfgDate);
+          expDate.setDate(expDate.getDate() + part.expiryDate);
+        }
+
+        const lot = queryRunner.manager.create(MatLot, {
           lotNo,
           partId: item.partId,
-          partType: 'RAW',
           initQty: item.receivedQty,
           currentQty: item.receivedQty,
           recvDate: new Date(),
+          manufactureDate: mfgDate,
+          expireDate: expDate,
           poNo: po.poNo,
           vendor: po.partnerName,
         });
@@ -201,11 +218,8 @@ export class ArrivalService {
           });
         }
 
-        // part, lot, warehouse 정보 조회
-        const [part, warehouse] = await Promise.all([
-          this.partMasterRepository.findOne({ where: { id: item.partId } }),
-          this.warehouseRepository.findOne({ where: { id: item.warehouseId } }),
-        ]);
+        // part, warehouse 정보 조회 (part는 이미 위에서 조회)
+        const warehouse = await this.warehouseRepository.findOne({ where: { id: item.warehouseId } });
 
         results.push({
           ...savedTx,
@@ -242,14 +256,23 @@ export class ArrivalService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. LOT 생성
-      const lot = queryRunner.manager.create(Lot, {
+      // 1. LOT 생성 (제조일자 + 유효기한 자동 계산)
+      const part = await this.partMasterRepository.findOne({ where: { id: dto.partId } });
+      const mfgDate = dto.manufactureDate ? new Date(dto.manufactureDate) : null;
+      let expDate: Date | null = null;
+      if (mfgDate && part?.expiryDate && part.expiryDate > 0) {
+        expDate = new Date(mfgDate);
+        expDate.setDate(expDate.getDate() + part.expiryDate);
+      }
+
+      const lot = queryRunner.manager.create(MatLot, {
         lotNo,
         partId: dto.partId,
-        partType: 'RAW',
         initQty: dto.qty,
         currentQty: dto.qty,
         recvDate: new Date(),
+        manufactureDate: mfgDate,
+        expireDate: expDate,
         vendor: dto.vendor,
       });
       const savedLot = await queryRunner.manager.save(lot);
@@ -271,11 +294,8 @@ export class ArrivalService {
       // 3. Stock upsert
       await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.partId, savedLot.id, dto.qty);
 
-      // part, warehouse 정보 조회
-      const [part, warehouse] = await Promise.all([
-        this.partMasterRepository.findOne({ where: { id: dto.partId } }),
-        this.warehouseRepository.findOne({ where: { id: dto.warehouseId } }),
-      ]);
+      // warehouse 정보 조회 (part는 이미 위에서 조회)
+      const warehouse = await this.warehouseRepository.findOne({ where: { id: dto.warehouseId } });
 
       await queryRunner.commitTransaction();
 
@@ -298,12 +318,15 @@ export class ArrivalService {
   }
 
   /** 입하 이력 조회 (MAT_IN + MAT_IN_CANCEL) */
-  async findAll(query: ArrivalQueryDto) {
+  async findAll(query: ArrivalQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate, status } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.stockTransactionRepository.createQueryBuilder('tx')
       .where('tx.transType IN (:...transTypes)', { transTypes: ['MAT_IN', 'MAT_IN_CANCEL'] });
+
+    if (company) queryBuilder.andWhere('tx.company = :company', { company });
+    if (plant) queryBuilder.andWhere('tx.plant = :plant', { plant });
 
     if (status) {
       queryBuilder.andWhere('tx.status = :status', { status });
@@ -342,9 +365,9 @@ export class ArrivalService {
     const warehouseIds = data.map((item) => item.toWarehouseId).filter(Boolean) as string[];
 
     const [parts, lots, warehouses] = await Promise.all([
-      this.partMasterRepository.findByIds(partIds),
-      lotIds.length > 0 ? this.lotRepository.findByIds(lotIds) : Promise.resolve([]),
-      warehouseIds.length > 0 ? this.warehouseRepository.findByIds(warehouseIds) : Promise.resolve([]),
+      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
+      warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { id: In(warehouseIds) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.id, p]));
@@ -415,10 +438,10 @@ export class ArrivalService {
 
       // 4. LOT.currentQty 감소
       if (original.lotId) {
-        const lot = await queryRunner.manager.findOne(Lot, { where: { id: original.lotId } });
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { id: original.lotId } });
         if (lot) {
           const newQty = Math.max(0, lot.currentQty - original.qty);
-          await queryRunner.manager.update(Lot, lot.id, {
+          await queryRunner.manager.update(MatLot, lot.id, {
             currentQty: newQty,
             status: newQty === 0 ? 'DEPLETED' : lot.status,
           });
@@ -439,7 +462,7 @@ export class ArrivalService {
       // part, lot, warehouse 정보 조회
       const [part, lot, toWarehouse] = await Promise.all([
         this.partMasterRepository.findOne({ where: { id: original.partId } }),
-        original.lotId ? this.lotRepository.findOne({ where: { id: original.lotId } }) : null,
+        original.lotId ? this.matLotRepository.findOne({ where: { id: original.lotId } }) : null,
         original.toWarehouseId ? this.warehouseRepository.findOne({ where: { id: original.toWarehouseId } }) : null,
       ]);
 
@@ -464,7 +487,7 @@ export class ArrivalService {
   }
 
   /** 오늘 입하 통계 */
-  async getStats() {
+  async getStats(company?: string, plant?: string) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
@@ -522,27 +545,25 @@ export class ArrivalService {
     await manager.update(PurchaseOrder, poId, { status: newStatus });
   }
 
-  /** Stock upsert (현재고 증감) */
-  private async upsertStock(manager: any, warehouseId: string, partId: string, lotId: string | null, qtyDelta: number) {
-    const existing = await manager.findOne(Stock, {
-      where: { warehouseId, partId, lotId: lotId || null },
+  /** MatStock upsert (현재고 증감) */
+  private async upsertStock(manager: any, warehouseCode: string, partId: string, lotId: string | null, qtyDelta: number) {
+    const existing = await manager.findOne(MatStock, {
+      where: { warehouseCode, partId, lotId: lotId || null },
     });
 
     if (existing) {
       const newQty = Math.max(0, existing.qty + qtyDelta);
-      await manager.update(Stock, existing.id, {
+      await manager.update(MatStock, existing.id, {
         qty: newQty,
         availableQty: Math.max(0, newQty - existing.reservedQty),
-        lastTransAt: new Date(),
       });
     } else if (qtyDelta > 0) {
-      const newStock = manager.create(Stock, {
-        warehouseId,
+      const newStock = manager.create(MatStock, {
+        warehouseCode,
         partId,
         lotId,
         qty: qtyDelta,
         availableQty: qtyDelta,
-        lastTransAt: new Date(),
       });
       await manager.save(newStock);
     }

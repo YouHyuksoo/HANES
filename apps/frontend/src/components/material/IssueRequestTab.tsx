@@ -169,34 +169,37 @@ export default function IssueRequestTab() {
       {/* 필터 + 테이블 */}
       <Card>
         <CardContent>
-          <div className="flex flex-wrap gap-4 mb-4">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t('material.request.searchPlaceholder')}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
-            </div>
-            <div className="w-40">
-              <Select
-                options={statusOptions}
-                value={statusFilter}
-                onChange={setStatusFilter}
-                fullWidth
-              />
-            </div>
-            <Button variant="secondary" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
           <DataGrid
             data={records}
             columns={columns}
-            pageSize={10}
             isLoading={isLoading}
+            enableExport
+            exportFileName={t('material.request.title')}
             emptyMessage={t('common.noData')}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t('material.request.searchPlaceholder')}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <Select
+                    options={statusOptions}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    fullWidth
+                  />
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => refetch()} className="flex-shrink-0">
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </div>
+            }
           />
         </CardContent>
       </Card>

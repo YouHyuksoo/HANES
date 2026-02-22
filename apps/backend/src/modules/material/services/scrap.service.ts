@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Between } from 'typeorm';
+import { Repository, DataSource, IsNull, Between, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -25,12 +25,14 @@ export class ScrapService {
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly dataSource: DataSource,
   ) {}
-  async findAll(query: ScrapQueryDto) {
+  async findAll(query: ScrapQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       transType: 'SCRAP',
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (fromDate && toDate) {
@@ -52,8 +54,8 @@ export class ScrapService {
     const lotIds = data.map((t) => t.lotId).filter(Boolean) as string[];
 
     const [parts, lots] = await Promise.all([
-      this.partMasterRepository.findByIds(partIds),
-      lotIds.length > 0 ? this.matLotRepository.findByIds(lotIds) : Promise.resolve([]),
+      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.id, p]));

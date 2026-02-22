@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Like } from 'typeorm';
+import { Repository, DataSource, IsNull, Like, In, Not, MoreThan } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -26,15 +26,17 @@ export class LotSplitService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findSplittableLots(query: LotSplitQueryDto) {
+  async findSplittableLots(query: LotSplitQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
     // 분할 가능한 LOT: 재고가 있고, DEPLETED 상태가 아닌 LOT
     const where: any = {
       deletedAt: IsNull(),
-      currentQty: { $gt: 1 } as any, // 1개 이상 재고가 있는 LOT
-      status: { $ne: 'DEPLETED' } as any,
+      currentQty: MoreThan(1),
+      status: Not('DEPLETED'),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (search) {
@@ -53,14 +55,16 @@ export class LotSplitService {
 
     // part 정보 조회 및 중첩 객체 평면화
     const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     // 재고 정보 조회
     const lotIds = data.map((lot) => lot.id);
-    const stocks = await this.matStockRepository.find({
-      where: { lotId: { $in: lotIds } as any },
-    });
+    const stocks = lotIds.length > 0
+      ? await this.matStockRepository.find({ where: { lotId: In(lotIds) } })
+      : [];
     const stockMap = new Map(stocks.map((s) => [s.lotId, s]));
 
     const flattenedData = data.map((lot) => {

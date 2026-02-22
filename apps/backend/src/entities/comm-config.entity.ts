@@ -47,6 +47,9 @@ export class CommConfig {
   @Column({ name: 'FLOW_CONTROL', length: 20, nullable: true })
   flowControl: string | null;
 
+  @Column({ name: 'LINE_ENDING', length: 10, nullable: true, default: 'NONE' })
+  lineEnding: string | null;
+
   @Column({ name: 'EXTRA_CONFIG', type: 'clob', nullable: true })
   extraConfig: string | null;
 

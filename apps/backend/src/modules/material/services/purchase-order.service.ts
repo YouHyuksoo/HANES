@@ -28,13 +28,15 @@ export class PurchaseOrderService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async findAll(query: PurchaseOrderQueryDto) {
+  async findAll(query: PurchaseOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       deletedAt: IsNull(),
       ...(status && { status }),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (search) {
@@ -53,7 +55,7 @@ export class PurchaseOrderService {
         take: limit,
         order: { createdAt: 'DESC' },
       }),
-      this.purchaseOrderRepository.count({ where: { deletedAt: IsNull(), ...(status && { status }) } }),
+      this.purchaseOrderRepository.count({ where: { deletedAt: IsNull(), ...(status && { status }), ...(company && { company }), ...(plant && { plant }) } }),
     ]);
 
     // 품목 정보 조회 및 평면화
@@ -63,7 +65,7 @@ export class PurchaseOrderService {
       : [];
 
     const partIds = items.map((item) => item.partId).filter(Boolean);
-    const parts = partIds.length > 0 ? await this.partMasterRepository.findByIds(partIds) : [];
+    const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     // PO별 아이템 그룹화
@@ -127,7 +129,7 @@ export class PurchaseOrderService {
     });
 
     const partIds = items.map((item) => item.partId).filter(Boolean);
-    const parts = partIds.length > 0 ? await this.partMasterRepository.findByIds(partIds) : [];
+    const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     return {
@@ -185,7 +187,7 @@ export class PurchaseOrderService {
 
       // part 정보 조회
       const partIds = savedItems.map((item: PurchaseOrderItem) => item.partId).filter(Boolean);
-      const parts = partIds.length > 0 ? await this.partMasterRepository.findByIds(partIds) : [];
+      const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
       const partMap = new Map(parts.map((p) => [p.id, p]));
 
       await queryRunner.commitTransaction();

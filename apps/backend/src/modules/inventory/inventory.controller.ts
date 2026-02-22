@@ -12,6 +12,7 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
+import { Company, Plant } from '../../common/decorators/tenant.decorator';
 import { InventoryService } from './services/inventory.service';
 import { WarehouseService } from './services/warehouse.service';
 import {
@@ -41,8 +42,8 @@ export class InventoryController {
    * 창고 목록 조회
    */
   @Get('warehouses')
-  async getWarehouses(@Query('warehouseType') warehouseType?: string) {
-    return this.warehouseService.findAll(warehouseType);
+  async getWarehouses(@Query('warehouseType') warehouseType?: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.warehouseService.findAll(warehouseType, company, plant);
   }
 
   /**
@@ -128,8 +129,8 @@ export class InventoryController {
    * 현재고 조회
    */
   @Get('stocks')
-  async getStocks(@Query() query: StockQueryDto) {
-    return this.inventoryService.getStock(query);
+  async getStocks(@Query() query: StockQueryDto, @Company() company?: string, @Plant() plant?: string) {
+    return this.inventoryService.getStock(query, company, plant);
   }
 
   /**
@@ -173,8 +174,8 @@ export class InventoryController {
    * 수불 이력 조회
    */
   @Get('transactions')
-  async getTransactions(@Query() query: TransactionQueryDto) {
-    return this.inventoryService.getTransactions(query);
+  async getTransactions(@Query() query: TransactionQueryDto, @Company() company?: string, @Plant() plant?: string) {
+    return this.inventoryService.getTransactions(query, company, plant);
   }
 
   /**

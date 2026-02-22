@@ -9,7 +9,7 @@
  * 2. **상태 표시**: 대기/승인/출고완료/반려 상태 배지
  * 3. **품목수/총수량**: 요청에 포함된 품목 수와 전체 수량
  */
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
@@ -19,9 +19,11 @@ import type { IssueRequestStatus } from '@/components/material';
 
 interface RequestTableProps {
   data: IssueRequest[];
+  toolbarLeft?: ReactNode;
+  isLoading?: boolean;
 }
 
-export default function RequestTable({ data }: RequestTableProps) {
+export default function RequestTable({ data, toolbarLeft, isLoading }: RequestTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IssueRequest>[]>(() => [
     { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160 },
@@ -34,12 +36,12 @@ export default function RequestTable({ data }: RequestTableProps) {
     },
     {
       id: 'itemCount', header: t('material.col.itemCount'), size: 70,
-      cell: ({ row }) => <span>{row.original.items.length}{t('material.request.items')}</span>,
+      cell: ({ row }) => <span>{row.original.items?.length ?? 0}{t('material.request.items')}</span>,
     },
     {
       accessorKey: 'totalQty', header: t('common.totalQty'), size: 100,
       cell: ({ getValue }) => (
-        <span className="font-medium">{(getValue() as number).toLocaleString()}</span>
+        <span className="font-medium">{(getValue() as number ?? 0).toLocaleString()}</span>
       ),
     },
     {
@@ -51,5 +53,5 @@ export default function RequestTable({ data }: RequestTableProps) {
     { accessorKey: 'requester', header: t('material.col.requester'), size: 80 },
   ], [t]);
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="issue_request" toolbarLeft={toolbarLeft} />;
 }

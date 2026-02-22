@@ -26,6 +26,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CustomerOrderService } from '../services/customer-order.service';
 import {
@@ -43,8 +44,8 @@ export class CustomerOrderController {
   @Get()
   @ApiOperation({ summary: '고객발주 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: CustomerOrderQueryDto) {
-    const result = await this.customerOrderService.findAll(query);
+  async findAll(@Query() query: CustomerOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.customerOrderService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

@@ -22,10 +22,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between, ILike, Not } from 'typeorm';
+import { Repository, DataSource, IsNull, Between, ILike, Not } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
 import {
   CreateJobOrderDto,
   UpdateJobOrderDto,
@@ -46,15 +47,19 @@ export class JobOrderService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(ProdResult)
     private readonly prodResultRepository: Repository<ProdResult>,
+    @InjectRepository(BomMaster)
+    private readonly bomMasterRepository: Repository<BomMaster>,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
    * 작업지시 목록 조회
    */
-  async findAll(query: JobOrderQueryDto, company?: string) {
+  async findAll(query: JobOrderQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
-      limit = 10,
+      limit = 5000,
+      search,
       orderNo,
       partId,
       lineCode,
@@ -65,52 +70,33 @@ export class JobOrderService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: IsNull(),
-      ...(company && { company }),
-      ...(orderNo && { orderNo: ILike(`%${orderNo}%`) }),
-      ...(partId && { partId }),
-      ...(lineCode && { lineCode }),
-      ...(status && { status }),
-      ...(erpSyncYn && { erpSyncYn }),
-      ...(planDateFrom || planDateTo
-        ? {
-            planDate: Between(
-              planDateFrom ? new Date(planDateFrom) : new Date('1900-01-01'),
-              planDateTo ? new Date(planDateTo) : new Date('2099-12-31'),
-            ),
-          }
-        : {}),
-    };
+    const qb = this.jobOrderRepository
+      .createQueryBuilder('jo')
+      .leftJoinAndSelect('jo.part', 'part')
+      .where('jo.deletedAt IS NULL');
 
-    const [data, total] = await Promise.all([
-      this.jobOrderRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { priority: 'ASC', planDate: 'ASC', createdAt: 'DESC' },
-        relations: ['part'],
-        select: {
-          id: true,
-          orderNo: true,
-          partId: true,
-          lineCode: true,
-          planQty: true,
-          planDate: true,
-          priority: true,
-          status: true,
-          erpSyncYn: true,
-          goodQty: true,
-          defectQty: true,
-          startAt: true,
-          endAt: true,
-          remark: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      this.jobOrderRepository.count({ where }),
-    ]);
+    if (company) qb.andWhere('jo.company = :company', { company });
+    if (plant) qb.andWhere('jo.plant = :plant', { plant });
+    if (orderNo) qb.andWhere('LOWER(jo.orderNo) LIKE :orderNo', { orderNo: `%${orderNo.toLowerCase()}%` });
+    if (partId) qb.andWhere('jo.partId = :partId', { partId });
+    if (lineCode) qb.andWhere('jo.lineCode = :lineCode', { lineCode });
+    if (status) qb.andWhere('jo.status = :status', { status });
+    if (erpSyncYn) qb.andWhere('jo.erpSyncYn = :erpSyncYn', { erpSyncYn });
+    if (planDateFrom) qb.andWhere('jo.planDate >= :planDateFrom', { planDateFrom: new Date(planDateFrom) });
+    if (planDateTo) qb.andWhere('jo.planDate <= :planDateTo', { planDateTo: new Date(planDateTo) });
+    if (search) {
+      qb.andWhere(
+        '(LOWER(jo.orderNo) LIKE :search OR LOWER(part.partCode) LIKE :search OR LOWER(part.partName) LIKE :search)',
+        { search: `%${search.toLowerCase()}%` },
+      );
+    }
+
+    qb.orderBy('jo.priority', 'ASC')
+      .addOrderBy('jo.planDate', 'ASC')
+      .addOrderBy('jo.createdAt', 'DESC');
+
+    const total = await qb.getCount();
+    const data = await qb.skip(skip).take(limit).getMany();
 
     return { data, total, page, limit };
   }
@@ -180,6 +166,7 @@ export class JobOrderService {
     const jobOrder = this.jobOrderRepository.create({
       orderNo: dto.orderNo,
       partId: dto.partId,
+      parentId: dto.parentId || null,
       lineCode: dto.lineCode,
       planQty: dto.planQty,
       planDate: dto.planDate ? new Date(dto.planDate) : null,
@@ -191,24 +178,81 @@ export class JobOrderService {
 
     const saved = await this.jobOrderRepository.save(jobOrder);
 
+    // BOM 기반 반제품 작업지시 자동생성
+    if (dto.autoCreateChildren) {
+      await this.createChildOrders(saved, dto);
+    }
+
     return this.jobOrderRepository.findOne({
       where: { id: saved.id },
-      relations: ['part'],
-      select: {
-        id: true,
-        orderNo: true,
-        partId: true,
-        lineCode: true,
-        planQty: true,
-        planDate: true,
-        priority: true,
-        status: true,
-        erpSyncYn: true,
-        remark: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      relations: ['part', 'children', 'children.part'],
     });
+  }
+
+  /**
+   * BOM 기반 반제품 작업지시 자동생성
+   */
+  private async createChildOrders(parent: JobOrder, dto: CreateJobOrderDto) {
+    const bomItems = await this.bomMasterRepository.find({
+      where: { parentPartId: parent.partId, useYn: 'Y' },
+      order: { seq: 'ASC' },
+    });
+
+    if (bomItems.length === 0) return;
+
+    // WIP 타입인 BOM 아이템만 작업지시 생성 (RAW는 불출대상)
+    const wipParts = await this.partMasterRepository
+      .createQueryBuilder('p')
+      .where('p.id IN (:...ids)', { ids: bomItems.map(b => b.childPartId) })
+      .andWhere('p.partType = :type', { type: 'WIP' })
+      .andWhere('p.deletedAt IS NULL')
+      .getMany();
+
+    const wipPartIds = new Set(wipParts.map(p => p.id));
+
+    for (let i = 0; i < bomItems.length; i++) {
+      const bom = bomItems[i];
+      if (!wipPartIds.has(bom.childPartId)) continue;
+
+      const childOrderNo = `${parent.orderNo}-${String(i + 1).padStart(2, '0')}`;
+      const childQty = Math.ceil(parent.planQty * Number(bom.qtyPer));
+
+      const childOrder = this.jobOrderRepository.create({
+        orderNo: childOrderNo,
+        partId: bom.childPartId,
+        parentId: parent.id,
+        lineCode: dto.lineCode,
+        planQty: childQty,
+        planDate: dto.planDate ? new Date(dto.planDate) : null,
+        priority: dto.priority ?? 5,
+        remark: `[자동생성] ${parent.orderNo}의 반제품`,
+        status: 'WAITING',
+        erpSyncYn: 'N',
+      });
+
+      await this.jobOrderRepository.save(childOrder);
+    }
+  }
+
+  /**
+   * 작업지시 트리 조회 (완제품 기준 계층구조)
+   */
+  async findTree(parentId?: string) {
+    const where: any = { deletedAt: IsNull() };
+    if (parentId) {
+      where.id = parentId;
+    } else {
+      where.parentId = IsNull();
+    }
+
+    const roots = await this.jobOrderRepository.find({
+      where,
+      relations: ['part', 'children', 'children.part'],
+      order: { planDate: 'DESC', createdAt: 'DESC' },
+      take: 100,
+    });
+
+    return roots;
   }
 
   /**

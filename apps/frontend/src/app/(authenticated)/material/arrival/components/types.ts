@@ -81,6 +81,7 @@ export interface ArrivalItemInput {
   receivedQty: number;
   warehouseId: string;
   lotNo?: string;
+  manufactureDate?: string;
   remark?: string;
 }
 

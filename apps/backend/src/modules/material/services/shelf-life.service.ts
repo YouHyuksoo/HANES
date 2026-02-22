@@ -19,7 +19,7 @@ export class ShelfLifeService {
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
 
-  async findAll(query: ShelfLifeQueryDto) {
+  async findAll(query: ShelfLifeQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, expiryStatus, nearExpiryDays = 30 } = query;
     const skip = (page - 1) * limit;
 
@@ -27,6 +27,8 @@ export class ShelfLifeService {
       deletedAt: IsNull(),
       // 유효기한이 있는 LOT만 조회
       expireDate: Raw((alias) => `${alias} IS NOT NULL`),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     const [data, total] = await Promise.all([
@@ -41,7 +43,9 @@ export class ShelfLifeService {
 
     // part 정보 조회
     const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     const today = new Date();

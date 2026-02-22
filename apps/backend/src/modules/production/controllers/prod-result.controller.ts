@@ -33,9 +33,8 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -63,9 +62,8 @@ export class ProdResultController {
   @Get()
   @ApiOperation({ summary: '생산실적 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: ProdResultQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.prodResultService.findAll(query, company);
+  async findAll(@Query() query: ProdResultQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.prodResultService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -197,6 +195,21 @@ export class ProdResultController {
     @Query('dateTo') dateTo: string,
   ) {
     const data = await this.prodResultService.getDailySummary(dateFrom, dateTo);
+    return ResponseUtil.success(data);
+  }
+
+  @Get('summary/by-product')
+  @ApiOperation({ summary: '완제품별 실적 통합 조회', description: '품목별 계획/양품/불량/양품률 통합 집계' })
+  @ApiQuery({ name: 'dateFrom', required: false, description: '시작일 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'dateTo', required: false, description: '종료일 (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'search', required: false, description: '검색어 (품목코드/품목명)' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getSummaryByProduct(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('search') search?: string,
+  ) {
+    const data = await this.prodResultService.getSummaryByProduct(dateFrom, dateTo, search);
     return ResponseUtil.success(data);
   }
 }

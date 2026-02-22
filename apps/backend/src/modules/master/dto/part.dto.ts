@@ -126,6 +126,18 @@ export class CreatePartDto {
   @Min(0)
   expiryDate?: number;
 
+  @ApiPropertyOptional({ description: '포장단위', example: 'BOX' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  packUnit?: string;
+
+  @ApiPropertyOptional({ description: '적재 로케이션', example: 'A-01-02' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  storageLocation?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()
@@ -149,13 +161,13 @@ export class PartQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 20 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(500)
-  limit?: number = 20;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ enum: PART_TYPE_VALUES })
   @IsOptional()

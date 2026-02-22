@@ -34,6 +34,8 @@ import { ProdResultController } from './controllers/prod-result.controller';
 import { ProdResultService } from './services/prod-result.service';
 import { ProductionViewsController } from './controllers/production-views.controller';
 import { ProductionViewsService } from './services/production-views.service';
+import { SampleInspectController } from './controllers/sample-inspect.controller';
+import { SampleInspectService } from './services/sample-inspect.service';
 import { InventoryModule } from '../inventory/inventory.module';
 
 // Entities
@@ -44,27 +46,32 @@ import { EquipMaster } from '../../entities/equip-master.entity';
 import { User } from '../../entities/user.entity';
 import { InspectResult } from '../../entities/inspect-result.entity';
 import { BoxMaster } from '../../entities/box-master.entity';
-import { Stock } from '../../entities/stock.entity';
+import { MatStock } from '../../entities/mat-stock.entity';
+import { BomMaster } from '../../entities/bom-master.entity';
+import { SampleInspectResult } from '../../entities/sample-inspect-result.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, User, InspectResult, BoxMaster, Stock]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult]),
     InventoryModule,
   ],
   controllers: [
     JobOrderController,
     ProdResultController,
     ProductionViewsController,
+    SampleInspectController,
   ],
   providers: [
     JobOrderService,
     ProdResultService,
     ProductionViewsService,
+    SampleInspectService,
   ],
   exports: [
     JobOrderService,
     ProdResultService,
     ProductionViewsService,
+    SampleInspectService,
   ],
 })
 export class ProductionModule {}

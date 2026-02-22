@@ -34,9 +34,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
-import { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -53,6 +51,7 @@ import {
   UpdateErpSyncDto,
 } from '../dto/job-order.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('생산관리 - 작업지시')
 @Controller('production/job-orders')
@@ -64,10 +63,16 @@ export class JobOrderController {
   @Get()
   @ApiOperation({ summary: '작업지시 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: JobOrderQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.jobOrderService.findAll(query, company);
+  async findAll(@Query() query: JobOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.jobOrderService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Get('tree')
+  @ApiOperation({ summary: '작업지시 트리 조회 (완제품 기준 계층구조)' })
+  async findTree(@Query('parentId') parentId?: string) {
+    const data = await this.jobOrderService.findTree(parentId);
+    return ResponseUtil.success(data);
   }
 
   @Get('erp/unsynced')

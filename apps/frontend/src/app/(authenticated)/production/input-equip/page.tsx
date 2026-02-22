@@ -8,14 +8,16 @@
  * 1. **목적**: 검사장비를 이용한 검사 실적 입력
  * 2. **검사범위**: 설비별 검사 기준 범위(상한/하한) 표시
  * 3. **측정값**: 실제 측정값을 입력하여 자동 합격/불합격 판정
+ * 4. API: GET/POST /production/prod-results
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Save, Microscope, Gauge, CheckCircle, XCircle, Target } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
 import WorkOrderContext from '@/components/production/WorkOrderContext';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
+import api from '@/services/api';
 
 interface EquipInspect {
   id: string;
@@ -31,36 +33,64 @@ interface EquipInspect {
   inspector: string;
 }
 
-const mockData: EquipInspect[] = [
-  { id: '1', orderNo: 'JO-20250126-001', partName: '메인 하네스 A', equipName: 'TESTER-001', lotNo: 'LOT-20250126-001', measuredValue: 4.8, lowerLimit: 4.5, upperLimit: 5.5, passYn: 'Y', inspectDate: '2025-01-26', inspector: '검사원A' },
-  { id: '2', orderNo: 'JO-20250126-002', partName: '서브 하네스 B', equipName: 'TESTER-002', lotNo: 'LOT-20250126-002', measuredValue: 3.2, lowerLimit: 3.0, upperLimit: 4.0, passYn: 'Y', inspectDate: '2025-01-26', inspector: '검사원B' },
-  { id: '3', orderNo: 'JO-20250125-001', partName: '도어 하네스 C', equipName: 'TESTER-001', lotNo: 'LOT-20250125-001', measuredValue: 6.2, lowerLimit: 4.5, upperLimit: 5.5, passYn: 'N', inspectDate: '2025-01-25', inspector: '검사원A' },
-  { id: '4', orderNo: 'JO-20250125-002', partName: '엔진룸 하네스 D', equipName: 'TESTER-003', lotNo: 'LOT-20250125-002', measuredValue: 2.1, lowerLimit: 2.0, upperLimit: 3.0, passYn: 'Y', inspectDate: '2025-01-25', inspector: '검사원C' },
-];
-
-function InputEquipPage() {
+export default function InputEquipPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<EquipInspect[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ orderNo: '', equipId: '', lotNo: '', measuredValue: '', remark: '' });
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    if (!searchText) return true;
-    return item.orderNo.toLowerCase().includes(searchText.toLowerCase()) || item.equipName.toLowerCase().includes(searchText.toLowerCase());
-  }), [searchText]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '5000' };
+      if (searchText) params.search = searchText;
+      const res = await api.get('/production/prod-results', { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    total: mockData.length,
-    pass: mockData.filter(d => d.passYn === 'Y').length,
-    fail: mockData.filter(d => d.passYn === 'N').length,
-    passRate: mockData.length > 0 ? Math.round((mockData.filter(d => d.passYn === 'Y').length / mockData.length) * 100) : 0,
-  }), []);
+    total: data.length,
+    pass: data.filter(d => d.passYn === 'Y').length,
+    fail: data.filter(d => d.passYn === 'N').length,
+    passRate: data.length > 0 ? Math.round((data.filter(d => d.passYn === 'Y').length / data.length) * 100) : 0,
+  }), [data]);
+
+  const handleSave = useCallback(async () => {
+    if (!form.orderNo) return;
+    setSaving(true);
+    try {
+      await api.post('/production/prod-results', {
+        jobOrderId: form.orderNo,
+        equipId: form.equipId || undefined,
+        lotNo: form.lotNo || undefined,
+        measuredValue: Number(form.measuredValue) || undefined,
+        remark: form.remark || undefined,
+      });
+      setIsModalOpen(false);
+      setForm({ orderNo: '', equipId: '', lotNo: '', measuredValue: '', remark: '' });
+      fetchData();
+    } catch (e) {
+      console.error('Save failed:', e);
+    } finally {
+      setSaving(false);
+    }
+  }, [form, fetchData]);
 
   const columns = useMemo<ColumnDef<EquipInspect>[]>(() => [
-    { accessorKey: 'orderNo', header: t('production.inputEquip.orderNo'), size: 160 },
-    { accessorKey: 'partName', header: t('production.inputEquip.partName'), size: 140 },
+    { accessorKey: 'orderNo', header: t('production.inputEquip.orderNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('production.inputEquip.partName'), size: 140, meta: { filterType: 'text' as const } },
     { accessorKey: 'equipName', header: t('production.inputEquip.inspectEquip'), size: 110 },
-    { accessorKey: 'lotNo', header: t('production.inputEquip.lotNo'), size: 150 },
+    { accessorKey: 'lotNo', header: t('production.inputEquip.lotNo'), size: 150, meta: { filterType: 'text' as const } },
     {
       id: 'range', header: t('production.inputEquip.inspectRange'), size: 120,
       cell: ({ row }) => <span className="text-text-muted text-xs">{row.original.lowerLimit} ~ {row.original.upperLimit}</span>,
@@ -96,16 +126,6 @@ function InputEquipPage() {
         <Button size="sm" onClick={() => setIsModalOpen(true)}><Save className="w-4 h-4 mr-1" />{t('production.inputEquip.inputInspect')}</Button>
       </div>
 
-      {/* 검사범위 안내 */}
-      <Card><CardContent>
-        <div className="flex items-center gap-2 mb-2"><Gauge className="w-5 h-5 text-primary" /><span className="font-semibold text-text">{t('production.inputEquip.equipSetting')}</span></div>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div className="p-2 bg-background rounded"><span className="text-text-muted">TESTER-001</span><p className="text-text font-medium">{t('production.inputEquip.range')}: 4.5 ~ 5.5</p></div>
-          <div className="p-2 bg-background rounded"><span className="text-text-muted">TESTER-002</span><p className="text-text font-medium">{t('production.inputEquip.range')}: 3.0 ~ 4.0</p></div>
-          <div className="p-2 bg-background rounded"><span className="text-text-muted">TESTER-003</span><p className="text-text font-medium">{t('production.inputEquip.range')}: 2.0 ~ 3.0</p></div>
-        </div>
-      </CardContent></Card>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t('production.inputEquip.inspectCount')} value={stats.total} icon={Target} color="blue" />
         <StatCard label={t('production.inputEquip.pass')} value={stats.pass} icon={CheckCircle} color="green" />
@@ -114,14 +134,21 @@ function InputEquipPage() {
       </div>
 
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('production.inputEquip.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t('production.inputEquip.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t('production.inputEquip.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputEquip.modalTitle')} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputEquip.modalTitle')} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <WorkOrderContext selectedOrderNo={form.orderNo} onSelect={(v) => setForm((p) => ({ ...p, orderNo: v }))} processFilter={["INSP"]} />
@@ -132,12 +159,12 @@ function InputEquipPage() {
           <Input label={t('production.inputEquip.remark')} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={() => { console.log('검사장비 결과:', form); setIsModalOpen(false); }}><Save className="w-4 h-4 mr-1" />{t('common.save')}</Button>
+            <Button onClick={handleSave} disabled={saving || !form.orderNo}>
+              <Save className="w-4 h-4 mr-1" />{saving ? t('common.saving') : t('common.save')}
+            </Button>
           </div>
         </div>
       </Modal>
     </div>
   );
 }
-
-export default InputEquipPage;

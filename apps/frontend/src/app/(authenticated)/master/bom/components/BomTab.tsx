@@ -2,19 +2,20 @@
 
 /**
  * @file src/app/(authenticated)/master/bom/components/BomTab.tsx
- * @description BOM 레벨 트리뷰 탭 - DB API 연동 + 유효일자 필터
+ * @description BOM 레벨 트리뷰 탭 - DB API 연동 + CRUD
  *
  * 초보자 가이드:
  * 1. **API 호출**: GET /master/boms/hierarchy/:parentPartId 로 트리 데이터 조회
- * 2. **effectiveDate**: 적용일/완료일 기준 필터링 (validFrom <= date AND validTo >= date)
- * 3. **접기/펼치기**: 하위 자재가 있는 항목은 클릭으로 전개/접기 가능
+ * 2. **추가/수정**: BomFormModal 컴포넌트로 분리
+ * 3. **삭제**: ConfirmModal로 확인 후 DELETE /master/boms/:id
+ * 4. **라우팅 보기**: onViewRouting 콜백으로 partId 전달 → Routing 탭 전환
  */
 import { useState, useCallback, useEffect, Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, ChevronRight, ChevronDown, Package, Boxes, CircleDot } from "lucide-react";
-import { Button, Modal, Input } from "@/components/ui";
+import { Plus, ChevronRight, ChevronDown, Package, Boxes, CircleDot, Edit2, Trash2, GitBranch } from "lucide-react";
+import { Button, ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
-import RoutingLinkModal from "./RoutingLinkModal";
+import BomFormModal from "./BomFormModal";
 import { ParentPart, BomTreeItem, RoutingTarget } from "../types";
 
 const partTypeConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
@@ -28,22 +29,18 @@ const levelColors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-purple
 interface BomTabProps {
   selectedParent: ParentPart | null;
   onViewRouting?: (target: RoutingTarget) => void;
-  bomRoutingLinks?: Map<string, string>;
-  onLinkRouting?: (partCode: string, routingCode: string) => void;
-  onUnlinkRouting?: (partCode: string) => void;
   effectiveDate?: string;
 }
 
-export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks, onLinkRouting, onUnlinkRouting, effectiveDate }: BomTabProps) {
+export default function BomTab({ selectedParent, onViewRouting, effectiveDate }: BomTabProps) {
   const { t } = useTranslation();
   const [bomTree, setBomTree] = useState<BomTreeItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBom, setEditingBom] = useState<BomTreeItem | null>(null);
-  const [linkingItem, setLinkingItem] = useState<{ item: BomTreeItem; breadcrumb: string } | null>(null);
+  const [deletingBom, setDeletingBom] = useState<BomTreeItem | null>(null);
 
-  /** API에서 BOM 트리 조회 (유효일자 필터 포함) */
   const fetchBomTree = useCallback(async () => {
     if (!selectedParent) { setBomTree([]); return; }
     setLoading(true);
@@ -59,18 +56,12 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
   useEffect(() => { fetchBomTree(); }, [fetchBomTree]);
 
   const toggleExpand = useCallback((id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+    setExpanded((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   }, []);
 
   const expandAll = useCallback(() => {
     const allIds = new Set<string>();
-    const collect = (items: BomTreeItem[]) => {
-      items.forEach((item) => { if (item.children?.length) { allIds.add(item.id); collect(item.children); } });
-    };
+    const collect = (items: BomTreeItem[]) => { items.forEach((item) => { if (item.children?.length) { allIds.add(item.id); collect(item.children); } }); };
     collect(bomTree);
     setExpanded(allIds);
   }, [bomTree]);
@@ -80,6 +71,21 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
   const countItems = (items: BomTreeItem[]): number =>
     items.reduce((sum, item) => sum + 1 + (item.children ? countItems(item.children) : 0), 0);
 
+  const handleEdit = useCallback((item: BomTreeItem) => { setEditingBom(item); setIsModalOpen(true); }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (!deletingBom) return;
+    try {
+      await api.delete(`/master/boms/${deletingBom.id}`);
+      setDeletingBom(null);
+      fetchBomTree();
+    } catch { /* API 에러는 인터셉터에서 처리 */ }
+  }, [deletingBom, fetchBomTree]);
+
+  const handleViewRouting = useCallback((item: BomTreeItem, breadcrumb: string) => {
+    onViewRouting?.({ partId: item.childPartId || "", partCode: item.partCode, partName: item.partName, partType: item.partType, breadcrumb });
+  }, [onViewRouting]);
+
   if (!selectedParent) {
     return <div className="flex items-center justify-center h-64 text-text-muted">{t("master.bom.selectParentPrompt")}</div>;
   }
@@ -88,9 +94,7 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
-          <p className="text-sm text-text-muted">
-            {selectedParent.partName} ({countItems(bomTree)}{t("master.bom.materialsCount")})
-          </p>
+          <p className="text-sm text-text-muted">{selectedParent.partName} ({countItems(bomTree)}{t("master.bom.materialsCount")})</p>
           <div className="flex gap-1">
             <button onClick={expandAll} className="px-2 py-1 text-xs rounded bg-surface hover:bg-border text-text-muted transition-colors">
               {t("master.bom.expandAll", "전체 펼치기")}
@@ -106,7 +110,7 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
       </div>
 
       <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
-        <table className="font-data text-sm min-w-[1060px]">
+        <table className="font-data text-sm min-w-[1160px]">
           <thead className="bg-background">
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-text border-b border-r border-border w-10">Lv</th>
@@ -118,18 +122,18 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
               <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-20">{t("master.bom.revision")}</th>
               <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-16">{t("master.bom.side", "사이드")}</th>
               <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-28">{t("master.bom.validFrom")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-border w-28">{t("master.bom.validTo")}</th>
+              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-28">{t("master.bom.validTo")}</th>
+              <th className="px-4 py-3 text-center font-semibold text-text border-b border-border w-24">{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
+              <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
             ) : bomTree.length === 0 ? (
-              <tr><td colSpan={10} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
+              <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
             ) : (
               <BomTreeRows items={bomTree} expanded={expanded} onToggle={toggleExpand}
-                bomRoutingLinks={bomRoutingLinks} onUnlinkRouting={onUnlinkRouting}
-                onOpenLinkModal={(item, breadcrumb) => setLinkingItem({ item, breadcrumb })}
+                onEdit={handleEdit} onDelete={setDeletingBom} onViewRouting={handleViewRouting}
                 parentCode={selectedParent.partCode} t={t} />
             )}
           </tbody>
@@ -145,36 +149,21 @@ export default function BomTab({ selectedParent, onViewRouting, bomRoutingLinks,
         ))}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
-        title={editingBom ? t("master.bom.editBom") : t("master.bom.addBom")} size="md">
-        <div className="space-y-4">
-          <Input label={t("master.bom.parentPart")} value={selectedParent.partCode} disabled fullWidth />
-          <Input label={t("master.bom.childPartCode")} placeholder={t("master.bom.searchChildPlaceholder")} defaultValue={editingBom?.partCode} fullWidth />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t("master.bom.qtyPer")} type="number" step="0.01" placeholder="1.0" defaultValue={editingBom?.qtyPer?.toString()} fullWidth />
-            <Input label={t("master.bom.unitLabel")} placeholder="EA, M, KG" defaultValue={editingBom?.unit || "EA"} fullWidth />
-          </div>
-          <Input label={t("master.bom.revision")} placeholder="A" defaultValue={editingBom?.revision || "A"} fullWidth />
-        </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button>{editingBom ? t("common.edit") : t("common.add")}</Button>
-        </div>
-      </Modal>
+      <BomFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchBomTree}
+        editingItem={editingBom} parentPartId={selectedParent.id} parentPartCode={selectedParent.partCode} />
 
-      <RoutingLinkModal isOpen={!!linkingItem} onClose={() => setLinkingItem(null)}
-        item={linkingItem?.item || null}
-        onLink={(partCode, routingCode) => { onLinkRouting?.(partCode, routingCode); setLinkingItem(null); }} />
+      <ConfirmModal isOpen={!!deletingBom} onClose={() => setDeletingBom(null)} onConfirm={handleDelete}
+        title={t("common.delete")} message={t("master.bom.deleteConfirm")} variant="danger" />
     </>
   );
 }
 
 function BomTreeRows({
-  items, expanded, onToggle, bomRoutingLinks, onUnlinkRouting, onOpenLinkModal, parentCode, t, depth = 0, breadcrumb = "",
+  items, expanded, onToggle, onEdit, onDelete, onViewRouting, parentCode, t, depth = 0, breadcrumb = "",
 }: {
   items: BomTreeItem[]; expanded: Set<string>; onToggle: (id: string) => void;
-  bomRoutingLinks?: Map<string, string>; onUnlinkRouting?: (partCode: string) => void;
-  onOpenLinkModal?: (item: BomTreeItem, breadcrumb: string) => void;
+  onEdit: (item: BomTreeItem) => void; onDelete: (item: BomTreeItem) => void;
+  onViewRouting: (item: BomTreeItem, breadcrumb: string) => void;
   parentCode: string; t: any; depth?: number; breadcrumb?: string;
 }) {
   return (
@@ -220,13 +209,25 @@ function BomTreeRows({
               <td className="px-4 py-2.5 border-r border-border text-center text-text">{item.revision}</td>
               <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text-muted">{item.side || "-"}</td>
               <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text font-mono whitespace-nowrap">{validFrom}</td>
-              <td className="px-4 py-2.5 text-center text-xs text-text font-mono whitespace-nowrap">{validTo}</td>
+              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text font-mono whitespace-nowrap">{validTo}</td>
+              <td className="px-4 py-2.5 text-center">
+                <div className="flex justify-center gap-1">
+                  <button onClick={() => onViewRouting(item, itemBreadcrumb)} className="p-1 hover:bg-surface rounded" title="라우팅 보기">
+                    <GitBranch className="w-3.5 h-3.5 text-purple-500" />
+                  </button>
+                  <button onClick={() => onEdit(item)} className="p-1 hover:bg-surface rounded">
+                    <Edit2 className="w-3.5 h-3.5 text-primary" />
+                  </button>
+                  <button onClick={() => onDelete(item)} className="p-1 hover:bg-surface rounded">
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  </button>
+                </div>
+              </td>
             </tr>
             {hasChildren && isExpanded && (
               <BomTreeRows key={`${item.id}-children`} items={item.children!} expanded={expanded} onToggle={onToggle}
-                bomRoutingLinks={bomRoutingLinks} onUnlinkRouting={onUnlinkRouting}
-                onOpenLinkModal={onOpenLinkModal} parentCode={parentCode}
-                t={t} depth={depth + 1} breadcrumb={itemBreadcrumb} />
+                onEdit={onEdit} onDelete={onDelete} onViewRouting={onViewRouting}
+                parentCode={parentCode} t={t} depth={depth + 1} breadcrumb={itemBreadcrumb} />
             )}
           </Fragment>
         );
@@ -234,5 +235,3 @@ function BomTreeRows({
     </>
   );
 }
-
-

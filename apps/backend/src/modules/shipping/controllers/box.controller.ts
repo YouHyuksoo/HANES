@@ -33,9 +33,8 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -63,9 +62,8 @@ export class BoxController {
   @Get()
   @ApiOperation({ summary: '박스 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: BoxQueryDto, @Req() req: Request) {
-    const company = req.headers['x-company'] as string | undefined;
-    const result = await this.boxService.findAll(query, company);
+  async findAll(@Query() query: BoxQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.boxService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

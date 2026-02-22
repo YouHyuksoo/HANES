@@ -47,7 +47,7 @@ export class OutsourcingService {
   // 외주처 마스터
   // ============================================================================
 
-  async findAllVendors(query: VendorQueryDto) {
+  async findAllVendors(query: VendorQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, vendorType, search, useYn } = query;
     const skip = (page - 1) * limit;
 
@@ -55,6 +55,12 @@ export class OutsourcingService {
       .createQueryBuilder('vm')
       .where('vm.deletedAt IS NULL');
 
+    if (company) {
+      queryBuilder.andWhere('vm.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('vm.plant = :plant', { plant });
+    }
     if (vendorType) {
       queryBuilder.andWhere('vm.vendorType = :vendorType', { vendorType });
     }
@@ -131,7 +137,7 @@ export class OutsourcingService {
   // 외주발주
   // ============================================================================
 
-  async findAllOrders(query: SubconOrderQueryDto) {
+  async findAllOrders(query: SubconOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, vendorId, status, search, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
@@ -140,6 +146,12 @@ export class OutsourcingService {
       .leftJoinAndSelect(VendorMaster, 'vm', 'vm.ID = so.VENDOR_ID')
       .where('so.deletedAt IS NULL');
 
+    if (company) {
+      queryBuilder.andWhere('so.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('so.plant = :plant', { plant });
+    }
     if (vendorId) {
       queryBuilder.andWhere('so.vendorId = :vendorId', { vendorId });
     }

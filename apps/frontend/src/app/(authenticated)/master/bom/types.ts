@@ -1,11 +1,12 @@
 /**
  * @file src/app/(authenticated)/master/bom/types.ts
- * @description BOM/Routing 관련 타입 정의 - Oracle TM_BOM 기준 보강
+ * @description BOM/Routing 관련 타입 정의 - Oracle TM_BOM + PROCESS_MAPS 기준
  *
  * 초보자 가이드:
  * 1. **ParentPart**: BOM 모품목(부모품목) - API에서 조회
  * 2. **BomTreeItem**: BOM 계층 트리 아이템 - hierarchy API 응답
- * 3. **RoutingGroup/RoutingItem**: 라우팅 관련 (별도 관리)
+ * 3. **RoutingItem**: 품목별 공정순서 아이템 - partId 기반 조회
+ * 4. **RoutingTarget**: BOM에서 라우팅 탭으로 이동 시 대상 정보
  */
 
 export interface ParentPart {
@@ -14,6 +15,10 @@ export interface ParentPart {
   partName: string;
   partNo?: string;
   partType: string;
+  spec?: string;
+  unit?: string;
+  customer?: string;
+  remark?: string;
   bomCount: number;
 }
 
@@ -52,7 +57,7 @@ export interface BomTreeItem {
   children?: BomTreeItem[];
 }
 
-/** 라우팅 그룹 내 개별 공정 단계 */
+/** 품목별 공정순서 아이템 (GET /master/routings 응답) */
 export interface RoutingItem {
   id: string;
   seq: number;
@@ -62,22 +67,36 @@ export interface RoutingItem {
   equipType?: string;
   stdTime?: number;
   setupTime?: number;
-  useYn: string;
-}
-
-/** 라우팅 그룹 (공정들의 묶음) - BOM 아이템에 이 그룹을 연결 */
-export interface RoutingGroup {
-  id: string;
-  routingCode: string;
-  routingName: string;
-  steps: RoutingItem[];
+  wireLength?: number;
+  stripLength?: number;
+  crimpHeight?: number;
+  crimpWidth?: number;
+  weldCondition?: string;
+  processParams?: string;
   useYn: string;
 }
 
 /** BOM에서 라우팅 탭으로 연결할 때 사용하는 타겟 정보 */
 export interface RoutingTarget {
+  partId: string;
   partCode: string;
   partName: string;
   partType: string;
   breadcrumb?: string;
+}
+
+/** BOM CRUD 폼 데이터 */
+export interface BomFormData {
+  parentPartId: string;
+  childPartId: string;
+  qtyPer: number;
+  seq?: number;
+  revision?: string;
+  bomGrp?: string;
+  processCode?: string;
+  side?: string;
+  validFrom?: string;
+  validTo?: string;
+  remark?: string;
+  useYn?: string;
 }

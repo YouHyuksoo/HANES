@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LotSplitService } from '../services/lot-split.service';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - LOT분할')
 @Controller('material/lot-split')
@@ -16,8 +17,8 @@ export class LotSplitController {
 
   @Get()
   @ApiOperation({ summary: '분할 가능한 LOT 목록 조회' })
-  async findSplittable(@Query() query: LotSplitQueryDto) {
-    const result = await this.lotSplitService.findSplittableLots(query);
+  async findSplittable(@Query() query: LotSplitQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.lotSplitService.findSplittableLots(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

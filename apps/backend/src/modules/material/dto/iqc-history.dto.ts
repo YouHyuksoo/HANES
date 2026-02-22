@@ -3,9 +3,41 @@
  * @description IQC 이력 조회 전용 DTO
  */
 
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export class CreateIqcResultDto {
+  @ApiProperty({ description: 'LOT ID' })
+  @IsString()
+  lotId: string;
+
+  @ApiProperty({ description: '검사 결과', enum: ['PASS', 'FAIL'] })
+  @IsString()
+  @IsIn(['PASS', 'FAIL'])
+  result: string;
+
+  @ApiPropertyOptional({ description: '검사자' })
+  @IsOptional()
+  @IsString()
+  inspectorName?: string;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  remark?: string;
+
+  @ApiPropertyOptional({ description: '검사유형', enum: ['INITIAL', 'RETEST'], default: 'INITIAL' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['INITIAL', 'RETEST'])
+  inspectType?: string;
+
+  @ApiPropertyOptional({ description: '검사항목별 계측값 상세 (JSON)' })
+  @IsOptional()
+  @IsString()
+  details?: string;
+}
 
 export class IqcHistoryQueryDto {
   @ApiPropertyOptional({ default: 1 })
@@ -15,13 +47,13 @@ export class IqcHistoryQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 5000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 10;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional()
   @IsOptional()

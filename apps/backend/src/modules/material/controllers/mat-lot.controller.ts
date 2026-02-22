@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { MatLotService } from '../services/mat-lot.service';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - LOT')
 @Controller('material/lots')
@@ -16,8 +17,8 @@ export class MatLotController {
 
   @Get()
   @ApiOperation({ summary: 'LOT 목록 조회' })
-  async findAll(@Query() query: MatLotQueryDto) {
-    const result = await this.matLotService.findAll(query);
+  async findAll(@Query() query: MatLotQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.matLotService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

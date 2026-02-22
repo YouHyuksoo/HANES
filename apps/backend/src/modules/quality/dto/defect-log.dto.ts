@@ -118,13 +118,13 @@ export class DefectLogQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 20, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 5000, minimum: 1, maximum: 10000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  @Max(10000)
+  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '생산실적 ID로 필터링' })
   @IsOptional()

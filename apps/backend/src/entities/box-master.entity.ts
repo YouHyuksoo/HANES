@@ -36,6 +36,9 @@ export class BoxMaster {
   @Column({ name: 'STATUS', length: 50, default: 'OPEN' })
   status: string;
 
+  @Column({ name: 'OQC_STATUS', length: 50, nullable: true })
+  oqcStatus: string | null;
+
   @Column({ name: 'CLOSE_TIME', type: 'timestamp', nullable: true })
   closeAt: Date | null;
 

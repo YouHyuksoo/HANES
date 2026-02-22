@@ -6,10 +6,11 @@
  * 
  * 상태 관리: Zustand persist로 localStorage에 저장 (페이지 이동 후에도 유지)
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Save, Cog, Settings, Shield, Package, CheckCircle, XCircle, UserPlus, X, ClipboardList, Trash2 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
+import api from '@/services/api';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
 import type { Worker } from '@/components/worker/WorkerSelector';
@@ -31,16 +32,13 @@ interface MachineResult {
   inspectChecked: boolean;
 }
 
-const mockData: MachineResult[] = [
-  { id: '1', orderNo: 'JO-20250126-001', partName: '메인 하네스 A', equipName: 'CNC-001', workerName: '김작업', lotNo: 'LOT-M-001', goodQty: 250, defectQty: 3, cycleTime: 45, workDate: '2025-01-26', inspectChecked: true },
-  { id: '2', orderNo: 'JO-20250126-002', partName: '서브 하네스 B', equipName: 'CNC-002', workerName: '이작업', lotNo: 'LOT-M-002', goodQty: 180, defectQty: 1, cycleTime: 38, workDate: '2025-01-26', inspectChecked: true },
-  { id: '3', orderNo: 'JO-20250125-001', partName: '도어 하네스 C', equipName: 'PRESS-001', workerName: '박작업', lotNo: 'LOT-M-003', goodQty: 400, defectQty: 8, cycleTime: 22, workDate: '2025-01-25', inspectChecked: false },
-];
-
 const consumableParts = ['커팅블레이드 #A1', '프레스금형 #B2', '용접팁 #C3', '윤활유 (500ml)'];
 
-function InputMachinePage() {
+export default function InputMachinePage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<MachineResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
@@ -59,18 +57,29 @@ function InputMachinePage() {
   const [checkedParts, setCheckedParts] = useState<string[]>([]);
   const [form, setForm] = useState({ orderNo: '', equipId: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', cycleTime: '', remark: '' });
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    if (!searchText) return true;
-    return item.orderNo.toLowerCase().includes(searchText.toLowerCase()) || 
-           item.equipName.toLowerCase().includes(searchText.toLowerCase());
-  }), [searchText]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '5000' };
+      if (searchText) params.lotNo = searchText;
+      if (selectedJobOrder) params.jobOrderId = selectedJobOrder.id;
+      const res = await api.get('/production/prod-results', { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, selectedJobOrder]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    count: mockData.length,
-    totalGood: mockData.reduce((s, r) => s + r.goodQty, 0),
-    totalDefect: mockData.reduce((s, r) => s + r.defectQty, 0),
-    avgCycle: Math.round(mockData.reduce((s, r) => s + r.cycleTime, 0) / mockData.length),
-  }), []);
+    count: data.length,
+    totalGood: data.reduce((s, r) => s + r.goodQty, 0),
+    totalDefect: data.reduce((s, r) => s + r.defectQty, 0),
+    avgCycle: data.length > 0 ? Math.round(data.reduce((s, r) => s + r.cycleTime, 0) / data.length) : 0,
+  }), [data]);
 
   const togglePart = (p: string) => setCheckedParts(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
 
@@ -88,38 +97,40 @@ function InputMachinePage() {
   };
 
   /** 실적 입력 모달 열기 */
-  const handleOpenInputModal = () => {
+  const handleOpenInputModal = useCallback(() => {
     if (!selectedJobOrder) {
-      alert(t('production.inputMachine.pleaseSelectJobOrderFirst'));
       setIsJobOrderModalOpen(true);
       return;
     }
     setIsModalOpen(true);
-  };
+  }, [selectedJobOrder]);
 
   /** 실적 저장 */
-  const handleSubmit = () => {
-    if (!selectedJobOrder) {
-      alert(t('production.inputMachine.pleaseSelectJobOrder'));
-      return;
+  const handleSubmit = useCallback(async () => {
+    if (!selectedJobOrder || !selectedWorker || !inspectConfirmed) return;
+    setSaving(true);
+    try {
+      await api.post('/production/prod-results', {
+        jobOrderId: selectedJobOrder.id,
+        workerId: selectedWorker.id,
+        equipId: form.equipId || undefined,
+        lotNo: form.lotNo || undefined,
+        goodQty: Number(form.goodQty) || 0,
+        defectQty: Number(form.defectQty) || 0,
+        cycleTime: Number(form.cycleTime) || undefined,
+        remark: form.remark || undefined,
+      });
+      setIsModalOpen(false);
+      setForm({ orderNo: '', equipId: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', cycleTime: '', remark: '' });
+      setInspectConfirmed(false);
+      setCheckedParts([]);
+      fetchData();
+    } catch (e) {
+      console.error('Save failed:', e);
+    } finally {
+      setSaving(false);
     }
-    if (!selectedWorker) {
-      alert(t('production.inputMachine.pleaseSelectWorker'));
-      return;
-    }
-    console.log('가공 실적 저장:', { 
-      jobOrder: selectedJobOrder, 
-      worker: selectedWorker, 
-      form, 
-      inspectConfirmed, 
-      checkedParts 
-    });
-    setIsModalOpen(false);
-    // Reset
-    setForm({ orderNo: '', equipId: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', cycleTime: '', remark: '' });
-    setInspectConfirmed(false);
-    setCheckedParts([]);
-  };
+  }, [selectedJobOrder, selectedWorker, inspectConfirmed, form, fetchData]);
 
   const columns = useMemo<ColumnDef<MachineResult>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputMachine.orderNo'), size: 160 },
@@ -293,11 +304,18 @@ function InputMachinePage() {
 
       {/* 실적 목록 */}
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('production.inputMachine.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t('production.inputMachine.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t('production.inputMachine.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
 
       {/* 실적 입력 모달 */}
@@ -364,5 +382,3 @@ function InputMachinePage() {
     </div>
   );
 }
-
-export default InputMachinePage;

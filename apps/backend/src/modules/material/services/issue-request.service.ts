@@ -12,7 +12,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, DataSource } from 'typeorm';
+import { Repository, Like, DataSource, In } from 'typeorm';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -51,7 +51,7 @@ export class IssueRequestService {
   private async flattenItems(items: MatIssueRequestItem[]) {
     const partIds = items.map((i) => i.partId).filter(Boolean);
     const parts = partIds.length > 0
-      ? await this.partMasterRepository.findByIds(partIds) : [];
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     return items.map((item) => {
@@ -110,9 +110,9 @@ export class IssueRequestService {
   }
 
   /** 출고요청 목록 조회 (페이지네이션 + 필터) */
-  async findAll(query: IssueRequestQueryDto) {
+  async findAll(query: IssueRequestQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, status, search } = query;
-    const where: any = { ...(status && { status }) };
+    const where: any = { ...(status && { status }), ...(company && { company }), ...(plant && { plant }) };
 
     const [data, total] = await Promise.all([
       this.requestRepository.find({

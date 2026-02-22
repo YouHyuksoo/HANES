@@ -16,11 +16,18 @@ export class IqcItemService {
     private readonly iqcItemRepository: Repository<IqcItemMaster>,
   ) {}
 
-  async findAll(query: IqcItemQueryDto) {
+  async findAll(query: IqcItemQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partId, search, useYn } = query;
 
     const queryBuilder = this.iqcItemRepository.createQueryBuilder('item')
       .where('item.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('item.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('item.plant = :plant', { plant });
+    }
 
     if (partId) {
       queryBuilder.andWhere('item.partId = :partId', { partId });

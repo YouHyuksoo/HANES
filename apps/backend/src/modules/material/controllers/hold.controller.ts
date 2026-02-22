@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { HoldService } from '../services/hold.service';
 import { HoldActionDto, ReleaseHoldDto, HoldQueryDto } from '../dto/hold.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 재고홀드')
 @Controller('material/hold')
@@ -16,8 +17,8 @@ export class HoldController {
 
   @Get()
   @ApiOperation({ summary: 'LOT 목록 조회 (홀드 관리)' })
-  async findAll(@Query() query: HoldQueryDto) {
-    const result = await this.holdService.findAll(query);
+  async findAll(@Query() query: HoldQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.holdService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

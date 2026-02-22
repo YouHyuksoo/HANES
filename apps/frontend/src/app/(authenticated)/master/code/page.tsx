@@ -111,9 +111,9 @@ function ComCodePage() {
   }, [invalidate]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="flex flex-col animate-fade-in h-[calc(100vh-var(--header-height)-var(--tab-bar-height)-48px)]">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-4 shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Settings className="w-7 h-7 text-primary" />
@@ -138,8 +138,8 @@ function ComCodePage() {
       </div>
 
       {/* 본문: 좌측 그룹 + 우측 상세 */}
-      <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-3">
+      <div className="grid grid-cols-12 gap-6 min-h-0 flex-1">
+        <div className="col-span-3 flex flex-col min-h-0">
           <GroupList
             groups={groups}
             selectedGroup={selectedGroup}
@@ -147,7 +147,7 @@ function ComCodePage() {
             isLoading={groupsLoading}
           />
         </div>
-        <div className="col-span-9">
+        <div className="col-span-9 flex flex-col min-h-0">
           <CodeDetailGrid
             groupCode={selectedGroup}
             codes={codes}

@@ -6,10 +6,11 @@
  * 
  * 상태 관리: Zustand persist로 localStorage에 저장 (페이지 이동 후에도 유지)
  */
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Save, ClipboardCheck, CheckCircle, XCircle, AlertTriangle, UserPlus, X, ClipboardList, Trash2 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
+import api from '@/services/api';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
 import type { Worker } from '@/components/worker/WorkerSelector';
@@ -31,42 +32,50 @@ interface InspectInput {
   remark: string;
 }
 
-const mockData: InspectInput[] = [
-  { id: '1', orderNo: 'JO-20250126-001', partName: '메인 하네스 A', lotNo: 'LOT-20250126-001', inspectQty: 100, passQty: 97, failQty: 3, passYn: 'Y', inspectDate: '2025-01-26', inspector: '검사원A', remark: '' },
-  { id: '2', orderNo: 'JO-20250126-002', partName: '서브 하네스 B', lotNo: 'LOT-20250126-002', inspectQty: 80, passQty: 78, failQty: 2, passYn: 'Y', inspectDate: '2025-01-26', inspector: '검사원B', remark: '' },
-  { id: '3', orderNo: 'JO-20250125-001', partName: '도어 하네스 C', lotNo: 'LOT-20250125-001', inspectQty: 50, passQty: 40, failQty: 10, passYn: 'N', inspectDate: '2025-01-25', inspector: '검사원A', remark: '불량률 초과' },
-];
-
-function InputInspectPage() {
+export default function InputInspectPage() {
   const { t } = useTranslation();
+  const [data, setData] = useState<InspectInput[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
   const [isJobOrderModalOpen, setIsJobOrderModalOpen] = useState(false);
-  
+
   // Zustand store에서 상태 가져오기
-  const { 
-    selectedJobOrder, 
-    selectedWorker, 
-    setSelectedJobOrder, 
-    setSelectedWorker, 
-    clearSelection 
+  const {
+    selectedJobOrder,
+    selectedWorker,
+    setSelectedJobOrder,
+    setSelectedWorker,
+    clearSelection
   } = useInputInspectStore();
-  
+
   const [form, setForm] = useState({ orderNo: '', lotNo: '', inspectQty: '', passQty: '', failQty: '', passYn: 'Y', remark: '' });
 
-  const filteredData = useMemo(() => mockData.filter(item => {
-    if (!searchText) return true;
-    return item.orderNo.toLowerCase().includes(searchText.toLowerCase()) || 
-           item.lotNo.toLowerCase().includes(searchText.toLowerCase());
-  }), [searchText]);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '5000' };
+      if (searchText) params.lotNo = searchText;
+      if (selectedJobOrder) params.jobOrderId = selectedJobOrder.id;
+      const res = await api.get('/production/prod-results', { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchText, selectedJobOrder]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    total: mockData.length,
-    pass: mockData.filter(d => d.passYn === 'Y').length,
-    fail: mockData.filter(d => d.passYn === 'N').length,
-    passRate: mockData.length > 0 ? Math.round((mockData.filter(d => d.passYn === 'Y').length / mockData.length) * 100) : 0,
-  }), []);
+    total: data.length,
+    pass: data.filter(d => d.passYn === 'Y').length,
+    fail: data.filter(d => d.passYn === 'N').length,
+    passRate: data.length > 0 ? Math.round((data.filter(d => d.passYn === 'Y').length / data.length) * 100) : 0,
+  }), [data]);
 
   /** 작업지시 선택 확인 */
   const handleJobOrderConfirm = (jobOrder: JobOrder) => {
@@ -82,33 +91,36 @@ function InputInspectPage() {
   };
 
   /** 검사 결과 저장 */
-  const handleSubmit = () => {
-    if (!selectedJobOrder) {
-      alert(t('production.inputInspect.pleaseSelectJobOrder'));
-      return;
+  const handleSubmit = useCallback(async () => {
+    if (!selectedJobOrder || !selectedWorker) return;
+    setSaving(true);
+    try {
+      await api.post('/production/prod-results', {
+        jobOrderId: selectedJobOrder.id,
+        workerId: selectedWorker.id,
+        lotNo: form.lotNo || undefined,
+        goodQty: Number(form.passQty) || 0,
+        defectQty: Number(form.failQty) || 0,
+        remark: form.remark || undefined,
+      });
+      setIsModalOpen(false);
+      setForm({ orderNo: '', lotNo: '', inspectQty: '', passQty: '', failQty: '', passYn: 'Y', remark: '' });
+      fetchData();
+    } catch (e) {
+      console.error('Save failed:', e);
+    } finally {
+      setSaving(false);
     }
-    if (!selectedWorker) {
-      alert(t('production.inputInspect.pleaseSelectWorker'));
-      return;
-    }
-    console.log('검사 결과 저장:', { 
-      jobOrder: selectedJobOrder, 
-      worker: selectedWorker, 
-      form 
-    });
-    setIsModalOpen(false);
-    setForm({ orderNo: '', lotNo: '', inspectQty: '', passQty: '', failQty: '', passYn: 'Y', remark: '' });
-  };
+  }, [selectedJobOrder, selectedWorker, form, fetchData]);
 
   /** 검사 입력 모달 열기 */
-  const handleOpenInputModal = () => {
+  const handleOpenInputModal = useCallback(() => {
     if (!selectedJobOrder) {
-      alert(t('production.inputInspect.pleaseSelectJobOrderFirst'));
       setIsJobOrderModalOpen(true);
       return;
     }
     setIsModalOpen(true);
-  };
+  }, [selectedJobOrder]);
 
   const columns = useMemo<ColumnDef<InspectInput>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputInspect.orderNo'), size: 160 },
@@ -288,15 +300,22 @@ function InputInspectPage() {
 
       {/* 실적 목록 */}
       <Card><CardContent>
-        <div className="flex gap-4 mb-4">
-          <div className="flex-1"><Input placeholder={t('production.inputInspect.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth /></div>
-          <Button variant="secondary"><RefreshCw className="w-4 h-4" /></Button>
-        </div>
-        <DataGrid data={filteredData} columns={columns} pageSize={10} />
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+          enableExport exportFileName={t('production.inputInspect.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t('production.inputInspect.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          } />
       </CardContent></Card>
 
       {/* 검사 입력 모달 */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputInspect.modalTitle')} size="md">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('production.inputInspect.modalTitle')} size="lg">
         <div className="space-y-4">
           {/* 선택된 작업지시 표시 */}
           {selectedJobOrder && (
@@ -323,8 +342,8 @@ function InputInspectPage() {
           <Input label={t('production.inputInspect.remark')} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleSubmit}>
-              <Save className="w-4 h-4 mr-1" />{t('common.save')}
+            <Button onClick={handleSubmit} disabled={saving || !selectedJobOrder || !selectedWorker}>
+              <Save className="w-4 h-4 mr-1" />{saving ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </div>
@@ -347,5 +366,3 @@ function InputInspectPage() {
     </div>
   );
 }
-
-export default InputInspectPage;

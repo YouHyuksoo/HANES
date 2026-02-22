@@ -349,18 +349,18 @@ function ReceiveLabelPage() {
       {/* 검색 + 테이블 */}
       <Card>
         <CardContent>
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1 max-w-md">
-              <Input
-                placeholder={t("material.receiveLabel.searchPlaceholder")}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
-            </div>
-          </div>
-          <DataGrid data={filteredLots} columns={columns} pageSize={20} isLoading={loading} />
+          <DataGrid
+            data={filteredLots}
+            columns={columns}
+            isLoading={loading}
+            enableExport
+            exportFileName={t("material.receiveLabel.title")}
+            toolbarLeft={
+              <Input placeholder={t("material.receiveLabel.searchPlaceholder")}
+                value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />} />
+            }
+          />
         </CardContent>
       </Card>
 

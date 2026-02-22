@@ -16,12 +16,19 @@ export class WorkInstructionService {
     private readonly workInstructionRepository: Repository<WorkInstruction>,
   ) {}
 
-  async findAll(query: WorkInstructionQueryDto) {
+  async findAll(query: WorkInstructionQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, partId, processCode, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.workInstructionRepository.createQueryBuilder('wi')
       .where('wi.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('wi.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('wi.plant = :plant', { plant });
+    }
 
     if (partId) {
       queryBuilder.andWhere('wi.partId = :partId', { partId });

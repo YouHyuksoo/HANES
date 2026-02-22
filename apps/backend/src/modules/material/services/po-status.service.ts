@@ -22,12 +22,14 @@ export class PoStatusService {
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
 
-  async findAll(query: PoStatusQueryDto) {
+  async findAll(query: PoStatusQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
     };
 
     if (status) {
@@ -62,7 +64,9 @@ export class PoStatusService {
 
     // part 정보 조회
     const partIds = items.map((item) => item.partId).filter(Boolean);
-    const parts = await this.partMasterRepository.findByIds(partIds);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
     // PO별로 품목 그룹화

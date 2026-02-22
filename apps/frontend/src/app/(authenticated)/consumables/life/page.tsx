@@ -1,15 +1,21 @@
 "use client";
 
 /**
- * @file src/pages/consumables/LifePage.tsx
+ * @file src/app/(authenticated)/consumables/life/page.tsx
  * @description 소모품 수명 현황 페이지 - 컴팩트 테이블 디자인
+ *
+ * 초보자 가이드:
+ * 1. **수명 관리**: 소모품(금형, 지그, 공구)의 사용횟수 기반 수명 모니터링
+ * 2. **상태**: NORMAL(정상), WARNING(주의), REPLACE(교체필요)
+ * 3. API: GET /consumables/life-status
  */
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity, Search } from 'lucide-react';
-import { Card, CardContent, Button, ComCodeBadge, Input, Select } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity, Search } from "lucide-react";
+import { Card, Button, ComCodeBadge, Input, Select } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { ColumnDef } from "@tanstack/react-table";
+import api from "@/services/api";
 
 interface LifeStatus {
   id: string;
@@ -21,239 +27,155 @@ interface LifeStatus {
   warningCount: number;
   lifePercentage: number;
   remainingLife: number;
-  status: 'NORMAL' | 'WARNING' | 'REPLACE';
+  status: "NORMAL" | "WARNING" | "REPLACE";
   lastReplaced: string | null;
   location: string;
 }
 
-// 더 많은 테스트 데이터
-const mockData: LifeStatus[] = [
-  { id: '1', consumableCode: 'TOOL-001', name: '절단날 표준형', category: 'TOOL', currentCount: 10500, expectedLife: 10000, warningCount: 8000, lifePercentage: 105, remainingLife: -500, status: 'REPLACE', lastReplaced: '2024-12-01', location: '커팅라인 A' },
-  { id: '2', consumableCode: 'JIG-001', name: '조립지그 001', category: 'JIG', currentCount: 48000, expectedLife: 50000, warningCount: 40000, lifePercentage: 96, remainingLife: 2000, status: 'WARNING', lastReplaced: '2024-10-15', location: '조립라인 B' },
-  { id: '3', consumableCode: 'MOLD-001', name: '압착금형 A타입', category: 'MOLD', currentCount: 85000, expectedLife: 100000, warningCount: 80000, lifePercentage: 85, remainingLife: 15000, status: 'WARNING', lastReplaced: '2024-08-20', location: '압착라인 1' },
-  { id: '4', consumableCode: 'MOLD-002', name: '압착금형 B타입', category: 'MOLD', currentCount: 45000, expectedLife: 100000, warningCount: 80000, lifePercentage: 45, remainingLife: 55000, status: 'NORMAL', lastReplaced: '2024-11-10', location: '압착라인 2' },
-  { id: '5', consumableCode: 'MOLD-003', name: '압착금형 C타입', category: 'MOLD', currentCount: 20000, expectedLife: 100000, warningCount: 80000, lifePercentage: 20, remainingLife: 80000, status: 'NORMAL', lastReplaced: '2025-01-05', location: '압착라인 3' },
-  { id: '6', consumableCode: 'TOOL-002', name: '절단날 대형', category: 'TOOL', currentCount: 9800, expectedLife: 10000, warningCount: 8000, lifePercentage: 98, remainingLife: 200, status: 'WARNING', lastReplaced: '2024-11-20', location: '커팅라인 B' },
-  { id: '7', consumableCode: 'JIG-002', name: '검사지그 001', category: 'JIG', currentCount: 25000, expectedLife: 50000, warningCount: 40000, lifePercentage: 50, remainingLife: 25000, status: 'NORMAL', lastReplaced: '2024-09-15', location: '검사라인' },
-  { id: '8', consumableCode: 'MOLD-004', name: '커넥터금형 A', category: 'MOLD', currentCount: 92000, expectedLife: 100000, warningCount: 80000, lifePercentage: 92, remainingLife: 8000, status: 'WARNING', lastReplaced: '2024-07-10', location: '조립라인 A' },
-  { id: '9', consumableCode: 'TOOL-003', name: '스트리퍼블레이드', category: 'TOOL', currentCount: 5000, expectedLife: 15000, warningCount: 12000, lifePercentage: 33, remainingLife: 10000, status: 'NORMAL', lastReplaced: '2025-01-10', location: '커팅라인 C' },
-  { id: '10', consumableCode: 'JIG-003', name: '포장지그 001', category: 'JIG', currentCount: 12000, expectedLife: 30000, warningCount: 24000, lifePercentage: 40, remainingLife: 18000, status: 'NORMAL', lastReplaced: '2024-12-20', location: '포장라인' },
-  { id: '11', consumableCode: 'MOLD-005', name: '터미널금형 B', category: 'MOLD', currentCount: 100500, expectedLife: 100000, warningCount: 80000, lifePercentage: 100.5, remainingLife: -500, status: 'REPLACE', lastReplaced: '2024-06-01', location: '압착라인 4' },
-  { id: '12', consumableCode: 'TOOL-004', name: '크림핑다이', category: 'TOOL', currentCount: 7500, expectedLife: 10000, warningCount: 8000, lifePercentage: 75, remainingLife: 2500, status: 'NORMAL', lastReplaced: '2024-12-15', location: '크림핑라인' },
-];
-
-function ConsumableLifePage() {
+export default function ConsumableLifePage() {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [data, setData] = useState<LifeStatus[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
-  const filteredData = useMemo(() => {
-    return mockData.filter((item) => {
-      const matchSearch = !searchTerm ||
-        item.consumableCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.location.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchStatus = !statusFilter || item.status === statusFilter;
-      const matchCategory = !categoryFilter || item.category === categoryFilter;
-      return matchSearch && matchStatus && matchCategory;
-    });
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "5000" };
+      if (searchTerm) params.search = searchTerm;
+      if (statusFilter) params.status = statusFilter;
+      if (categoryFilter) params.category = categoryFilter;
+      const res = await api.get("/consumables/life-status", { params });
+      setData(res.data?.data ?? []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
   }, [searchTerm, statusFilter, categoryFilter]);
 
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const stats = useMemo(() => ({
-    total: mockData.length,
-    normal: mockData.filter((d) => d.status === 'NORMAL').length,
-    warning: mockData.filter((d) => d.status === 'WARNING').length,
-    replace: mockData.filter((d) => d.status === 'REPLACE').length,
-  }), []);
+    total: data.length,
+    normal: data.filter((d) => d.status === "NORMAL").length,
+    warning: data.filter((d) => d.status === "WARNING").length,
+    replace: data.filter((d) => d.status === "REPLACE").length,
+  }), [data]);
 
   const getProgressColor = (pct: number) => {
-    if (pct >= 100) return 'bg-red-500';
-    if (pct >= 80) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (pct >= 100) return "bg-red-500";
+    if (pct >= 80) return "bg-yellow-500";
+    return "bg-green-500";
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'REPLACE':
-        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded">교체</span>;
-      case 'WARNING':
-        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded">주의</span>;
+      case "REPLACE":
+        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">{t("consumables.life.replace")}</span>;
+      case "WARNING":
+        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded">{t("consumables.life.warning")}</span>;
       default:
-        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded">정상</span>;
+        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">{t("consumables.life.normal")}</span>;
     }
   };
 
-  const columns = useMemo<ColumnDef<LifeStatus>[]>(
-    () => [
-      {
-        accessorKey: 'status',
-        header: '상태',
-        size: 60,
-        cell: ({ getValue }) => getStatusBadge(getValue() as string),
-      },
-      {
-        accessorKey: 'consumableCode',
-        header: t('consumables.master.code'),
-        size: 110,
-      },
-      {
-        accessorKey: 'name',
-        header: t('consumables.master.name'),
-        size: 140,
-      },
-      {
-        accessorKey: 'category',
-        header: '구분',
-        size: 70,
-        cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />,
-      },
-      {
-        accessorKey: 'location',
-        header: '설비/위치',
-        size: 110,
-      },
-      {
-        accessorKey: 'lifePercentage',
-        header: '수명',
-        size: 100,
-        cell: ({ row }) => {
-          const pct = row.original.lifePercentage;
-          return (
-            <div className="flex items-center gap-1.5">
-              <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                <div className={`h-full ${getProgressColor(pct)}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-              </div>
-              <span className={`text-xs ${pct >= 100 ? 'text-red-600' : pct >= 80 ? 'text-yellow-600' : 'text-text-muted'}`}>
-                {pct}%
-              </span>
+  const columns = useMemo<ColumnDef<LifeStatus>[]>(() => [
+    { accessorKey: "status", header: t("common.status"), size: 60, cell: ({ getValue }) => getStatusBadge(getValue() as string) },
+    { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 110, meta: { filterType: "text" as const } },
+    { accessorKey: "name", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: "category", header: t("consumables.life.categoryLabel"), size: 70, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
+    { accessorKey: "location", header: t("consumables.life.location"), size: 110 },
+    {
+      accessorKey: "lifePercentage", header: t("consumables.life.lifeLabel"), size: 100,
+      cell: ({ row }) => {
+        const pct = row.original.lifePercentage;
+        return (
+          <div className="flex items-center gap-1.5">
+            <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className={`h-full ${getProgressColor(pct)}`} style={{ width: `${Math.min(pct, 100)}%` }} />
             </div>
-          );
-        },
+            <span className={`text-xs ${pct >= 100 ? "text-red-600" : pct >= 80 ? "text-yellow-600" : "text-text-muted"}`}>{pct}%</span>
+          </div>
+        );
       },
-      {
-        accessorKey: 'currentCount',
-        header: '현재/기준',
-        size: 110,
-        cell: ({ row }) => (
-          <span className="text-xs">
-            {row.original.currentCount.toLocaleString()} / {row.original.expectedLife.toLocaleString()}
-          </span>
-        ),
+    },
+    {
+      accessorKey: "currentCount", header: t("consumables.life.currentExpected"), size: 110,
+      cell: ({ row }) => <span className="text-xs">{row.original.currentCount.toLocaleString()} / {row.original.expectedLife.toLocaleString()}</span>,
+    },
+    {
+      accessorKey: "remainingLife", header: t("consumables.life.remaining"), size: 70,
+      cell: ({ getValue }) => {
+        const val = getValue() as number;
+        return <span className={`text-xs ${val < 0 ? "text-red-600 font-medium" : "text-text-muted"}`}>{val < 0 ? `+${Math.abs(val).toLocaleString()}` : val.toLocaleString()}</span>;
       },
-      {
-        accessorKey: 'remainingLife',
-        header: '잔여',
-        size: 70,
-        cell: ({ getValue, row }) => {
-          const val = getValue() as number;
-          return (
-            <span className={`text-xs ${val < 0 ? 'text-red-600 font-medium' : 'text-text-muted'}`}>
-              {val < 0 ? `+${Math.abs(val).toLocaleString()}` : val.toLocaleString()}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: 'lastReplaced',
-        header: '최근교체',
-        size: 90,
-        cell: ({ getValue }) => getValue() ? <span className="text-xs text-text-muted">{getValue() as string}</span> : '-',
-      },
-      {
-        id: 'actions',
-        header: '관리',
-        size: 70,
-        cell: ({ row }) => (
-          row.original.status === 'REPLACE' ? (
-            <Button size="sm" variant="secondary">
-              <RotateCcw className="w-3 h-3 mr-1" /> 교체
-            </Button>
-          ) : null
-        ),
-      },
-    ],
-    [t]
-  );
+    },
+    {
+      accessorKey: "lastReplaced", header: t("consumables.life.lastReplaced"), size: 90,
+      cell: ({ getValue }) => getValue() ? <span className="text-xs text-text-muted">{getValue() as string}</span> : "-",
+    },
+    {
+      id: "actions", header: t("common.manage"), size: 70,
+      cell: ({ row }) => row.original.status === "REPLACE" ? (
+        <Button size="sm" variant="secondary"><RotateCcw className="w-3 h-3 mr-1" /> {t("consumables.life.replaceAction")}</Button>
+      ) : null,
+    },
+  ], [t]);
 
   return (
     <div className="space-y-3 animate-fade-in">
-      {/* 헤더 - 컴팩트 */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-primary" />
-          <h1 className="text-lg font-bold text-text">{t('consumables.life.title')}</h1>
-          <span className="text-xs text-text-muted">{filteredData.length}건</span>
+          <h1 className="text-lg font-bold text-text">{t("consumables.life.title")}</h1>
+          <span className="text-xs text-text-muted">{data.length}{t("common.count")}</span>
         </div>
-        <Button variant="secondary" size="sm">
-          <RefreshCw className="w-3.5 h-3.5 mr-1" /> 새로고침
-        </Button>
       </div>
 
-      {/* 상태 요약 - 인라인 배지 형태 */}
       <div className="flex gap-2 text-xs">
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded">
-          <Activity className="w-3 h-3" /> 전체 {stats.total}
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded">
+          <Activity className="w-3 h-3" /> {t("common.total")} {stats.total}
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded">
-          <CheckCircle className="w-3 h-3" /> 정상 {stats.normal}
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded">
+          <CheckCircle className="w-3 h-3" /> {t("consumables.life.normal")} {stats.normal}
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-50 text-yellow-700 rounded">
-          <AlertTriangle className="w-3 h-3" /> 주의 {stats.warning}
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
+          <AlertTriangle className="w-3 h-3" /> {t("consumables.life.warning")} {stats.warning}
         </span>
-        <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-700 rounded">
-          <XCircle className="w-3 h-3" /> 교체 {stats.replace}
+        <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded">
+          <XCircle className="w-3 h-3" /> {t("consumables.life.replace")} {stats.replace}
         </span>
       </div>
 
-      {/* 필터 바 */}
-      <Card className="p-2">
-        <div className="flex gap-2">
-          <div className="flex-1 min-w-[180px]">
-            <Input 
-              placeholder="코드, 이름, 위치 검색..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
-              leftIcon={<Search className="w-3.5 h-3.5" />} 
-              fullWidth 
-            />
-          </div>
-          <Select 
-            options={[
-              { value: '', label: '전체 상태' },
-              { value: 'NORMAL', label: '정상' },
-              { value: 'WARNING', label: '주의' },
-              { value: 'REPLACE', label: '교체필요' },
-            ]} 
-            value={statusFilter} 
-            onChange={setStatusFilter}
-          />
-          <Select 
-            options={[
-              { value: '', label: '전체 구분' },
-              { value: 'MOLD', label: '금형' },
-              { value: 'JIG', label: '지그' },
-              { value: 'TOOL', label: '공구' },
-            ]} 
-            value={categoryFilter} 
-            onChange={setCategoryFilter}
-          />
-          <Button size="sm" variant="secondary" onClick={() => { setSearchTerm(''); setStatusFilter(''); setCategoryFilter(''); }}>
-            초기화
-          </Button>
-        </div>
-      </Card>
-
-      {/* 데이터 테이블 - 더 많은 데이터 표시 */}
-      <Card className="overflow-hidden">
-        <DataGrid 
-          data={filteredData} 
-          columns={columns} 
-          pageSize={15}
+      <Card className="overflow-hidden p-4">
+        <DataGrid
+          data={data}
+          columns={columns}
+          isLoading={loading}
+          enableColumnFilter
+          enableExport
+          exportFileName={t("consumables.life.title")}
+          toolbarLeft={
+            <div className="flex gap-2 items-center flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input placeholder={t("consumables.life.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-3.5 h-3.5" />} fullWidth />
+              </div>
+              <div className="w-28 flex-shrink-0">
+                <Select options={[{ value: "", label: t("common.allStatus") }, { value: "NORMAL", label: t("consumables.life.normal") }, { value: "WARNING", label: t("consumables.life.warning") }, { value: "REPLACE", label: t("consumables.life.replace") }]} value={statusFilter} onChange={setStatusFilter} fullWidth />
+              </div>
+              <div className="w-28 flex-shrink-0">
+                <Select options={[{ value: "", label: t("common.all") }, { value: "MOLD", label: t("comCode.CONSUMABLE_CATEGORY.MOLD") }, { value: "JIG", label: t("comCode.CONSUMABLE_CATEGORY.JIG") }, { value: "TOOL", label: t("comCode.CONSUMABLE_CATEGORY.TOOL") }]} value={categoryFilter} onChange={setCategoryFilter} fullWidth />
+              </div>
+              <Button variant="secondary" onClick={fetchData}>
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          }
         />
       </Card>
     </div>
   );
 }
-
-export default ConsumableLifePage;

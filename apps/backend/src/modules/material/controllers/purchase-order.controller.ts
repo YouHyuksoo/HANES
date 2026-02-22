@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PurchaseOrderService } from '../services/purchase-order.service';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - PO관리')
 @Controller('material/purchase-orders')
@@ -16,8 +17,8 @@ export class PurchaseOrderController {
 
   @Get()
   @ApiOperation({ summary: 'PO 목록 조회' })
-  async findAll(@Query() query: PurchaseOrderQueryDto) {
-    const result = await this.purchaseOrderService.findAll(query);
+  async findAll(@Query() query: PurchaseOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.purchaseOrderService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

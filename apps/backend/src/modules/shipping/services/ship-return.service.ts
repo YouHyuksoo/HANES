@@ -64,12 +64,14 @@ export class ShipReturnService {
   }
 
   /** 반품 목록 조회 */
-  async findAll(query: ShipReturnQueryDto) {
+  async findAll(query: ShipReturnQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, returnDateFrom, returnDateTo } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       deletedAt: IsNull(),
+      ...(company && { company }),
+      ...(plant && { plant }),
       ...(status && { status }),
       ...(search && {
         returnNo: ILike(`%${search}%`),

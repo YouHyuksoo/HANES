@@ -16,12 +16,19 @@ export class ProcessService {
     private readonly processRepository: Repository<ProcessMaster>,
   ) {}
 
-  async findAll(query: ProcessQueryDto) {
+  async findAll(query: ProcessQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, processType, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.processRepository.createQueryBuilder('process')
       .where('process.deletedAt IS NULL');
+
+    if (company) {
+      queryBuilder.andWhere('process.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('process.plant = :plant', { plant });
+    }
 
     if (processType) {
       queryBuilder.andWhere('process.processType = :processType', { processType });

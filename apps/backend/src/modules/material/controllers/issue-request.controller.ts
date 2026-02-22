@@ -31,6 +31,7 @@ import {
   RequestIssueDto,
 } from '../dto/issue-request.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 출고요청')
 @Controller('material/issue-requests')
@@ -49,8 +50,8 @@ export class IssueRequestController {
 
   @Get()
   @ApiOperation({ summary: '출고요청 목록 조회' })
-  async findAll(@Query() query: IssueRequestQueryDto) {
-    const result = await this.issueRequestService.findAll(query);
+  async findAll(@Query() query: IssueRequestQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.issueRequestService.findAll(query, company, plant);
     return ResponseUtil.paged(
       result.data,
       result.total,

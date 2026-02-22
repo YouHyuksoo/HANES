@@ -56,7 +56,7 @@ export class PalletService {
   /**
    * 팔레트 목록 조회
    */
-  async findAll(query: PalletQueryDto, company?: string) {
+  async findAll(query: PalletQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 10,
@@ -70,6 +70,7 @@ export class PalletService {
     const where: any = {
       deletedAt: IsNull(),
       ...(company && { company }),
+      ...(plant && { plant }),
       ...(palletNo && { palletNo: ILike(`%${palletNo}%`) }),
       ...(shipmentId && { shipmentId }),
       ...(status && { status }),

@@ -15,7 +15,7 @@ export const AppDataSource = new DataSource({
   username: process.env.ORACLE_USER || 'MES_USER',
   password: process.env.ORACLE_PASSWORD || 'password',
   sid: process.env.ORACLE_SID || 'ORCL',
-  synchronize: process.env.NODE_ENV !== 'production', // 개발 환경에서만 자동 동기화
+  synchronize: false, // Oracle PK 충돌 방지 - 스키마 변경은 SQL로 직접 관리
   logging: process.env.NODE_ENV !== 'production',
   logger: 'advanced-console',
   entities: [__dirname + '/../entities/*.entity{.ts,.js}'],

@@ -22,6 +22,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { LabelTemplateService } from '../services/label-template.service';
 import {
@@ -39,8 +40,8 @@ export class LabelTemplateController {
 
   @Get()
   @ApiOperation({ summary: '라벨 템플릿 목록 조회' })
-  async findAll(@Query() query: LabelTemplateQueryDto) {
-    const result = await this.labelTemplateService.findAll(query);
+  async findAll(@Query() query: LabelTemplateQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.labelTemplateService.findAll(query, company, plant);
     return ResponseUtil.paged(
       result.data,
       result.total,
