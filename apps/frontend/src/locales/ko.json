@@ -646,9 +646,13 @@
     "disconnected": "바코드 스캐너 미연결",
     "connect": "스캐너 연결",
     "disconnect": "연결 해제",
+    "reconnect": "재접속",
     "lastScan": "마지막 스캔",
     "notSupported": "Web Serial API 미지원 브라우저입니다",
-    "connectFailed": "연결 실패"
+    "connectFailed": "연결 실패",
+    "selectConfig": "설정 선택",
+    "noConfig": "등록된 SERIAL 설정이 없습니다",
+    "defaultConfig": "기본값 (9600-8-N-1)"
   },
   "serialTest": {
     "title": "시리얼 통신 테스트",
@@ -1869,6 +1873,7 @@
     }
   },
   "crimping": {
+    "terminal": "터미널",
     "order": {
       "title": "압착 작업지시",
       "subtitle": "터미널 압착 작업을 지시하고 관리합니다.",
@@ -1917,6 +1922,11 @@
     "mold": {
       "title": "금형관리",
       "subtitle": "금형 타수 및 수명을 관리합니다.",
+      "total": "전체",
+      "code": "금형코드",
+      "name": "금형명",
+      "add": "금형 등록",
+      "edit": "금형 수정",
       "moldCode": "금형코드",
       "moldName": "금형명",
       "terminal": "적용터미널",

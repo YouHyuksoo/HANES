@@ -640,9 +640,13 @@
     "disconnected": "Máy quét mã vạch chưa kết nối",
     "connect": "Kết nối máy quét",
     "disconnect": "Ngắt kết nối",
+    "reconnect": "Kết nối lại",
     "lastScan": "Quét gần nhất",
     "notSupported": "Trình duyệt không hỗ trợ Web Serial API",
-    "connectFailed": "Kết nối thất bại"
+    "connectFailed": "Kết nối thất bại",
+    "selectConfig": "Chọn cấu hình",
+    "noConfig": "Chưa đăng ký cấu hình SERIAL",
+    "defaultConfig": "Mặc định (9600-8-N-1)"
   },
   "serialTest": {
     "title": "Kiểm tra cổng Serial",
@@ -1792,6 +1796,7 @@
     }
   },
   "crimping": {
+    "terminal": "Terminal",
     "order": {
       "title": "Lệnh ép terminal",
       "subtitle": "Quản lý và phân công lệnh ép terminal.",
@@ -1840,6 +1845,11 @@
     "mold": {
       "title": "Quản lý khuôn",
       "subtitle": "Quản lý số lần đóng và tuổi thọ khuôn.",
+      "total": "Tổng cộng",
+      "code": "Mã khuôn",
+      "name": "Tên khuôn",
+      "add": "Đăng ký khuôn",
+      "edit": "Sửa khuôn",
       "moldCode": "Mã khuôn",
       "moldName": "Tên khuôn",
       "terminal": "Terminal áp dụng",

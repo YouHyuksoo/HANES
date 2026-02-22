@@ -639,9 +639,13 @@
     "disconnected": "条码扫描器未连接",
     "connect": "连接扫描器",
     "disconnect": "断开连接",
+    "reconnect": "重新连接",
     "lastScan": "最近扫描",
     "notSupported": "此浏览器不支持Web Serial API",
-    "connectFailed": "连接失败"
+    "connectFailed": "连接失败",
+    "selectConfig": "选择配置",
+    "noConfig": "未注册SERIAL配置",
+    "defaultConfig": "默认值 (9600-8-N-1)"
   },
   "serialTest": {
     "title": "串口通信测试",
@@ -1791,6 +1795,7 @@
     }
   },
   "crimping": {
+    "terminal": "端子",
     "order": {
       "title": "压接作业指示",
       "subtitle": "管理和分配端子压接作业指示。",
@@ -1839,6 +1844,11 @@
     "mold": {
       "title": "模具管理",
       "subtitle": "管理模具次数和寿命。",
+      "total": "全部",
+      "code": "模具代码",
+      "name": "模具名称",
+      "add": "注册模具",
+      "edit": "编辑模具",
       "moldCode": "模具代码",
       "moldName": "模具名称",
       "terminal": "适用端子",

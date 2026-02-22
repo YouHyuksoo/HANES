@@ -639,9 +639,13 @@
     "disconnected": "Barcode scanner not connected",
     "connect": "Connect scanner",
     "disconnect": "Disconnect",
+    "reconnect": "Reconnect",
     "lastScan": "Last scan",
     "notSupported": "Web Serial API is not supported in this browser",
-    "connectFailed": "Connection failed"
+    "connectFailed": "Connection failed",
+    "selectConfig": "Select config",
+    "noConfig": "No SERIAL config registered",
+    "defaultConfig": "Default (9600-8-N-1)"
   },
   "serialTest": {
     "title": "Serial Port Test",
@@ -1791,6 +1795,7 @@
     }
   },
   "crimping": {
+    "terminal": "Terminal",
     "order": {
       "title": "Crimping Work Order",
       "subtitle": "Manage and assign terminal crimping work orders.",
@@ -1839,6 +1844,11 @@
     "mold": {
       "title": "Mold Management",
       "subtitle": "Manage mold shot count and life.",
+      "total": "Total",
+      "code": "Mold Code",
+      "name": "Mold Name",
+      "add": "Add Mold",
+      "edit": "Edit Mold",
       "moldCode": "Mold Code",
       "moldName": "Mold Name",
       "terminal": "Applied Terminal",

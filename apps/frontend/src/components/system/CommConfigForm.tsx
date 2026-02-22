@@ -170,13 +170,6 @@ export default function CommConfigForm({
       {isSerial ? (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label={t('system.commConfig.portName')}
-              value={formData.portName}
-              onChange={(e) => onChange("portName", e.target.value)}
-              placeholder={t('system.commConfig.portNamePlaceholder')}
-              fullWidth
-            />
             <Select
               label={t('system.commConfig.baudRate')}
               options={BAUD_RATE_OPTIONS}

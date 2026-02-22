@@ -169,12 +169,6 @@ export default function CommConfigPage() {
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as number) ?? "-"}</span>,
       },
       {
-        accessorKey: "portName",
-        header: t('system.commConfig.portName'),
-        size: 80,
-        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
-      },
-      {
         accessorKey: "baudRate",
         header: t('system.commConfig.baudRate'),
         size: 90,
