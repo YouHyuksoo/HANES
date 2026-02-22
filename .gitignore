@@ -36,6 +36,12 @@ coverage
 # Prisma
 prisma/migrations/**/migration_lock.toml
 
+# Uploads
+apps/backend/uploads
+
+# Playwright MCP
+.playwright-mcp
+
 # Misc
 *.tsbuildinfo
 nul
