@@ -56,7 +56,10 @@
       "mcp__notebooklm__ask_question",
       "Bash(where:*)",
       "Bash(corepack enable:*)",
-      "Bash(npm config:*)"
+      "Bash(npm config:*)",
+      "Bash(npx pm2:*)",
+      "Bash(npx skills:*)",
+      "Bash(grep:*)"
     ]
   }
 }

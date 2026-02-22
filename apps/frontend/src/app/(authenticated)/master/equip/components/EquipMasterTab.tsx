@@ -74,6 +74,7 @@ export default function EquipMasterTab() {
   const [lineOptions, setLineOptions] = useState<LineOption[]>([{ value: "", label: t("common.all") }]);
   const [processOptions, setProcessOptions] = useState<ProcessOption[]>([{ value: "", label: t("common.all") }]);
   const [deleteTarget, setDeleteTarget] = useState<EquipMaster | null>(null);
+  const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
 
   // API에서 생산라인 목록 조회
   const fetchLines = useCallback(async () => {
@@ -219,7 +220,7 @@ export default function EquipMasterTab() {
       fetchEquipments();
     } catch (e: any) {
       console.error("Save failed:", e);
-      alert(e.response?.data?.message || "저장에 실패했습니다.");
+      setAlertModal({ open: true, title: t("common.error"), message: e.response?.data?.message || t("common.saveFailed", "저장에 실패했습니다.") });
     }
   };
 
@@ -462,6 +463,13 @@ export default function EquipMasterTab() {
         variant="danger"
         message={`'${deleteTarget?.equipName || ""}'을(를) 삭제하시겠습니까?`}
       />
+
+      <Modal isOpen={alertModal.open} onClose={() => setAlertModal({ ...alertModal, open: false })} title={alertModal.title} size="sm">
+        <p className="text-text">{alertModal.message}</p>
+        <div className="flex justify-end pt-4">
+          <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>{t("common.confirm")}</Button>
+        </div>
+      </Modal>
     </>
   );
 }

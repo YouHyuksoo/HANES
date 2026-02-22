@@ -156,9 +156,14 @@ export default function OqcPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("quality.oqc.description")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsRequestModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> {t("quality.oqc.createRequest")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+          </Button>
+          <Button size="sm" onClick={() => setIsRequestModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> {t("quality.oqc.createRequest")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -195,9 +200,6 @@ export default function OqcPage() {
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
               </div>
               <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

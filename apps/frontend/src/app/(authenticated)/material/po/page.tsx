@@ -177,9 +177,14 @@ export default function PoPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("material.po.subtitle")}</p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" />{t("common.register")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" />{t("common.register")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
@@ -202,9 +207,6 @@ export default function PoPage() {
               <div className="w-36 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

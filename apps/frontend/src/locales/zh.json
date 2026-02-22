@@ -157,6 +157,7 @@
     "inventory.productPhysicalInvHistory": "产品盘点历史",
     "inventory.matPhysicalInv": "材料库存盘点管理",
     "inventory.matPhysicalInvHistory": "材料库存盘点查询",
+    "inventory.arrivalStock": "到货库存现况查询",
     "material": "物料管理",
     "material.arrival": "到货管理",
     "material.iqc": "来料检验(IQC)",
@@ -279,6 +280,17 @@
     "plant": "事业所",
     "selectPlant": "请选择事业所",
     "plantRequired": "必须选择事业所",
+    "connection": {
+      "title": "系统连接检查",
+      "subtitle": "正在检查服务器和数据库连接状态。",
+      "serverCheck": "服务器连接检查",
+      "dbCheck": "数据库连接检查",
+      "serverTimeout": "服务器响应超时。",
+      "serverUnreachable": "无法连接到服务器。",
+      "dbDisconnected": "无法连接到数据库。",
+      "retryDesc": "连接失败。请检查网络状态后重试。",
+      "retry": "重试"
+    },
     "branding": {
       "title": "HARNESS MES",
       "subtitle": "Manufacturing Execution System",
@@ -429,6 +441,7 @@
       "cancelFailed": "取消处理出错。",
       "alreadyCanceled": "该事务已被取消。",
       "cannotCancelCancel": "取消事务不能再次取消。",
+      "receive": "入库",
       "matIn": "原材料入库",
       "matInCancel": "原材料入库取消",
       "matOut": "原材料出库",
@@ -620,6 +633,15 @@
       "changedCount": "{{count}}项已更改",
       "confirmDelete": "确定要删除此设置吗？"
     }
+  },
+  "serial": {
+    "connected": "条码扫描器已连接",
+    "disconnected": "条码扫描器未连接",
+    "connect": "连接扫描器",
+    "disconnect": "断开连接",
+    "lastScan": "最近扫描",
+    "notSupported": "此浏览器不支持Web Serial API",
+    "connectFailed": "连接失败"
   },
   "serialTest": {
     "title": "串口通信测试",
@@ -1241,6 +1263,7 @@
         "todayReceivedQty": "今日入库数量"
       },
       "col": {
+        "receiveNo": "入库编号",
         "initQty": "初始数量",
         "receivedQty": "已入库数量",
         "remainingQty": "剩余数量",
@@ -1451,6 +1474,31 @@
         "confirmed": "已确认",
         "partial": "部分入库",
         "received": "入库完成"
+      }
+    },
+    "arrivalStock": {
+      "title": "到货库存现况",
+      "subtitle": "查看已到货物料的当前库存现况。",
+      "searchPlaceholder": "搜索品目编码、品目名称、PO号、发票号...",
+      "arrivalNo": "到货编号",
+      "invoiceNo": "发票号",
+      "vendorName": "供应商",
+      "partCode": "品目编码",
+      "partName": "品目名称",
+      "lotNo": "LOT号",
+      "arrivalQty": "到货数量",
+      "currentStock": "当前库存",
+      "warehouseName": "仓库",
+      "arrivalType": "到货类型",
+      "arrivalDate": "到货日期",
+      "manufactureDate": "生产日期",
+      "expireDate": "有效期",
+      "unit": "单位",
+      "stats": {
+        "totalArrivalQty": "到货总量",
+        "totalCurrentStock": "当前库存合计",
+        "partCount": "品目数",
+        "lotCount": "LOT数"
       }
     },
     "iqcHistory": {

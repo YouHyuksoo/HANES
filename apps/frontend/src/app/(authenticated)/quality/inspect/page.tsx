@@ -111,6 +111,11 @@ export default function InspectPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />{t("quality.inspect.title")}</h1>
           <p className="text-text-muted mt-1">{t("quality.inspect.description")}</p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -161,9 +166,6 @@ export default function InspectPage() {
               </div>
               <Select options={inspectTypeOptions} value={inspectType} onChange={setInspectType} placeholder={t("quality.inspect.inspectType")} />
               <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder={t("quality.inspect.resultCol")} />
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

@@ -84,9 +84,6 @@ export default function IqcPage() {
                 <div className="w-40 flex-shrink-0">
                   <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                 </div>
-                <Button variant="secondary" size="sm" onClick={refresh} className="flex-shrink-0">
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
               </div>
             }
           />

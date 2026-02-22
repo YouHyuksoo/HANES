@@ -6,7 +6,7 @@
  * 
  * 상태 관리: Zustand persist로 localStorage에 저장 (페이지 이동 후에도 유지)
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Save, Cog, Settings, Shield, Package, CheckCircle, XCircle, UserPlus, X, ClipboardList, Trash2 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from '@/components/ui';
@@ -53,6 +53,7 @@ export default function InputMachinePage() {
     clearSelection 
   } = useInputMachineStore();
   
+  const lotNoRef = useRef<HTMLInputElement>(null);
   const [inspectConfirmed, setInspectConfirmed] = useState(false);
   const [checkedParts, setCheckedParts] = useState<string[]>([]);
   const [form, setForm] = useState({ orderNo: '', equipId: '', workerName: '', lotNo: '', goodQty: '', defectQty: '', cycleTime: '', remark: '' });
@@ -103,6 +104,7 @@ export default function InputMachinePage() {
       return;
     }
     setIsModalOpen(true);
+    setTimeout(() => lotNoRef.current?.focus(), 100);
   }, [selectedJobOrder]);
 
   /** 실적 저장 */
@@ -153,7 +155,7 @@ export default function InputMachinePage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cog className="w-7 h-7 text-primary" />{t('production.inputMachine.title')}</h1>
           <p className="text-text-muted mt-1">{t('production.inputMachine.description')}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {/* 전체 초기화 버튼 */}
           {(selectedJobOrder || selectedWorker) && (
             <Button 
@@ -350,7 +352,7 @@ export default function InputMachinePage() {
           <div className="grid grid-cols-2 gap-4">
             <Select label={t('production.inputMachine.equip')} options={[{ value: 'CNC-001', label: 'CNC-001' }, { value: 'CNC-002', label: 'CNC-002' }, { value: 'PRESS-001', label: 'PRESS-001' }]} value={form.equipId} onChange={v => setForm(p => ({ ...p, equipId: v }))} fullWidth />
             <Input label={t('production.inputMachine.worker')} value={selectedWorker?.workerName ?? ''} fullWidth disabled />
-            <Input label={t('production.inputMachine.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
+            <Input ref={lotNoRef} label={t('production.inputMachine.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
             <Input label={t('production.inputMachine.goodQty')} type="number" value={form.goodQty} onChange={e => setForm(p => ({ ...p, goodQty: e.target.value }))} fullWidth />
             <Input label={t('production.inputMachine.defectQty')} type="number" value={form.defectQty} onChange={e => setForm(p => ({ ...p, defectQty: e.target.value }))} fullWidth />
             <Input label={t('production.inputMachine.cycleTimeSec')} type="number" value={form.cycleTime} onChange={e => setForm(p => ({ ...p, cycleTime: e.target.value }))} fullWidth />

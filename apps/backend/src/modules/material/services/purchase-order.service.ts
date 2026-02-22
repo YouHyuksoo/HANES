@@ -8,7 +8,7 @@
  * 3. **금액 계산**: 품목별 수량 x 단가 합산
  */
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Like, DataSource, In } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
@@ -32,39 +32,39 @@ export class PurchaseOrderService {
     const { page = 1, limit = 10, search, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: IsNull(),
-      ...(status && { status }),
-      ...(company && { company }),
-      ...(plant && { plant }),
-    };
+    // QueryBuilder로 DB 레벨 필터링 (메모리 필터링 제거)
+    const qb = this.purchaseOrderRepository
+      .createQueryBuilder('po')
+      .where('po.deletedAt IS NULL');
 
+    if (company) qb.andWhere('po.company = :company', { company });
+    if (plant) qb.andWhere('po.plant = :plant', { plant });
+    if (status) qb.andWhere('po.status = :status', { status });
+
+    // 검색: poNo OR partnerName (DB 레벨 OR 조건)
     if (search) {
-      where.poNo = Like(`%${search}%`);
-      // partnerName 검색은 메모리에서 처리 (TypeORM에서 OR 조건이 복잡함)
+      qb.andWhere(
+        '(LOWER(po.poNo) LIKE :search OR LOWER(po.partnerName) LIKE :search)',
+        { search: `%${search.toLowerCase()}%` },
+      );
     }
 
-    if (fromDate && toDate) {
-      where.orderDate = Like(`%`); // placeholder
-    }
+    // 날짜 필터 (DB 레벨)
+    if (fromDate) qb.andWhere('po.orderDate >= :fromDate', { fromDate: new Date(fromDate) });
+    if (toDate) qb.andWhere('po.orderDate <= :toDate', { toDate: new Date(toDate) });
 
-    const [data, total] = await Promise.all([
-      this.purchaseOrderRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.purchaseOrderRepository.count({ where: { deletedAt: IsNull(), ...(status && { status }), ...(company && { company }), ...(plant && { plant }) } }),
-    ]);
+    qb.orderBy('po.createdAt', 'DESC');
 
-    // 품목 정보 조회 및 평면화
+    const total = await qb.getCount();
+    const data = await qb.skip(skip).take(limit).getMany();
+
+    if (data.length === 0) return { data: [], total, page, limit };
+
+    // 품목 정보 일괄 조회 (N+1 방지)
     const poIds = data.map((po) => po.id);
-    const items = poIds.length > 0 
-      ? await this.purchaseOrderItemRepository.find({ where: { poId: In(poIds) } })
-      : [];
+    const items = await this.purchaseOrderItemRepository.find({ where: { poId: In(poIds) } });
 
-    const partIds = items.map((item) => item.partId).filter(Boolean);
+    const partIds = [...new Set(items.map((item) => item.partId).filter(Boolean))];
     const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
     const partMap = new Map(parts.map((p) => [p.id, p]));
 
@@ -77,7 +77,7 @@ export class PurchaseOrderService {
       itemsByPoId.get(item.poId)!.push(item);
     }
 
-    let result = data.map((po) => {
+    const result = data.map((po) => {
       const poItems = itemsByPoId.get(po.id) || [];
       const enrichedItems = poItems.map((item) => {
         const part = partMap.get(item.partId);
@@ -95,27 +95,7 @@ export class PurchaseOrderService {
       };
     });
 
-    // 검색어로 partnerName 필터링
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(
-        (po) =>
-          po.poNo?.toLowerCase().includes(searchLower) ||
-          po.partnerName?.toLowerCase().includes(searchLower),
-      );
-    }
-
-    // 날짜 필터링
-    if (fromDate) {
-      const fromDateObj = new Date(fromDate);
-      result = result.filter((po) => po.orderDate && po.orderDate >= fromDateObj);
-    }
-    if (toDate) {
-      const toDateObj = new Date(toDate);
-      result = result.filter((po) => po.orderDate && po.orderDate <= toDateObj);
-    }
-
-    return { data: result, total: result.length, page, limit };
+    return { data: result, total, page, limit };
   }
 
   async findById(id: string) {
@@ -264,6 +244,34 @@ export class PurchaseOrderService {
       await queryRunner.release();
     }
 
+    return this.findById(id);
+  }
+
+  /** PO 확정 (DRAFT -> CONFIRMED) */
+  async confirm(id: string) {
+    const po = await this.purchaseOrderRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
+    if (po.status !== 'DRAFT') {
+      throw new BadRequestException(`DRAFT 상태의 PO만 확정할 수 있습니다. 현재 상태: ${po.status}`);
+    }
+
+    await this.purchaseOrderRepository.update(id, { status: 'CONFIRMED' });
+    return this.findById(id);
+  }
+
+  /** PO 마감 (RECEIVED -> CLOSED) */
+  async close(id: string) {
+    const po = await this.purchaseOrderRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
+    if (!['RECEIVED', 'PARTIAL'].includes(po.status)) {
+      throw new BadRequestException(`마감 가능한 상태가 아닙니다. 현재 상태: ${po.status}`);
+    }
+
+    await this.purchaseOrderRepository.update(id, { status: 'CLOSED' });
     return this.findById(id);
   }
 

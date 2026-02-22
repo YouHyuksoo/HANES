@@ -26,7 +26,7 @@ export class IqcItemPoolService {
   ) {}
 
   async findAll(query: IqcItemPoolQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 5000, search, judgeMethod, useYn } = query;
+    const { page = 1, limit = 50, search, judgeMethod, useYn } = query;
 
     const qb = this.repo.createQueryBuilder('item')
       .where('item.deletedAt IS NULL');

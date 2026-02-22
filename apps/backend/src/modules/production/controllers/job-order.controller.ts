@@ -99,7 +99,7 @@ export class JobOrderController {
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '작업지시 없음' })
   async findById(@Param('id') id: string) {
-    const data = await this.jobOrderService.findById(id);
+    const data = await this.jobOrderService.findByIdWithResults(id);
     return ResponseUtil.success(data);
   }
 
@@ -118,8 +118,8 @@ export class JobOrderController {
   @ApiOperation({ summary: '작업지시 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
   @ApiResponse({ status: 409, description: '중복 작업지시번호' })
-  async create(@Body() dto: CreateJobOrderDto) {
-    const data = await this.jobOrderService.create(dto);
+  async create(@Body() dto: CreateJobOrderDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.jobOrderService.create(dto, company, plant);
     return ResponseUtil.success(data, '작업지시가 생성되었습니다.');
   }
 

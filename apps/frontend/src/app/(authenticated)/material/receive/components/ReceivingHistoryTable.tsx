@@ -2,7 +2,7 @@
 
 /**
  * @file src/app/(authenticated)/material/receive/components/ReceivingHistoryTable.tsx
- * @description 입고 이력 테이블 - RECEIVE 타입 StockTransaction 표시
+ * @description 입고 이력 테이블 - MAT_RECEIVINGS 기반 입고 이력 표시
  */
 
 import { useMemo } from 'react';
@@ -19,7 +19,7 @@ export default function ReceivingHistoryTable({ data }: ReceivingHistoryTablePro
   const { t } = useTranslation();
 
   const columns = useMemo<ColumnDef<ReceivingRecord>[]>(() => [
-    { accessorKey: 'transNo', header: t('material.arrival.col.transNo'), size: 180 },
+    { accessorKey: 'receiveNo', header: t('material.receive.col.receiveNo', '입고번호'), size: 180 },
     {
       accessorKey: 'transDate',
       header: t('material.receive.col.receivedDate'),

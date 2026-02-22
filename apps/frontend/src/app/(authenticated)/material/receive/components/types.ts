@@ -47,6 +47,7 @@ export interface ReceivableLot {
 /** 입고 이력 레코드 */
 export interface ReceivingRecord {
   id: string;
+  receiveNo?: string;
   transNo: string;
   transDate: string;
   qty: number;

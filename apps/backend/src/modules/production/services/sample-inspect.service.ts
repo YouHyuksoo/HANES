@@ -74,7 +74,7 @@ export class SampleInspectService {
 
   /** 샘플검사 이력 조회 (작업지시별 그룹핑) */
   async findHistory(query: SampleInspectHistoryQueryDto, company?: string, plant?: string) {
-    const { passYn, startDate, endDate, search, limit = 5000 } = query;
+    const { passYn, startDate, endDate, search, limit = 50 } = query;
 
     const qb = this.sampleInspectRepository
       .createQueryBuilder('si')

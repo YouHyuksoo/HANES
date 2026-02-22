@@ -154,6 +154,9 @@ export default function VendorBarcodeMappingPage() {
             <p className="text-text-muted mt-1">{t("master.vendorBarcode.subtitle", "제조사 바코드를 MES 품번과 매핑")}</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            </Button>
             <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingItem(null); setIsPanelOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" />{t("master.vendorBarcode.addMapping", "매핑 추가")}
             </Button>
@@ -173,9 +176,6 @@ export default function VendorBarcodeMappingPage() {
                 <div className="w-40 flex-shrink-0">
                   <Select options={matchTypeOptions} value={matchTypeFilter} onChange={setMatchTypeFilter} fullWidth />
                 </div>
-                <Button variant="secondary" onClick={fetchData}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
               </div>
             } />
         </CardContent></Card>

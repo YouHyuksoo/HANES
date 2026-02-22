@@ -32,13 +32,13 @@ export class ProgressQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 5000 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상태 필터 (WAITING, RUNNING, PAUSED, DONE, CANCELED)' })
   @IsOptional()
@@ -72,13 +72,13 @@ export class SampleInspectQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 5000 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '합격 여부 (Y/N)' })
   @IsOptional()
@@ -113,13 +113,13 @@ export class PackResultQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 5000 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '포장일 시작' })
   @IsOptional()
@@ -148,13 +148,13 @@ export class WipStockQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 5000 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '품목 유형 (WIP/FG)', enum: ['WIP', 'FG'] })
   @IsOptional()

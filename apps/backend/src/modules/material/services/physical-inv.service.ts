@@ -85,7 +85,7 @@ export class PhysicalInvService {
   }
 
   async findHistory(query: PhysicalInvHistoryQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 5000, search, warehouseCode, startDate, endDate } = query;
+    const { page = 1, limit = 50, search, warehouseCode, startDate, endDate } = query;
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')

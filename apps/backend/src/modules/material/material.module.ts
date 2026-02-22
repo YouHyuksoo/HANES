@@ -27,6 +27,8 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { MatLot } from '../../entities/mat-lot.entity';
 import { MatStock } from '../../entities/mat-stock.entity';
 import { MatIssue } from '../../entities/mat-issue.entity';
+import { MatArrival } from '../../entities/mat-arrival.entity';
+import { MatReceiving } from '../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
 import { PurchaseOrder } from '../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../entities/purchase-order-item.entity';
@@ -85,6 +87,8 @@ import { IssueRequestService } from './services/issue-request.service';
       MatLot,
       MatStock,
       MatIssue,
+      MatArrival,
+      MatReceiving,
       StockTransaction,
       PurchaseOrder,
       PurchaseOrderItem,

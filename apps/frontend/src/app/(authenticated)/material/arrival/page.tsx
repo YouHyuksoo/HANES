@@ -98,6 +98,9 @@ export default function ArrivalPage() {
           <p className="text-text-muted mt-1">{t('material.arrival.description')}</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={refresh}>
+            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+          </Button>
           <Button size="sm" onClick={() => setIsPoModalOpen(true)}>
             <Plus className="w-4 h-4 mr-1" /> {t('material.arrival.poArrival')}
           </Button>
@@ -136,9 +139,6 @@ export default function ArrivalPage() {
                 <div className="w-40 flex-shrink-0">
                   <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                 </div>
-                <Button variant="secondary" size="sm" onClick={refresh} className="flex-shrink-0">
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
               </div>
             }
           />

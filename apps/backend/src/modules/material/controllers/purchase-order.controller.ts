@@ -3,8 +3,8 @@
  * @description 구매발주(PO) CRUD API 컨트롤러
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { PurchaseOrderService } from '../services/purchase-order.service';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -42,6 +42,22 @@ export class PurchaseOrderController {
   async update(@Param('id') id: string, @Body() dto: UpdatePurchaseOrderDto) {
     const data = await this.purchaseOrderService.update(id, dto);
     return ResponseUtil.success(data, 'PO가 수정되었습니다.');
+  }
+
+  @Patch(':id/confirm')
+  @ApiOperation({ summary: 'PO 확정 (DRAFT → CONFIRMED)' })
+  @ApiParam({ name: 'id', description: 'PO ID' })
+  async confirm(@Param('id') id: string) {
+    const data = await this.purchaseOrderService.confirm(id);
+    return ResponseUtil.success(data, 'PO가 확정되었습니다.');
+  }
+
+  @Patch(':id/close')
+  @ApiOperation({ summary: 'PO 마감 (RECEIVED/PARTIAL → CLOSED)' })
+  @ApiParam({ name: 'id', description: 'PO ID' })
+  async close(@Param('id') id: string) {
+    const data = await this.purchaseOrderService.close(id);
+    return ResponseUtil.success(data, 'PO가 마감되었습니다.');
   }
 
   @Delete(':id')

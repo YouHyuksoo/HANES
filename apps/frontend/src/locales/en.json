@@ -157,6 +157,7 @@
     "inventory.productPhysicalInvHistory": "Product Inventory History",
     "inventory.matPhysicalInv": "Material Physical Inv Mgmt",
     "inventory.matPhysicalInvHistory": "Material Physical Inv History",
+    "inventory.arrivalStock": "Arrival Stock Status",
     "material": "Material",
     "material.arrival": "Arrival",
     "material.iqc": "IQC Inspection",
@@ -279,6 +280,17 @@
     "plant": "Plant",
     "selectPlant": "Select a plant",
     "plantRequired": "Plant selection is required",
+    "connection": {
+      "title": "System Connection Check",
+      "subtitle": "Checking server and database connection status.",
+      "serverCheck": "Server Connection",
+      "dbCheck": "Database Connection",
+      "serverTimeout": "Server response timed out.",
+      "serverUnreachable": "Cannot connect to the server.",
+      "dbDisconnected": "Cannot connect to the database.",
+      "retryDesc": "Connection failed. Please check your network and try again.",
+      "retry": "Retry"
+    },
     "branding": {
       "title": "HARNESS MES",
       "subtitle": "Manufacturing Execution System",
@@ -429,6 +441,7 @@
       "cancelFailed": "Error during cancellation.",
       "alreadyCanceled": "This transaction is already canceled.",
       "cannotCancelCancel": "Cancel transactions cannot be canceled again.",
+      "receive": "Receiving",
       "matIn": "Material Receipt",
       "matInCancel": "Material Receipt Cancel",
       "matOut": "Material Issue",
@@ -620,6 +633,15 @@
       "changedCount": "{{count}} items changed",
       "confirmDelete": "Delete this setting?"
     }
+  },
+  "serial": {
+    "connected": "Barcode scanner connected",
+    "disconnected": "Barcode scanner not connected",
+    "connect": "Connect scanner",
+    "disconnect": "Disconnect",
+    "lastScan": "Last scan",
+    "notSupported": "Web Serial API is not supported in this browser",
+    "connectFailed": "Connection failed"
   },
   "serialTest": {
     "title": "Serial Port Test",
@@ -1241,6 +1263,7 @@
         "todayReceivedQty": "Today Received Qty"
       },
       "col": {
+        "receiveNo": "Receive No",
         "initQty": "Initial Qty",
         "receivedQty": "Received Qty",
         "remainingQty": "Remaining",
@@ -1451,6 +1474,31 @@
         "confirmed": "Confirmed",
         "partial": "Partial",
         "received": "Received"
+      }
+    },
+    "arrivalStock": {
+      "title": "Arrival Stock Status",
+      "subtitle": "View current stock status of arrived materials.",
+      "searchPlaceholder": "Search part code, part name, PO No, invoice No...",
+      "arrivalNo": "Arrival No.",
+      "invoiceNo": "Invoice No.",
+      "vendorName": "Vendor",
+      "partCode": "Part Code",
+      "partName": "Part Name",
+      "lotNo": "LOT No.",
+      "arrivalQty": "Arrival Qty",
+      "currentStock": "Current Stock",
+      "warehouseName": "Warehouse",
+      "arrivalType": "Arrival Type",
+      "arrivalDate": "Arrival Date",
+      "manufactureDate": "Manufacture Date",
+      "expireDate": "Expiry Date",
+      "unit": "Unit",
+      "stats": {
+        "totalArrivalQty": "Total Arrival Qty",
+        "totalCurrentStock": "Total Stock",
+        "partCount": "Parts",
+        "lotCount": "LOTs"
       }
     },
     "iqcHistory": {

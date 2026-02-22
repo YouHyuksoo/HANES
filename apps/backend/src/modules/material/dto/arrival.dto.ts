@@ -64,6 +64,12 @@ export class CreatePoArrivalDto {
   @Type(() => ArrivalItemDto)
   items: ArrivalItemDto[];
 
+  @ApiPropertyOptional({ description: '인보이스 번호' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  invoiceNo?: string;
+
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()
   @IsString()
@@ -102,10 +108,21 @@ export class CreateManualArrivalDto {
   @IsDateString()
   manufactureDate?: string;
 
-  @ApiPropertyOptional({ description: '공급업체' })
+  @ApiPropertyOptional({ description: '인보이스 번호' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  invoiceNo?: string;
+
+  @ApiPropertyOptional({ description: '공급업체 ID' })
+  @IsOptional()
+  @IsString()
+  vendorId?: string;
+
+  @ApiPropertyOptional({ description: '공급업체명' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
   vendor?: string;
 
   @ApiPropertyOptional({ description: '비고' })
@@ -129,13 +146,13 @@ export class ArrivalQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 5000 })
+  @ApiPropertyOptional({ default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (transNo, 품목코드, PO번호)' })
   @IsOptional()
@@ -156,6 +173,39 @@ export class ArrivalQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+}
+
+/** 입하재고현황 조회 DTO */
+export class ArrivalStockQueryDto {
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ default: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5000)
+  limit?: number = 5000;
+
+  @ApiPropertyOptional({ description: '검색어 (품목코드, 품목명, PO번호, 인보이스번호)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: '시작일' })
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: '종료일' })
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
 }
 
 /** 입하 취소 DTO */

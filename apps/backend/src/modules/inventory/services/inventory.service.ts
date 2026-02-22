@@ -9,7 +9,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, DataSource, IsNull, In, MoreThan } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -486,155 +486,163 @@ export class InventoryService {
    * @returns 평면화된 재고 데이터 (중첩 객체 → 평면 필드)
    */
   async getStock(query: StockQueryDto, company?: string, plant?: string) {
-    const queryBuilder = this.stockRepository.createQueryBuilder('stock')
-      .leftJoinAndSelect(Warehouse, 'warehouse', 'stock.warehouseCode = warehouse.warehouseCode')
-      .leftJoinAndSelect(PartMaster, 'part', 'stock.partId = part.id')
-      .leftJoinAndSelect(MatLot, 'lot', 'stock.lotId = lot.id')
-      .select([
-        'stock',
-        'warehouse.warehouseCode AS warehouse_code',
-        'warehouse.warehouseName AS warehouse_name',
-        'warehouse.warehouseType AS warehouse_type',
-        'part.partCode AS part_code',
-        'part.partName AS part_name',
-        'part.partType AS part_type',
-        'part.unit AS part_unit',
-        'lot.lotNo AS lot_no',
-        'lot.status AS lot_status',
-      ]);
+    const where: any = {};
+    if (company) where.company = company;
+    if (plant) where.plant = plant;
+    if (query.warehouseId) where.warehouseCode = query.warehouseId;
+    if (query.partId) where.partId = query.partId;
+    if (query.lotId) where.lotId = query.lotId;
 
-    if (company) {
-      queryBuilder.andWhere('stock.company = :company', { company });
-    }
-    if (plant) {
-      queryBuilder.andWhere('stock.plant = :plant', { plant });
-    }
-    if (query.warehouseId) {
-      queryBuilder.andWhere('stock.warehouseCode = :warehouseId', { warehouseId: query.warehouseId });
-    }
-    if (query.partId) {
-      queryBuilder.andWhere('stock.partId = :partId', { partId: query.partId });
-    }
-    if (query.lotId) {
-      queryBuilder.andWhere('stock.lotId = :lotId', { lotId: query.lotId });
-    }
-    if (!query.includeZero) {
-      queryBuilder.andWhere('stock.qty > 0');
-    }
+    const stocks = await this.stockRepository.find({
+      where,
+      select: ['id', 'warehouseCode', 'partId', 'lotId', 'qty', 'reservedQty', 'availableQty'],
+      order: { warehouseCode: 'ASC', partId: 'ASC' },
+    });
+
+    // 0수량 제외
+    let filtered = query.includeZero ? stocks : stocks.filter((s) => s.qty > 0);
+
+    if (filtered.length === 0) return [];
+
+    // 관련 데이터 일괄 조회
+    const whCodes = [...new Set(filtered.map((s) => s.warehouseCode).filter(Boolean))];
+    const partIds = [...new Set(filtered.map((s) => s.partId).filter(Boolean))];
+    const lotIds = [...new Set(filtered.map((s) => s.lotId).filter(Boolean))];
+
+    const warehouses = whCodes.length > 0 ? await this.warehouseRepository.find({
+      where: { warehouseCode: In(whCodes) },
+      select: ['id', 'warehouseCode', 'warehouseName', 'warehouseType'],
+    }) : [];
+    const parts = partIds.length > 0 ? await this.partMasterRepository.find({
+      where: { id: In(partIds) },
+      select: ['id', 'partCode', 'partName', 'partType', 'unit'],
+    }) : [];
+    const lots = lotIds.length > 0 ? await this.lotRepository.find({
+      where: { id: In(lotIds as string[]) },
+      select: ['id', 'lotNo', 'status'],
+    }) : [];
+
+    const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w] as const));
+    const partMap = new Map(parts.map((p) => [p.id, p] as const));
+    const lotMap = new Map(lots.map((l) => [l.id, l] as const));
+
+    // warehouseType/partType 필터링
     if (query.warehouseType) {
-      queryBuilder.andWhere('warehouse.warehouseType = :warehouseType', { warehouseType: query.warehouseType });
+      filtered = filtered.filter((s) => whMap.get(s.warehouseCode)?.warehouseType === query.warehouseType);
     }
     if (query.partType) {
-      queryBuilder.andWhere('part.partType = :partType', { partType: query.partType });
+      filtered = filtered.filter((s) => partMap.get(s.partId)?.partType === query.partType);
     }
 
-    const stocks = await queryBuilder
-      .orderBy('stock.warehouseId', 'ASC')
-      .addOrderBy('stock.partId', 'ASC')
-      .getRawMany();
-
-    // 평면화된 응답으로 변환
-    return stocks.map((stock) => ({
-      id: stock.stock_id,
-      warehouseId: stock.stock_warehouseCode,
-      partId: stock.stock_partId,
-      lotId: stock.stock_lotId,
-      qty: stock.stock_qty,
-      reservedQty: stock.stock_reservedQty,
-      availableQty: stock.stock_availableQty,
-      // 품목 정보 (평면화)
-      partCode: stock.part_code || null,
-      partName: stock.part_name || null,
-      partType: stock.part_type || null,
-      unit: stock.part_unit || null,
-      // 창고 정보 (평면화)
-      warehouseCode: stock.warehouse_code || null,
-      warehouseName: stock.warehouse_name || null,
-      warehouseType: stock.warehouse_type || null,
-      // LOT 정보 (평면화)
-      lotNo: stock.lot_no || null,
-      lotStatus: stock.lot_status || null,
-    }));
+    return filtered.map((s) => {
+      const wh = whMap.get(s.warehouseCode);
+      const part = partMap.get(s.partId);
+      const lot = s.lotId ? lotMap.get(s.lotId) : null;
+      return {
+        id: s.id,
+        warehouseId: s.warehouseCode,
+        partId: s.partId,
+        lotId: s.lotId,
+        qty: s.qty,
+        reservedQty: s.reservedQty,
+        availableQty: s.availableQty,
+        partCode: part?.partCode || null,
+        partName: part?.partName || null,
+        partType: part?.partType || null,
+        unit: part?.unit || null,
+        warehouseCode: wh?.warehouseCode || null,
+        warehouseName: wh?.warehouseName || null,
+        warehouseType: wh?.warehouseType || null,
+        lotNo: lot?.lotNo || null,
+        lotStatus: lot?.status || null,
+      };
+    });
   }
 
   /**
    * 수불 이력 조회
    */
   async getTransactions(query: TransactionQueryDto, company?: string, plant?: string) {
-    const queryBuilder = this.stockTransactionRepository.createQueryBuilder('trans')
-      .leftJoinAndSelect(Warehouse, 'fromWh', 'trans.fromWarehouseId = fromWh.id')
-      .leftJoinAndSelect(Warehouse, 'toWh', 'trans.toWarehouseId = toWh.id')
-      .leftJoinAndSelect(PartMaster, 'part', 'trans.partId = part.id')
-      .leftJoinAndSelect(MatLot, 'lot', 'trans.lotId = lot.id')
-      .leftJoinAndSelect(StockTransaction, 'cancelRef', 'trans.cancelRefId = cancelRef.id')
-      .select([
-        'trans',
-        'fromWh AS fromWarehouse',
-        'toWh AS toWarehouse',
-        'part AS part',
-        'lot AS lot',
-        'cancelRef AS cancelRef',
-      ]);
+    const where: any = {};
+    if (company) where.company = company;
+    if (plant) where.plant = plant;
+    if (query.partId) where.partId = query.partId;
+    if (query.lotId) where.lotId = query.lotId;
+    if (query.transType) where.transType = query.transType;
+    if (query.refType) where.refType = query.refType;
+    if (query.refId) where.refId = query.refId;
 
-    if (company) {
-      queryBuilder.andWhere('trans.company = :company', { company });
-    }
-    if (plant) {
-      queryBuilder.andWhere('trans.plant = :plant', { plant });
-    }
+    const qb = this.stockTransactionRepository.createQueryBuilder('trans')
+      .where(where);
+
     if (query.warehouseId) {
-      queryBuilder.andWhere(
+      qb.andWhere(
         '(trans.fromWarehouseId = :warehouseId OR trans.toWarehouseId = :warehouseId)',
-        { warehouseId: query.warehouseId }
+        { warehouseId: query.warehouseId },
       );
     }
-    if (query.partId) {
-      queryBuilder.andWhere('trans.partId = :partId', { partId: query.partId });
-    }
-    if (query.lotId) {
-      queryBuilder.andWhere('trans.lotId = :lotId', { lotId: query.lotId });
-    }
-    if (query.transType) {
-      queryBuilder.andWhere('trans.transType = :transType', { transType: query.transType });
-    }
-    if (query.refType) {
-      queryBuilder.andWhere('trans.refType = :refType', { refType: query.refType });
-    }
-    if (query.refId) {
-      queryBuilder.andWhere('trans.refId = :refId', { refId: query.refId });
-    }
     if (query.dateFrom) {
-      queryBuilder.andWhere('trans.transDate >= :dateFrom', { dateFrom: query.dateFrom });
+      qb.andWhere('trans.transDate >= :dateFrom', { dateFrom: query.dateFrom });
     }
     if (query.dateTo) {
-      queryBuilder.andWhere('trans.transDate <= :dateTo', { dateTo: query.dateTo });
+      qb.andWhere('trans.transDate <= :dateTo', { dateTo: query.dateTo });
     }
 
-    return queryBuilder
+    const transactions = await qb
       .orderBy('trans.transDate', 'DESC')
       .take(query.limit || 100)
       .skip(query.offset || 0)
       .getMany();
+
+    if (transactions.length === 0) return [];
+
+    // 관련 데이터 일괄 조회
+    const whIds = [...new Set(transactions.flatMap((t) => [t.fromWarehouseId, t.toWarehouseId].filter(Boolean)))];
+    const partIds = [...new Set(transactions.map((t) => t.partId).filter(Boolean))];
+    const lotIds = [...new Set(transactions.map((t) => t.lotId).filter(Boolean))];
+
+    const warehouses = whIds.length > 0 ? await this.warehouseRepository.find({ where: { id: In(whIds as string[]) } }) : [];
+    const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds as string[]) } }) : [];
+    const lots = lotIds.length > 0 ? await this.lotRepository.find({ where: { id: In(lotIds as string[]) } }) : [];
+
+    const whMap = new Map(warehouses.map((w) => [w.id, w]));
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const lotMap = new Map(lots.map((l) => [l.id, l]));
+
+    return transactions.map((t) => ({
+      ...t,
+      fromWarehouse: t.fromWarehouseId ? whMap.get(t.fromWarehouseId) || null : null,
+      toWarehouse: t.toWarehouseId ? whMap.get(t.toWarehouseId) || null : null,
+      part: partMap.get(t.partId) || null,
+      lot: t.lotId ? lotMap.get(t.lotId) || null : null,
+    }));
   }
 
   /**
    * LOT 목록 조회
    */
   async getLots(query: { partId?: string; partType?: string; status?: string }) {
-    const queryBuilder = this.lotRepository.createQueryBuilder('lot')
-      .leftJoinAndSelect(PartMaster, 'part', 'lot.partId = part.id')
-      .select(['lot', 'part AS part']);
+    const where: any = {};
+    if (query.partId) where.partId = query.partId;
+    if (query.status) where.status = query.status;
 
-    if (query.partId) {
-      queryBuilder.andWhere('lot.partId = :partId', { partId: query.partId });
-    }
-    if (query.status) {
-      queryBuilder.andWhere('lot.status = :status', { status: query.status });
-    }
+    const lots = await this.lotRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+    });
 
-    return queryBuilder
-      .orderBy('lot.createdAt', 'DESC')
-      .getMany();
+    if (lots.length === 0) return [];
+
+    const partIds = [...new Set(lots.map((l) => l.partId).filter(Boolean))];
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+
+    return lots.map((l) => ({
+      ...l,
+      part: partMap.get(l.partId) || null,
+    }));
   }
 
   /**
@@ -649,15 +657,9 @@ export class InventoryService {
       throw new NotFoundException('LOT을 찾을 수 없습니다.');
     }
 
-    // Get related data
     const [part, stocks, transactions] = await Promise.all([
       this.partMasterRepository.findOne({ where: { id: lot.partId } }),
-      this.stockRepository
-        .createQueryBuilder('stock')
-        .leftJoinAndSelect(Warehouse, 'warehouse', 'stock.warehouseCode = warehouse.warehouseCode')
-        .where('stock.lotId = :lotId', { lotId: id })
-        .select(['stock', 'warehouse AS warehouse'])
-        .getMany(),
+      this.stockRepository.find({ where: { lotId: id } }),
       this.stockTransactionRepository.find({
         where: { lotId: id },
         order: { transDate: 'DESC' },
@@ -665,10 +667,17 @@ export class InventoryService {
       }),
     ]);
 
+    // stock에 warehouse 정보 추가
+    const whCodes = [...new Set(stocks.map((s) => s.warehouseCode).filter(Boolean))];
+    const warehouses = whCodes.length > 0
+      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes) } })
+      : [];
+    const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
+
     return {
       ...lot,
       part,
-      stocks,
+      stocks: stocks.map((s) => ({ ...s, warehouse: whMap.get(s.warehouseCode) || null })),
       transactions,
     };
   }
@@ -710,31 +719,48 @@ export class InventoryService {
    * 재고 집계
    */
   async getStockSummary(query: { warehouseType?: string; partType?: string }) {
-    const queryBuilder = this.stockRepository.createQueryBuilder('stock')
-      .leftJoinAndSelect(Warehouse, 'warehouse', 'stock.warehouseCode = warehouse.warehouseCode')
-      .leftJoinAndSelect(PartMaster, 'part', 'stock.partId = part.id')
-      .where('stock.qty > 0');
+    let stocks = await this.stockRepository.find({
+      where: { qty: MoreThan(0) },
+      select: ['id', 'warehouseCode', 'partId', 'qty'],
+    });
 
+    if (stocks.length === 0) return [];
+
+    const whCodes = [...new Set(stocks.map((s) => s.warehouseCode).filter(Boolean))];
+    const partIds = [...new Set(stocks.map((s) => s.partId).filter(Boolean))];
+
+    const warehouses = whCodes.length > 0 ? await this.warehouseRepository.find({
+      where: { warehouseCode: In(whCodes) },
+      select: ['id', 'warehouseCode', 'warehouseName', 'warehouseType'],
+    }) : [];
+    const parts = partIds.length > 0 ? await this.partMasterRepository.find({
+      where: { id: In(partIds) },
+      select: ['id', 'partCode', 'partName', 'partType'],
+    }) : [];
+
+    const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w] as const));
+    const partMap = new Map(parts.map((p) => [p.id, p] as const));
+
+    // 타입 필터
     if (query.warehouseType) {
-      queryBuilder.andWhere('warehouse.warehouseType = :warehouseType', { warehouseType: query.warehouseType });
+      stocks = stocks.filter((s) => whMap.get(s.warehouseCode)?.warehouseType === query.warehouseType);
     }
     if (query.partType) {
-      queryBuilder.andWhere('part.partType = :partType', { partType: query.partType });
+      stocks = stocks.filter((s) => partMap.get(s.partId)?.partType === query.partType);
     }
-
-    const stocks = await queryBuilder
-      .select(['stock', 'warehouse AS warehouse', 'part AS part'])
-      .getMany();
 
     // 품목별 집계
     const summary: Record<string, { partId: string; partCode: string; partName: string; totalQty: number; warehouses: any[] }> = {};
 
     for (const stock of stocks) {
+      const part = partMap.get(stock.partId);
+      const wh = whMap.get(stock.warehouseCode);
+
       if (!summary[stock.partId]) {
         summary[stock.partId] = {
           partId: stock.partId,
-          partCode: (stock as any).part?.partCode || '',
-          partName: (stock as any).part?.partName || '',
+          partCode: part?.partCode || '',
+          partName: part?.partName || '',
           totalQty: 0,
           warehouses: [],
         };
@@ -742,8 +768,8 @@ export class InventoryService {
       summary[stock.partId].totalQty += stock.qty;
       summary[stock.partId].warehouses.push({
         warehouseId: stock.warehouseCode,
-        warehouseCode: (stock as any).warehouse?.warehouseCode || '',
-        warehouseName: (stock as any).warehouse?.warehouseName || '',
+        warehouseCode: wh?.warehouseCode || '',
+        warehouseName: wh?.warehouseName || '',
         qty: stock.qty,
       });
     }

@@ -49,7 +49,7 @@ export class OqcService {
 
   /** 목록 조회 (QueryBuilder + PartMaster 조인) */
   async findAll(query: OqcRequestQueryDto, company?: string) {
-    const { page = 1, limit = 5000, search, status, customer, fromDate, toDate } = query;
+    const { page = 1, limit = 50, search, status, customer, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.oqcRequestRepo

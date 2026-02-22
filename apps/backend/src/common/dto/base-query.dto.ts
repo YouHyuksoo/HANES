@@ -29,13 +29,13 @@ export class PaginationQueryDto {
   @Min(1)
   page: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 당 항목 수', default: 5000, minimum: 1, maximum: 10000 })
+  @ApiPropertyOptional({ description: '페이지 당 항목 수', default: 50, minimum: 1, maximum: 200 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit: number = 5000;
+  @Max(200)
+  limit: number = 50;
 }
 
 /**

@@ -115,6 +115,9 @@ export default function EquipBomTab() {
   const [deleteItemTarget, setDeleteItemTarget] = useState<EquipBomItem | null>(null);
   const [deleteRelTarget, setDeleteRelTarget] = useState<EquipBomRel | null>(null);
 
+  // 알림 모달 상태
+  const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
+
   // ========================================
   // 데이터 로드
   // ========================================
@@ -265,7 +268,7 @@ export default function EquipBomTab() {
       fetchBomItems();
     } catch (e: any) {
       console.error("Save item failed:", e);
-      alert(e.response?.data?.message || "저장에 실패했습니다.");
+      setAlertModal({ open: true, title: t("common.error"), message: e.response?.data?.message || t("common.saveFailed", "저장에 실패했습니다.") });
     }
   };
 
@@ -287,7 +290,7 @@ export default function EquipBomTab() {
 
   const openRelCreate = () => {
     if (!selectedEquipId) {
-      alert(t("master.equip.selectEquipFirst", "설비를 먼저 선택해주세요."));
+      setAlertModal({ open: true, title: t("common.confirm"), message: t("master.equip.selectEquipFirst", "설비를 먼저 선택해주세요.") });
       return;
     }
     setEditingRel(null);
@@ -332,7 +335,7 @@ export default function EquipBomTab() {
       fetchBomRels();
     } catch (e: any) {
       console.error("Save relation failed:", e);
-      alert(e.response?.data?.message || "저장에 실패했습니다.");
+      setAlertModal({ open: true, title: t("common.error"), message: e.response?.data?.message || t("common.saveFailed", "저장에 실패했습니다.") });
     }
   };
 
@@ -793,6 +796,14 @@ export default function EquipBomTab() {
         variant="danger"
         message={`'${deleteRelTarget?.bomItem?.itemName || ""}' 연결을 삭제하시겠습니까?`}
       />
+
+      {/* 알림 모달 */}
+      <Modal isOpen={alertModal.open} onClose={() => setAlertModal({ ...alertModal, open: false })} title={alertModal.title} size="sm">
+        <p className="text-text">{alertModal.message}</p>
+        <div className="flex justify-end pt-4">
+          <Button onClick={() => setAlertModal({ ...alertModal, open: false })}>{t("common.confirm")}</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

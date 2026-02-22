@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
   Index,
@@ -41,8 +42,23 @@ export class OqcRequestBox {
   @Column({ name: 'IS_SAMPLE', length: 1, default: 'N' })
   isSample: string;
 
+  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  company: string | null;
+
+  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  plant: string | null;
+
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  createdBy: string | null;
+
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  updatedBy: string | null;
+
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
+  updatedAt: Date;
 
   @ManyToOne(() => OqcRequest, (req) => req.boxes)
   @JoinColumn({ name: 'OQC_REQUEST_ID' })

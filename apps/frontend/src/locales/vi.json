@@ -157,6 +157,7 @@
     "inventory.productPhysicalInvHistory": "Lịch sử kiểm kê sản phẩm",
     "inventory.matPhysicalInv": "Quản lý kiểm kê VT",
     "inventory.matPhysicalInvHistory": "Lịch sử kiểm kê VT",
+    "inventory.arrivalStock": "Tình trạng tồn kho nhập hàng",
     "material": "Quản lý vật tư",
     "material.arrival": "Quản lý nhập hàng",
     "material.iqc": "Kiểm tra đầu vào (IQC)",
@@ -280,6 +281,17 @@
     "plant": "Nhà máy",
     "selectPlant": "Chọn nhà máy",
     "plantRequired": "Bắt buộc chọn nhà máy",
+    "connection": {
+      "title": "Kiểm tra kết nối hệ thống",
+      "subtitle": "Đang kiểm tra kết nối máy chủ và cơ sở dữ liệu.",
+      "serverCheck": "Kết nối máy chủ",
+      "dbCheck": "Kết nối cơ sở dữ liệu",
+      "serverTimeout": "Phản hồi máy chủ đã hết thời gian.",
+      "serverUnreachable": "Không thể kết nối đến máy chủ.",
+      "dbDisconnected": "Không thể kết nối đến cơ sở dữ liệu.",
+      "retryDesc": "Kết nối thất bại. Vui lòng kiểm tra mạng và thử lại.",
+      "retry": "Thử lại"
+    },
     "branding": {
       "title": "HARNESS MES",
       "subtitle": "Manufacturing Execution System",
@@ -430,6 +442,7 @@
       "cancelFailed": "Lỗi khi hủy.",
       "alreadyCanceled": "Giao dịch này đã bị hủy.",
       "cannotCancelCancel": "Không thể hủy giao dịch đã bị hủy.",
+      "receive": "Nhập kho",
       "matIn": "Nhập nguyên vật liệu",
       "matInCancel": "Hủy nhập nguyên vật liệu",
       "matOut": "Xuất nguyên vật liệu",
@@ -621,6 +634,15 @@
       "changedCount": "{{count}} mục đã thay đổi",
       "confirmDelete": "Xóa cài đặt này?"
     }
+  },
+  "serial": {
+    "connected": "Máy quét mã vạch đã kết nối",
+    "disconnected": "Máy quét mã vạch chưa kết nối",
+    "connect": "Kết nối máy quét",
+    "disconnect": "Ngắt kết nối",
+    "lastScan": "Quét gần nhất",
+    "notSupported": "Trình duyệt không hỗ trợ Web Serial API",
+    "connectFailed": "Kết nối thất bại"
   },
   "serialTest": {
     "title": "Kiểm tra cổng Serial",
@@ -1242,6 +1264,7 @@
         "todayReceivedQty": "SL nhập hôm nay"
       },
       "col": {
+        "receiveNo": "Số nhập kho",
         "initQty": "SL ban đầu",
         "receivedQty": "SL đã nhập",
         "remainingQty": "SL còn lại",
@@ -1452,6 +1475,31 @@
         "confirmed": "Đã xác nhận",
         "partial": "Nhận một phần",
         "received": "Đã nhận đủ"
+      }
+    },
+    "arrivalStock": {
+      "title": "Tình trạng tồn kho nhập hàng",
+      "subtitle": "Xem tình trạng tồn kho hiện tại của vật tư đã nhập.",
+      "searchPlaceholder": "Tìm mã phụ tùng, tên phụ tùng, số PO, số hóa đơn...",
+      "arrivalNo": "Số nhập hàng",
+      "invoiceNo": "Số hóa đơn",
+      "vendorName": "Nhà cung cấp",
+      "partCode": "Mã phụ tùng",
+      "partName": "Tên phụ tùng",
+      "lotNo": "Số LOT",
+      "arrivalQty": "Số lượng nhập",
+      "currentStock": "Tồn kho hiện tại",
+      "warehouseName": "Kho",
+      "arrivalType": "Loại nhập hàng",
+      "arrivalDate": "Ngày nhập hàng",
+      "manufactureDate": "Ngày sản xuất",
+      "expireDate": "Hạn sử dụng",
+      "unit": "Đơn vị",
+      "stats": {
+        "totalArrivalQty": "Tổng số nhập",
+        "totalCurrentStock": "Tổng tồn kho",
+        "partCount": "Số phụ tùng",
+        "lotCount": "Số LOT"
       }
     },
     "iqcHistory": {

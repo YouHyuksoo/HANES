@@ -32,7 +32,7 @@ export class LotMergeService {
   ) {}
 
   async findMergeableLots(query: LotMergeQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 5000, search, partId } = query;
+    const { page = 1, limit = 50, search, partId } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.matLotRepository.createQueryBuilder('lot')

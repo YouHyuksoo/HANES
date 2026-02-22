@@ -159,8 +159,8 @@ export default function LotMergePage() {
           <p className="text-text-muted mt-1">{t("material.lotMerge.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => setShowConfirm(true)}
             disabled={!canMerge}>

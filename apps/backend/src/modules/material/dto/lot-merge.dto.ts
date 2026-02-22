@@ -39,13 +39,13 @@ export class LotMergeQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ default: 5000 })
+  @ApiPropertyOptional({ default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색 (로트번호, 품목코드)' })
   @IsOptional()

@@ -139,9 +139,14 @@ export default function CustomerPoPage() {
             </h1>
             <p className="text-text-muted mt-1">{t("shipping.customerPo.subtitle")}</p>
           </div>
-          <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingItem(null); setIsPanelOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" />{t("common.register")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            </Button>
+            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingItem(null); setIsPanelOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" />{t("common.register")}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-5 gap-3">
@@ -170,9 +175,6 @@ export default function CustomerPoPage() {
                 <div className="w-40 flex-shrink-0">
                   <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                 </div>
-                <Button variant="secondary" onClick={fetchData}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
               </div>
             }
           />

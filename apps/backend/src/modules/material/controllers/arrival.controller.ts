@@ -4,7 +4,8 @@
  *
  * 초보자 가이드:
  * 1. **GET /material/arrivals**: 입하 이력 조회 (페이지네이션)
- * 2. **GET /material/arrivals/stats**: 입하 통계
+ * 2. **GET /material/arrivals/stock-status**: 입하재고현황 조회
+ * 3. **GET /material/arrivals/stats**: 입하 통계
  * 3. **GET /material/arrivals/receivable-pos**: 입하 가능 PO 목록
  * 4. **GET /material/arrivals/po/:poId/items**: PO 품목 상세
  * 5. **POST /material/arrivals/po**: PO 기반 입하 등록
@@ -19,6 +20,7 @@ import {
   CreatePoArrivalDto,
   CreateManualArrivalDto,
   ArrivalQueryDto,
+  ArrivalStockQueryDto,
   CancelArrivalDto,
 } from '../dto/arrival.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -34,6 +36,13 @@ export class ArrivalController {
   async findAll(@Query() query: ArrivalQueryDto, @Company() company: string, @Plant() plant: string) {
     const result = await this.arrivalService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Get('stock-status')
+  @ApiOperation({ summary: '입하재고현황 조회' })
+  async getArrivalStockStatus(@Query() query: ArrivalStockQueryDto) {
+    const result = await this.arrivalService.getArrivalStockStatus(query);
+    return ResponseUtil.success(result);
   }
 
   @Get('stats')

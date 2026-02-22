@@ -55,6 +55,12 @@ export class WarehouseLocation {
   @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  createdBy: string | null;
+
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  updatedBy: string | null;
+
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 

@@ -96,75 +96,9 @@ export default function CommConfigPage() {
   const columns = useMemo<ColumnDef<CommConfig>[]>(
     () => [
       {
-        accessorKey: "configName",
-        header: t('system.commConfig.configName'),
-        size: 200,
-        cell: ({ row }) => (
-          <div>
-            <div className="font-medium text-text">{row.original.configName}</div>
-            {row.original.description && (
-              <div className="text-xs text-text-muted truncate max-w-[180px]">
-                {row.original.description}
-              </div>
-            )}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "commType",
-        header: t('system.commConfig.commType'),
-        size: 120,
-        cell: ({ row }) => {
-          const badge = TYPE_BADGE[row.original.commType] || TYPE_BADGE.TCP;
-          return (
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${badge.bg} ${badge.text}`}
-            >
-              {row.original.commType}
-            </span>
-          );
-        },
-      },
-      {
-        id: "connection",
-        header: t('system.commConfig.connection'),
-        size: 180,
-        cell: ({ row }) => {
-          const c = row.original;
-          if (c.commType === "SERIAL") {
-            return (
-              <span className="text-sm text-text">
-                {c.portName || "-"} / {c.baudRate || "-"}bps
-              </span>
-            );
-          }
-          return (
-            <span className="text-sm text-text">
-              {c.host || "-"}:{c.port || "-"}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "useYn",
-        header: t('system.commConfig.use'),
-        size: 70,
-        cell: ({ row }) => (
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-              row.original.useYn === "Y"
-                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-            }`}
-          >
-            {row.original.useYn === "Y" ? t('system.commConfig.inUse') : t('system.commConfig.notInUse')}
-          </span>
-        ),
-      },
-      {
         id: "actions",
         header: t('common.actions'),
-        size: 130,
+        size: 120,
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
             {row.original.commType === "SERIAL" && (
@@ -191,6 +125,108 @@ export default function CommConfigPage() {
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
+        ),
+      },
+      {
+        accessorKey: "configName",
+        header: t('system.commConfig.configName'),
+        size: 160,
+        cell: ({ getValue }) => (
+          <span className="font-medium text-text">{getValue() as string}</span>
+        ),
+      },
+      {
+        accessorKey: "description",
+        header: t('system.commConfig.descriptionLabel'),
+        size: 160,
+        cell: ({ getValue }) => (
+          <span className="text-sm text-text-muted truncate">{(getValue() as string) || "-"}</span>
+        ),
+      },
+      {
+        accessorKey: "commType",
+        header: t('system.commConfig.commType'),
+        size: 100,
+        cell: ({ row }) => {
+          const badge = TYPE_BADGE[row.original.commType] || TYPE_BADGE.TCP;
+          return (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${badge.bg} ${badge.text}`}>
+              {row.original.commType}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "host",
+        header: t('system.commConfig.hostLabel'),
+        size: 130,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
+      },
+      {
+        accessorKey: "port",
+        header: t('system.commConfig.portLabel'),
+        size: 70,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as number) ?? "-"}</span>,
+      },
+      {
+        accessorKey: "portName",
+        header: t('system.commConfig.portName'),
+        size: 80,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
+      },
+      {
+        accessorKey: "baudRate",
+        header: t('system.commConfig.baudRate'),
+        size: 90,
+        cell: ({ getValue }) => {
+          const v = getValue() as number | null;
+          return <span className="text-sm text-text">{v ? `${v.toLocaleString()}` : "-"}</span>;
+        },
+      },
+      {
+        accessorKey: "dataBits",
+        header: t('system.commConfig.dataBits'),
+        size: 80,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as number) ?? "-"}</span>,
+      },
+      {
+        accessorKey: "stopBits",
+        header: t('system.commConfig.stopBits'),
+        size: 80,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
+      },
+      {
+        accessorKey: "parity",
+        header: t('system.commConfig.parity'),
+        size: 80,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
+      },
+      {
+        accessorKey: "flowControl",
+        header: t('system.commConfig.flowControl'),
+        size: 90,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
+      },
+      {
+        accessorKey: "lineEnding",
+        header: t('system.commConfig.lineEnding'),
+        size: 80,
+        cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
+      },
+      {
+        accessorKey: "useYn",
+        header: t('system.commConfig.use'),
+        size: 70,
+        cell: ({ row }) => (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+              row.original.useYn === "Y"
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+            }`}
+          >
+            {row.original.useYn === "Y" ? t('system.commConfig.inUse') : t('system.commConfig.notInUse')}
+          </span>
         ),
       },
     ],

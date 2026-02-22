@@ -18,6 +18,7 @@ import { useAuthStore } from "@/stores/authStore";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LanguageSwitcher from "./LanguageSwitcher";
+import SerialIndicator from "./SerialIndicator";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -97,6 +98,9 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
 
       {/* Right Section - Actions */}
       <div className="flex items-center gap-2">
+        {/* 바코드 스캐너 연결 상태 */}
+        <SerialIndicator />
+
         {/* 알림 */}
         <button
           className="relative p-2 rounded-md hover:bg-background transition-colors"

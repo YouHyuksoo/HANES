@@ -16,6 +16,7 @@ import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -23,6 +24,7 @@ import {
   CreatePoArrivalDto,
   CreateManualArrivalDto,
   ArrivalQueryDto,
+  ArrivalStockQueryDto,
   CancelArrivalDto,
 } from '../dto/arrival.dto';
 
@@ -37,6 +39,8 @@ export class ArrivalService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(MatArrival)
+    private readonly matArrivalRepository: Repository<MatArrival>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(PartMaster)
@@ -165,6 +169,7 @@ export class ArrivalService {
 
     try {
       const results = [];
+      const arrivalNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 
       for (const item of dto.items) {
         const transNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
@@ -192,7 +197,27 @@ export class ArrivalService {
         });
         const savedLot = await queryRunner.manager.save(lot);
 
-        // 2. StockTransaction 생성
+        // 2. MatArrival 생성 (입하 업무 테이블)
+        const arrival = queryRunner.manager.create(MatArrival, {
+          arrivalNo,
+          invoiceNo: dto.invoiceNo || null,
+          poId: dto.poId,
+          poItemId: item.poItemId,
+          poNo: po.poNo,
+          vendorId: po.partnerId,
+          vendorName: po.partnerName,
+          lotId: savedLot.id,
+          partId: item.partId,
+          qty: item.receivedQty,
+          warehouseCode: item.warehouseId,
+          arrivalType: 'PO',
+          workerId: dto.workerId,
+          remark: item.remark || dto.remark,
+          status: 'DONE',
+        });
+        await queryRunner.manager.save(arrival);
+
+        // 3. StockTransaction 생성 (수불원장)
         const stockTx = queryRunner.manager.create(StockTransaction, {
           transNo,
           transType: 'MAT_IN',
@@ -207,10 +232,10 @@ export class ArrivalService {
         });
         const savedTx = await queryRunner.manager.save(stockTx);
 
-        // 3. Stock upsert (현재고 반영)
+        // 4. Stock upsert (현재고 반영)
         await this.upsertStock(queryRunner.manager, item.warehouseId, item.partId, savedLot.id, item.receivedQty);
 
-        // 4. PurchaseOrderItem.receivedQty 증가
+        // 5. PurchaseOrderItem.receivedQty 증가
         const poItem = poItems.find((pi) => pi.id === item.poItemId);
         if (poItem) {
           await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
@@ -223,6 +248,7 @@ export class ArrivalService {
 
         results.push({
           ...savedTx,
+          arrivalNo,
           partCode: part?.partCode,
           partName: part?.partName,
           partType: part?.partType,
@@ -249,6 +275,7 @@ export class ArrivalService {
   /** 수동 입하 등록 */
   async createManualArrival(dto: CreateManualArrivalDto) {
     const transNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+    const arrivalNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
     const lotNo = dto.lotNo || `L${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -277,7 +304,24 @@ export class ArrivalService {
       });
       const savedLot = await queryRunner.manager.save(lot);
 
-      // 2. StockTransaction 생성
+      // 2. MatArrival 생성 (입하 업무 테이블)
+      const arrival = queryRunner.manager.create(MatArrival, {
+        arrivalNo,
+        invoiceNo: dto.invoiceNo || null,
+        vendorId: dto.vendorId || null,
+        vendorName: dto.vendor || null,
+        lotId: savedLot.id,
+        partId: dto.partId,
+        qty: dto.qty,
+        warehouseCode: dto.warehouseId,
+        arrivalType: 'MANUAL',
+        workerId: dto.workerId,
+        remark: dto.remark,
+        status: 'DONE',
+      });
+      await queryRunner.manager.save(arrival);
+
+      // 3. StockTransaction 생성 (수불원장)
       const stockTx = queryRunner.manager.create(StockTransaction, {
         transNo,
         transType: 'MAT_IN',
@@ -291,7 +335,7 @@ export class ArrivalService {
       });
       const savedTx = await queryRunner.manager.save(stockTx);
 
-      // 3. Stock upsert
+      // 4. Stock upsert
       await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.partId, savedLot.id, dto.qty);
 
       // warehouse 정보 조회 (part는 이미 위에서 조회)
@@ -301,6 +345,7 @@ export class ArrivalService {
 
       return {
         ...savedTx,
+        arrivalNo,
         partCode: part?.partCode,
         partName: part?.partName,
         partType: part?.partType,
@@ -374,10 +419,17 @@ export class ArrivalService {
     const lotMap = new Map(lots.map((l) => [l.id, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.id, w]));
 
+    // MatArrival 정보 조회 (인보이스번호, 거래처 등)
+    const arrivalRecords = lotIds.length > 0
+      ? await this.matArrivalRepository.find({ where: { lotId: In(lotIds) } })
+      : [];
+    const arrivalByLotId = new Map(arrivalRecords.map((a) => [a.lotId, a]));
+
     const flattenedData = data.map((item) => {
       const part = partMap.get(item.partId);
       const lot = item.lotId ? lotMap.get(item.lotId) : null;
       const warehouse = item.toWarehouseId ? warehouseMap.get(item.toWarehouseId) : null;
+      const arrival = item.lotId ? arrivalByLotId.get(item.lotId) : null;
 
       return {
         ...item,
@@ -388,6 +440,11 @@ export class ArrivalService {
         lotNo: lot?.lotNo,
         warehouseCode: warehouse?.warehouseCode,
         warehouseName: warehouse?.warehouseName,
+        arrivalNo: arrival?.arrivalNo,
+        invoiceNo: arrival?.invoiceNo,
+        vendorId: arrival?.vendorId,
+        vendorName: arrival?.vendorName,
+        arrivalType: arrival?.arrivalType,
       };
     });
 
@@ -413,6 +470,16 @@ export class ArrivalService {
     try {
       // 1. 원본 CANCELED 처리
       await queryRunner.manager.update(StockTransaction, dto.transactionId, { status: 'CANCELED' });
+
+      // 1-1. MatArrival도 CANCELED 처리 (LOT 기준으로 찾기)
+      if (original.lotId) {
+        const arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
+          where: { lotId: original.lotId, status: 'DONE' },
+        });
+        if (arrivalRecord) {
+          await queryRunner.manager.update(MatArrival, arrivalRecord.id, { status: 'CANCELED' });
+        }
+      }
 
       // 2. 역분개 트랜잭션 생성
       const cancelTx = queryRunner.manager.create(StockTransaction, {
@@ -518,6 +585,110 @@ export class ArrivalService {
       unrecevedPoCount,
       totalCount,
     };
+  }
+
+  /** 입하재고현황 조회 (MAT_ARRIVALS 기반 + 현재고 조인) */
+  async getArrivalStockStatus(query: ArrivalStockQueryDto) {
+    const { search, fromDate, toDate } = query;
+
+    const qb = this.matArrivalRepository.createQueryBuilder('a')
+      .where('a.status = :status', { status: 'DONE' });
+
+    if (fromDate && toDate) {
+      qb.andWhere('a.arrivalDate BETWEEN :fromDate AND :toDate', {
+        fromDate: new Date(fromDate),
+        toDate: new Date(toDate + 'T23:59:59'),
+      });
+    } else if (fromDate) {
+      qb.andWhere('a.arrivalDate >= :fromDate', { fromDate: new Date(fromDate) });
+    } else if (toDate) {
+      qb.andWhere('a.arrivalDate <= :toDate', { toDate: new Date(toDate + 'T23:59:59') });
+    }
+
+    const arrivals = await qb.orderBy('a.arrivalDate', 'DESC').getMany();
+
+    if (arrivals.length === 0) {
+      return {
+        data: [],
+        stats: { totalArrivalQty: 0, totalCurrentStock: 0, partCount: 0, lotCount: 0 },
+      };
+    }
+
+    // 관련 ID 수집
+    const partIds = [...new Set(arrivals.map((a) => a.partId))];
+    const lotIds = [...new Set(arrivals.map((a) => a.lotId))];
+    const warehouseCodes = [...new Set(arrivals.map((a) => a.warehouseCode))];
+
+    // 병렬 조회
+    const [parts, lots, warehouses, stocks] = await Promise.all([
+      this.partMasterRepository.find({ where: { id: In(partIds) } }),
+      this.matLotRepository.find({ where: { id: In(lotIds) } }),
+      this.warehouseRepository.find({ where: { id: In(warehouseCodes) } }),
+      this.matStockRepository.find({
+        where: { partId: In(partIds), warehouseCode: In(warehouseCodes) },
+      }),
+    ]);
+
+    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.id, w]));
+
+    // Stock 맵: warehouseCode_partId_lotId → qty
+    const stockMap = new Map<string, number>();
+    for (const s of stocks) {
+      const key = `${s.warehouseCode}_${s.partId}_${s.lotId || ''}`;
+      stockMap.set(key, (stockMap.get(key) || 0) + s.qty);
+    }
+
+    let data = arrivals.map((a) => {
+      const part = partMap.get(a.partId);
+      const lot = lotMap.get(a.lotId);
+      const warehouse = warehouseMap.get(a.warehouseCode);
+      const stockKey = `${a.warehouseCode}_${a.partId}_${a.lotId || ''}`;
+      const currentStock = stockMap.get(stockKey) ?? 0;
+
+      return {
+        id: a.id,
+        arrivalNo: a.arrivalNo,
+        invoiceNo: a.invoiceNo,
+        poNo: a.poNo,
+        vendorName: a.vendorName,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        unit: part?.unit,
+        lotNo: lot?.lotNo,
+        arrivalQty: a.qty,
+        currentStock,
+        warehouseName: warehouse?.warehouseName || a.warehouseCode,
+        arrivalType: a.arrivalType,
+        arrivalDate: a.arrivalDate,
+        manufactureDate: lot?.manufactureDate,
+        expireDate: lot?.expireDate,
+      };
+    });
+
+    // 검색 필터 (메모리 필터링)
+    if (search) {
+      const s = search.toLowerCase();
+      data = data.filter((d) =>
+        (d.partCode && d.partCode.toLowerCase().includes(s)) ||
+        (d.partName && d.partName.toLowerCase().includes(s)) ||
+        (d.poNo && d.poNo.toLowerCase().includes(s)) ||
+        (d.invoiceNo && d.invoiceNo.toLowerCase().includes(s)) ||
+        (d.arrivalNo && d.arrivalNo.toLowerCase().includes(s)) ||
+        (d.lotNo && d.lotNo.toLowerCase().includes(s)),
+      );
+    }
+
+    // 통계
+    const stats = {
+      totalArrivalQty: data.reduce((sum, d) => sum + d.arrivalQty, 0),
+      totalCurrentStock: data.reduce((sum, d) => sum + d.currentStock, 0),
+      partCount: new Set(data.map((d) => d.partCode)).size,
+      lotCount: new Set(data.map((d) => d.lotNo)).size,
+    };
+
+    return { data, stats };
   }
 
   /** PO 상태 재계산 */

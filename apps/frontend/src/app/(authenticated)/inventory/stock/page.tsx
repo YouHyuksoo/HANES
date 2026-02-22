@@ -226,7 +226,6 @@ export default function InventoryStockPage() {
                   <input type="checkbox" id="includeZero" checked={filters.includeZero} onChange={(e) => setFilters({ ...filters, includeZero: e.target.checked })} />
                   <label htmlFor="includeZero" className="text-sm text-text-muted">{t('common.includeZero')}</label>
                 </div>
-                <Button variant="secondary" onClick={fetchStocks}><RefreshCw className="w-4 h-4" /></Button>
               </div>
             }
           />

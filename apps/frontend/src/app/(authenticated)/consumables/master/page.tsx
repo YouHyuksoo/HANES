@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   Plus, Edit2, RefreshCw, Search, Wrench, AlertTriangle, XCircle, Trash2,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -37,6 +37,7 @@ function ConsumableMasterPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ConsumableItem | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   /* 카테고리 필터 옵션 (전체 + 공통코드) */
   const filterOptions = useMemo(
@@ -96,14 +97,20 @@ function ConsumableMasterPage() {
   };
 
   /* 삭제 */
-  const handleDelete = async (id: string) => {
-    if (!confirm(t("common.confirmDelete", "삭제하시겠습니까?"))) return;
+  const handleDelete = (id: string) => {
+    setDeleteTarget(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.delete(`/consumables/${id}`);
+      await api.delete(`/consumables/${deleteTarget}`);
       fetchData();
       fetchSummary();
     } catch {
       /* ignore */
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -219,9 +226,6 @@ function ConsumableMasterPage() {
                   value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />} />
                 <Select options={filterOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder={t("consumables.master.category")} />
-                <Button variant="secondary" onClick={() => { fetchData(); fetchSummary(); }}>
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
               </div>
             }
           />
@@ -234,6 +238,14 @@ function ConsumableMasterPage() {
         onSubmit={handleSubmit}
         item={editing}
         loading={saving}
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("common.delete")}
+        message={t("common.confirmDelete", "삭제하시겠습니까?")}
       />
     </div>
   );

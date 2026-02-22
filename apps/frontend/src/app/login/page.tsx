@@ -9,7 +9,7 @@
  * 2. **useAuthStore**: Zustand 인증 스토어로 로그인/회원가입 처리
  * 3. **에러 표시**: API 에러 메시지를 폼 아래에 표시
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { LogIn, UserPlus, Factory } from 'lucide-react';
@@ -19,6 +19,7 @@ import { AxiosError } from 'axios';
 import { api } from '@/services/api';
 import LoginBranding from './components/LoginBranding';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
+import ConnectionCheckOverlay from './components/ConnectionCheckOverlay';
 
 interface CompanyOption {
   companyCode: string;
@@ -38,6 +39,8 @@ function LoginPage() {
   const { login, register, isLoading } = useAuthStore();
   const [tab, setTab] = useState<TabType>('login');
   const [error, setError] = useState('');
+  const [systemReady, setSystemReady] = useState(false);
+  const handleSystemReady = useCallback(() => setSystemReady(true), []);
 
   // 회사 목록
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
@@ -53,8 +56,9 @@ function LoginPage() {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // 페이지 로드 시 활성 회사 목록 조회
+  // 시스템 준비 완료 후 회사 목록 조회
   useEffect(() => {
+    if (!systemReady) return;
     setCompanyLoading(true);
     api.get('/master/companies/public')
       .then((res) => {
@@ -64,7 +68,7 @@ function LoginPage() {
       })
       .catch(() => setCompanies([]))
       .finally(() => setCompanyLoading(false));
-  }, []);
+  }, [systemReady]);
 
   // 회사 선택 시 해당 사업장 목록 조회
   useEffect(() => {
@@ -127,6 +131,9 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
+      {/* 시스템 연결 확인 오버레이 */}
+      {!systemReady && <ConnectionCheckOverlay onReady={handleSystemReady} />}
+
       {/* 좌측 - 애니메이션 브랜딩 영역 */}
       <LoginBranding />
 

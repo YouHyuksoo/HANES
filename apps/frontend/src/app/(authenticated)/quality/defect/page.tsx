@@ -143,9 +143,14 @@ export default function DefectPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><AlertTriangle className="w-7 h-7 text-primary" />{t("quality.defect.title")}</h1>
           <p className="text-text-muted mt-1">{t("quality.defect.description")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> {t("quality.defect.register")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+          </Button>
+          <Button size="sm" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> {t("quality.defect.register")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -177,9 +182,6 @@ export default function DefectPage() {
               </div>
               <Select options={defectTypes} value={defectType} onChange={setDefectType} placeholder={t("quality.defect.defectType")} />
               <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   Index,
 } from 'typeorm';
 
@@ -10,9 +11,13 @@ import {
 @Index(['jobOrderId'])
 @Index(['lotId'])
 @Index(['issueType'])
+@Index(['issueNo'])
 export class MatIssue {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
+
+  @Column({ name: 'ISSUE_NO', length: 50, nullable: true })
+  issueNo: string | null;
 
   @Column({ name: 'JOB_ORDER_ID', length: 50, nullable: true })
   jobOrderId: string | null;
@@ -52,4 +57,7 @@ export class MatIssue {
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
+  updatedAt: Date;
 }

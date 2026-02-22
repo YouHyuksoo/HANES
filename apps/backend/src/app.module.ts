@@ -34,6 +34,7 @@ import { ConsumablesModule } from './modules/consumables/consumables.module';
 import { OutsourcingModule } from './modules/outsourcing/outsourcing.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SystemModule } from './modules/system/system.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -90,6 +91,9 @@ import { SystemModule } from './modules/system/system.module';
 
     // 시스템관리 (통신설정)
     SystemModule,
+
+    // 대시보드 (KPI, 최근 생산현황)
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

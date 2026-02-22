@@ -23,7 +23,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like, In } from 'typeorm';
+import { Repository, IsNull, In } from 'typeorm';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { ProdLineMaster } from '../../../entities/prod-line-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
@@ -53,6 +53,7 @@ export class EquipMasterService {
 
   /**
    * 설비 목록 조회 (페이지네이션)
+   * - 검색어 필터링을 DB 레벨 QueryBuilder WHERE/LIKE로 처리
    */
   async findAll(query: EquipMasterQueryDto) {
     const {
@@ -67,46 +68,33 @@ export class EquipMasterService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: IsNull(),
-    };
+    const qb = this.equipMasterRepository.createQueryBuilder('e')
+      .where('e.deletedAt IS NULL');
 
-    if (equipType) where.equipType = equipType;
-    if (lineCode) where.lineCode = lineCode;
-    if (status) where.status = status;
-    if (useYn) where.useYn = useYn;
-    if (company) where.company = company;
-    if (query.plant) where.plant = query.plant;
+    if (equipType) qb.andWhere('e.equipType = :equipType', { equipType });
+    if (lineCode) qb.andWhere('e.lineCode = :lineCode', { lineCode });
+    if (status) qb.andWhere('e.status = :status', { status });
+    if (useYn) qb.andWhere('e.useYn = :useYn', { useYn });
+    if (company) qb.andWhere('e.company = :company', { company });
+    if (query.plant) qb.andWhere('e.plant = :plant', { plant: query.plant });
 
     if (search) {
-      where.equipCode = Like(`%${search}%`);
-      // Note: TypeORM doesn't support OR with ILIKE directly in simple where
-      // Using QueryBuilder would be better for complex OR conditions
-    }
-
-    const [data, total] = await Promise.all([
-      this.equipMasterRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { equipCode: 'ASC' },
-      }),
-      this.equipMasterRepository.count({ where }),
-    ]);
-
-    // Post-filter for search with OR condition if needed
-    let filteredData = data;
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredData = data.filter(
-        (item) =>
-          item.equipCode.toLowerCase().includes(searchLower) ||
-          item.equipName.toLowerCase().includes(searchLower) ||
-          (item.modelName && item.modelName.toLowerCase().includes(searchLower)),
+      qb.andWhere(
+        '(LOWER(e.equipCode) LIKE :search OR LOWER(e.equipName) LIKE :search OR LOWER(e.modelName) LIKE :search)',
+        { search: `%${search.toLowerCase()}%` },
       );
     }
 
-    return { data: filteredData, total: search ? filteredData.length : total, page, limit };
+    const [data, total] = await Promise.all([
+      qb.clone()
+        .orderBy('e.equipCode', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      qb.clone().getCount(),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   /**

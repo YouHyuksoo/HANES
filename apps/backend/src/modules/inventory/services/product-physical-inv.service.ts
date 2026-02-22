@@ -40,7 +40,7 @@ export class ProductPhysicalInvService {
 
   /** 실사 대상 Stock 목록 조회 */
   async findStocks(query: ProductPhysicalInvQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 5000, search, warehouseId } = query;
+    const { page = 1, limit = 50, search, warehouseId } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.stockRepository
@@ -93,7 +93,7 @@ export class ProductPhysicalInvService {
 
   /** 실사 이력 조회 (InvAdjLog adjType=PRODUCT_PHYSICAL_COUNT) */
   async findHistory(query: ProductPhysicalInvHistoryQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 5000, search, warehouseId, startDate, endDate } = query;
+    const { page = 1, limit = 50, search, warehouseId, startDate, endDate } = query;
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')

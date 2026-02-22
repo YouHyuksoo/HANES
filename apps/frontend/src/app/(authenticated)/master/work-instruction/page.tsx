@@ -129,9 +129,14 @@ export default function WorkInstructionPage() {
             </h1>
             <p className="text-text-muted mt-1">{t("master.workInstruction.subtitle")}</p>
           </div>
-          <Button size="sm" onClick={handleAddClick}>
-            <Plus className="w-4 h-4 mr-1" />{t("master.workInstruction.addDoc")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            </Button>
+            <Button size="sm" onClick={handleAddClick}>
+              <Plus className="w-4 h-4 mr-1" />{t("master.workInstruction.addDoc")}
+            </Button>
+          </div>
         </div>
 
         <Card><CardContent>
@@ -150,9 +155,6 @@ export default function WorkInstructionPage() {
                   <Input placeholder={t("master.workInstruction.searchPlaceholder")} value={searchText}
                     onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
-                <Button variant="secondary" onClick={fetchData}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
               </div>
             }
           />

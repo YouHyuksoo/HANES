@@ -7,7 +7,7 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search } from "lucide-react";
-import { Button, Input, Modal, Select } from "@/components/ui";
+import { Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { InspectItemMaster, seedInspectItems, INSPECT_TYPE_COLORS } from "../types";
@@ -37,6 +37,7 @@ export default function ItemMasterTab() {
   const [typeFilter, setTypeFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<InspectItemMaster | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
 
   const typeOptions = useMemo(() => [
@@ -115,9 +116,13 @@ export default function ItemMasterTab() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm(t("common.confirmDelete"))) {
-      setItems(prev => prev.filter(i => i.id !== id));
-    }
+    setDeleteTarget(id);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    setItems(prev => prev.filter(i => i.id !== deleteTarget));
+    setDeleteTarget(null);
   };
 
   const columns: ColumnDef<InspectItemMaster>[] = useMemo(() => [
@@ -207,6 +212,14 @@ export default function ItemMasterTab() {
           <Button onClick={handleSave}>{editing ? t("common.edit") : t("common.add")}</Button>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("common.delete")}
+        message={t("common.confirmDelete")}
+      />
     </div>
   );
 }

@@ -104,11 +104,11 @@ export class SampleInspectHistoryQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '조회 건수', default: 5000 })
+  @ApiPropertyOptional({ description: '조회 건수', default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 }

@@ -8,7 +8,7 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Save, HandMetal, Package, CheckCircle, XCircle, UserPlus, X, ClipboardList, Trash2, Plug, Unplug } from 'lucide-react';
+import { Search, RefreshCw, Save, HandMetal, Package, CheckCircle, XCircle, UserPlus, X, ClipboardList, Trash2 } from 'lucide-react';
 import { Card, CardContent, Button, Input, StatCard, Modal } from '@/components/ui';
 import api from '@/services/api';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
@@ -17,8 +17,6 @@ import type { Worker } from '@/components/worker/WorkerSelector';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useInputManualStore } from '@/stores/inputManualStore';
-import { useCommConfigsByType } from '@/hooks/system/useCommConfigData';
-import { useSerialTest } from '@/hooks/system/useSerialTest';
 
 interface ManualResult {
   id: string;
@@ -53,43 +51,6 @@ export default function InputManualPage() {
     clearSelection 
   } = useInputManualStore();
   
-  // 시리얼 바코드 스캐너 연결
-  const { configs: serialConfigs } = useCommConfigsByType('SERIAL');
-  const [selectedConfigId, setSelectedConfigId] = useState<string>('');
-  const selectedConfig = useMemo(
-    () => serialConfigs.find(c => c.id === selectedConfigId) ?? null,
-    [serialConfigs, selectedConfigId]
-  );
-
-  // 첫 번째 시리얼 설정 자동 선택
-  useEffect(() => {
-    if (serialConfigs.length > 0 && !selectedConfigId) {
-      setSelectedConfigId(serialConfigs[0].id);
-    }
-  }, [serialConfigs, selectedConfigId]);
-
-  // 수신 버퍼 (바코드 스캐너 데이터 조립용)
-  const scanBufferRef = useRef('');
-  const scanTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  const handleSerialData = useCallback((ascii: string) => {
-    // 바코드 스캐너: 데이터가 여러 청크로 올 수 있으므로 버퍼에 모은 후 일정 시간 뒤 처리
-    scanBufferRef.current += ascii.replace(/[^\x20-\x7E]/g, '');
-    if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
-    scanTimerRef.current = setTimeout(() => {
-      const scanned = scanBufferRef.current.trim();
-      if (scanned) {
-        setForm(prev => ({ ...prev, lotNo: scanned }));
-        // 모달이 열려있으면 LOT필드에 반영
-        if (lotNoRef.current) lotNoRef.current.value = scanned;
-      }
-      scanBufferRef.current = '';
-    }, 150);
-  }, []);
-
-  const { connected: serialConnected, error: serialError, connect: serialConnect, disconnect: serialDisconnect } =
-    useSerialTest(selectedConfig, { onData: handleSerialData });
-
   const lotNoRef = useRef<HTMLInputElement>(null);
   const goodQtyRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
@@ -193,37 +154,6 @@ export default function InputManualPage() {
           <p className="text-text-muted mt-1">{t('production.inputManual.description')}</p>
         </div>
         <div className="flex gap-2 items-center">
-          {/* 시리얼 바코드 스캐너 연결 */}
-          {serialConfigs.length > 0 && (
-            <div className="flex items-center gap-1.5 mr-2">
-              {serialConfigs.length > 1 && (
-                <select
-                  className="h-8 px-2 text-xs rounded-[var(--radius)] border border-gray-400 dark:border-gray-500 bg-background text-text"
-                  value={selectedConfigId}
-                  onChange={e => setSelectedConfigId(e.target.value)}
-                  disabled={serialConnected}
-                >
-                  {serialConfigs.map(c => (
-                    <option key={c.id} value={c.id}>{c.configName}</option>
-                  ))}
-                </select>
-              )}
-              {serialConnected ? (
-                <Button variant="outline" size="sm" onClick={serialDisconnect}
-                  className="border-green-400 text-green-600 dark:text-green-400">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-1.5" />
-                  <Unplug className="w-3.5 h-3.5 mr-1" />
-                  {selectedConfig?.configName ?? t('serialTest.disconnectBtn')}
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" onClick={serialConnect}>
-                  <Plug className="w-3.5 h-3.5 mr-1" />
-                  {t('serialTest.connectBtn')}
-                </Button>
-              )}
-            </div>
-          )}
-
           {/* 전체 초기화 버튼 (선택된 것이 있을 때만 표시) */}
           {(selectedJobOrder || selectedWorker) && (
             <Button
@@ -258,13 +188,6 @@ export default function InputManualPage() {
           </Button>
         </div>
       </div>
-
-      {/* 시리얼 연결 에러 */}
-      {serialError && (
-        <div className="p-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-[var(--radius)]">
-          {serialError}
-        </div>
-      )}
 
       {/* 작업지시 + 작업자 정보 영역 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

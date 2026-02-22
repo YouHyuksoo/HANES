@@ -12,6 +12,8 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
   Unique,
@@ -34,6 +36,24 @@ export class IqcGroupItem {
 
   @Column({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
+
+  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  company: string | null;
+
+  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  plant: string | null;
+
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  createdBy: string | null;
+
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  updatedBy: string | null;
+
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
+  updatedAt: Date;
 
   @ManyToOne(() => IqcGroup, (group) => group.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'GROUP_ID' })

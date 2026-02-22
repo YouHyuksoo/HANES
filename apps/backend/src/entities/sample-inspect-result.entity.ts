@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   Index,
   ManyToOne,
   JoinColumn,
@@ -70,6 +71,12 @@ export class SampleInspectResult {
   @Column({ name: 'CREATED_BY', length: 255, nullable: true })
   createdBy: string | null;
 
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  updatedBy: string | null;
+
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
+  updatedAt: Date;
 }

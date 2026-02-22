@@ -11,7 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource } from 'typeorm';
+import { Repository, IsNull, DataSource, In } from 'typeorm';
 import { CustomsEntry } from '../../../entities/customs-entry.entity';
 import { CustomsLot } from '../../../entities/customs-lot.entity';
 import { CustomsUsageReport } from '../../../entities/customs-usage-report.entity';
@@ -136,19 +136,25 @@ export class CustomsService {
       countQuery.getCount(),
     ]);
 
-    // Fetch customs lots for each entry
-    const data = await Promise.all(
-      entries.map(async (entry) => {
-        const lots = await this.customsLotRepository.find({
-          where: { entryId: entry.id },
-          select: ['id', 'lotNo', 'partCode', 'qty', 'usedQty', 'remainQty', 'status'],
-        });
-        return {
-          ...entry,
-          customsLots: lots,
-        };
-      }),
-    );
+    // 일괄 조회로 N+1 방지
+    const entryIds = entries.map((e) => e.id);
+    const lots = entryIds.length > 0
+      ? await this.customsLotRepository.find({
+          where: { entryId: In(entryIds) },
+          select: ['id', 'entryId', 'lotNo', 'partCode', 'qty', 'usedQty', 'remainQty', 'status'],
+        })
+      : [];
+
+    const lotsByEntryId = new Map<string, CustomsLot[]>();
+    for (const lot of lots) {
+      if (!lotsByEntryId.has(lot.entryId)) lotsByEntryId.set(lot.entryId, []);
+      lotsByEntryId.get(lot.entryId)!.push(lot);
+    }
+
+    const data = entries.map((entry) => ({
+      ...entry,
+      customsLots: lotsByEntryId.get(entry.id) || [],
+    }));
 
     return { data, total, page, limit };
   }
@@ -166,14 +172,22 @@ export class CustomsService {
       where: { entryId: id },
     });
 
-    const lotsWithReports = await Promise.all(
-      lots.map(async (lot) => {
-        const reports = await this.customsUsageReportRepository.find({
-          where: { customsLotId: lot.id },
-        });
-        return { ...lot, usageReports: reports };
-      }),
-    );
+    // 일괄 조회로 N+1 방지
+    const lotIds = lots.map((l) => l.id);
+    const reports = lotIds.length > 0
+      ? await this.customsUsageReportRepository.find({ where: { customsLotId: In(lotIds) } })
+      : [];
+
+    const reportsByLotId = new Map<string, CustomsUsageReport[]>();
+    for (const report of reports) {
+      if (!reportsByLotId.has(report.customsLotId)) reportsByLotId.set(report.customsLotId, []);
+      reportsByLotId.get(report.customsLotId)!.push(report);
+    }
+
+    const lotsWithReports = lots.map((lot) => ({
+      ...lot,
+      usageReports: reportsByLotId.get(lot.id) || [],
+    }));
 
     return { ...entry, customsLots: lotsWithReports };
   }
@@ -239,14 +253,22 @@ export class CustomsService {
       order: { createdAt: 'DESC' },
     });
 
-    return Promise.all(
-      lots.map(async (lot) => {
-        const reports = await this.customsUsageReportRepository.find({
-          where: { customsLotId: lot.id },
-        });
-        return { ...lot, usageReports: reports };
-      }),
-    );
+    // 일괄 조회로 N+1 방지
+    const lotIds = lots.map((l) => l.id);
+    const reports = lotIds.length > 0
+      ? await this.customsUsageReportRepository.find({ where: { customsLotId: In(lotIds) } })
+      : [];
+
+    const reportsByLotId = new Map<string, CustomsUsageReport[]>();
+    for (const report of reports) {
+      if (!reportsByLotId.has(report.customsLotId)) reportsByLotId.set(report.customsLotId, []);
+      reportsByLotId.get(report.customsLotId)!.push(report);
+    }
+
+    return lots.map((lot) => ({
+      ...lot,
+      usageReports: reportsByLotId.get(lot.id) || [],
+    }));
   }
 
   async findLotById(id: string) {
@@ -332,21 +354,26 @@ export class CustomsService {
       queryBuilder.getCount(),
     ]);
 
-    // Fetch related data
-    const data = await Promise.all(
-      reports.map(async (report) => {
-        const lot = await this.customsLotRepository.findOne({
-          where: { id: report.customsLotId },
-        });
-        const entry = lot
-          ? await this.customsEntryRepository.findOne({ where: { id: lot.entryId } })
-          : null;
-        return {
-          ...report,
-          customsLot: lot ? { ...lot, entry } : null,
-        };
-      }),
-    );
+    // 일괄 조회로 N+1 방지 (reports → lots → entries)
+    const lotIds = [...new Set(reports.map((r) => r.customsLotId).filter(Boolean))];
+    const lots = lotIds.length > 0
+      ? await this.customsLotRepository.find({ where: { id: In(lotIds) } })
+      : [];
+    const lotMap = new Map(lots.map((l) => [l.id, l]));
+
+    const entryIds = [...new Set(lots.map((l) => l.entryId).filter(Boolean))];
+    const entries = entryIds.length > 0
+      ? await this.customsEntryRepository.find({ where: { id: In(entryIds) } })
+      : [];
+    const entryMap = new Map(entries.map((e) => [e.id, e]));
+
+    const data = reports.map((report) => {
+      const lot = lotMap.get(report.customsLotId);
+      return {
+        ...report,
+        customsLot: lot ? { ...lot, entry: entryMap.get(lot.entryId) || null } : null,
+      };
+    });
 
     return { data, total, page, limit };
   }

@@ -157,6 +157,7 @@
     "inventory.productPhysicalInvHistory": "제품재고실사조회",
     "inventory.matPhysicalInv": "자재재고실사관리",
     "inventory.matPhysicalInvHistory": "자재재고실사조회",
+    "inventory.arrivalStock": "입하재고현황조회",
     "material": "자재관리",
     "material.arrival": "입하관리",
     "material.iqc": "수입검사(IQC)",
@@ -280,6 +281,17 @@
     "plant": "사업장",
     "selectPlant": "사업장을 선택하세요",
     "plantRequired": "사업장 선택은 필수입니다",
+    "connection": {
+      "title": "시스템 연결 확인",
+      "subtitle": "서버와 데이터베이스 연결 상태를 확인하고 있습니다.",
+      "serverCheck": "서버 연결 확인",
+      "dbCheck": "데이터베이스 연결 확인",
+      "serverTimeout": "서버 응답 시간이 초과되었습니다.",
+      "serverUnreachable": "서버에 연결할 수 없습니다.",
+      "dbDisconnected": "데이터베이스에 연결할 수 없습니다.",
+      "retryDesc": "연결에 실패했습니다. 네트워크 상태를 확인 후 다시 시도해 주세요.",
+      "retry": "다시 시도"
+    },
     "branding": {
       "title": "HARNESS MES",
       "subtitle": "Manufacturing Execution System",
@@ -430,6 +442,7 @@
       "cancelFailed": "취소 처리 중 오류가 발생했습니다.",
       "alreadyCanceled": "이미 취소된 트랜잭션입니다.",
       "cannotCancelCancel": "취소 트랜잭션은 다시 취소할 수 없습니다.",
+      "receive": "입고",
       "matIn": "원자재 입고",
       "matInCancel": "원자재 입고취소",
       "matOut": "원자재 출고",
@@ -627,6 +640,15 @@
       "changedCount": "{{count}}개 항목 변경됨",
       "confirmDelete": "이 설정을 삭제하시겠습니까?"
     }
+  },
+  "serial": {
+    "connected": "바코드 스캐너 연결됨",
+    "disconnected": "바코드 스캐너 미연결",
+    "connect": "스캐너 연결",
+    "disconnect": "연결 해제",
+    "lastScan": "마지막 스캔",
+    "notSupported": "Web Serial API 미지원 브라우저입니다",
+    "connectFailed": "연결 실패"
   },
   "serialTest": {
     "title": "시리얼 통신 테스트",
@@ -1303,6 +1325,7 @@
         "todayReceivedQty": "금일 입고수량"
       },
       "col": {
+        "receiveNo": "입고번호",
         "initQty": "초기수량",
         "receivedQty": "기입고수량",
         "remainingQty": "잔량",
@@ -1529,6 +1552,31 @@
         "confirmed": "확정",
         "partial": "부분입고",
         "received": "입고완료"
+      }
+    },
+    "arrivalStock": {
+      "title": "입하재고현황",
+      "subtitle": "입하된 자재의 현재 재고 현황을 조회합니다.",
+      "searchPlaceholder": "품목코드, 품목명, PO번호, 인보이스번호 검색...",
+      "arrivalNo": "입하번호",
+      "invoiceNo": "인보이스번호",
+      "vendorName": "거래처",
+      "partCode": "품목코드",
+      "partName": "품목명",
+      "lotNo": "LOT번호",
+      "arrivalQty": "입하수량",
+      "currentStock": "현재고",
+      "warehouseName": "창고",
+      "arrivalType": "입하유형",
+      "arrivalDate": "입하일자",
+      "manufactureDate": "제조일자",
+      "expireDate": "유효기한",
+      "unit": "단위",
+      "stats": {
+        "totalArrivalQty": "입하총량",
+        "totalCurrentStock": "현재고합계",
+        "partCount": "품목수",
+        "lotCount": "LOT수"
       }
     },
     "iqcHistory": {

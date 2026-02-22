@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Like, Between, In } from 'typeorm';
+import { Repository, DataSource, IsNull, Between, In } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import {
@@ -53,6 +53,7 @@ export class ConsumablesService {
 
   /**
    * 소모품 목록 조회 (페이지네이션)
+   * - 검색어 필터링을 DB 레벨 QueryBuilder WHERE/LIKE로 처리
    */
   async findAll(query?: ConsumableQueryDto, company?: string, plant?: string) {
     const {
@@ -65,52 +66,34 @@ export class ConsumablesService {
     } = query || {};
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: IsNull(),
-    };
+    const qb = this.consumableMasterRepository.createQueryBuilder('c')
+      .where('c.deletedAt IS NULL');
 
-    if (company) {
-      where.company = company;
-    }
-    if (plant) {
-      where.plant = plant;
-    }
-    if (category) {
-      where.category = category;
-    }
-    if (status) {
-      where.status = status;
-    }
-    if (useYn) {
-      where.useYn = useYn;
-    }
+    if (company) qb.andWhere('c.company = :company', { company });
+    if (plant) qb.andWhere('c.plant = :plant', { plant });
+    if (category) qb.andWhere('c.category = :category', { category });
+    if (status) qb.andWhere('c.status = :status', { status });
+    if (useYn) qb.andWhere('c.useYn = :useYn', { useYn });
 
-    const [data, total] = await Promise.all([
-      this.consumableMasterRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { consumableCode: 'ASC' },
-      }),
-      this.consumableMasterRepository.count({ where }),
-    ]);
-
-    // 검색어 필터링 (코드, 이름, 위치)
-    let filteredData = data;
     if (search) {
-      const searchLower = search.toLowerCase();
-      filteredData = data.filter(
-        (item) =>
-          item.consumableCode.toLowerCase().includes(searchLower) ||
-          item.consumableName.toLowerCase().includes(searchLower) ||
-          (item.location && item.location.toLowerCase().includes(searchLower)) ||
-          (item.vendor && item.vendor.toLowerCase().includes(searchLower)),
+      qb.andWhere(
+        '(LOWER(c.consumableCode) LIKE :search OR LOWER(c.consumableName) LIKE :search OR LOWER(c.location) LIKE :search OR LOWER(c.vendor) LIKE :search)',
+        { search: `%${search.toLowerCase()}%` },
       );
     }
 
+    const [data, total] = await Promise.all([
+      qb.clone()
+        .orderBy('c.consumableCode', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      qb.clone().getCount(),
+    ]);
+
     return {
-      data: filteredData,
-      total: search ? filteredData.length : total,
+      data,
+      total,
       page,
       limit,
     };
@@ -282,6 +265,7 @@ export class ConsumablesService {
 
   /**
    * 소모품 재고 현황 조회
+   * - 검색어 필터링을 DB 레벨 QueryBuilder WHERE/LIKE로 처리
    */
   async getStockStatus(query?: ConsumableQueryDto) {
     const {
@@ -292,39 +276,32 @@ export class ConsumablesService {
     } = query || {};
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deletedAt: IsNull(),
-      useYn: 'Y',
-    };
+    const qb = this.consumableMasterRepository.createQueryBuilder('c')
+      .where('c.deletedAt IS NULL')
+      .andWhere('c.useYn = :useYn', { useYn: 'Y' });
 
-    if (category) {
-      where.category = category;
-    }
+    if (category) qb.andWhere('c.category = :category', { category });
 
-    const [data, total] = await Promise.all([
-      this.consumableMasterRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { stockQty: 'ASC', consumableCode: 'ASC' },
-      }),
-      this.consumableMasterRepository.count({ where }),
-    ]);
-
-    // 검색어 필터링
-    let filteredData = data;
     if (search) {
-      const searchLower = search.toLowerCase();
-      filteredData = data.filter(
-        (item) =>
-          item.consumableCode.toLowerCase().includes(searchLower) ||
-          item.consumableName.toLowerCase().includes(searchLower),
+      qb.andWhere(
+        '(LOWER(c.consumableCode) LIKE :search OR LOWER(c.consumableName) LIKE :search)',
+        { search: `%${search.toLowerCase()}%` },
       );
     }
 
+    const [data, total] = await Promise.all([
+      qb.clone()
+        .orderBy('c.stockQty', 'ASC')
+        .addOrderBy('c.consumableCode', 'ASC')
+        .skip(skip)
+        .take(limit)
+        .getMany(),
+      qb.clone().getCount(),
+    ]);
+
     return {
-      data: filteredData,
-      total: search ? filteredData.length : total,
+      data,
+      total,
       page,
       limit,
     };

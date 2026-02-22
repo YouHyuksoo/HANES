@@ -36,6 +36,8 @@ export * from './stock-transaction.entity';
 export * from './mat-lot.entity';
 export * from './mat-stock.entity';
 export * from './mat-issue.entity';
+export * from './mat-arrival.entity';
+export * from './mat-receiving.entity';
 export * from './mat-issue-request.entity';
 export * from './mat-issue-request-item.entity';
 export * from './inv-adj-log.entity';

@@ -94,13 +94,13 @@ export class VendorQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 5000 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '업체 유형' })
   @IsOptional()
@@ -177,13 +177,13 @@ export class SubconOrderQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 5000 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
+  @Max(200)
+  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '외주처 ID' })
   @IsOptional()

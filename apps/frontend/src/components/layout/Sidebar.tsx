@@ -55,6 +55,7 @@ export const menuItems: MenuItem[] = [
       { id: "inv-lot", labelKey: "menu.inventory.lot", path: "/inventory/lot" },
       { id: "inv-mat-physical-inv", labelKey: "menu.inventory.matPhysicalInv", path: "/inventory/material-physical-inv" },
       { id: "inv-mat-physical-inv-history", labelKey: "menu.inventory.matPhysicalInvHistory", path: "/inventory/material-physical-inv-history" },
+      { id: "inv-arrival-stock", labelKey: "menu.inventory.arrivalStock", path: "/material/arrival-stock" },
     ],
   },
   {
