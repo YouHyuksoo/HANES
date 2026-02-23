@@ -22,12 +22,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, ILike, Between, MoreThanOrEqual, LessThanOrEqual, And, Not } from 'typeorm';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
+import { TraceLog } from '../../../entities/trace-log.entity';
 import {
   CreateInspectResultDto,
   UpdateInspectResultDto,
   InspectResultQueryDto,
   InspectPassRateDto,
   InspectTypeStatsDto,
+  BarcodeInspectDto,
+  BarcodeInspectResponseDto,
 } from '../dto/inspect-result.dto';
 
 @Injectable()
@@ -39,6 +42,8 @@ export class InspectResultService {
     private readonly inspectResultRepository: Repository<InspectResult>,
     @InjectRepository(ProdResult)
     private readonly prodResultRepository: Repository<ProdResult>,
+    @InjectRepository(TraceLog)
+    private readonly traceLogRepository: Repository<TraceLog>,
   ) {}
 
   /**
@@ -51,6 +56,7 @@ export class InspectResultService {
       prodResultId,
       serialNo,
       inspectType,
+      inspectScope,
       passYn,
       startDate,
       endDate,
@@ -63,6 +69,7 @@ export class InspectResultService {
       ...(prodResultId && { prodResultId }),
       ...(serialNo && { serialNo: ILike(`%${serialNo}%`) }),
       ...(inspectType && { inspectType }),
+      ...(inspectScope && { inspectScope }),
       ...(passYn && { passYn }),
       ...(startDate || endDate
         ? {
@@ -155,6 +162,157 @@ export class InspectResultService {
   }
 
   /**
+   * 바코드 스캔으로 검사 결과 등록
+   * - 바코드(시리얼번호)로 제품 정보 조회
+   * - TraceLog에서 생산실적 정보 찾기
+   * - 검사 결과 등록
+   */
+  async createByBarcode(dto: BarcodeInspectDto): Promise<BarcodeInspectResponseDto> {
+    // 1. 바코드로 TraceLog에서 생산실적 정보 조회
+    const traceLog = await this.traceLogRepository.findOne({
+      where: { serialNo: dto.barcode },
+      order: { traceTime: 'DESC' },
+    });
+
+    if (!traceLog) {
+      throw new NotFoundException(`바코드에 해당하는 제품 정보를 찾을 수 없습니다: ${dto.barcode}`);
+    }
+
+    // 2. TraceLog의 eventData에서 prodResultId 추출 (JSON 파싱)
+    let prodResultId: string | null = null;
+    if (traceLog.eventData) {
+      try {
+        const eventData = JSON.parse(traceLog.eventData);
+        prodResultId = eventData.prodResultId || eventData.productionResultId || null;
+      } catch {
+        // JSON 파싱 실패 시 무시
+      }
+    }
+
+    // 3. prodResultId가 없으면 TraceLog의 lotId나 다른 정보로 추적
+    if (!prodResultId && traceLog.lotId) {
+      // lotId로 생산실적 검색
+      const prodResult = await this.prodResultRepository.findOne({
+        where: { lotNo: traceLog.lotId },
+        order: { createdAt: 'DESC' },
+      });
+      if (prodResult) {
+        prodResultId = prodResult.id;
+      }
+    }
+
+    if (!prodResultId) {
+      throw new NotFoundException(`바코드에 해당하는 생산실적을 찾을 수 없습니다: ${dto.barcode}`);
+    }
+
+    // 4. 생산실적 존재 확인
+    const prodResult = await this.prodResultRepository.findOne({
+      where: { id: prodResultId },
+      relations: ['jobOrder', 'jobOrder.part'],
+    });
+
+    if (!prodResult) {
+      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResultId}`);
+    }
+
+    // 5. 검사 결과 등록
+    const inspectResult = this.inspectResultRepository.create({
+      prodResultId,
+      serialNo: dto.barcode,
+      inspectType: dto.inspectType ?? 'VISUAL',
+      inspectScope: dto.inspectScope ?? 'FULL',
+      passYn: dto.passYn,
+      errorCode: dto.errorCode,
+      errorDetail: dto.errorDetail,
+      inspectAt: new Date(),
+      inspectorId: dto.inspectorId,
+    });
+
+    const saved = await this.inspectResultRepository.save(inspectResult);
+
+    return {
+      inspectResultId: saved.id,
+      prodResultId,
+      barcode: dto.barcode,
+      passYn: saved.passYn,
+      inspectAt: saved.inspectAt,
+      productInfo: {
+        partCode: prodResult.jobOrder?.part?.partCode,
+        partName: prodResult.jobOrder?.part?.partName,
+        orderNo: prodResult.jobOrder?.orderNo,
+      },
+    };
+  }
+
+  /**
+   * 바코드로 제품 정보 조회 (검사 전 확인용)
+   */
+  async getProductByBarcode(barcode: string) {
+    const traceLog = await this.traceLogRepository.findOne({
+      where: { serialNo: barcode },
+      order: { traceTime: 'DESC' },
+    });
+
+    if (!traceLog) {
+      throw new NotFoundException(`바코드에 해당하는 제품 정보를 찾을 수 없습니다: ${barcode}`);
+    }
+
+    // TraceLog에서 생산실적 추적
+    let prodResult: ProdResult | null = null;
+    
+    // eventData에서 prodResultId 추출 시도
+    if (traceLog.eventData) {
+      try {
+        const eventData = JSON.parse(traceLog.eventData);
+        const prodResultId = eventData.prodResultId || eventData.productionResultId;
+        if (prodResultId) {
+          prodResult = await this.prodResultRepository.findOne({
+            where: { id: prodResultId },
+            relations: ['jobOrder', 'jobOrder.part'],
+          });
+        }
+      } catch {
+        // JSON 파싱 실패 시 무시
+      }
+    }
+
+    // lotId로 생산실적 검색
+    if (!prodResult && traceLog.lotId) {
+      prodResult = await this.prodResultRepository.findOne({
+        where: { lotNo: traceLog.lotId },
+        order: { createdAt: 'DESC' },
+        relations: ['jobOrder', 'jobOrder.part'],
+      });
+    }
+
+    // 이전 검사 이력 조회
+    const previousInspects = await this.inspectResultRepository.find({
+      where: { serialNo: barcode },
+      order: { inspectAt: 'DESC' },
+      take: 5,
+    });
+
+    return {
+      barcode,
+      serialNo: traceLog.serialNo,
+      productInfo: prodResult ? {
+        partCode: prodResult.jobOrder?.part?.partCode,
+        partName: prodResult.jobOrder?.part?.partName,
+        orderNo: prodResult.jobOrder?.orderNo,
+        prodResultId: prodResult.id,
+        productionDate: prodResult.createdAt,
+      } : null,
+      previousInspects: previousInspects.map(i => ({
+        id: i.id,
+        inspectType: i.inspectType,
+        inspectScope: i.inspectScope,
+        passYn: i.passYn,
+        inspectAt: i.inspectAt,
+      })),
+    };
+  }
+
+  /**
    * 검사실적 일괄 생성
    */
   async createMany(dtos: CreateInspectResultDto[]) {
@@ -175,6 +333,7 @@ export class InspectResultService {
 
     if (dto.serialNo !== undefined) updateData.serialNo = dto.serialNo;
     if (dto.inspectType !== undefined) updateData.inspectType = dto.inspectType;
+    if (dto.inspectScope !== undefined) updateData.inspectScope = dto.inspectScope;
     if (dto.passYn !== undefined) updateData.passYn = dto.passYn;
     if (dto.errorCode !== undefined) updateData.errorCode = dto.errorCode;
     if (dto.errorDetail !== undefined) updateData.errorDetail = dto.errorDetail;

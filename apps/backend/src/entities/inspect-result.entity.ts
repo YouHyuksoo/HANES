@@ -14,6 +14,7 @@ import { ProdResult } from './prod-result.entity';
 @Index(['prodResultId'])
 @Index(['passYn'])
 @Index(['serialNo'])
+@Index(['inspectScope'])
 export class InspectResult {
   @PrimaryGeneratedColumn('uuid', { name: 'ID' })
   id: string;
@@ -30,6 +31,9 @@ export class InspectResult {
 
   @Column({ name: 'INSPECT_TYPE', length: 50, nullable: true })
   inspectType: string | null;
+
+  @Column({ name: 'INSPECT_SCOPE', length: 20, nullable: true, comment: '검사범위 (FULL: 전수검사, SAMPLE: 샘플링검사)' })
+  inspectScope: string | null;
 
   @Column({ name: 'PASS_YN', length: 1, default: 'Y' })
   passYn: string;

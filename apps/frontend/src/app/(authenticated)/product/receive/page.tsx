@@ -62,8 +62,8 @@ export default function ProductReceivePage() {
     remark: "",
   });
 
-  const partOptions = usePartOptions(activeTab);
-  const warehouseOptions = useWarehouseOptions(activeTab);
+  const { options: partOptions } = usePartOptions(activeTab);
+  const { options: warehouseOptions } = useWarehouseOptions(activeTab);
 
   /** 입고 이력 조회 */
   const fetchData = useCallback(async () => {

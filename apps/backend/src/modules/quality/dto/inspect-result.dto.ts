@@ -52,6 +52,16 @@ export class CreateInspectResultDto {
   @MaxLength(50)
   inspectType?: string;
 
+  @ApiPropertyOptional({
+    description: '검사 범위 (FULL: 전수검사, SAMPLE: 샘플링검사)',
+    example: 'FULL',
+    enum: ['FULL', 'SAMPLE'],
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  inspectScope?: string;
+
   @ApiPropertyOptional({ description: '합격 여부', default: 'Y', enum: ['Y', 'N'] })
   @IsOptional()
   @IsString()
@@ -127,6 +137,11 @@ export class InspectResultQueryDto {
   @IsString()
   inspectType?: string;
 
+  @ApiPropertyOptional({ description: '검사 범위로 필터링 (FULL: 전수검사, SAMPLE: 샘플링검사)' })
+  @IsOptional()
+  @IsString()
+  inspectScope?: string;
+
   @ApiPropertyOptional({ description: '합격 여부 필터', enum: ['Y', 'N'] })
   @IsOptional()
   @IsString()
@@ -175,4 +190,83 @@ export class InspectTypeStatsDto {
 
   @ApiProperty({ description: '합격률 (%)' })
   passRate: number;
+}
+
+/**
+ * 바코드 스캔 검사 결과 등록 DTO
+ */
+export class BarcodeInspectDto {
+  @ApiProperty({ description: '제품 바코드 (시리얼 번호)', example: 'SN202501150001' })
+  @IsString()
+  @MaxLength(100)
+  barcode: string;
+
+  @ApiPropertyOptional({
+    description: '검사 범위',
+    example: 'FULL',
+    enum: ['FULL', 'SAMPLE'],
+    default: 'FULL',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  inspectScope?: string;
+
+  @ApiPropertyOptional({
+    description: '검사 유형',
+    example: 'VISUAL',
+    enum: ['CONTINUITY', 'VISUAL', 'DIMENSION', 'FUNCTION'],
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  inspectType?: string;
+
+  @ApiProperty({ description: '합격 여부', enum: ['Y', 'N'] })
+  @IsString()
+  passYn: string;
+
+  @ApiPropertyOptional({ description: '에러 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  errorCode?: string;
+
+  @ApiPropertyOptional({ description: '에러 상세', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  errorDetail?: string;
+
+  @ApiPropertyOptional({ description: '검사자 ID' })
+  @IsOptional()
+  @IsString()
+  inspectorId?: string;
+}
+
+/**
+ * 바코드 스캔 검사 결과 응답 DTO
+ */
+export class BarcodeInspectResponseDto {
+  @ApiProperty({ description: '검사실적 ID' })
+  inspectResultId: string;
+
+  @ApiProperty({ description: '생산실적 ID' })
+  prodResultId: string;
+
+  @ApiProperty({ description: '제품 바코드' })
+  barcode: string;
+
+  @ApiProperty({ description: '검사 결과' })
+  passYn: string;
+
+  @ApiProperty({ description: '검사 시간' })
+  inspectAt: Date;
+
+  @ApiProperty({ description: '제품 정보', required: false })
+  productInfo?: {
+    partCode?: string;
+    partName?: string;
+    orderNo?: string;
+  };
 }

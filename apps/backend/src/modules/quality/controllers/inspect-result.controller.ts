@@ -45,6 +45,7 @@ import {
   CreateInspectResultDto,
   UpdateInspectResultDto,
   InspectResultQueryDto,
+  BarcodeInspectDto,
 } from '../dto/inspect-result.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
@@ -151,6 +152,35 @@ export class InspectResultController {
   async createMany(@Body() dtos: CreateInspectResultDto[]) {
     const data = await this.inspectResultService.createMany(dtos);
     return ResponseUtil.success(data, `${data.count}건의 검사실적이 등록되었습니다.`);
+  }
+
+  // ===== 바코드 스캔 검사 API (Q10-2) =====
+
+  @Post('barcode/inspect')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ 
+    summary: '바코드 스캔 검사 결과 등록', 
+    description: '제품 바코드를 스캔하여 검사 결과를 등록합니다 (Q10-2)' 
+  })
+  @ApiResponse({ status: 201, description: '검사 결과 등록 성공' })
+  @ApiResponse({ status: 404, description: '바코드에 해당하는 제품 정보 없음' })
+  async createByBarcode(@Body() dto: BarcodeInspectDto) {
+    const data = await this.inspectResultService.createByBarcode(dto);
+    const message = data.passYn === 'Y' ? '합격 처리되었습니다.' : '불합격 처리되었습니다.';
+    return ResponseUtil.success(data, message);
+  }
+
+  @Get('barcode/:barcode')
+  @ApiOperation({ 
+    summary: '바코드로 제품 정보 조회', 
+    description: '검사 전 바코드 스캔으로 제품 정보 및 이전 검사 이력 확인 (Q10-2)' 
+  })
+  @ApiParam({ name: 'barcode', description: '제품 바코드 (시리얼 번호)' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiResponse({ status: 404, description: '바코드에 해당하는 제품 정보 없음' })
+  async getProductByBarcode(@Param('barcode') barcode: string) {
+    const data = await this.inspectResultService.getProductByBarcode(barcode);
+    return ResponseUtil.success(data);
   }
 
   @Put(':id')

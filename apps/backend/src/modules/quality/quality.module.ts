@@ -38,6 +38,7 @@ import { OqcRequest } from '../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../entities/oqc-request-box.entity';
 import { BoxMaster } from '../../entities/box-master.entity';
 import { PartMaster } from '../../entities/part-master.entity';
+import { TraceLog } from '../../entities/trace-log.entity';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { PartMaster } from '../../entities/part-master.entity';
       OqcRequestBox,
       BoxMaster,
       PartMaster,
+      TraceLog,
     ]),
   ],
   controllers: [

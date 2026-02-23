@@ -56,8 +56,8 @@ function ReceiveLabelPage() {
   const [labelDesign, setLabelDesign] = useState<LabelDesign>(MAT_LOT_DEFAULT_DESIGN);
   const [printing, setPrinting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
-  const { configs } = useSysConfigStore();
-  const isAutoReceive = configs['IQC_AUTO_RECEIVE'] === 'Y';
+  const { isEnabled } = useSysConfigStore();
+  const isAutoReceive = isEnabled('IQC_AUTO_RECEIVE');
   const [autoReceiveResult, setAutoReceiveResult] = useState<{
     received: string[];
     skipped: string[];
