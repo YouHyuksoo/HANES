@@ -50,6 +50,7 @@ export * from './warehouse-location.entity';
 export * from './pm-plan.entity';
 export * from './pm-plan-item.entity';
 export * from './pm-work-order.entity';
+export * from './pm-wo-result.entity';
 
 // Quality
 export * from './sample-inspect-result.entity';

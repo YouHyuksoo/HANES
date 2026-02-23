@@ -12,19 +12,21 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRightFromLine, ClipboardList, Package, QrCode } from 'lucide-react';
+import { ArrowRightFromLine, ClipboardList, Package, QrCode, History } from 'lucide-react';
 import IssueRequestTab from '@/components/material/IssueRequestTab';
 import ManualIssueTab from '@/components/material/ManualIssueTab';
 import BarcodeScanTab from '@/components/material/BarcodeScanTab';
+import IssueHistoryTab from '@/components/material/IssueHistoryTab';
 
 /** 탭 키 타입 */
-type TabKey = 'request' | 'manual' | 'scan';
+type TabKey = 'request' | 'manual' | 'scan' | 'history';
 
 /** 탭 정의 */
 const TAB_CONFIG: { key: TabKey; labelKey: string; icon: typeof ClipboardList }[] = [
   { key: 'request', labelKey: 'material.issue.tab.request', icon: ClipboardList },
   { key: 'manual', labelKey: 'material.issue.tab.manual', icon: Package },
   { key: 'scan', labelKey: 'material.issue.tab.scan', icon: QrCode },
+  { key: 'history', labelKey: 'material.issue.tab.history', icon: History },
 ];
 
 function IssuePage() {
@@ -69,6 +71,7 @@ function IssuePage() {
       {activeTab === 'request' && <IssueRequestTab />}
       {activeTab === 'manual' && <ManualIssueTab />}
       {activeTab === 'scan' && <BarcodeScanTab />}
+      {activeTab === 'history' && <IssueHistoryTab />}
     </div>
   );
 }

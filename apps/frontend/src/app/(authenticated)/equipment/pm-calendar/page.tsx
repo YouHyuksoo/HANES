@@ -44,6 +44,7 @@ export default function PmCalendarPage() {
 
   const [executeModalOpen, setExecuteModalOpen] = useState(false);
   const [executeTarget, setExecuteTarget] = useState<WoScheduleItem | null>(null);
+  const [executeMode, setExecuteMode] = useState<"execute" | "view">("execute");
 
   const equipTypeOptions = useComCodeOptions("EQUIP_TYPE");
   const equipTypeFilterOpts = useMemo(() => [
@@ -117,6 +118,13 @@ export default function PmCalendarPage() {
 
   const handleExecute = useCallback((wo: WoScheduleItem) => {
     setExecuteTarget(wo);
+    setExecuteMode("execute");
+    setExecuteModalOpen(true);
+  }, []);
+
+  const handleView = useCallback((wo: WoScheduleItem) => {
+    setExecuteTarget(wo);
+    setExecuteMode("view");
     setExecuteModalOpen(true);
   }, []);
 
@@ -235,6 +243,7 @@ export default function PmCalendarPage() {
             data={dayData}
             loading={dayLoading}
             onExecute={handleExecute}
+            onView={handleView}
           />
         </div>
       </div>
@@ -242,9 +251,10 @@ export default function PmCalendarPage() {
       {/* Execute Modal */}
       <PmExecuteModal
         isOpen={executeModalOpen}
-        onClose={() => { setExecuteModalOpen(false); setExecuteTarget(null); }}
+        onClose={() => { setExecuteModalOpen(false); setExecuteTarget(null); setExecuteMode("execute"); }}
         workOrder={executeTarget}
         onSaved={handleExecuteSaved}
+        mode={executeMode}
       />
     </div>
   );

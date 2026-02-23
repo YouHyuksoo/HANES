@@ -8,11 +8,13 @@
     "search": "검색",
     "period": "기간",
     "refresh": "새로고침",
+    "viewMore": "더보기",
     "reset": "초기화",
     "export": "내보내기",
     "import": "가져오기",
     "confirm": "확인",
     "close": "닫기",
+    "viewDetail": "상세보기",
     "loading": "로딩 중...",
     "saving": "저장 중...",
     "uploading": "업로드 중...",
@@ -211,8 +213,8 @@
     "quality.oqcHistory": "출하검사이력",
     "equipment": "설비관리",
     "equipment.master": "설비마스터관리",
-    "equipment.status": "가동현황조회",
-    "equipment.pmPlan": "PM 계획관리",
+    "equipment.status": "설비가동현황조회",
+    "equipment.pmPlan": "예방보전계획관리",
     "equipment.pm": "예방보전관리",
     "equipment.pmCalendar": "예방보전캘린더",
     "equipment.dailyInspectCalendar": "일상점검캘린더",
@@ -325,7 +327,18 @@
     "status": "상태",
     "statusWaiting": "대기",
     "statusInProgress": "진행중",
-    "statusCompleted": "완료"
+    "statusCompleted": "완료",
+    "inspect": {
+      "dailyTitle": "일상점검",
+      "periodicTitle": "정기점검",
+      "pmTitle": "예방보전",
+      "completed": "완료",
+      "pass": "합격",
+      "fail": "불합격",
+      "progress": "진행률",
+      "noData": "오늘 점검 대상이 없습니다.",
+      "notDone": "미실시"
+    }
   },
   "inventory": {
     "matStock": {
@@ -1417,7 +1430,8 @@
       "tab": {
         "request": "출고요청처리",
         "manual": "수동출고",
-        "scan": "바코드스캔"
+        "scan": "바코드스캔",
+        "history": "출고이력"
       },
       "stats": {
         "requested": "요청",
@@ -1459,7 +1473,21 @@
       "fullIssue": "전량출고",
       "scanHistoryTitle": "금일 스캔 출고 이력",
       "noScanHistory": "스캔 출고 이력이 없습니다.",
-      "scanTime": "시간"
+      "scanTime": "시간",
+      "history": {
+        "tabTitle": "출고이력",
+        "issueNo": "출고번호",
+        "issueDate": "출고일",
+        "statusDone": "완료",
+        "statusCanceled": "취소",
+        "searchPlaceholder": "출고번호, 품목코드, LOT번호 검색...",
+        "cancelAction": "출고 취소",
+        "cancelTitle": "출고 취소",
+        "cancelWarning": "출고를 취소하면 재고가 복원되고 역분개 트랜잭션이 생성됩니다. 이 작업은 되돌릴 수 없습니다.",
+        "cancelReason": "취소 사유",
+        "cancelReasonPlaceholder": "취소 사유를 입력하세요...",
+        "confirmCancel": "취소 확정"
+      }
     },
     "stock": {
       "title": "자재재고현황",
@@ -1611,7 +1639,15 @@
         "pass": "합격",
         "fail": "불합격",
         "passRate": "합격률"
-      }
+      },
+      "statusDone": "완료",
+      "statusCanceled": "취소",
+      "cancelAction": "판정 취소",
+      "cancelTitle": "IQC 판정 취소",
+      "cancelWarning": "판정을 취소하면 해당 LOT의 IQC 상태가 '대기'로 복원됩니다. 재검사가 필요합니다.",
+      "cancelReason": "취소 사유",
+      "cancelReasonPlaceholder": "취소 사유를 입력하세요",
+      "confirmCancel": "판정 취소"
     },
     "lotSplit": {
       "title": "자재분할",
@@ -2545,7 +2581,10 @@
       "crimping": "압착",
       "assembly": "조립",
       "inspection": "검사",
-      "allLines": "전체 라인"
+      "allLines": "전체 라인",
+      "subtitle": "전체 설비의 실시간 가동 현황을 확인합니다.",
+      "noEquip": "표시할 설비가 없습니다.",
+      "working": "작업중"
     },
     "code": "설비코드",
     "name": "설비명",
@@ -2557,8 +2596,10 @@
     "stop": "가동중지",
     "edit": "설비 수정",
     "pmPlan": {
-      "title": "PM 계획관리",
+      "title": "예방보전계획관리",
       "description": "설비별 예방보전 계획을 등록하고 관리합니다.",
+      "dueDateFrom": "예정일(시작)",
+      "dueDateTo": "예정일(종료)",
       "planCode": "계획코드",
       "planName": "계획명",
       "planNamePlaceholder": "예방보전 계획명 입력",
@@ -2584,8 +2625,12 @@
       "criteria": "판정기준",
       "criteriaPlaceholder": "판정 기준 입력",
       "sparePartCode": "예비부품",
+      "sparePartQty": "수량",
       "estimatedMin": "소요(분)",
-      "descPlaceholder": "계획 설명 입력"
+      "descPlaceholder": "계획 설명 입력",
+      "sectionBasic": "기본정보",
+      "sectionCycle": "주기 설정",
+      "equipName": "설비명"
     },
     "pmWorkOrder": {
       "woSchedule": "Work Order 현황",
@@ -2603,7 +2648,8 @@
       "fillAllItems": "모든 항목을 입력하세요",
       "remarkPlaceholder": "비고 입력",
       "completeWo": "WO 완료",
-      "noItems": "연결된 보전항목이 없습니다."
+      "noItems": "연결된 보전항목이 없습니다.",
+      "completedAt": "완료일시"
     },
     "pmCalendar": {
       "title": "예방보전 캘린더",
@@ -2963,7 +3009,13 @@
       "driverPlaceholder": "운전자명 입력",
       "destination": "도착지",
       "destinationPlaceholder": "도착지 입력",
-      "allCustomers": "전체 고객사"
+      "allCustomers": "전체 고객사",
+      "cancelShipment": "출하 취소",
+      "cancelWarning": "출하를 취소하면 할당된 팔레트가 해제됩니다. PREPARING 또는 LOADED 상태에서만 취소 가능합니다.",
+      "cancelReason": "취소 사유",
+      "cancelReasonPlaceholder": "취소 사유를 입력하세요...",
+      "confirmCancel": "취소 확정",
+      "statCanceled": "취소"
     },
     "scan": {
       "title": "출하 스캔 검증",

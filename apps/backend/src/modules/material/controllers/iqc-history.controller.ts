@@ -3,10 +3,10 @@
  * @description IQC 이력 조회 전용 API 컨트롤러
  */
 
-import { Controller, Get, Post, Query, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IqcHistoryService } from '../services/iqc-history.service';
-import { IqcHistoryQueryDto, CreateIqcResultDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
@@ -28,5 +28,13 @@ export class IqcHistoryController {
   async createResult(@Body() dto: CreateIqcResultDto) {
     const data = await this.iqcHistoryService.createResult(dto);
     return ResponseUtil.success(data, 'IQC 검사결과가 등록되었습니다.');
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'IQC 판정 취소 (LOT iqcStatus → PENDING 복원)' })
+  async cancel(@Param('id') id: string, @Body() dto: CancelIqcResultDto) {
+    const data = await this.iqcHistoryService.cancel(id, dto);
+    return ResponseUtil.success(data, 'IQC 판정이 취소되었습니다.');
   }
 }

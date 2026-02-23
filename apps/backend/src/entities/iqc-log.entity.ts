@@ -40,6 +40,9 @@ export class IqcLog {
   @Column({ name: 'INSPECT_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   inspectDate: Date;
 
+  @Column({ name: 'STATUS', length: 50, default: 'DONE' })
+  status: string;
+
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 

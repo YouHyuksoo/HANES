@@ -4,7 +4,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateIqcResultDto {
@@ -37,6 +37,13 @@ export class CreateIqcResultDto {
   @IsOptional()
   @IsString()
   details?: string;
+}
+
+export class CancelIqcResultDto {
+  @ApiProperty({ description: '취소 사유' })
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
 }
 
 export class IqcHistoryQueryDto {

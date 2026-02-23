@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
 import { X, Plus, Trash2 } from "lucide-react";
-import { useEquipOptions } from "@/hooks/useMasterOptions";
+import { useEquipOptions, useEquipBomOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
@@ -63,6 +63,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
   const itemTypeOpts = useComCodeOptions("PM_ITEM_TYPE");
 
   const [equipId, setEquipId] = useState("");
+  const { options: bomOptions } = useEquipBomOptions(equipId || null);
   const [planCode, setPlanCode] = useState("");
   const [planName, setPlanName] = useState("");
   const [pmType, setPmType] = useState("TIME_BASED");
@@ -185,7 +186,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
   }, [canSave, editingPlan, equipId, planCode, planName, pmType, cycleType, cycleValue, estimatedTime, description, items, onSave, onClose]);
 
   return (
-    <div className={`w-[580px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}>
+    <div className={`w-[720px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}>
       {/* Header */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">
@@ -294,83 +295,87 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
                 </button>
               </div>
 
-              <div className="border border-border rounded-lg overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead className="bg-surface">
-                    <tr>
-                      <th className="px-2 py-1.5 text-center text-text-muted font-medium w-8">#</th>
-                      <th className="px-2 py-1.5 text-left text-text-muted font-medium">{t("equipment.pmPlan.itemName")}</th>
-                      <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("equipment.pmPlan.itemType")}</th>
-                      <th className="px-2 py-1.5 text-left text-text-muted font-medium w-28">{t("equipment.pmPlan.criteria")}</th>
-                      <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">{t("equipment.pmPlan.sparePartCode")}</th>
-                      <th className="px-2 py-1.5 text-center text-text-muted font-medium w-12">{t("equipment.pmPlan.estimatedMin")}</th>
-                      <th className="w-8" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, idx) => (
-                      <tr key={idx} className="border-t border-border hover:bg-surface/50">
-                        <td className="px-2 py-1 text-center text-text-muted">{item.seq}</td>
-                        <td className="px-2 py-1">
-                          <input
-                            type="text"
-                            value={item.itemName}
-                            onChange={(e) => updateItem(idx, "itemName", e.target.value)}
-                            className="w-full text-xs px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary"
-                            placeholder={t("equipment.pmPlan.itemNamePlaceholder")}
-                          />
-                        </td>
-                        <td className="px-2 py-1">
-                          <select
-                            value={item.itemType}
-                            onChange={(e) => updateItem(idx, "itemType", e.target.value)}
-                            className="w-full text-xs px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary"
-                          >
-                            {itemTypeOpts.map((opt) => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-2 py-1">
-                          <input
-                            type="text"
-                            value={item.criteria}
-                            onChange={(e) => updateItem(idx, "criteria", e.target.value)}
-                            className="w-full text-xs px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary"
-                            placeholder={t("equipment.pmPlan.criteriaPlaceholder")}
-                          />
-                        </td>
-                        <td className="px-2 py-1">
-                          <input
-                            type="text"
-                            value={item.sparePartCode}
-                            onChange={(e) => updateItem(idx, "sparePartCode", e.target.value)}
-                            className="w-full text-xs px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
-                        </td>
-                        <td className="px-2 py-1">
-                          <input
-                            type="number"
-                            value={item.estimatedMinutes !== null ? item.estimatedMinutes : ""}
-                            onChange={(e) => updateItem(idx, "estimatedMinutes", e.target.value ? Number(e.target.value) : null)}
-                            className="w-full text-xs px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text text-center focus:outline-none focus:ring-1 focus:ring-primary"
-                            min={0}
-                          />
-                        </td>
-                        <td className="px-2 py-1 text-center">
-                          {items.length > 1 && (
-                            <button
-                              onClick={() => removeItem(idx)}
-                              className="p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-2">
+                {items.map((item, idx) => (
+                  <div key={idx} className="border border-border rounded-lg p-3 bg-white dark:bg-gray-900/50 hover:border-primary/30 transition-colors">
+                    {/* Row 1: seq, 항목명, 항목유형, 삭제 */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold shrink-0">
+                        {item.seq}
+                      </span>
+                      <input
+                        type="text"
+                        value={item.itemName}
+                        onChange={(e) => updateItem(idx, "itemName", e.target.value)}
+                        className="flex-1 text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder={t("equipment.pmPlan.itemNamePlaceholder")}
+                      />
+                      <select
+                        value={item.itemType}
+                        onChange={(e) => updateItem(idx, "itemType", e.target.value)}
+                        className="w-24 text-xs px-1.5 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary shrink-0"
+                      >
+                        {itemTypeOpts.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                      {items.length > 1 && (
+                        <button
+                          onClick={() => removeItem(idx)}
+                          className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      )}
+                    </div>
+                    {/* Row 2: 판정기준, 예비부품, 수량, 소요시간 */}
+                    <div className="flex items-center gap-2 pl-8">
+                      <div className="flex-1 min-w-0">
+                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.criteria")}</label>
+                        <input
+                          type="text"
+                          value={item.criteria}
+                          onChange={(e) => updateItem(idx, "criteria", e.target.value)}
+                          className="w-full text-xs px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary"
+                          placeholder={t("equipment.pmPlan.criteriaPlaceholder")}
+                        />
+                      </div>
+                      <div className="w-40 shrink-0">
+                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.sparePartCode")}</label>
+                        <select
+                          value={item.sparePartCode}
+                          onChange={(e) => updateItem(idx, "sparePartCode", e.target.value)}
+                          className="w-full text-xs px-1.5 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <option value="">{t("common.none", "-")}</option>
+                          {bomOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="w-14 shrink-0">
+                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.sparePartQty", "수량")}</label>
+                        <input
+                          type="number"
+                          value={item.sparePartQty || ""}
+                          onChange={(e) => updateItem(idx, "sparePartQty", e.target.value ? Number(e.target.value) : 0)}
+                          className="w-full text-xs px-1.5 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                          min={0}
+                        />
+                      </div>
+                      <div className="w-16 shrink-0">
+                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.estimatedMin")}</label>
+                        <input
+                          type="number"
+                          value={item.estimatedMinutes !== null ? item.estimatedMinutes : ""}
+                          onChange={(e) => updateItem(idx, "estimatedMinutes", e.target.value ? Number(e.target.value) : null)}
+                          className="w-full text-xs px-1.5 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-text text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                          min={0}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </>

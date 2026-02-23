@@ -8,11 +8,13 @@
     "search": "Tìm kiếm",
     "period": "Thời gian",
     "refresh": "Làm mới",
+    "viewMore": "Xem thêm",
     "reset": "Đặt lại",
     "export": "Xuất",
     "import": "Nhập",
     "confirm": "Xác nhận",
     "close": "Đóng",
+    "viewDetail": "Xem chi tiết",
     "loading": "Đang tải...",
     "saving": "Đang lưu...",
     "uploading": "Đang tải lên...",
@@ -210,10 +212,10 @@
     "quality.oqcHistory": "Lịch sử OQC",
     "equipment": "Quản lý thiết bị",
     "equipment.master": "Quản lý dữ liệu chính thiết bị",
-    "equipment.status": "Tra cứu tình trạng vận hành",
-    "equipment.pmPlan": "Quản lý kế hoạch PM",
-    "equipment.pm": "Quản lý bảo trì phòng ngừa",
-    "equipment.pmCalendar": "Lịch bảo trì phòng ngừa",
+    "equipment.status": "Tình trạng vận hành thiết bị",
+    "equipment.pmPlan": "Quản lý kế hoạch bảo trì",
+    "equipment.pm": "Quản lý bảo trì",
+    "equipment.pmCalendar": "Lịch bảo trì",
     "equipment.dailyInspectCalendar": "Lịch kiểm tra hàng ngày",
     "equipment.periodicInspectCalendar": "Lịch kiểm tra định kỳ",
     "equipment.dailyInspect": "Quản lý kiểm tra hàng ngày",
@@ -325,7 +327,18 @@
     "status": "Trạng thái",
     "statusWaiting": "Chờ",
     "statusInProgress": "Đang tiến hành",
-    "statusCompleted": "Hoàn thành"
+    "statusCompleted": "Hoàn thành",
+    "inspect": {
+      "dailyTitle": "Kiểm tra hàng ngày",
+      "periodicTitle": "Kiểm tra định kỳ",
+      "pmTitle": "Bảo trì phòng ngừa",
+      "completed": "Hoàn thành",
+      "pass": "Đạt",
+      "fail": "Không đạt",
+      "progress": "Tiến độ",
+      "noData": "Không có kiểm tra nào hôm nay.",
+      "notDone": "Chưa thực hiện"
+    }
   },
   "inventory": {
     "matStock": {
@@ -1340,7 +1353,8 @@
       "tab": {
         "request": "Xử lý yêu cầu xuất",
         "manual": "Xuất thủ công",
-        "scan": "Quét mã vạch"
+        "scan": "Quét mã vạch",
+        "history": "Lịch sử xuất kho"
       },
       "stats": {
         "requested": "Đã yêu cầu",
@@ -1382,7 +1396,21 @@
       "fullIssue": "Xuất toàn bộ",
       "scanHistoryTitle": "Lịch sử xuất kho quét hôm nay",
       "noScanHistory": "Không có lịch sử xuất kho quét.",
-      "scanTime": "Thời gian"
+      "scanTime": "Thời gian",
+      "history": {
+        "tabTitle": "Lịch sử xuất kho",
+        "issueNo": "Mã xuất kho",
+        "issueDate": "Ngày xuất",
+        "statusDone": "Hoàn thành",
+        "statusCanceled": "Đã hủy",
+        "searchPlaceholder": "Tìm mã xuất kho, mã linh kiện, số LOT...",
+        "cancelAction": "Hủy xuất kho",
+        "cancelTitle": "Hủy xuất kho",
+        "cancelWarning": "Hủy xuất kho sẽ khôi phục tồn kho và tạo giao dịch đảo ngược. Thao tác này không thể hoàn tác.",
+        "cancelReason": "Lý do hủy",
+        "cancelReasonPlaceholder": "Nhập lý do hủy...",
+        "confirmCancel": "Xác nhận hủy"
+      }
     },
     "stock": {
       "title": "Tồn kho vật tư",
@@ -1534,7 +1562,15 @@
         "pass": "Đạt",
         "fail": "Không đạt",
         "passRate": "Tỷ lệ đạt"
-      }
+      },
+      "statusDone": "Hoàn thành",
+      "statusCanceled": "Đã hủy",
+      "cancelAction": "Hủy phán định",
+      "cancelTitle": "Hủy phán định IQC",
+      "cancelWarning": "Khi hủy phán định, trạng thái IQC của LOT sẽ được khôi phục về 'Chờ'. Cần kiểm tra lại.",
+      "cancelReason": "Lý do hủy",
+      "cancelReasonPlaceholder": "Nhập lý do hủy",
+      "confirmCancel": "Hủy phán định"
     },
     "lotSplit": {
       "title": "Chia tách vật tư",
@@ -2468,7 +2504,10 @@
       "crimping": "Bấm",
       "assembly": "Lắp ráp",
       "inspection": "Kiểm tra",
-      "allLines": "Tất cả chuyền"
+      "allLines": "Tất cả chuyền",
+      "subtitle": "Theo dõi trạng thái vận hành thiết bị theo thời gian thực.",
+      "noEquip": "Không có thiết bị để hiển thị.",
+      "working": "Đang làm việc"
     },
     "code": "Mã thiết bị",
     "name": "Tên thiết bị",
@@ -2497,8 +2536,10 @@
     },
     "edit": "Sửa thiết bị",
     "pmPlan": {
-      "title": "Quản lý kế hoạch PM",
+      "title": "Quản lý kế hoạch bảo trì",
       "description": "Đăng ký và quản lý kế hoạch bảo trì phòng ngừa theo thiết bị.",
+      "dueDateFrom": "Ngày dự kiến (Từ)",
+      "dueDateTo": "Ngày dự kiến (Đến)",
       "planCode": "Mã kế hoạch",
       "planName": "Tên kế hoạch",
       "planNamePlaceholder": "Nhập tên kế hoạch PM",
@@ -2524,8 +2565,12 @@
       "criteria": "Tiêu chí",
       "criteriaPlaceholder": "Nhập tiêu chí",
       "sparePartCode": "Phụ tùng",
+      "sparePartQty": "SL",
       "estimatedMin": "Dự kiến(phút)",
-      "descPlaceholder": "Nhập mô tả kế hoạch"
+      "descPlaceholder": "Nhập mô tả kế hoạch",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionCycle": "Cài đặt chu kỳ",
+      "equipName": "Tên thiết bị"
     },
     "pmWorkOrder": {
       "woSchedule": "Tình hình Work Order",
@@ -2543,7 +2588,8 @@
       "fillAllItems": "Vui lòng điền tất cả hạng mục",
       "remarkPlaceholder": "Nhập ghi chú",
       "completeWo": "Hoàn thành WO",
-      "noItems": "Không có hạng mục bảo trì liên kết."
+      "noItems": "Không có hạng mục bảo trì liên kết.",
+      "completedAt": "Thời gian hoàn thành"
     },
     "pmCalendar": {
       "title": "Lịch bảo trì phòng ngừa",
@@ -2903,7 +2949,13 @@
       "driverPlaceholder": "Nhập tên tài xế",
       "destination": "Điểm đến",
       "destinationPlaceholder": "Nhập điểm đến",
-      "allCustomers": "Tất cả khách hàng"
+      "allCustomers": "Tất cả khách hàng",
+      "cancelShipment": "Hủy xuất hàng",
+      "cancelWarning": "Hủy xuất hàng sẽ giải phóng các pallet đã phân bổ. Chỉ trạng thái Đang chuẩn bị hoặc Đã chất hàng mới có thể hủy.",
+      "cancelReason": "Lý do hủy",
+      "cancelReasonPlaceholder": "Nhập lý do hủy...",
+      "confirmCancel": "Xác nhận hủy",
+      "statCanceled": "Đã hủy"
     },
     "scan": {
       "title": "Xác minh quét xuất hàng",

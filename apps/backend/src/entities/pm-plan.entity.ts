@@ -17,6 +17,7 @@ import {
   DeleteDateColumn,
   Index,
   OneToMany,
+  AfterLoad,
 } from 'typeorm';
 import { PmPlanItem } from './pm-plan-item.entity';
 
@@ -89,4 +90,9 @@ export class PmPlan {
 
   @OneToMany(() => PmPlanItem, (item) => item.pmPlan, { cascade: true })
   items: PmPlanItem[];
+
+  @AfterLoad()
+  convertRawId() {
+    if (Buffer.isBuffer(this.id)) this.id = (this.id as any).toString('hex').toUpperCase();
+  }
 }

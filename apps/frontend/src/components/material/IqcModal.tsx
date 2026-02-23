@@ -43,7 +43,7 @@ interface IqcModalProps {
   selectedItem: IqcItem | null;
   form: IqcResultForm;
   setForm: React.Dispatch<React.SetStateAction<IqcResultForm>>;
-  onSubmit: (details?: MeasurementRow[]) => void;
+  onSubmit: (details?: MeasurementRow[], overrideResult?: string) => void;
 }
 
 function judgeValue(value: string, lsl: number | null, usl: number | null): "PASS" | "FAIL" | "" {
@@ -77,7 +77,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     const fetchItems = async () => {
       setLoadingItems(true);
       try {
-        const res = await api.get("/master/iqc-items", { params: { partId: selectedItem.id } });
+        const res = await api.get("/master/iqc-items", { params: { partId: selectedItem.partId } });
         const items: IqcInspectItem[] = res.data?.data ?? [];
         setInspectItems(items);
         setMeasurements(items.map((item) => ({
@@ -125,7 +125,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     const finalResult = overallJudge || form.result;
     if (!finalResult) return;
     setForm((prev) => ({ ...prev, result: finalResult as IqcResultForm["result"] }));
-    onSubmit(measurements.length > 0 ? measurements : undefined);
+    onSubmit(measurements.length > 0 ? measurements : undefined, finalResult);
   }, [overallJudge, form.result, measurements, setForm, onSubmit]);
 
   if (!selectedItem) return null;

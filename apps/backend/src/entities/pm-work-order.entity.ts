@@ -16,8 +16,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToMany,
   Index,
+  AfterLoad,
 } from 'typeorm';
+import { PmWoResult } from './pm-wo-result.entity';
 
 @Entity({ name: 'PM_WORK_ORDERS' })
 @Index(['equipId'])
@@ -90,13 +93,12 @@ export class PmWorkOrder {
   @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
   deletedAt: Date | null;
 
-  /** CLOB details를 JSON으로 파싱하는 헬퍼 */
-  getDetailsObject(): Record<string, unknown> | null {
-    if (!this.details) return null;
-    try {
-      return JSON.parse(this.details);
-    } catch {
-      return null;
-    }
+  @OneToMany(() => PmWoResult, (result) => result.workOrder, { cascade: true })
+  results: PmWoResult[];
+
+  @AfterLoad()
+  convertRawIds() {
+    if (Buffer.isBuffer(this.id)) this.id = (this.id as any).toString('hex').toUpperCase();
+    if (Buffer.isBuffer(this.pmPlanId)) this.pmPlanId = (this.pmPlanId as any).toString('hex').toUpperCase();
   }
 }

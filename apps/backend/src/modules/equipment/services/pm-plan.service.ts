@@ -15,6 +15,7 @@ import { Repository, IsNull, Between, Like, In } from 'typeorm';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmPlanItem } from '../../../entities/pm-plan-item.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
+import { PmWoResult } from '../../../entities/pm-wo-result.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import {
   CreatePmPlanDto,
@@ -34,6 +35,8 @@ export class PmPlanService {
     private readonly pmPlanItemRepo: Repository<PmPlanItem>,
     @InjectRepository(PmWorkOrder)
     private readonly pmWorkOrderRepo: Repository<PmWorkOrder>,
+    @InjectRepository(PmWoResult)
+    private readonly pmWoResultRepo: Repository<PmWoResult>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepo: Repository<EquipMaster>,
   ) {}
@@ -42,11 +45,10 @@ export class PmPlanService {
 
   /** PM 계획 목록 조회 */
   async findAllPlans(query: PmPlanQueryDto) {
-    const { page = 1, limit = 50, equipId, pmType, search } = query;
+    const { page = 1, limit = 50, equipId, pmType, search, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.pmPlanRepo.createQueryBuilder('plan')
-      .leftJoinAndSelect(EquipMaster, 'equip', 'plan.equipId = equip.id')
       .where('plan.deletedAt IS NULL');
 
     if (equipId) qb.andWhere('plan.equipId = :equipId', { equipId });
@@ -57,30 +59,64 @@ export class PmPlanService {
         { search: `%${search}%` },
       );
     }
+    if (dueDateFrom) {
+      qb.andWhere('plan.nextDueAt >= :dueDateFrom', { dueDateFrom: new Date(dueDateFrom) });
+    }
+    if (dueDateTo) {
+      const toDate = new Date(dueDateTo);
+      toDate.setHours(23, 59, 59, 999);
+      qb.andWhere('plan.nextDueAt <= :dueDateTo', { dueDateTo: toDate });
+    }
 
     const total = await qb.getCount();
 
-    const rawData = await qb
+    const plans = await qb
       .orderBy('plan.createdAt', 'DESC')
       .skip(skip)
       .take(limit)
-      .getRawAndEntities();
+      .getMany();
 
-    const plans = rawData.entities.map((plan, idx) => {
-      const raw = rawData.raw[idx];
+    const planIds = plans.map((p) => p.id);
+    const equipIds = [...new Set(plans.map((p) => p.equipId))];
+
+    const equips = equipIds.length > 0
+      ? await this.equipMasterRepo.find({
+          where: { id: In(equipIds) },
+          select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+        })
+      : [];
+    const equipMap = new Map(equips.map((e) => [e.id, e]));
+
+    // 계획별 항목 수 조회
+    let itemCountMap = new Map<string, number>();
+    if (planIds.length > 0) {
+      const itemCounts = await this.pmPlanItemRepo
+        .createQueryBuilder('item')
+        .select('item.pmPlanId', 'pmPlanId')
+        .addSelect('COUNT(*)', 'cnt')
+        .where('item.pmPlanId IN (:...planIds)', { planIds })
+        .andWhere('item.useYn = :useYn', { useYn: 'Y' })
+        .groupBy('item.pmPlanId')
+        .getRawMany();
+      itemCountMap = new Map(itemCounts.map((r: any) => [r.pmPlanId, parseInt(r.cnt, 10)]));
+    }
+
+    const data = plans.map((plan) => {
+      const equip = equipMap.get(plan.equipId);
       return {
         ...plan,
+        itemCount: itemCountMap.get(plan.id) || 0,
         equip: {
-          id: raw.equip_id ?? raw.EQUIP_ID,
-          equipCode: raw.equip_equipCode ?? raw.EQUIP_CODE,
-          equipName: raw.equip_equipName ?? raw.EQUIP_NAME,
-          lineCode: raw.equip_lineCode ?? raw.LINE_CODE,
-          equipType: raw.equip_equipType ?? raw.EQUIP_TYPE,
+          id: equip?.id || plan.equipId,
+          equipCode: equip?.equipCode || '-',
+          equipName: equip?.equipName || '-',
+          lineCode: equip?.lineCode || null,
+          equipType: equip?.equipType || null,
         },
       };
     });
 
-    return { data: plans, total, page, limit };
+    return { data, total, page, limit };
   }
 
   /** PM 계획 상세 조회 (items 포함) */
@@ -312,12 +348,27 @@ export class PmPlanService {
     wo.status = 'COMPLETED';
     wo.completedAt = new Date();
     wo.overallResult = dto.overallResult;
-    wo.details = JSON.stringify(dto.details);
     wo.remark = dto.remark || null;
     if (dto.assignedWorkerId) wo.assignedWorkerId = dto.assignedWorkerId;
     if (!wo.startedAt) wo.startedAt = new Date();
 
     await this.pmWorkOrderRepo.save(wo);
+
+    if (dto.items?.length) {
+      const results = dto.items.map((item) =>
+        this.pmWoResultRepo.create({
+          workOrderId: wo.id,
+          pmPlanItemId: item.itemId || null,
+          seq: item.seq,
+          itemName: item.itemName,
+          itemType: item.itemType || 'CHECK',
+          criteria: item.criteria || null,
+          result: item.result,
+          remark: item.remark || null,
+        }),
+      );
+      await this.pmWoResultRepo.save(results);
+    }
 
     if (wo.pmPlanId) {
       const plan = await this.pmPlanRepo.findOne({
@@ -360,36 +411,41 @@ export class PmPlanService {
     const skip = (page - 1) * limit;
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
-      .leftJoinAndSelect(EquipMaster, 'equip', 'wo.equipId = equip.id')
       .where('wo.deletedAt IS NULL');
 
     if (equipId) qb.andWhere('wo.equipId = :equipId', { equipId });
     if (status) qb.andWhere('wo.status = :status', { status });
     if (search) {
-      qb.andWhere(
-        '(LOWER(wo.workOrderNo) LIKE LOWER(:search) OR LOWER(equip.equipCode) LIKE LOWER(:search))',
-        { search: `%${search}%` },
-      );
+      qb.andWhere('LOWER(wo.workOrderNo) LIKE LOWER(:search)', { search: `%${search}%` });
     }
 
     const total = await qb.getCount();
 
-    const rawData = await qb
+    const workOrders = await qb
       .orderBy('wo.scheduledDate', 'DESC')
       .skip(skip)
       .take(limit)
-      .getRawAndEntities();
+      .getMany();
 
-    const data = rawData.entities.map((wo, idx) => {
-      const raw = rawData.raw[idx];
+    const equipIds = [...new Set(workOrders.map((wo) => wo.equipId))];
+    const equips = equipIds.length > 0
+      ? await this.equipMasterRepo.find({
+          where: { id: In(equipIds) },
+          select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+        })
+      : [];
+    const equipMap = new Map(equips.map((e) => [e.id, e]));
+
+    const data = workOrders.map((wo) => {
+      const equip = equipMap.get(wo.equipId);
       return {
         ...wo,
         equip: {
-          id: raw.equip_id ?? raw.EQUIP_ID,
-          equipCode: raw.equip_equipCode ?? raw.EQUIP_CODE,
-          equipName: raw.equip_equipName ?? raw.EQUIP_NAME,
-          lineCode: raw.equip_lineCode ?? raw.LINE_CODE,
-          equipType: raw.equip_equipType ?? raw.EQUIP_TYPE,
+          id: equip?.id || wo.equipId,
+          equipCode: equip?.equipCode || '-',
+          equipName: equip?.equipName || '-',
+          lineCode: equip?.lineCode || null,
+          equipType: equip?.equipType || null,
         },
       };
     });
@@ -471,19 +527,43 @@ export class PmPlanService {
     dayEnd.setHours(23, 59, 59, 999);
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
-      .leftJoin(EquipMaster, 'equip', 'wo.equipId = equip.id')
-      .addSelect(['equip.equipCode', 'equip.equipName', 'equip.lineCode', 'equip.equipType'])
       .where('wo.deletedAt IS NULL')
       .andWhere('wo.scheduledDate BETWEEN :dayStart AND :dayEnd', { dayStart, dayEnd });
 
-    if (lineCode) qb.andWhere('equip.lineCode = :lineCode', { lineCode });
-    if (equipType) qb.andWhere('equip.equipType = :equipType', { equipType });
+    if (lineCode || equipType) {
+      qb.leftJoin(EquipMaster, 'equip', 'wo.equipId = equip.id');
+      if (lineCode) qb.andWhere('equip.lineCode = :lineCode', { lineCode });
+      if (equipType) qb.andWhere('equip.equipType = :equipType', { equipType });
+    }
 
-    const rawResult = await qb.getRawAndEntities();
+    const workOrders = await qb.orderBy('wo.scheduledDate', 'ASC').getMany();
+
+    const equipIds = [...new Set(workOrders.map((wo) => wo.equipId))];
+    const equips = equipIds.length > 0
+      ? await this.equipMasterRepo.find({
+          where: { id: In(equipIds) },
+          select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+        })
+      : [];
+    const equipMap = new Map(equips.map((e) => [e.id, e]));
+
+    const woIds = workOrders.map((wo) => wo.id);
+    const allResults = woIds.length > 0
+      ? await this.pmWoResultRepo.find({
+          where: { workOrderId: In(woIds) },
+          order: { seq: 'ASC' },
+        })
+      : [];
+    const resultsMap = new Map<string, PmWoResult[]>();
+    for (const r of allResults) {
+      const list = resultsMap.get(r.workOrderId) || [];
+      list.push(r);
+      resultsMap.set(r.workOrderId, list);
+    }
 
     const result = await Promise.all(
-      rawResult.entities.map(async (wo, idx) => {
-        const raw = rawResult.raw[idx];
+      workOrders.map(async (wo) => {
+        const equip = equipMap.get(wo.equipId);
 
         let planItems: PmPlanItem[] = [];
         let planName: string | null = null;
@@ -493,22 +573,24 @@ export class PmPlanService {
             select: ['id', 'planName'],
           });
           planName = plan?.planName || null;
-          planItems = await this.pmPlanItemRepo.find({
+          const rawItems = await this.pmPlanItemRepo.find({
             where: { pmPlanId: wo.pmPlanId, useYn: 'Y' },
             order: { seq: 'ASC' },
           });
+          planItems = rawItems;
         }
 
         return {
           ...wo,
           planName,
           equip: {
-            equipCode: raw.equip_equipCode ?? raw.EQUIP_CODE,
-            equipName: raw.equip_equipName ?? raw.EQUIP_NAME,
-            lineCode: raw.equip_lineCode ?? raw.LINE_CODE,
-            equipType: raw.equip_equipType ?? raw.EQUIP_TYPE,
+            equipCode: equip?.equipCode || '-',
+            equipName: equip?.equipName || '-',
+            lineCode: equip?.lineCode || null,
+            equipType: equip?.equipType || null,
           },
           planItems,
+          results: resultsMap.get(wo.id) || [],
         };
       }),
     );

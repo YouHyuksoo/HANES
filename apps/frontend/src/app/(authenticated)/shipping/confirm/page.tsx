@@ -12,7 +12,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Upload, ArrowRight } from 'lucide-react';
+import { Truck, Plus, Search, RefreshCw, CheckCircle, Package, Clock, MapPin, Upload, ArrowRight, XCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { usePartnerOptions } from '@/hooks/useMasterOptions';
@@ -60,6 +60,9 @@ export default function ShipmentPage() {
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [scanTarget, setScanTarget] = useState<Shipment | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Shipment | null>(null);
+  const [cancelRemark, setCancelRemark] = useState('');
+  const [cancelling, setCancelling] = useState(false);
   const [createForm, setCreateForm] = useState({ shipDate: '', customerCode: '', vehicleNo: '', driverName: '', destination: '' });
 
   const fetchData = useCallback(async () => {
@@ -127,6 +130,24 @@ export default function ShipmentPage() {
     }
   }, [fetchData]);
 
+  /** 출하 취소 */
+  const handleCancelShipment = useCallback(async () => {
+    if (!cancelTarget || !cancelRemark.trim()) return;
+    setCancelling(true);
+    try {
+      await api.post(`/shipping/shipments/${cancelTarget.id}/cancel`, {
+        remark: cancelRemark.trim(),
+      });
+      setCancelTarget(null);
+      setCancelRemark('');
+      fetchData();
+    } catch (e) {
+      console.error('Cancel shipment failed:', e);
+    } finally {
+      setCancelling(false);
+    }
+  }, [cancelTarget, cancelRemark, fetchData]);
+
   const handleFormChange = (field: string, value: string) => setCreateForm((prev) => ({ ...prev, [field]: value }));
 
   const columns = useMemo<ColumnDef<Shipment>[]>(() => [
@@ -138,19 +159,29 @@ export default function ShipmentPage() {
     { accessorKey: 'totalQty', header: t('common.totalQty'), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'status', header: t('common.status'), size: 100, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
     { accessorKey: 'vehicleNo', header: t('shipping.confirm.vehicleNo'), size: 100 },
-    { id: 'actions', header: '', size: 100, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.changeStatus')}
-          disabled={row.original.status === 'DELIVERED'}
-          onClick={(e) => { e.stopPropagation(); handleStatusChange(row.original); }}>
-          <ArrowRight className={`w-4 h-4 ${row.original.status === 'DELIVERED' ? 'text-text-muted opacity-50' : 'text-primary'}`} />
-        </button>
-        <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.syncERP')}
-          onClick={(e) => e.stopPropagation()}>
-          <Upload className="w-4 h-4 text-primary" />
-        </button>
-      </div>
-    ) },
+    { id: 'actions', header: '', size: 130, cell: ({ row }) => {
+      const s = row.original;
+      const canCancel = s.status === 'PREPARING' || s.status === 'LOADED';
+      return (
+        <div className="flex gap-1">
+          <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.changeStatus')}
+            disabled={s.status === 'DELIVERED' || s.status === 'CANCELED'}
+            onClick={(e) => { e.stopPropagation(); handleStatusChange(s); }}>
+            <ArrowRight className={`w-4 h-4 ${s.status === 'DELIVERED' || s.status === 'CANCELED' ? 'text-text-muted opacity-50' : 'text-primary'}`} />
+          </button>
+          {canCancel && (
+            <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.cancelShipment')}
+              onClick={(e) => { e.stopPropagation(); setCancelTarget(s); }}>
+              <XCircle className="w-4 h-4 text-red-500" />
+            </button>
+          )}
+          <button className="p-1 hover:bg-surface rounded" title={t('shipping.confirm.syncERP')}
+            onClick={(e) => e.stopPropagation()}>
+            <Upload className="w-4 h-4 text-primary" />
+          </button>
+        </div>
+      );
+    } },
   ], [t, handleStatusChange]);
 
   return (
@@ -184,8 +215,9 @@ export default function ShipmentPage() {
               <div className="w-36 flex-shrink-0">
                 <Select options={customerFilterOptions} value={customerFilter} onChange={setCustomerFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
+              <Button variant="secondary" onClick={fetchData} className="flex-shrink-0">
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {t('common.refresh')}
               </Button>
             </div>
           }
@@ -232,6 +264,36 @@ export default function ShipmentPage() {
             <div className="flex justify-end"><Button variant="secondary" onClick={() => setIsDetailModalOpen(false)}>{t('common.close')}</Button></div>
           </div>
         )}
+      </Modal>
+
+      {/* 출하 취소 모달 */}
+      <Modal isOpen={!!cancelTarget} onClose={() => { setCancelTarget(null); setCancelRemark(''); }} title={t('shipping.confirm.cancelShipment')} size="lg">
+        <div className="space-y-4">
+          {cancelTarget && (
+            <div className="p-3 bg-surface-secondary rounded-lg space-y-1 text-sm">
+              <p><span className="text-text-muted">{t('shipping.confirm.shipmentNo')}:</span> {cancelTarget.shipNo}</p>
+              <p><span className="text-text-muted">{t('shipping.confirm.customer')}:</span> {cancelTarget.customer}</p>
+              <p><span className="text-text-muted">{t('shipping.confirm.shipDate')}:</span> {cancelTarget.shipDate}</p>
+              <p><span className="text-text-muted">{t('shipping.confirm.pallet')}:</span> {cancelTarget.palletCount} / <span className="text-text-muted">{t('shipping.confirm.box')}:</span> {cancelTarget.boxCount}</p>
+            </div>
+          )}
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <p className="text-sm text-red-700 dark:text-red-400">{t('shipping.confirm.cancelWarning')}</p>
+          </div>
+          <Input
+            label={t('shipping.confirm.cancelReason')}
+            placeholder={t('shipping.confirm.cancelReasonPlaceholder')}
+            value={cancelRemark}
+            onChange={(e) => setCancelRemark(e.target.value)}
+            fullWidth
+          />
+          <div className="flex justify-end gap-2 pt-4 border-t border-border">
+            <Button variant="secondary" onClick={() => { setCancelTarget(null); setCancelRemark(''); }}>{t('common.cancel')}</Button>
+            <Button variant="danger" onClick={handleCancelShipment} disabled={!cancelRemark.trim() || cancelling}>
+              {cancelling ? t('common.processing') : t('shipping.confirm.confirmCancel')}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* 바코드 스캔 검증 모달 (LOADED → SHIPPED) */}

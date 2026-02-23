@@ -7,7 +7,8 @@
  * 2. **usePartOptions(type?)**: 품목 목록 → SelectOption[] (label: "코드 - 이름")
  * 3. **useWorkerOptions()**: 작업자 목록 → SelectOption[]
  * 4. **usePartnerOptions(type?)**: 거래처 목록 → SelectOption[] (label: "코드 - 이름")
- * 5. useComCode.ts 패턴을 따름 (useApiQuery + useMemo)
+ * 5. **useEquipBomOptions(equipId)**: 설비 BOM 부품 → SelectOption[] (설비 선택 시 연동)
+ * 6. useComCode.ts 패턴을 따름 (useApiQuery + useMemo)
  */
 
 import { useMemo } from "react";
@@ -169,6 +170,41 @@ export function usePartnerOptions(partnerType?: "SUPPLIER" | "CUSTOMER") {
     return list.map((p) => ({
       value: p.partnerCode,
       label: `${p.partnerCode} - ${p.partnerName}`,
+    }));
+  }, [data]);
+
+  return { options, isLoading };
+}
+
+interface EquipBomRelItem {
+  id: string;
+  bomItemId: string;
+  quantity: number;
+  bomItem: {
+    id: string;
+    itemCode: string;
+    itemName: string;
+    itemType: string;
+    spec: string | null;
+  };
+}
+
+/**
+ * 설비에 연결된 BOM 부품 목록을 SelectOption[]으로 반환
+ * @param equipId - 설비 ID (null이면 빈 목록)
+ */
+export function useEquipBomOptions(equipId: string | null) {
+  const { data, isLoading } = useApiQuery<{ data: EquipBomRelItem[] }>(
+    ["equip-bom", equipId ?? "none"],
+    equipId ? `/master/equip-bom/equip/${equipId}` : null,
+    { staleTime: 3 * 60 * 1000, enabled: !!equipId },
+  );
+
+  const options = useMemo<SelectOption[]>(() => {
+    const list = data?.data ?? [];
+    return list.map((rel) => ({
+      value: rel.bomItem.itemCode,
+      label: `${rel.bomItem.itemCode} - ${rel.bomItem.itemName}`,
     }));
   }, [data]);
 

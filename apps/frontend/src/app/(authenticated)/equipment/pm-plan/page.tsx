@@ -2,28 +2,28 @@
 
 /**
  * @file src/app/(authenticated)/equipment/pm-plan/page.tsx
- * @description PM(예방보전) 계획 마스터 페이지 - 설비별 보전항목/주기/부품 관리
+ * @description PM(예방보전) 계획 마스터 페이지 — DataGrid + 우측 슬라이드 패널 CRUD
  *
  * 초보자 가이드:
  * 1. **DataGrid**: PM 계획 목록 (코드, 설비, 주기, 다음예정일 등)
- * 2. **필터**: PM유형, 검색어
- * 3. **CRUD**: 등록/수정/삭제 모달
+ * 2. **우측 패널**: 추가/수정 폼은 우측 슬라이드 패널에서 처리
+ * 3. **필터**: PM유형 + 검색어
  * 4. API: GET/POST/PUT/DELETE /equipment/pm-plans
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Wrench, Plus, RefreshCw, Search, Calendar,
+  Wrench, Plus, RefreshCw, Search, Calendar, Edit2, Trash2,
 } from "lucide-react";
 import {
   Button, Input, Select, StatCard,
   ConfirmModal, ComCodeBadge,
 } from "@/components/ui";
+import { Card, CardContent } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
-import { useEquipOptions } from "@/hooks/useMasterOptions";
-import PmPlanModal from "./components/PmPlanModal";
+import PmPlanPanel from "./components/PmPlanPanel";
 import api from "@/services/api";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -35,9 +35,12 @@ interface PmPlanRow {
   cycleType: string;
   cycleValue: number;
   cycleUnit: string;
+  equipId: string;
   estimatedTime: number | null;
+  description: string;
   nextDueAt: string | null;
   useYn: string;
+  itemCount: number;
   equip: {
     id: string;
     equipCode: string;
@@ -51,14 +54,16 @@ export default function PmPlanPage() {
   const { t } = useTranslation();
 
   const [data, setData] = useState<PmPlanRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [pmTypeFilter, setPmTypeFilter] = useState("");
+  const [dueDateFrom, setDueDateFrom] = useState("");
+  const [dueDateTo, setDueDateTo] = useState("");
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PmPlanRow | null>(null);
+  const panelAnimateRef = useRef(true);
+
   const [deleteTarget, setDeleteTarget] = useState<PmPlanRow | null>(null);
 
   const pmTypeOptions = useComCodeOptions("PM_TYPE");
@@ -70,18 +75,19 @@ export default function PmPlanPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string | number> = { page, limit: 50 };
+      const params: Record<string, string | number> = { limit: 5000 };
       if (search) params.search = search;
       if (pmTypeFilter) params.pmType = pmTypeFilter;
+      if (dueDateFrom) params.dueDateFrom = dueDateFrom;
+      if (dueDateTo) params.dueDateTo = dueDateTo;
       const res = await api.get("/equipment/pm-plans", { params });
       setData(res.data?.data ?? []);
-      setTotal(res.data?.meta?.total ?? 0);
     } catch {
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [page, search, pmTypeFilter]);
+  }, [search, pmTypeFilter, dueDateFrom, dueDateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -93,23 +99,43 @@ export default function PmPlanPage() {
     return { totalPlans, timeBased, usageBased, inactive };
   }, [data]);
 
-  const handleEdit = useCallback((row: PmPlanRow) => {
-    setEditId(row.id);
-    setModalOpen(true);
+  const handlePanelClose = useCallback(() => {
+    setIsPanelOpen(false);
+    setEditingPlan(null);
+    panelAnimateRef.current = true;
   }, []);
 
-  const handleDelete = useCallback(async () => {
+  const handlePanelSave = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/equipment/pm-plans/${deleteTarget.id}`);
-      setDeleteTarget(null);
       fetchData();
-    } catch (e) {
-      console.error("Delete failed:", e);
+    } catch {
+      // 에러는 api 인터셉터에서 처리
+    } finally {
+      setDeleteTarget(null);
     }
   }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<PmPlanRow>[]>(() => [
+    {
+      id: "actions", header: t("common.actions"), size: 80,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingPlan(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     {
       accessorKey: "planCode",
       header: t("equipment.pmPlan.planCode"),
@@ -128,6 +154,12 @@ export default function PmPlanPage() {
           <span className="font-mono text-xs">{equip.equipCode}</span>
         ) : "-";
       },
+    },
+    {
+      id: "equipName",
+      header: t("equipment.pmPlan.equipName"),
+      size: 140,
+      accessorFn: (row) => row.equip?.equipName ?? "-",
     },
     {
       accessorKey: "planName",
@@ -151,14 +183,31 @@ export default function PmPlanPage() {
       ),
     },
     {
+      accessorKey: "itemCount",
+      header: t("equipment.pmPlan.itemsTitle"),
+      size: 80,
+      meta: { align: "center" as const },
+      cell: ({ getValue }) => {
+        const count = getValue() as number;
+        return (
+          <span className={`inline-flex items-center justify-center min-w-[24px] h-5 px-1.5 rounded-full text-xs font-medium ${
+            count > 0
+              ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+              : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+          }`}>
+            {count}
+          </span>
+        );
+      },
+    },
+    {
       accessorKey: "nextDueAt",
       header: t("equipment.pmPlan.nextDueAt"),
       size: 120,
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
         if (!v) return "-";
-        const d = new Date(v);
-        return d.toLocaleDateString();
+        return new Date(v).toLocaleDateString();
       },
     },
     {
@@ -168,108 +217,108 @@ export default function PmPlanPage() {
       cell: ({ getValue }) => {
         const yn = getValue() as string;
         return (
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-            yn === "Y"
-              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-              : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-          }`}>
-            {yn === "Y" ? t("common.active") : t("common.inactive")}
-          </span>
+          <span className={`w-2 h-2 rounded-full inline-block ${yn === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
         );
       },
     },
-    {
-      id: "actions",
-      header: t("common.actions"),
-      size: 100,
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={() => handleEdit(row.original)}>
-            {t("common.edit")}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDeleteTarget(row.original)}
-            className="text-red-500 hover:text-red-700"
-          >
-            {t("common.delete")}
-          </Button>
-        </div>
-      ),
-    },
-  ], [t, handleEdit]);
+  ], [t, isPanelOpen]);
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Wrench className="w-7 h-7 text-primary" />
-            {t("equipment.pmPlan.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("equipment.pmPlan.description")}</p>
-        </div>
-        <div className="flex gap-2 items-center">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-            <input
-              type="text"
-              placeholder={t("common.search")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary w-44"
-            />
+    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-5">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Wrench className="w-7 h-7 text-primary" />
+              {t("equipment.pmPlan.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("equipment.pmPlan.description")} ({data.length}{t("common.cases", "건")})</p>
           </div>
-          <div className="w-32">
-            <Select options={pmTypeFilterOpts} value={pmTypeFilter} onChange={setPmTypeFilter} fullWidth />
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPlan(null); setIsPanelOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" />{t("equipment.pmPlan.addPlan")}
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button size="sm" onClick={() => { setEditId(null); setModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" />
-            {t("equipment.pmPlan.addPlan")}
-          </Button>
         </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-3">
+          <StatCard label={t("common.total")} value={stats.totalPlans} icon={Wrench} color="blue" />
+          <StatCard label={t("equipment.pmPlan.timeBased")} value={stats.timeBased} icon={Calendar} color="green" />
+          <StatCard label={t("equipment.pmPlan.usageBased")} value={stats.usageBased} icon={Wrench} color="yellow" />
+          <StatCard label={t("common.inactive")} value={stats.inactive} icon={Wrench} color="gray" />
+        </div>
+
+        {/* DataGrid */}
+        <Card><CardContent>
+          <DataGrid
+            data={data}
+            columns={columns}
+            isLoading={loading}
+            enableColumnFilter
+            enableExport
+            exportFileName={t("equipment.pmPlan.title")}
+            onRowClick={(row) => { panelAnimateRef.current = !isPanelOpen; setEditingPlan(row); setIsPanelOpen(true); }}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0 items-center">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t("common.search")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                  />
+                </div>
+                <div className="w-32">
+                  <Select options={pmTypeFilterOpts} value={pmTypeFilter} onChange={setPmTypeFilter} fullWidth />
+                </div>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="date"
+                    value={dueDateFrom}
+                    onChange={(e) => setDueDateFrom(e.target.value)}
+                    className="h-9 px-2 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-text"
+                    title={t("equipment.pmPlan.dueDateFrom")}
+                  />
+                  <span className="text-text-muted text-xs">~</span>
+                  <input
+                    type="date"
+                    value={dueDateTo}
+                    onChange={(e) => setDueDateTo(e.target.value)}
+                    className="h-9 px-2 text-xs border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-text"
+                    title={t("equipment.pmPlan.dueDateTo")}
+                  />
+                </div>
+              </div>
+            }
+          />
+        </CardContent></Card>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t("common.total")} value={stats.totalPlans} icon={Wrench} color="blue" />
-        <StatCard label={t("equipment.pmPlan.timeBased")} value={stats.timeBased} icon={Calendar} color="green" />
-        <StatCard label={t("equipment.pmPlan.usageBased")} value={stats.usageBased} icon={Wrench} color="yellow" />
-        <StatCard label={t("common.inactive")} value={stats.inactive} icon={Wrench} color="gray" />
-      </div>
-
-      {/* DataGrid */}
-      <DataGrid
-        data={data}
-        columns={columns}
-        isLoading={loading}
-        enableColumnFilter
-        enableExport
-        exportFileName={t("equipment.pmPlan.title")}
-      />
-
-      {/* Modal */}
-      <PmPlanModal
-        isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setEditId(null); }}
-        editId={editId}
-        onSaved={fetchData}
-      />
+      {/* Right Panel */}
+      {isPanelOpen && (
+        <PmPlanPanel
+          editingPlan={editingPlan}
+          onClose={handlePanelClose}
+          onSave={handlePanelSave}
+          animate={panelAnimateRef.current}
+        />
+      )}
 
       {/* Delete Confirm */}
       <ConfirmModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title={t("equipment.pmPlan.deletePlan")}
-        message={`${deleteTarget?.planCode} - ${deleteTarget?.planName}\n${t("equipment.pmPlan.deleteConfirm")}`}
-        confirmText={t("common.delete")}
+        onConfirm={handleDeleteConfirm}
         variant="danger"
+        message={t("equipment.pmPlan.deleteConfirm", {
+          name: `${deleteTarget?.planCode} - ${deleteTarget?.planName}`,
+          defaultValue: `'${deleteTarget?.planCode} - ${deleteTarget?.planName}'을(를) 삭제하시겠습니까?`,
+        })}
       />
     </div>
   );

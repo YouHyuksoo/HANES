@@ -31,6 +31,7 @@ import { ConsumableMountLog } from '../../entities/consumable-mount-log.entity';
 import { PmPlan } from '../../entities/pm-plan.entity';
 import { PmPlanItem } from '../../entities/pm-plan-item.entity';
 import { PmWorkOrder } from '../../entities/pm-work-order.entity';
+import { PmWoResult } from '../../entities/pm-wo-result.entity';
 import { User } from '../../entities/user.entity';
 import { ProdLineMaster } from '../../entities/prod-line-master.entity';
 import { ProcessMaster } from '../../entities/process-master.entity';
@@ -57,6 +58,7 @@ import { PmPlanService } from './services/pm-plan.service';
       PmPlan,
       PmPlanItem,
       PmWorkOrder,
+      PmWoResult,
       User,
       ProdLineMaster,
       ProcessMaster,

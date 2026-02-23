@@ -11,8 +11,18 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { Clock, Wrench, Play, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { Clock, Wrench, Play, CheckCircle, XCircle, AlertTriangle, Eye } from "lucide-react";
 import { Button, ComCodeBadge } from "@/components/ui";
+
+export interface WoResultItem {
+  id: string;
+  seq: number;
+  itemName: string;
+  itemType: string;
+  criteria: string | null;
+  result: string;
+  remark: string | null;
+}
 
 export interface WoScheduleItem {
   id: string;
@@ -24,6 +34,10 @@ export interface WoScheduleItem {
   status: string;
   priority: string;
   overallResult: string | null;
+  assignedWorkerId: string | null;
+  details: string | null;
+  remark: string | null;
+  completedAt: string | null;
   planName: string | null;
   equip: {
     equipCode: string;
@@ -38,6 +52,7 @@ export interface WoScheduleItem {
     itemType: string;
     criteria: string | null;
   }>;
+  results: WoResultItem[];
 }
 
 interface PmWorkOrderPanelProps {
@@ -45,6 +60,7 @@ interface PmWorkOrderPanelProps {
   data: WoScheduleItem[];
   loading: boolean;
   onExecute: (wo: WoScheduleItem) => void;
+  onView: (wo: WoScheduleItem) => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -63,7 +79,7 @@ const STATUS_ICONS: Record<string, React.ComponentType<{ className?: string }>> 
   CANCELLED: XCircle,
 };
 
-export default function PmWorkOrderPanel({ date, data, loading, onExecute }: PmWorkOrderPanelProps) {
+export default function PmWorkOrderPanel({ date, data, loading, onExecute, onView }: PmWorkOrderPanelProps) {
   const { t } = useTranslation();
 
   const formatDate = (dateStr: string) => {
@@ -150,7 +166,7 @@ export default function PmWorkOrderPanel({ date, data, loading, onExecute }: PmW
                   </div>
                 )}
 
-                {canExecute && (
+                {canExecute ? (
                   <Button
                     size="sm"
                     variant="primary"
@@ -160,7 +176,17 @@ export default function PmWorkOrderPanel({ date, data, loading, onExecute }: PmW
                     <Play className="w-3.5 h-3.5 mr-1" />
                     {t("equipment.pmWorkOrder.execute")}
                   </Button>
-                )}
+                ) : (wo.status === "COMPLETED" || wo.status === "CANCELLED") ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onView(wo)}
+                    className="w-full mt-1"
+                  >
+                    <Eye className="w-3.5 h-3.5 mr-1" />
+                    {t("common.viewDetail")}
+                  </Button>
+                ) : null}
               </div>
             );
           })}

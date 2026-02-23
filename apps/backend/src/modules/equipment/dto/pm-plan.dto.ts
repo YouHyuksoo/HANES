@@ -159,7 +159,7 @@ export class PmPlanQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(5000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '설비 ID' })
@@ -177,6 +177,16 @@ export class PmPlanQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: '다음예정일 시작 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  dueDateFrom?: string;
+
+  @ApiPropertyOptional({ description: '다음예정일 종료 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  dueDateTo?: string;
 }
 
 /** WO 수동 생성 DTO */
@@ -212,6 +222,47 @@ export class CreatePmWorkOrderDto {
   assignedWorkerId?: string;
 }
 
+/** WO 실행 항목별 결과 DTO */
+export class WoItemResultDto {
+  @ApiPropertyOptional({ description: '항목 ID (PM Plan Item ID)' })
+  @IsOptional()
+  @IsString()
+  itemId?: string;
+
+  @ApiProperty({ description: '순서' })
+  @IsInt()
+  @Min(1)
+  seq: number;
+
+  @ApiProperty({ description: '항목명' })
+  @IsString()
+  @MaxLength(200)
+  itemName: string;
+
+  @ApiPropertyOptional({ description: '항목 유형', enum: ITEM_TYPE, default: 'CHECK' })
+  @IsOptional()
+  @IsString()
+  @IsIn([...ITEM_TYPE])
+  itemType?: string;
+
+  @ApiPropertyOptional({ description: '판정 기준' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  criteria?: string;
+
+  @ApiProperty({ description: '결과 (PASS/FAIL)', enum: ['PASS', 'FAIL'] })
+  @IsString()
+  @IsIn(['PASS', 'FAIL'])
+  result: string;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  remark?: string;
+}
+
 /** WO 실행 DTO */
 export class ExecutePmWorkOrderDto {
   @ApiPropertyOptional({ description: '담당 작업자 ID' })
@@ -224,9 +275,11 @@ export class ExecutePmWorkOrderDto {
   @IsIn([...OVERALL_RESULT])
   overallResult: string;
 
-  @ApiProperty({ description: '항목별 실행 결과 (JSON)' })
-  @IsObject()
-  details: Record<string, any>;
+  @ApiProperty({ description: '항목별 실행 결과', type: [WoItemResultDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WoItemResultDto)
+  items: WoItemResultDto[];
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
@@ -306,7 +359,7 @@ export class PmWorkOrderQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(5000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '설비 ID' })

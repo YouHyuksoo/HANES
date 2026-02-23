@@ -13,6 +13,7 @@ import api from '@/services/api';
 /** IQC 검사 항목 인터페이스 */
 export interface IqcItem {
   id: string;
+  partId: string;
   receiveNo: string;
   arrivalDate: string;
   supplierName: string;
@@ -55,10 +56,11 @@ export function useIqcData() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/material/lots', { params: { limit: 5000 } });
+      const res = await api.get('/material/lots', { params: { limit: 200, iqcStatus: 'PENDING' } });
       const lots = res.data?.data ?? [];
       const mapped: IqcItem[] = lots.map((lot: any) => ({
         id: lot.id,
+        partId: lot.partId || '',
         receiveNo: lot.lotNo || '-',
         arrivalDate: lot.createdAt || '',
         supplierName: lot.vendor || '-',
@@ -107,10 +109,11 @@ export function useIqcData() {
     setIsIqcModalOpen(true);
   };
 
-  const handleIqcSubmit = useCallback(async (details?: any[]) => {
-    if (!selectedItem || !resultForm.result) return;
+  const handleIqcSubmit = useCallback(async (details?: any[], overrideResult?: string) => {
+    const finalResult = overrideResult || resultForm.result;
+    if (!selectedItem || !finalResult) return;
     try {
-      const result = resultForm.result === 'PASSED' ? 'PASS' : 'FAIL';
+      const result = finalResult === 'PASSED' ? 'PASS' : 'FAIL';
       await api.post('/material/iqc-history', {
         lotId: selectedItem.id,
         result,

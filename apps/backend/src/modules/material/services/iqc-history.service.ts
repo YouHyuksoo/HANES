@@ -3,13 +3,14 @@
  * @description IQC 이력 조회 서비스 (TypeORM)
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like, In } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { IqcHistoryQueryDto, CreateIqcResultDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 
 @Injectable()
 export class IqcHistoryService {
@@ -18,6 +19,8 @@ export class IqcHistoryService {
     private readonly iqcLogRepository: Repository<IqcLog>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(MatReceiving)
+    private readonly matReceivingRepository: Repository<MatReceiving>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
@@ -119,13 +122,15 @@ export class IqcHistoryService {
     const partIds = data.map((log) => log.partId).filter(Boolean);
     const lotIds = data.map((log) => log.lotId).filter(Boolean) as string[];
 
-    const [parts, lots] = await Promise.all([
+    const [parts, lots, receivings] = await Promise.all([
       partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
       lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
+      lotIds.length > 0 ? this.matReceivingRepository.find({ where: { lotId: In(lotIds), status: 'DONE' } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.id, p]));
     const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const receivedLotIds = new Set(receivings.map((r) => r.lotId));
 
     // 중첩 객체 평면화
     const flattenedData = data.map((log) => {
@@ -137,6 +142,7 @@ export class IqcHistoryService {
         partName: part?.partName,
         unit: part?.unit,
         lotNo: lot?.lotNo,
+        received: log.lotId ? receivedLotIds.has(log.lotId) : false,
       };
     });
 
@@ -181,5 +187,41 @@ export class IqcHistoryService {
       partCode: part?.partCode,
       partName: part?.partName,
     };
+  }
+
+  /** IQC 판정 취소 - LOT iqcStatus를 PENDING으로 복원 */
+  async cancel(id: string, dto: CancelIqcResultDto) {
+    const log = await this.iqcLogRepository.findOne({ where: { id } });
+    if (!log) {
+      throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${id}`);
+    }
+    if (log.status === 'CANCELED') {
+      throw new BadRequestException('이미 취소된 판정입니다.');
+    }
+
+    // 이미 입고된 LOT인지 확인
+    if (log.lotId) {
+      const receiving = await this.matReceivingRepository.findOne({
+        where: { lotId: log.lotId, status: 'DONE' },
+      });
+      if (receiving) {
+        throw new BadRequestException('이미 입고된 LOT은 IQC 판정을 취소할 수 없습니다.');
+      }
+    }
+
+    // IqcLog 상태 변경
+    await this.iqcLogRepository.update(id, {
+      status: 'CANCELED',
+      remark: dto.reason,
+    });
+
+    // LOT의 iqcStatus를 PENDING으로 복원
+    if (log.lotId) {
+      await this.matLotRepository.update(log.lotId, {
+        iqcStatus: 'PENDING',
+      });
+    }
+
+    return { id, status: 'CANCELED' };
   }
 }

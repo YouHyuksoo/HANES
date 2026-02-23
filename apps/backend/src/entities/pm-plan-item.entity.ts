@@ -17,6 +17,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  AfterLoad,
 } from 'typeorm';
 import { PmPlan } from './pm-plan.entity';
 
@@ -65,4 +66,10 @@ export class PmPlanItem {
   @ManyToOne(() => PmPlan, (plan) => plan.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'PM_PLAN_ID' })
   pmPlan: PmPlan;
+
+  @AfterLoad()
+  convertRawIds() {
+    if (Buffer.isBuffer(this.id)) this.id = (this.id as any).toString('hex').toUpperCase();
+    if (Buffer.isBuffer(this.pmPlanId)) this.pmPlanId = (this.pmPlanId as any).toString('hex').toUpperCase();
+  }
 }

@@ -8,11 +8,13 @@
     "search": "Search",
     "period": "Period",
     "refresh": "Refresh",
+    "viewMore": "View More",
     "reset": "Reset",
     "export": "Export",
     "import": "Import",
     "confirm": "Confirm",
     "close": "Close",
+    "viewDetail": "View Detail",
     "loading": "Loading...",
     "saving": "Saving...",
     "uploading": "Uploading...",
@@ -210,9 +212,9 @@
     "quality.oqcHistory": "OQC History",
     "equipment": "Equipment",
     "equipment.master": "Equipment Master Mgmt",
-    "equipment.status": "Operation Status Inquiry",
+    "equipment.status": "Equipment Operation Status",
     "equipment.pmPlan": "PM Plan Mgmt",
-    "equipment.pm": "Preventive Maint. Mgmt",
+    "equipment.pm": "PM Mgmt",
     "equipment.pmCalendar": "PM Calendar",
     "equipment.dailyInspectCalendar": "Daily Inspect Calendar",
     "equipment.periodicInspectCalendar": "Periodic Inspect Calendar",
@@ -324,7 +326,18 @@
     "status": "Status",
     "statusWaiting": "Waiting",
     "statusInProgress": "In Progress",
-    "statusCompleted": "Completed"
+    "statusCompleted": "Completed",
+    "inspect": {
+      "dailyTitle": "Daily Inspection",
+      "periodicTitle": "Periodic Inspection",
+      "pmTitle": "Preventive Maintenance",
+      "completed": "Done",
+      "pass": "Pass",
+      "fail": "Fail",
+      "progress": "Progress",
+      "noData": "No inspections scheduled for today.",
+      "notDone": "Not Done"
+    }
   },
   "inventory": {
     "matStock": {
@@ -1339,7 +1352,8 @@
       "tab": {
         "request": "Issue Requests",
         "manual": "Manual Issue",
-        "scan": "Barcode Scan"
+        "scan": "Barcode Scan",
+        "history": "Issue History"
       },
       "stats": {
         "requested": "Requested",
@@ -1381,7 +1395,21 @@
       "fullIssue": "Full Issue",
       "scanHistoryTitle": "Today's Scan Issue History",
       "noScanHistory": "No scan issue history.",
-      "scanTime": "Time"
+      "scanTime": "Time",
+      "history": {
+        "tabTitle": "Issue History",
+        "issueNo": "Issue No.",
+        "issueDate": "Issue Date",
+        "statusDone": "Done",
+        "statusCanceled": "Canceled",
+        "searchPlaceholder": "Search issue no, part code, LOT no...",
+        "cancelAction": "Cancel Issue",
+        "cancelTitle": "Cancel Issue",
+        "cancelWarning": "Canceling will restore inventory and create a reversal transaction. This action cannot be undone.",
+        "cancelReason": "Cancel Reason",
+        "cancelReasonPlaceholder": "Enter cancel reason...",
+        "confirmCancel": "Confirm Cancel"
+      }
     },
     "stock": {
       "title": "Material Stock",
@@ -1533,7 +1561,15 @@
         "pass": "Pass",
         "fail": "Fail",
         "passRate": "Pass Rate"
-      }
+      },
+      "statusDone": "Done",
+      "statusCanceled": "Canceled",
+      "cancelAction": "Cancel Judgment",
+      "cancelTitle": "Cancel IQC Judgment",
+      "cancelWarning": "Canceling the judgment will revert the LOT's IQC status to 'Pending'. Re-inspection will be required.",
+      "cancelReason": "Cancel Reason",
+      "cancelReasonPlaceholder": "Enter cancellation reason",
+      "confirmCancel": "Cancel Judgment"
     },
     "lotSplit": {
       "title": "Lot Split",
@@ -2467,7 +2503,10 @@
       "crimping": "Crimping",
       "assembly": "Assembly",
       "inspection": "Inspection",
-      "allLines": "All Lines"
+      "allLines": "All Lines",
+      "subtitle": "Monitor real-time operating status of all equipment.",
+      "noEquip": "No equipment to display.",
+      "working": "Working"
     },
     "code": "Equip Code",
     "name": "Equip Name",
@@ -2498,6 +2537,8 @@
     "pmPlan": {
       "title": "PM Plan Management",
       "description": "Register and manage preventive maintenance plans per equipment.",
+      "dueDateFrom": "Due Date (From)",
+      "dueDateTo": "Due Date (To)",
       "planCode": "Plan Code",
       "planName": "Plan Name",
       "planNamePlaceholder": "Enter PM plan name",
@@ -2523,8 +2564,12 @@
       "criteria": "Criteria",
       "criteriaPlaceholder": "Enter criteria",
       "sparePartCode": "Spare Part",
+      "sparePartQty": "Qty",
       "estimatedMin": "Est.(min)",
-      "descPlaceholder": "Enter plan description"
+      "descPlaceholder": "Enter plan description",
+      "sectionBasic": "Basic Info",
+      "sectionCycle": "Cycle Settings",
+      "equipName": "Equipment Name"
     },
     "pmWorkOrder": {
       "woSchedule": "Work Order Schedule",
@@ -2542,7 +2587,8 @@
       "fillAllItems": "Please fill in all items",
       "remarkPlaceholder": "Enter remarks",
       "completeWo": "Complete WO",
-      "noItems": "No linked maintenance items."
+      "noItems": "No linked maintenance items.",
+      "completedAt": "Completed At"
     },
     "pmCalendar": {
       "title": "PM Calendar",
@@ -2902,7 +2948,13 @@
       "driverPlaceholder": "Enter driver name",
       "destination": "Destination",
       "destinationPlaceholder": "Enter destination",
-      "allCustomers": "All Customers"
+      "allCustomers": "All Customers",
+      "cancelShipment": "Cancel Shipment",
+      "cancelWarning": "Canceling will release assigned pallets. Only PREPARING or LOADED status can be canceled.",
+      "cancelReason": "Cancel Reason",
+      "cancelReasonPlaceholder": "Enter cancel reason...",
+      "confirmCancel": "Confirm Cancel",
+      "statCanceled": "Canceled"
     },
     "scan": {
       "title": "Shipment Scan Verification",
