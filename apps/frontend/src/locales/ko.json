@@ -162,25 +162,29 @@
     "inventory.matPhysicalInv": "자재재고실사관리",
     "inventory.matPhysicalInvHistory": "자재재고실사조회",
     "inventory.arrivalStock": "입하재고현황조회",
-    "material": "자재관리",
+    "productInventory.hold": "제품재고홀드관리",
+    "material": "자재수불관리",
+    "productMgmt": "제품수불관리",
+    "productMgmt.receive": "제품입고관리",
+    "productMgmt.receiptCancel": "제품입고취소",
     "material.arrival": "입하관리",
     "material.iqc": "수입검사(IQC)",
     "material.receiveLabel": "입고라벨발행",
-    "material.receive": "입고관리",
+    "material.receive": "자재입고관리",
     "material.request": "출고요청관리",
-    "material.issue": "출고관리",
+    "material.issue": "자재출고관리",
     "material.lot": "LOT관리",
     "material.po": "PO관리",
     "material.poStatus": "PO현황조회",
     "material.iqcHistory": "수입검사이력조회",
     "material.lotSplit": "자재분할관리",
     "material.lotMerge": "자재병합관리",
-    "material.shelfLife": "유수명자재관리",
-    "material.hold": "재고홀드관리",
+    "material.shelfLife": "자재유수명관리",
+    "material.hold": "자재재고홀드관리",
     "material.scrap": "자재폐기처리",
     "material.adjustment": "재고보정처리",
     "material.miscReceipt": "기타입고관리",
-    "material.receiptCancel": "입고취소처리",
+    "material.receiptCancel": "자재입고취소",
     "cutting": "절단공정",
     "cutting.order": "작업지시",
     "cutting.result": "작업실적",
@@ -1366,7 +1370,7 @@
       "submitPassed": "합격 등록"
     },
     "receive": {
-      "title": "입고관리",
+      "title": "자재입고관리",
       "subtitle": "자재 입고를 처리합니다.",
       "description": "IQC 합격건을 선택하여 일괄/분할 입고 처리합니다.",
       "tabPending": "입고대기",
@@ -1417,6 +1421,14 @@
         "totalQty": "전체 수량",
         "selectedLots": "선택 LOT",
         "selectedLabels": "발행 라벨수"
+      },
+      "autoReceive": {
+        "success": "자동입고 완료: {{count}}건이 기본창고({{warehouse}})에 입고되었습니다",
+        "skipped": "재발행 {{count}}건은 입고를 건너뛰었습니다",
+        "noDefaultWarehouse": "기본 창고가 설정되지 않아 자동입고를 건너뛰었습니다",
+        "failed": "자동입고 처리 중 오류가 발생했습니다",
+        "enabledBanner": "자동입고 활성 — 라벨 발행 시 기본창고에 자동 입고됩니다",
+        "disabledBanner": "자동입고 비활성 — 라벨 발행 후 수동 일괄입고가 필요합니다"
       }
     },
     "request": {
@@ -1456,7 +1468,7 @@
       "items": "건"
     },
     "issue": {
-      "title": "출고관리",
+      "title": "자재출고관리",
       "subtitle": "자재 출고를 처리합니다.",
       "description": "자재 출고를 처리합니다.",
       "tab": {
@@ -1743,7 +1755,7 @@
       }
     },
     "hold": {
-      "title": "재고홀드",
+      "title": "자재재고홀드",
       "subtitle": "LOT 홀드 및 해제를 관리합니다.",
       "partCode": "품목코드",
       "partName": "품목명",
@@ -1879,8 +1891,8 @@
       }
     },
     "receiptCancel": {
-      "title": "입고취소",
-      "subtitle": "입고 트랜잭션을 취소 처리합니다.",
+      "title": "자재입고취소",
+      "subtitle": "자재 입고 트랜잭션을 취소 처리합니다.",
       "transNo": "트랜잭션번호",
       "transType": "유형",
       "partCode": "품목코드",
@@ -1901,6 +1913,84 @@
         "cancellable": "취소가능",
         "canceled": "취소완료"
       }
+    }
+  },
+  "productMgmt": {
+    "receive": {
+      "title": "제품입고관리",
+      "subtitle": "반제품/완제품 입고를 처리합니다.",
+      "tabWip": "반제품(WIP)",
+      "tabFg": "완제품(FG)",
+      "registerReceive": "입고등록",
+      "stats": {
+        "todayCount": "금일 입고건수",
+        "todayQty": "금일 입고수량",
+        "wipCount": "WIP 입고",
+        "fgCount": "FG 입고"
+      },
+      "col": {
+        "transNo": "입고번호",
+        "transDate": "입고일",
+        "warehouse": "창고",
+        "jobOrderId": "작업지시번호",
+        "processCode": "공정코드"
+      },
+      "modal": {
+        "title": "제품입고 등록",
+        "partType": "품목유형",
+        "partId": "품목",
+        "warehouseId": "입고 창고",
+        "qty": "수량",
+        "jobOrderId": "작업지시번호",
+        "processCode": "공정코드",
+        "remark": "비고",
+        "confirm": "입고확정"
+      }
+    },
+    "receiptCancel": {
+      "title": "제품입고취소",
+      "subtitle": "제품 입고 트랜잭션을 취소 처리합니다.",
+      "transNo": "트랜잭션번호",
+      "transType": "유형",
+      "warehouse": "창고",
+      "qty": "수량",
+      "transDate": "처리일",
+      "cancel": "취소",
+      "cancelTitle": "제품입고취소 확인",
+      "reason": "취소사유",
+      "reasonPlaceholder": "취소 사유를 입력하세요",
+      "confirm": "취소확정",
+      "searchPlaceholder": "트랜잭션번호, 품목명 검색...",
+      "stats": {
+        "total": "전체 입고",
+        "cancellable": "취소가능",
+        "canceled": "취소완료"
+      }
+    }
+  },
+  "productHold": {
+    "title": "제품재고홀드",
+    "subtitle": "제품 재고(WIP/FG) 홀드 및 해제를 관리합니다.",
+    "partCode": "품목코드",
+    "partName": "품목명",
+    "partType": "품목유형",
+    "warehouseCode": "창고",
+    "qty": "수량",
+    "lotId": "LOT ID",
+    "holdReason": "홀드사유",
+    "holdAt": "홀드일시",
+    "hold": "홀드",
+    "release": "해제",
+    "holdTitle": "제품재고 홀드",
+    "releaseTitle": "제품재고 해제",
+    "reason": "사유",
+    "reasonPlaceholder": "사유를 입력하세요",
+    "searchPlaceholder": "품목코드, 품목명 검색...",
+    "allType": "전체유형",
+    "stats": {
+      "total": "전체재고",
+      "holdCount": "홀드",
+      "normalCount": "정상"
     }
   },
   "cutting": {
@@ -3685,6 +3775,15 @@
       "shortage": "부족",
       "match": "일치",
       "warehouse": "창고",
+      "countMonth": "실사기준월",
+      "monthDisplay": "{{year}}년 {{month}}월",
+      "allWarehouse": "전체 창고",
+      "defaultQty1": "기본수량 1개",
+      "countTypeNormal": "정상",
+      "countTypeCancel": "취소",
+      "autoCountHint": "스캔 즉시 수량 1로 자동 실사",
+      "manualCountHint": "스캔 후 수량을 입력하세요",
+      "skip": "건너뛰기",
       "confirmCount": "실사확인",
       "countSuccess": "제품 재고실사가 완료되었습니다",
       "countFailed": "제품 재고실사에 실패했습니다"
@@ -3694,22 +3793,24 @@
       "scanEquip": "설비 바코드를 스캔하세요",
       "equipCode": "설비코드",
       "equipName": "설비명",
-      "location": "설치위치",
+      "lineProcess": "라인/공정",
       "inspectItems": "점검항목",
-      "checkMethod": "점검방법",
       "criteria": "판정기준",
       "result": "점검결과",
       "pass": "합격",
       "fail": "불합격",
       "conditional": "조건부",
       "remark": "비고",
-      "remarkPlaceholder": "비고를 입력하세요",
+      "measuredValuePlaceholder": "측정값",
+      "remarkPlaceholder": "비고",
       "confirmInspect": "점검확인",
       "inspectSuccess": "설비점검이 완료되었습니다",
       "inspectFailed": "설비점검에 실패했습니다",
       "allItemsRequired": "모든 점검항목의 결과를 선택하세요",
       "noItems": "점검항목이 없습니다",
-      "itemCount": "{{current}} / {{total}} 항목 완료"
+      "itemCount": "{{current}} / {{total}} 항목 완료",
+      "inspectHistory": "점검 이력",
+      "itemUnit": "건"
     },
     "settings": {
       "title": "PDA 설정",

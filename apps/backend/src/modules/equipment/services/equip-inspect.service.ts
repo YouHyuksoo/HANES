@@ -117,7 +117,10 @@ export class EquipInspectService {
   }
 
   /** 점검 결과 등록 */
-  async create(dto: CreateEquipInspectDto) {
+  async create(
+    dto: CreateEquipInspectDto,
+    context?: { company: string; plant: string },
+  ) {
     // 설비 존재 확인
     const equip = await this.equipMasterRepository.findOne({
       where: { id: dto.equipId, deletedAt: IsNull() },
@@ -132,6 +135,8 @@ export class EquipInspectService {
       overallResult: dto.overallResult ?? 'PASS',
       details: dto.details ? JSON.stringify(dto.details) : null,
       remark: dto.remark,
+      company: context?.company || equip.company,
+      plant: context?.plant || equip.plant,
     });
 
     const saved = await this.equipInspectLogRepository.save(log);

@@ -162,24 +162,28 @@
     "inventory.matPhysicalInv": "Quản lý kiểm kê VT",
     "inventory.matPhysicalInvHistory": "Lịch sử kiểm kê VT",
     "inventory.arrivalStock": "Tình trạng tồn kho nhập hàng",
-    "material": "Quản lý vật tư",
+    "productInventory.hold": "Giữ tồn kho sản phẩm",
+    "material": "Quản lý xuất nhập vật tư",
+    "productMgmt": "Quản lý xuất nhập sản phẩm",
+    "productMgmt.receive": "Nhập kho sản phẩm",
+    "productMgmt.receiptCancel": "Hủy nhập kho sản phẩm",
     "material.arrival": "Quản lý nhập hàng",
     "material.iqc": "Kiểm tra đầu vào (IQC)",
-    "material.receive": "Quản lý nhập kho",
+    "material.receive": "Nhập kho vật tư",
     "material.request": "Quản lý yêu cầu xuất kho",
-    "material.issue": "Quản lý xuất kho",
+    "material.issue": "Xuất kho vật tư",
     "material.lot": "Quản lý LOT",
     "material.po": "Quản lý PO",
     "material.poStatus": "Tra cứu tình trạng PO",
     "material.iqcHistory": "Tra cứu lịch sử kiểm tra đầu vào",
     "material.lotSplit": "Quản lý phân tách lô",
     "material.lotMerge": "Gộp LOT",
-    "material.shelfLife": "Quản lý vật tư hạn sử dụng",
-    "material.hold": "Quản lý giữ tồn kho",
+    "material.shelfLife": "Hạn sử dụng vật tư",
+    "material.hold": "Giữ tồn kho vật tư",
     "material.scrap": "Xử lý hủy vật tư",
     "material.adjustment": "Xử lý điều chỉnh tồn kho",
     "material.miscReceipt": "Quản lý nhập kho khác",
-    "material.receiptCancel": "Xử lý hủy nhập kho",
+    "material.receiptCancel": "Hủy nhập kho vật tư",
     "cutting": "Công đoạn cắt",
     "cutting.order": "Lệnh sản xuất",
     "cutting.result": "Kết quả sản xuất",
@@ -1305,7 +1309,7 @@
       "submitPassed": "Đăng ký đạt"
     },
     "receive": {
-      "title": "Quản lý nhập kho",
+      "title": "Nhập kho vật tư",
       "subtitle": "Xử lý nhập kho vật tư.",
       "description": "Chọn hàng đạt IQC để nhập kho hàng loạt/từng phần.",
       "tabPending": "Chờ nhập kho",
@@ -1341,6 +1345,30 @@
       "remarkPlaceholder": "Nhập ghi chú",
       "confirmReceiving": "Xác nhận nhập kho",
       "confirmTitle": "Xác nhận nhập kho"
+    },
+    "receiveLabel": {
+      "title": "Phát hành nhãn nhập kho",
+      "subtitle": "Chọn LOT đạt IQC và phát hành nhãn lô vật tư.",
+      "printTitle": "In nhãn lô vật tư",
+      "printLabel": "In nhãn",
+      "qty": "Số lượng",
+      "labelCount": "Số nhãn",
+      "sheets": "tờ",
+      "searchPlaceholder": "Tìm số LOT, mã linh kiện, tên linh kiện, nhà cung cấp...",
+      "stats": {
+        "totalLots": "Tổng LOT",
+        "totalQty": "Tổng số lượng",
+        "selectedLots": "LOT đã chọn",
+        "selectedLabels": "Nhãn phát hành"
+      },
+      "autoReceive": {
+        "success": "Nhập kho tự động hoàn tất: {{count}} lô đã nhập vào kho mặc định ({{warehouse}})",
+        "skipped": "{{count}} lô in lại đã bỏ qua",
+        "noDefaultWarehouse": "Bỏ qua nhập kho tự động: chưa cấu hình kho mặc định",
+        "failed": "Lỗi xảy ra trong quá trình nhập kho tự động",
+        "enabledBanner": "Nhập kho tự động BẬT — Hàng sẽ tự động nhập kho mặc định khi in nhãn",
+        "disabledBanner": "Nhập kho tự động TẮT — Cần nhập kho hàng loạt thủ công sau khi in nhãn"
+      }
     },
     "request": {
       "title": "Yêu cầu xuất kho",
@@ -1379,7 +1407,7 @@
       "items": "mục"
     },
     "issue": {
-      "title": "Quản lý xuất kho",
+      "title": "Xuất kho vật tư",
       "subtitle": "Xử lý xuất kho vật tư.",
       "description": "Xử lý xuất kho vật tư.",
       "tab": {
@@ -1666,7 +1694,7 @@
       }
     },
     "hold": {
-      "title": "Tạm giữ tồn kho",
+      "title": "Giữ tồn kho vật tư",
       "subtitle": "Quản lý tạm giữ và giải phóng LOT.",
       "partCode": "Mã linh kiện",
       "partName": "Tên linh kiện",
@@ -1802,8 +1830,8 @@
       }
     },
     "receiptCancel": {
-      "title": "Hủy nhập kho",
-      "subtitle": "Hủy giao dịch nhập kho.",
+      "title": "Hủy nhập kho vật tư",
+      "subtitle": "Hủy giao dịch nhập kho vật tư.",
       "transNo": "Mã giao dịch",
       "transType": "Loại",
       "partCode": "Mã linh kiện",
@@ -1824,6 +1852,84 @@
         "cancellable": "Có thể hủy",
         "canceled": "Đã hủy"
       }
+    }
+  },
+  "productMgmt": {
+    "receive": {
+      "title": "Nhập kho sản phẩm",
+      "subtitle": "Xử lý nhập kho bán thành phẩm/thành phẩm.",
+      "tabWip": "Bán thành phẩm (WIP)",
+      "tabFg": "Thành phẩm (FG)",
+      "registerReceive": "Đăng ký nhập kho",
+      "stats": {
+        "todayCount": "Nhập kho hôm nay",
+        "todayQty": "SL nhập hôm nay",
+        "wipCount": "Nhập WIP",
+        "fgCount": "Nhập FG"
+      },
+      "col": {
+        "transNo": "Mã nhập kho",
+        "transDate": "Ngày nhập",
+        "warehouse": "Kho",
+        "jobOrderId": "Mã lệnh SX",
+        "processCode": "Mã công đoạn"
+      },
+      "modal": {
+        "title": "Đăng ký nhập kho sản phẩm",
+        "partType": "Loại sản phẩm",
+        "partId": "Sản phẩm",
+        "warehouseId": "Kho nhập",
+        "qty": "Số lượng",
+        "jobOrderId": "Mã lệnh SX",
+        "processCode": "Mã công đoạn",
+        "remark": "Ghi chú",
+        "confirm": "Xác nhận nhập kho"
+      }
+    },
+    "receiptCancel": {
+      "title": "Hủy nhập kho sản phẩm",
+      "subtitle": "Hủy giao dịch nhập kho sản phẩm.",
+      "transNo": "Mã giao dịch",
+      "transType": "Loại",
+      "warehouse": "Kho",
+      "qty": "Số lượng",
+      "transDate": "Ngày",
+      "cancel": "Hủy",
+      "cancelTitle": "Xác nhận hủy nhập kho",
+      "reason": "Lý do hủy",
+      "reasonPlaceholder": "Nhập lý do hủy",
+      "confirm": "Xác nhận hủy",
+      "searchPlaceholder": "Tìm mã giao dịch, tên sản phẩm...",
+      "stats": {
+        "total": "Tổng nhập kho",
+        "cancellable": "Có thể hủy",
+        "canceled": "Đã hủy"
+      }
+    }
+  },
+  "productHold": {
+    "title": "Giữ tồn kho sản phẩm",
+    "subtitle": "Quản lý giữ và giải phóng tồn kho sản phẩm (WIP/FG).",
+    "partCode": "Mã linh kiện",
+    "partName": "Tên linh kiện",
+    "partType": "Loại sản phẩm",
+    "warehouseCode": "Kho",
+    "qty": "Số lượng",
+    "lotId": "LOT ID",
+    "holdReason": "Lý do giữ",
+    "holdAt": "Ngày giữ",
+    "hold": "Giữ",
+    "release": "Giải phóng",
+    "holdTitle": "Giữ tồn kho sản phẩm",
+    "releaseTitle": "Giải phóng tồn kho sản phẩm",
+    "reason": "Lý do",
+    "reasonPlaceholder": "Nhập lý do",
+    "searchPlaceholder": "Tìm mã, tên linh kiện...",
+    "allType": "Tất cả loại",
+    "stats": {
+      "total": "Tổng tồn kho",
+      "holdCount": "Đang giữ",
+      "normalCount": "Bình thường"
     }
   },
   "cutting": {
@@ -3625,6 +3731,15 @@
       "shortage": "Thiếu",
       "match": "Khớp",
       "warehouse": "Kho",
+      "countMonth": "Tháng kiểm kê",
+      "monthDisplay": "{{month}}/{{year}}",
+      "allWarehouse": "Tất cả kho",
+      "defaultQty1": "SL mặc định 1",
+      "countTypeNormal": "Bình thường",
+      "countTypeCancel": "Hủy",
+      "autoCountHint": "Tự động kiểm kê SL 1 khi quét",
+      "manualCountHint": "Nhập số lượng sau khi quét",
+      "skip": "Bỏ qua",
       "confirmCount": "Xác nhận kiểm kê",
       "countSuccess": "Kiểm kê sản phẩm thành công",
       "countFailed": "Kiểm kê sản phẩm thất bại"
@@ -3634,22 +3749,24 @@
       "scanEquip": "Quét mã vạch thiết bị",
       "equipCode": "Mã thiết bị",
       "equipName": "Tên thiết bị",
-      "location": "Vị trí lắp đặt",
+      "lineProcess": "Dây chuyền/Công đoạn",
       "inspectItems": "Hạng mục kiểm tra",
-      "checkMethod": "Phương pháp kiểm tra",
       "criteria": "Tiêu chí đánh giá",
       "result": "Kết quả",
       "pass": "Đạt",
       "fail": "Không đạt",
       "conditional": "Có điều kiện",
       "remark": "Ghi chú",
-      "remarkPlaceholder": "Nhập ghi chú",
+      "measuredValuePlaceholder": "Giá trị đo",
+      "remarkPlaceholder": "Ghi chú",
       "confirmInspect": "Xác nhận kiểm tra",
       "inspectSuccess": "Kiểm tra thiết bị thành công",
       "inspectFailed": "Kiểm tra thiết bị thất bại",
       "allItemsRequired": "Vui lòng chọn kết quả cho tất cả hạng mục",
       "noItems": "Không có hạng mục kiểm tra",
-      "itemCount": "{{current}} / {{total}} hạng mục hoàn thành"
+      "itemCount": "{{current}} / {{total}} hạng mục hoàn thành",
+      "inspectHistory": "Lịch sử kiểm tra",
+      "itemUnit": " hạng mục"
     },
     "settings": {
       "title": "Cài đặt PDA",

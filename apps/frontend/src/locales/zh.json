@@ -162,24 +162,28 @@
     "inventory.matPhysicalInv": "材料库存盘点管理",
     "inventory.matPhysicalInvHistory": "材料库存盘点查询",
     "inventory.arrivalStock": "到货库存现况查询",
-    "material": "物料管理",
+    "productInventory.hold": "产品库存冻结管理",
+    "material": "物料收发管理",
+    "productMgmt": "产品收发管理",
+    "productMgmt.receive": "产品入库管理",
+    "productMgmt.receiptCancel": "产品入库取消",
     "material.arrival": "到货管理",
     "material.iqc": "来料检验(IQC)",
-    "material.receive": "入库管理",
+    "material.receive": "物料入库管理",
     "material.request": "出库申请管理",
-    "material.issue": "出库管理",
+    "material.issue": "物料出库管理",
     "material.lot": "LOT管理",
     "material.po": "PO管理",
     "material.poStatus": "PO现况查询",
     "material.iqcHistory": "进料检验历史查询",
     "material.lotSplit": "物料分割管理",
     "material.lotMerge": "物料合并",
-    "material.shelfLife": "保质期物料管理",
-    "material.hold": "库存冻结管理",
+    "material.shelfLife": "物料保质期管理",
+    "material.hold": "物料库存冻结管理",
     "material.scrap": "物料报废处理",
     "material.adjustment": "库存调整处理",
     "material.miscReceipt": "其他入库管理",
-    "material.receiptCancel": "入库取消处理",
+    "material.receiptCancel": "物料入库取消",
     "cutting": "裁切工序",
     "cutting.order": "作业指示",
     "cutting.result": "作业实绩",
@@ -1304,7 +1308,7 @@
       "submitPassed": "登记为合格"
     },
     "receive": {
-      "title": "入库管理",
+      "title": "物料入库管理",
       "subtitle": "处理物料入库。",
       "description": "选择IQC合格品进行批量/分批入库处理。",
       "tabPending": "待入库",
@@ -1340,6 +1344,30 @@
       "remarkPlaceholder": "请输入备注",
       "confirmReceiving": "确认入库",
       "confirmTitle": "入库确认"
+    },
+    "receiveLabel": {
+      "title": "入库标签发行",
+      "subtitle": "选择IQC合格LOT并发行物料批次标签。",
+      "printTitle": "物料批次标签打印",
+      "printLabel": "打印标签",
+      "qty": "数量",
+      "labelCount": "标签数",
+      "sheets": "张",
+      "searchPlaceholder": "搜索LOT号、品目代码、品目名、供应商...",
+      "stats": {
+        "totalLots": "全部LOT",
+        "totalQty": "全部数量",
+        "selectedLots": "已选LOT",
+        "selectedLabels": "发行标签数"
+      },
+      "autoReceive": {
+        "success": "自动入库完成：{{count}}批次已入库至默认仓库（{{warehouse}}）",
+        "skipped": "{{count}}批次重新打印已跳过",
+        "noDefaultWarehouse": "未设置默认仓库，已跳过自动入库",
+        "failed": "自动入库处理中发生错误",
+        "enabledBanner": "自动入库已启用 — 打印标签时自动入库至默认仓库",
+        "disabledBanner": "自动入库已关闭 — 打印标签后需手动批量入库"
+      }
     },
     "request": {
       "title": "出库申请",
@@ -1378,7 +1406,7 @@
       "items": "件"
     },
     "issue": {
-      "title": "出库管理",
+      "title": "物料出库管理",
       "subtitle": "处理物料出库。",
       "description": "处理物料出库。",
       "tab": {
@@ -1665,7 +1693,7 @@
       }
     },
     "hold": {
-      "title": "库存冻结",
+      "title": "物料库存冻结",
       "subtitle": "管理LOT冻结和解冻。",
       "partCode": "零件代码",
       "partName": "零件名称",
@@ -1801,8 +1829,8 @@
       }
     },
     "receiptCancel": {
-      "title": "入库取消",
-      "subtitle": "取消入库事务。",
+      "title": "物料入库取消",
+      "subtitle": "取消物料入库事务。",
       "transNo": "事务编号",
       "transType": "类型",
       "partCode": "零件代码",
@@ -1823,6 +1851,84 @@
         "cancellable": "可取消",
         "canceled": "已取消"
       }
+    }
+  },
+  "productMgmt": {
+    "receive": {
+      "title": "产品入库管理",
+      "subtitle": "处理半成品/成品入库。",
+      "tabWip": "半成品(WIP)",
+      "tabFg": "成品(FG)",
+      "registerReceive": "入库登记",
+      "stats": {
+        "todayCount": "今日入库数",
+        "todayQty": "今日入库量",
+        "wipCount": "WIP入库",
+        "fgCount": "FG入库"
+      },
+      "col": {
+        "transNo": "入库编号",
+        "transDate": "入库日期",
+        "warehouse": "仓库",
+        "jobOrderId": "工单号",
+        "processCode": "工序代码"
+      },
+      "modal": {
+        "title": "产品入库登记",
+        "partType": "品目类型",
+        "partId": "品目",
+        "warehouseId": "入库仓库",
+        "qty": "数量",
+        "jobOrderId": "工单号",
+        "processCode": "工序代码",
+        "remark": "备注",
+        "confirm": "确认入库"
+      }
+    },
+    "receiptCancel": {
+      "title": "产品入库取消",
+      "subtitle": "取消产品入库交易。",
+      "transNo": "交易编号",
+      "transType": "类型",
+      "warehouse": "仓库",
+      "qty": "数量",
+      "transDate": "日期",
+      "cancel": "取消",
+      "cancelTitle": "确认入库取消",
+      "reason": "取消原因",
+      "reasonPlaceholder": "请输入取消原因",
+      "confirm": "确认取消",
+      "searchPlaceholder": "搜索交易编号、品目名...",
+      "stats": {
+        "total": "总入库数",
+        "cancellable": "可取消",
+        "canceled": "已取消"
+      }
+    }
+  },
+  "productHold": {
+    "title": "产品库存冻结",
+    "subtitle": "管理产品库存(WIP/FG)冻结和解冻。",
+    "partCode": "零件代码",
+    "partName": "零件名称",
+    "partType": "品目类型",
+    "warehouseCode": "仓库",
+    "qty": "数量",
+    "lotId": "LOT ID",
+    "holdReason": "冻结原因",
+    "holdAt": "冻结时间",
+    "hold": "冻结",
+    "release": "解冻",
+    "holdTitle": "产品库存冻结",
+    "releaseTitle": "产品库存解冻",
+    "reason": "原因",
+    "reasonPlaceholder": "请输入原因",
+    "searchPlaceholder": "搜索零件代码、名称...",
+    "allType": "全部类型",
+    "stats": {
+      "total": "全部库存",
+      "holdCount": "冻结",
+      "normalCount": "正常"
     }
   },
   "cutting": {
@@ -3624,6 +3730,15 @@
       "shortage": "不足",
       "match": "一致",
       "warehouse": "仓库",
+      "countMonth": "盘点基准月",
+      "monthDisplay": "{{year}}年{{month}}月",
+      "allWarehouse": "全部仓库",
+      "defaultQty1": "默认数量1",
+      "countTypeNormal": "正常",
+      "countTypeCancel": "取消",
+      "autoCountHint": "扫描后自动盘点数量1",
+      "manualCountHint": "扫描后输入数量",
+      "skip": "跳过",
       "confirmCount": "确认盘点",
       "countSuccess": "产品库存盘点完成",
       "countFailed": "产品库存盘点失败"
@@ -3633,22 +3748,24 @@
       "scanEquip": "请扫描设备条码",
       "equipCode": "设备编码",
       "equipName": "设备名称",
-      "location": "安装位置",
+      "lineProcess": "产线/工序",
       "inspectItems": "检查项目",
-      "checkMethod": "检查方法",
       "criteria": "判定标准",
       "result": "检查结果",
       "pass": "合格",
       "fail": "不合格",
       "conditional": "有条件",
       "remark": "备注",
-      "remarkPlaceholder": "请输入备注",
+      "measuredValuePlaceholder": "测量值",
+      "remarkPlaceholder": "备注",
       "confirmInspect": "确认检查",
       "inspectSuccess": "设备检查完成",
       "inspectFailed": "设备检查失败",
       "allItemsRequired": "请选择所有检查项目的结果",
       "noItems": "没有检查项目",
-      "itemCount": "{{current}} / {{total}} 项完成"
+      "itemCount": "{{current}} / {{total}} 项完成",
+      "inspectHistory": "检查记录",
+      "itemUnit": "项"
     },
     "settings": {
       "title": "PDA设置",

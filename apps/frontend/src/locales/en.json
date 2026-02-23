@@ -162,24 +162,28 @@
     "inventory.matPhysicalInv": "Material Physical Inv Mgmt",
     "inventory.matPhysicalInvHistory": "Material Physical Inv History",
     "inventory.arrivalStock": "Arrival Stock Status",
-    "material": "Material",
+    "productInventory.hold": "Product Stock Hold",
+    "material": "Material Mgmt",
+    "productMgmt": "Product Mgmt",
+    "productMgmt.receive": "Product Receive",
+    "productMgmt.receiptCancel": "Product Receipt Cancel",
     "material.arrival": "Arrival",
     "material.iqc": "IQC Inspection",
-    "material.receive": "Receiving",
+    "material.receive": "Material Receiving",
     "material.request": "Issue Request Mgmt",
-    "material.issue": "Issuing",
+    "material.issue": "Material Issuing",
     "material.lot": "LOT Management",
     "material.po": "Purchase Order",
     "material.poStatus": "PO Status Inquiry",
     "material.iqcHistory": "IQC History Inquiry",
     "material.lotSplit": "Lot Split Mgmt",
     "material.lotMerge": "Lot Merge",
-    "material.shelfLife": "Shelf Life Mgmt",
-    "material.hold": "Stock Hold Mgmt",
+    "material.shelfLife": "Material Shelf Life",
+    "material.hold": "Material Stock Hold",
     "material.scrap": "Material Scrap Process",
     "material.adjustment": "Stock Adjust Process",
     "material.miscReceipt": "Misc Receipt Mgmt",
-    "material.receiptCancel": "Receipt Cancel Process",
+    "material.receiptCancel": "Material Receipt Cancel",
     "cutting": "Cutting",
     "cutting.order": "Work Order",
     "cutting.result": "Work Result",
@@ -1341,6 +1345,30 @@
       "confirmReceiving": "Confirm Receiving",
       "confirmTitle": "Confirm Receiving"
     },
+    "receiveLabel": {
+      "title": "Receive Label",
+      "subtitle": "Select IQC passed LOTs and issue material lot labels.",
+      "printTitle": "Material Lot Label Print",
+      "printLabel": "Print Label",
+      "qty": "Quantity",
+      "labelCount": "Label Count",
+      "sheets": "sheets",
+      "searchPlaceholder": "Search LOT no, part code, part name, vendor...",
+      "stats": {
+        "totalLots": "Total LOTs",
+        "totalQty": "Total Qty",
+        "selectedLots": "Selected LOTs",
+        "selectedLabels": "Labels to Print"
+      },
+      "autoReceive": {
+        "success": "Auto receiving complete: {{count}} lot(s) received to default warehouse ({{warehouse}})",
+        "skipped": "{{count}} reprint lot(s) skipped",
+        "noDefaultWarehouse": "Auto receiving skipped: no default warehouse configured",
+        "failed": "Error occurred during auto receiving",
+        "enabledBanner": "Auto Receive ON — Items will be auto-received to default warehouse on label print",
+        "disabledBanner": "Auto Receive OFF — Manual bulk receiving is required after label print"
+      }
+    },
     "request": {
       "title": "Issue Request",
       "subtitle": "Manage material issue requests.",
@@ -1665,7 +1693,7 @@
       }
     },
     "hold": {
-      "title": "Stock Hold",
+      "title": "Material Stock Hold",
       "subtitle": "Manage LOT hold and release.",
       "partCode": "Part Code",
       "partName": "Part Name",
@@ -1801,8 +1829,8 @@
       }
     },
     "receiptCancel": {
-      "title": "Receipt Cancel",
-      "subtitle": "Cancel receipt transactions.",
+      "title": "Material Receipt Cancel",
+      "subtitle": "Cancel material receipt transactions.",
       "transNo": "Transaction No.",
       "transType": "Type",
       "partCode": "Part Code",
@@ -1823,6 +1851,84 @@
         "cancellable": "Cancellable",
         "canceled": "Canceled"
       }
+    }
+  },
+  "productMgmt": {
+    "receive": {
+      "title": "Product Receiving",
+      "subtitle": "Process WIP/FG product receiving.",
+      "tabWip": "WIP",
+      "tabFg": "FG",
+      "registerReceive": "Register Receive",
+      "stats": {
+        "todayCount": "Today Receipts",
+        "todayQty": "Today Qty",
+        "wipCount": "WIP Receipts",
+        "fgCount": "FG Receipts"
+      },
+      "col": {
+        "transNo": "Receipt No.",
+        "transDate": "Receipt Date",
+        "warehouse": "Warehouse",
+        "jobOrderId": "Job Order No.",
+        "processCode": "Process Code"
+      },
+      "modal": {
+        "title": "Register Product Receipt",
+        "partType": "Part Type",
+        "partId": "Part",
+        "warehouseId": "Warehouse",
+        "qty": "Quantity",
+        "jobOrderId": "Job Order No.",
+        "processCode": "Process Code",
+        "remark": "Remark",
+        "confirm": "Confirm Receipt"
+      }
+    },
+    "receiptCancel": {
+      "title": "Product Receipt Cancel",
+      "subtitle": "Cancel product receipt transactions.",
+      "transNo": "Transaction No.",
+      "transType": "Type",
+      "warehouse": "Warehouse",
+      "qty": "Quantity",
+      "transDate": "Date",
+      "cancel": "Cancel",
+      "cancelTitle": "Confirm Receipt Cancel",
+      "reason": "Cancel Reason",
+      "reasonPlaceholder": "Enter cancel reason",
+      "confirm": "Confirm Cancel",
+      "searchPlaceholder": "Search transaction no., part name...",
+      "stats": {
+        "total": "Total Receipts",
+        "cancellable": "Cancellable",
+        "canceled": "Canceled"
+      }
+    }
+  },
+  "productHold": {
+    "title": "Product Stock Hold",
+    "subtitle": "Manage product inventory (WIP/FG) hold and release.",
+    "partCode": "Part Code",
+    "partName": "Part Name",
+    "partType": "Part Type",
+    "warehouseCode": "Warehouse",
+    "qty": "Quantity",
+    "lotId": "LOT ID",
+    "holdReason": "Hold Reason",
+    "holdAt": "Hold Date",
+    "hold": "Hold",
+    "release": "Release",
+    "holdTitle": "Product Stock Hold",
+    "releaseTitle": "Product Stock Release",
+    "reason": "Reason",
+    "reasonPlaceholder": "Enter reason",
+    "searchPlaceholder": "Search part code, name...",
+    "allType": "All Types",
+    "stats": {
+      "total": "Total Stock",
+      "holdCount": "Hold",
+      "normalCount": "Normal"
     }
   },
   "cutting": {
@@ -3624,6 +3730,15 @@
       "shortage": "Shortage",
       "match": "Match",
       "warehouse": "Warehouse",
+      "countMonth": "Count Month",
+      "monthDisplay": "{{year}}-{{month}}",
+      "allWarehouse": "All Warehouses",
+      "defaultQty1": "Default Qty 1",
+      "countTypeNormal": "Normal",
+      "countTypeCancel": "Cancel",
+      "autoCountHint": "Auto count qty 1 on scan",
+      "manualCountHint": "Enter quantity after scan",
+      "skip": "Skip",
       "confirmCount": "Confirm Count",
       "countSuccess": "Product inventory count completed",
       "countFailed": "Product inventory count failed"
@@ -3633,22 +3748,24 @@
       "scanEquip": "Scan equipment barcode",
       "equipCode": "Equipment Code",
       "equipName": "Equipment Name",
-      "location": "Location",
+      "lineProcess": "Line/Process",
       "inspectItems": "Inspect Items",
-      "checkMethod": "Check Method",
       "criteria": "Criteria",
       "result": "Result",
       "pass": "Pass",
       "fail": "Fail",
       "conditional": "Conditional",
       "remark": "Remark",
-      "remarkPlaceholder": "Enter remark",
+      "measuredValuePlaceholder": "Measured value",
+      "remarkPlaceholder": "Remark",
       "confirmInspect": "Confirm Inspect",
       "inspectSuccess": "Inspection completed",
       "inspectFailed": "Inspection failed",
       "allItemsRequired": "Please select results for all inspect items",
       "noItems": "No inspect items",
-      "itemCount": "{{current}} / {{total}} items completed"
+      "itemCount": "{{current}} / {{total}} items completed",
+      "inspectHistory": "Inspect History",
+      "itemUnit": " items"
     },
     "settings": {
       "title": "PDA Settings",

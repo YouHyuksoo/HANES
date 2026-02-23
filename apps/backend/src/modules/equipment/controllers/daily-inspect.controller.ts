@@ -23,9 +23,11 @@ import {
   Body,
   Param,
   Query,
+  Req,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { EquipInspectService } from '../services/equip-inspect.service';
 import {
@@ -75,8 +77,13 @@ export class DailyInspectController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '일상점검 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async create(@Body() dto: CreateEquipInspectDto) {
-    const data = await this.equipInspectService.create({ ...dto, inspectType: 'DAILY' });
+  async create(@Body() dto: CreateEquipInspectDto, @Req() req: Request) {
+    const company = (req.headers['x-company'] as string) || '';
+    const plant = (req.headers['x-plant'] as string) || '';
+    const data = await this.equipInspectService.create(
+      { ...dto, inspectType: 'DAILY' },
+      { company, plant },
+    );
     return ResponseUtil.success(data, '일상점검이 등록되었습니다.');
   }
 
