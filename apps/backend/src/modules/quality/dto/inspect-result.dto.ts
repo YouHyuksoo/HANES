@@ -104,12 +104,12 @@ export class InspectResultQueryDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 200 })
+  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '생산실적 ID로 필터링' })

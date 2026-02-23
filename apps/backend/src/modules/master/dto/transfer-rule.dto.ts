@@ -48,7 +48,7 @@ export class TransferRuleQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '출발 창고 ID 필터' })

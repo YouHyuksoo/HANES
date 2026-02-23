@@ -95,7 +95,7 @@ export class BomQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상위 품목 ID' })

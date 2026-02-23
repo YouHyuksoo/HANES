@@ -97,7 +97,7 @@ export class ConsumableQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '카테고리 필터' })
@@ -212,7 +212,7 @@ export class ConsumableLogQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '소모품 ID' })

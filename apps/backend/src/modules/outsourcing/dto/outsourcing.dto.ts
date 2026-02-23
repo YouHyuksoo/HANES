@@ -99,7 +99,7 @@ export class VendorQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '업체 유형' })
@@ -182,7 +182,7 @@ export class SubconOrderQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '외주처 ID' })

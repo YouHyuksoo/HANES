@@ -32,7 +32,7 @@ export class InterLogQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '방향 필터', enum: ['IN', 'OUT'] })

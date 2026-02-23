@@ -94,7 +94,7 @@ export class PartnerQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ enum: PARTNER_TYPE_VALUES })

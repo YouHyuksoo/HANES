@@ -211,7 +211,7 @@ export class CommConfigQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '통신 유형 필터', enum: COMM_TYPE_VALUES })

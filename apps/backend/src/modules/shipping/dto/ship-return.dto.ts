@@ -114,7 +114,7 @@ export class ShipReturnQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (반품번호)' })

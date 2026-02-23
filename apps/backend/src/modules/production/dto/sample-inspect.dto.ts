@@ -109,6 +109,6 @@ export class SampleInspectHistoryQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 }

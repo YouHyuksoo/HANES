@@ -37,7 +37,7 @@ export class ProgressQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상태 필터 (WAITING, RUNNING, PAUSED, DONE, CANCELED)' })
@@ -77,7 +77,7 @@ export class SampleInspectQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '합격 여부 (Y/N)' })
@@ -118,7 +118,7 @@ export class PackResultQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '포장일 시작' })
@@ -153,7 +153,7 @@ export class WipStockQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '품목 유형 (WIP/FG)', enum: ['WIP', 'FG'] })

@@ -53,7 +53,7 @@ export class IqcPartLinkQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(200)
+  @Max(10000)
   limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색 (품목코드/품목명/거래처명)' })
