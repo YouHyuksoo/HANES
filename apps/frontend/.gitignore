@@ -38,3 +38,10 @@ coverage
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# PWA (next-pwa generated)
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/swe-worker-*.js
