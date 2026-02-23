@@ -2,10 +2,10 @@
 
 /**
  * @file src/app/(authenticated)/equipment/status/page.tsx
- * @description 설비 가동현황 페이지 — 전체 설비를 카드형태로 실시간 표시
+ * @description 설비 가동현황 페이지 — 컨트롤룸 스타일 카드 그리드 (라이트/다크 대응)
  *
  * 초보자 가이드:
- * 1. **카드 그리드**: 설비별 상태(정상/점검/정지)를 색상 카드로 표시
+ * 1. **카드 그리드**: 설비별 상태(정상/점검/정지)를 카드로 표시
  * 2. **필터**: 라인, 설비유형, 상태, 검색어
  * 3. **StatCards**: 전체/정상/점검/정지 건수 표시
  * 4. API: GET /equipment/equips
@@ -15,9 +15,9 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Monitor, RefreshCw, Search, CheckCircle, AlertTriangle,
-  XCircle, Settings, Wifi, WifiOff, Cpu,
+  XCircle, Wifi, Activity,
 } from "lucide-react";
-import { Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { Button, Input, Select, StatCard } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import { useApiQuery } from "@/hooks/useApi";
 
@@ -34,29 +34,27 @@ interface EquipCard {
   currentJobOrderId: string | null;
 }
 
+/** 상태별 스타일 — 라이트/다크 모드 각각 대응 */
 const statusStyle: Record<string, {
-  border: string; bg: string; icon: typeof CheckCircle; iconColor: string; pulse: string;
+  pill: string; dot: string; pulse: boolean; glow: string;
 }> = {
   NORMAL: {
-    border: "border-green-300 dark:border-green-700",
-    bg: "bg-green-50 dark:bg-green-900/10",
-    icon: CheckCircle,
-    iconColor: "text-green-500",
-    pulse: "bg-green-500",
+    pill: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25",
+    dot: "bg-emerald-500 dark:bg-emerald-400",
+    pulse: true,
+    glow: "hover:shadow-emerald-200/60 dark:hover:shadow-emerald-500/10",
   },
   MAINT: {
-    border: "border-yellow-300 dark:border-yellow-700",
-    bg: "bg-yellow-50 dark:bg-yellow-900/10",
-    icon: AlertTriangle,
-    iconColor: "text-yellow-500",
-    pulse: "bg-yellow-500",
+    pill: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25",
+    dot: "bg-amber-500 dark:bg-amber-400",
+    pulse: false,
+    glow: "hover:shadow-amber-200/60 dark:hover:shadow-amber-500/10",
   },
   STOP: {
-    border: "border-red-300 dark:border-red-700",
-    bg: "bg-red-50 dark:bg-red-900/10",
-    icon: XCircle,
-    iconColor: "text-red-500",
-    pulse: "bg-red-500",
+    pill: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/25",
+    dot: "bg-rose-500 dark:bg-rose-400",
+    pulse: false,
+    glow: "hover:shadow-rose-200/60 dark:hover:shadow-rose-500/10",
   },
 };
 
@@ -139,12 +137,10 @@ export default function EquipStatusPage() {
             {t("equipment.status.subtitle", "전체 설비의 실시간 가동 현황을 확인합니다.")}
           </p>
         </div>
-        <div className="flex gap-2 items-center">
-          <Button variant="secondary" size="sm" onClick={() => refetch()}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} />
-            {t("common.refresh")}
-          </Button>
-        </div>
+        <Button variant="secondary" size="sm" onClick={() => refetch()}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} />
+          {t("common.refresh")}
+        </Button>
       </div>
 
       {/* Stats */}
@@ -177,104 +173,116 @@ export default function EquipStatusPage() {
         <Button variant="ghost" size="sm" onClick={resetFilters}>{t("common.reset")}</Button>
       </div>
 
-      {/* Equipment Card Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-text-muted">
-          <Monitor className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">{t("equipment.status.noEquip", "표시할 설비가 없습니다.")}</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
-          {filtered.map((equip) => {
-            const style = statusStyle[equip.status] || defaultStyle;
-            const StatusIcon = style.icon;
-            return (
-              <div
-                key={equip.id}
-                className={`relative rounded-xl border-2 ${style.border} ${style.bg} p-4 transition-all hover:shadow-lg hover:scale-[1.02] cursor-default`}
-              >
-                {/* Pulse indicator */}
-                <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                  {equip.status === "NORMAL" && (
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${style.pulse} opacity-75`} />
-                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${style.pulse}`} />
-                    </span>
-                  )}
-                  {equip.status !== "NORMAL" && (
-                    <span className={`inline-flex rounded-full h-2.5 w-2.5 ${style.pulse}`} />
-                  )}
-                </div>
+      {/* Equipment Card Grid — Control-Room Panel (라이트/다크 대응) */}
+      <div className="bg-slate-100 dark:bg-slate-950 rounded-2xl p-5">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <Monitor className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-700" />
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              {t("equipment.status.noEquip", "표시할 설비가 없습니다.")}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((equip) => {
+              const s = statusStyle[equip.status] || defaultStyle;
+              const hasJob = !!equip.currentJobOrderId;
+              const statusLabel = t(`comCode.EQUIP_STATUS.${equip.status}`, { defaultValue: equip.status });
+              const typeLabel = equip.equipType
+                ? t(`comCode.EQUIP_TYPE.${equip.equipType}`, { defaultValue: equip.equipType })
+                : null;
 
-                {/* Status icon + code */}
-                <div className="flex items-center gap-2 mb-2">
-                  <StatusIcon className={`w-5 h-5 ${style.iconColor}`} />
-                  <span className="font-mono text-sm font-bold text-text">{equip.equipCode}</span>
-                </div>
-
-                {/* Name */}
-                <p className="text-xs text-text font-medium mb-3 truncate" title={equip.equipName}>
-                  {equip.equipName}
-                </p>
-
-                {/* Info rows */}
-                <div className="space-y-1.5">
-                  {equip.equipType && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-text-muted">{t("equipment.type")}</span>
-                      <ComCodeBadge groupCode="EQUIP_TYPE" code={equip.equipType} />
-                    </div>
-                  )}
-                  {equip.lineCode && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-text-muted">{t("equipment.line")}</span>
-                      <span className="text-xs font-mono font-medium text-text">{equip.lineCode}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-text-muted">{t("common.status")}</span>
-                    <ComCodeBadge groupCode="EQUIP_STATUS" code={equip.status} />
-                  </div>
-                  {equip.ipAddress && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-text-muted">IP</span>
-                      <div className="flex items-center gap-1">
-                        <Wifi className="w-3 h-3 text-green-500" />
-                        <span className="text-[10px] font-mono text-text-muted">{equip.ipAddress}</span>
-                      </div>
-                    </div>
-                  )}
-                  {!equip.ipAddress && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-text-muted">IP</span>
-                      <div className="flex items-center gap-1">
-                        <WifiOff className="w-3 h-3 text-gray-400" />
-                        <span className="text-[10px] text-text-muted">-</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Job order indicator */}
-                {equip.currentJobOrderId && (
-                  <div className="mt-3 pt-2 border-t border-border/50">
-                    <div className="flex items-center gap-1.5">
-                      <Cpu className="w-3 h-3 text-blue-500" />
-                      <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium truncate">
-                        {t("equipment.status.working", "작업중")}
+              return (
+                <div
+                  key={equip.id}
+                  className={`group rounded-xl border transition-all duration-300
+                    bg-white border-slate-200/80 hover:shadow-xl
+                    dark:bg-slate-900 dark:border-slate-700/40 dark:hover:border-slate-600/60
+                    ${s.glow} hover:shadow-2xl`}
+                >
+                  <div className="p-5">
+                    {/* Header: Label + Status pill */}
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                        EQUIP ID
+                      </span>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5
+                        rounded-full text-[11px] font-semibold border ${s.pill}`}
+                      >
+                        <span className="relative flex h-1.5 w-1.5">
+                          {s.pulse && (
+                            <span className={`animate-ping absolute h-full w-full rounded-full ${s.dot} opacity-60`} />
+                          )}
+                          <span className={`relative rounded-full h-1.5 w-1.5 ${s.dot}`} />
+                        </span>
+                        {statusLabel}
                       </span>
                     </div>
+
+                    {/* Equipment Code — Bold mono */}
+                    <h3 className="text-xl font-extrabold font-mono tracking-tight leading-tight text-slate-900 dark:text-white">
+                      {equip.equipCode}
+                    </h3>
+                    <p className="text-[13px] mt-0.5 mb-4 truncate text-slate-500 dark:text-slate-400" title={equip.equipName}>
+                      {equip.equipName}
+                    </p>
+
+                    {/* Metric Tiles */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-lg px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60">
+                        <span className="text-[9px] uppercase tracking-wider block text-slate-400 dark:text-slate-500">
+                          TYPE
+                        </span>
+                        <p className="text-sm font-semibold mt-0.5 truncate text-slate-700 dark:text-slate-200">
+                          {typeLabel || "—"}
+                        </p>
+                      </div>
+                      <div className="rounded-lg px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60">
+                        <span className="text-[9px] uppercase tracking-wider block text-slate-400 dark:text-slate-500">
+                          LINE
+                        </span>
+                        <p className="text-sm font-semibold mt-0.5 truncate text-slate-700 dark:text-slate-200">
+                          {equip.lineCode || "—"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+
+                  {/* Footer */}
+                  <div className="px-5 py-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                    {equip.ipAddress ? (
+                      <span className="text-[11px] flex items-center gap-1.5 font-mono text-slate-400 dark:text-slate-500">
+                        <Wifi className="w-3 h-3 text-emerald-500/70 dark:text-emerald-500/60" />
+                        {equip.ipAddress}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-300 dark:text-slate-600">—</span>
+                    )}
+                    {hasJob ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold
+                        bg-blue-100 text-blue-600 border border-blue-200
+                        dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20"
+                      >
+                        <Activity className="w-3 h-3 animate-pulse" />
+                        {t("equipment.status.working", "작업중")}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] flex items-center gap-1 text-slate-400 dark:text-slate-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+                        Idle
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

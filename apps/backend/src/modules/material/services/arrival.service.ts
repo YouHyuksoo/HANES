@@ -27,6 +27,7 @@ import {
   ArrivalStockQueryDto,
   CancelArrivalDto,
 } from '../dto/arrival.dto';
+import { NumRuleService } from '../../num-rule/num-rule.service';
 
 @Injectable()
 export class ArrivalService {
@@ -48,6 +49,7 @@ export class ArrivalService {
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
+    private readonly numRuleService: NumRuleService,
   ) {}
 
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
@@ -169,11 +171,11 @@ export class ArrivalService {
 
     try {
       const results = [];
-      const arrivalNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+      const arrivalNo = await this.numRuleService.nextNumberInTx(queryRunner, 'ARRIVAL');
 
       for (const item of dto.items) {
-        const transNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
-        const lotNo = item.lotNo || `L${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+        const lotNo = item.lotNo || await this.numRuleService.nextNumberInTx(queryRunner, 'LOT');
 
         // 1. LOT 생성 (제조일자 + 유효기한 자동 계산)
         const part = await this.partMasterRepository.findOne({ where: { id: item.partId } });
@@ -274,15 +276,14 @@ export class ArrivalService {
 
   /** 수동 입하 등록 */
   async createManualArrival(dto: CreateManualArrivalDto) {
-    const transNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
-    const arrivalNo = `ARR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
-    const lotNo = dto.lotNo || `L${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
+      const arrivalNo = await this.numRuleService.nextNumberInTx(queryRunner, 'ARRIVAL');
+      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+      const lotNo = dto.lotNo || await this.numRuleService.nextNumberInTx(queryRunner, 'LOT');
       // 1. LOT 생성 (제조일자 + 유효기한 자동 계산)
       const part = await this.partMasterRepository.findOne({ where: { id: dto.partId } });
       const mfgDate = dto.manufactureDate ? new Date(dto.manufactureDate) : null;

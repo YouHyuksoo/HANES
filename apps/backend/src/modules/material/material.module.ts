@@ -22,6 +22,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InventoryModule } from '../inventory/inventory.module';
+import { NumRuleModule } from '../num-rule/num-rule.module';
 
 // Entities
 import { MatLot } from '../../entities/mat-lot.entity';
@@ -83,6 +84,7 @@ import { IssueRequestService } from './services/issue-request.service';
 @Module({
   imports: [
     InventoryModule,
+    NumRuleModule,
     TypeOrmModule.forFeature([
       MatLot,
       MatStock,

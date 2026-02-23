@@ -17,6 +17,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { LoginDto, RegisterDto } from './auth.dto';
+import { RoleService } from '../role/role.service';
+import { ActivityLogService } from '../system/services/activity-log.service';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +27,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly roleService: RoleService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /**
@@ -67,6 +71,20 @@ export class AuthService {
     // 로그인 시 선택한 회사 또는 사용자 기본 회사 사용
     const selectedCompany = dto.company || user.company || '';
 
+    // 활동 로그 기록 (비동기, 실패해도 로그인에 영향 없음)
+    this.activityLogService.logActivity({
+      userId: user.id,
+      userEmail: user.email,
+      userName: user.name,
+      activityType: 'LOGIN',
+      deviceType: null,
+      company: selectedCompany,
+      plant: null,
+    }).catch((err) => this.logger.warn(`로그인 활동 로그 기록 실패: ${err.message}`));
+
+    // RBAC: 역할별 허용 메뉴 조회 (ADMIN이면 빈 배열 → 프론트에서 전체 허용)
+    const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(user.role);
+
     return {
       token: user.id, // userId를 토큰으로 사용
       user: {
@@ -79,6 +97,7 @@ export class AuthService {
         status: user.status,
         company: selectedCompany,
       },
+      allowedMenus,
     };
   }
 
@@ -148,6 +167,12 @@ export class AuthService {
       throw new UnauthorizedException('비활성화된 계정입니다.');
     }
 
-    return user;
+    // RBAC: 역할별 허용 메뉴 조회
+    const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(user.role);
+
+    return {
+      ...user,
+      allowedMenus,
+    };
   }
 }

@@ -15,13 +15,13 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTabStore, Tab } from "@/stores/tabStore";
-import { menuItems } from "./Sidebar";
+import { menuConfig } from "@/config/menuConfig";
 import { useTabSync } from "@/hooks/useTabSync";
 import TabContextMenu from "./TabContextMenu";
 
 /** 부모 메뉴의 아이콘 컴포넌트를 찾아 반환 */
 function getParentIcon(parentId: string) {
-  const parent = menuItems.find((m) => m.id === parentId);
+  const parent = menuConfig.find((m) => m.code === parentId);
   return parent?.icon ?? null;
 }
 

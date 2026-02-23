@@ -21,6 +21,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
+import { NumRuleService } from '../../num-rule/num-rule.service';
 
 @Injectable()
 export class ReceivingService {
@@ -40,6 +41,7 @@ export class ReceivingService {
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
+    private readonly numRuleService: NumRuleService,
   ) {}
 
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
@@ -165,10 +167,10 @@ export class ReceivingService {
     try {
       const results = [];
       // 같은 배치의 모든 아이템에 동일한 receiveNo 부여
-      const receiveNo = `RCV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+      const receiveNo = await this.numRuleService.nextNumberInTx(queryRunner, 'RECEIVE');
 
       for (const item of dto.items) {
-        const transNo = `RCV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+        const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
 
         const lot = await queryRunner.manager.findOne(MatLot, { where: { id: item.lotId } });
         if (!lot) continue;

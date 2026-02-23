@@ -19,7 +19,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between, ILike, Not } from 'typeorm';
+import { Repository, IsNull, Between, ILike, Not, DataSource } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -47,6 +47,7 @@ export class ProdResultService {
     private readonly consumableMasterRepository: Repository<ConsumableMaster>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -316,7 +317,7 @@ export class ProdResultService {
   }
 
   /**
-   * 생산실적 완료
+   * 생산실적 완료 (트랜잭션: 실적 완료 + 금형 타수 + 설비 해제 원자성 보장)
    */
   async complete(id: string, dto: CompleteProdResultDto) {
     const prodResult = await this.findById(id);
@@ -327,22 +328,27 @@ export class ProdResultService {
       );
     }
 
-    const updateData: any = {
-      status: 'DONE',
-      endAt: dto.endAt ? new Date(dto.endAt) : new Date(),
-    };
-    if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
-    if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
-    if (dto.remark) updateData.remark = dto.remark;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    await this.prodResultRepository.update(id, updateData);
+    try {
+      // 1. 실적 상태 → DONE
+      const updateData: any = {
+        status: 'DONE',
+        endAt: dto.endAt ? new Date(dto.endAt) : new Date(),
+      };
+      if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
+      if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
+      if (dto.remark) updateData.remark = dto.remark;
 
-    // 금형 타수 자동 증가: 해당 설비에 장착된 MOLD 카테고리 금형 조회
-    if (prodResult.equipId) {
-      try {
+      await queryRunner.manager.update(ProdResult, id, updateData);
+
+      // 2. 금형 타수 자동 증가 (트랜잭션 내 — 실패 시 전체 롤백)
+      if (prodResult.equipId) {
         const totalQty = (dto.goodQty ?? prodResult.goodQty) + (dto.defectQty ?? prodResult.defectQty);
         if (totalQty > 0) {
-          const mountedMolds = await this.consumableMasterRepository.find({
+          const mountedMolds = await queryRunner.manager.find(ConsumableMaster, {
             where: {
               mountedEquipId: prodResult.equipId,
               category: 'MOLD',
@@ -361,7 +367,7 @@ export class ProdResultService {
               newStatus = 'WARNING';
             }
 
-            await this.consumableMasterRepository.update(mold.id, {
+            await queryRunner.manager.update(ConsumableMaster, mold.id, {
               currentCount: newCount,
               status: newStatus,
             });
@@ -371,16 +377,20 @@ export class ProdResultService {
             );
           }
         }
-      } catch (err) {
-        const e = err instanceof Error ? err : new Error(String(err));
-        this.logger.error(`금형 타수 증가 실패: ${e.message}`, e.stack);
+
+        // 3. 설비의 현재 작업지시번호 해제
+        await queryRunner.manager.update(EquipMaster, prodResult.equipId, {
+          currentJobOrderId: null,
+        });
+        this.logger.log(`설비 작업지시 해제: ${prodResult.equipId}`);
       }
 
-      // 설비의 현재 작업지시번호 해제
-      await this.equipMasterRepository.update(prodResult.equipId, {
-        currentJobOrderId: null,
-      });
-      this.logger.log(`설비 작업지시 해제: ${prodResult.equipId}`);
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
 
     return this.prodResultRepository.findOne({
@@ -407,7 +417,7 @@ export class ProdResultService {
   }
 
   /**
-   * 생산실적 취소
+   * 생산실적 취소 (트랜잭션: 실적 취소 + 설비 해제 원자성 보장)
    */
   async cancel(id: string, remark?: string) {
     const prodResult = await this.findById(id);
@@ -416,17 +426,30 @@ export class ProdResultService {
       throw new BadRequestException(`이미 취소된 실적입니다.`);
     }
 
-    const updateData: any = { status: 'CANCELED' };
-    if (remark) updateData.remark = remark;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    await this.prodResultRepository.update(id, updateData);
+    try {
+      const updateData: any = { status: 'CANCELED' };
+      if (remark) updateData.remark = remark;
 
-    // 설비의 현재 작업지시번호 해제
-    if (prodResult.equipId) {
-      await this.equipMasterRepository.update(prodResult.equipId, {
-        currentJobOrderId: null,
-      });
-      this.logger.log(`설비 작업지시 해제 (취소): ${prodResult.equipId}`);
+      await queryRunner.manager.update(ProdResult, id, updateData);
+
+      // 설비의 현재 작업지시번호 해제
+      if (prodResult.equipId) {
+        await queryRunner.manager.update(EquipMaster, prodResult.equipId, {
+          currentJobOrderId: null,
+        });
+        this.logger.log(`설비 작업지시 해제 (취소): ${prodResult.equipId}`);
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
 
     return this.prodResultRepository.findOne({

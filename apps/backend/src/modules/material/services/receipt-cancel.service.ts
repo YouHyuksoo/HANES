@@ -11,6 +11,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-cancel.dto';
+import { NumRuleService } from '../../num-rule/num-rule.service';
 
 @Injectable()
 export class ReceiptCancelService {
@@ -24,6 +25,7 @@ export class ReceiptCancelService {
     @InjectRepository(PurchaseOrderItem)
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
     private readonly dataSource: DataSource,
+    private readonly numRuleService: NumRuleService,
   ) {}
   async findCancellable(query: ReceiptCancelQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
@@ -125,8 +127,9 @@ export class ReceiptCancelService {
       }
 
       // 역분개 트랜잭션 생성
+      const cancelTransNo = await this.numRuleService.nextNumberInTx(queryRunner, 'CANCEL_TX');
       const cancelTransaction = queryRunner.manager.create(StockTransaction, {
-        transNo: `RC-${Date.now()}`,
+        transNo: cancelTransNo,
         transType: 'RECEIPT_CANCEL',
         transDate: new Date(),
         fromWarehouseId: toWarehouseId,

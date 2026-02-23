@@ -192,6 +192,30 @@ function ImageCropModal({ isOpen, onClose, imageSrc, onCropComplete }: ImageCrop
   );
 }
 
+/** 사용자 아바타 (이미지 로드 실패 시 기본 아이콘 폴백) */
+function UserAvatar({ photoUrl }: { photoUrl: string | null }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (!photoUrl || imgError) {
+    return (
+      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+        <Users className="w-5 h-5 text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+      <img
+        src={photoUrl}
+        alt=""
+        className="w-full h-full object-cover"
+        onError={() => setImgError(true)}
+      />
+    </div>
+  );
+}
+
 function UserPage() {
   const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
@@ -394,18 +418,7 @@ function UserPage() {
         accessorKey: 'photoUrl',
         header: t('system.users.photo'),
         size: 60,
-        cell: ({ getValue }) => {
-          const photoUrl = getValue() as string | null;
-          return (
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
-              {photoUrl ? (
-                <img src={photoUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <Users className="w-5 h-5 text-primary" />
-              )}
-            </div>
-          );
-        },
+        cell: ({ getValue }) => <UserAvatar photoUrl={getValue() as string | null} />,
       },
       { accessorKey: 'email', header: t('system.users.email'), size: 200 },
       { accessorKey: 'name', header: t('system.users.name'), size: 100 },

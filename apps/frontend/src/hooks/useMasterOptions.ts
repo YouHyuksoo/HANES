@@ -201,8 +201,8 @@ export function useEquipBomOptions(equipId: string | null) {
   );
 
   const options = useMemo<SelectOption[]>(() => {
-    const list = data?.data ?? [];
-    return list.map((rel) => ({
+    const list = (data?.data as any)?.data ?? data?.data ?? [];
+    return (list as EquipBomRelItem[]).map((rel) => ({
       value: rel.bomItem.itemCode,
       label: `${rel.bomItem.itemCode} - ${rel.bomItem.itemName}`,
     }));

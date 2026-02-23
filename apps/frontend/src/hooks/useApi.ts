@@ -19,13 +19,13 @@ import type { ApiResponse } from "@/types";
 
 export function useApiQuery<T>(
   key: string[],
-  url: string,
+  url: string | null,
   options?: Omit<UseQueryOptions<ApiResponse<T>>, "queryKey" | "queryFn">,
 ) {
   return useQuery<ApiResponse<T>>({
     queryKey: key,
     queryFn: async () => {
-      const response = await api.get<ApiResponse<T>>(url);
+      const response = await api.get<ApiResponse<T>>(url!);
       return response.data;
     },
     ...options,

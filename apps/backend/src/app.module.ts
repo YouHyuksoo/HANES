@@ -35,6 +35,8 @@ import { OutsourcingModule } from './modules/outsourcing/outsourcing.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SystemModule } from './modules/system/system.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { RoleModule } from './modules/role/role.module';
+import { NumRuleModule } from './modules/num-rule/num-rule.module';
 
 @Module({
   imports: [
@@ -94,6 +96,12 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 
     // 대시보드 (KPI, 최근 생산현황)
     DashboardModule,
+
+    // 역할 관리 (RBAC 역할 정의, 메뉴 권한)
+    RoleModule,
+
+    // 채번 서비스 (SELECT FOR UPDATE 기반 번호 생성)
+    NumRuleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

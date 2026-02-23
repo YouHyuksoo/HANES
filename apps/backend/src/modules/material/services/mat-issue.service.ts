@@ -20,6 +20,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 import { ScanIssueDto } from '../dto/scan-issue.dto';
+import { NumRuleService } from '../../num-rule/num-rule.service';
 
 @Injectable()
 export class MatIssueService {
@@ -37,6 +38,7 @@ export class MatIssueService {
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
     private readonly dataSource: DataSource,
+    private readonly numRuleService: NumRuleService,
   ) {}
 
   /**
@@ -115,7 +117,7 @@ export class MatIssueService {
     try {
       const results = [];
       // 같은 배치의 모든 아이템에 동일한 issueNo 부여
-      const issueNo = `ISS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+      const issueNo = await this.numRuleService.nextNumberInTx(queryRunner, 'MAT_ISSUE');
 
       for (const item of items) {
         // LOT 유효성 확인
@@ -153,7 +155,7 @@ export class MatIssueService {
         const savedIssue = await queryRunner.manager.save(issue);
 
         // 2. StockTransaction(MAT_OUT) 생성 (수불원장)
-        const transNo = `ISS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+        const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
         const stockTx = queryRunner.manager.create(StockTransaction, {
           transNo,
           transType: 'MAT_OUT',
@@ -275,7 +277,7 @@ export class MatIssueService {
       });
 
       if (originalTx) {
-        const cancelTransNo = `CAN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+        const cancelTransNo = await this.numRuleService.nextNumberInTx(queryRunner, 'CANCEL_TX');
         const cancelTx = queryRunner.manager.create(StockTransaction, {
           transNo: cancelTransNo,
           transType: 'MAT_OUT',

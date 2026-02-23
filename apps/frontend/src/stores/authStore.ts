@@ -30,6 +30,8 @@ interface AuthState {
   selectedPlant: string;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** RBAC: 접근 허용된 메뉴 코드 목록 (빈 배열이면 ADMIN = 전체 허용) */
+  allowedMenus: string[];
 
   login: (email: string, password: string, company?: string, plant?: string) => Promise<void>;
   register: (data: {
@@ -54,13 +56,14 @@ export const useAuthStore = create<AuthState>()(
       selectedPlant: "",
       isAuthenticated: false,
       isLoading: false,
+      allowedMenus: [],
 
       login: async (email: string, password: string, company?: string, plant?: string) => {
         set({ isLoading: true });
         try {
           const res = await api.post("/auth/login", { email, password, company });
           const responseData = res.data?.data ?? res.data;
-          const { token, user } = responseData;
+          const { token, user, allowedMenus } = responseData;
 
           localStorage.setItem("harness-token", token);
 
@@ -71,6 +74,7 @@ export const useAuthStore = create<AuthState>()(
             selectedPlant: plant || "",
             isAuthenticated: true,
             isLoading: false,
+            allowedMenus: allowedMenus || [],
           });
         } catch (error) {
           set({ isLoading: false });
@@ -107,6 +111,7 @@ export const useAuthStore = create<AuthState>()(
           selectedCompany: "",
           selectedPlant: "",
           isAuthenticated: false,
+          allowedMenus: [],
         });
       },
 
@@ -127,9 +132,11 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const res = await api.get("/auth/me");
-          const userData = res.data?.data ?? res.data;
+          const responseData = res.data?.data ?? res.data;
+          const { allowedMenus, ...userData } = responseData;
           set({
             user: userData,
+            allowedMenus: allowedMenus || [],
             isAuthenticated: true,
           });
         } catch {
@@ -150,6 +157,7 @@ export const useAuthStore = create<AuthState>()(
         selectedCompany: state.selectedCompany,
         selectedPlant: state.selectedPlant,
         isAuthenticated: state.isAuthenticated,
+        allowedMenus: state.allowedMenus,
       }),
     },
   ),

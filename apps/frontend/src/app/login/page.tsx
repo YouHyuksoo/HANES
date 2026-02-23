@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { LogIn, UserPlus, Factory } from 'lucide-react';
+import { LogIn, UserPlus, Factory, Smartphone } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { Button, Input, Select } from '@/components/ui';
 import { AxiosError } from 'axios';
@@ -234,6 +234,18 @@ function LoginPage() {
               >
                 {t('auth.login')}
               </Button>
+
+              {/* PDA 접속 링크 */}
+              <div className="mt-5 text-center">
+                <button
+                  type="button"
+                  onClick={() => router.push('/pda/login')}
+                  className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-primary transition-colors"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  {t('auth.pdaLogin')}
+                </button>
+              </div>
             </form>
           )}
 

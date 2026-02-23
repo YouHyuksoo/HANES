@@ -74,22 +74,17 @@ export class DashboardService {
     }));
   }
 
-  /** 오늘 생산량 (양품 합계) + 전일 대비 변화율 */
+  /** 오늘 생산량 (양품 합계) + 전일 대비 변화율 — CASE WHEN으로 단일 쿼리 */
   private async getTodayProduction() {
-    const todayResult = await this.jobOrderRepo
+    const result = await this.jobOrderRepo
       .createQueryBuilder('jo')
-      .select('NVL(SUM(jo.GOOD_QTY), 0)', 'total')
-      .where('TRUNC(jo.PLAN_DATE) = TRUNC(SYSDATE)')
+      .select("NVL(SUM(CASE WHEN TRUNC(jo.PLAN_DATE) = TRUNC(SYSDATE) THEN jo.GOOD_QTY ELSE 0 END), 0)", 'todayTotal')
+      .addSelect("NVL(SUM(CASE WHEN TRUNC(jo.PLAN_DATE) = TRUNC(SYSDATE) - 1 THEN jo.GOOD_QTY ELSE 0 END), 0)", 'yesterdayTotal')
+      .where('TRUNC(jo.PLAN_DATE) BETWEEN TRUNC(SYSDATE) - 1 AND TRUNC(SYSDATE)')
       .getRawOne();
 
-    const yesterdayResult = await this.jobOrderRepo
-      .createQueryBuilder('jo')
-      .select('NVL(SUM(jo.GOOD_QTY), 0)', 'total')
-      .where('TRUNC(jo.PLAN_DATE) = TRUNC(SYSDATE) - 1')
-      .getRawOne();
-
-    const todayVal = Number(todayResult?.total ?? 0);
-    const yesterdayVal = Number(yesterdayResult?.total ?? 0);
+    const todayVal = Number(result?.todayTotal ?? 0);
+    const yesterdayVal = Number(result?.yesterdayTotal ?? 0);
     const change = yesterdayVal > 0
       ? Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100)
       : 0;
@@ -109,26 +104,21 @@ export class DashboardService {
     return { value: totalQty, change: 0 };
   }
 
-  /** 오늘 검사 합격률 + 전일 대비 변화율 */
+  /** 오늘 검사 합격률 + 전일 대비 변화율 — CASE WHEN으로 단일 쿼리 */
   private async getQualityPassRate() {
-    const todayResult = await this.inspectResultRepo
+    const result = await this.inspectResultRepo
       .createQueryBuilder('ir')
-      .select('COUNT(*)', 'total')
-      .addSelect("SUM(CASE WHEN ir.PASS_YN = 'Y' THEN 1 ELSE 0 END)", 'passCount')
-      .where('TRUNC(ir.INSPECT_TIME) = TRUNC(SYSDATE)')
+      .select("SUM(CASE WHEN TRUNC(ir.INSPECT_TIME) = TRUNC(SYSDATE) THEN 1 ELSE 0 END)", 'todayTotal')
+      .addSelect("SUM(CASE WHEN TRUNC(ir.INSPECT_TIME) = TRUNC(SYSDATE) AND ir.PASS_YN = 'Y' THEN 1 ELSE 0 END)", 'todayPass')
+      .addSelect("SUM(CASE WHEN TRUNC(ir.INSPECT_TIME) = TRUNC(SYSDATE) - 1 THEN 1 ELSE 0 END)", 'yesterdayTotal')
+      .addSelect("SUM(CASE WHEN TRUNC(ir.INSPECT_TIME) = TRUNC(SYSDATE) - 1 AND ir.PASS_YN = 'Y' THEN 1 ELSE 0 END)", 'yesterdayPass')
+      .where('TRUNC(ir.INSPECT_TIME) BETWEEN TRUNC(SYSDATE) - 1 AND TRUNC(SYSDATE)')
       .getRawOne();
 
-    const yesterdayResult = await this.inspectResultRepo
-      .createQueryBuilder('ir')
-      .select('COUNT(*)', 'total')
-      .addSelect("SUM(CASE WHEN ir.PASS_YN = 'Y' THEN 1 ELSE 0 END)", 'passCount')
-      .where('TRUNC(ir.INSPECT_TIME) = TRUNC(SYSDATE) - 1')
-      .getRawOne();
-
-    const todayTotal = Number(todayResult?.total ?? 0);
-    const todayPass = Number(todayResult?.passCount ?? 0);
-    const yesterdayTotal = Number(yesterdayResult?.total ?? 0);
-    const yesterdayPass = Number(yesterdayResult?.passCount ?? 0);
+    const todayTotal = Number(result?.todayTotal ?? 0);
+    const todayPass = Number(result?.todayPass ?? 0);
+    const yesterdayTotal = Number(result?.yesterdayTotal ?? 0);
+    const yesterdayPass = Number(result?.yesterdayPass ?? 0);
 
     const todayRate = todayTotal > 0 ? (todayPass / todayTotal) * 100 : 100;
     const yesterdayRate = yesterdayTotal > 0 ? (yesterdayPass / yesterdayTotal) * 100 : 100;
@@ -137,22 +127,17 @@ export class DashboardService {
     return { value: todayRate.toFixed(1), change };
   }
 
-  /** 오늘 불량 건수 + 전일 대비 변화율 */
+  /** 오늘 불량 건수 + 전일 대비 변화율 — CASE WHEN으로 단일 쿼리 */
   private async getInterlockCount() {
-    const todayResult = await this.defectLogRepo
+    const result = await this.defectLogRepo
       .createQueryBuilder('d')
-      .select('COUNT(*)', 'total')
-      .where('TRUNC(d.OCCUR_TIME) = TRUNC(SYSDATE)')
+      .select("SUM(CASE WHEN TRUNC(d.OCCUR_TIME) = TRUNC(SYSDATE) THEN 1 ELSE 0 END)", 'todayTotal')
+      .addSelect("SUM(CASE WHEN TRUNC(d.OCCUR_TIME) = TRUNC(SYSDATE) - 1 THEN 1 ELSE 0 END)", 'yesterdayTotal')
+      .where('TRUNC(d.OCCUR_TIME) BETWEEN TRUNC(SYSDATE) - 1 AND TRUNC(SYSDATE)')
       .getRawOne();
 
-    const yesterdayResult = await this.defectLogRepo
-      .createQueryBuilder('d')
-      .select('COUNT(*)', 'total')
-      .where('TRUNC(d.OCCUR_TIME) = TRUNC(SYSDATE) - 1')
-      .getRawOne();
-
-    const todayVal = Number(todayResult?.total ?? 0);
-    const yesterdayVal = Number(yesterdayResult?.total ?? 0);
+    const todayVal = Number(result?.todayTotal ?? 0);
+    const yesterdayVal = Number(result?.yesterdayTotal ?? 0);
     const change = yesterdayVal > 0
       ? Math.round(((todayVal - yesterdayVal) / yesterdayVal) * 100)
       : 0;

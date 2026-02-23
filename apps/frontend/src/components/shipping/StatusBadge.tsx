@@ -17,7 +17,7 @@ export type BoxStatus = 'OPEN' | 'CLOSED' | 'SHIPPED';
 export type PalletStatus = 'OPEN' | 'CLOSED' | 'LOADED' | 'SHIPPED';
 
 /** 출하 상태 타입 */
-export type ShipmentStatus = 'PREPARING' | 'LOADED' | 'SHIPPED' | 'DELIVERED';
+export type ShipmentStatus = 'PREPARING' | 'LOADED' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
 
 /** 박스 상태 배지 - ComCodeBadge 위임 */
 export function BoxStatusBadge({ status }: { status: BoxStatus }) {

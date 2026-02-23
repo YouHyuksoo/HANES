@@ -11,6 +11,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateScrapDto, ScrapQueryDto } from '../dto/scrap.dto';
+import { NumRuleService } from '../../num-rule/num-rule.service';
 
 @Injectable()
 export class ScrapService {
@@ -24,6 +25,7 @@ export class ScrapService {
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly dataSource: DataSource,
+    private readonly numRuleService: NumRuleService,
   ) {}
   async findAll(query: ScrapQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
@@ -116,8 +118,9 @@ export class ScrapService {
       });
 
       // 폐기 트랜잭션 생성
+      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
       const transaction = queryRunner.manager.create(StockTransaction, {
-        transNo: `SCR-${Date.now()}`,
+        transNo,
         transType: 'SCRAP',
         transDate: new Date(),
         fromWarehouseId: warehouseId,
