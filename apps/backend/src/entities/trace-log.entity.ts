@@ -5,6 +5,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity({ name: 'TRACE_LOGS' })
@@ -51,6 +54,16 @@ export class TraceLog {
   @Column({ name: 'EVENT_DATA', type: 'clob', nullable: true })
   eventData: string | null;
 
+  @Column({ name: 'PARENT_ID', length: 36, nullable: true })
+  parentId: string | null;
+
+  @ManyToOne(() => TraceLog, (trace) => trace.children, { nullable: true })
+  @JoinColumn({ name: 'PARENT_ID' })
+  parent: TraceLog | null;
+
+  @OneToMany(() => TraceLog, (trace) => trace.parent)
+  children: TraceLog[];
+
   @Column({ name: 'COMPANY', length: 255, nullable: true })
   company: string | null;
 
@@ -68,4 +81,18 @@ export class TraceLog {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
+
+  /** 
+   * 시리얼 트리깊이 계산 (루트=0, 자식=1, 손자=2...)
+   * 주의: Entity에서 직접 호출 시 parent가 로드되지 않았으면 0을 반환
+   */
+  getDepth(): number {
+    let d = 0;
+    let current: TraceLog | null = this;
+    while (current?.parentId) {
+      d++;
+      current = current.parent;
+    }
+    return d;
+  }
 }

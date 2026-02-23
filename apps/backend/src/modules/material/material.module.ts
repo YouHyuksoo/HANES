@@ -1,6 +1,6 @@
 /**
  * @file src/modules/material/material.module.ts
- * @description 자재관리 모듈 - LOT, 재고, 출고, PO, IQC, 분할, 유수명, 홀드, 폐기, 보정, 기타입고, 실사, 입고취소
+ * @description 자재관리 모듈 - LOT, 재고, 출고, PO, IQC, 분할, 유수명, 홀드, 폐기, 보정, 기타입고, 실사, 입고취소, 자동입고
  *
  * 초보자 가이드:
  * 1. **MatLot/MatStock/MatIssue**: 기존 레거시 자재 관리
@@ -23,6 +23,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InventoryModule } from '../inventory/inventory.module';
 import { NumRuleModule } from '../num-rule/num-rule.module';
+import { SystemModule } from '../system/system.module';
 
 // Entities
 import { MatLot } from '../../entities/mat-lot.entity';
@@ -85,6 +86,7 @@ import { IssueRequestService } from './services/issue-request.service';
   imports: [
     InventoryModule,
     NumRuleModule,
+    SystemModule,
     TypeOrmModule.forFeature([
       MatLot,
       MatStock,

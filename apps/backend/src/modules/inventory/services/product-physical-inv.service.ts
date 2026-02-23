@@ -11,7 +11,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { MatStock } from '../../../entities/mat-stock.entity';
+import { ProductStock } from '../../../entities/product-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -25,8 +25,8 @@ import {
 @Injectable()
 export class ProductPhysicalInvService {
   constructor(
-    @InjectRepository(MatStock)
-    private readonly stockRepository: Repository<MatStock>,
+    @InjectRepository(ProductStock)
+    private readonly stockRepository: Repository<ProductStock>,
     @InjectRepository(InvAdjLog)
     private readonly invAdjLogRepository: Repository<InvAdjLog>,
     @InjectRepository(MatLot)
@@ -153,7 +153,7 @@ export class ProductPhysicalInvService {
 
   /** 실사 결과 반영 (Stock 수량 업데이트 + InvAdjLog 기록) */
   async applyCount(dto: CreateProductPhysicalInvDto) {
-    const { items, createdBy } = dto;
+    const { items, createdBy, countMonth, countType } = dto;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -162,7 +162,7 @@ export class ProductPhysicalInvService {
       const results = [];
 
       for (const item of items) {
-        const stock = await queryRunner.manager.findOne(MatStock, {
+        const stock = await queryRunner.manager.findOne(ProductStock, {
           where: { id: item.stockId },
         });
 
@@ -175,7 +175,7 @@ export class ProductPhysicalInvService {
         const diffQty = afterQty - beforeQty;
 
         // Stock 수량 업데이트
-        await queryRunner.manager.update(MatStock, stock.id, {
+        await queryRunner.manager.update(ProductStock, stock.id, {
           qty: afterQty,
           availableQty: afterQty - stock.reservedQty,
           lastCountAt: new Date(),
@@ -190,7 +190,11 @@ export class ProductPhysicalInvService {
           beforeQty,
           afterQty,
           diffQty,
-          reason: item.remark || '제품재고실사',
+          reason: [
+            countType === 'CANCEL' ? '[취소]' : null,
+            countMonth ? `[${countMonth}]` : null,
+            item.remark || '제품재고실사',
+          ].filter(Boolean).join(' '),
           createdBy,
         });
 

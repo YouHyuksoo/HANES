@@ -12,12 +12,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Printer, Search, RefreshCw, Tag, CheckCircle, Package, FileText,
+  Printer, Search, RefreshCw, Tag, CheckCircle, Package, FileText, Info,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { api } from "@/services/api";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
 import BarcodeCanvas from "../../master/label/components/BarcodeCanvas";
 import { LabelDesign, MAT_LOT_DEFAULT_DESIGN } from "../../master/label/types";
 
@@ -55,6 +56,13 @@ function ReceiveLabelPage() {
   const [labelDesign, setLabelDesign] = useState<LabelDesign>(MAT_LOT_DEFAULT_DESIGN);
   const [printing, setPrinting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const { configs } = useSysConfigStore();
+  const isAutoReceive = configs['IQC_AUTO_RECEIVE'] === 'Y';
+  const [autoReceiveResult, setAutoReceiveResult] = useState<{
+    received: string[];
+    skipped: string[];
+    warehouseName?: string;
+  } | null>(null);
 
   /** IQC 합격 LOT 조회 */
   const fetchData = useCallback(async () => {
@@ -141,13 +149,32 @@ function ReceiveLabelPage() {
     });
   }, []);
 
-  /** 라벨 인쇄 */
-  const handlePrint = useCallback(() => {
+  /** 라벨 인쇄 (자동입고 포함) */
+  const handlePrint = useCallback(async () => {
     const selected = filteredLots.filter((l) => selectedIds.has(l.id));
     if (selected.length === 0) return;
 
+    // 자동입고 처리 (설정 활성 시)
+    if (isAutoReceive) {
+      try {
+        const res = await api.post("/material/receiving/auto", {
+          lotIds: selected.map((l) => l.id),
+        });
+        const result = res.data?.data;
+        if (result) {
+          setAutoReceiveResult(result);
+          // 자동입고 성공 시 데이터 새로고침
+          if (result.received?.length > 0) {
+            fetchData();
+          }
+        }
+      } catch (err) {
+        console.error("Auto-receive failed:", err);
+      }
+    }
+
+    // 라벨 인쇄 실행
     setPrinting(true);
-    /* 렌더 후 인쇄 실행 */
     setTimeout(() => {
       if (!printRef.current) {
         setPrinting(false);
@@ -178,7 +205,7 @@ function ReceiveLabelPage() {
       win.document.close();
       setPrinting(false);
     }, 500);
-  }, [filteredLots, selectedIds, labelDesign, t]);
+  }, [filteredLots, selectedIds, labelDesign, t, isAutoReceive, fetchData]);
 
   /** 선택된 LOT → 라벨 데이터 (수량만큼 라벨 반복) */
   const labelItems = useMemo(() => {
@@ -318,6 +345,27 @@ function ReceiveLabelPage() {
         </div>
       </div>
 
+      {/* 자동입고 설정 상태 배너 */}
+      <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm ${
+        isAutoReceive
+          ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+          : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+      }`}>
+        <Info className="w-4 h-4 shrink-0" />
+        <span>
+          {isAutoReceive
+            ? t("material.receiveLabel.autoReceive.enabledBanner")
+            : t("material.receiveLabel.autoReceive.disabledBanner")}
+        </span>
+        <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${
+          isAutoReceive
+            ? "bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200"
+            : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+        }`}>
+          {isAutoReceive ? "ON" : "OFF"}
+        </span>
+      </div>
+
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-3">
         <StatCard
@@ -345,6 +393,39 @@ function ReceiveLabelPage() {
           color="purple"
         />
       </div>
+
+      {/* 자동입고 결과 알림 */}
+      {autoReceiveResult && (
+        <div className="space-y-2">
+          {autoReceiveResult.received?.length > 0 && (
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+              <span className="text-sm text-green-700 dark:text-green-300">
+                {t("material.receiveLabel.autoReceive.success", {
+                  count: autoReceiveResult.received.length,
+                  warehouse: autoReceiveResult.warehouseName || "",
+                })}
+              </span>
+              <button
+                onClick={() => setAutoReceiveResult(null)}
+                className="ml-auto text-green-400 hover:text-green-600"
+              >
+                <span className="text-xs">✕</span>
+              </button>
+            </div>
+          )}
+          {autoReceiveResult.skipped?.length > 0 && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2">
+              <Tag className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-sm text-amber-700 dark:text-amber-300">
+                {t("material.receiveLabel.autoReceive.skipped", {
+                  count: autoReceiveResult.skipped.length,
+                })}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 검색 + 테이블 */}
       <Card>

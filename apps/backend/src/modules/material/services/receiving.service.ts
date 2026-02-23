@@ -19,9 +19,12 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { PurchaseOrder } from '../../../entities/purchase-order.entity';
+import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
 import { NumRuleService } from '../../num-rule/num-rule.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
 export class ReceivingService {
@@ -38,10 +41,15 @@ export class ReceivingService {
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PurchaseOrder)
+    private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
+    @InjectRepository(PurchaseOrderItem)
+    private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
     private readonly numRuleService: NumRuleService,
+    private readonly sysConfigService: SysConfigService,
   ) {}
 
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
@@ -132,6 +140,71 @@ export class ReceivingService {
       .filter((lot) => lot.remainingQty > 0);
   }
 
+  /** 
+   * PO 수량 오차율 체크
+   * - LOT의 PO 번호를 기준으로 주문 수량 대비 입고 수량이 오차율 내인지 확인
+   * - 초과 시 BadRequestException 발생
+   */
+  private async checkPoTolerance(lot: MatLot, receiveQty: number): Promise<void> {
+    if (!lot.poNo) return; // PO 번호가 없으면 체크 불필요
+
+    // PO 조회 (PO 번호로)
+    const po = await this.purchaseOrderRepository.findOne({
+      where: { poNo: lot.poNo },
+    });
+    if (!po) return; // PO 정보 없으면 체크 불필요
+
+    // PO 품목 조회
+    const poItem = await this.purchaseOrderItemRepository.findOne({
+      where: { poId: po.id, partId: lot.partId },
+    });
+    if (!poItem) return; // PO 품목 정보 없으면 체크 불필요
+
+    // 품목의 오차율 조회
+    const part = await this.partMasterRepository.findOne({
+      where: { id: lot.partId },
+      select: ['id', 'toleranceRate'],
+    });
+    const toleranceRate = part?.toleranceRate ?? 5.0; // 기본값 5%
+
+    // 해당 PO의 기 입고 수량 조회 (동일 품목 기준)
+    const receivedAgg = await this.stockTransactionRepository
+      .createQueryBuilder('tx')
+      .select('SUM(tx.qty)', 'sumQty')
+      .where('tx.transType = :transType', { transType: 'RECEIVE' })
+      .andWhere('tx.status = :status', { status: 'DONE' })
+      .andWhere('tx.partId = :partId', { partId: lot.partId })
+      .andWhere(
+        `tx.lotId IN (
+          SELECT id FROM mat_lots WHERE po_no = :poNo
+        )`,
+        { poNo: lot.poNo }
+      )
+      .getRawOne();
+
+    const alreadyReceived = parseInt(receivedAgg?.sumQty) || 0;
+    const willBeReceived = alreadyReceived + receiveQty;
+    const orderQty = poItem.orderQty;
+
+    // 오차율 계산
+    const upperLimit = orderQty * (1 + toleranceRate / 100);
+    const lowerLimit = orderQty * (1 - toleranceRate / 100);
+
+    // 상한 초과 체크
+    if (willBeReceived > upperLimit) {
+      throw new BadRequestException(
+        `PO(${lot.poNo}) 수량 초과: 주문수량 ${orderQty}, ` +
+        `허용범위 ${toleranceRate}%(${lowerLimit.toFixed(0)}~${upperLimit.toFixed(0)}), ` +
+        `입고예정 ${willBeReceived} (기입고 ${alreadyReceived} + 이번입고 ${receiveQty})`
+      );
+    }
+
+    // 하한 미달 경고 (선택사항 - 현재는 허용)
+    // if (willBeReceived < lowerLimit) {
+    //   console.warn(`PO(${lot.poNo}) 수량 미달 경고: ${willBeReceived} < ${lowerLimit}`);
+    // }
+  }
+
   /** 일괄/분할 입고 처리 */
   async createBulkReceive(dto: CreateBulkReceiveDto) {
     // LOT 검증
@@ -158,6 +231,9 @@ export class ReceivingService {
           `입고수량(${item.qty})이 잔량(${remaining})을 초과합니다. LOT: ${lot.lotNo}`,
         );
       }
+
+      // PO 오차율 체크 추가
+      await this.checkPoTolerance(lot, item.qty);
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -384,6 +460,101 @@ export class ReceivingService {
       pendingQty: pendingLots.reduce((sum, l) => sum + l.initQty - (receivedMap.get(l.id) || 0), 0),
       todayReceivedCount: todayCount,
       todayReceivedQty: parseInt(todayQtyResult?.sumQty) || 0,
+    };
+  }
+
+  /**
+   * 자동입고 처리 - 라벨 최초 발행 시 기본창고로 자동 입고
+   *
+   * 로직:
+   * 1. IQC_AUTO_RECEIVE 설정 확인
+   * 2. 각 LOT의 기입고 여부 확인 (재발행 판별)
+   * 3. 기본 창고(isDefault='Y') 조회
+   * 4. 미입고 LOT만 createBulkReceive()로 입고 처리
+   */
+  async autoReceive(lotIds: string[], workerId?: string) {
+    // 1. 설정 확인
+    const isAutoEnabled = await this.sysConfigService.isEnabled('IQC_AUTO_RECEIVE');
+    if (!isAutoEnabled) {
+      return { autoReceiveEnabled: false, received: [], skipped: lotIds };
+    }
+
+    // 2. 기본 창고 조회
+    const defaultWarehouse = await this.warehouseRepository.findOne({
+      where: { isDefault: 'Y' },
+    });
+    if (!defaultWarehouse) {
+      return {
+        autoReceiveEnabled: true,
+        received: [],
+        skipped: lotIds,
+        error: '기본 창고가 설정되지 않았습니다.',
+      };
+    }
+
+    // 3. 각 LOT별 기입고 여부 확인 (재발행 판별)
+    const received: string[] = [];
+    const skipped: string[] = [];
+    const receiveItems: { lotId: string; qty: number; warehouseId: string }[] = [];
+
+    for (const lotId of lotIds) {
+      // MAT_RECEIVINGS에 해당 LOT 기록이 있으면 재발행 → 스킵
+      const existingReceiving = await this.matReceivingRepository.findOne({
+        where: { lotId, status: 'DONE' },
+      });
+      if (existingReceiving) {
+        skipped.push(lotId);
+        continue;
+      }
+
+      // LOT 검증 (IQC 합격 + 잔량)
+      const lot = await this.matLotRepository.findOne({
+        where: { id: lotId },
+      });
+      if (!lot || lot.iqcStatus !== 'PASS') {
+        skipped.push(lotId);
+        continue;
+      }
+
+      // 기입고수량 확인
+      const receivedAgg = await this.stockTransactionRepository
+        .createQueryBuilder('tx')
+        .select('SUM(tx.qty)', 'sumQty')
+        .where('tx.lotId = :lotId', { lotId })
+        .andWhere('tx.transType = :transType', { transType: 'RECEIVE' })
+        .andWhere('tx.status = :status', { status: 'DONE' })
+        .getRawOne();
+
+      const receivedQty = parseInt(receivedAgg?.sumQty) || 0;
+      const remaining = lot.initQty - receivedQty;
+
+      if (remaining <= 0) {
+        skipped.push(lotId);
+        continue;
+      }
+
+      receiveItems.push({
+        lotId,
+        qty: remaining,
+        warehouseId: defaultWarehouse.warehouseCode,
+      });
+    }
+
+    // 4. 미입고 건이 있으면 일괄 입고
+    if (receiveItems.length > 0) {
+      await this.createBulkReceive({
+        items: receiveItems,
+        workerId,
+      });
+      received.push(...receiveItems.map((i) => i.lotId));
+    }
+
+    return {
+      autoReceiveEnabled: true,
+      received,
+      skipped,
+      warehouseCode: defaultWarehouse.warehouseCode,
+      warehouseName: defaultWarehouse.warehouseName,
     };
   }
 

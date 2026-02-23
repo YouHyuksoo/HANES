@@ -4,7 +4,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNumber, Min, Max, MaxLength, IsIn, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PART_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 
@@ -125,6 +125,27 @@ export class CreatePartDto {
   @IsInt()
   @Min(0)
   expiryDate?: number;
+
+  @ApiPropertyOptional({ description: 'PO 수량 오차 허용률 (%)', default: 5.0, minimum: 0, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  toleranceRate?: number;
+
+  @ApiPropertyOptional({ description: '자재 분할 가능 여부', default: 'Y', enum: ['Y', 'N'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  isSplittable?: string;
+
+  @ApiPropertyOptional({ description: '샘플검사 수량', example: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  sampleQty?: number;
 
   @ApiPropertyOptional({ description: '포장단위', example: 'BOX' })
   @IsOptional()

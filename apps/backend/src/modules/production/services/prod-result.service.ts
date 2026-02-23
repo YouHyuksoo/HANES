@@ -19,11 +19,15 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between, ILike, Not, DataSource } from 'typeorm';
+import { Repository, IsNull, Between, ILike, Not, In, DataSource } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
+import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
+import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
 import {
   CreateProdResultDto,
@@ -43,8 +47,16 @@ export class ProdResultService {
     private readonly jobOrderRepository: Repository<JobOrder>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepository: Repository<EquipMaster>,
+    @InjectRepository(EquipBomRel)
+    private readonly equipBomRelRepository: Repository<EquipBomRel>,
+    @InjectRepository(EquipBomItem)
+    private readonly equipBomItemRepository: Repository<EquipBomItem>,
+    @InjectRepository(PartMaster)
+    private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(ConsumableMaster)
     private readonly consumableMasterRepository: Repository<ConsumableMaster>,
+    @InjectRepository(MatIssue)
+    private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
@@ -144,7 +156,46 @@ export class ProdResultService {
       prodResult.defectLogs = prodResult.defectLogs.slice(0, 10);
     }
 
+    // 자재 투입 이력 조회
+    const matIssues = await this.findMatIssues(id);
+    (prodResult as any).matIssues = matIssues;
+
     return prodResult;
+  }
+
+  /**
+   * 생산실적의 자재 투입 이력 조회
+   */
+  async findMatIssues(prodResultId: string) {
+    const issues = await this.matIssueRepository.find({
+      where: { prodResultId, status: 'DONE' },
+      order: { issueDate: 'DESC' },
+    });
+
+    // LOT 및 품목 정보 추가
+    const lotIds = issues.map(i => i.lotId).filter(Boolean);
+    const lots = lotIds.length > 0 
+      ? await this.dataSource.getRepository('MatLot').findByIds(lotIds)
+      : [];
+    const lotMap = new Map(lots.map(l => [l.id, l]));
+
+    const partIds = lots.map(l => l.partId).filter(Boolean);
+    const parts = partIds.length > 0
+      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+      : [];
+    const partMap = new Map(parts.map(p => [p.id, p]));
+
+    return issues.map(issue => {
+      const lot = lotMap.get(issue.lotId);
+      const part = lot ? partMap.get(lot.partId) : null;
+      return {
+        ...issue,
+        lotNo: lot?.lotNo,
+        partCode: part?.partCode,
+        partName: part?.partName,
+        unit: part?.unit,
+      };
+    });
   }
 
   /**
@@ -176,6 +227,95 @@ export class ProdResultService {
   }
 
   /**
+   * 설비부품 인터락 체크
+   * - 작업지시 품목과 설비에 장착된 부품이 일치하는지 확인
+   * - 불일치 시 BadRequestException 발생
+   */
+  private async checkEquipBomInterlock(equipId: string | null | undefined, jobOrderId: string): Promise<void> {
+    if (!equipId) return; // 설비 미지정 시 체크 불필요
+
+    // 작업지시 품목 조회
+    const jobOrder = await this.jobOrderRepository.findOne({
+      where: { id: jobOrderId },
+      relations: ['part'],
+    });
+    if (!jobOrder?.part) return; // 품목 정보 없으면 체크 불필요
+
+    const jobPartCode = jobOrder.part.partCode;
+
+    // 설비에 장착된 BOM 부품 조회
+    const equipBomRels = await this.equipBomRelRepository.find({
+      where: { equipId, useYn: 'Y' },
+    });
+    if (equipBomRels.length === 0) return; // 설비 BOM 미설정 시 체크 불필요
+
+    const bomItemIds = equipBomRels.map(rel => rel.bomItemId);
+    const bomItems = await this.equipBomItemRepository.find({
+      where: { id: In(bomItemIds), useYn: 'Y' },
+    });
+
+    // 설비 BOM 품목 코드 목록
+    const equipPartCodes = bomItems.map(item => item.itemCode);
+
+    // 품목 코드 일치 여부 확인
+    // - 작업지시 품번이 설비 BOM에 포함되거나
+    // - 또는 작업지시 품번과 설비 BOM 품번이 일치하는지 확인
+    const isMatched = equipPartCodes.some(code => 
+      code === jobPartCode || 
+      jobPartCode.includes(code) || 
+      code.includes(jobPartCode)
+    );
+
+    if (!isMatched) {
+      throw new BadRequestException(
+        `설비부품 인터락 오류: 작업지시 품목(${jobPartCode})이 ` +
+        `설비(${equipId})의 장착부품(${equipPartCodes.join(', ')})과 일치하지 않습니다. ` +
+        `설비부품을 교체하거나 작업지시를 확인하세요.`
+      );
+    }
+  }
+
+  /**
+   * 작업지시 수량 초과 체크
+   * - 기등록 실적 + 새 실적의 합이 planQty를 초과하는지 확인
+   */
+  private async checkJobOrderQtyLimit(jobOrderId: string, newGoodQty: number, newDefectQty: number): Promise<void> {
+    const jobOrder = await this.jobOrderRepository.findOne({
+      where: { id: jobOrderId, deletedAt: IsNull() },
+      select: ['id', 'planQty', 'orderNo'],
+    });
+    
+    if (!jobOrder) return; // 작업지시 없으면 체크 불필요
+    if (!jobOrder.planQty || jobOrder.planQty <= 0) return; // planQty 미설정 시 체크 불필요
+
+    // 기등록 실적 집계
+    const existingSummary = await this.prodResultRepository
+      .createQueryBuilder('pr')
+      .select('SUM(pr.goodQty)', 'totalGood')
+      .addSelect('SUM(pr.defectQty)', 'totalDefect')
+      .where('pr.jobOrderId = :jobOrderId', { jobOrderId })
+      .andWhere('pr.deletedAt IS NULL')
+      .andWhere('pr.status != :canceled', { canceled: 'CANCELED' })
+      .getRawOne();
+
+    const existingGood = parseInt(existingSummary?.totalGood) || 0;
+    const existingDefect = parseInt(existingSummary?.totalDefect) || 0;
+    const existingTotal = existingGood + existingDefect;
+
+    const willBeTotal = existingTotal + newGoodQty + newDefectQty;
+
+    // 수량 초과 체크
+    if (willBeTotal > jobOrder.planQty) {
+      throw new BadRequestException(
+        `작업지시(${jobOrder.orderNo}) 수량 초과: ` +
+        `계획수량 ${jobOrder.planQty}, ` +
+        `기등록 ${existingTotal} (양품${existingGood}/불량${existingDefect}), ` +
+        `이번입력 ${newGoodQty + newDefectQty} (양품${newGoodQty}/불량${newDefectQty})`
+      );
+    }
+  }
+
+  /**
    * 생산실적 생성
    */
   async create(dto: CreateProdResultDto) {
@@ -191,6 +331,12 @@ export class ProdResultService {
     if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
       throw new BadRequestException(`완료되거나 취소된 작업지시에는 실적을 등록할 수 없습니다.`);
     }
+
+    // 작업지시 수량 초과 체크
+    await this.checkJobOrderQtyLimit(dto.jobOrderId, dto.goodQty ?? 0, dto.defectQty ?? 0);
+
+    // 설비부품 인터락 체크
+    await this.checkEquipBomInterlock(dto.equipId, dto.jobOrderId);
 
     // 설비 존재 확인 (옵션)
     if (dto.equipId) {

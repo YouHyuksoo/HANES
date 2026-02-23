@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { ProdResult } from './prod-result.entity';
 
 @Entity({ name: 'MAT_ISSUES' })
 @Index(['jobOrderId'])
@@ -21,6 +24,13 @@ export class MatIssue {
 
   @Column({ name: 'JOB_ORDER_ID', length: 50, nullable: true })
   jobOrderId: string | null;
+
+  @Column({ name: 'PROD_RESULT_ID', length: 36, nullable: true })
+  prodResultId: string | null; // 생산실적 ID (자재 투입 이력 연결)
+
+  @ManyToOne(() => ProdResult, { nullable: true })
+  @JoinColumn({ name: 'PROD_RESULT_ID' })
+  prodResult: ProdResult | null;
 
   @Column({ name: 'LOT_ID', length: 50 })
   lotId: string;

@@ -119,6 +119,13 @@ export class LotSplitService {
         throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.partId}`);
       }
 
+      // 분할 가능 여부 체크
+      if (part.isSplittable === 'N') {
+        throw new BadRequestException(
+          `해당 품목은 분할할 수 없습니다. 품번: ${part.partCode}, 분할 설정: ${part.isSplittable}`
+        );
+      }
+
       // 새 LOT 번호 생성 (미지정 시 자동 생성)
       const generatedLotNo = newLotNo || (await this.generateLotNo(sourceLot.lotNo));
 

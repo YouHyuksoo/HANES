@@ -15,6 +15,7 @@ import {
 import { Company, Plant } from '../../common/decorators/tenant.decorator';
 import { InventoryService } from './services/inventory.service';
 import { WarehouseService } from './services/warehouse.service';
+import { ProductInventoryService } from './services/product-inventory.service';
 import {
   CreateWarehouseDto,
   UpdateWarehouseDto,
@@ -26,12 +27,19 @@ import {
   TransactionQueryDto,
   CreateLotDto,
 } from './dto/inventory.dto';
+import {
+  ProductReceiveStockDto,
+  ProductIssueStockDto,
+  ProductTransactionQueryDto,
+  ProductStockQueryDto,
+} from './dto/product-inventory.dto';
 
 @Controller('inventory')
 export class InventoryController {
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly warehouseService: WarehouseService,
+    private readonly productInventoryService: ProductInventoryService,
   ) {}
 
   // ============================================================================
@@ -211,10 +219,14 @@ export class InventoryController {
   }
 
   /**
-   * 트랜잭션 취소
+   * 트랜잭션 취소 (원자재 vs 제품 자동 분기)
+   * WIP/FG 계열 → productInventoryService, 그 외 → inventoryService
    */
   @Post('cancel')
-  async cancelTransaction(@Body() dto: CancelTransactionDto) {
+  async cancelTransaction(@Body() dto: CancelTransactionDto & { source?: string }) {
+    if (dto.source === 'product') {
+      return this.productInventoryService.cancelTransaction(dto);
+    }
     return this.inventoryService.cancelTransaction(dto);
   }
 
@@ -245,47 +257,71 @@ export class InventoryController {
   }
 
   /**
-   * 반제품 창고입고
+   * 반제품 창고입고 → PRODUCT_STOCKS 테이블
    */
   @Post('wip/receive')
-  async receiveWip(@Body() dto: ReceiveStockDto) {
-    return this.inventoryService.receiveStock({
+  async receiveWip(@Body() dto: ProductReceiveStockDto) {
+    return this.productInventoryService.receiveStock({
       ...dto,
-      transType: 'WIP_IN' as any,
+      partType: 'WIP',
+      transType: 'WIP_IN',
     });
   }
 
   /**
-   * 반제품 출고
+   * 반제품 출고 → PRODUCT_STOCKS 테이블
    */
   @Post('wip/issue')
-  async issueWip(@Body() dto: IssueStockDto) {
-    return this.inventoryService.issueStock({
+  async issueWip(@Body() dto: ProductIssueStockDto) {
+    return this.productInventoryService.issueStock({
       ...dto,
-      transType: 'WIP_OUT' as any,
+      partType: 'WIP',
+      transType: 'WIP_OUT',
     });
   }
 
   /**
-   * 완제품 창고입고
+   * 완제품 창고입고 → PRODUCT_STOCKS 테이블
    */
   @Post('fg/receive')
-  async receiveFg(@Body() dto: ReceiveStockDto) {
-    return this.inventoryService.receiveStock({
+  async receiveFg(@Body() dto: ProductReceiveStockDto) {
+    return this.productInventoryService.receiveStock({
       ...dto,
-      transType: 'FG_IN' as any,
+      partType: 'FG',
+      transType: 'FG_IN',
     });
   }
 
   /**
-   * 완제품 출하
+   * 완제품 출하 → PRODUCT_STOCKS 테이블
    */
   @Post('fg/issue')
-  async issueFg(@Body() dto: IssueStockDto) {
-    return this.inventoryService.issueStock({
+  async issueFg(@Body() dto: ProductIssueStockDto) {
+    return this.productInventoryService.issueStock({
       ...dto,
-      transType: 'FG_OUT' as any,
+      partType: 'FG',
+      transType: 'FG_OUT',
     });
+  }
+
+  // ============================================================================
+  // 제품 전용 조회 API (PRODUCT_STOCKS / PRODUCT_TRANSACTIONS)
+  // ============================================================================
+
+  /**
+   * 제품 현재고 조회
+   */
+  @Get('product/stocks')
+  async getProductStocks(@Query() query: ProductStockQueryDto, @Company() company?: string, @Plant() plant?: string) {
+    return this.productInventoryService.getStock(query, company, plant);
+  }
+
+  /**
+   * 제품 수불 이력 조회
+   */
+  @Get('product/transactions')
+  async getProductTransactions(@Query() query: ProductTransactionQueryDto, @Company() company?: string, @Plant() plant?: string) {
+    return this.productInventoryService.getTransactions(query, company, plant);
   }
 
   /**

@@ -15,6 +15,7 @@ import { DefectLog } from './defect-log.entity';
 import { JobOrder } from './job-order.entity';
 import { EquipMaster } from './equip-master.entity';
 import { WorkerMaster } from './worker-master.entity';
+import { MatIssue } from './mat-issue.entity';
 
 @Entity({ name: 'PROD_RESULTS' })
 @Index(['jobOrderId'])
@@ -99,4 +100,7 @@ export class ProdResult {
 
   @OneToMany(() => DefectLog, (defectLog) => defectLog.prodResult)
   defectLogs: DefectLog[];
+
+  @OneToMany(() => MatIssue, (matIssue) => matIssue.prodResult)
+  matIssues: MatIssue[];
 }

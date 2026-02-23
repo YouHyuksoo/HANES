@@ -72,6 +72,15 @@ export class PartMaster {
   @Column({ name: 'EXPIRY_DATE', type: 'int', default: 0 })
   expiryDate: number;
 
+  @Column({ name: 'TOLERANCE_RATE', type: 'decimal', precision: 5, scale: 2, default: 5.0 })
+  toleranceRate: number; // PO 수량 오차 허용률 (%)
+
+  @Column({ name: 'IS_SPLITTABLE', length: 1, default: 'Y' })
+  isSplittable: string; // 자재 분할 가능 여부 (Y/N)
+
+  @Column({ name: 'SAMPLE_QTY', type: 'int', nullable: true })
+  sampleQty: number | null; // 샘플검사 수량
+
   @Column({ name: 'PACK_UNIT', length: 50, nullable: true })
   packUnit: string | null;
 

@@ -1,6 +1,6 @@
 /**
  * @file src/modules/material/dto/receiving.dto.ts
- * @description 입고관리 DTO - IQC 합격건 일괄/분할 입고 처리
+ * @description 입고관리 DTO - IQC 합격건 일괄/분할 입고 처리, 자동입고(라벨 발행 시)
  *
  * 초보자 가이드:
  * 1. **입고 대상**: 입하(Arrival)를 통해 생성된 LOT 중 IQC 합격(PASS)된 건
@@ -87,4 +87,17 @@ export class ReceivingQueryDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
+}
+
+/** 자동입고 요청 DTO (라벨 발행 시 호출) */
+export class AutoReceiveDto {
+  @ApiProperty({ description: '입고 대상 LOT ID 목록' })
+  @IsArray()
+  @IsString({ each: true })
+  lotIds: string[];
+
+  @ApiPropertyOptional({ description: '작업자 ID' })
+  @IsOptional()
+  @IsString()
+  workerId?: string;
 }

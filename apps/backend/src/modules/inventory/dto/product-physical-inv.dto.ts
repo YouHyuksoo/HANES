@@ -37,6 +37,17 @@ export class CreateProductPhysicalInvDto {
   @Type(() => ProductPhysicalInvItemDto)
   items: ProductPhysicalInvItemDto[];
 
+  @ApiPropertyOptional({ description: '실사 기준월 (YYYY-MM)', example: '2026-02' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(7)
+  countMonth?: string;
+
+  @ApiPropertyOptional({ description: '실사 구분 (NORMAL=정상, CANCEL=취소)', example: 'NORMAL' })
+  @IsOptional()
+  @IsString()
+  countType?: string;
+
   @ApiPropertyOptional({ description: '작성자' })
   @IsOptional()
   @IsString()

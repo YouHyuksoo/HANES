@@ -108,7 +108,7 @@ export class MatIssueService {
   }
 
   async create(dto: CreateMatIssueDto) {
-    const { jobOrderId, warehouseCode, issueType, items, remark, workerId } = dto;
+    const { jobOrderId, prodResultId, warehouseCode, issueType, items, remark, workerId } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -145,6 +145,7 @@ export class MatIssueService {
         const issue = queryRunner.manager.create(MatIssue, {
           issueNo,
           jobOrderId,
+          prodResultId, // 생산실적과 연결
           lotId: item.lotId,
           issueQty: item.issueQty,
           issueType: issueType ?? 'PROD',

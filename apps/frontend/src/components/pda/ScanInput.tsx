@@ -14,10 +14,22 @@
  *
  * 참조: C:\Project\SMMEX_SMT_PDA\src\components\ui\scan-input.tsx
  */
-import { useRef, useEffect, useCallback, useState } from "react";
+import {
+  useRef,
+  useEffect,
+  useCallback,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Keyboard, KeyboardOff } from "lucide-react";
 import { usePdaStore } from "@/stores/pdaStore";
+
+/** 부모 컴포넌트에서 포커스 제어용 핸들 */
+export interface ScanInputHandle {
+  focus: () => void;
+}
 
 interface ScanInputProps {
   /** 스캔 완료 시 호출 */
@@ -36,7 +48,7 @@ interface ScanInputProps {
   isLoading?: boolean;
 }
 
-export default function ScanInput({
+const ScanInput = forwardRef<ScanInputHandle, ScanInputProps>(function ScanInput({
   onScan,
   placeholderKey = "pda.scan.placeholder",
   disabled = false,
@@ -44,7 +56,7 @@ export default function ScanInput({
   onChange: externalOnChange,
   autoClear = true,
   isLoading = false,
-}: ScanInputProps) {
+}, ref) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const { keyboardVisible, toggleKeyboard } = usePdaStore();
@@ -93,6 +105,22 @@ export default function ScanInput({
 
     return timer;
   }, []);
+
+  /** 부모에서 scanRef.current.focus() 호출 시 키보드 트릭 포함 포커스 */
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => {
+        if (keyboardVisible) {
+          inputRef.current?.setAttribute("inputmode", "text");
+          inputRef.current?.focus();
+        } else {
+          applyHideKeyboardTrick();
+        }
+      },
+    }),
+    [keyboardVisible, applyHideKeyboardTrick],
+  );
 
   // ── 마운트 시 키보드 숨김 트릭 적용 ──
   useEffect(() => {
@@ -206,4 +234,6 @@ export default function ScanInput({
       </div>
     </div>
   );
-}
+});
+
+export default ScanInput;

@@ -12,7 +12,7 @@
 import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ReceivingService } from '../services/receiving.service';
-import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
+import { CreateBulkReceiveDto, ReceivingQueryDto, AutoReceiveDto } from '../dto/receiving.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
@@ -39,6 +39,14 @@ export class ReceivingController {
   @ApiOperation({ summary: '입고 가능 LOT 목록 (IQC 합격 + 미입고)' })
   async findReceivable(@Company() company: string, @Plant() plant: string) {
     const data = await this.receivingService.findReceivable(company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Post('auto')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '자동입고 처리 (라벨 발행 시)' })
+  async autoReceive(@Body() dto: AutoReceiveDto) {
+    const data = await this.receivingService.autoReceive(dto.lotIds, dto.workerId);
     return ResponseUtil.success(data);
   }
 

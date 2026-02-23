@@ -11,7 +11,7 @@
 import {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
   Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck,
 } from "lucide-react";
 
 /** 메뉴 설정 항목 인터페이스 */
@@ -71,6 +71,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "INV_MAT_PHYSICAL_INV", labelKey: "menu.inventory.matPhysicalInv", path: "/inventory/material-physical-inv" },
       { code: "INV_MAT_PHYSICAL_INV_HISTORY", labelKey: "menu.inventory.matPhysicalInvHistory", path: "/inventory/material-physical-inv-history" },
       { code: "INV_ARRIVAL_STOCK", labelKey: "menu.inventory.arrivalStock", path: "/material/arrival-stock" },
+      { code: "MAT_HOLD", labelKey: "menu.material.hold", path: "/material/hold" },
     ],
   },
   {
@@ -81,6 +82,16 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "INV_PRODUCT_STOCK", labelKey: "menu.inventory.productStock", path: "/inventory/stock" },
       { code: "INV_PRODUCT_PHYSICAL_INV", labelKey: "menu.inventory.productPhysicalInv", path: "/inventory/product-physical-inv" },
       { code: "INV_PRODUCT_PHYSICAL_INV_HISTORY", labelKey: "menu.inventory.productPhysicalInvHistory", path: "/inventory/product-physical-inv-history" },
+      { code: "PROD_HOLD", labelKey: "menu.productInventory.hold", path: "/inventory/product-hold" },
+    ],
+  },
+  {
+    code: "PRODUCT_MGMT",
+    labelKey: "menu.productMgmt",
+    icon: PackageCheck,
+    children: [
+      { code: "PROD_RECEIVE", labelKey: "menu.productMgmt.receive", path: "/product/receive" },
+      { code: "PROD_RECEIPT_CANCEL", labelKey: "menu.productMgmt.receiptCancel", path: "/product/receipt-cancel" },
     ],
   },
   {
@@ -97,7 +108,6 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MAT_LOT_SPLIT", labelKey: "menu.material.lotSplit", path: "/material/lot-split" },
       { code: "MAT_LOT_MERGE", labelKey: "menu.material.lotMerge", path: "/material/lot-merge" },
       { code: "MAT_SHELF_LIFE", labelKey: "menu.material.shelfLife", path: "/material/shelf-life" },
-      { code: "MAT_HOLD", labelKey: "menu.material.hold", path: "/material/hold" },
       { code: "MAT_SCRAP", labelKey: "menu.material.scrap", path: "/material/scrap" },
       { code: "MAT_ADJUSTMENT", labelKey: "menu.material.adjustment", path: "/material/adjustment" },
       { code: "MAT_MISC_RECEIPT", labelKey: "menu.material.miscReceipt", path: "/material/misc-receipt" },

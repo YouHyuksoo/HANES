@@ -69,7 +69,15 @@
       "mcp__chrome-devtools__get_network_request",
       "mcp__chrome-devtools__take_snapshot",
       "mcp__chrome-devtools__fill",
-      "mcp__chrome-devtools__list_network_requests"
+      "mcp__chrome-devtools__list_network_requests",
+      "Bash(echo pandoc failed, trying alternative...:*)",
+      "Bash(start \"\" \"C:\\\\Users\\\\hsyou\\\\.claude\\\\usage-data\\\\report.html\")",
+      "mcp__plugin_context7_context7__query-docs",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_snapshot",
+      "mcp__chrome-devtools__evaluate_script",
+      "mcp__chrome-devtools__press_key"
     ]
   }
 }
