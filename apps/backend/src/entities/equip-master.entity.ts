@@ -58,6 +58,9 @@ export class EquipMaster {
   @Column({ name: 'STATUS', length: 20, default: 'NORMAL' })
   status: string;
 
+  @Column({ name: 'CURRENT_JOB_ORDER_ID', length: 50, nullable: true })
+  currentJobOrderId: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

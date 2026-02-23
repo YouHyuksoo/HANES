@@ -43,6 +43,7 @@ import { JobOrder } from '../../entities/job-order.entity';
 import { ProdResult } from '../../entities/prod-result.entity';
 import { PartMaster } from '../../entities/part-master.entity';
 import { EquipMaster } from '../../entities/equip-master.entity';
+import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { User } from '../../entities/user.entity';
 import { InspectResult } from '../../entities/inspect-result.entity';
 import { BoxMaster } from '../../entities/box-master.entity';
@@ -52,7 +53,7 @@ import { SampleInspectResult } from '../../entities/sample-inspect-result.entity
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult]),
     InventoryModule,
   ],
   controllers: [

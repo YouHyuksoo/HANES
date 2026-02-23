@@ -23,6 +23,7 @@ import { Repository, IsNull, Between, ILike, Not } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
+import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { User } from '../../../entities/user.entity';
 import {
   CreateProdResultDto,
@@ -42,6 +43,8 @@ export class ProdResultService {
     private readonly jobOrderRepository: Repository<JobOrder>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepository: Repository<EquipMaster>,
+    @InjectRepository(ConsumableMaster)
+    private readonly consumableMasterRepository: Repository<ConsumableMaster>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
@@ -334,6 +337,52 @@ export class ProdResultService {
 
     await this.prodResultRepository.update(id, updateData);
 
+    // 금형 타수 자동 증가: 해당 설비에 장착된 MOLD 카테고리 금형 조회
+    if (prodResult.equipId) {
+      try {
+        const totalQty = (dto.goodQty ?? prodResult.goodQty) + (dto.defectQty ?? prodResult.defectQty);
+        if (totalQty > 0) {
+          const mountedMolds = await this.consumableMasterRepository.find({
+            where: {
+              mountedEquipId: prodResult.equipId,
+              category: 'MOLD',
+              operStatus: 'MOUNTED',
+              deletedAt: IsNull(),
+            },
+          });
+
+          for (const mold of mountedMolds) {
+            const newCount = mold.currentCount + totalQty;
+            let newStatus = mold.status;
+
+            if (mold.expectedLife && newCount >= mold.expectedLife) {
+              newStatus = 'REPLACE';
+            } else if (mold.warningCount && newCount >= mold.warningCount) {
+              newStatus = 'WARNING';
+            }
+
+            await this.consumableMasterRepository.update(mold.id, {
+              currentCount: newCount,
+              status: newStatus,
+            });
+
+            this.logger.log(
+              `금형 타수 자동 증가: ${mold.consumableCode} (${mold.currentCount} → ${newCount})`,
+            );
+          }
+        }
+      } catch (err) {
+        const e = err instanceof Error ? err : new Error(String(err));
+        this.logger.error(`금형 타수 증가 실패: ${e.message}`, e.stack);
+      }
+
+      // 설비의 현재 작업지시번호 해제
+      await this.equipMasterRepository.update(prodResult.equipId, {
+        currentJobOrderId: null,
+      });
+      this.logger.log(`설비 작업지시 해제: ${prodResult.equipId}`);
+    }
+
     return this.prodResultRepository.findOne({
       where: { id },
       relations: ['jobOrder'],
@@ -371,6 +420,14 @@ export class ProdResultService {
     if (remark) updateData.remark = remark;
 
     await this.prodResultRepository.update(id, updateData);
+
+    // 설비의 현재 작업지시번호 해제
+    if (prodResult.equipId) {
+      await this.equipMasterRepository.update(prodResult.equipId, {
+        currentJobOrderId: null,
+      });
+      this.logger.log(`설비 작업지시 해제 (취소): ${prodResult.equipId}`);
+    }
 
     return this.prodResultRepository.findOne({
       where: { id },

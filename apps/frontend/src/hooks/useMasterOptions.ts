@@ -32,6 +32,14 @@ interface WorkerItem {
   workerCode?: string;
 }
 
+interface EquipItem {
+  id: string;
+  equipCode: string;
+  equipName: string;
+  equipType?: string;
+  lineCode?: string;
+}
+
 interface PartnerItem {
   id: string;
   partnerCode: string;
@@ -113,6 +121,28 @@ export function useWorkerOptions() {
     return list.map((w) => ({
       value: w.id,
       label: w.workerName,
+    }));
+  }, [data]);
+
+  return { options, isLoading };
+}
+
+/**
+ * 설비 목록을 SelectOption[]으로 반환
+ */
+export function useEquipOptions() {
+  const { data, isLoading } = useApiQuery<PaginatedResponse<EquipItem>>(
+    ["equips", "options"],
+    "/equipment/equips?limit=200",
+    { staleTime: 5 * 60 * 1000 },
+  );
+
+  const options = useMemo<SelectOption[]>(() => {
+    const raw = data?.data;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+    return list.map((e) => ({
+      value: e.id,
+      label: `${e.equipCode} - ${e.equipName}`,
     }));
   }, [data]);
 

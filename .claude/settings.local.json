@@ -59,7 +59,14 @@
       "Bash(npm config:*)",
       "Bash(npx pm2:*)",
       "Bash(npx skills:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__wait_for",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__list_console_messages",
+      "mcp__chrome-devtools__get_network_request"
     ]
   }
 }

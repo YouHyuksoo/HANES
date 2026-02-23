@@ -294,6 +294,17 @@ export default function EquipMasterTab() {
 
   return (
     <>
+      <div className="flex justify-end items-center mb-3 gap-2">
+        <Button variant="secondary" size="sm" onClick={fetchEquipments}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+          {t("common.refresh", "새로고침")}
+        </Button>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-1" />
+          {t("master.equip.addEquip", "설비 추가")}
+        </Button>
+      </div>
+
       <Card>
         <CardContent>
           <DataGrid data={equipments} columns={columns} pageSize={10} isLoading={loading} enableColumnPinning enableExport exportFileName={t("master.equip.title", "설비관리")}
@@ -311,14 +322,6 @@ export default function EquipMasterTab() {
                 <Select options={equipTypeOptions} value={typeFilter} onChange={setTypeFilter} placeholder={t("master.equip.type", "유형")} />
                 <Select options={lineOptions} value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
                 <Select options={commTypeOptions} value={commFilter} onChange={setCommFilter} placeholder={t("master.equip.commType", "통신")} />
-                <Button variant="secondary" size="sm" onClick={fetchEquipments}>
-                  <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-                  {t("common.refresh", "새로고침")}
-                </Button>
-                <Button size="sm" onClick={openCreate}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  {t("master.equip.addEquip", "설비 추가")}
-                </Button>
               </div>
             } />
         </CardContent>

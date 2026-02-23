@@ -13,6 +13,7 @@ export * from './equip-master.entity';
 export * from './equip-bom-item.entity';
 export * from './equip-bom-rel.entity';
 export * from './consumable-master.entity';
+export * from './consumable-mount-log.entity';
 export * from './partner-master.entity';
 export * from './num-rule-master.entity';
 export * from './department-master.entity';
@@ -44,6 +45,11 @@ export * from './inv-adj-log.entity';
 export * from './consumable-log.entity';
 export * from './warehouse-transfer-rule.entity';
 export * from './warehouse-location.entity';
+
+// PM (Preventive Maintenance)
+export * from './pm-plan.entity';
+export * from './pm-plan-item.entity';
+export * from './pm-work-order.entity';
 
 // Quality
 export * from './sample-inspect-result.entity';

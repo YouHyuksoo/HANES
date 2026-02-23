@@ -53,8 +53,8 @@ export default function ItemMasterTab() {
   ], [t]);
 
   const judgeMethodOptions = useMemo(() => [
-    { value: "VISUAL", label: t("master.inspectItem.visual", "육안") },
-    { value: "MEASURE", label: t("master.inspectItem.measure", "계측") },
+    { value: "VISUAL", label: t("master.equipInspect.visual", "육안") },
+    { value: "MEASURE", label: t("master.equipInspect.measure", "계측") },
   ], [t]);
 
   const inspectTypeLabels = useMemo<Record<string, string>>(() => ({
@@ -151,7 +151,7 @@ export default function ItemMasterTab() {
     },
     {
       accessorKey: "judgeMethod", header: t("master.equipInspect.judgeMethod"), size: 80,
-      cell: ({ getValue }) => getValue() === "VISUAL" ? t("master.inspectItem.visual") : t("master.inspectItem.measure"),
+      cell: ({ getValue }) => getValue() === "VISUAL" ? t("master.equipInspect.visual") : t("master.equipInspect.measure"),
     },
     {
       accessorKey: "criteria", header: t("master.equipInspect.criteria"), size: 150,

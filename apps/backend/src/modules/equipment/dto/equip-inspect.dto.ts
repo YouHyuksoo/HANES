@@ -70,6 +70,38 @@ export class CreateEquipInspectDto {
 /** 설비 점검 수정 DTO */
 export class UpdateEquipInspectDto extends PartialType(CreateEquipInspectDto) {}
 
+/** 점검 캘린더 월별 조회 DTO */
+export class InspectCalendarQueryDto {
+  @ApiProperty({ description: '년도' })
+  @Type(() => Number)
+  @IsInt()
+  year: number;
+
+  @ApiProperty({ description: '월' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  month: number;
+
+  @ApiPropertyOptional({ description: '라인코드 필터' })
+  @IsOptional()
+  @IsString()
+  lineCode?: string;
+}
+
+/** 점검 캘린더 일별 스케줄 조회 DTO */
+export class InspectDayScheduleQueryDto {
+  @ApiProperty({ description: '날짜 (YYYY-MM-DD)' })
+  @IsString()
+  date: string;
+
+  @ApiPropertyOptional({ description: '라인코드 필터' })
+  @IsOptional()
+  @IsString()
+  lineCode?: string;
+}
+
 /** 설비 점검 목록 조회 쿼리 DTO */
 export class EquipInspectQueryDto {
   @ApiPropertyOptional({ description: '페이지 번호', default: 1 })

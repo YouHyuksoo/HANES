@@ -28,13 +28,32 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { EquipInspectService } from '../services/equip-inspect.service';
-import { CreateEquipInspectDto, UpdateEquipInspectDto, EquipInspectQueryDto } from '../dto/equip-inspect.dto';
+import {
+  CreateEquipInspectDto, UpdateEquipInspectDto, EquipInspectQueryDto,
+  InspectCalendarQueryDto, InspectDayScheduleQueryDto,
+} from '../dto/equip-inspect.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('설비관리 - 정기점검')
 @Controller('equipment/periodic-inspect')
 export class PeriodicInspectController {
   constructor(private readonly equipInspectService: EquipInspectService) {}
+
+  @Get('calendar')
+  @ApiOperation({ summary: '정기점검 캘린더 월별 요약' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getCalendarSummary(@Query() query: InspectCalendarQueryDto) {
+    const data = await this.equipInspectService.getCalendarSummary(query.year, query.month, query.lineCode, 'PERIODIC');
+    return ResponseUtil.success(data);
+  }
+
+  @Get('calendar/day')
+  @ApiOperation({ summary: '정기점검 캘린더 일별 스케줄' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getDaySchedule(@Query() query: InspectDayScheduleQueryDto) {
+    const data = await this.equipInspectService.getDaySchedule(query.date, query.lineCode, 'PERIODIC');
+    return ResponseUtil.success(data);
+  }
 
   @Get()
   @ApiOperation({ summary: '정기점검 목록 조회' })

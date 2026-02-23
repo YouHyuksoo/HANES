@@ -27,12 +27,14 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, DataSource, In } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
+import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
 import { User } from '../../../entities/user.entity';
 import {
   EquipCreateConsumableDto,
@@ -42,6 +44,9 @@ import {
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
+  MountToEquipDto,
+  UnmountFromEquipDto,
+  SetRepairDto,
 } from '../dto/consumable.dto';
 
 @Injectable()
@@ -53,6 +58,8 @@ export class ConsumableService {
     private readonly consumableMasterRepository: Repository<ConsumableMaster>,
     @InjectRepository(ConsumableLog)
     private readonly consumableLogRepository: Repository<ConsumableLog>,
+    @InjectRepository(ConsumableMountLog)
+    private readonly mountLogRepository: Repository<ConsumableMountLog>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
@@ -551,6 +558,293 @@ export class ConsumableService {
   // =============================================
   // 통계
   // =============================================
+
+  // =============================================
+  // 금형 장착/해제/수리 관리
+  // =============================================
+
+  /**
+   * 금형을 설비에 장착
+   */
+  async mountToEquip(id: string, dto: MountToEquipDto) {
+    const consumable = await this.consumableMasterRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+
+    if (!consumable) {
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${id}`);
+    }
+
+    if (consumable.operStatus === 'MOUNTED') {
+      throw new ConflictException(
+        `이미 설비에 장착된 금형입니다. 현재 장착 설비: ${consumable.mountedEquipId}`,
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.update(ConsumableMaster, id, {
+        operStatus: 'MOUNTED',
+        mountedEquipId: dto.equipId,
+      });
+
+      await queryRunner.manager.save(ConsumableMountLog, {
+        consumableId: id,
+        equipId: dto.equipId,
+        action: 'MOUNT',
+        workerId: dto.workerId ?? null,
+        remark: dto.remark ?? null,
+        company: consumable.company,
+        plant: consumable.plant,
+      });
+
+      await queryRunner.commitTransaction();
+
+      this.logger.log(
+        `금형 장착: ${consumable.consumableCode} → 설비 ${dto.equipId}`,
+      );
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * 금형을 설비에서 해제
+   */
+  async unmountFromEquip(id: string, dto: UnmountFromEquipDto) {
+    const consumable = await this.consumableMasterRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+
+    if (!consumable) {
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${id}`);
+    }
+
+    if (consumable.operStatus !== 'MOUNTED') {
+      throw new BadRequestException(
+        `장착 상태가 아닌 금형은 해제할 수 없습니다. 현재 상태: ${consumable.operStatus}`,
+      );
+    }
+
+    const previousEquipId = consumable.mountedEquipId;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.update(ConsumableMaster, id, {
+        operStatus: 'WAREHOUSE',
+        mountedEquipId: null,
+      });
+
+      await queryRunner.manager.save(ConsumableMountLog, {
+        consumableId: id,
+        equipId: previousEquipId,
+        action: 'UNMOUNT',
+        workerId: dto.workerId ?? null,
+        remark: dto.remark ?? null,
+        company: consumable.company,
+        plant: consumable.plant,
+      });
+
+      await queryRunner.commitTransaction();
+
+      this.logger.log(
+        `금형 해제: ${consumable.consumableCode} ← 설비 ${previousEquipId}`,
+      );
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * 금형을 수리 상태로 전환 (장착 상태면 자동 해제)
+   */
+  async setRepairStatus(id: string, dto: SetRepairDto) {
+    const consumable = await this.consumableMasterRepository.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+
+    if (!consumable) {
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${id}`);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 장착 상태면 먼저 해제 로그 기록
+      if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipId) {
+        await queryRunner.manager.save(ConsumableMountLog, {
+          consumableId: id,
+          equipId: consumable.mountedEquipId,
+          action: 'UNMOUNT',
+          workerId: dto.workerId ?? null,
+          remark: '수리 전환으로 인한 자동 해제',
+          company: consumable.company,
+          plant: consumable.plant,
+        });
+      }
+
+      await queryRunner.manager.update(ConsumableMaster, id, {
+        operStatus: 'REPAIR',
+        mountedEquipId: null,
+      });
+
+      await queryRunner.commitTransaction();
+
+      this.logger.log(
+        `금형 수리 전환: ${consumable.consumableCode} (이전 상태: ${consumable.operStatus})`,
+      );
+
+      return this.findById(id);
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * 금형 장착/해제 이력 조회
+   */
+  async getMountHistory(consumableId: string) {
+    await this.findById(consumableId);
+
+    return this.mountLogRepository.find({
+      where: { consumableId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * 특정 설비에 장착된 금형 목록 조회
+   */
+  async findMountedByEquip(equipId: string) {
+    return this.consumableMasterRepository.find({
+      where: {
+        mountedEquipId: equipId,
+        operStatus: 'MOUNTED',
+        deletedAt: IsNull(),
+      },
+      order: { consumableCode: 'ASC' },
+    });
+  }
+
+  // =============================================
+  // 통계
+  // =============================================
+
+  /**
+   * 예방보전 캘린더 월별 요약
+   * - 각 날짜별로 교체 예정/경고/완료된 소모품 수를 집계
+   */
+  async getPmCalendarSummary(year: number, month: number, category?: string) {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
+
+    // 교체 예정일이 해당 월에 있는 소모품 조회
+    const qb = this.consumableMasterRepository
+      .createQueryBuilder('c')
+      .where('c.deletedAt IS NULL')
+      .andWhere('c.useYn = :yn', { yn: 'Y' })
+      .andWhere('c.nextReplaceAt IS NOT NULL')
+      .andWhere('c.nextReplaceAt BETWEEN :start AND :end', { start: startDate, end: endDate });
+
+    if (category) {
+      qb.andWhere('c.category = :category', { category });
+    }
+
+    const consumables = await qb.getMany();
+
+    // 날짜별 집계
+    const dateMap = new Map<string, { total: number; warning: number; replace: number; normal: number }>();
+    for (const c of consumables) {
+      const d = new Date(c.nextReplaceAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!dateMap.has(key)) dateMap.set(key, { total: 0, warning: 0, replace: 0, normal: 0 });
+      const entry = dateMap.get(key)!;
+      entry.total++;
+      if (c.status === 'REPLACE') entry.replace++;
+      else if (c.status === 'WARNING') entry.warning++;
+      else entry.normal++;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const entry = dateMap.get(dateStr) || { total: 0, warning: 0, replace: 0, normal: 0 };
+      const dateObj = new Date(year, month - 1, day);
+
+      let status = 'NONE';
+      if (entry.total === 0) {
+        status = 'NONE';
+      } else if (entry.replace > 0) {
+        status = 'HAS_FAIL';
+      } else if (entry.warning > 0) {
+        status = 'IN_PROGRESS';
+      } else if (dateObj < today) {
+        status = 'OVERDUE';
+      } else {
+        status = 'ALL_PASS';
+      }
+
+      result.push({
+        date: dateStr,
+        total: entry.total,
+        completed: entry.normal,
+        pass: entry.normal,
+        fail: entry.replace + entry.warning,
+        status,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * 예방보전 캘린더 일별 상세 스케줄
+   * - 특정 날짜에 교체 예정인 소모품 목록 반환
+   */
+  async getPmDaySchedule(date: string, category?: string) {
+    const dateObj = new Date(date);
+    const startOfDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+    const endOfDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 23, 59, 59);
+
+    const qb = this.consumableMasterRepository
+      .createQueryBuilder('c')
+      .where('c.deletedAt IS NULL')
+      .andWhere('c.useYn = :yn', { yn: 'Y' })
+      .andWhere('c.nextReplaceAt BETWEEN :start AND :end', { start: startOfDay, end: endOfDay });
+
+    if (category) {
+      qb.andWhere('c.category = :category', { category });
+    }
+
+    qb.orderBy('c.status', 'DESC').addOrderBy('c.consumableCode', 'ASC');
+
+    return qb.getMany();
+  }
 
   /**
    * 소모품 현황 통계

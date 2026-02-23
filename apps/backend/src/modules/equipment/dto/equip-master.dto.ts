@@ -160,6 +160,16 @@ export class ChangeEquipStatusDto {
 }
 
 /**
+ * 설비 작업지시 할당 DTO
+ */
+export class AssignJobOrderDto {
+  @ApiProperty({ description: '작업지시 ID (null이면 해제)', example: 'job-order-uuid' })
+  @IsOptional()
+  @IsString()
+  jobOrderId?: string | null;
+}
+
+/**
  * 설비마스터 목록 조회 쿼리 DTO
  */
 export class EquipMasterQueryDto {

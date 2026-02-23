@@ -10,9 +10,10 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, Between } from 'typeorm';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
+import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
 import { CreateEquipInspectDto, UpdateEquipInspectDto, EquipInspectQueryDto } from '../dto/equip-inspect.dto';
 
 @Injectable()
@@ -22,6 +23,8 @@ export class EquipInspectService {
     private readonly equipInspectLogRepository: Repository<EquipInspectLog>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepository: Repository<EquipMaster>,
+    @InjectRepository(EquipInspectItemMaster)
+    private readonly inspectItemRepository: Repository<EquipInspectItemMaster>,
   ) {}
 
   /** 점검 목록 조회 */
@@ -179,6 +182,208 @@ export class EquipInspectService {
     await this.findById(id);
     await this.equipInspectLogRepository.delete(id);
     return { id, deleted: true };
+  }
+
+  /**
+   * cycle에 따라 해당 날짜가 점검 대상인지 판정
+   * DAILY → 매일, WEEKLY → 월요일(dayOfWeek===1), MONTHLY → 매월 1일
+   */
+  private isDue(cycle: string | null, date: Date): boolean {
+    const c = (cycle || 'DAILY').toUpperCase();
+    if (c === 'DAILY') return true;
+    if (c === 'WEEKLY') return date.getDay() === 1;
+    if (c === 'MONTHLY') return date.getDate() === 1;
+    return true;
+  }
+
+  /** 캘린더 월별 요약 조회 */
+  async getCalendarSummary(year: number, month: number, lineCode?: string, inspectType: string = 'DAILY') {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
+
+    // 1) 사용중인 설비 목록 (lineCode 필터)
+    const equipWhere: Record<string, unknown> = { useYn: 'Y', deletedAt: IsNull() };
+    if (lineCode) equipWhere.lineCode = lineCode;
+    const equips = await this.equipMasterRepository.find({ where: equipWhere, select: ['id', 'lineCode'] });
+    const equipIds = equips.map((e) => e.id);
+    if (equipIds.length === 0) {
+      return Array.from({ length: daysInMonth }, (_, i) => ({
+        date: `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`,
+        total: 0, completed: 0, pass: 0, fail: 0, status: 'NONE',
+      }));
+    }
+
+    // 2) 해당 설비의 점검항목 조회
+    const allItems = await this.inspectItemRepository
+      .createQueryBuilder('item')
+      .where('item.inspectType = :type', { type: inspectType })
+      .andWhere('item.useYn = :yn', { yn: 'Y' })
+      .andWhere('item.equipId IN (:...equipIds)', { equipIds })
+      .andWhere('item.deletedAt IS NULL')
+      .getMany();
+
+    // 설비별 점검항목 그룹핑
+    const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
+    for (const item of allItems) {
+      const list = itemsByEquip.get(item.equipId) || [];
+      list.push(item);
+      itemsByEquip.set(item.equipId, list);
+    }
+
+    // 3) 해당 월의 점검로그 조회
+    const logs = await this.equipInspectLogRepository
+      .createQueryBuilder('log')
+      .where('log.inspectType = :type', { type: inspectType })
+      .andWhere('log.inspectDate BETWEEN :start AND :end', {
+        start: startDate, end: endDate,
+      })
+      .andWhere('log.equipId IN (:...equipIds)', { equipIds })
+      .getMany();
+
+    // 날짜별 로그 인덱싱
+    const logsByDate = new Map<string, EquipInspectLog[]>();
+    for (const log of logs) {
+      const d = new Date(log.inspectDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const list = logsByDate.get(key) || [];
+      list.push(log);
+      logsByDate.set(key, list);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 4) 날짜별 집계
+    const result = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateObj = new Date(year, month - 1, day);
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      // 해당 날짜에 점검 대상인 설비 수 산출
+      let totalEquips = 0;
+      for (const [equipId, items] of itemsByEquip) {
+        const hasDue = items.some((item) => this.isDue(item.cycle, dateObj));
+        if (hasDue) totalEquips++;
+      }
+
+      // 해당 날짜의 로그에서 완료 설비 추출
+      const dayLogs = logsByDate.get(dateStr) || [];
+      const completedEquipIds = new Set(dayLogs.map((l) => l.equipId));
+      const completed = completedEquipIds.size;
+      const pass = dayLogs.filter((l) => l.overallResult === 'PASS').length;
+      const fail = dayLogs.filter((l) => l.overallResult !== 'PASS').length;
+
+      let status = 'NONE';
+      if (totalEquips === 0) {
+        status = 'NONE';
+      } else if (completed >= totalEquips && fail === 0) {
+        status = 'ALL_PASS';
+      } else if (fail > 0) {
+        status = 'HAS_FAIL';
+      } else if (completed > 0 && completed < totalEquips) {
+        status = 'IN_PROGRESS';
+      } else if (completed === 0) {
+        status = dateObj < today ? 'OVERDUE' : 'NOT_STARTED';
+      }
+
+      result.push({ date: dateStr, total: totalEquips, completed, pass, fail, status });
+    }
+
+    return result;
+  }
+
+  /** 캘린더 일별 설비 점검 스케줄 조회 */
+  async getDaySchedule(date: string, lineCode?: string, inspectType: string = 'DAILY') {
+    const dateObj = new Date(date);
+
+    // 1) 사용중인 설비 목록
+    const equipWhere: Record<string, unknown> = { useYn: 'Y', deletedAt: IsNull() };
+    if (lineCode) equipWhere.lineCode = lineCode;
+    const equips = await this.equipMasterRepository.find({
+      where: equipWhere,
+      select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+    });
+    if (equips.length === 0) return [];
+
+    const equipIds = equips.map((e) => e.id);
+
+    // 2) 점검항목 조회
+    const allItems = await this.inspectItemRepository
+      .createQueryBuilder('item')
+      .where('item.inspectType = :type', { type: inspectType })
+      .andWhere('item.useYn = :yn', { yn: 'Y' })
+      .andWhere('item.equipId IN (:...equipIds)', { equipIds })
+      .andWhere('item.deletedAt IS NULL')
+      .orderBy('item.seq', 'ASC')
+      .getMany();
+
+    const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
+    for (const item of allItems) {
+      const list = itemsByEquip.get(item.equipId) || [];
+      list.push(item);
+      itemsByEquip.set(item.equipId, list);
+    }
+
+    // 3) 해당 날짜의 점검로그
+    const dayStart = new Date(dateObj);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dateObj);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const logs = await this.equipInspectLogRepository
+      .createQueryBuilder('log')
+      .where('log.inspectType = :type', { type: inspectType })
+      .andWhere('log.inspectDate BETWEEN :start AND :end', { start: dayStart, end: dayEnd })
+      .andWhere('log.equipId IN (:...equipIds)', { equipIds })
+      .getMany();
+
+    const logByEquip = new Map<string, EquipInspectLog>();
+    for (const log of logs) {
+      logByEquip.set(log.equipId, log);
+    }
+
+    // 4) 설비별 스케줄 구성 (isDue인 항목이 있는 설비만)
+    const result = [];
+    for (const equip of equips) {
+      const items = itemsByEquip.get(equip.id) || [];
+      const dueItems = items.filter((item) => this.isDue(item.cycle, dateObj));
+      if (dueItems.length === 0) continue;
+
+      const log = logByEquip.get(equip.id);
+      let details: { items?: Array<{ itemId: string; seq: number; itemName: string; result: string; remark: string }> } | null = null;
+      if (log?.details) {
+        try { details = JSON.parse(log.details); } catch { details = null; }
+      }
+
+      const itemResults = dueItems.map((item) => {
+        const detailItem = details?.items?.find((d) => d.itemId === item.id || d.seq === item.seq);
+        return {
+          itemId: item.id,
+          seq: item.seq,
+          itemName: item.itemName,
+          criteria: item.criteria,
+          cycle: item.cycle || 'DAILY',
+          result: detailItem?.result || null,
+          remark: detailItem?.remark || '',
+        };
+      });
+
+      result.push({
+        equipId: equip.id,
+        equipCode: equip.equipCode,
+        equipName: equip.equipName,
+        lineCode: equip.lineCode,
+        equipType: equip.equipType,
+        inspected: !!log,
+        overallResult: log?.overallResult || null,
+        inspectorName: log?.inspectorName || null,
+        logId: log?.id || null,
+        items: itemResults,
+      });
+    }
+
+    return result;
   }
 
   /** 점검 통계 요약 */

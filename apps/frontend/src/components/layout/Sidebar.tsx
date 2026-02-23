@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck, Database,
   FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog, ClipboardCheck,
-  ShoppingCart,
+  ShoppingCart, Monitor,
 } from "lucide-react";
 import SidebarMenu from "./SidebarMenu";
 
@@ -29,6 +29,12 @@ export interface MenuItem {
 
 export const menuItems: MenuItem[] = [
   { id: "dashboard", labelKey: "menu.dashboard", path: "/dashboard", icon: LayoutDashboard },
+  {
+    id: "monitoring", labelKey: "menu.monitoring", icon: Monitor,
+    children: [
+      { id: "mon-equip-status", labelKey: "menu.equipment.status", path: "/equipment/status" },
+    ],
+  },
   {
     id: "master", labelKey: "menu.master", icon: Database,
     children: [
@@ -132,8 +138,11 @@ export const menuItems: MenuItem[] = [
     id: "equipment", labelKey: "menu.equipment", icon: Wrench,
     children: [
       { id: "equip-master", labelKey: "menu.equipment.master", path: "/master/equip" },
-      { id: "equip-status", labelKey: "menu.equipment.status", path: "/equipment/status" },
+      { id: "equip-pm-plan", labelKey: "menu.equipment.pmPlan", path: "/equipment/pm-plan" },
       { id: "equip-pm", labelKey: "menu.equipment.pm", path: "/equipment/pm" },
+      { id: "equip-pm-calendar", labelKey: "menu.equipment.pmCalendar", path: "/equipment/pm-calendar" },
+      { id: "equip-inspect-calendar", labelKey: "menu.equipment.dailyInspectCalendar", path: "/equipment/inspect-calendar" },
+      { id: "equip-periodic-calendar", labelKey: "menu.equipment.periodicInspectCalendar", path: "/equipment/periodic-inspect-calendar" },
       { id: "equip-daily", labelKey: "menu.equipment.dailyInspect", path: "/equipment/daily-inspect" },
       { id: "equip-periodic", labelKey: "menu.equipment.periodicInspect", path: "/equipment/periodic-inspect" },
       { id: "equip-history", labelKey: "menu.equipment.inspectHistory", path: "/equipment/inspect-history" },

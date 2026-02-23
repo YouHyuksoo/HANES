@@ -256,6 +256,58 @@ export class RegisterReplacementDto {
 }
 
 /**
+ * 금형 설비 장착 DTO
+ */
+export class MountToEquipDto {
+  @ApiProperty({ description: '설비 ID', example: 'equip-001' })
+  @IsString()
+  equipId: string;
+
+  @ApiPropertyOptional({ description: '작업자 ID' })
+  @IsOptional()
+  @IsString()
+  workerId?: string;
+
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
+/**
+ * 금형 설비 해제 DTO
+ */
+export class UnmountFromEquipDto {
+  @ApiPropertyOptional({ description: '작업자 ID' })
+  @IsOptional()
+  @IsString()
+  workerId?: string;
+
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
+/**
+ * 금형 수리 전환 DTO
+ */
+export class SetRepairDto {
+  @ApiPropertyOptional({ description: '작업자 ID' })
+  @IsOptional()
+  @IsString()
+  workerId?: string;
+
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
+/**
  * 소모품 로그 조회 쿼리 DTO
  */
 export class ConsumableLogQueryDto {
@@ -294,4 +346,42 @@ export class ConsumableLogQueryDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+}
+
+/**
+ * 예방보전 캘린더 조회 쿼리 DTO
+ */
+export class PmCalendarQueryDto {
+  @ApiProperty({ description: '조회 연도', example: 2026 })
+  @Type(() => Number)
+  @IsInt()
+  year: number;
+
+  @ApiProperty({ description: '조회 월', example: 2 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  month: number;
+
+  @ApiPropertyOptional({ description: '카테고리 필터', enum: CONSUMABLE_CATEGORY_VALUES })
+  @IsOptional()
+  @IsString()
+  @IsIn([...CONSUMABLE_CATEGORY_VALUES])
+  category?: string;
+}
+
+/**
+ * 예방보전 캘린더 일별 상세 쿼리 DTO
+ */
+export class PmDayScheduleQueryDto {
+  @ApiProperty({ description: '조회 날짜 (YYYY-MM-DD)', example: '2026-02-23' })
+  @IsString()
+  date: string;
+
+  @ApiPropertyOptional({ description: '카테고리 필터', enum: CONSUMABLE_CATEGORY_VALUES })
+  @IsOptional()
+  @IsString()
+  @IsIn([...CONSUMABLE_CATEGORY_VALUES])
+  category?: string;
 }

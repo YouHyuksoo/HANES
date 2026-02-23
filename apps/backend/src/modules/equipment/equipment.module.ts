@@ -27,6 +27,10 @@ import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master
 import { EquipInspectLog } from '../../entities/equip-inspect-log.entity';
 import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../entities/consumable-log.entity';
+import { ConsumableMountLog } from '../../entities/consumable-mount-log.entity';
+import { PmPlan } from '../../entities/pm-plan.entity';
+import { PmPlanItem } from '../../entities/pm-plan-item.entity';
+import { PmWorkOrder } from '../../entities/pm-work-order.entity';
 import { User } from '../../entities/user.entity';
 import { ProdLineMaster } from '../../entities/prod-line-master.entity';
 import { ProcessMaster } from '../../entities/process-master.entity';
@@ -35,9 +39,11 @@ import { ConsumableController, ConsumableLogController } from './controllers/con
 import { DailyInspectController } from './controllers/daily-inspect.controller';
 import { PeriodicInspectController } from './controllers/periodic-inspect.controller';
 import { InspectHistoryController } from './controllers/inspect-history.controller';
+import { PmPlanController, PmWorkOrderController } from './controllers/pm-plan.controller';
 import { EquipMasterService } from './services/equip-master.service';
 import { ConsumableService } from './services/consumable.service';
 import { EquipInspectService } from './services/equip-inspect.service';
+import { PmPlanService } from './services/pm-plan.service';
 
 @Module({
   imports: [
@@ -47,6 +53,10 @@ import { EquipInspectService } from './services/equip-inspect.service';
       EquipInspectLog,
       ConsumableMaster,
       ConsumableLog,
+      ConsumableMountLog,
+      PmPlan,
+      PmPlanItem,
+      PmWorkOrder,
       User,
       ProdLineMaster,
       ProcessMaster,
@@ -59,16 +69,20 @@ import { EquipInspectService } from './services/equip-inspect.service';
     DailyInspectController,
     PeriodicInspectController,
     InspectHistoryController,
+    PmPlanController,
+    PmWorkOrderController,
   ],
   providers: [
     EquipMasterService,
     ConsumableService,
     EquipInspectService,
+    PmPlanService,
   ],
   exports: [
     EquipMasterService,
     ConsumableService,
     EquipInspectService,
+    PmPlanService,
   ],
 })
 export class EquipmentModule {}

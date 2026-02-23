@@ -48,6 +48,11 @@ import {
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
+  MountToEquipDto,
+  UnmountFromEquipDto,
+  SetRepairDto,
+  PmCalendarQueryDto,
+  PmDayScheduleQueryDto,
 } from '../dto/consumable.dto';
 import { CONSUMABLE_CATEGORY_VALUES } from '@harness/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -86,6 +91,22 @@ export class ConsumableController {
     return ResponseUtil.success(data);
   }
 
+  @Get('calendar')
+  @ApiOperation({ summary: '예방보전 캘린더 월별 요약' })
+  @SwaggerResponse({ status: 200, description: '조회 성공' })
+  async getPmCalendarSummary(@Query() query: PmCalendarQueryDto) {
+    const data = await this.consumableService.getPmCalendarSummary(query.year, query.month, query.category);
+    return ResponseUtil.success(data);
+  }
+
+  @Get('calendar/day')
+  @ApiOperation({ summary: '예방보전 캘린더 일별 상세' })
+  @SwaggerResponse({ status: 200, description: '조회 성공' })
+  async getPmDaySchedule(@Query() query: PmDayScheduleQueryDto) {
+    const data = await this.consumableService.getPmDaySchedule(query.date, query.category);
+    return ResponseUtil.success(data);
+  }
+
   @Get('category/:category')
   @ApiOperation({ summary: '카테고리별 소모품 목록 조회' })
   @ApiParam({ name: 'category', description: '카테고리', enum: CONSUMABLE_CATEGORY_VALUES })
@@ -99,6 +120,54 @@ export class ConsumableController {
   @ApiParam({ name: 'consumableCode', description: '소모품 코드', example: 'MOLD-001' })
   async findByCode(@Param('consumableCode') consumableCode: string) {
     const data = await this.consumableService.findByCode(consumableCode);
+    return ResponseUtil.success(data);
+  }
+
+  // =============================================
+  // 금형 장착/해제/수리 관리
+  // =============================================
+
+  @Get('mounted/:equipId')
+  @ApiOperation({ summary: '설비별 장착된 금형 조회' })
+  @ApiParam({ name: 'equipId', description: '설비 ID' })
+  async findMountedByEquip(@Param('equipId') equipId: string) {
+    const data = await this.consumableService.findMountedByEquip(equipId);
+    return ResponseUtil.success(data);
+  }
+
+  @Post(':id/mount')
+  @ApiOperation({ summary: '금형 설비 장착' })
+  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
+  @SwaggerResponse({ status: 200, description: '금형 장착 성공' })
+  @SwaggerResponse({ status: 409, description: '이미 장착된 금형' })
+  async mountToEquip(@Param('id') id: string, @Body() dto: MountToEquipDto) {
+    const data = await this.consumableService.mountToEquip(id, dto);
+    return ResponseUtil.success(data, '금형이 설비에 장착되었습니다.');
+  }
+
+  @Post(':id/unmount')
+  @ApiOperation({ summary: '금형 설비 해제' })
+  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
+  @SwaggerResponse({ status: 200, description: '금형 해제 성공' })
+  async unmountFromEquip(@Param('id') id: string, @Body() dto: UnmountFromEquipDto) {
+    const data = await this.consumableService.unmountFromEquip(id, dto);
+    return ResponseUtil.success(data, '금형이 설비에서 해제되었습니다.');
+  }
+
+  @Post(':id/repair')
+  @ApiOperation({ summary: '금형 수리 전환' })
+  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
+  @SwaggerResponse({ status: 200, description: '수리 전환 성공' })
+  async setRepairStatus(@Param('id') id: string, @Body() dto: SetRepairDto) {
+    const data = await this.consumableService.setRepairStatus(id, dto);
+    return ResponseUtil.success(data, '금형이 수리 상태로 전환되었습니다.');
+  }
+
+  @Get(':id/mount-logs')
+  @ApiOperation({ summary: '금형 장착/해제 이력 조회' })
+  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
+  async getMountHistory(@Param('id') id: string) {
+    const data = await this.consumableService.getMountHistory(id);
     return ResponseUtil.success(data);
   }
 

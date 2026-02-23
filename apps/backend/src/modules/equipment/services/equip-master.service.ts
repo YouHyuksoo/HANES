@@ -32,6 +32,7 @@ import {
   UpdateEquipMasterDto,
   EquipMasterQueryDto,
   ChangeEquipStatusDto,
+  AssignJobOrderDto,
 } from '../dto/equip-master.dto';
 
 @Injectable()
@@ -348,5 +349,28 @@ export class EquipMasterService {
       select: ['processCode', 'processName', 'processType', 'processCategory'],
       order: { sortOrder: 'ASC', processCode: 'ASC' },
     });
+  }
+
+  // =============================================
+  // 작업지시 할당
+  // =============================================
+
+  /**
+   * 설비에 작업지시 할당/해제
+   */
+  async assignJobOrder(id: string, dto: AssignJobOrderDto) {
+    const equip = await this.findById(id);
+
+    await this.equipMasterRepository.update(id, {
+      currentJobOrderId: dto.jobOrderId ?? null,
+    });
+
+    this.logger.log(
+      dto.jobOrderId
+        ? `설비 작업지시 할당: ${equip.equipCode} → ${dto.jobOrderId}`
+        : `설비 작업지시 해제: ${equip.equipCode}`,
+    );
+
+    return this.findById(id);
   }
 }
