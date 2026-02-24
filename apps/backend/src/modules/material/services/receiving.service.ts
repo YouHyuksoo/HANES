@@ -467,7 +467,7 @@ export class ReceivingService {
    * 로직:
    * 1. IQC_AUTO_RECEIVE 설정 확인
    * 2. 각 LOT의 기입고 여부 확인 (재발행 판별)
-   * 3. 기본 창고(isDefault='Y') 조회
+   * 3. 기본 창고(isDefault=1) 조회
    * 4. 미입고 LOT만 createBulkReceive()로 입고 처리
    */
   async autoReceive(lotIds: string[], workerId?: string) {
@@ -479,7 +479,7 @@ export class ReceivingService {
 
     // 2. 기본 창고 조회
     const defaultWarehouse = await this.warehouseRepository.findOne({
-      where: { isDefault: 'Y' },
+      where: { isDefault: 1 },
     });
     if (!defaultWarehouse) {
       return {

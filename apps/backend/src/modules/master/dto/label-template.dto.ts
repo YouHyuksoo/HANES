@@ -40,6 +40,22 @@ export class CreateLabelTemplateDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  @ApiPropertyOptional({ description: 'ZPL 코드 (외부 디자이너에서 만든 코드)' })
+  @IsOptional()
+  @IsString()
+  zplCode?: string;
+
+  @ApiPropertyOptional({ description: '인쇄 모드', enum: ['BROWSER', 'ZPL', 'BOTH'], default: 'BROWSER' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['BROWSER', 'ZPL', 'BOTH'])
+  printMode?: string;
+
+  @ApiPropertyOptional({ description: '기본 프린터 ID' })
+  @IsOptional()
+  @IsString()
+  printerId?: string;
 }
 
 export class UpdateLabelTemplateDto extends PartialType(CreateLabelTemplateDto) {}

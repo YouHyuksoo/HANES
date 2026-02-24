@@ -1144,7 +1144,15 @@
       "overwrite": "用当前设计覆盖",
       "delete": "删除",
       "templateNamePlaceholder": "输入模板名称",
-      "noTemplates": "没有已保存的模板"
+      "noTemplates": "没有已保存的模板",
+      "zplCode": "ZPL 代码",
+      "zplCodePlaceholder": "请粘贴 ^XA ... ^XZ 格式的 ZPL 代码",
+      "zplPreview": "ZPL 预览",
+      "printModeLabel": "打印模式",
+      "printModeBrowser": "浏览器打印",
+      "printModeZpl": "ZPL 打印",
+      "printModeBoth": "同时（浏览器+ZPL）",
+      "variableHelper": "变量助手（点击插入）"
     },
     "company": {
       "title": "公司管理",
@@ -1191,6 +1199,7 @@
     }
   },
   "material": {
+    "issueAccount": "出库账户",
     "col": {
       "arrivalNo": "入库编号",
       "arrivalDate": "入库日期",
@@ -1362,6 +1371,16 @@
         "selectedLots": "已选LOT",
         "selectedLabels": "发行标签数"
       },
+      "printMethod": "打印方式",
+      "printMethodBrowser": "浏览器打印",
+      "printMethodZplUsb": "ZPL USB (Zebra)",
+      "printMethodZplTcp": "ZPL TCP (网络)",
+      "selectPrinter": "选择打印机",
+      "agentConnected": "已连接",
+      "agentDisconnected": "未连接",
+      "agentNotInstalled": "Zebra代理未安装",
+      "zplSendSuccess": "ZPL发送完成（{{count}}张）",
+      "zplSendFailed": "ZPL发送失败",
       "autoReceive": {
         "success": "自动入库完成：{{count}}批次已入库至默认仓库（{{warehouse}}）",
         "skipped": "{{count}}批次重新打印已跳过",
@@ -1369,6 +1388,18 @@
         "failed": "自动入库处理中发生错误",
         "enabledBanner": "自动入库已启用 — 打印标签时自动入库至默认仓库",
         "disabledBanner": "自动入库已关闭 — 打印标签后需手动批量入库"
+      },
+      "history": {
+        "title": "发行记录",
+        "printedAt": "发行时间",
+        "printMode": "打印方式",
+        "labelCount": "数量",
+        "printerName": "打印机名",
+        "status": "状态",
+        "workerId": "发行人",
+        "today": "今天",
+        "days7": "7天",
+        "days30": "30天"
       }
     },
     "request": {

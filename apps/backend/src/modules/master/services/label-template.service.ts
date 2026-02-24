@@ -93,6 +93,9 @@ export class LabelTemplateService {
       category: dto.category,
       isDefault: dto.isDefault,
       remark: dto.remark,
+      zplCode: dto.zplCode,
+      printMode: dto.printMode,
+      printerId: dto.printerId,
     };
     
     if (dto.designData) {

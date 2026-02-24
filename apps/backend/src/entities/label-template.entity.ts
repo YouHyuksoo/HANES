@@ -31,6 +31,15 @@ export class LabelTemplate {
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
+  @Column({ name: 'ZPL_CODE', type: 'clob', nullable: true })
+  zplCode: string | null;
+
+  @Column({ name: 'PRINT_MODE', length: 20, default: 'BROWSER' })
+  printMode: string;
+
+  @Column({ name: 'PRINTER_ID', length: 36, nullable: true })
+  printerId: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

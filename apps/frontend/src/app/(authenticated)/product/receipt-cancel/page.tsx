@@ -63,7 +63,7 @@ export default function ProductReceiptCancelPage() {
       if (startDate) params.dateFrom = startDate;
       if (endDate) params.dateTo = endDate;
       const res = await api.get("/inventory/product/transactions", { params });
-      setData(res.data ?? []);
+      setData(Array.isArray(res.data) ? res.data : []);
     } catch {
       setData([]);
     } finally {

@@ -1145,7 +1145,15 @@
       "overwrite": "Ghi đè bằng thiết kế hiện tại",
       "delete": "Xóa",
       "templateNamePlaceholder": "Nhập tên mẫu",
-      "noTemplates": "Không có mẫu đã lưu"
+      "noTemplates": "Không có mẫu đã lưu",
+      "zplCode": "Mã ZPL",
+      "zplCodePlaceholder": "Dán mã ZPL dạng ^XA ... ^XZ",
+      "zplPreview": "Xem trước ZPL",
+      "printModeLabel": "Chế độ in",
+      "printModeBrowser": "In trình duyệt",
+      "printModeZpl": "In ZPL",
+      "printModeBoth": "Cả hai (Trình duyệt+ZPL)",
+      "variableHelper": "Trợ giúp biến (nhấp để chèn)"
     },
     "company": {
       "title": "Quản lý công ty",
@@ -1192,6 +1200,7 @@
     }
   },
   "material": {
+    "issueAccount": "Tài khoản xuất kho",
     "col": {
       "arrivalNo": "Mã nhập hàng",
       "arrivalDate": "Ngày nhập",
@@ -1363,6 +1372,16 @@
         "selectedLots": "LOT đã chọn",
         "selectedLabels": "Nhãn phát hành"
       },
+      "printMethod": "Phương thức in",
+      "printMethodBrowser": "In trình duyệt",
+      "printMethodZplUsb": "ZPL USB (Zebra)",
+      "printMethodZplTcp": "ZPL TCP (Mạng)",
+      "selectPrinter": "Chọn máy in",
+      "agentConnected": "Đã kết nối",
+      "agentDisconnected": "Chưa kết nối",
+      "agentNotInstalled": "Chưa cài đặt Zebra agent",
+      "zplSendSuccess": "Gửi ZPL thành công ({{count}} nhãn)",
+      "zplSendFailed": "Gửi ZPL thất bại",
       "autoReceive": {
         "success": "Nhập kho tự động hoàn tất: {{count}} lô đã nhập vào kho mặc định ({{warehouse}})",
         "skipped": "{{count}} lô in lại đã bỏ qua",
@@ -1370,6 +1389,18 @@
         "failed": "Lỗi xảy ra trong quá trình nhập kho tự động",
         "enabledBanner": "Nhập kho tự động BẬT — Hàng sẽ tự động nhập kho mặc định khi in nhãn",
         "disabledBanner": "Nhập kho tự động TẮT — Cần nhập kho hàng loạt thủ công sau khi in nhãn"
+      },
+      "history": {
+        "title": "Lịch sử phát hành",
+        "printedAt": "Thời gian phát hành",
+        "printMode": "Phương thức in",
+        "labelCount": "Số lượng",
+        "printerName": "Tên máy in",
+        "status": "Trạng thái",
+        "workerId": "Người phát hành",
+        "today": "Hôm nay",
+        "days7": "7 ngày",
+        "days30": "30 ngày"
       }
     },
     "request": {

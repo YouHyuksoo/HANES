@@ -190,9 +190,8 @@ export default function ManualIssueTab() {
                     fullWidth
                   />
                 </div>
-                <div className="w-44 flex-shrink-0">
+                <div className="w-40 flex-shrink-0">
                   <Select
-                    label={t('material.issueAccount')}
                     options={issueTypeOptions}
                     value={issueType}
                     onChange={setIssueType}

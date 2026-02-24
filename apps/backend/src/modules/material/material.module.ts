@@ -41,6 +41,8 @@ import { JobOrder } from '../../entities/job-order.entity';
 import { IqcLog } from '../../entities/iqc-log.entity';
 import { MatIssueRequest } from '../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../entities/mat-issue-request-item.entity';
+import { LabelTemplate } from '../../entities/label-template.entity';
+import { LabelPrintLog } from '../../entities/label-print-log.entity';
 
 // 기존 컨트롤러/서비스
 import { MatLotController } from './controllers/mat-lot.controller';
@@ -81,6 +83,8 @@ import { ReceivingController } from './controllers/receiving.controller';
 import { ReceivingService } from './services/receiving.service';
 import { IssueRequestController } from './controllers/issue-request.controller';
 import { IssueRequestService } from './services/issue-request.service';
+import { LabelPrintController } from './controllers/label-print.controller';
+import { LabelPrintService } from './services/label-print.service';
 
 @Module({
   imports: [
@@ -103,6 +107,8 @@ import { IssueRequestService } from './services/issue-request.service';
       IqcLog,
       MatIssueRequest,
       MatIssueRequestItem,
+      LabelTemplate,
+      LabelPrintLog,
     ]),
   ],
   controllers: [
@@ -124,6 +130,7 @@ import { IssueRequestService } from './services/issue-request.service';
     ArrivalController,
     ReceivingController,
     IssueRequestController,
+    LabelPrintController,
   ],
   providers: [
     MatLotService,
@@ -144,6 +151,7 @@ import { IssueRequestService } from './services/issue-request.service';
     ArrivalService,
     ReceivingService,
     IssueRequestService,
+    LabelPrintService,
   ],
   exports: [
     MatLotService,

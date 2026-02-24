@@ -20,6 +20,9 @@ export interface LabelTemplateItem {
   isDefault: boolean;
   remark?: string;
   updatedAt: string;
+  zplCode?: string;
+  printMode?: string;
+  printerId?: string;
 }
 
 const BASE = "/master/label-templates";
@@ -44,12 +47,13 @@ export function useLabelTemplates() {
 
   /** 새 템플릿 저장 */
   const save = useCallback(
-    async (name: string, category: LabelCategory, design: LabelDesign, isDefault = false) => {
+    async (name: string, category: LabelCategory, design: LabelDesign, isDefault = false, extras?: { zplCode?: string; printMode?: string }) => {
       const res = await api.post(BASE, {
         templateName: name,
         category,
         designData: design,
         isDefault,
+        ...extras,
       });
       return res.data?.data as LabelTemplateItem;
     },
@@ -58,7 +62,7 @@ export function useLabelTemplates() {
 
   /** 기존 템플릿 덮어쓰기 */
   const update = useCallback(
-    async (id: string, design: LabelDesign, extras?: { templateName?: string; isDefault?: boolean }) => {
+    async (id: string, design: LabelDesign, extras?: { templateName?: string; isDefault?: boolean; zplCode?: string; printMode?: string }) => {
       const res = await api.put(`${BASE}/${id}`, {
         designData: design,
         ...extras,

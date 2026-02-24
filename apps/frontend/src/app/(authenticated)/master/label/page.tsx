@@ -19,6 +19,7 @@ import LabelCanvas from "./components/LabelCanvas";
 import LabelPreview from "./components/LabelPreview";
 import TemplateManager from "./components/TemplateManager";
 import LabelGrid from "./components/LabelGrid";
+import ZplEditor from "./components/ZplEditor";
 import { LabelCategory, LabelItem, LabelDesign, DEFAULT_DESIGN, MAT_LOT_DEFAULT_DESIGN } from "./types";
 import { api } from "@/services/api";
 
@@ -84,6 +85,9 @@ function LabelPage() {
   const [design, setDesign] = useState<LabelDesign>(DEFAULT_DESIGN);
   const [items, setItems] = useState<LabelItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [designMode, setDesignMode] = useState<'designer' | 'zpl'>('designer');
+  const [zplCode, setZplCode] = useState('');
+  const [printMode, setPrintMode] = useState('BROWSER');
 
   /** 카테고리 변경 시 API 데이터 로드 */
   const fetchItems = useCallback(async (cat: LabelCategory) => {
@@ -163,16 +167,53 @@ function LabelPage() {
 
         {/* 중앙: 디자인 설정 + 템플릿 관리 */}
         <div className="col-span-4 space-y-4 overflow-y-auto min-h-0">
-          <Card><CardContent>
-            <h3 className="text-sm font-semibold text-text flex items-center gap-2 mb-3">
-              <Palette className="w-4 h-4 text-primary" />{t("master.label.designer")}
-            </h3>
-            <LabelDesigner design={design} onChange={setDesign} />
-          </CardContent></Card>
+          {/* 디자인 모드 토글 */}
+          <div className="flex border border-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setDesignMode('designer')}
+              className={`flex-1 px-3 py-1.5 text-sm font-medium transition-colors ${
+                designMode === 'designer'
+                  ? 'bg-primary text-white'
+                  : 'bg-surface text-text-muted hover:text-text'
+              }`}
+            >
+              {t("master.label.designer")}
+            </button>
+            <button
+              onClick={() => setDesignMode('zpl')}
+              className={`flex-1 px-3 py-1.5 text-sm font-medium transition-colors ${
+                designMode === 'zpl'
+                  ? 'bg-primary text-white'
+                  : 'bg-surface text-text-muted hover:text-text'
+              }`}
+            >
+              {t("master.label.zplCode", { defaultValue: "ZPL 코드" })}
+            </button>
+          </div>
 
-          <Card><CardContent>
-            <TemplateManager category={category} design={design} onLoad={setDesign} />
-          </CardContent></Card>
+          {designMode === 'designer' ? (
+            <>
+              <Card><CardContent>
+                <h3 className="text-sm font-semibold text-text flex items-center gap-2 mb-3">
+                  <Palette className="w-4 h-4 text-primary" />{t("master.label.designer")}
+                </h3>
+                <LabelDesigner design={design} onChange={setDesign} />
+              </CardContent></Card>
+
+              <Card><CardContent>
+                <TemplateManager category={category} design={design} onLoad={setDesign} />
+              </CardContent></Card>
+            </>
+          ) : (
+            <Card><CardContent>
+              <ZplEditor
+                zplCode={zplCode}
+                onZplCodeChange={setZplCode}
+                printMode={printMode}
+                onPrintModeChange={setPrintMode}
+              />
+            </CardContent></Card>
+          )}
         </div>
 
         {/* 우측: 미리보기 + 인쇄 */}

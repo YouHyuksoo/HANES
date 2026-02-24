@@ -88,7 +88,7 @@ export class WarehouseService {
       lineCode: dto.lineCode || null,
       processCode: dto.processCode || null,
       vendorId: dto.vendorId || null,
-      isDefault: dto.isDefault ? 'Y' : 'N',
+      isDefault: dto.isDefault ? 1 : 0,
       useYn: 'Y',
     });
 
@@ -113,7 +113,7 @@ export class WarehouseService {
       ...(dto.plantCode !== undefined && { plantCode: dto.plantCode || null }),
       ...(dto.lineCode !== undefined && { lineCode: dto.lineCode || null }),
       ...(dto.processCode !== undefined && { processCode: dto.processCode || null }),
-      ...(dto.isDefault !== undefined && { isDefault: dto.isDefault ? 'Y' : 'N' }),
+      ...(dto.isDefault !== undefined && { isDefault: dto.isDefault ? 1 : 0 }),
       ...(dto.useYn && { useYn: dto.useYn }),
     });
 
@@ -153,7 +153,7 @@ export class WarehouseService {
     return this.warehouseRepository.findOne({
       where: {
         warehouseType,
-        isDefault: 'Y',
+        isDefault: 1,
         useYn: 'Y',
       },
     });
@@ -177,7 +177,7 @@ export class WarehouseService {
         lineCode,
         processCode,
         useYn: 'Y',
-        isDefault: 'N',
+        isDefault: 0,
       });
 
       warehouse = await this.warehouseRepository.save(warehouse);
@@ -203,7 +203,7 @@ export class WarehouseService {
         warehouseType: 'SUBCON',
         vendorId,
         useYn: 'Y',
-        isDefault: 'N',
+        isDefault: 0,
       });
 
       warehouse = await this.warehouseRepository.save(warehouse);
@@ -245,8 +245,10 @@ export class WarehouseService {
           warehouseCode: wh.code,
           warehouseName: wh.name,
           warehouseType: wh.type,
-          isDefault: wh.isDefault ? 'Y' : 'N',
+          isDefault: wh.isDefault ? 1 : 0,
           useYn: 'Y',
+          company: '40',
+          plant: '1000',
         });
 
         const saved = await this.warehouseRepository.save(warehouse) as Warehouse;

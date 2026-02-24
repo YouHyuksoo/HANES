@@ -1206,7 +1206,15 @@
       "overwrite": "현재 디자인으로 덮어쓰기",
       "delete": "삭제",
       "templateNamePlaceholder": "템플릿 이름 입력",
-      "noTemplates": "저장된 템플릿이 없습니다"
+      "noTemplates": "저장된 템플릿이 없습니다",
+      "zplCode": "ZPL 코드",
+      "zplCodePlaceholder": "^XA ... ^XZ 형태의 ZPL 코드를 붙여넣으세요",
+      "zplPreview": "ZPL 미리보기",
+      "printModeLabel": "인쇄 모드",
+      "printModeBrowser": "브라우저 인쇄",
+      "printModeZpl": "ZPL 인쇄",
+      "printModeBoth": "병행(브라우저+ZPL)",
+      "variableHelper": "변수 도우미 (클릭하여 삽입)"
     },
     "company": {
       "title": "회사관리",
@@ -1253,6 +1261,7 @@
     }
   },
   "material": {
+    "issueAccount": "출고계정",
     "col": {
       "arrivalNo": "입하번호",
       "arrivalDate": "입하일",
@@ -1424,6 +1433,16 @@
         "selectedLots": "선택 LOT",
         "selectedLabels": "발행 라벨수"
       },
+      "printMethod": "출력 방식",
+      "printMethodBrowser": "브라우저 인쇄",
+      "printMethodZplUsb": "ZPL USB (Zebra)",
+      "printMethodZplTcp": "ZPL TCP (네트워크)",
+      "selectPrinter": "프린터 선택",
+      "agentConnected": "연결됨",
+      "agentDisconnected": "미연결",
+      "agentNotInstalled": "Zebra 에이전트 미설치",
+      "zplSendSuccess": "ZPL 전송 완료 ({{count}}건)",
+      "zplSendFailed": "ZPL 전송 실패",
       "autoReceive": {
         "success": "자동입고 완료: {{count}}건이 기본창고({{warehouse}})에 입고되었습니다",
         "skipped": "재발행 {{count}}건은 입고를 건너뛰었습니다",
@@ -1431,6 +1450,18 @@
         "failed": "자동입고 처리 중 오류가 발생했습니다",
         "enabledBanner": "자동입고 활성 — 라벨 발행 시 기본창고에 자동 입고됩니다",
         "disabledBanner": "자동입고 비활성 — 라벨 발행 후 수동 일괄입고가 필요합니다"
+      },
+      "history": {
+        "title": "발행 이력",
+        "printedAt": "발행일시",
+        "printMode": "출력방식",
+        "labelCount": "매수",
+        "printerName": "프린터명",
+        "status": "상태",
+        "workerId": "발행자",
+        "today": "오늘",
+        "days7": "7일",
+        "days30": "30일"
       }
     },
     "request": {

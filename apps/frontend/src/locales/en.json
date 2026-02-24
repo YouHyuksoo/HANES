@@ -1144,7 +1144,15 @@
       "overwrite": "Overwrite with current design",
       "delete": "Delete",
       "templateNamePlaceholder": "Enter template name",
-      "noTemplates": "No saved templates"
+      "noTemplates": "No saved templates",
+      "zplCode": "ZPL Code",
+      "zplCodePlaceholder": "Paste ZPL code in ^XA ... ^XZ format",
+      "zplPreview": "ZPL Preview",
+      "printModeLabel": "Print Mode",
+      "printModeBrowser": "Browser Print",
+      "printModeZpl": "ZPL Print",
+      "printModeBoth": "Both (Browser+ZPL)",
+      "variableHelper": "Variable Helper (click to insert)"
     },
     "company": {
       "title": "Company Master",
@@ -1191,6 +1199,7 @@
     }
   },
   "material": {
+    "issueAccount": "Issue Account",
     "col": {
       "arrivalNo": "Arrival No.",
       "arrivalDate": "Arrival Date",
@@ -1362,6 +1371,16 @@
         "selectedLots": "Selected LOTs",
         "selectedLabels": "Labels to Print"
       },
+      "printMethod": "Print Method",
+      "printMethodBrowser": "Browser Print",
+      "printMethodZplUsb": "ZPL USB (Zebra)",
+      "printMethodZplTcp": "ZPL TCP (Network)",
+      "selectPrinter": "Select Printer",
+      "agentConnected": "Connected",
+      "agentDisconnected": "Disconnected",
+      "agentNotInstalled": "Zebra agent not installed",
+      "zplSendSuccess": "ZPL sent successfully ({{count}} label(s))",
+      "zplSendFailed": "ZPL send failed",
       "autoReceive": {
         "success": "Auto receiving complete: {{count}} lot(s) received to default warehouse ({{warehouse}})",
         "skipped": "{{count}} reprint lot(s) skipped",
@@ -1369,6 +1388,18 @@
         "failed": "Error occurred during auto receiving",
         "enabledBanner": "Auto Receive ON — Items will be auto-received to default warehouse on label print",
         "disabledBanner": "Auto Receive OFF — Manual bulk receiving is required after label print"
+      },
+      "history": {
+        "title": "Print History",
+        "printedAt": "Printed At",
+        "printMode": "Print Mode",
+        "labelCount": "Labels",
+        "printerName": "Printer",
+        "status": "Status",
+        "workerId": "Printed By",
+        "today": "Today",
+        "days7": "7 Days",
+        "days30": "30 Days"
       }
     },
     "request": {
