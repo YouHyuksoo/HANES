@@ -15,7 +15,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   OneToMany,
   Index,
   AfterLoad,
@@ -89,9 +88,6 @@ export class PmWorkOrder {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   @OneToMany(() => PmWoResult, (result) => result.workOrder, { cascade: true })
   results: PmWoResult[];

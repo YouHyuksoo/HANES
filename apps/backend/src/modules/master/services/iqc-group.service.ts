@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Not } from 'typeorm';
+import { Repository } from 'typeorm';
 import { IqcGroup } from '../../../entities/iqc-group.entity';
 import { IqcGroupItem } from '../../../entities/iqc-group-item.entity';
 import { CreateIqcGroupDto, UpdateIqcGroupDto, IqcGroupQueryDto } from '../dto/iqc-group.dto';
@@ -28,8 +28,7 @@ export class IqcGroupService {
     const { page = 1, limit = 10, search, inspectMethod, useYn } = query;
 
     const qb = this.groupRepo.createQueryBuilder('g')
-      .leftJoinAndSelect('g.items', 'gi')
-      .where('g.deletedAt IS NULL');
+      .leftJoinAndSelect('g.items', 'gi');
 
     if (company) {
       qb.andWhere('g.company = :company', { company });
@@ -64,7 +63,7 @@ export class IqcGroupService {
 
   async findById(id: string) {
     const group = await this.groupRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['items'],
     });
 
@@ -77,7 +76,7 @@ export class IqcGroupService {
 
   async create(dto: CreateIqcGroupDto) {
     const exists = await this.groupRepo.findOne({
-      where: { groupCode: dto.groupCode, deletedAt: IsNull() },
+      where: { groupCode: dto.groupCode },
     });
     if (exists) {
       throw new ConflictException(`그룹코드 ${dto.groupCode}가 이미 존재합니다.`);
@@ -112,7 +111,7 @@ export class IqcGroupService {
 
     if (dto.groupCode && dto.groupCode !== group.groupCode) {
       const exists = await this.groupRepo.findOne({
-        where: { groupCode: dto.groupCode, deletedAt: IsNull() },
+        where: { groupCode: dto.groupCode },
       });
       if (exists) {
         throw new ConflictException(`그룹코드 ${dto.groupCode}가 이미 존재합니다.`);
@@ -150,7 +149,7 @@ export class IqcGroupService {
 
   async delete(id: string) {
     const group = await this.findById(id);
-    await this.groupRepo.softRemove(group);
+    await this.groupRepo.remove(group);
     return { id, deleted: true };
   }
 }

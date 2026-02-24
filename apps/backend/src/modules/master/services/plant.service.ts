@@ -22,7 +22,6 @@ export class PlantService {
 
     const queryBuilder = this.plantRepository.createQueryBuilder('plant')
       .leftJoinAndSelect('plant.parent', 'parent')
-      .where('plant.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('plant.company = :company', { company });
@@ -62,7 +61,7 @@ export class PlantService {
 
   async findById(id: string) {
     const plant = await this.plantRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['parent', 'children'],
     });
 
@@ -71,7 +70,7 @@ export class PlantService {
   }
 
   async findHierarchy(rootId?: string) {
-    const where: any = { deletedAt: IsNull() };
+    const where: any = {};
     if (rootId) {
       where.id = rootId;
     } else {
@@ -92,7 +91,6 @@ export class PlantService {
         shopCode: dto.shopCode ?? IsNull(),
         lineCode: dto.lineCode ?? IsNull(),
         cellCode: dto.cellCode ?? IsNull(),
-        deletedAt: IsNull(),
       },
     });
 
@@ -122,17 +120,17 @@ export class PlantService {
   async delete(id: string) {
     await this.findById(id);
     const childCount = await this.plantRepository.count({
-      where: { parentId: id, deletedAt: IsNull() },
+      where: { parentId: id },
     });
     if (childCount > 0) throw new ConflictException(`하위 항목이 존재합니다`);
     
-    await this.plantRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.plantRepository.delete(id);
+    return { id };
   }
 
   async findByType(plantType: string) {
     return this.plantRepository.find({
-      where: { plantType, useYn: 'Y', deletedAt: IsNull() },
+      where: { plantType, useYn: 'Y' },
       order: { sortOrder: 'asc' },
     });
   }

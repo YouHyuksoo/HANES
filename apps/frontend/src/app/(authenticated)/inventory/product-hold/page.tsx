@@ -122,6 +122,7 @@ export default function ProductHoldPage() {
     },
     {
       accessorKey: "partType", header: t("productHold.partType"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="PART_TYPE" code={getValue() as string} />
       ),
@@ -132,13 +133,14 @@ export default function ProductHoldPage() {
     },
     {
       accessorKey: "lotId", header: t("productHold.lotId"), size: 130,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (
         <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>
       ),
     },
     {
       accessorKey: "qty", header: t("productHold.qty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
         <span className="font-semibold">
           {row.original.qty?.toLocaleString()} {row.original.unit || ""}
@@ -147,6 +149,7 @@ export default function ProductHoldPage() {
     },
     {
       accessorKey: "status", header: t("common.status"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return (
@@ -158,12 +161,14 @@ export default function ProductHoldPage() {
     },
     {
       accessorKey: "holdReason", header: t("productHold.holdReason"), size: 160,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (
         <span className="text-sm text-text-muted">{(getValue() as string) || "-"}</span>
       ),
     },
     {
       id: "actions", header: "", size: 100,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const isHold = row.original.status === "HOLD";
         return (

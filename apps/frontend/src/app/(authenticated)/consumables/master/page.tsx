@@ -117,30 +117,34 @@ function ConsumableMasterPage() {
   /* 컬럼 정의 */
   const columns = useMemo<ColumnDef<ConsumableItem>[]>(
     () => [
-      { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 120 },
-      { accessorKey: "consumableName", header: t("consumables.master.name"), size: 170 },
+      { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 120, meta: { filterType: "text" as const } },
+      { accessorKey: "consumableName", header: t("consumables.master.name"), size: 170, meta: { filterType: "text" as const } },
       {
         accessorKey: "category",
         header: t("consumables.master.category"),
         size: 80,
+        meta: { filterType: "multi" as const },
         cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />,
       },
       {
         accessorKey: "currentCount",
         header: t("consumables.master.currentCount"),
         size: 100,
+        meta: { filterType: "number" as const },
         cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
       },
       {
         accessorKey: "expectedLife",
         header: t("consumables.master.expectedLife"),
         size: 100,
+        meta: { filterType: "number" as const },
         cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
       },
       {
         id: "lifePercentage",
         header: t("consumables.master.life"),
         size: 130,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => {
           const { currentCount, expectedLife } = row.original;
           if (!expectedLife) return "-";
@@ -156,18 +160,20 @@ function ConsumableMasterPage() {
           );
         },
       },
-      { accessorKey: "location", header: t("consumables.master.location"), size: 110 },
-      { accessorKey: "vendor", header: t("consumables.master.vendor"), size: 100 },
+      { accessorKey: "location", header: t("consumables.master.location"), size: 110, meta: { filterType: "text" as const } },
+      { accessorKey: "vendor", header: t("consumables.master.vendor"), size: 100, meta: { filterType: "text" as const } },
       {
         accessorKey: "status",
         header: t("common.status"),
         size: 90,
+        meta: { filterType: "multi" as const },
         cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} />,
       },
       {
         id: "actions",
         header: t("common.manage"),
         size: 90,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => (
           <div className="flex gap-1">
             <button
@@ -218,6 +224,7 @@ function ConsumableMasterPage() {
             data={data}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             exportFileName={t("consumables.master.title")}
             toolbarLeft={

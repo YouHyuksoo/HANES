@@ -153,25 +153,28 @@ function DepartmentPage() {
 
   const columns = useMemo<ColumnDef<Department>[]>(
     () => [
-      { accessorKey: "deptCode", header: t("system.department.deptCode"), size: 120 },
-      { accessorKey: "deptName", header: t("system.department.deptName"), size: 180 },
+      { accessorKey: "deptCode", header: t("system.department.deptCode"), size: 120, meta: { filterType: "text" as const } },
+      { accessorKey: "deptName", header: t("system.department.deptName"), size: 180, meta: { filterType: "text" as const } },
       {
         accessorKey: "parentDeptCode",
         header: t("system.department.parentDeptCode"),
         size: 120,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => getValue() || "-",
       },
-      { accessorKey: "sortOrder", header: t("system.department.sortOrder"), size: 80 },
+      { accessorKey: "sortOrder", header: t("system.department.sortOrder"), size: 80, meta: { filterType: "number" as const } },
       {
         accessorKey: "managerName",
         header: t("system.department.managerName"),
         size: 120,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => getValue() || "-",
       },
       {
         accessorKey: "useYn",
         header: t("system.department.useYn"),
         size: 80,
+        meta: { filterType: "multi" as const },
         cell: ({ getValue }) => {
           const v = getValue() as string;
           return (
@@ -191,12 +194,14 @@ function DepartmentPage() {
         accessorKey: "remark",
         header: t("system.department.remark"),
         size: 200,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => getValue() || "-",
       },
       {
         id: "actions",
         header: t("common.actions"),
         size: 100,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => (
           <div className="flex gap-1">
             <button onClick={() => openEditModal(row.original)} className="p-1 hover:bg-surface rounded">
@@ -240,6 +245,7 @@ function DepartmentPage() {
             isLoading={loading}
             emptyMessage={t("system.department.emptyMessage")}
             enableExport
+            enableColumnFilter
             exportFileName={t("system.department.title")}
             toolbarLeft={
               <Input

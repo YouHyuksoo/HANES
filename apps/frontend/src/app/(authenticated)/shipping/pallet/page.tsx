@@ -135,13 +135,13 @@ export default function PalletPage() {
 
   const columns = useMemo<ColumnDef<Pallet>[]>(() => [
     { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 100, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
+    { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
     { accessorKey: "shipmentNo", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140 },
+    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
     {
-      id: "actions", header: t("common.actions"), size: 120,
+      id: "actions", header: t("common.actions"), size: 120, meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const pallet = row.original;
         return (

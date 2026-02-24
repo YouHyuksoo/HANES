@@ -152,14 +152,14 @@ export default function ShipmentPage() {
 
   const columns = useMemo<ColumnDef<Shipment>[]>(() => [
     { accessorKey: 'shipNo', header: t('shipping.confirm.shipmentNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'shipDate', header: t('shipping.confirm.shipDate'), size: 100 },
+    { accessorKey: 'shipDate', header: t('shipping.confirm.shipDate'), size: 100, meta: { filterType: 'date' as const } },
     { accessorKey: 'customer', header: t('shipping.confirm.customer'), size: 120, meta: { filterType: 'text' as const } },
-    { accessorKey: 'palletCount', header: t('shipping.confirm.pallet'), size: 80, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: 'boxCount', header: t('shipping.confirm.box'), size: 80, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: 'totalQty', header: t('common.totalQty'), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'status', header: t('common.status'), size: 100, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
-    { accessorKey: 'vehicleNo', header: t('shipping.confirm.vehicleNo'), size: 100 },
-    { id: 'actions', header: '', size: 130, cell: ({ row }) => {
+    { accessorKey: 'palletCount', header: t('shipping.confirm.pallet'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: 'boxCount', header: t('shipping.confirm.box'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: 'totalQty', header: t('common.totalQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'status', header: t('common.status'), size: 100, meta: { filterType: 'multi' as const }, cell: ({ getValue }) => <ShipmentStatusBadge status={getValue() as ShipmentStatus} /> },
+    { accessorKey: 'vehicleNo', header: t('shipping.confirm.vehicleNo'), size: 100, meta: { filterType: 'text' as const } },
+    { id: 'actions', header: '', size: 130, meta: { filterType: 'none' as const }, cell: ({ row }) => {
       const s = row.original;
       const canCancel = s.status === 'PREPARING' || s.status === 'LOADED';
       return (

@@ -29,31 +29,31 @@ interface IssueTableProps {
 export default function IssueTable({ data, onApprove, onReject, onProcess }: IssueTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IssueRecord>[]>(() => [
-    { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 150 },
-    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100 },
+    { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100, meta: { filterType: 'date' as const } },
     {
-      accessorKey: 'workOrderNo', header: t('material.col.workOrder'), size: 150,
+      accessorKey: 'workOrderNo', header: t('material.col.workOrder'), size: 150, meta: { filterType: 'text' as const },
       cell: ({ getValue }) => (
         <span className="text-primary font-medium">{getValue() as string}</span>
       ),
     },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100 },
-    { accessorKey: 'partName', header: t('common.partName'), size: 120 },
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('common.partName'), size: 120, meta: { filterType: 'text' as const } },
     {
-      accessorKey: 'requestQty', header: t('material.col.requestQty'), size: 90,
+      accessorKey: 'requestQty', header: t('material.col.requestQty'), size: 90, meta: { filterType: 'number' as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
-      accessorKey: 'issuedQty', header: t('material.col.issuedQty'), size: 90,
+      accessorKey: 'issuedQty', header: t('material.col.issuedQty'), size: 90, meta: { filterType: 'number' as const },
       cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span>,
     },
     {
-      accessorKey: 'status', header: t('common.status'), size: 90,
+      accessorKey: 'status', header: t('common.status'), size: 90, meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => <IssueStatusBadge status={getValue() as IssueStatus} />,
     },
-    { accessorKey: 'requester', header: t('material.col.requester'), size: 80 },
+    { accessorKey: 'requester', header: t('material.col.requester'), size: 80, meta: { filterType: 'text' as const } },
     {
-      id: 'actions', header: t('material.col.actions'), size: 110,
+      id: 'actions', header: t('material.col.actions'), size: 110, meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const record = row.original;
         return (
@@ -91,5 +91,5 @@ export default function IssueTable({ data, onApprove, onReject, onProcess }: Iss
     },
   ], [onApprove, onReject, onProcess, t]);
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter />;
 }

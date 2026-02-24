@@ -55,7 +55,6 @@ export class OqcService {
     const qb = this.oqcRequestRepo
       .createQueryBuilder('oqc')
       .leftJoinAndMapOne('oqc.part', PartMaster, 'part', 'oqc.partId = part.id')
-      .where('oqc.deletedAt IS NULL');
 
     if (company) qb.andWhere('oqc.company = :company', { company });
     if (status) qb.andWhere('oqc.status = :status', { status });
@@ -81,7 +80,7 @@ export class OqcService {
   /** 상세 조회 (의뢰 + 연결 박스 목록) */
   async findById(id: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['boxes'],
     });
 
@@ -101,7 +100,7 @@ export class OqcService {
 
     // 1. 박스 유효성: status=CLOSED + oqcStatus IS NULL
     const boxes = await this.boxRepo.find({
-      where: { id: In(boxIds), deletedAt: IsNull() },
+      where: { id: In(boxIds) },
     });
 
     if (boxes.length !== boxIds.length) {
@@ -187,7 +186,7 @@ export class OqcService {
   /** 검사 실행 — 판정(PASS/FAIL), 샘플 표시, oqcStatus 일괄 업데이트 */
   async executeInspection(id: string, dto: ExecuteOqcInspectionDto, updatedBy?: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['boxes'],
     });
 
@@ -246,7 +245,7 @@ export class OqcService {
   /** 결과 수정 (판정 후 보정) */
   async updateResult(id: string, dto: UpdateOqcResultDto, updatedBy?: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['boxes'],
     });
 
@@ -297,7 +296,6 @@ export class OqcService {
       .leftJoinAndMapOne('box.part', PartMaster, 'part', 'box.partId = part.id')
       .where('box.status = :status', { status: 'CLOSED' })
       .andWhere('box.oqcStatus IS NULL')
-      .andWhere('box.deletedAt IS NULL');
 
     if (partId) qb.andWhere('box.partId = :partId', { partId });
     if (company) qb.andWhere('box.company = :company', { company });
@@ -311,7 +309,6 @@ export class OqcService {
   async getStats(company?: string) {
     const qb = this.oqcRequestRepo
       .createQueryBuilder('oqc')
-      .where('oqc.deletedAt IS NULL');
 
     if (company) qb.andWhere('oqc.company = :company', { company });
 

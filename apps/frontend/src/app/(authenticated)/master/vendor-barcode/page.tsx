@@ -126,7 +126,7 @@ export default function VendorBarcodeMappingPage() {
     { accessorKey: "vendorName", header: t("master.vendorBarcode.vendorName", "제조사명"), size: 120 },
     {
       accessorKey: "matchType", header: t("master.vendorBarcode.matchType", "매칭유형"), size: 90,
-      meta: { filterType: "select" as const, filterOptions: MATCH_TYPE_OPTIONS.map(o => ({ value: o.value, label: o.label })) },
+      meta: { filterType: "multi" as const, filterOptions: MATCH_TYPE_OPTIONS.map(o => ({ value: o.value, label: o.label })) },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return <span className={`px-2 py-0.5 text-xs rounded-full ${MATCH_TYPE_COLORS[v] ?? ""}`}>{v}</span>;
@@ -135,7 +135,7 @@ export default function VendorBarcodeMappingPage() {
     { accessorKey: "mappingRule", header: t("master.vendorBarcode.mappingRule", "매핑규칙"), size: 150 },
     {
       accessorKey: "useYn", header: t("master.vendorBarcode.useYn", "사용"), size: 50,
-      meta: { filterType: "select" as const, filterOptions: [{ value: "Y", label: "Y" }, { value: "N", label: "N" }] },
+      meta: { filterType: "multi" as const, filterOptions: [{ value: "Y", label: "Y" }, { value: "N", label: "N" }] },
       cell: ({ getValue }) => (
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),

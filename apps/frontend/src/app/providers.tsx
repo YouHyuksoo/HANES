@@ -30,23 +30,33 @@ const queryClient = new QueryClient({
   },
 });
 
-/** 테마 Effect - HTML 클래스 자동 적용 */
+/** 테마 Effect - HTML 클래스 + 컬러 테마 자동 적용 */
 function ThemeEffect() {
-  const { theme, setTheme, _resolveTheme } = useThemeStore();
+  const { theme, colorTheme, setTheme, _resolveTheme } = useThemeStore();
 
   // 초기 테마 설정 및 HTML 클래스 적용
   useEffect(() => {
     const resolved = _resolveTheme(theme);
     const root = document.documentElement;
-    
+
     root.classList.remove("light", "dark");
     root.classList.add(resolved);
-    
+
     // store의 resolvedTheme 동기화
     if (useThemeStore.getState().resolvedTheme !== resolved) {
       useThemeStore.setState({ resolvedTheme: resolved });
     }
   }, [theme, _resolveTheme]);
+
+  // 컬러 테마 적용
+  useEffect(() => {
+    const root = document.documentElement;
+    if (colorTheme === "default") {
+      root.removeAttribute("data-color-theme");
+    } else {
+      root.setAttribute("data-color-theme", colorTheme);
+    }
+  }, [colorTheme]);
 
   // system 모드일 때 OS 테마 변경 감지
   useEffect(() => {

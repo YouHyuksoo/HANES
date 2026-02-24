@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
@@ -69,7 +69,6 @@ export class ShipReturnService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(status && { status }),
@@ -120,7 +119,7 @@ export class ShipReturnService {
   /** 반품 단건 조회 */
   async findById(id: string) {
     const ret = await this.shipReturnRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!ret) throw new NotFoundException(`반품을 찾을 수 없습니다: ${id}`);
@@ -142,7 +141,7 @@ export class ShipReturnService {
   /** 반품 생성 */
   async create(dto: CreateShipReturnDto) {
     const existing = await this.shipReturnRepository.findOne({
-      where: { returnNo: dto.returnNo, deletedAt: IsNull() },
+      where: { returnNo: dto.returnNo },
     });
     if (existing) throw new ConflictException(`이미 존재하는 반품 번호입니다: ${dto.returnNo}`);
 
@@ -235,17 +234,14 @@ export class ShipReturnService {
     }
   }
 
-  /** 반품 삭제 (소프트 삭제) */
+  /** 반품 삭제 */
   async delete(id: string) {
     const ret = await this.findById(id);
     if (ret.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipReturnRepository.update(
-      { id },
-      { deletedAt: new Date() }
-    );
+    await this.shipReturnRepository.delete(id);
 
     return { id, deleted: true };
   }

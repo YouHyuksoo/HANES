@@ -15,7 +15,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import {
   CreateVendorBarcodeMappingDto,
@@ -37,7 +37,6 @@ export class VendorBarcodeMappingService {
 
     const qb = this.repo
       .createQueryBuilder('m')
-      .where('m.deletedAt IS NULL');
 
     if (company) {
       qb.andWhere('m.company = :company', { company });
@@ -73,7 +72,7 @@ export class VendorBarcodeMappingService {
   /** 상세 조회 */
   async findById(id: string) {
     const mapping = await this.repo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!mapping) {
       throw new NotFoundException(`바코드 매핑을 찾을 수 없습니다: ${id}`);
@@ -84,7 +83,7 @@ export class VendorBarcodeMappingService {
   /** 생성 */
   async create(dto: CreateVendorBarcodeMappingDto) {
     const existing = await this.repo.findOne({
-      where: { vendorBarcode: dto.vendorBarcode, deletedAt: IsNull() },
+      where: { vendorBarcode: dto.vendorBarcode },
     });
     if (existing) {
       throw new ConflictException(
@@ -111,8 +110,8 @@ export class VendorBarcodeMappingService {
   /** 삭제 (Soft Delete) */
   async delete(id: string) {
     await this.findById(id);
-    await this.repo.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.repo.delete(id);
+    return { id };
   }
 
   /**
@@ -128,14 +127,13 @@ export class VendorBarcodeMappingService {
         vendorBarcode: barcode,
         matchType: 'EXACT',
         useYn: 'Y',
-        deletedAt: IsNull(),
       },
     });
     if (exact) return { matched: true, mapping: exact, matchMethod: 'EXACT' };
 
     // 2단계: PREFIX 매칭 (DB에서 PREFIX 타입만 로드 후 비교)
     const prefixMappings = await this.repo.find({
-      where: { matchType: 'PREFIX', useYn: 'Y', deletedAt: IsNull() },
+      where: { matchType: 'PREFIX', useYn: 'Y' },
     });
     for (const m of prefixMappings) {
       if (barcode.startsWith(m.vendorBarcode)) {
@@ -145,7 +143,7 @@ export class VendorBarcodeMappingService {
 
     // 3단계: REGEX 매칭
     const regexMappings = await this.repo.find({
-      where: { matchType: 'REGEX', useYn: 'Y', deletedAt: IsNull() },
+      where: { matchType: 'REGEX', useYn: 'Y' },
     });
     for (const m of regexMappings) {
       try {

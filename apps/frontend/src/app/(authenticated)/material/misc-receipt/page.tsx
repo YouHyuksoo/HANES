@@ -141,7 +141,7 @@ export default function MiscReceiptPage() {
     },
     {
       accessorKey: "qty", header: t("material.miscReceipt.qty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
         <span className="text-green-600 dark:text-green-400 font-medium">
           +{row.original.qty.toLocaleString()} {row.original.unit || ""}

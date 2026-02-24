@@ -47,6 +47,7 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
         />
       ),
       size: 40,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <input
           type="checkbox"
@@ -56,21 +57,23 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
         />
       ),
     },
-    { id: 'lotNo', header: t('material.col.lotNo'), size: 150, cell: ({ row }) => row.original.lotNo },
-    { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, cell: ({ row }) => row.original.poNo || '-' },
-    { id: 'partCode', header: t('common.partCode'), size: 100, cell: ({ row }) => row.original.part.partCode },
-    { id: 'partName', header: t('common.partName'), size: 130, cell: ({ row }) => row.original.part.partName },
-    { id: 'vendor', header: t('material.arrival.col.vendor'), size: 100, cell: ({ row }) => row.original.vendor || '-' },
+    { id: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lotNo },
+    { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.poNo || '-' },
+    { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.partCode },
+    { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.partName },
+    { id: 'vendor', header: t('material.arrival.col.vendor'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendor || '-' },
     {
       id: 'initQty',
       header: t('material.receive.col.initQty'),
       size: 80,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => <span>{row.original.initQty.toLocaleString()}</span>,
     },
     {
       id: 'receivedQty',
       header: t('material.receive.col.receivedQty'),
       size: 80,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => (
         <span className="text-blue-600">{row.original.receivedQty.toLocaleString()}</span>
       ),
@@ -79,6 +82,7 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       id: 'remainingQty',
       header: t('material.receive.col.remainingQty'),
       size: 80,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => (
         <span className="text-orange-600 font-medium">{row.original.remainingQty.toLocaleString()}</span>
       ),
@@ -87,6 +91,7 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       id: 'manufactureDate',
       header: t('material.arrival.col.manufactureDate'),
       size: 140,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <Input
           type="date"
@@ -100,6 +105,7 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       id: 'inputQty',
       header: t('material.receive.col.inputQty'),
       size: 100,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <Input
           type="number"
@@ -115,6 +121,7 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       id: 'warehouse',
       header: t('material.arrival.col.warehouse'),
       size: 140,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <Select
           options={warehouses}
@@ -126,5 +133,5 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
     },
   ], [t, inputs, warehouses, onInputChange, onSelectAll, allSelected, handleQtyChange]);
 
-  return <DataGrid data={data} columns={columns} pageSize={20} />;
+  return <DataGrid data={data} columns={columns} pageSize={20} enableColumnFilter />;
 }

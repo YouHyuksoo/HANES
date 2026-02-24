@@ -83,13 +83,13 @@ export default function ConsumableLifePage() {
   };
 
   const columns = useMemo<ColumnDef<LifeStatus>[]>(() => [
-    { accessorKey: "status", header: t("common.status"), size: 60, cell: ({ getValue }) => getStatusBadge(getValue() as string) },
+    { accessorKey: "status", header: t("common.status"), size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => getStatusBadge(getValue() as string) },
     { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 110, meta: { filterType: "text" as const } },
     { accessorKey: "name", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "category", header: t("consumables.life.categoryLabel"), size: 70, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
-    { accessorKey: "location", header: t("consumables.life.location"), size: 110 },
+    { accessorKey: "category", header: t("consumables.life.categoryLabel"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
+    { accessorKey: "location", header: t("consumables.life.location"), size: 110, meta: { filterType: "text" as const } },
     {
-      accessorKey: "lifePercentage", header: t("consumables.life.lifeLabel"), size: 100,
+      accessorKey: "lifePercentage", header: t("consumables.life.lifeLabel"), size: 100, meta: { filterType: "number" as const },
       cell: ({ row }) => {
         const pct = row.original.lifePercentage;
         return (
@@ -103,22 +103,22 @@ export default function ConsumableLifePage() {
       },
     },
     {
-      accessorKey: "currentCount", header: t("consumables.life.currentExpected"), size: 110,
+      accessorKey: "currentCount", header: t("consumables.life.currentExpected"), size: 110, meta: { filterType: "number" as const },
       cell: ({ row }) => <span className="text-xs">{row.original.currentCount.toLocaleString()} / {row.original.expectedLife.toLocaleString()}</span>,
     },
     {
-      accessorKey: "remainingLife", header: t("consumables.life.remaining"), size: 70,
+      accessorKey: "remainingLife", header: t("consumables.life.remaining"), size: 70, meta: { filterType: "number" as const },
       cell: ({ getValue }) => {
         const val = getValue() as number;
         return <span className={`text-xs ${val < 0 ? "text-red-600 font-medium" : "text-text-muted"}`}>{val < 0 ? `+${Math.abs(val).toLocaleString()}` : val.toLocaleString()}</span>;
       },
     },
     {
-      accessorKey: "lastReplaced", header: t("consumables.life.lastReplaced"), size: 90,
+      accessorKey: "lastReplaced", header: t("consumables.life.lastReplaced"), size: 90, meta: { filterType: "date" as const },
       cell: ({ getValue }) => getValue() ? <span className="text-xs text-text-muted">{getValue() as string}</span> : "-",
     },
     {
-      id: "actions", header: t("common.manage"), size: 70,
+      id: "actions", header: t("common.manage"), size: 70, meta: { filterType: "none" as const },
       cell: ({ row }) => row.original.status === "REPLACE" ? (
         <Button size="sm" variant="secondary"><RotateCcw className="w-3 h-3 mr-1" /> {t("consumables.life.replaceAction")}</Button>
       ) : null,

@@ -132,7 +132,7 @@ export default function MaterialPhysicalInvPage() {
     {
       accessorKey: "qty", header: t("material.physicalInv.systemQty"), size: 100,
       cell: ({ row }) => <span>{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       id: "countedQty", header: t("material.physicalInv.countedQty"), size: 120,
@@ -164,6 +164,7 @@ export default function MaterialPhysicalInvPage() {
     },
     {
       accessorKey: "lastCountAt", header: t("material.physicalInv.lastCountDate"), size: 110,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? new Date(v).toLocaleDateString() : <span className="text-text-muted">-</span>;

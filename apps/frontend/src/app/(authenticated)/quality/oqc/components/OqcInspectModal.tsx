@@ -107,7 +107,7 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
 
   const columns = useMemo<ColumnDef<OqcBox>[]>(() => [
     {
-      id: "sample", header: t("quality.oqc.sample"), size: 60,
+      id: "sample", header: t("quality.oqc.sample"), size: 60, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <input
           type="checkbox"
@@ -119,15 +119,15 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
       ),
     },
     {
-      accessorKey: "boxNo", header: t("quality.oqc.boxNo"), size: 180,
+      accessorKey: "boxNo", header: t("quality.oqc.boxNo"), size: 180, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "qty", header: t("quality.oqc.qty"), size: 80,
+      accessorKey: "qty", header: t("quality.oqc.qty"), size: 80, meta: { filterType: "number" as const },
       cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span>,
     },
     {
-      accessorKey: "isSample", header: t("quality.oqc.isSample"), size: 80,
+      accessorKey: "isSample", header: t("quality.oqc.isSample"), size: 80, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
           getValue() === "Y"

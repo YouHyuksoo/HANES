@@ -4,7 +4,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   Unique,
   OneToMany,
@@ -93,9 +92,6 @@ export class JobOrder {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   @OneToMany(() => ProdResult, (prodResult) => prodResult.jobOrder)
   prodResults: ProdResult[];

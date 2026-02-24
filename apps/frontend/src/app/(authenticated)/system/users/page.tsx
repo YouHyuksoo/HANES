@@ -418,16 +418,18 @@ function UserPage() {
         accessorKey: 'photoUrl',
         header: t('system.users.photo'),
         size: 60,
+        meta: { filterType: 'none' as const },
         cell: ({ getValue }) => <UserAvatar photoUrl={getValue() as string | null} />,
       },
-      { accessorKey: 'email', header: t('system.users.email'), size: 200 },
-      { accessorKey: 'name', header: t('system.users.name'), size: 100 },
-      { accessorKey: 'empNo', header: t('system.users.empNo'), size: 100 },
-      { accessorKey: 'dept', header: t('system.users.dept'), size: 100 },
+      { accessorKey: 'email', header: t('system.users.email'), size: 200, meta: { filterType: 'text' as const } },
+      { accessorKey: 'name', header: t('system.users.name'), size: 100, meta: { filterType: 'text' as const } },
+      { accessorKey: 'empNo', header: t('system.users.empNo'), size: 100, meta: { filterType: 'text' as const } },
+      { accessorKey: 'dept', header: t('system.users.dept'), size: 100, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'role',
         header: t('system.users.role'),
         size: 90,
+        meta: { filterType: 'multi' as const },
         cell: ({ getValue }) => {
           const role = getValue() as string;
           const colorMap: Record<string, string> = {
@@ -447,6 +449,7 @@ function UserPage() {
         accessorKey: 'status',
         header: t('system.users.status'),
         size: 80,
+        meta: { filterType: 'multi' as const },
         cell: ({ getValue }) => {
           const status = getValue() as string;
           return (
@@ -464,6 +467,7 @@ function UserPage() {
         accessorKey: 'lastLoginAt',
         header: t('system.users.lastLogin'),
         size: 150,
+        meta: { filterType: 'date' as const },
         cell: ({ getValue }) => {
           const v = getValue() as string | null;
           return v ? new Date(v).toLocaleString('ko-KR') : '-';
@@ -473,6 +477,7 @@ function UserPage() {
         id: 'actions',
         header: t('common.actions'),
         size: 100,
+        meta: { filterType: 'none' as const },
         cell: ({ row }) => (
           <div className="flex gap-1">
             <button
@@ -521,6 +526,7 @@ function UserPage() {
             columns={columns}
             isLoading={loading}
             emptyMessage={t('system.users.emptyMessage')}
+            enableColumnFilter
             enableExport
             exportFileName={t('system.users.title')}
             toolbarLeft={

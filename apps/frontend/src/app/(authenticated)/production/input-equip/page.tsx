@@ -218,14 +218,16 @@ export default function InputEquipPage() {
   const columns = useMemo<ColumnDef<EquipInspect>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputEquip.orderNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'partName', header: t('production.inputEquip.partName'), size: 140, meta: { filterType: 'text' as const } },
-    { accessorKey: 'equipName', header: t('production.inputEquip.inspectEquip'), size: 110 },
+    { accessorKey: 'equipName', header: t('production.inputEquip.inspectEquip'), size: 110, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('production.inputEquip.lotNo'), size: 150, meta: { filterType: 'text' as const } },
     {
       id: 'range', header: t('production.inputEquip.inspectRange'), size: 120,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => <span className="text-text-muted text-xs">{row.original.lowerLimit} ~ {row.original.upperLimit}</span>,
     },
     {
       accessorKey: 'measuredValue', header: t('production.inputEquip.measuredValue'), size: 90,
+      meta: { filterType: 'number' as const },
       cell: ({ row }) => {
         const { measuredValue, lowerLimit, upperLimit } = row.original;
         const inRange = measuredValue >= lowerLimit && measuredValue <= upperLimit;
@@ -234,6 +236,7 @@ export default function InputEquipPage() {
     },
     {
       accessorKey: 'passYn', header: t('production.inputEquip.judgment'), size: 80,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v === 'Y'
@@ -241,8 +244,8 @@ export default function InputEquipPage() {
           : <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{t('production.inputEquip.fail')}</span>;
       },
     },
-    { accessorKey: 'inspector', header: t('production.inputEquip.inspector'), size: 80 },
-    { accessorKey: 'inspectDate', header: t('production.inputEquip.inspectDate'), size: 100 },
+    { accessorKey: 'inspector', header: t('production.inputEquip.inspector'), size: 80, meta: { filterType: 'text' as const } },
+    { accessorKey: 'inspectDate', header: t('production.inputEquip.inspectDate'), size: 100, meta: { filterType: 'date' as const } },
   ], [t]);
 
   return (

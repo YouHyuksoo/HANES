@@ -19,6 +19,7 @@ import { Button, Input, Select } from "@/components/ui";
 import { AxiosError } from "axios";
 import { api } from "@/services/api";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
+import PwaInstallPrompt from "@/components/pda/PwaInstallPrompt";
 
 interface CompanyOption {
   companyCode: string;
@@ -114,6 +115,9 @@ export default function PdaLoginPage() {
         </div>
         <LanguageSwitcher />
       </div>
+
+      {/* PWA 설치 배너 */}
+      <PwaInstallPrompt />
 
       {/* 폼 영역 */}
       <div className="flex-1 flex items-center justify-center px-5 py-6">

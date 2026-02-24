@@ -216,6 +216,23 @@
 }
 
 /* ============================================
+   커스텀 컬러 테마 - #E6096E (라이트/다크 공통 오버라이드)
+   ============================================ */
+[data-color-theme="custom"] {
+  --primary: oklch(0.5973 0.2374 4.3564);
+  --ring: oklch(0.5973 0.2374 4.3564);
+  --chart-1: oklch(0.5973 0.2374 4.3564);
+  --sidebar-primary: oklch(0.5973 0.2374 4.3564);
+  --sidebar-ring: oklch(0.5973 0.2374 4.3564);
+  --primary-hover: oklch(0.53 0.24 4);
+}
+
+[data-color-theme="custom"].dark,
+[data-color-theme="custom"] .dark {
+  --primary-hover: oklch(0.65 0.24 4);
+}
+
+/* ============================================
    Tailwind CSS 4 테마 설정
    tweakcn 테마 적용 (https://tweakcn.com/)
    ============================================ */

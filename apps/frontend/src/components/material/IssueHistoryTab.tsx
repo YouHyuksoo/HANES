@@ -111,20 +111,22 @@ export default function IssueHistoryTab() {
 
   /** DataGrid 컬럼 */
   const columns = useMemo<ColumnDef<IssueRecord>[]>(() => [
-    { accessorKey: 'issueNo', header: t('material.issue.history.issueNo'), size: 180 },
+    { accessorKey: 'issueNo', header: t('material.issue.history.issueNo'), size: 180, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'issueDate',
       header: t('material.issue.history.issueDate'),
       size: 100,
+      meta: { filterType: 'date' as const },
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
     },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 120 },
-    { accessorKey: 'partName', header: t('common.partName'), size: 150 },
-    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160 },
+    { accessorKey: 'partCode', header: t('common.partCode'), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('common.partName'), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'issueQty',
       header: t('common.quantity'),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ row }) => {
         const { issueQty, unit } = row.original;
         return (
@@ -138,6 +140,7 @@ export default function IssueHistoryTab() {
       accessorKey: 'issueType',
       header: t('common.type'),
       size: 80,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const type = getValue() as string;
         return (
@@ -147,11 +150,12 @@ export default function IssueHistoryTab() {
         );
       },
     },
-    { accessorKey: 'jobOrderNo', header: t('material.col.workOrder'), size: 160 },
+    { accessorKey: 'jobOrderNo', header: t('material.col.workOrder'), size: 160, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'status',
       header: t('common.status'),
       size: 90,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const status = getValue() as string;
         const isCanceled = status === 'CANCELED';
@@ -172,6 +176,7 @@ export default function IssueHistoryTab() {
       id: 'actions',
       header: '',
       size: 70,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const record = row.original;
         if (record.status !== 'DONE') return null;
@@ -198,6 +203,7 @@ export default function IssueHistoryTab() {
             data={records}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             exportFileName={t('material.issue.history.tabTitle')}
             emptyMessage={t('common.noData')}

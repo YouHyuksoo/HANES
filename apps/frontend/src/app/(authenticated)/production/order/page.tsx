@@ -137,6 +137,7 @@ export default function JobOrderPage() {
     },
     {
       id: "partType", header: t("production.order.partType"), size: 70,
+      meta: { filterType: "multi" as const },
       accessorFn: (row) => row.part?.partType || "",
       cell: ({ getValue }) => {
         const v = getValue() as string;
@@ -150,15 +151,16 @@ export default function JobOrderPage() {
     {
       accessorKey: "planQty", header: t("production.order.planQty"), size: 80,
       cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span>,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       accessorKey: "goodQty", header: t("production.order.prodQty"), size: 80,
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       id: "progress", header: t("production.order.progress"), size: 120,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const p = getProgress(row.original);
         return (
@@ -173,10 +175,12 @@ export default function JobOrderPage() {
     },
     {
       accessorKey: "status", header: t("common.status"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} />,
     },
     {
       accessorKey: "planDate", header: t("production.order.planDate"), size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? String(v).slice(0, 10) : "-";

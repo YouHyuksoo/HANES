@@ -106,26 +106,27 @@ export default function SampleInspectPage() {
     },
     {
       accessorKey: "sampleNo", header: t("production.sampleInspect.sampleNo"), size: 60,
-      meta: { align: "center" as const },
+      meta: { filterType: "number" as const, align: "center" as const },
       cell: ({ getValue }) => <span className="font-mono">{getValue() as number}</span>,
     },
     {
       accessorKey: "measuredValue", header: t("production.sampleInspect.measuredValue"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "text" as const, align: "right" as const },
       cell: ({ getValue }) => <span className="font-mono">{(getValue() as string) || "-"}</span>,
     },
     {
       accessorKey: "specLower", header: t("production.sampleInspect.specLower"), size: 70,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || "-"}</span>,
     },
     {
       accessorKey: "specUpper", header: t("production.sampleInspect.specUpper"), size: 70,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || "-"}</span>,
     },
     {
       accessorKey: "passYn", header: t("production.sampleInspect.judgment"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="JUDGE_YN" code={getValue() as string} />,
     },
     {
@@ -134,6 +135,7 @@ export default function SampleInspectPage() {
     },
     {
       accessorKey: "remark", header: t("production.sampleInspect.remark"), size: 120,
+      meta: { filterType: "text" as const },
     },
   ], [t]);
 

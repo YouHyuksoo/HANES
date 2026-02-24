@@ -228,16 +228,16 @@ export default function InputMachinePage() {
   }, [selectedJobOrder, selectedWorker, selectedEquip, selectedProcess, inspectConfirmed, form, fetchData]);
 
   const columns = useMemo<ColumnDef<MachineResult>[]>(() => [
-    { accessorKey: 'orderNo', header: t('production.inputMachine.orderNo'), size: 160 },
-    { accessorKey: 'partName', header: t('production.inputMachine.partName'), size: 140 },
-    { accessorKey: 'equipName', header: t('production.inputMachine.equip'), size: 100 },
-    { accessorKey: 'workerName', header: t('production.inputMachine.worker'), size: 80 },
-    { accessorKey: 'lotNo', header: t('production.inputMachine.lotNo'), size: 130 },
-    { accessorKey: 'goodQty', header: t('production.inputMachine.good'), size: 80, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'defectQty', header: t('production.inputMachine.defect'), size: 80, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'cycleTime', header: t('production.inputMachine.ctSec'), size: 70 },
-    { accessorKey: 'inspectChecked', header: t('production.inputMachine.inspect'), size: 70, cell: ({ getValue }) => getValue() ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-400" /> },
-    { accessorKey: 'workDate', header: t('production.inputMachine.workDate'), size: 100 },
+    { accessorKey: 'orderNo', header: t('production.inputMachine.orderNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('production.inputMachine.partName'), size: 140, meta: { filterType: 'text' as const } },
+    { accessorKey: 'equipName', header: t('production.inputMachine.equip'), size: 100, meta: { filterType: 'text' as const } },
+    { accessorKey: 'workerName', header: t('production.inputMachine.worker'), size: 80, meta: { filterType: 'text' as const } },
+    { accessorKey: 'lotNo', header: t('production.inputMachine.lotNo'), size: 130, meta: { filterType: 'text' as const } },
+    { accessorKey: 'goodQty', header: t('production.inputMachine.good'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'defectQty', header: t('production.inputMachine.defect'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'cycleTime', header: t('production.inputMachine.ctSec'), size: 70, meta: { filterType: 'number' as const } },
+    { accessorKey: 'inspectChecked', header: t('production.inputMachine.inspect'), size: 70, meta: { filterType: 'none' as const }, cell: ({ getValue }) => getValue() ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-400" /> },
+    { accessorKey: 'workDate', header: t('production.inputMachine.workDate'), size: 100, meta: { filterType: 'date' as const } },
   ], [t]);
 
   return (

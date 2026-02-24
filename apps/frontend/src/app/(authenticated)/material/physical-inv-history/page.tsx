@@ -79,7 +79,7 @@ export default function PhysicalInvHistoryPage() {
 
   const columns = useMemo<ColumnDef<InvHistoryItem>[]>(() => [
     {
-      accessorKey: "createdAt", header: t("material.physicalInvHistory.countDate"), size: 140,
+      accessorKey: "createdAt", header: t("material.physicalInvHistory.countDate"), size: 140, meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const d = getValue() as string;
         return d ? new Date(d).toLocaleString() : "-";
@@ -112,14 +112,14 @@ export default function PhysicalInvHistoryPage() {
       cell: ({ getValue, row }) => (
         <span>{(getValue() as number).toLocaleString()} {row.original.unit || ""}</span>
       ),
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       accessorKey: "afterQty", header: t("material.physicalInvHistory.countedQty"), size: 100,
       cell: ({ getValue, row }) => (
         <span className="font-medium">{(getValue() as number).toLocaleString()} {row.original.unit || ""}</span>
       ),
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       accessorKey: "diffQty", header: t("material.physicalInvHistory.diffQty"), size: 90,
@@ -129,14 +129,14 @@ export default function PhysicalInvHistoryPage() {
         const cls = v > 0 ? "text-blue-600 font-medium" : "text-red-600 font-medium";
         return <span className={cls}>{v > 0 ? "+" : ""}{v.toLocaleString()}</span>;
       },
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
-      accessorKey: "reason", header: t("material.physicalInvHistory.reason"), size: 120,
+      accessorKey: "reason", header: t("material.physicalInvHistory.reason"), size: 120, meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
     {
-      accessorKey: "createdBy", header: t("material.physicalInvHistory.inspector"), size: 90,
+      accessorKey: "createdBy", header: t("material.physicalInvHistory.inspector"), size: 90, meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
   ], [t]);

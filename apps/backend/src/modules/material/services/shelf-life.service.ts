@@ -24,7 +24,6 @@ export class ShelfLifeService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       // 유효기한이 있는 LOT만 조회
       expireDate: Raw((alias) => `${alias} IS NOT NULL`),
       ...(company && { company }),

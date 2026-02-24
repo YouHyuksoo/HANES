@@ -130,15 +130,15 @@ export default function ShipReturnPage() {
     { accessorKey: "returnNo", header: t("shipping.return.returnNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "shipOrderNo", header: t("shipping.return.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.return.customer"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "returnDate", header: t("shipping.return.returnDate"), size: 100 },
-    { accessorKey: "returnReason", header: t("shipping.return.returnReason"), size: 120 },
-    { accessorKey: "totalQty", header: t("shipping.return.returnQty"), size: 80, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => {
+    { accessorKey: "returnDate", header: t("shipping.return.returnDate"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "returnReason", header: t("shipping.return.returnReason"), size: 120, meta: { filterType: "text" as const } },
+    { accessorKey: "totalQty", header: t("shipping.return.returnQty"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => {
       const s = getValue() as string;
       const label = statusOptions.find(o => o.value === s)?.label || s;
       return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{label}</span>;
     } },
-    { id: "actions", header: "", size: 80, cell: ({ row }) => (
+    { id: "actions", header: "", size: 80, meta: { filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
         <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>

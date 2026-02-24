@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ModelSuffix } from '../../../entities/model-suffix.entity';
 import { CreateModelSuffixDto, UpdateModelSuffixDto, ModelSuffixQueryDto } from '../dto/model-suffix.dto';
 
@@ -19,8 +19,7 @@ export class ModelSuffixService {
   async findAll(query: ModelSuffixQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, modelCode, customer, search, useYn } = query;
 
-    const queryBuilder = this.modelSuffixRepository.createQueryBuilder('suffix')
-      .where('suffix.deletedAt IS NULL');
+    const queryBuilder = this.modelSuffixRepository.createQueryBuilder('suffix');
 
     if (company) {
       queryBuilder.andWhere('suffix.company = :company', { company });
@@ -60,7 +59,7 @@ export class ModelSuffixService {
 
   async findById(id: string) {
     const suffix = await this.modelSuffixRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!suffix) {
@@ -75,7 +74,6 @@ export class ModelSuffixService {
       where: {
         modelCode: dto.modelCode,
         suffixCode: dto.suffixCode,
-        deletedAt: IsNull(),
       },
     });
 
@@ -96,8 +94,7 @@ export class ModelSuffixService {
         where: {
           modelCode: dto.modelCode,
           suffixCode: dto.suffixCode,
-          deletedAt: IsNull(),
-        },
+          },
       });
 
       if (existing && existing.id !== id) {
@@ -117,7 +114,7 @@ export class ModelSuffixService {
   async delete(id: string) {
     const suffix = await this.findById(id);
 
-    await this.modelSuffixRepository.softRemove(suffix);
+    await this.modelSuffixRepository.remove(suffix);
 
     return { id, deleted: true };
   }

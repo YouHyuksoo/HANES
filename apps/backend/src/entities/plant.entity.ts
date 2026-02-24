@@ -4,7 +4,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   Unique,
   ManyToOne,
@@ -64,9 +63,6 @@ export class Plant {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   // Self-relation: Plant hierarchy
   @ManyToOne(() => Plant, (plant) => plant.children, { nullable: true })

@@ -94,30 +94,36 @@ export default function ProdLineTab() {
   }, [fetchLines]);
 
   const columns = useMemo<ColumnDef<ProdLine>[]>(() => [
-    { accessorKey: "lineCode", header: t("master.prodLine.lineCode"), size: 100 },
-    { accessorKey: "lineName", header: t("master.prodLine.lineName"), size: 200 },
+    { accessorKey: "lineCode", header: t("master.prodLine.lineCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "lineName", header: t("master.prodLine.lineName"), size: 200, meta: { filterType: "text" as const } },
     { accessorKey: "oper", header: t("master.prodLine.oper"), size: 100,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>,
     },
     { accessorKey: "lineType", header: t("master.prodLine.lineType"), size: 100,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">{v}</span> : <span className="text-text-muted">-</span>;
       },
     },
-    { accessorKey: "whLoc", header: t("master.prodLine.whLoc"), size: 100 },
+    { accessorKey: "whLoc", header: t("master.prodLine.whLoc"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "erpCode", header: t("master.prodLine.erpCode"), size: 100,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
     { accessorKey: "remark", header: t("master.prodLine.remark"), size: 150,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
     { accessorKey: "useYn", header: t("master.prodLine.use"), size: 60,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),
     },
     { id: "actions", header: t("common.actions"), size: 80,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
@@ -139,6 +145,7 @@ export default function ProdLineTab() {
             data={lines}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             exportFileName={t("master.prodLine.title", "생산라인")}
             toolbarLeft={

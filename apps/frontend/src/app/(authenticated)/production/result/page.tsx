@@ -102,16 +102,18 @@ export default function ProdResultPage() {
   const columns = useMemo<ColumnDef<ProdResult>[]>(
     () => [
       { accessorKey: 'resultNo', header: t('production.result.resultNo'), size: 150, meta: { filterType: 'text' as const } },
-      { accessorKey: 'workDate', header: t('production.result.workDate'), size: 100 },
+      { accessorKey: 'workDate', header: t('production.result.workDate'), size: 100, meta: { filterType: 'date' as const } },
       {
         accessorKey: 'processType', header: t('production.order.processType'), size: 80,
+        meta: { filterType: 'multi' as const },
         cell: ({ getValue }) => <ComCodeBadge groupCode="PROCESS_TYPE" code={getValue() as string} />
       },
       { accessorKey: 'orderNo', header: t('production.result.orderNo'), size: 150, meta: { filterType: 'text' as const } },
       { accessorKey: 'partName', header: t('production.result.partName'), size: 130, meta: { filterType: 'text' as const } },
-      { accessorKey: 'equipName', header: t('production.result.equipment'), size: 90 },
+      { accessorKey: 'equipName', header: t('production.result.equipment'), size: 90, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'workerName', header: t('production.result.worker'), size: 110,
+        meta: { filterType: 'text' as const },
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
             <WorkerAvatar name={row.original.workerName} dept={row.original.workerDept} size="sm" />
@@ -122,14 +124,17 @@ export default function ProdResultPage() {
       { accessorKey: 'lotNo', header: t('production.result.lotNo'), size: 150, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'goodQty', header: t('production.result.goodQty'), size: 70,
+        meta: { filterType: 'number' as const },
         cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span>
       },
       {
         accessorKey: 'defectQty', header: t('production.result.defectQty'), size: 70,
+        meta: { filterType: 'number' as const },
         cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span>
       },
       {
         id: 'defectRate', header: t('production.result.defectRate'), size: 80,
+        meta: { filterType: 'none' as const },
         cell: ({ row }) => {
           const rate = parseFloat(getDefectRate(row.original));
           return <span className={`${rate > 3 ? 'text-red-500' : 'text-text-muted'}`}>{rate}%</span>;
@@ -137,6 +142,7 @@ export default function ProdResultPage() {
       },
       {
         id: 'workTime', header: t('production.result.workTime'), size: 120,
+        meta: { filterType: 'none' as const },
         cell: ({ row }) => <span className="text-text-muted">{row.original.startAt} ~ {row.original.endAt}</span>
       },
     ],

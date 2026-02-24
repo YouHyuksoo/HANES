@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between, Like, In } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmPlanItem } from '../../../entities/pm-plan-item.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
@@ -48,8 +48,7 @@ export class PmPlanService {
     const { page = 1, limit = 50, equipId, pmType, search, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
-    const qb = this.pmPlanRepo.createQueryBuilder('plan')
-      .where('plan.deletedAt IS NULL');
+    const qb = this.pmPlanRepo.createQueryBuilder('plan');
 
     if (equipId) qb.andWhere('plan.equipId = :equipId', { equipId });
     if (pmType) qb.andWhere('plan.pmType = :pmType', { pmType });
@@ -122,7 +121,7 @@ export class PmPlanService {
   /** PM 계획 상세 조회 (items 포함) */
   async findPlanById(id: string) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['items'],
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
@@ -142,7 +141,7 @@ export class PmPlanService {
   /** PM 계획 생성 */
   async createPlan(dto: CreatePmPlanDto) {
     const equip = await this.equipMasterRepo.findOne({
-      where: { id: dto.equipId, deletedAt: IsNull() },
+      where: { id: dto.equipId },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
 
@@ -192,7 +191,7 @@ export class PmPlanService {
   /** PM 계획 수정 */
   async updatePlan(id: string, dto: UpdatePmPlanDto) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
 
@@ -244,10 +243,10 @@ export class PmPlanService {
   /** PM 계획 삭제 (소프트) */
   async deletePlan(id: string) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
-    await this.pmPlanRepo.softDelete(id);
+    await this.pmPlanRepo.delete(id);
     return { id, deleted: true };
   }
 
@@ -261,7 +260,6 @@ export class PmPlanService {
     const plans = await this.pmPlanRepo.find({
       where: {
         useYn: 'Y',
-        deletedAt: IsNull(),
         nextDueAt: Between(startDate, endDate),
       },
     });
@@ -277,7 +275,6 @@ export class PmPlanService {
         where: {
           pmPlanId: plan.id,
           scheduledDate: scheduledDate,
-          deletedAt: IsNull(),
         },
       });
 
@@ -311,7 +308,7 @@ export class PmPlanService {
   /** WO 수동 생성 */
   async createWorkOrder(dto: CreatePmWorkOrderDto) {
     const equip = await this.equipMasterRepo.findOne({
-      where: { id: dto.equipId, deletedAt: IsNull() },
+      where: { id: dto.equipId },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
 
@@ -337,7 +334,7 @@ export class PmPlanService {
   /** WO 실행 */
   async executeWorkOrder(id: string, dto: ExecutePmWorkOrderDto) {
     const wo = await this.pmWorkOrderRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${id}`);
 
@@ -392,7 +389,7 @@ export class PmPlanService {
   /** WO 취소 */
   async cancelWorkOrder(id: string) {
     const wo = await this.pmWorkOrderRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${id}`);
 
@@ -410,8 +407,7 @@ export class PmPlanService {
     const { page = 1, limit = 50, equipId, status, search } = query;
     const skip = (page - 1) * limit;
 
-    const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
-      .where('wo.deletedAt IS NULL');
+    const qb = this.pmWorkOrderRepo.createQueryBuilder('wo');
 
     if (equipId) qb.andWhere('wo.equipId = :equipId', { equipId });
     if (status) qb.andWhere('wo.status = :status', { status });
@@ -468,8 +464,7 @@ export class PmPlanService {
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
       .leftJoin(EquipMaster, 'equip', 'wo.equipId = equip.id')
-      .where('wo.deletedAt IS NULL')
-      .andWhere('wo.scheduledDate BETWEEN :startDate AND :endDate', { startDate, endDate });
+      .where('wo.scheduledDate BETWEEN :startDate AND :endDate', { startDate, endDate });
 
     if (lineCode) qb.andWhere('equip.lineCode = :lineCode', { lineCode });
     if (equipType) qb.andWhere('equip.equipType = :equipType', { equipType });
@@ -527,8 +522,7 @@ export class PmPlanService {
     dayEnd.setHours(23, 59, 59, 999);
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
-      .where('wo.deletedAt IS NULL')
-      .andWhere('wo.scheduledDate BETWEEN :dayStart AND :dayEnd', { dayStart, dayEnd });
+      .where('wo.scheduledDate BETWEEN :dayStart AND :dayEnd', { dayStart, dayEnd });
 
     if (lineCode || equipType) {
       qb.leftJoin(EquipMaster, 'equip', 'wo.equipId = equip.id');

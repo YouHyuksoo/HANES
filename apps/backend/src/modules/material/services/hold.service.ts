@@ -27,7 +27,6 @@ export class HoldService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
     };
@@ -96,7 +95,7 @@ export class HoldService {
     const { lotId, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { id: lotId, deletedAt: IsNull() },
+      where: { id: lotId },
     });
 
     if (!lot) {
@@ -133,7 +132,7 @@ export class HoldService {
     const { lotId, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { id: lotId, deletedAt: IsNull() },
+      where: { id: lotId },
     });
 
     if (!lot) {

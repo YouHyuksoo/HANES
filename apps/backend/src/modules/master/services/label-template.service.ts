@@ -8,7 +8,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { LabelTemplate } from '../../../entities/label-template.entity';
 import {
   CreateLabelTemplateDto,
@@ -26,8 +26,7 @@ export class LabelTemplateService {
   async findAll(query: LabelTemplateQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, category, search } = query;
 
-    const queryBuilder = this.labelTemplateRepository.createQueryBuilder('template')
-      .where('template.deletedAt IS NULL');
+    const queryBuilder = this.labelTemplateRepository.createQueryBuilder('template');
 
     if (company) {
       queryBuilder.andWhere('template.company = :company', { company });
@@ -58,7 +57,7 @@ export class LabelTemplateService {
 
   async findById(id: string) {
     const template = await this.labelTemplateRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!template) {
@@ -112,7 +111,7 @@ export class LabelTemplateService {
   async delete(id: string) {
     const template = await this.findById(id);
 
-    await this.labelTemplateRepository.softRemove(template);
+    await this.labelTemplateRepository.remove(template);
 
     return { id, deleted: true };
   }
@@ -124,7 +123,6 @@ export class LabelTemplateService {
       .set({ isDefault: false })
       .where('category = :category', { category })
       .andWhere('isDefault = :isDefault', { isDefault: true })
-      .andWhere('deletedAt IS NULL')
       .execute();
   }
 }

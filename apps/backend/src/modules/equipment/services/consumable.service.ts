@@ -31,7 +31,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
@@ -85,8 +85,7 @@ export class ConsumableService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.consumableMasterRepository.createQueryBuilder('consumable')
-      .where('consumable.deletedAt IS NULL');
+    const queryBuilder = this.consumableMasterRepository.createQueryBuilder('consumable');
 
     if (company) {
       queryBuilder.andWhere('consumable.company = :company', { company });
@@ -135,7 +134,7 @@ export class ConsumableService {
    */
   async findById(id: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!consumable) {
@@ -175,7 +174,7 @@ export class ConsumableService {
    */
   async findByCode(consumableCode: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { consumableCode, deletedAt: IsNull() },
+      where: { consumableCode },
     });
 
     if (!consumable) {
@@ -191,7 +190,7 @@ export class ConsumableService {
   async create(dto: EquipCreateConsumableDto) {
     // 중복 코드 확인
     const existing = await this.consumableMasterRepository.findOne({
-      where: { consumableCode: dto.consumableCode, deletedAt: IsNull() },
+      where: { consumableCode: dto.consumableCode },
     });
 
     if (existing) {
@@ -228,7 +227,6 @@ export class ConsumableService {
       const existing = await this.consumableMasterRepository.findOne({
         where: {
           consumableCode: dto.consumableCode,
-          deletedAt: IsNull(),
         },
       });
 
@@ -267,7 +265,7 @@ export class ConsumableService {
   async delete(id: string) {
     await this.findById(id);
 
-    await this.consumableMasterRepository.softDelete(id);
+    await this.consumableMasterRepository.delete(id);
     return { id, deleted: true };
   }
 
@@ -516,7 +514,7 @@ export class ConsumableService {
    */
   async findByCategory(category: string) {
     return this.consumableMasterRepository.find({
-      where: { category, useYn: 'Y', deletedAt: IsNull() },
+      where: { category, useYn: 'Y' },
       order: { consumableCode: 'ASC' },
     });
   }
@@ -530,8 +528,7 @@ export class ConsumableService {
 
     return this.consumableMasterRepository
       .createQueryBuilder('consumable')
-      .where('consumable.deletedAt IS NULL')
-      .andWhere('consumable.useYn = :useYn', { useYn: 'Y' })
+      .where('consumable.useYn = :useYn', { useYn: 'Y' })
       .andWhere(
         '(consumable.status IN (:...statuses) OR consumable.nextReplaceAt <= :targetDate)',
         { statuses: ['WARNING', 'REPLACE'], targetDate }
@@ -549,7 +546,6 @@ export class ConsumableService {
       where: {
         status: In(['WARNING', 'REPLACE']),
         useYn: 'Y',
-        deletedAt: IsNull(),
       },
       order: { status: 'DESC' },
     });
@@ -568,7 +564,7 @@ export class ConsumableService {
    */
   async mountToEquip(id: string, dto: MountToEquipDto) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!consumable) {
@@ -621,7 +617,7 @@ export class ConsumableService {
    */
   async unmountFromEquip(id: string, dto: UnmountFromEquipDto) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!consumable) {
@@ -676,7 +672,7 @@ export class ConsumableService {
    */
   async setRepairStatus(id: string, dto: SetRepairDto) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!consumable) {
@@ -741,7 +737,6 @@ export class ConsumableService {
       where: {
         mountedEquipId: equipId,
         operStatus: 'MOUNTED',
-        deletedAt: IsNull(),
       },
       order: { consumableCode: 'ASC' },
     });
@@ -763,8 +758,7 @@ export class ConsumableService {
     // 교체 예정일이 해당 월에 있는 소모품 조회
     const qb = this.consumableMasterRepository
       .createQueryBuilder('c')
-      .where('c.deletedAt IS NULL')
-      .andWhere('c.useYn = :yn', { yn: 'Y' })
+      .where('c.useYn = :yn', { yn: 'Y' })
       .andWhere('c.nextReplaceAt IS NOT NULL')
       .andWhere('c.nextReplaceAt BETWEEN :start AND :end', { start: startDate, end: endDate });
 
@@ -833,8 +827,7 @@ export class ConsumableService {
 
     const qb = this.consumableMasterRepository
       .createQueryBuilder('c')
-      .where('c.deletedAt IS NULL')
-      .andWhere('c.useYn = :yn', { yn: 'Y' })
+      .where('c.useYn = :yn', { yn: 'Y' })
       .andWhere('c.nextReplaceAt BETWEEN :start AND :end', { start: startOfDay, end: endOfDay });
 
     if (category) {
@@ -855,8 +848,7 @@ export class ConsumableService {
       .createQueryBuilder('consumable')
       .select('consumable.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .where('consumable.deletedAt IS NULL')
-      .andWhere('consumable.useYn = :useYn', { useYn: 'Y' })
+      .where('consumable.useYn = :useYn', { useYn: 'Y' })
       .groupBy('consumable.status')
       .getRawMany();
 
@@ -865,14 +857,13 @@ export class ConsumableService {
       .createQueryBuilder('consumable')
       .select('consumable.category', 'category')
       .addSelect('COUNT(*)', 'count')
-      .where('consumable.deletedAt IS NULL')
-      .andWhere('consumable.useYn = :useYn', { useYn: 'Y' })
+      .where('consumable.useYn = :useYn', { useYn: 'Y' })
       .groupBy('consumable.category')
       .getRawMany();
 
     // 전체 개수
     const totalCount = await this.consumableMasterRepository.count({
-      where: { deletedAt: IsNull(), useYn: 'Y' },
+      where: { useYn: 'Y' },
     });
 
     return {

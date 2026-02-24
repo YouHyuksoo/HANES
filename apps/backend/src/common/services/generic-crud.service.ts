@@ -16,7 +16,7 @@
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { Repository, FindOptionsWhere, Like, IsNull, FindManyOptions, FindOneOptions } from 'typeorm';
+import { Repository, FindOptionsWhere, Like, FindManyOptions, FindOneOptions } from 'typeorm';
 import { PaginationMeta } from '../dto/response.dto';
 import { BaseListQueryDto } from '../dto/base-query.dto';
 
@@ -33,7 +33,7 @@ export interface GenericCrudOptions<T> {
 }
 
 @Injectable()
-export abstract class GenericCrudService<T extends { id: string; createdAt?: Date; updatedAt?: Date; deletedAt?: Date | null }> {
+export abstract class GenericCrudService<T extends { id: string; createdAt?: Date; updatedAt?: Date }> {
   constructor(
     protected readonly repository: Repository<T>,
     protected readonly options: GenericCrudOptions<T> = {},
@@ -91,7 +91,7 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
    * 단건 조회
    */
   async findById(id: string): Promise<T> {
-    const where: FindOptionsWhere<any> = { id, deletedAt: IsNull() };
+    const where: FindOptionsWhere<any> = { id };
     const item = await this.repository.findOne({ where });
 
     if (!item) {
@@ -99,14 +99,6 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
     }
 
     return item;
-  }
-
-  /**
-   * 단건 조회 (소프트 삭제 포함)
-   */
-  async findByIdWithDeleted(id: string): Promise<T | null> {
-    const where: FindOptionsWhere<any> = { id };
-    return this.repository.findOne({ where });
   }
 
   /**
@@ -152,29 +144,17 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
   }
 
   /**
-   * 소프트 삭제
+   * 삭제
    */
-  async remove(id: string, userId?: string): Promise<void> {
-    // 존재 확인
+  async remove(id: string): Promise<void> {
     await this.findById(id);
-
-    await this.repository.update(id, {
-      deletedAt: new Date(),
-      ...(userId && { updatedBy: userId }),
-    } as any);
-  }
-
-  /**
-   * 하드 삭제 (주의: 실제로 데이터를 삭제합니다)
-   */
-  async hardDelete(id: string): Promise<void> {
     await this.repository.delete(id);
   }
 
   /**
-   * 복수 하드 삭제
+   * 복수 삭제
    */
-  async hardDeleteMany(ids: string[]): Promise<void> {
+  async removeMany(ids: string[]): Promise<void> {
     await this.repository.delete(ids);
   }
 
@@ -183,7 +163,7 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
    */
   async exists(id: string): Promise<boolean> {
     const count = await this.repository.count({
-      where: { id, deletedAt: IsNull() } as any,
+      where: { id } as any,
     });
     return count > 0;
   }
@@ -192,7 +172,7 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
    * 전체 카운트
    */
   async count(): Promise<number> {
-    return this.repository.count({ where: { deletedAt: IsNull() } as any });
+    return this.repository.count();
   }
 
   /**
@@ -204,7 +184,7 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
     fromDate?: string;
     toDate?: string;
   }): FindOptionsWhere<T> {
-    const where: FindOptionsWhere<any> = { deletedAt: IsNull() };
+    const where: FindOptionsWhere<any> = {};
 
     // 검색어 처리 (Oracle은 대소문자 구분이 있을 수 있으므로 UPPER 사용)
     if (filters.search && this.options.searchFields?.length) {
@@ -246,7 +226,6 @@ export abstract class GenericCrudService<T extends { id: string; createdAt?: Dat
 
       const where: FindOptionsWhere<any> = {
         [field]: value,
-        deletedAt: IsNull(),
       };
 
       if (excludeId) {

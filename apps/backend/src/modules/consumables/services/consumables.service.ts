@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Between, In } from 'typeorm';
+import { Repository, DataSource, Between, In } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import {
@@ -66,8 +66,7 @@ export class ConsumablesService {
     } = query || {};
     const skip = (page - 1) * limit;
 
-    const qb = this.consumableMasterRepository.createQueryBuilder('c')
-      .where('c.deletedAt IS NULL');
+    const qb = this.consumableMasterRepository.createQueryBuilder('c');
 
     if (company) qb.andWhere('c.company = :company', { company });
     if (plant) qb.andWhere('c.plant = :plant', { plant });
@@ -104,7 +103,7 @@ export class ConsumablesService {
    */
   async findById(id: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!consumable) {
@@ -120,7 +119,7 @@ export class ConsumablesService {
   async create(dto: CreateConsumableDto) {
     // 중복 코드 확인
     const existing = await this.consumableMasterRepository.findOne({
-      where: { consumableCode: dto.consumableCode, deletedAt: IsNull() },
+      where: { consumableCode: dto.consumableCode },
     });
 
     if (existing) {
@@ -156,7 +155,6 @@ export class ConsumablesService {
       const existing = await this.consumableMasterRepository.findOne({
         where: {
           consumableCode: dto.consumableCode,
-          deletedAt: IsNull(),
           id: id, // exclude current id
         },
       });
@@ -190,7 +188,7 @@ export class ConsumablesService {
   async delete(id: string) {
     await this.findById(id);
 
-    await this.consumableMasterRepository.softDelete(id);
+    await this.consumableMasterRepository.delete(id);
     return { id, deleted: true };
   }
 
@@ -211,13 +209,13 @@ export class ConsumablesService {
   async getSummary() {
     const [total, warning, replace] = await Promise.all([
       this.consumableMasterRepository.count({
-        where: { deletedAt: IsNull(), useYn: 'Y' },
+        where: { useYn: 'Y' },
       }),
       this.consumableMasterRepository.count({
-        where: { status: 'WARNING', deletedAt: IsNull(), useYn: 'Y' },
+        where: { status: 'WARNING', useYn: 'Y' },
       }),
       this.consumableMasterRepository.count({
-        where: { status: 'REPLACE', deletedAt: IsNull(), useYn: 'Y' },
+        where: { status: 'REPLACE', useYn: 'Y' },
       }),
     ]);
 
@@ -231,7 +229,6 @@ export class ConsumablesService {
     return this.consumableMasterRepository.find({
       where: {
         status: In(['WARNING', 'REPLACE']),
-        deletedAt: IsNull(),
         useYn: 'Y',
       },
       order: { status: 'DESC', currentCount: 'DESC' },
@@ -243,7 +240,7 @@ export class ConsumablesService {
    */
   async getLifeStatus() {
     const consumables = await this.consumableMasterRepository.find({
-      where: { deletedAt: IsNull(), useYn: 'Y' },
+      where: { useYn: 'Y' },
     });
 
     let good = 0;
@@ -277,8 +274,7 @@ export class ConsumablesService {
     const skip = (page - 1) * limit;
 
     const qb = this.consumableMasterRepository.createQueryBuilder('c')
-      .where('c.deletedAt IS NULL')
-      .andWhere('c.useYn = :useYn', { useYn: 'Y' });
+      .where('c.useYn = :useYn', { useYn: 'Y' });
 
     if (category) qb.andWhere('c.category = :category', { category });
 
@@ -374,7 +370,7 @@ export class ConsumablesService {
     try {
       // 소모품 존재 확인
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { id: dto.consumableId, deletedAt: IsNull() },
+        where: { id: dto.consumableId },
       });
 
       if (!consumable) {
@@ -454,7 +450,7 @@ export class ConsumablesService {
 
     try {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { id: dto.consumableId, deletedAt: IsNull() },
+        where: { id: dto.consumableId },
       });
 
       if (!consumable) {
@@ -516,7 +512,7 @@ export class ConsumablesService {
 
     try {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { id: dto.consumableId, deletedAt: IsNull() },
+        where: { id: dto.consumableId },
       });
 
       if (!consumable) {

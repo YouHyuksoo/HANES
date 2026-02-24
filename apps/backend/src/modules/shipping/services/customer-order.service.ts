@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -43,7 +43,6 @@ export class CustomerOrderService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(status && { status }),
@@ -103,7 +102,7 @@ export class CustomerOrderService {
   /** 고객발주 단건 조회 */
   async findById(id: string) {
     const order = await this.customerOrderRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!order) throw new NotFoundException(`고객발주를 찾을 수 없습니다: ${id}`);
@@ -134,7 +133,7 @@ export class CustomerOrderService {
   /** 고객발주 생성 */
   async create(dto: CreateCustomerOrderDto) {
     const existing = await this.customerOrderRepository.findOne({
-      where: { orderNo: dto.orderNo, deletedAt: IsNull() },
+      where: { orderNo: dto.orderNo },
     });
     if (existing) throw new ConflictException(`이미 존재하는 수주번호입니다: ${dto.orderNo}`);
 
@@ -235,17 +234,14 @@ export class CustomerOrderService {
     }
   }
 
-  /** 고객발주 삭제 (소프트 삭제) */
+  /** 고객발주 삭제 */
   async delete(id: string) {
     const order = await this.findById(id);
     if (order.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.customerOrderRepository.update(
-      { id },
-      { deletedAt: new Date() }
-    );
+    await this.customerOrderRepository.delete(id);
 
     return { id, deleted: true };
   }

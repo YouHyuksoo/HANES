@@ -98,7 +98,7 @@ export default function LotSplitPage() {
     },
     {
       accessorKey: "currentQty", header: t("material.lotSplit.currentQty"), size: 120,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => <span className="font-semibold">{row.original.currentQty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
@@ -106,7 +106,7 @@ export default function LotSplitPage() {
       meta: { filterType: "text" as const },
     },
     {
-      id: "actions", header: "", size: 90,
+      id: "actions", header: "", size: 90, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <Button size="sm" variant="secondary" onClick={() => {
           setSelectedLot(row.original);

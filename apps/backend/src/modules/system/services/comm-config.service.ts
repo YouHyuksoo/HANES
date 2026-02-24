@@ -15,7 +15,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, IsNull } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { CommConfig } from '../../../entities/comm-config.entity';
 import {
   CreateCommConfigDto,
@@ -38,7 +38,6 @@ export class CommConfigService {
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
     };
@@ -66,7 +65,7 @@ export class CommConfigService {
   /** 단건 조회 (ID) */
   async findById(id: string) {
     const config = await this.commConfigRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!config) {
@@ -79,7 +78,7 @@ export class CommConfigService {
   /** 이름으로 조회 (다른 화면에서 참조용) */
   async findByName(configName: string) {
     const config = await this.commConfigRepository.findOne({
-      where: { configName, deletedAt: IsNull() },
+      where: { configName },
     });
 
     if (!config) {
@@ -95,7 +94,6 @@ export class CommConfigService {
       where: {
         commType,
         useYn: 'Y',
-        deletedAt: IsNull(),
       },
       select: [
         'id',
@@ -176,7 +174,7 @@ export class CommConfigService {
   async remove(id: string) {
     await this.findById(id);
 
-    await this.commConfigRepository.softDelete(id);
+    await this.commConfigRepository.delete(id);
 
     return { message: '통신설정이 삭제되었습니다.' };
   }

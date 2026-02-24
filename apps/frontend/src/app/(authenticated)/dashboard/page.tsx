@@ -183,13 +183,14 @@ export default function DashboardPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const columns = useMemo<ColumnDef<RecentProduction>[]>(() => [
-    { accessorKey: "orderNo", header: t("dashboard.orderNo"), size: 160 },
-    { accessorKey: "partName", header: t("dashboard.partName"), size: 180 },
-    { accessorKey: "line", header: t("dashboard.line"), size: 100 },
-    { accessorKey: "planQty", header: t("dashboard.planQty"), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: "actualQty", header: t("dashboard.actualQty"), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "orderNo", header: t("dashboard.orderNo"), size: 160, meta: { filterType: "text" as const } },
+    { accessorKey: "partName", header: t("dashboard.partName"), size: 180, meta: { filterType: "text" as const } },
+    { accessorKey: "line", header: t("dashboard.line"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "planQty", header: t("dashboard.planQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "actualQty", header: t("dashboard.actualQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     {
       accessorKey: "progress", header: t("dashboard.progress"), size: 160,
+      meta: { filterType: "none" as const },
       cell: ({ getValue }) => {
         const value = getValue() as number;
         return (
@@ -204,6 +205,7 @@ export default function DashboardPage() {
     },
     {
       accessorKey: "status", header: t("dashboard.status"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const status = getValue() as string;
         const colorMap: Record<string, string> = {

@@ -4,7 +4,7 @@
  */
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { CreateWarehouseDto, UpdateWarehouseDto } from '../dto/inventory.dto';
@@ -24,7 +24,6 @@ export class WarehouseService {
    */
   async findAll(warehouseType?: string, company?: string, plant?: string) {
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
     };
@@ -49,7 +48,7 @@ export class WarehouseService {
    */
   async findOne(id: string) {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!warehouse) {
@@ -64,7 +63,7 @@ export class WarehouseService {
    */
   async findByCode(warehouseCode: string) {
     return this.warehouseRepository.findOne({
-      where: { warehouseCode, deletedAt: IsNull() },
+      where: { warehouseCode },
     });
   }
 
@@ -101,7 +100,7 @@ export class WarehouseService {
    */
   async update(id: string, dto: UpdateWarehouseDto) {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!warehouse) {
@@ -126,7 +125,7 @@ export class WarehouseService {
    */
   async remove(id: string) {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!warehouse) {
@@ -142,7 +141,7 @@ export class WarehouseService {
       throw new ConflictException('해당 창고에 재고가 존재하여 삭제할 수 없습니다.');
     }
 
-    await this.warehouseRepository.softDelete(id);
+    await this.warehouseRepository.delete(id);
 
     return { id, deleted: true };
   }
@@ -156,7 +155,6 @@ export class WarehouseService {
         warehouseType,
         isDefault: 'Y',
         useYn: 'Y',
-        deletedAt: IsNull(),
       },
     });
   }

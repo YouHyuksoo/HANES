@@ -76,12 +76,12 @@ export default function ShipHistoryPage() {
   const columns = useMemo<ColumnDef<ShipHistory>[]>(() => [
     { accessorKey: "shipOrderNo", header: t("shipping.history.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.history.customer"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "dueDate", header: t("shipping.history.dueDate"), size: 100 },
-    { accessorKey: "shipDate", header: t("shipping.history.shipDateCol"), size: 100 },
-    { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70 },
-    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 100 },
+    { accessorKey: "dueDate", header: t("shipping.history.dueDate"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "shipDate", header: t("shipping.history.shipDateCol"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70, meta: { filterType: "number" as const } },
+    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
+    { accessorKey: "createdAt", header: t("common.createdAt"), size: 100, meta: { filterType: "date" as const } },
   ], [t]);
 
   return (

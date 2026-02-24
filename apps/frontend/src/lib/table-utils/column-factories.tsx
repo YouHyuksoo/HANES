@@ -148,7 +148,7 @@ export function createQtyColumn<T>(
     header: t("common.qty", "수량"),
     size: options.size ?? 100,
     cell: QtyCell,
-    meta: { align: "right" },
+    meta: { filterType: "number" as const, align: "right" },
   };
 }
 

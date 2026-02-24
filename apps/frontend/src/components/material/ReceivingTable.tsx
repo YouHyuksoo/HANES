@@ -22,16 +22,17 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<ReceivingItem>[]>(
     () => [
-      { accessorKey: 'receiveNo', header: t('material.col.arrivalNo'), size: 160 },
-      { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100 },
-      { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100 },
-      { accessorKey: 'partCode', header: t('common.partCode'), size: 110 },
-      { accessorKey: 'partName', header: t('common.partName'), size: 130 },
-      { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150 },
+      { accessorKey: 'receiveNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
+      { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100, meta: { filterType: 'date' as const } },
+      { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100, meta: { filterType: 'text' as const } },
+      { accessorKey: 'partCode', header: t('common.partCode'), size: 110, meta: { filterType: 'text' as const } },
+      { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
+      { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'quantity',
         header: t('common.quantity'),
         size: 100,
+        meta: { filterType: 'number' as const },
         cell: ({ row }) => (
           <span className="font-medium">
             {row.original.quantity.toLocaleString()} {row.original.unit}
@@ -42,23 +43,27 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
         accessorKey: 'iqcPassedAt',
         header: t('material.col.iqcPassedAt'),
         size: 130,
+        meta: { filterType: 'date' as const },
       },
       {
         accessorKey: 'status',
         header: t('common.status'),
         size: 100,
+        meta: { filterType: 'multi' as const },
         cell: ({ getValue }) => <ReceivingStatusBadge status={getValue() as ReceivingStatus} />,
       },
       {
         accessorKey: 'warehouse',
         header: t('material.col.warehouse'),
         size: 100,
+        meta: { filterType: 'text' as const },
         cell: ({ getValue }) => <span>{(getValue() as string) || '-'}</span>,
       },
       {
         id: 'actions',
         header: t('material.col.receiving'),
         size: 70,
+        meta: { filterType: 'none' as const },
         cell: ({ row }) => {
           const item = row.original;
           const canConfirm = item.status === 'PASSED';
@@ -80,5 +85,5 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
     [onConfirm, t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter />;
 }

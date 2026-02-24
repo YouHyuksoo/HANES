@@ -14,7 +14,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   OneToMany,
 } from 'typeorm';
@@ -79,9 +78,6 @@ export class EquipBomItem {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   // Relations
   @OneToMany(() => EquipBomRel, (rel) => rel.bomItem)

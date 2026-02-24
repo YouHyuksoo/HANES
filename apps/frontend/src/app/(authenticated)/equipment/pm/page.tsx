@@ -89,6 +89,7 @@ export default function PmPage() {
     },
     {
       accessorKey: "category", header: t("equipment.pm.category"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const cat = getValue() as string;
         const labels: Record<string, string> = {
@@ -99,6 +100,7 @@ export default function PmPage() {
     },
     {
       id: "lifeProgress", header: t("equipment.pm.lifeProgress"), size: 160,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const { currentShots, expectedLife } = row.original;
         const pct = expectedLife > 0 ? Math.min(Math.round((currentShots / expectedLife) * 100), 100) : 0;
@@ -115,6 +117,7 @@ export default function PmPage() {
     },
     {
       accessorKey: "status", header: t("common.status"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         const cfg = statusConfig[s] || statusConfig.OK;

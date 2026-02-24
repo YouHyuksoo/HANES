@@ -126,6 +126,7 @@ export default function InventoryStockPage() {
       accessorKey: 'warehouseType',
       header: t('inventory.stock.warehouseType'),
       size: 100,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }: CellContext<StockData, unknown>) => {
         const type = getValue() as string;
         return (
@@ -144,6 +145,7 @@ export default function InventoryStockPage() {
       accessorKey: 'lotNo',
       header: t('inventory.stock.lot'),
       size: 150,
+      meta: { filterType: 'text' as const },
       cell: ({ getValue }: CellContext<StockData, unknown>) => getValue() || '-',
     },
     // 현재고
@@ -167,13 +169,14 @@ export default function InventoryStockPage() {
           </span>
         );
       },
-      meta: { align: 'right' },
+      meta: { filterType: 'number' as const, align: 'right' },
     },
     // 단위
     {
       accessorKey: 'unit',
       header: t('inventory.stock.unit'),
       size: 60,
+      meta: { filterType: 'text' as const },
     },
     // 마지막 거래일 (공통 유틸리티)
     createDateColumn<StockData>(t, 'lastTransAt', t('inventory.stock.lastTransaction'), { size: 150 }),
@@ -213,6 +216,7 @@ export default function InventoryStockPage() {
             columns={columns}
             isLoading={loading}
             emptyMessage={t('inventory.stock.emptyMessage')}
+            enableColumnFilter
             enableExport
             exportFileName={t('inventory.stock.title')}
             toolbarLeft={

@@ -135,26 +135,26 @@ export default function PoPage() {
       accessorKey: "partnerName", header: t("material.po.partnerName"), size: 120,
       meta: { filterType: "text" as const },
     },
-    { accessorKey: "orderDate", header: t("material.po.orderDate"), size: 110 },
-    { accessorKey: "dueDate", header: t("material.po.dueDate"), size: 110 },
+    { accessorKey: "orderDate", header: t("material.po.orderDate"), size: 110, meta: { filterType: "date" as const } },
+    { accessorKey: "dueDate", header: t("material.po.dueDate"), size: 110, meta: { filterType: "date" as const } },
     {
       accessorKey: "itemCount", header: t("material.po.itemCount"), size: 80,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       accessorKey: "totalAmount", header: t("material.po.totalAmount"), size: 130,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 100,
+      accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
       },
     },
     {
-      id: "actions", header: "", size: 80,
+      id: "actions", header: "", size: 80, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">

@@ -151,11 +151,13 @@ export default function LotPage() {
       accessorKey: 'lotNo',
       header: t('inventory.lot.lotNo'),
       size: 160,
+      meta: { filterType: 'text' as const },
     },
     {
       accessorKey: 'partType',
       header: t('inventory.lot.partType'),
       size: 100,
+      meta: { filterType: 'multi' as const },
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${getPartTypeColor(row.original.partType)}`}>
           {getPartTypeLabel(row.original.partType)}
@@ -166,24 +168,28 @@ export default function LotPage() {
       accessorKey: 'partCode',
       header: t('inventory.lot.partCode'),
       size: 120,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.part.partCode,
     },
     {
       accessorKey: 'partName',
       header: t('inventory.lot.partName'),
       size: 180,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.part.partName,
     },
     {
       accessorKey: 'initQty',
       header: t('inventory.lot.initQty'),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ row }) => row.original.initQty.toLocaleString(),
     },
     {
       accessorKey: 'currentQty',
       header: t('inventory.lot.currentQty'),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ row }) => (
         <span className={row.original.currentQty <= 0 ? 'text-gray-400' : 'font-semibold'}>
           {row.original.currentQty.toLocaleString()}
@@ -194,6 +200,7 @@ export default function LotPage() {
       accessorKey: 'usage',
       header: t('inventory.lot.usageRate'),
       size: 80,
+      meta: { filterType: 'number' as const },
       cell: ({ row }) => {
         const rate = row.original.initQty > 0
           ? ((row.original.initQty - row.original.currentQty) / row.original.initQty * 100)
@@ -205,6 +212,7 @@ export default function LotPage() {
       accessorKey: 'status',
       header: t('inventory.lot.status'),
       size: 80,
+      meta: { filterType: 'multi' as const },
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(row.original.status)}`}>
           {getStatusLabel(row.original.status)}
@@ -215,18 +223,21 @@ export default function LotPage() {
       accessorKey: 'vendor',
       header: t('inventory.lot.vendor'),
       size: 100,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.vendor || '-',
     },
     {
       accessorKey: 'recvDate',
       header: t('inventory.lot.recvDate'),
       size: 100,
+      meta: { filterType: 'date' as const },
       cell: ({ row }) => row.original.recvDate ? new Date(row.original.recvDate).toLocaleDateString() : '-',
     },
     {
       accessorKey: 'expireDate',
       header: t('inventory.lot.expireDate'),
       size: 100,
+      meta: { filterType: 'date' as const },
       cell: ({ row }) => {
         if (!row.original.expireDate) return '-';
         const date = new Date(row.original.expireDate);
@@ -242,12 +253,14 @@ export default function LotPage() {
       accessorKey: 'parentLot',
       header: t('inventory.lot.parentLot'),
       size: 140,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.parentLot?.lotNo || '-',
     },
     {
       id: 'actions',
       header: '',
       size: 80,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => (
         <button onClick={() => handleViewDetail(row.original)} className="p-1 hover:bg-surface rounded" title={t('common.detail')}>
           <Eye className="w-4 h-4 text-primary" />
@@ -294,6 +307,7 @@ export default function LotPage() {
             data={filteredLots}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             exportFileName={t('inventory.lot.title')}
             emptyMessage={t('inventory.lot.emptyMessage')}

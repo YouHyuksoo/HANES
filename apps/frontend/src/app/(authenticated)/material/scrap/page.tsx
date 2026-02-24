@@ -108,7 +108,7 @@ export default function ScrapPage() {
     },
     {
       accessorKey: "qty", header: t("material.scrap.qty"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">-{(getValue() as number).toLocaleString()}</span>,
     },
     {

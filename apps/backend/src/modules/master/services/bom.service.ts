@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, LessThanOrEqual, MoreThanOrEqual, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
@@ -40,8 +40,7 @@ export class BomService {
       let queryBuilder = this.bomRepository.createQueryBuilder('bom')
         .select('bom.parentPartId', 'parentPartId')
         .addSelect('COUNT(bom.id)', 'bomCount')
-        .where('bom.deletedAt IS NULL')
-        .andWhere('bom.useYn = :useYn', { useYn: 'Y' })
+        .where('bom.useYn = :useYn', { useYn: 'Y' })
         .groupBy('bom.parentPartId');
 
       queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
@@ -62,7 +61,7 @@ export class BomService {
 
     const parentIds = grouped.map((g) => g.parentPartId);
     const parents = await this.partRepository.find({
-      where: { id: In(parentIds), deletedAt: IsNull() },
+      where: { id: In(parentIds) },
       select: ['id', 'partCode', 'partName', 'partNo', 'partType', 'spec', 'unit', 'customer', 'remark'],
       order: { partCode: 'asc' },
     });
@@ -85,7 +84,6 @@ export class BomService {
     const queryBuilder = this.bomRepository.createQueryBuilder('bom')
       .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.id = bom.parentPartId')
       .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.id = bom.childPartId')
-      .where('bom.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('bom.company = :company', { company });
@@ -124,7 +122,6 @@ export class BomService {
       .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.id = bom.parentPartId')
       .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.id = bom.childPartId')
       .where('bom.id = :id', { id })
-      .andWhere('bom.deletedAt IS NULL')
       .getOne();
 
     if (!bom) throw new NotFoundException(`BOM을 찾을 수 없습니다: ${id}`);
@@ -135,7 +132,6 @@ export class BomService {
     let queryBuilder = this.bomRepository.createQueryBuilder('bom')
       .leftJoinAndSelect(PartMaster, 'childPart', 'childPart.id = bom.childPartId')
       .where('bom.parentPartId = :parentPartId', { parentPartId })
-      .andWhere('bom.deletedAt IS NULL')
       .andWhere('bom.useYn = :useYn', { useYn: 'Y' });
 
     queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
@@ -268,7 +264,6 @@ export class BomService {
         parentPartId: dto.parentPartId,
         childPartId: dto.childPartId,
         revision: dto.revision ?? 'A',
-        deletedAt: IsNull(),
       },
     });
 
@@ -314,7 +309,7 @@ export class BomService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.bomRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.bomRepository.delete(id);
+    return { id };
   }
 }

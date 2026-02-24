@@ -121,18 +121,18 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
       id: "select", header: () => (
         <input type="checkbox" checked={boxes.length > 0 && selectedBoxIds.size === boxes.length}
           onChange={toggleAll} className="rounded" />
-      ), size: 40,
+      ), size: 40, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <input type="checkbox" checked={selectedBoxIds.has(row.original.id)}
           onChange={() => toggleBox(row.original.id)} className="rounded" />
       ),
     },
     {
-      accessorKey: "boxNo", header: t("quality.oqc.boxNo"), size: 160,
+      accessorKey: "boxNo", header: t("quality.oqc.boxNo"), size: 160, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "qty", header: t("quality.oqc.qty"), size: 80,
+      accessorKey: "qty", header: t("quality.oqc.qty"), size: 80, meta: { filterType: "number" as const },
       cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span>,
     },
   ], [t, selectedBoxIds, boxes, toggleAll, toggleBox]);

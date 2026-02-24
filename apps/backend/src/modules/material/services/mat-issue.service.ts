@@ -122,7 +122,7 @@ export class MatIssueService {
       for (const item of items) {
         // LOT 유효성 확인
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { id: item.lotId, deletedAt: IsNull() },
+          where: { id: item.lotId },
         });
 
         if (!lot) {
@@ -211,7 +211,7 @@ export class MatIssueService {
    */
   async scanIssue(dto: ScanIssueDto) {
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo: dto.lotNo, deletedAt: IsNull() },
+      where: { lotNo: dto.lotNo },
     });
     if (!lot) {
       throw new BadRequestException(`LOT을 찾을 수 없습니다: ${dto.lotNo}`);

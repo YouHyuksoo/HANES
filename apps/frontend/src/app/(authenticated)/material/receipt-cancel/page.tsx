@@ -106,7 +106,7 @@ export default function ReceiptCancelPage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "transType", header: t("material.receiptCancel.transType"), size: 90,
+      accessorKey: "transType", header: t("material.receiptCancel.transType"), size: 90, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
           {getValue() as string}
@@ -133,7 +133,7 @@ export default function ReceiptCancelPage() {
     },
     {
       accessorKey: "qty", header: t("material.receiptCancel.qty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
         <span className="font-medium text-green-600 dark:text-green-400">
           +{row.original.qty.toLocaleString()} {row.original.unit || ""}
@@ -141,14 +141,14 @@ export default function ReceiptCancelPage() {
       ),
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 80,
+      accessorKey: "status", header: t("common.status"), size: 80, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
       },
     },
     {
-      id: "actions", header: "", size: 90,
+      id: "actions", header: "", size: 90, meta: { filterType: "none" as const },
       cell: ({ row }) => {
         if (row.original.status === "CANCELED" || row.original.cancelRefId) return null;
         return (

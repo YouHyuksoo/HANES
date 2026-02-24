@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
@@ -123,7 +123,7 @@ export class EquipInspectService {
   ) {
     // 설비 존재 확인
     const equip = await this.equipMasterRepository.findOne({
-      where: { id: dto.equipId, deletedAt: IsNull() },
+      where: { id: dto.equipId },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
 
@@ -208,7 +208,7 @@ export class EquipInspectService {
     const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
 
     // 1) 사용중인 설비 목록 (lineCode 필터)
-    const equipWhere: Record<string, unknown> = { useYn: 'Y', deletedAt: IsNull() };
+    const equipWhere: Record<string, unknown> = { useYn: 'Y' };
     if (lineCode) equipWhere.lineCode = lineCode;
     const equips = await this.equipMasterRepository.find({ where: equipWhere, select: ['id', 'lineCode'] });
     const equipIds = equips.map((e) => e.id);
@@ -225,7 +225,6 @@ export class EquipInspectService {
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
       .andWhere('item.equipId IN (:...equipIds)', { equipIds })
-      .andWhere('item.deletedAt IS NULL')
       .getMany();
 
     // 설비별 점검항목 그룹핑
@@ -303,7 +302,7 @@ export class EquipInspectService {
     const dateObj = new Date(date);
 
     // 1) 사용중인 설비 목록
-    const equipWhere: Record<string, unknown> = { useYn: 'Y', deletedAt: IsNull() };
+    const equipWhere: Record<string, unknown> = { useYn: 'Y' };
     if (lineCode) equipWhere.lineCode = lineCode;
     const equips = await this.equipMasterRepository.find({
       where: equipWhere,
@@ -319,7 +318,6 @@ export class EquipInspectService {
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
       .andWhere('item.equipId IN (:...equipIds)', { equipIds })
-      .andWhere('item.deletedAt IS NULL')
       .orderBy('item.seq', 'ASC')
       .getMany();
 

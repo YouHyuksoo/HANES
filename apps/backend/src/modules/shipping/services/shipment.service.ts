@@ -23,7 +23,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And, DataSource } from 'typeorm';
+import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And, DataSource } from 'typeorm';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -70,7 +70,6 @@ export class ShipmentService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(shipNo && { shipNo: ILike(`%${shipNo}%`) }),
@@ -105,7 +104,7 @@ export class ShipmentService {
    */
   async findById(id: string) {
     const shipment = await this.shipmentRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!shipment) {
@@ -120,7 +119,7 @@ export class ShipmentService {
    */
   async findByShipNo(shipNo: string) {
     const shipment = await this.shipmentRepository.findOne({
-      where: { shipNo, deletedAt: IsNull() },
+      where: { shipNo },
     });
 
     if (!shipment) {
@@ -136,7 +135,7 @@ export class ShipmentService {
   async create(dto: CreateShipmentDto) {
     // 중복 체크
     const existing = await this.shipmentRepository.findOne({
-      where: { shipNo: dto.shipNo, deletedAt: IsNull() },
+      where: { shipNo: dto.shipNo },
     });
 
     if (existing) {
@@ -187,7 +186,7 @@ export class ShipmentService {
   }
 
   /**
-   * 출하 삭제 (소프트 삭제)
+   * 출하 삭제
    */
   async delete(id: string) {
     const shipment = await this.findById(id);
@@ -202,10 +201,7 @@ export class ShipmentService {
       throw new BadRequestException('팔레트가 적재된 출하는 삭제할 수 없습니다. 먼저 팔레트를 하차해주세요.');
     }
 
-    await this.shipmentRepository.update(
-      { id },
-      { deletedAt: new Date() }
-    );
+    await this.shipmentRepository.delete(id);
 
     return { id, deleted: true };
   }
@@ -227,7 +223,6 @@ export class ShipmentService {
     const pallets = await this.palletRepository.find({
       where: {
         id: In(dto.palletIds),
-        deletedAt: IsNull(),
       },
     });
 
@@ -269,7 +264,6 @@ export class ShipmentService {
       const shipmentSummary = await queryRunner.manager
         .createQueryBuilder(PalletMaster, 'pallet')
         .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
-        .andWhere('pallet.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(pallet.boxCount)', 'boxCount')
         .addSelect('SUM(pallet.totalQty)', 'totalQty')
@@ -312,7 +306,6 @@ export class ShipmentService {
       where: {
         id: In(dto.palletIds),
         shipmentId: id,
-        deletedAt: IsNull(),
       },
     });
 
@@ -342,7 +335,6 @@ export class ShipmentService {
       const shipmentSummary = await queryRunner.manager
         .createQueryBuilder(PalletMaster, 'pallet')
         .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
-        .andWhere('pallet.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(pallet.boxCount)', 'boxCount')
         .addSelect('SUM(pallet.totalQty)', 'totalQty')
@@ -407,7 +399,7 @@ export class ShipmentService {
 
     // OQC 검증: 팔레트 내 박스 중 oqcStatus가 FAIL 또는 PENDING이면 출하 차단
     const pallets = await this.palletRepository.find({
-      where: { shipmentId: id, deletedAt: IsNull() },
+      where: { shipmentId: id },
       select: ['id'],
     });
 
@@ -416,7 +408,6 @@ export class ShipmentService {
       const failedBoxes = await this.boxRepository
         .createQueryBuilder('box')
         .where('box.palletId IN (:...palletIds)', { palletIds })
-        .andWhere('box.deletedAt IS NULL')
         .andWhere('box.oqcStatus IN (:...blockedStatuses)', { blockedStatuses: ['FAIL', 'PENDING'] })
         .select(['box.id', 'box.boxNo', 'box.oqcStatus'])
         .getMany();
@@ -438,7 +429,7 @@ export class ShipmentService {
       // 팔레트 상태 업데이트
       await queryRunner.manager.update(
         PalletMaster,
-        { shipmentId: id, deletedAt: IsNull() },
+        { shipmentId: id },
         { status: 'SHIPPED' }
       );
 
@@ -446,7 +437,7 @@ export class ShipmentService {
       if (palletIds.length > 0) {
         await queryRunner.manager.update(
           BoxMaster,
-          { palletId: In(palletIds), deletedAt: IsNull() },
+          { palletId: In(palletIds) },
           { status: 'SHIPPED' }
         );
       }
@@ -509,7 +500,7 @@ export class ShipmentService {
       // 팔레트 상태 복원 (CLOSED로)
       await queryRunner.manager.update(
         PalletMaster,
-        { shipmentId: id, deletedAt: IsNull() },
+        { shipmentId: id },
         {
           shipmentId: null,
           status: 'CLOSED',
@@ -580,7 +571,6 @@ export class ShipmentService {
       where: {
         erpSyncYn: 'N',
         status: In(['SHIPPED', 'DELIVERED']),
-        deletedAt: IsNull(),
       },
       order: { shipAt: 'ASC' },
     });
@@ -607,7 +597,6 @@ export class ShipmentService {
     const { startDate, endDate, customer } = query;
 
     const where: any = {
-      deletedAt: IsNull(),
       shipDate: Between(new Date(startDate), new Date(endDate)),
       status: In(['SHIPPED', 'DELIVERED']),
       ...(customer && { customer: ILike(`%${customer}%`) }),
@@ -672,7 +661,6 @@ export class ShipmentService {
   async getCustomerStats(startDate: string, endDate: string) {
     const shipments = await this.shipmentRepository.find({
       where: {
-        deletedAt: IsNull(),
         shipDate: Between(new Date(startDate), new Date(endDate)),
         status: In(['SHIPPED', 'DELIVERED']),
       },
@@ -720,7 +708,7 @@ export class ShipmentService {
     await this.findById(id); // 존재 확인
 
     const pallets = await this.palletRepository.find({
-      where: { shipmentId: id, deletedAt: IsNull() },
+      where: { shipmentId: id },
       order: { palletNo: 'ASC' },
     });
 
@@ -728,7 +716,7 @@ export class ShipmentService {
     const result = await Promise.all(
       pallets.map(async (pallet) => {
         const boxes = await this.boxRepository.find({
-          where: { palletId: pallet.id, deletedAt: IsNull() },
+          where: { palletId: pallet.id },
           order: { boxNo: 'ASC' },
           select: ['id', 'boxNo', 'partId', 'qty', 'status'],
         });
@@ -747,7 +735,7 @@ export class ShipmentService {
     await this.findById(id); // 존재 확인
 
     const pallet = await this.palletRepository.findOne({
-      where: { palletNo, deletedAt: IsNull() },
+      where: { palletNo },
     });
 
     if (!pallet) {
@@ -779,7 +767,6 @@ export class ShipmentService {
       .createQueryBuilder('box')
       .innerJoin(PalletMaster, 'pallet', 'box.palletId = pallet.id')
       .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
-      .andWhere('box.deletedAt IS NULL')
       .select(['box.partId', 'box.qty'])
       .getMany();
 

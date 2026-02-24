@@ -94,6 +94,7 @@ export default function InterfaceLogPage() {
   const columns = useMemo<ColumnDef<InterLog>[]>(() => [
     {
       accessorKey: "direction", header: t("interface.log.direction"), size: 70,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const dir = getValue() as string;
         return (
@@ -103,23 +104,27 @@ export default function InterfaceLogPage() {
         );
       },
     },
-    { accessorKey: "messageType", header: t("interface.log.messageType"), size: 100, cell: ({ getValue }) => messageTypeLabels[getValue() as string] || getValue() },
+    { accessorKey: "messageType", header: t("interface.log.messageType"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => messageTypeLabels[getValue() as string] || getValue() },
     { accessorKey: "interfaceId", header: t("interface.log.interfaceId"), size: 120, meta: { filterType: "text" as const } },
     {
       accessorKey: "status", header: t("common.status"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => { const status = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>; },
     },
     {
       accessorKey: "retryCount", header: t("interface.log.retryCount"), size: 70,
+      meta: { filterType: "number" as const },
       cell: ({ getValue }) => { const count = getValue() as number; return count > 0 ? <span className="text-yellow-600 dark:text-yellow-400">{count}{t("common.count")}</span> : "-"; },
     },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140 },
+    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
     {
       accessorKey: "errorMsg", header: t("interface.log.errorMsg"), size: 150,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => { const msg = getValue() as string | null; return msg ? <span className="text-red-600 dark:text-red-400 text-xs">{msg}</span> : "-"; },
     },
     {
       id: "actions", header: t("common.manage"), size: 100,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => { setSelectedLog(row.original); setIsDetailModalOpen(true); }} className="p-1 hover:bg-surface rounded" title={t("common.detail")}><Eye className="w-4 h-4 text-primary" /></button>

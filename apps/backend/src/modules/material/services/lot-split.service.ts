@@ -32,7 +32,6 @@ export class LotSplitService {
 
     // 분할 가능한 LOT: 재고가 있고, DEPLETED 상태가 아닌 LOT
     const where: any = {
-      deletedAt: IsNull(),
       currentQty: MoreThan(1),
       status: Not('DEPLETED'),
       ...(company && { company }),
@@ -92,7 +91,7 @@ export class LotSplitService {
     try {
       // 원본 LOT 조회
       const sourceLot = await queryRunner.manager.findOne(MatLot, {
-        where: { id: sourceLotId, deletedAt: IsNull() },
+        where: { id: sourceLotId },
       });
 
       if (!sourceLot) {
@@ -131,7 +130,7 @@ export class LotSplitService {
 
       // 중복 LOT 번호 확인
       const existingLot = await queryRunner.manager.findOne(MatLot, {
-        where: { lotNo: generatedLotNo, deletedAt: IsNull() },
+        where: { lotNo: generatedLotNo },
       });
       if (existingLot) {
         throw new BadRequestException(`이미 존재하는 LOT 번호입니다: ${generatedLotNo}`);

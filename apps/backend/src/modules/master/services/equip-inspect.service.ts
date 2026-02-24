@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
 import { CreateEquipInspectItemDto, UpdateEquipInspectItemDto, EquipInspectItemQueryDto } from '../dto/equip-inspect.dto';
 
@@ -19,8 +19,7 @@ export class EquipInspectService {
   async findAll(query: EquipInspectItemQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, equipId, inspectType, search, useYn } = query;
 
-    const queryBuilder = this.equipInspectRepository.createQueryBuilder('item')
-      .where('item.deletedAt IS NULL');
+    const queryBuilder = this.equipInspectRepository.createQueryBuilder('item');
 
     if (company) {
       queryBuilder.andWhere('item.company = :company', { company });
@@ -60,7 +59,7 @@ export class EquipInspectService {
 
   async findById(id: string) {
     const item = await this.equipInspectRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!item) {
@@ -91,7 +90,7 @@ export class EquipInspectService {
   async delete(id: string) {
     const item = await this.findById(id);
 
-    await this.equipInspectRepository.softRemove(item);
+    await this.equipInspectRepository.remove(item);
 
     return { id, deleted: true };
   }

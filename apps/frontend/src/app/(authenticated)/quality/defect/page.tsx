@@ -119,15 +119,15 @@ export default function DefectPage() {
   }, [data]);
 
   const columns = useMemo<ColumnDef<Defect>[]>(() => [
-    { accessorKey: "occurredAt", header: t("quality.defect.occurredAt"), size: 140 },
+    { accessorKey: "occurredAt", header: t("quality.defect.occurredAt"), size: 140, meta: { filterType: "date" as const } },
     { accessorKey: "workOrderNo", header: t("quality.defect.workOrder"), size: 160, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "defectCode", header: t("quality.defect.defectCode"), size: 80 },
+    { accessorKey: "defectCode", header: t("quality.defect.defectCode"), size: 80, meta: { filterType: "text" as const } },
     { accessorKey: "defectName", header: t("quality.defect.defectName"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "quantity", header: t("quality.defect.quantity"), size: 60, cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 100, cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_STATUS" code={getValue() as string} /> },
-    { accessorKey: "operator", header: t("quality.defect.operator"), size: 80 },
+    { accessorKey: "quantity", header: t("quality.defect.quantity"), size: 60, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_STATUS" code={getValue() as string} /> },
+    { accessorKey: "operator", header: t("quality.defect.operator"), size: 80, meta: { filterType: "text" as const } },
     {
-      id: "actions", header: t("common.manage"), size: 100,
+      id: "actions", header: t("common.manage"), size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <button className="p-1 hover:bg-surface rounded text-xs text-primary" onClick={() => { setSelectedDefect(row.original); setIsStatusModalOpen(true); }}>
           {t("quality.defect.changeStatus")}

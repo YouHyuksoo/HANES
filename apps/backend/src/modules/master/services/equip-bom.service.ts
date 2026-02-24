@@ -93,7 +93,7 @@ export class EquipBomService {
 
   async deleteItem(id: string): Promise<void> {
     const item = await this.findItemById(id);
-    await this.bomItemRepo.softRemove(item);
+    await this.bomItemRepo.remove(item);
   }
 
   // ========================================
@@ -106,8 +106,7 @@ export class EquipBomService {
     const queryBuilder = this.bomRelRepo
       .createQueryBuilder('rel')
       .leftJoinAndSelect('rel.equipment', 'equip')
-      .leftJoinAndSelect('rel.bomItem', 'item')
-      .where('rel.deletedAt IS NULL');
+      .leftJoinAndSelect('rel.bomItem', 'item');
 
     if (equipId) {
       queryBuilder.andWhere('rel.equipId = :equipId', { equipId });
@@ -174,7 +173,7 @@ export class EquipBomService {
 
   async deleteRel(id: string): Promise<void> {
     const rel = await this.findRelById(id);
-    await this.bomRelRepo.softRemove(rel);
+    await this.bomRelRepo.remove(rel);
   }
 
   // ========================================

@@ -124,14 +124,16 @@ export default function LotMergePage() {
       meta: { filterType: "text" as const },
     },
     { accessorKey: "currentQty", header: t("common.quantity"), size: 90,
+      meta: { filterType: "number" as const },
       cell: ({ getValue, row }) => (
         <span className="font-semibold">{(getValue() as number).toLocaleString()} {row.original.unit || "EA"}</span>
       ),
     },
     { accessorKey: "vendor", header: t("material.lotMerge.vendor"), size: 100,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => getValue() || "-",
     },
-    { accessorKey: "status", header: t("common.status"), size: 80,
+    { accessorKey: "status", header: t("common.status"), size: 80, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         const color = v === "NORMAL"
@@ -141,6 +143,7 @@ export default function LotMergePage() {
       },
     },
     { accessorKey: "expireDate", header: t("material.lotMerge.expireDate"), size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? new Date(v).toLocaleDateString() : "-";

@@ -9,7 +9,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, IsNull } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { CreateUserDto, UpdateUserDto } from './user.dto';
 
@@ -25,7 +25,6 @@ export class UserService {
   /** 사용자 목록 조회 (검색/필터) */
   async findAll(query?: { search?: string; role?: string; status?: string }, company?: string) {
     const where: Record<string, unknown> = {
-      deletedAt: IsNull(),
       ...(company && { company }),
     };
 
@@ -60,7 +59,7 @@ export class UserService {
   /** 사용자 상세 조회 */
   async findOne(id: string) {
     const user = await this.userRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       select: [
         'id',
         'email',
@@ -149,8 +148,7 @@ export class UserService {
   async remove(id: string) {
     await this.findOne(id);
 
-    await this.userRepository.softDelete(id);
-    await this.userRepository.update(id, { status: 'INACTIVE' });
+    await this.userRepository.delete(id);
 
     this.logger.log(`User deleted: ${id}`);
     return { message: '사용자가 삭제되었습니다.' };

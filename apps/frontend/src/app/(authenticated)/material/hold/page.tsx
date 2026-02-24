@@ -113,7 +113,7 @@ export default function HoldPage() {
     },
     {
       accessorKey: "currentQty", header: t("material.hold.currentQty"), size: 120,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
         <span className="font-semibold">{row.original.currentQty.toLocaleString()} {row.original.unit || ""}</span>
       ),
@@ -123,14 +123,14 @@ export default function HoldPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 80,
+      accessorKey: "status", header: t("common.status"), size: 80, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
       },
     },
     {
-      id: "actions", header: "", size: 100,
+      id: "actions", header: "", size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const isHold = row.original.status === "HOLD";
         return (

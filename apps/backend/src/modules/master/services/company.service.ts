@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CompanyMaster } from '../../../entities/company-master.entity';
 import { CreateCompanyDto, UpdateCompanyDto, CompanyQueryDto } from '../dto/company.dto';
 
@@ -27,7 +27,6 @@ export class CompanyService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.companyRepository.createQueryBuilder('company')
-      .where('company.deletedAt IS NULL');
 
     if (useYn) {
       queryBuilder.andWhere('company.useYn = :useYn', { useYn });
@@ -59,7 +58,6 @@ export class CompanyService {
       .select('c.companyCode', 'companyCode')
       .addSelect('MIN(c.companyName)', 'companyName')
       .where('c.useYn = :useYn', { useYn: 'Y' })
-      .andWhere('c.deletedAt IS NULL')
       .groupBy('c.companyCode')
       .orderBy('c.companyCode', 'ASC')
       .getRawMany();
@@ -69,7 +67,7 @@ export class CompanyService {
   /** 공개 API — 회사별 사업장 목록 (로그인 페이지용, 인증 불필요) */
   async findPlantsByCompany(companyCode: string) {
     const rows = await this.companyRepository.find({
-      where: { companyCode, useYn: 'Y', deletedAt: IsNull() },
+      where: { companyCode, useYn: 'Y' },
       select: ['plant', 'companyName'],
       order: { plant: 'asc' },
     });
@@ -81,7 +79,7 @@ export class CompanyService {
   /** 상세 조회 */
   async findById(id: string) {
     const company = await this.companyRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!company) throw new NotFoundException(`회사를 찾을 수 없습니다: ${id}`);
     return company;
@@ -90,7 +88,7 @@ export class CompanyService {
   /** 생성 */
   async create(dto: CreateCompanyDto) {
     const existing = await this.companyRepository.findOne({
-      where: { companyCode: dto.companyCode, deletedAt: IsNull() },
+      where: { companyCode: dto.companyCode },
     });
     if (existing) throw new ConflictException(`이미 존재하는 회사 코드입니다: ${dto.companyCode}`);
 
@@ -120,7 +118,7 @@ export class CompanyService {
   /** 소프트 삭제 */
   async delete(id: string) {
     await this.findById(id);
-    await this.companyRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.companyRepository.delete(id);
+    return { id };
   }
 }

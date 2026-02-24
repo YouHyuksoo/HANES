@@ -80,7 +80,7 @@ export default function WorkerPage() {
   const columns = useMemo<ColumnDef<Worker>[]>(() => [
     {
       id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const },
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingWorker(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
@@ -94,16 +94,18 @@ export default function WorkerPage() {
     },
     {
       id: "photo", header: t("master.worker.photo", "사진"), size: 60,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => <WorkerAvatar name={row.original.workerName} dept={row.original.dept ?? ""} photoUrl={row.original.photoUrl} />,
     },
-    { accessorKey: "workerCode", header: t("master.worker.workerCode", "작업자코드"), size: 100 },
-    { accessorKey: "workerName", header: t("master.worker.workerName", "작업자명"), size: 100 },
-    { accessorKey: "engName", header: t("master.worker.engName", "영문명"), size: 100, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "dept", header: t("master.worker.dept", "부서"), size: 90, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "position", header: t("master.worker.position", "직급"), size: 80, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "phone", header: t("master.worker.phone", "전화번호"), size: 120, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "workerCode", header: t("master.worker.workerCode", "작업자코드"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "workerName", header: t("master.worker.workerName", "작업자명"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "engName", header: t("master.worker.engName", "영문명"), size: 100, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "dept", header: t("master.worker.dept", "부서"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "position", header: t("master.worker.position", "직급"), size: 80, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "phone", header: t("master.worker.phone", "전화번호"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     {
       accessorKey: "useYn", header: t("master.worker.use", "사용"), size: 60,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return (
@@ -147,6 +149,7 @@ export default function WorkerPage() {
               isLoading={loading}
               emptyMessage={t("master.worker.emptyMessage", "등록된 작업자가 없습니다.")}
               enableColumnPinning
+              enableColumnFilter
               enableExport
               exportFileName={t("master.worker.title", "작업자 관리")}
               onRowClick={(row) => { if (isPanelOpen) setEditingWorker(row); }}

@@ -29,7 +29,7 @@ import {
   Header,
   Cell,
 } from '@tanstack/react-table';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { flushSync } from 'react-dom';
 import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical, X, Pin, PinOff } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -39,13 +39,21 @@ import { ColumnFilterInput } from './ColumnFilterInput';
 import { ScrollHandle } from './ScrollHandle';
 import { PaginationControls } from './PaginationControls';
 import { detectAlignment, getAlignmentClass, getPinnedStyle } from './utils';
+import { numberRangeFilterFn } from './numberFilterFn';
+import { dateRangeFilterFn } from './dateFilterFn';
+import { textInFilterFn } from './textFilterFn';
 
 // 컬럼 메타 타입 확장
 declare module '@tanstack/react-table' {
+  interface FilterFns {
+    numberRange: typeof import('./numberFilterFn').numberRangeFilterFn;
+    dateRange: typeof import('./dateFilterFn').dateRangeFilterFn;
+    textIn: typeof import('./textFilterFn').textInFilterFn;
+  }
   interface ColumnMeta<TData, TValue> {
     align?: 'left' | 'center' | 'right';
-    /** 컬럼 필터 타입: text(기본), select(드롭다운), none(필터 없음) */
-    filterType?: 'text' | 'select' | 'none';
+    /** 컬럼 필터 타입: text(기본), select(드롭다운), number(숫자 범위), none(필터 없음) */
+    filterType?: 'text' | 'select' | 'multi' | 'number' | 'date' | 'none';
     /** select 필터용 옵션 목록 (미지정 시 데이터에서 자동 추출) */
     filterOptions?: { value: string; label: string }[];
     /** 필터 placeholder */
@@ -126,9 +134,21 @@ function DataGrid<T>({
     setPagination(prev => ({ ...prev, pageIndex: 0 }));
   }, [columnFilters]);
 
+  // 커스텀 필터 컬럼 전처리: filterType에 따라 filterFn 자동 연결
+  const processedColumns = useMemo(() =>
+    columns.map((col) => {
+      if ('filterFn' in col) return col;
+      if (col.meta?.filterType === 'number') return { ...col, filterFn: 'numberRange' as const };
+      if (col.meta?.filterType === 'date') return { ...col, filterFn: 'dateRange' as const };
+      if (col.meta?.filterType === 'multi') return { ...col, filterFn: 'textIn' as const };
+      return col;
+    }),
+  [columns]);
+
   const table = useReactTable({
     data,
-    columns,
+    columns: processedColumns,
+    filterFns: { numberRange: numberRangeFilterFn, dateRange: dateRangeFilterFn, textIn: textInFilterFn },
     state: { sorting, columnFilters, columnOrder, columnSizing, columnPinning, pagination },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

@@ -4,7 +4,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   Unique,
 } from 'typeorm';
@@ -74,9 +73,6 @@ export class BomMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   // Relations will be added when PartMaster entity is fully integrated
   // @ManyToOne(() => PartMaster, (part) => part.bomParents)

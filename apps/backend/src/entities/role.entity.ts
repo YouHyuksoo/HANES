@@ -6,7 +6,7 @@
  * 1. **ROLES 테이블**: 시스템에서 사용하는 역할(ADMIN, MANAGER 등)을 정의
  * 2. **isSystem**: true인 역할은 삭제/수정 불가 (ADMIN 등 기본 역할)
  * 3. **permissions**: 이 역할에 할당된 메뉴 권한 목록 (RoleMenuPermission과 1:N 관계)
- * 4. **softDelete**: deletedAt으로 논리 삭제 처리
+
  */
 
 import {
@@ -15,7 +15,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   OneToMany,
 } from 'typeorm';
@@ -65,9 +64,6 @@ export class Role {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   @OneToMany(() => RoleMenuPermission, (p) => p.role)
   permissions: RoleMenuPermission[];

@@ -94,13 +94,13 @@ export default function InspectPage() {
   }, [data]);
 
   const columns = useMemo<ColumnDef<InspectRecord>[]>(() => [
-    { accessorKey: "inspectedAt", header: t("quality.inspect.inspectedAt"), size: 150 },
+    { accessorKey: "inspectedAt", header: t("quality.inspect.inspectedAt"), size: 150, meta: { filterType: "date" as const } },
     { accessorKey: "serialNo", header: t("quality.inspect.serialNo"), size: 170, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: "inspectType", header: t("quality.inspect.inspectType"), size: 100, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_TYPE" code={getValue() as string} /> },
-    { accessorKey: "result", header: t("quality.inspect.resultCol"), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_RESULT" code={getValue() as string} /> },
-    { accessorKey: "errorCode", header: t("quality.inspect.errorCode"), size: 80, cell: ({ getValue }) => { const code = getValue() as string | undefined; return code ? <span className="text-red-500 font-mono">{code}</span> : <span className="text-text-muted">-</span>; } },
-    { accessorKey: "errorDesc", header: t("quality.inspect.errorDesc"), size: 150, cell: ({ getValue }) => { const desc = getValue() as string | undefined; return desc || <span className="text-text-muted">-</span>; } },
-    { accessorKey: "inspectTime", header: t("quality.inspect.inspectTime"), size: 80, cell: ({ getValue }) => <span className="font-mono">{getValue() as number}{t("common.seconds")}</span> },
+    { accessorKey: "inspectType", header: t("quality.inspect.inspectType"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_TYPE" code={getValue() as string} /> },
+    { accessorKey: "result", header: t("quality.inspect.resultCol"), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_RESULT" code={getValue() as string} /> },
+    { accessorKey: "errorCode", header: t("quality.inspect.errorCode"), size: 80, meta: { filterType: "text" as const }, cell: ({ getValue }) => { const code = getValue() as string | undefined; return code ? <span className="text-red-500 font-mono">{code}</span> : <span className="text-text-muted">-</span>; } },
+    { accessorKey: "errorDesc", header: t("quality.inspect.errorDesc"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => { const desc = getValue() as string | undefined; return desc || <span className="text-text-muted">-</span>; } },
+    { accessorKey: "inspectTime", header: t("quality.inspect.inspectTime"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-mono">{getValue() as number}{t("common.seconds")}</span> },
     { accessorKey: "equipmentNo", header: t("quality.inspect.equipment"), size: 80, meta: { filterType: "text" as const } },
   ], [t]);
 

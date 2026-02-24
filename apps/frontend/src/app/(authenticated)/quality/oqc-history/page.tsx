@@ -88,6 +88,7 @@ export default function OqcHistoryPage() {
     },
     {
       accessorKey: "requestDate", header: t("quality.oqc.requestDate"), size: 120,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const d = getValue() as string;
         return d ? new Date(d).toLocaleDateString() : "-";
@@ -106,26 +107,32 @@ export default function OqcHistoryPage() {
     },
     {
       accessorKey: "customer", header: t("quality.oqc.customer"), size: 120,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
     {
       accessorKey: "totalBoxCount", header: t("quality.oqc.boxCount"), size: 80,
+      meta: { filterType: "number" as const },
       cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span>,
     },
     {
       accessorKey: "totalQty", header: t("quality.oqc.totalQty"), size: 90,
+      meta: { filterType: "number" as const },
       cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number).toLocaleString()}</span>,
     },
     {
       accessorKey: "status", header: t("quality.oqc.result"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="OQC_STATUS" code={getValue() as string} />,
     },
     {
       accessorKey: "inspectorName", header: t("quality.oqc.inspector"), size: 90,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
     {
       accessorKey: "inspectDate", header: t("quality.oqc.inspectDate"), size: 140,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const d = getValue() as string;
         return d ? new Date(d).toLocaleString() : "-";

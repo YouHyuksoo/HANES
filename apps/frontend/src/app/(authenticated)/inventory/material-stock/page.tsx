@@ -226,7 +226,7 @@ function MaterialStockPage() {
             {row.original.qty.toLocaleString()} {row.original.unit || ""}
           </span>
         ),
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
       },
       {
         accessorKey: "safetyStock",
@@ -240,7 +240,7 @@ function MaterialStockPage() {
             <span className="text-text-muted">-</span>
           );
         },
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
       },
       {
         id: "stockLevel",
@@ -255,13 +255,14 @@ function MaterialStockPage() {
         ),
       },
       {
-        id: "manufactureDate",
+        accessorKey: "manufactureDate",
         header: t("material.stock.columns.manufactureDate"),
         size: 100,
         cell: ({ row }) => {
           const d = row.original.manufactureDate;
           return d ? String(d).slice(0, 10) : "-";
         },
+        meta: { filterType: "date" as const },
       },
       {
         id: "elapsedDays",

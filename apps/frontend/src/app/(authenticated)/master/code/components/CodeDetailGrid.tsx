@@ -39,7 +39,7 @@ export default function CodeDetailGrid({
         id: "actions",
         header: t("common.actions"),
         size: 90,
-        meta: { align: "center" as const },
+        meta: { align: "center" as const, filterType: "none" as const },
         cell: ({ row }) => (
           <div className="flex gap-1">
             <button
@@ -63,15 +63,17 @@ export default function CodeDetailGrid({
         accessorKey: "detailCode",
         header: t("master.code.detailCode"),
         size: 140,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => (
           <span className="font-mono text-xs font-semibold">{getValue<string>()}</span>
         ),
       },
-      { accessorKey: "codeName", header: t("master.code.codeName"), size: 130 },
+      { accessorKey: "codeName", header: t("master.code.codeName"), size: 130, meta: { filterType: "text" as const } },
       {
         accessorKey: "attr3",
         header: t("master.code.codeNameEn", { defaultValue: "영어명" }),
         size: 150,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => (
           <span className="text-text-muted">{getValue<string>() || "-"}</span>
         ),
@@ -80,6 +82,7 @@ export default function CodeDetailGrid({
         id: "badge",
         header: t("master.code.badge", { defaultValue: "배지" }),
         size: 120,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => {
           const attr1 = row.original.attr1;
           if (!attr1) return <span className="text-text-muted">-</span>;
@@ -94,6 +97,7 @@ export default function CodeDetailGrid({
         accessorKey: "sortOrder",
         header: t("master.code.sortOrder"),
         size: 80,
+        meta: { filterType: "number" as const },
         cell: ({ getValue }) => (
           <span className="text-center block">{getValue<number>()}</span>
         ),
@@ -102,6 +106,7 @@ export default function CodeDetailGrid({
         accessorKey: "useYn",
         header: t("master.code.useYn"),
         size: 80,
+        meta: { filterType: "multi" as const },
         cell: ({ getValue }) => (
           <span
             className={`px-2 py-0.5 text-xs rounded-full ${
@@ -128,7 +133,7 @@ export default function CodeDetailGrid({
         className="px-4 pt-4"
       />
       <CardContent className="flex-1 flex flex-col min-h-0 px-4 pb-4">
-        <DataGrid data={codes} columns={columns} isLoading={isLoading} enableExport exportFileName={`${groupCode}_codes`} />
+        <DataGrid data={codes} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName={`${groupCode}_codes`} />
       </CardContent>
     </Card>
   );

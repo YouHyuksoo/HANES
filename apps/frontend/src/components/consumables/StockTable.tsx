@@ -37,6 +37,7 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
         accessorKey: 'stockQty',
         header: t('consumables.comp.currentStock'),
         size: 80,
+        meta: { filterType: 'number' },
         cell: ({ row }) => {
           const qty = row.original.stockQty;
           const safety = row.original.safetyStock;
@@ -53,7 +54,7 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
           );
         },
       },
-      { accessorKey: 'safetyStock', header: t('consumables.comp.safetyStock'), size: 80 },
+      { accessorKey: 'safetyStock', header: t('consumables.comp.safetyStock'), size: 80, meta: { filterType: 'number' } },
       {
         id: 'stockStatus',
         header: t('consumables.comp.stockStatus'),
@@ -74,6 +75,7 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
         accessorKey: 'unitPrice',
         header: t('consumables.comp.unitPrice'),
         size: 100,
+        meta: { filterType: 'number' },
         cell: ({ getValue }) => {
           const val = getValue() as number | null;
           return val != null ? val.toLocaleString() + t('common.won') : '-';

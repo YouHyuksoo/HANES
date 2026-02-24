@@ -129,6 +129,7 @@ export default function IqcHistoryPage() {
       id: "actions",
       header: t("common.actions"),
       size: 50,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
         if (record.status !== "DONE" || record.received) return null;
@@ -146,7 +147,7 @@ export default function IqcHistoryPage() {
       },
     },
     {
-      accessorKey: "inspectDate", header: t("material.iqcHistory.inspectDate"), size: 140,
+      accessorKey: "inspectDate", header: t("material.iqcHistory.inspectDate"), size: 140, meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const d = getValue() as string;
         return d ? new Date(d).toLocaleString() : "-";
@@ -167,21 +168,21 @@ export default function IqcHistoryPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "inspectType", header: t("material.iqcHistory.inspectType"), size: 100,
+      accessorKey: "inspectType", header: t("material.iqcHistory.inspectType"), size: 100, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeColors[v] || ""}`}>{v}</span>;
       },
     },
     {
-      accessorKey: "result", header: t("material.iqcHistory.result"), size: 80,
+      accessorKey: "result", header: t("material.iqcHistory.result"), size: 80, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const r = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${resultColors[r] || ""}`}>{r}</span>;
       },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         const isCanceled = s === "CANCELED";
@@ -197,7 +198,7 @@ export default function IqcHistoryPage() {
       },
     },
     {
-      accessorKey: "inspectorName", header: t("material.iqcHistory.inspector"), size: 90,
+      accessorKey: "inspectorName", header: t("material.iqcHistory.inspector"), size: 90, meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
     {

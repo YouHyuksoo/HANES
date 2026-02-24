@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -39,7 +39,6 @@ export class ShipOrderService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(status && { status }),
@@ -101,7 +100,7 @@ export class ShipOrderService {
   /** 출하지시 단건 조회 */
   async findById(id: string) {
     const order = await this.shipOrderRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${id}`);
@@ -134,7 +133,7 @@ export class ShipOrderService {
   /** 출하지시 생성 */
   async create(dto: CreateShipOrderDto) {
     const existing = await this.shipOrderRepository.findOne({
-      where: { shipOrderNo: dto.shipOrderNo, deletedAt: IsNull() },
+      where: { shipOrderNo: dto.shipOrderNo },
     });
     if (existing) throw new ConflictException(`이미 존재하는 출하지시 번호입니다: ${dto.shipOrderNo}`);
 
@@ -229,17 +228,14 @@ export class ShipOrderService {
     }
   }
 
-  /** 출하지시 삭제 (소프트 삭제) */
+  /** 출하지시 삭제 */
   async delete(id: string) {
     const order = await this.findById(id);
     if (order.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipOrderRepository.update(
-      { id },
-      { deletedAt: new Date() }
-    );
+    await this.shipOrderRepository.delete(id);
 
     return { id, deleted: true };
   }

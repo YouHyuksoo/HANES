@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like, In } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
@@ -24,7 +24,6 @@ export class MatLotService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(partId && { partId }),
       ...(lotNo && { lotNo: Like(`%${lotNo}%`) }),
       ...(vendor && { vendor: Like(`%${vendor}%`) }),
@@ -66,7 +65,7 @@ export class MatLotService {
 
   async findById(id: string) {
     const lot = await this.matLotRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${id}`);
@@ -83,7 +82,7 @@ export class MatLotService {
 
   async findByLotNo(lotNo: string) {
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo, deletedAt: IsNull() },
+      where: { lotNo },
     });
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
@@ -100,7 +99,7 @@ export class MatLotService {
 
   async create(dto: CreateMatLotDto) {
     const existing = await this.matLotRepository.findOne({
-      where: { lotNo: dto.lotNo, deletedAt: IsNull() },
+      where: { lotNo: dto.lotNo },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 LOT 번호입니다: ${dto.lotNo}`);
@@ -159,8 +158,8 @@ export class MatLotService {
     if (lot.currentQty > 0) {
       throw new BadRequestException('재고가 남아있는 LOT은 삭제할 수 없습니다.');
     }
-    await this.matLotRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.matLotRepository.delete(id);
+    return { id };
   }
 
   async consumeQty(id: string, qty: number) {

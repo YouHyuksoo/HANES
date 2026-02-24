@@ -23,7 +23,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { ProdLineMaster } from '../../../entities/prod-line-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
@@ -69,8 +69,7 @@ export class EquipMasterService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const qb = this.equipMasterRepository.createQueryBuilder('e')
-      .where('e.deletedAt IS NULL');
+    const qb = this.equipMasterRepository.createQueryBuilder('e');
 
     if (equipType) qb.andWhere('e.equipType = :equipType', { equipType });
     if (lineCode) qb.andWhere('e.lineCode = :lineCode', { lineCode });
@@ -103,7 +102,7 @@ export class EquipMasterService {
    */
   async findById(id: string) {
     const equip = await this.equipMasterRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!equip) {
@@ -118,7 +117,7 @@ export class EquipMasterService {
    */
   async findByCode(equipCode: string) {
     const equip = await this.equipMasterRepository.findOne({
-      where: { equipCode, deletedAt: IsNull() },
+      where: { equipCode },
     });
 
     if (!equip) {
@@ -134,7 +133,7 @@ export class EquipMasterService {
   async create(dto: CreateEquipMasterDto) {
     // 중복 코드 확인
     const existing = await this.equipMasterRepository.findOne({
-      where: { equipCode: dto.equipCode, deletedAt: IsNull() },
+      where: { equipCode: dto.equipCode },
     });
 
     if (existing) {
@@ -172,7 +171,6 @@ export class EquipMasterService {
       const existing = await this.equipMasterRepository.findOne({
         where: {
           equipCode: dto.equipCode,
-          deletedAt: IsNull(),
           id: id, // exclude current id
         },
       });
@@ -209,7 +207,7 @@ export class EquipMasterService {
   async delete(id: string) {
     await this.findById(id);
 
-    await this.equipMasterRepository.softDelete(id);
+    await this.equipMasterRepository.delete(id);
     return { id, deleted: true };
   }
 
@@ -236,7 +234,7 @@ export class EquipMasterService {
    */
   async findByStatus(status: string) {
     return this.equipMasterRepository.find({
-      where: { status, useYn: 'Y', deletedAt: IsNull() },
+      where: { status, useYn: 'Y' },
       order: { equipCode: 'ASC' },
     });
   }
@@ -250,7 +248,7 @@ export class EquipMasterService {
    */
   async findByLineCode(lineCode: string) {
     return this.equipMasterRepository.find({
-      where: { lineCode, useYn: 'Y', deletedAt: IsNull() },
+      where: { lineCode, useYn: 'Y' },
       order: { equipCode: 'ASC' },
     });
   }
@@ -260,7 +258,7 @@ export class EquipMasterService {
    */
   async findByType(equipType: string) {
     return this.equipMasterRepository.find({
-      where: { equipType, useYn: 'Y', deletedAt: IsNull() },
+      where: { equipType, useYn: 'Y' },
       order: { equipCode: 'ASC' },
     });
   }
@@ -278,8 +276,7 @@ export class EquipMasterService {
       .createQueryBuilder('equip')
       .select('equip.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .where('equip.deletedAt IS NULL')
-      .andWhere('equip.useYn = :useYn', { useYn: 'Y' })
+      .where('equip.useYn = :useYn', { useYn: 'Y' })
       .groupBy('equip.status')
       .getRawMany();
 
@@ -288,14 +285,13 @@ export class EquipMasterService {
       .createQueryBuilder('equip')
       .select('equip.equipType', 'equipType')
       .addSelect('COUNT(*)', 'count')
-      .where('equip.deletedAt IS NULL')
-      .andWhere('equip.useYn = :useYn', { useYn: 'Y' })
+      .where('equip.useYn = :useYn', { useYn: 'Y' })
       .groupBy('equip.equipType')
       .getRawMany();
 
     // 전체 개수
     const totalCount = await this.equipMasterRepository.count({
-      where: { deletedAt: IsNull(), useYn: 'Y' },
+      where: { useYn: 'Y' },
     });
 
     return {
@@ -319,7 +315,6 @@ export class EquipMasterService {
       where: {
         status: In(['MAINT', 'STOP']),
         useYn: 'Y',
-        deletedAt: IsNull(),
       },
       order: { updatedAt: 'DESC' },
     });
@@ -334,7 +329,7 @@ export class EquipMasterService {
    */
   async getLines() {
     return this.lineRepository.find({
-      where: { useYn: 'Y', deletedAt: IsNull() },
+      where: { useYn: 'Y' },
       select: ['lineCode', 'lineName', 'lineType', 'oper'],
       order: { lineCode: 'ASC' },
     });
@@ -345,7 +340,7 @@ export class EquipMasterService {
    */
   async getProcesses() {
     return this.processRepository.find({
-      where: { useYn: 'Y', deletedAt: IsNull() },
+      where: { useYn: 'Y' },
       select: ['processCode', 'processName', 'processType', 'processCategory'],
       order: { sortOrder: 'ASC', processCode: 'ASC' },
     });

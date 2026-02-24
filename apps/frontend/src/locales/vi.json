@@ -271,7 +271,8 @@
     "openMenu": "Mở menu",
     "searchPlaceholder": "Tìm kiếm (Ctrl+K)",
     "switchToLight": "Chuyển sang chế độ sáng",
-    "switchToDark": "Chuyển sang chế độ tối"
+    "switchToDark": "Chuyển sang chế độ tối",
+    "colorTheme": "Chuyển đổi chủ đề màu"
   },
   "auth": {
     "login": "Đăng nhập",
@@ -3616,6 +3617,39 @@
     "html": "HTML",
     "markdown": "Markdown",
     "txt": "Văn bản"
+  },
+  "textFilter": {
+    "searchPlaceholder": "Tìm kiếm...",
+    "selectAll": "Chọn tất cả",
+    "blankLabel": "Trống",
+    "noMatch": "Không có kết quả",
+    "apply": "Lọc",
+    "clear": "Xóa bộ lọc"
+  },
+  "dateFilter": {
+    "title": "Khoảng thời gian",
+    "from": "Từ ngày",
+    "to": "Đến ngày",
+    "apply": "Lọc",
+    "clear": "Xóa bộ lọc"
+  },
+  "numberFilter": {
+    "values": "Chọn giá trị",
+    "selectAll": "Chọn tất cả",
+    "blankLabel": "Trống",
+    "conditions": "Điều kiện phạm vi",
+    "none": "Không có điều kiện",
+    "eq": "Bằng",
+    "neq": "Không bằng",
+    "gt": "Lớn hơn",
+    "gte": "Lớn hơn hoặc bằng",
+    "lt": "Nhỏ hơn",
+    "lte": "Nhỏ hơn hoặc bằng",
+    "blank": "Trống",
+    "notBlank": "Không trống",
+    "valuePlaceholder": "Nhập giá trị",
+    "apply": "Lọc",
+    "clear": "Xóa bộ lọc"
   },
   "tabs": {
     "close": "Đóng",

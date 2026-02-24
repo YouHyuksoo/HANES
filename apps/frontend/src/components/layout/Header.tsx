@@ -12,8 +12,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail } from "lucide-react";
+import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
@@ -29,6 +30,7 @@ interface HeaderProps {
 function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const { t } = useTranslation();
   const { isDark, toggleTheme } = useTheme();
+  const { colorTheme, setColorTheme } = useThemeStore();
   const { user, logout, selectedCompany, selectedPlant } = useAuthStore();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -108,6 +110,15 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
         >
           <Bell className="w-5 h-5 text-text-muted" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
+        </button>
+
+        {/* 컬러 테마 토글 */}
+        <button
+          onClick={() => setColorTheme(colorTheme === "default" ? "custom" : "default")}
+          className="p-2 rounded-md hover:bg-background transition-colors"
+          aria-label={t('header.colorTheme')}
+        >
+          <Palette className={`w-5 h-5 ${colorTheme === "custom" ? "text-[#E6096E]" : "text-text-muted"}`} />
         </button>
 
         {/* 테마 토글 */}

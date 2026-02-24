@@ -14,7 +14,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   OneToMany,
   AfterLoad,
@@ -84,9 +83,6 @@ export class PmPlan {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   @OneToMany(() => PmPlanItem, (item) => item.pmPlan, { cascade: true })
   items: PmPlanItem[];

@@ -68,7 +68,6 @@ export class PalletService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(palletNo && { palletNo: ILike(`%${palletNo}%`) }),
@@ -95,7 +94,7 @@ export class PalletService {
    */
   async findById(id: string) {
     const pallet = await this.palletRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!pallet) {
@@ -110,7 +109,7 @@ export class PalletService {
    */
   async findByPalletNo(palletNo: string) {
     const pallet = await this.palletRepository.findOne({
-      where: { palletNo, deletedAt: IsNull() },
+      where: { palletNo },
     });
 
     if (!pallet) {
@@ -126,7 +125,7 @@ export class PalletService {
   async create(dto: CreatePalletDto) {
     // 중복 체크
     const existing = await this.palletRepository.findOne({
-      where: { palletNo: dto.palletNo, deletedAt: IsNull() },
+      where: { palletNo: dto.palletNo },
     });
 
     if (existing) {
@@ -164,7 +163,7 @@ export class PalletService {
   }
 
   /**
-   * 팔레트 삭제 (소프트 삭제)
+   * 팔레트 삭제
    */
   async delete(id: string) {
     const pallet = await this.findById(id);
@@ -184,10 +183,7 @@ export class PalletService {
       throw new BadRequestException('출하에 할당된 팔레트는 삭제할 수 없습니다. 먼저 출하에서 제거해주세요.');
     }
 
-    await this.palletRepository.update(
-      { id },
-      { deletedAt: new Date() }
-    );
+    await this.palletRepository.delete(id);
 
     return { id, deleted: true };
   }
@@ -209,7 +205,6 @@ export class PalletService {
     const boxes = await this.boxRepository.find({
       where: {
         id: In(dto.boxIds),
-        deletedAt: IsNull(),
       },
     });
 
@@ -248,7 +243,6 @@ export class PalletService {
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
         .where('box.palletId = :palletId', { palletId: id })
-        .andWhere('box.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
@@ -289,7 +283,6 @@ export class PalletService {
       where: {
         id: In(dto.boxIds),
         palletId: id,
-        deletedAt: IsNull(),
       },
     });
 
@@ -316,7 +309,6 @@ export class PalletService {
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
         .where('box.palletId = :palletId', { palletId: id })
-        .andWhere('box.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
@@ -415,7 +407,7 @@ export class PalletService {
 
     // 출하 존재 및 상태 확인
     const shipment = await this.shipmentRepository.findOne({
-      where: { id: dto.shipmentId, deletedAt: IsNull() },
+      where: { id: dto.shipmentId },
     });
 
     if (!shipment) {
@@ -446,7 +438,6 @@ export class PalletService {
       const shipmentSummary = await queryRunner.manager
         .createQueryBuilder(PalletMaster, 'pallet')
         .where('pallet.shipmentId = :shipmentId', { shipmentId: dto.shipmentId })
-        .andWhere('pallet.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(pallet.boxCount)', 'boxCount')
         .addSelect('SUM(pallet.totalQty)', 'totalQty')
@@ -485,7 +476,7 @@ export class PalletService {
 
     // 출하가 PREPARING 상태일 때만 제거 가능
     const shipment = await this.shipmentRepository.findOne({
-      where: { id: pallet.shipmentId, deletedAt: IsNull() },
+      where: { id: pallet.shipmentId },
     });
 
     if (!shipment) {
@@ -518,7 +509,6 @@ export class PalletService {
       const shipmentSummary = await queryRunner.manager
         .createQueryBuilder(PalletMaster, 'pallet')
         .where('pallet.shipmentId = :shipmentId', { shipmentId })
-        .andWhere('pallet.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(pallet.boxCount)', 'boxCount')
         .addSelect('SUM(pallet.totalQty)', 'totalQty')
@@ -552,7 +542,7 @@ export class PalletService {
    */
   async findByShipmentId(shipmentId: string) {
     return this.palletRepository.find({
-      where: { shipmentId, deletedAt: IsNull() },
+      where: { shipmentId },
       order: { createdAt: 'ASC' },
     });
   }
@@ -565,7 +555,6 @@ export class PalletService {
       where: {
         shipmentId: IsNull(),
         status: 'CLOSED',
-        deletedAt: IsNull(),
       },
       order: { createdAt: 'ASC' },
     });
@@ -584,7 +573,6 @@ export class PalletService {
       .addSelect('COUNT(*)', 'boxCount')
       .addSelect('SUM(box.qty)', 'qty')
       .where('box.palletId = :palletId', { palletId: id })
-      .andWhere('box.deletedAt IS NULL')
       .groupBy('box.partId')
       .getRawMany();
 

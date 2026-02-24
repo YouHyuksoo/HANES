@@ -15,7 +15,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   OneToMany,
   Index,
 } from 'typeorm';
@@ -59,9 +58,6 @@ export class IqcGroup {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   @OneToMany(() => IqcGroupItem, (item) => item.group, { cascade: true })
   items: IqcGroupItem[];

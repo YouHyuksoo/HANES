@@ -64,18 +64,20 @@ export default function BarcodeScanTab() {
       accessorKey: 'issuedAt',
       header: t('material.issue.scanTime', { defaultValue: '시간' }),
       size: 100,
+      meta: { filterType: 'text' as const },
       cell: ({ getValue }) => {
         const d = new Date(getValue() as string);
         return <span>{d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>;
       },
     },
-    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120 },
-    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 160 },
-    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160 },
+    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'issueQty',
       header: t('material.col.issuedQty'),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ getValue }) => (
         <span className="font-medium">{(getValue() as number).toLocaleString()}</span>
       ),
@@ -84,6 +86,7 @@ export default function BarcodeScanTab() {
       accessorKey: 'unit',
       header: t('common.unit'),
       size: 60,
+      meta: { filterType: 'text' as const },
       cell: ({ getValue }) => <span className="text-text-muted">{getValue() as string}</span>,
     },
   ], [t]);

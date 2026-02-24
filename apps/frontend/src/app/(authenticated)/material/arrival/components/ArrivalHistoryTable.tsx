@@ -29,41 +29,47 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
   const { t } = useTranslation();
 
   const columns = useMemo<ColumnDef<ArrivalRecord>[]>(() => [
-    { accessorKey: 'transNo', header: t('material.arrival.col.transNo'), size: 180 },
+    { accessorKey: 'transNo', header: t('material.arrival.col.transNo'), size: 180, meta: { filterType: "text" as const } },
     {
       accessorKey: 'transDate',
       header: t('material.arrival.col.transDate'),
       size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => (getValue() as string).slice(0, 10),
     },
     {
       id: 'poNo',
       header: t('material.arrival.col.poNo'),
       size: 130,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.lot?.poNo || '-',
     },
     {
       accessorKey: 'part.partCode',
       header: t('common.partCode'),
       size: 110,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.part?.partCode,
     },
     {
       accessorKey: 'part.partName',
       header: t('common.partName'),
       size: 130,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.part?.partName,
     },
     {
       id: 'lotNo',
       header: t('material.col.lotNo'),
       size: 150,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.lot?.lotNo || '-',
     },
     {
       accessorKey: 'qty',
       header: t('common.quantity'),
       size: 100,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => {
         const { qty } = row.original;
         const unit = row.original.part?.unit || '';
@@ -79,12 +85,14 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
       id: 'warehouse',
       header: t('material.arrival.col.warehouse'),
       size: 100,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.toWarehouse?.warehouseName || '-',
     },
     {
       accessorKey: 'status',
       header: t('common.status'),
       size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ row }) => {
         const { status } = row.original;
         const isCancel = status === 'CANCELED';
@@ -103,6 +111,7 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
       id: 'actions',
       header: '',
       size: 70,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
         if (record.transType !== 'MAT_IN' || record.status !== 'DONE') return null;
@@ -120,5 +129,5 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
     },
   ], [t, onCancel]);
 
-  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableExport exportFileName="arrival_history" toolbarLeft={toolbarLeft} />;
+  return <DataGrid data={data} columns={columns} isLoading={isLoading} enableColumnFilter enableExport exportFileName="arrival_history" toolbarLeft={toolbarLeft} />;
 }

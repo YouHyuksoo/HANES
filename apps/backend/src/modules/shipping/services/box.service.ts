@@ -69,7 +69,6 @@ export class BoxService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(boxNo && { boxNo: ILike(`%${boxNo}%`) }),
@@ -97,7 +96,7 @@ export class BoxService {
    */
   async findById(id: string) {
     const box = await this.boxRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!box) {
@@ -112,7 +111,7 @@ export class BoxService {
    */
   async findByBoxNo(boxNo: string) {
     const box = await this.boxRepository.findOne({
-      where: { boxNo, deletedAt: IsNull() },
+      where: { boxNo },
     });
 
     if (!box) {
@@ -128,7 +127,7 @@ export class BoxService {
   async create(dto: CreateBoxDto) {
     // 중복 체크
     const existing = await this.boxRepository.findOne({
-      where: { boxNo: dto.boxNo, deletedAt: IsNull() },
+      where: { boxNo: dto.boxNo },
     });
 
     if (existing) {
@@ -137,7 +136,7 @@ export class BoxService {
 
     // 품목 존재 확인
     const part = await this.partRepository.findOne({
-      where: { id: dto.partId, deletedAt: IsNull() },
+      where: { id: dto.partId },
     });
 
     if (!part) {
@@ -178,7 +177,7 @@ export class BoxService {
   }
 
   /**
-   * 박스 삭제 (소프트 삭제)
+   * 박스 삭제
    */
   async delete(id: string) {
     const box = await this.findById(id);
@@ -193,10 +192,7 @@ export class BoxService {
       throw new BadRequestException('팔레트에 할당된 박스는 삭제할 수 없습니다. 먼저 팔레트에서 제거해주세요.');
     }
 
-    await this.boxRepository.update(
-      { id },
-      { deletedAt: new Date() }
-    );
+    await this.boxRepository.delete(id);
 
     return { id, deleted: true };
   }
@@ -366,7 +362,7 @@ export class BoxService {
 
     // 팔레트 존재 및 상태 확인
     const pallet = await this.palletRepository.findOne({
-      where: { id: dto.palletId, deletedAt: IsNull() },
+      where: { id: dto.palletId },
     });
 
     if (!pallet) {
@@ -390,7 +386,6 @@ export class BoxService {
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
         .where('box.palletId = :palletId', { palletId: dto.palletId })
-        .andWhere('box.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
@@ -423,7 +418,7 @@ export class BoxService {
 
     // 팔레트가 OPEN 상태일 때만 제거 가능
     const pallet = await this.palletRepository.findOne({
-      where: { id: box.palletId, deletedAt: IsNull() },
+      where: { id: box.palletId },
     });
 
     if (!pallet) {
@@ -449,7 +444,6 @@ export class BoxService {
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
         .where('box.palletId = :palletId', { palletId })
-        .andWhere('box.deletedAt IS NULL')
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
@@ -477,7 +471,7 @@ export class BoxService {
    */
   async findByPalletId(palletId: string) {
     return this.boxRepository.find({
-      where: { palletId, deletedAt: IsNull() },
+      where: { palletId },
       order: { createdAt: 'ASC' },
     });
   }
@@ -488,7 +482,6 @@ export class BoxService {
   async findByPartId(partId: string, status?: BoxStatus) {
     const where: any = {
       partId,
-      deletedAt: IsNull(),
       ...(status && { status }),
     };
 
@@ -506,7 +499,6 @@ export class BoxService {
       where: {
         palletId: IsNull(),
         status: 'CLOSED',
-        deletedAt: IsNull(),
       },
       order: { createdAt: 'ASC' },
     });

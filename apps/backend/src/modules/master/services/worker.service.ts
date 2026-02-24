@@ -9,7 +9,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { CreateWorkerDto, UpdateWorkerDto, WorkerQueryDto } from '../dto/worker.dto';
 
@@ -27,7 +27,6 @@ export class WorkerService {
     console.log(`[WorkerService.findAll] query=`, JSON.stringify(query), ', company=', company);
 
     const queryBuilder = this.workerRepository.createQueryBuilder('worker')
-      .where('worker.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('worker.company = :company', { company });
@@ -73,7 +72,7 @@ export class WorkerService {
 
   async findById(id: string) {
     const item = await this.workerRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!item) throw new NotFoundException(`작업자를 찾을 수 없습니다: ${id}`);
     
@@ -85,7 +84,7 @@ export class WorkerService {
 
   async create(dto: CreateWorkerDto) {
     const existing = await this.workerRepository.findOne({
-      where: { workerCode: dto.workerCode, deletedAt: IsNull() },
+      where: { workerCode: dto.workerCode },
     });
     if (existing) throw new ConflictException(`이미 존재하는 작업자 코드입니다: ${dto.workerCode}`);
 
@@ -127,7 +126,7 @@ export class WorkerService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.workerRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.workerRepository.delete(id);
+    return { id };
   }
 }

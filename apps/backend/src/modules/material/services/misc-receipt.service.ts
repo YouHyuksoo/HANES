@@ -159,7 +159,7 @@ export class MiscReceiptService {
       // LOT 확인 (lotId가 있는 경우)
       if (lotId) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { id: lotId, deletedAt: IsNull() },
+          where: { id: lotId },
         });
         if (!lot) {
           throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);

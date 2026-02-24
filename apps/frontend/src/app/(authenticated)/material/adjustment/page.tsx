@@ -117,6 +117,7 @@ export default function AdjustmentPage() {
   const columns = useMemo<ColumnDef<AdjustmentRecord>[]>(() => [
     {
       accessorKey: "createdAt", header: t("material.adjustment.createdAt"), size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
     },
     {
@@ -134,17 +135,17 @@ export default function AdjustmentPage() {
     },
     {
       accessorKey: "beforeQty", header: t("material.adjustment.beforeQty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => <span>{row.original.beforeQty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
       accessorKey: "afterQty", header: t("material.adjustment.afterQty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => <span className="font-medium">{row.original.afterQty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
       accessorKey: "diffQty", header: t("material.adjustment.diffQty"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => {
         const diff = getValue() as number;
         if (diff === 0) return <span className="text-text-muted">0</span>;
@@ -159,7 +160,7 @@ export default function AdjustmentPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "createdBy", header: t("material.adjustment.createdBy"), size: 80,
+      accessorKey: "createdBy", header: t("material.adjustment.createdBy"), size: 80, meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
   ], [t]);

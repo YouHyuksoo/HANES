@@ -6,7 +6,7 @@
  * - 자재 출고를 요청하는 헤더 테이블
  * - 상태 흐름: REQUESTED → APPROVED → COMPLETED (또는 REJECTED)
  * - 요청 품목은 MatIssueRequestItem 엔티티에서 관리
- * - soft delete 지원 (deletedAt)
+
  */
 
 import {
@@ -15,7 +15,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
 } from 'typeorm';
 
@@ -71,7 +70,4 @@ export class MatIssueRequest {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 }

@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 
@@ -21,7 +21,6 @@ export class PartService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.partRepository.createQueryBuilder('p')
-      .where('p.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('p.company = :company', { company });
@@ -63,7 +62,7 @@ export class PartService {
 
   async findById(id: string) {
     const part = await this.partRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${id}`);
     return part;
@@ -71,7 +70,7 @@ export class PartService {
 
   async findByCode(partCode: string) {
     const part = await this.partRepository.findOne({
-      where: { partCode, deletedAt: IsNull() },
+      where: { partCode },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${partCode}`);
     return part;
@@ -79,7 +78,7 @@ export class PartService {
 
   async create(dto: CreatePartDto) {
     const existing = await this.partRepository.findOne({
-      where: { partCode: dto.partCode, deletedAt: IsNull() },
+      where: { partCode: dto.partCode },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 품목 코드입니다: ${dto.partCode}`);
@@ -119,13 +118,13 @@ export class PartService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.partRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.partRepository.delete(id);
+    return { id };
   }
 
   async findByType(partType: string) {
     return this.partRepository.find({
-      where: { partType, useYn: 'Y', deletedAt: IsNull() },
+      where: { partType, useYn: 'Y' },
       order: { partCode: 'asc' },
     });
   }

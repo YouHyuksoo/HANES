@@ -20,7 +20,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { RepairLog } from '../../../entities/repair-log.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -68,7 +68,6 @@ export class DefectLogService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(prodResultId && { prodResultId }),
@@ -105,7 +104,7 @@ export class DefectLogService {
    */
   async findById(id: string) {
     const defect = await this.defectLogRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!defect) {
@@ -120,7 +119,7 @@ export class DefectLogService {
    */
   async findByProdResultId(prodResultId: string) {
     const defects = await this.defectLogRepository.find({
-      where: { prodResultId, deletedAt: IsNull() },
+      where: { prodResultId },
       order: { occurAt: 'DESC' },
     });
 
@@ -204,16 +203,13 @@ export class DefectLogService {
   }
 
   /**
-   * 불량로그 삭제 (소프트 삭제)
+   * 불량로그 삭제
    */
   async delete(id: string) {
     const existing = await this.findById(id);
 
     // 불량 삭제 시 생산실적 불량수량 감소
-    await this.defectLogRepository.update(
-      { id },
-      { deletedAt: new Date() }
-    );
+    await this.defectLogRepository.delete(id);
 
     await this.prodResultRepository.update(
       { id: existing.prodResultId },
@@ -336,7 +332,6 @@ export class DefectLogService {
     endDate?: string
   ): Promise<DefectTypeStatsDto[]> {
     const where: any = {
-      deletedAt: IsNull(),
       ...(startDate || endDate
         ? {
             occurAt: And(
@@ -380,7 +375,6 @@ export class DefectLogService {
     endDate?: string
   ): Promise<DefectStatusStatsDto[]> {
     const where: any = {
-      deletedAt: IsNull(),
       ...(startDate || endDate
         ? {
             occurAt: And(
@@ -417,7 +411,6 @@ export class DefectLogService {
 
     const defects = await this.defectLogRepository.find({
       where: {
-        deletedAt: IsNull(),
         occurAt: MoreThanOrEqual(startDate),
       },
       select: ['occurAt', 'qty', 'defectCode'],
@@ -448,7 +441,6 @@ export class DefectLogService {
   async getPendingDefects() {
     return this.defectLogRepository.find({
       where: {
-        deletedAt: IsNull(),
         status: In(['WAIT', 'REPAIR', 'REWORK']),
       },
       order: { occurAt: 'ASC' },

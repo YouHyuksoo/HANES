@@ -128,7 +128,7 @@ export default function PeriodicInspectPage() {
   }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<PeriodicInspect>[]>(() => [
-    { accessorKey: "inspectDate", header: t("equipment.periodicInspect.inspectDate"), size: 110 },
+    { accessorKey: "inspectDate", header: t("equipment.periodicInspect.inspectDate"), size: 110, meta: { filterType: "date" as const } },
     {
       accessorKey: "equipCode", header: t("equipment.periodicInspect.equipCode"), size: 110,
       meta: { filterType: "text" as const },
@@ -144,6 +144,7 @@ export default function PeriodicInspectPage() {
     },
     {
       accessorKey: "overallResult", header: t("equipment.periodicInspect.result"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const r = getValue() as string;
         const label = r === "PASS" ? t("equipment.periodicInspect.resultPass")
@@ -159,6 +160,7 @@ export default function PeriodicInspectPage() {
     },
     {
       id: "actions", header: "", size: 80,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">

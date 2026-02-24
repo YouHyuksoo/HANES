@@ -27,8 +27,7 @@ export class IqcPartLinkService {
     const qb = this.linkRepo.createQueryBuilder('link')
       .leftJoinAndSelect('link.part', 'part')
       .leftJoinAndSelect('link.partner', 'partner')
-      .leftJoinAndSelect('link.group', 'grp')
-      .where('link.deletedAt IS NULL');
+      .leftJoinAndSelect('link.group', 'grp');
 
     if (company) {
       qb.andWhere('link.company = :company', { company });
@@ -64,7 +63,7 @@ export class IqcPartLinkService {
 
   async findById(id: string) {
     const link = await this.linkRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['part', 'partner', 'group'],
     });
 
@@ -78,7 +77,6 @@ export class IqcPartLinkService {
   async create(dto: CreateIqcPartLinkDto) {
     const whereCondition: any = {
       partId: dto.partId,
-      deletedAt: IsNull(),
     };
 
     if (dto.partnerId) {
@@ -119,7 +117,7 @@ export class IqcPartLinkService {
 
   async delete(id: string) {
     const link = await this.findById(id);
-    await this.linkRepo.softRemove(link);
+    await this.linkRepo.remove(link);
     return { id, deleted: true };
   }
 }

@@ -140,6 +140,7 @@ export default function JobOrderSelectModal({
         accessorKey: 'planQty',
         header: t('production.order.planQty'),
         size: 100,
+        meta: { filterType: 'number' },
         cell: ({ row }) => (
           <div className="text-right">
             <div className="font-medium">
@@ -166,6 +167,7 @@ export default function JobOrderSelectModal({
         accessorKey: 'planStartDate',
         header: t('production.order.planDate'),
         size: 110,
+        meta: { filterType: 'date' },
         cell: ({ row }) => (
           <span className="text-sm text-text-muted">
             {row.original.planStartDate} ~ {row.original.planEndDate}

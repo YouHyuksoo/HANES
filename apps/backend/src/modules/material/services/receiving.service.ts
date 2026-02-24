@@ -58,7 +58,6 @@ export class ReceivingService {
     const qb = this.matLotRepository.createQueryBuilder('lot')
       .where('lot.iqcStatus = :iqcStatus', { iqcStatus: 'PASS' })
       .andWhere('lot.status IN (:...statuses)', { statuses: ['NORMAL', 'HOLD'] })
-      .andWhere('lot.deletedAt IS NULL')
       .andWhere('lot.currentQty > 0');
 
     if (company) qb.andWhere('lot.company = :company', { company });
@@ -210,7 +209,7 @@ export class ReceivingService {
     // LOT 검증
     for (const item of dto.items) {
       const lot = await this.matLotRepository.findOne({
-        where: { id: item.lotId, deletedAt: IsNull() },
+        where: { id: item.lotId },
       });
       if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${item.lotId}`);
       if (lot.iqcStatus !== 'PASS') throw new BadRequestException(`IQC 합격되지 않은 LOT입니다: ${lot.lotNo}`);
@@ -412,7 +411,6 @@ export class ReceivingService {
       .select(['lot.id', 'lot.initQty'])
       .where('lot.iqcStatus = :iqcStatus', { iqcStatus: 'PASS' })
       .andWhere('lot.status = :status', { status: 'NORMAL' })
-      .andWhere('lot.deletedAt IS NULL')
       .andWhere('lot.currentQty > 0')
       .getMany();
     const lotIds = validLots.map((l) => l.id);

@@ -271,7 +271,8 @@
     "openMenu": "打开菜单",
     "searchPlaceholder": "搜索 (Ctrl+K)",
     "switchToLight": "切换到亮色模式",
-    "switchToDark": "切换到暗色模式"
+    "switchToDark": "切换到暗色模式",
+    "colorTheme": "切换颜色主题"
   },
   "auth": {
     "login": "登录",
@@ -3615,6 +3616,39 @@
     "html": "HTML",
     "markdown": "Markdown",
     "txt": "文本"
+  },
+  "textFilter": {
+    "searchPlaceholder": "搜索...",
+    "selectAll": "全选",
+    "blankLabel": "空值",
+    "noMatch": "无匹配项",
+    "apply": "筛选",
+    "clear": "清除筛选"
+  },
+  "dateFilter": {
+    "title": "日期范围",
+    "from": "开始日期",
+    "to": "结束日期",
+    "apply": "筛选",
+    "clear": "清除筛选"
+  },
+  "numberFilter": {
+    "values": "选择值",
+    "selectAll": "全选",
+    "blankLabel": "空值",
+    "conditions": "范围条件",
+    "none": "无条件",
+    "eq": "等于",
+    "neq": "不等于",
+    "gt": "大于",
+    "gte": "大于等于",
+    "lt": "小于",
+    "lte": "小于等于",
+    "blank": "空值",
+    "notBlank": "非空值",
+    "valuePlaceholder": "输入值",
+    "apply": "筛选",
+    "clear": "清除筛选"
   },
   "tabs": {
     "close": "关闭",

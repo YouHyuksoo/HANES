@@ -104,11 +104,11 @@ export default function EquipPage() {
   }), [equipments]);
 
   const logColumns = useMemo<ColumnDef<CommLog>[]>(() => [
-    { accessorKey: "timestamp", header: t("inspection.equip.time"), size: 150 },
+    { accessorKey: "timestamp", header: t("inspection.equip.time"), size: 150, meta: { filterType: "date" as const } },
     { accessorKey: "equipCode", header: t("inspection.equip.inspector"), size: 90, meta: { filterType: "text" as const } },
-    { accessorKey: "direction", header: t("inspection.equip.direction"), size: 60, cell: ({ getValue }) => <span className={getValue() === "RX" ? "text-blue-500" : "text-orange-500"}>{getValue() as string}</span> },
-    { accessorKey: "message", header: t("inspection.equip.message"), size: 350, cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 70, cell: ({ getValue }) => <span className={getValue() === "OK" ? "text-green-500" : "text-red-500"}>{getValue() as string}</span> },
+    { accessorKey: "direction", header: t("inspection.equip.direction"), size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <span className={getValue() === "RX" ? "text-blue-500" : "text-orange-500"}>{getValue() as string}</span> },
+    { accessorKey: "message", header: t("inspection.equip.message"), size: 350, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <span className={getValue() === "OK" ? "text-green-500" : "text-red-500"}>{getValue() as string}</span> },
   ], [t]);
 
   return (

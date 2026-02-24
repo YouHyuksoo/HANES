@@ -15,7 +15,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   OneToMany,
 } from 'typeorm';
@@ -85,9 +84,6 @@ export class OqcRequest {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   @OneToMany(() => OqcRequestBox, (box) => box.oqcRequest)
   boxes: OqcRequestBox[];

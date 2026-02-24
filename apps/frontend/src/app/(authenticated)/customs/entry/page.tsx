@@ -111,18 +111,18 @@ export default function CustomsEntryPage() {
     { accessorKey: "entryNo", header: t("customs.entry.entryNo"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "blNo", header: t("customs.entry.blNo"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "invoiceNo", header: t("customs.entry.invoiceNo"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "declarationDate", header: t("customs.entry.declarationDate"), size: 100 },
-    { accessorKey: "clearanceDate", header: t("customs.entry.clearanceDate"), size: 100, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "origin", header: t("customs.entry.origin"), size: 70 },
-    { accessorKey: "hsCode", header: t("customs.entry.hsCode"), size: 90 },
-    { accessorKey: "totalAmount", header: t("customs.entry.amount"), size: 100, cell: ({ row }) => `${row.original.totalAmount.toLocaleString()} ${row.original.currency}` },
+    { accessorKey: "declarationDate", header: t("customs.entry.declarationDate"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "clearanceDate", header: t("customs.entry.clearanceDate"), size: 100, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "origin", header: t("customs.entry.origin"), size: 70, meta: { filterType: "text" as const } },
+    { accessorKey: "hsCode", header: t("customs.entry.hsCode"), size: 90, meta: { filterType: "text" as const } },
+    { accessorKey: "totalAmount", header: t("customs.entry.amount"), size: 100, meta: { filterType: "number" as const }, cell: ({ row }) => `${row.original.totalAmount.toLocaleString()} ${row.original.currency}` },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[s]}`}>{statusLabels[s]}</span>; },
     },
-    { accessorKey: "lotCount", header: t("customs.entry.lotCount"), size: 70 },
+    { accessorKey: "lotCount", header: t("customs.entry.lotCount"), size: 70, meta: { filterType: "number" as const } },
     {
-      id: "actions", header: t("common.manage"), size: 100,
+      id: "actions", header: t("common.manage"), size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Edit2 className="w-4 h-4 text-primary" /></button>

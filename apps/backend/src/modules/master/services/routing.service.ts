@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ProcessMap } from '../../../entities/process-map.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateRoutingDto, UpdateRoutingDto, RoutingQueryDto } from '../dto/routing.dto';
@@ -29,7 +29,6 @@ export class RoutingService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.routingRepository.createQueryBuilder('routing')
-      .where('routing.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('routing.company = :company', { company });
@@ -85,7 +84,7 @@ export class RoutingService {
 
   async findById(id: string) {
     const item = await this.routingRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!item) throw new NotFoundException(`라우팅을 찾을 수 없습니다: ${id}`);
 
@@ -131,7 +130,7 @@ export class RoutingService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.routingRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.routingRepository.delete(id);
+    return { id };
   }
 }

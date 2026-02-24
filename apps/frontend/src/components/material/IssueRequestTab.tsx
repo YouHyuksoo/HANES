@@ -77,12 +77,13 @@ export default function IssueRequestTab() {
 
   // DataGrid 컬럼 정의
   const columns = useMemo<ColumnDef<IssueRequestRecord>[]>(() => [
-    { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160 },
-    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100 },
+    { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100, meta: { filterType: 'date' as const } },
     {
       accessorKey: 'workOrderNo',
       header: t('material.col.workOrder'),
       size: 160,
+      meta: { filterType: 'text' as const },
       cell: ({ getValue }) => (
         <span className="text-primary font-medium">{getValue() as string}</span>
       ),
@@ -91,6 +92,7 @@ export default function IssueRequestTab() {
       id: 'itemCount',
       header: t('material.col.itemCount'),
       size: 70,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => (
         <span>{row.original.itemCount ?? row.original.items?.length ?? 0}{t('material.request.items')}</span>
       ),
@@ -99,6 +101,7 @@ export default function IssueRequestTab() {
       accessorKey: 'totalQty',
       header: t('common.totalQty'),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ getValue }) => (
         <span className="font-medium">{(getValue() as number)?.toLocaleString()}</span>
       ),
@@ -107,15 +110,17 @@ export default function IssueRequestTab() {
       accessorKey: 'status',
       header: t('common.status'),
       size: 90,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => (
         <IssueRequestStatusBadge status={getValue() as IssueRequestStatus} />
       ),
     },
-    { accessorKey: 'requester', header: t('material.col.requester'), size: 80 },
+    { accessorKey: 'requester', header: t('material.col.requester'), size: 80, meta: { filterType: 'text' as const } },
     {
       id: 'actions',
       header: t('material.col.actions'),
       size: 130,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const record = row.original;
         return (
@@ -173,6 +178,7 @@ export default function IssueRequestTab() {
             data={records}
             columns={columns}
             isLoading={isLoading}
+            enableColumnFilter
             enableExport
             exportFileName={t('material.request.title')}
             emptyMessage={t('common.noData')}

@@ -12,11 +12,14 @@ import { persist } from "zustand/middleware";
 
 export type Theme = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
+export type ColorTheme = "default" | "custom";
 
 interface ThemeState {
   theme: Theme;
   resolvedTheme: ResolvedTheme;
+  colorTheme: ColorTheme;
   setTheme: (theme: Theme) => void;
+  setColorTheme: (colorTheme: ColorTheme) => void;
   toggleTheme: () => void;
   _resolveTheme: (theme: Theme) => ResolvedTheme;
 }
@@ -33,10 +36,15 @@ export const useThemeStore = create<ThemeState>()(
     (set, get) => ({
       theme: "system",
       resolvedTheme: "light",
+      colorTheme: "default" as ColorTheme,
 
       setTheme: (theme: Theme) => {
         const resolved = theme === "system" ? getSystemTheme() : theme;
         set({ theme, resolvedTheme: resolved });
+      },
+
+      setColorTheme: (colorTheme: ColorTheme) => {
+        set({ colorTheme });
       },
 
       toggleTheme: () => {
@@ -51,7 +59,7 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: "harness-theme",
-      partialize: (state) => ({ theme: state.theme }),
+      partialize: (state) => ({ theme: state.theme, colorTheme: state.colorTheme }),
       onRehydrateStorage: () => (state) => {
         // hydration 후 resolvedTheme 재계산
         if (state) {

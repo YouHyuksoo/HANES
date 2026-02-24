@@ -123,24 +123,27 @@ export default function IssueFromRequestModal({
 
   // 컬럼 정의
   const columns = useMemo<ColumnDef<IssueRow>[]>(() => [
-    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120 },
-    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 150 },
+    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 150, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'requestQty',
       header: t('material.col.requestQty'),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
       accessorKey: 'issuedQty',
       header: t('material.issue.issuedLabel'),
       size: 90,
+      meta: { filterType: 'number' as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
       accessorKey: 'remainQty',
       header: t('material.issue.remainingLabel'),
       size: 90,
+      meta: { filterType: 'number' as const },
       cell: ({ getValue }) => (
         <span className="font-medium text-primary">{(getValue() as number).toLocaleString()}</span>
       ),
@@ -149,6 +152,7 @@ export default function IssueFromRequestModal({
       id: 'issueQtyInput',
       header: t('material.issue.issueQtyLabel'),
       size: 120,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const item = row.original;
         return (
@@ -163,7 +167,7 @@ export default function IssueFromRequestModal({
         );
       },
     },
-    { accessorKey: 'unit', header: t('common.unit'), size: 60 },
+    { accessorKey: 'unit', header: t('common.unit'), size: 60, meta: { filterType: 'text' as const } },
   ], [t, handleQtyChange]);
 
   return (

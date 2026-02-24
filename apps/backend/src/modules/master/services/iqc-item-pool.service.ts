@@ -10,7 +10,7 @@
 
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { IqcItemPool } from '../../../entities/iqc-item-pool.entity';
 import {
   CreateIqcItemPoolDto,
@@ -28,8 +28,7 @@ export class IqcItemPoolService {
   async findAll(query: IqcItemPoolQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, judgeMethod, useYn } = query;
 
-    const qb = this.repo.createQueryBuilder('item')
-      .where('item.deletedAt IS NULL');
+    const qb = this.repo.createQueryBuilder('item');
 
     if (company) {
       qb.andWhere('item.company = :company', { company });
@@ -64,7 +63,7 @@ export class IqcItemPoolService {
 
   async findById(id: string) {
     const item = await this.repo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!item) {
       throw new NotFoundException('검사항목을 찾을 수 없습니다.');
@@ -74,7 +73,7 @@ export class IqcItemPoolService {
 
   async create(dto: CreateIqcItemPoolDto) {
     const existing = await this.repo.findOne({
-      where: { itemCode: dto.itemCode, deletedAt: IsNull() },
+      where: { itemCode: dto.itemCode },
     });
     if (existing) {
       throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.itemCode}`);
@@ -89,7 +88,7 @@ export class IqcItemPoolService {
 
     if (dto.itemCode && dto.itemCode !== item.itemCode) {
       const dup = await this.repo.findOne({
-        where: { itemCode: dto.itemCode, deletedAt: IsNull() },
+        where: { itemCode: dto.itemCode },
       });
       if (dup) {
         throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.itemCode}`);
@@ -102,7 +101,7 @@ export class IqcItemPoolService {
 
   async delete(id: string) {
     const item = await this.findById(id);
-    await this.repo.softRemove(item);
+    await this.repo.remove(item);
     return { id, deleted: true };
   }
 }

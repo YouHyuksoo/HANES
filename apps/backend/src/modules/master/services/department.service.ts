@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { DepartmentMaster } from '../../../entities/department-master.entity';
 import { CreateDepartmentDto, UpdateDepartmentDto, DepartmentQueryDto } from '../dto/department.dto';
 
@@ -21,7 +21,6 @@ export class DepartmentService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.departmentRepository.createQueryBuilder('dept')
-      .where('dept.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('dept.company = :company', { company });
@@ -56,7 +55,7 @@ export class DepartmentService {
 
   async findById(id: string) {
     const dept = await this.departmentRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!dept) throw new NotFoundException(`부서를 찾을 수 없습니다: ${id}`);
     return dept;
@@ -64,7 +63,7 @@ export class DepartmentService {
 
   async create(dto: CreateDepartmentDto) {
     const existing = await this.departmentRepository.findOne({
-      where: { deptCode: dto.deptCode, deletedAt: IsNull() },
+      where: { deptCode: dto.deptCode },
     });
     if (existing) throw new ConflictException(`이미 존재하는 부서코드입니다: ${dto.deptCode}`);
 
@@ -89,7 +88,7 @@ export class DepartmentService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.departmentRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.departmentRepository.delete(id);
+    return { id };
   }
 }

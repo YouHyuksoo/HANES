@@ -99,6 +99,7 @@ export default function CommConfigPage() {
         id: "actions",
         header: t('common.actions'),
         size: 120,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
             {row.original.commType === "SERIAL" && (
@@ -131,6 +132,7 @@ export default function CommConfigPage() {
         accessorKey: "configName",
         header: t('system.commConfig.configName'),
         size: 160,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => (
           <span className="font-medium text-text">{getValue() as string}</span>
         ),
@@ -139,6 +141,7 @@ export default function CommConfigPage() {
         accessorKey: "description",
         header: t('system.commConfig.descriptionLabel'),
         size: 160,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => (
           <span className="text-sm text-text-muted truncate">{(getValue() as string) || "-"}</span>
         ),
@@ -147,6 +150,7 @@ export default function CommConfigPage() {
         accessorKey: "commType",
         header: t('system.commConfig.commType'),
         size: 100,
+        meta: { filterType: "multi" as const },
         cell: ({ row }) => {
           const badge = TYPE_BADGE[row.original.commType] || TYPE_BADGE.TCP;
           return (
@@ -160,18 +164,21 @@ export default function CommConfigPage() {
         accessorKey: "host",
         header: t('system.commConfig.hostLabel'),
         size: 130,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
       },
       {
         accessorKey: "port",
         header: t('system.commConfig.portLabel'),
         size: 70,
+        meta: { filterType: "number" as const },
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as number) ?? "-"}</span>,
       },
       {
         accessorKey: "baudRate",
         header: t('system.commConfig.baudRate'),
         size: 90,
+        meta: { filterType: "number" as const },
         cell: ({ getValue }) => {
           const v = getValue() as number | null;
           return <span className="text-sm text-text">{v ? `${v.toLocaleString()}` : "-"}</span>;
@@ -181,36 +188,42 @@ export default function CommConfigPage() {
         accessorKey: "dataBits",
         header: t('system.commConfig.dataBits'),
         size: 80,
+        meta: { filterType: "number" as const },
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as number) ?? "-"}</span>,
       },
       {
         accessorKey: "stopBits",
         header: t('system.commConfig.stopBits'),
         size: 80,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
       },
       {
         accessorKey: "parity",
         header: t('system.commConfig.parity'),
         size: 80,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
       },
       {
         accessorKey: "flowControl",
         header: t('system.commConfig.flowControl'),
         size: 90,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
       },
       {
         accessorKey: "lineEnding",
         header: t('system.commConfig.lineEnding'),
         size: 80,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => <span className="text-sm text-text">{(getValue() as string) || "-"}</span>,
       },
       {
         accessorKey: "useYn",
         header: t('system.commConfig.use'),
         size: 70,
+        meta: { filterType: "multi" as const },
         cell: ({ row }) => (
           <span
             className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
@@ -283,6 +296,7 @@ export default function CommConfigPage() {
         columns={columns}
         isLoading={loading}
         enableColumnResizing
+        enableColumnFilter
       />
 
       {/* 생성/수정 모달 */}

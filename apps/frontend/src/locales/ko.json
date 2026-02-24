@@ -272,7 +272,8 @@
     "openMenu": "메뉴 열기",
     "searchPlaceholder": "검색 (Ctrl+K)",
     "switchToLight": "라이트 모드로 전환",
-    "switchToDark": "다크 모드로 전환"
+    "switchToDark": "다크 모드로 전환",
+    "colorTheme": "컬러 테마 전환"
   },
   "auth": {
     "login": "로그인",
@@ -3660,6 +3661,39 @@
     "html": "HTML",
     "markdown": "Markdown",
     "txt": "텍스트"
+  },
+  "textFilter": {
+    "searchPlaceholder": "검색...",
+    "selectAll": "전체 선택",
+    "blankLabel": "빈값",
+    "noMatch": "일치하는 항목 없음",
+    "apply": "필터 적용",
+    "clear": "필터 해제"
+  },
+  "dateFilter": {
+    "title": "기간 선택",
+    "from": "시작일",
+    "to": "종료일",
+    "apply": "필터 적용",
+    "clear": "필터 해제"
+  },
+  "numberFilter": {
+    "values": "값 선택",
+    "selectAll": "전체 선택",
+    "blankLabel": "빈값",
+    "conditions": "범위 조건",
+    "none": "조건 없음",
+    "eq": "같음",
+    "neq": "같지 않음",
+    "gt": "초과",
+    "gte": "이상",
+    "lt": "미만",
+    "lte": "이하",
+    "blank": "빈값",
+    "notBlank": "빈값 아님",
+    "valuePlaceholder": "값 입력",
+    "apply": "필터 적용",
+    "clear": "필터 해제"
   },
   "tabs": {
     "close": "닫기",

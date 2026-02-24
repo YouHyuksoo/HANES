@@ -19,7 +19,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Role } from '../../entities/role.entity';
 import { RoleMenuPermission } from '../../entities/role-menu-permission.entity';
 import { CreateRoleDto, UpdateRoleDto, UpdatePermissionsDto } from './role.dto';
@@ -38,7 +38,6 @@ export class RoleService {
   /** 역할 목록 조회 */
   async findAll(company?: string) {
     const where: Record<string, unknown> = {
-      deletedAt: IsNull(),
       ...(company && { company }),
     };
 
@@ -51,7 +50,7 @@ export class RoleService {
   /** 역할 상세 조회 (권한 포함) */
   async findOne(id: number) {
     const role = await this.roleRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['permissions'],
     });
 
@@ -66,7 +65,7 @@ export class RoleService {
   async create(dto: CreateRoleDto, company?: string, userId?: string) {
     // code 중복 체크
     const existing = await this.roleRepository.findOne({
-      where: { code: dto.code, deletedAt: IsNull() },
+      where: { code: dto.code },
     });
 
     if (existing) {
@@ -113,7 +112,7 @@ export class RoleService {
       throw new BadRequestException('시스템 기본 역할은 삭제할 수 없습니다.');
     }
 
-    await this.roleRepository.softDelete(id);
+    await this.roleRepository.delete(id);
     this.logger.log(`Role deleted: ${role.code} (${id})`);
     return { message: '역할이 삭제되었습니다.' };
   }
@@ -173,7 +172,7 @@ export class RoleService {
     }
 
     const role = await this.roleRepository.findOne({
-      where: { code: roleCode, deletedAt: IsNull() },
+      where: { code: roleCode },
     });
 
     if (!role) {

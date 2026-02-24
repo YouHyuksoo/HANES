@@ -80,11 +80,12 @@ export default function CustomerPoStatusPage() {
   const columns = useMemo<ColumnDef<CustomerPoStatus>[]>(() => [
     { accessorKey: "orderNo", header: t("shipping.customerPoStatus.orderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.customerPoStatus.customer"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "dueDate", header: t("shipping.customerPoStatus.dueDate"), size: 100 },
-    { accessorKey: "orderQty", header: t("shipping.customerPoStatus.orderQty"), size: 90, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "shippedQty", header: t("shipping.customerPoStatus.shippedQty"), size: 90, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "dueDate", header: t("shipping.customerPoStatus.dueDate"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "orderQty", header: t("shipping.customerPoStatus.orderQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "shippedQty", header: t("shipping.customerPoStatus.shippedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     {
       accessorKey: "shipRate", header: t("shipping.customerPoStatus.shipRate"), size: 100,
+      meta: { filterType: "none" as const },
       cell: ({ getValue }) => {
         const rate = getValue() as number;
         const barColor = rate >= 100 ? "bg-green-500" : rate >= 50 ? "bg-blue-500" : rate > 0 ? "bg-orange-500" : "bg-gray-300 dark:bg-gray-600";
@@ -100,10 +101,12 @@ export default function CustomerPoStatusPage() {
     },
     {
       accessorKey: "remainQty", header: t("shipping.customerPoStatus.remainQty"), size: 90,
+      meta: { filterType: "number" as const },
       cell: ({ getValue }) => { const qty = getValue() as number; return <span className={`font-medium ${qty > 0 ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>{qty.toLocaleString()}</span>; },
     },
     {
       accessorKey: "status", header: t("common.status"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         const label = statusOptions.find((o) => o.value === s)?.label || s;

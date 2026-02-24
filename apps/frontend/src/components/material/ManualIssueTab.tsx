@@ -70,6 +70,7 @@ export default function ManualIssueTab() {
         />
       ),
       size: 40,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const stock = row.original;
         return (
@@ -86,14 +87,16 @@ export default function ManualIssueTab() {
       accessorKey: 'warehouseName',
       header: t('material.col.warehouse', { defaultValue: '창고' }),
       size: 100,
+      meta: { filterType: 'text' as const },
     },
-    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120 },
-    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 150 },
-    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150 },
+    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'iqcStatus',
       header: 'IQC',
       size: 70,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const status = getValue() as string;
         return (
@@ -107,6 +110,7 @@ export default function ManualIssueTab() {
       accessorKey: 'availableQty',
       header: t('material.issue.availableQty', { defaultValue: '가용수량' }),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ getValue }) => (
         <span className="font-medium">{(getValue() as number).toLocaleString()}</span>
       ),
@@ -115,6 +119,7 @@ export default function ManualIssueTab() {
       id: 'issueQty',
       header: t('material.issue.issueQtyLabel'),
       size: 120,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const stock = row.original;
         const isSelected = selectedItems.has(stock.id);
@@ -137,6 +142,7 @@ export default function ManualIssueTab() {
       accessorKey: 'unit',
       header: t('common.unit'),
       size: 60,
+      meta: { filterType: 'text' as const },
       cell: ({ getValue }) => <span className="text-text-muted">{getValue() as string ?? 'EA'}</span>,
     },
   ], [t, availableStocks, selectedItems, toggleAll, toggleSelect, updateQty]);
@@ -158,6 +164,7 @@ export default function ManualIssueTab() {
             data={availableStocks}
             columns={columns}
             isLoading={isLoading}
+            enableColumnFilter
             enableExport
             exportFileName={t('material.issue.manualIssue', { defaultValue: '수동출고' })}
             emptyMessage={t('material.issue.noAvailableStock', { defaultValue: '출고 가능한 재고가 없습니다.' })}

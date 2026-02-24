@@ -127,7 +127,7 @@ export default function PartPage() {
   const columns = useMemo<ColumnDef<Part>[]>(() => [
     {
       id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const },
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
@@ -139,10 +139,11 @@ export default function PartPage() {
         </div>
       ),
     },
-    { accessorKey: "partNo", header: t("master.part.partNo", "품번"), size: 120 },
+    { accessorKey: "partNo", header: t("master.part.partNo", "품번"), size: 120, meta: { filterType: "text" as const } },
     ...createPartColumns<Part>(t).map(col => ({ ...col, size: 140 })),
     {
       accessorKey: "partType", header: t("master.part.type"), size: 70,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as Part["partType"];
         const cfg = PART_TYPE_COLORS[v];
@@ -151,32 +152,35 @@ export default function PartPage() {
     },
     {
       accessorKey: "productType", header: t("master.part.productType", "제품유형"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return <span className="text-xs">{productTypeLabels[v] || v || "-"}</span>;
       },
     },
-    { accessorKey: "spec", header: t("master.part.spec"), size: 130 },
+    { accessorKey: "spec", header: t("master.part.spec"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "rev", header: t("master.part.rev", "Rev"), size: 45 },
-    { accessorKey: "custPartNo", header: t("master.part.custPartNo", "고객품번"), size: 120, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "custPartNo", header: t("master.part.custPartNo", "고객품번"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "unit", header: t("master.part.unit"), size: 45 },
-    { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70 },
-    { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "LOT수량"), size: 75, cell: ({ getValue }) => getValue() ?? "-" },
+    { accessorKey: "boxQty", header: t("master.part.boxQty", "박스입수"), size: 70, meta: { filterType: "number" as const } },
+    { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "LOT수량"), size: 75, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() ?? "-" },
     {
       accessorKey: "iqcYn", header: t("master.part.iqcFlag", "IQC"), size: 50,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>{v}</span>;
       },
     },
-    { accessorKey: "tactTime", header: t("master.part.tactTime", "택타임"), size: 65, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}s` : "-"; } },
-    { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
+    { accessorKey: "tactTime", header: t("master.part.tactTime", "택타임"), size: 65, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}s` : "-"; } },
+    { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
     { accessorKey: "packUnit", header: t("master.part.packUnit", "포장단위"), size: 70, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "storageLocation", header: t("master.part.storageLocation", "적재위치"), size: 90, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "vendor", header: t("master.part.vendor"), size: 90, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "customer", header: t("master.part.customer"), size: 90, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "vendor", header: t("master.part.vendor"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "customer", header: t("master.part.customer"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     {
       id: "iqcSetup", header: t("master.part.iqc.header", "IQC검사"), size: 100,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => {
         if (row.original.iqcYn !== "Y") return <span className="text-xs text-text-muted">-</span>;
         const links = iqcLinkMap[row.original.id];
@@ -230,6 +234,7 @@ export default function PartPage() {
             data={parts}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             enableColumnPinning
             exportFileName={t("master.part.title")}

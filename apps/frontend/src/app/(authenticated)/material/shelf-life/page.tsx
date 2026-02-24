@@ -99,7 +99,7 @@ export default function ShelfLifePage() {
     },
     {
       accessorKey: "currentQty", header: t("material.shelfLife.currentQty"), size: 110,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => <span>{row.original.currentQty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
@@ -108,6 +108,7 @@ export default function ShelfLifePage() {
     },
     {
       accessorKey: "expireDate", header: t("material.shelfLife.expireDate"), size: 110,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? new Date(v).toLocaleDateString() : "-";
@@ -115,7 +116,7 @@ export default function ShelfLifePage() {
     },
     {
       accessorKey: "daysUntilExpiry", header: t("material.shelfLife.remainDays"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => {
         const days = getValue() as number | null;
         if (days === null) return <span className="text-text-muted">-</span>;
@@ -124,7 +125,7 @@ export default function ShelfLifePage() {
       },
     },
     {
-      accessorKey: "expiryStatus", header: t("common.status"), size: 100,
+      accessorKey: "expiryStatus", header: t("common.status"), size: 100, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const label = getValue() as string;
         const displayName = label === "EXPIRED" ? t("material.shelfLife.expired")

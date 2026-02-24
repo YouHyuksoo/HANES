@@ -159,7 +159,7 @@ export default function ArrivalStockPage() {
         accessorKey: "arrivalQty",
         header: t("material.arrivalStock.arrivalQty"),
         size: 100,
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
         cell: ({ getValue }) => (
           <span>{(getValue() as number).toLocaleString()}</span>
         ),
@@ -168,7 +168,7 @@ export default function ArrivalStockPage() {
         accessorKey: "currentStock",
         header: t("material.arrivalStock.currentStock"),
         size: 100,
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
         cell: ({ getValue }) => {
           const v = getValue() as number;
           return (
@@ -188,6 +188,7 @@ export default function ArrivalStockPage() {
         accessorKey: "unit",
         header: t("material.arrivalStock.unit"),
         size: 60,
+        meta: { filterType: "text" as const },
       },
       {
         accessorKey: "warehouseName",
@@ -199,6 +200,7 @@ export default function ArrivalStockPage() {
         accessorKey: "arrivalType",
         header: t("material.arrivalStock.arrivalType"),
         size: 90,
+        meta: { filterType: "multi" as const },
         cell: ({ getValue }) => {
           const v = getValue() as string;
           return (
@@ -214,18 +216,21 @@ export default function ArrivalStockPage() {
         accessorKey: "arrivalDate",
         header: t("material.arrivalStock.arrivalDate"),
         size: 100,
+        meta: { filterType: "date" as const },
         cell: ({ getValue }) => formatDate(getValue() as string),
       },
       {
         accessorKey: "manufactureDate",
         header: t("material.arrivalStock.manufactureDate"),
         size: 100,
+        meta: { filterType: "date" as const },
         cell: ({ getValue }) => formatDate(getValue() as string | null),
       },
       {
         accessorKey: "expireDate",
         header: t("material.arrivalStock.expireDate"),
         size: 100,
+        meta: { filterType: "date" as const },
         cell: ({ getValue }) => formatDate(getValue() as string | null),
       },
     ],

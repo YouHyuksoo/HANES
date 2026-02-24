@@ -89,20 +89,20 @@ export default function PoStatusPage() {
       accessorKey: "partnerName", header: t("material.po.partnerName"), size: 120,
       meta: { filterType: "text" as const },
     },
-    { accessorKey: "orderDate", header: t("material.po.orderDate"), size: 110 },
-    { accessorKey: "dueDate", header: t("material.po.dueDate"), size: 110 },
+    { accessorKey: "orderDate", header: t("material.po.orderDate"), size: 110, meta: { filterType: "date" as const } },
+    { accessorKey: "dueDate", header: t("material.po.dueDate"), size: 110, meta: { filterType: "date" as const } },
     {
       accessorKey: "totalOrderQty", header: t("material.poStatus.orderQty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
       accessorKey: "totalReceivedQty", header: t("material.poStatus.receivedQty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
-      accessorKey: "receiveRate", header: t("material.poStatus.receiveRate"), size: 120,
+      accessorKey: "receiveRate", header: t("material.poStatus.receiveRate"), size: 120, meta: { filterType: "none" as const },
       cell: ({ getValue }) => {
         const rate = getValue() as number;
         return (
@@ -116,7 +116,7 @@ export default function PoStatusPage() {
       },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 100,
+      accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;

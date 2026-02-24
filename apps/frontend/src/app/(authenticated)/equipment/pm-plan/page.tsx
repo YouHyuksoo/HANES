@@ -140,6 +140,7 @@ export default function PmPlanPage() {
       accessorKey: "planCode",
       header: t("equipment.pmPlan.planCode"),
       size: 120,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (
         <span className="font-mono text-xs font-medium">{getValue() as string}</span>
       ),
@@ -148,6 +149,7 @@ export default function PmPlanPage() {
       accessorKey: "equip",
       header: t("equipment.pmPlan.equipCode"),
       size: 120,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => {
         const equip = getValue() as PmPlanRow["equip"];
         return equip ? (
@@ -159,17 +161,20 @@ export default function PmPlanPage() {
       id: "equipName",
       header: t("equipment.pmPlan.equipName"),
       size: 140,
+      meta: { filterType: "text" as const },
       accessorFn: (row) => row.equip?.equipName ?? "-",
     },
     {
       accessorKey: "planName",
       header: t("equipment.pmPlan.planName"),
       size: 180,
+      meta: { filterType: "text" as const },
     },
     {
       accessorKey: "pmType",
       header: t("equipment.pmPlan.pmType"),
       size: 100,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="PM_TYPE" code={getValue() as string} />
       ),
@@ -178,6 +183,7 @@ export default function PmPlanPage() {
       accessorKey: "cycleType",
       header: t("equipment.pmPlan.cycleType"),
       size: 100,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="PM_CYCLE_TYPE" code={getValue() as string} />
       ),
@@ -186,7 +192,7 @@ export default function PmPlanPage() {
       accessorKey: "itemCount",
       header: t("equipment.pmPlan.itemsTitle"),
       size: 80,
-      meta: { align: "center" as const },
+      meta: { align: "center" as const, filterType: "number" as const },
       cell: ({ getValue }) => {
         const count = getValue() as number;
         return (
@@ -204,6 +210,7 @@ export default function PmPlanPage() {
       accessorKey: "nextDueAt",
       header: t("equipment.pmPlan.nextDueAt"),
       size: 120,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
         if (!v) return "-";
@@ -214,6 +221,7 @@ export default function PmPlanPage() {
       accessorKey: "useYn",
       header: t("common.status"),
       size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const yn = getValue() as string;
         return (

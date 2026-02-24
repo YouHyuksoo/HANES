@@ -102,6 +102,7 @@ export default function CustomerPoPage() {
   const columns = useMemo<ColumnDef<CustomerOrder>[]>(() => [
     {
       id: "actions", header: "", size: 80,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingItem(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
@@ -115,12 +116,13 @@ export default function CustomerPoPage() {
     },
     { accessorKey: "orderNo", header: t("shipping.customerPo.orderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.customerPo.customer"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "orderDate", header: t("shipping.customerPo.orderDate"), size: 100 },
-    { accessorKey: "dueDate", header: t("shipping.customerPo.dueDate"), size: 100 },
-    { accessorKey: "itemCount", header: t("shipping.customerPo.itemCount"), size: 70, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: "totalAmount", header: t("shipping.customerPo.totalAmount"), size: 120, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "orderDate", header: t("shipping.customerPo.orderDate"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "dueDate", header: t("shipping.customerPo.dueDate"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "itemCount", header: t("shipping.customerPo.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: "totalAmount", header: t("shipping.customerPo.totalAmount"), size: 120, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     {
       accessorKey: "status", header: t("common.status"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         const label = statusOptions.find((o) => o.value === s)?.label || s;

@@ -127,7 +127,7 @@ export default function IqcGroupTab() {
   const columns = useMemo<ColumnDef<IqcGroupRow>[]>(() => [
     {
       id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const },
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={e => { e.stopPropagation(); openEdit(row.original); }}
@@ -141,10 +141,11 @@ export default function IqcGroupTab() {
         </div>
       ),
     },
-    { accessorKey: "groupCode", header: t("master.iqcGroup.groupCode", "그룹코드"), size: 110 },
-    { accessorKey: "groupName", header: t("master.iqcGroup.groupName", "그룹명"), size: 180 },
+    { accessorKey: "groupCode", header: t("master.iqcGroup.groupCode", "그룹코드"), size: 110, meta: { filterType: "text" as const } },
+    { accessorKey: "groupName", header: t("master.iqcGroup.groupName", "그룹명"), size: 180, meta: { filterType: "text" as const } },
     {
       accessorKey: "inspectMethod", header: t("master.iqcGroup.inspectMethod", "검사형태"), size: 100,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return (
@@ -156,11 +157,13 @@ export default function IqcGroupTab() {
     },
     {
       accessorKey: "sampleQty", header: t("master.iqcGroup.sampleQty", "샘플수량"), size: 90,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => row.original.inspectMethod === "SAMPLE" && row.original.sampleQty
         ? `${row.original.sampleQty}${t("common.ea", "개")}` : "-",
     },
     {
       id: "itemCount", header: t("master.iqcGroup.itemCount", "항목수"), size: 80,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => (
         <span className="inline-flex items-center gap-1">
           <Layers className="w-3.5 h-3.5 text-text-muted" />
@@ -178,6 +181,7 @@ export default function IqcGroupTab() {
             data={groups}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             exportFileName={t("master.iqcGroup.tabGroups", "검사그룹")}
             toolbarLeft={

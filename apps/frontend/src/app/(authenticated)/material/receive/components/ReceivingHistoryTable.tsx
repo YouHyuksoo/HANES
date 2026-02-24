@@ -19,21 +19,23 @@ export default function ReceivingHistoryTable({ data }: ReceivingHistoryTablePro
   const { t } = useTranslation();
 
   const columns = useMemo<ColumnDef<ReceivingRecord>[]>(() => [
-    { accessorKey: 'receiveNo', header: t('material.receive.col.receiveNo', '입고번호'), size: 180 },
+    { accessorKey: 'receiveNo', header: t('material.receive.col.receiveNo', '입고번호'), size: 180, meta: { filterType: "text" as const } },
     {
       accessorKey: 'transDate',
       header: t('material.receive.col.receivedDate'),
       size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => (getValue() as string).slice(0, 10),
     },
-    { id: 'lotNo', header: t('material.col.lotNo'), size: 150, cell: ({ row }) => row.original.lot?.lotNo || '-' },
-    { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, cell: ({ row }) => row.original.lot?.poNo || '-' },
-    { id: 'partCode', header: t('common.partCode'), size: 100, cell: ({ row }) => row.original.part?.partCode },
-    { id: 'partName', header: t('common.partName'), size: 130, cell: ({ row }) => row.original.part?.partName },
+    { id: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lot?.lotNo || '-' },
+    { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lot?.poNo || '-' },
+    { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.partCode },
+    { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.partName },
     {
       accessorKey: 'qty',
       header: t('common.quantity'),
       size: 100,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => (
         <span className="text-green-600 font-medium">
           +{row.original.qty.toLocaleString()} {row.original.part?.unit}
@@ -44,15 +46,17 @@ export default function ReceivingHistoryTable({ data }: ReceivingHistoryTablePro
       id: 'warehouse',
       header: t('material.arrival.col.warehouse'),
       size: 100,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.toWarehouse?.warehouseName || '-',
     },
     {
       accessorKey: 'remark',
       header: t('common.remark'),
       size: 120,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || '-'}</span>,
     },
   ], [t]);
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter />;
 }

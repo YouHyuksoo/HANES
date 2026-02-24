@@ -105,18 +105,18 @@ export default function CustomsUsagePage() {
     { accessorKey: "reportNo", header: t("customs.usage.reportNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "lotNo", header: t("customs.stock.lotNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "partCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "partName", header: t("common.partName"), size: 140 },
-    { accessorKey: "usageQty", header: t("customs.usage.usageQty"), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: "usageDate", header: t("customs.usage.usageDate"), size: 130 },
-    { accessorKey: "reportDate", header: t("customs.usage.reportDate"), size: 130, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "jobOrderNo", header: t("customs.usage.jobOrder"), size: 110, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "partName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: "usageQty", header: t("customs.usage.usageQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "usageDate", header: t("customs.usage.usageDate"), size: 130, meta: { filterType: "date" as const } },
+    { accessorKey: "reportDate", header: t("customs.usage.reportDate"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "jobOrderNo", header: t("customs.usage.jobOrder"), size: 110, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => { const status = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>; },
     },
-    { accessorKey: "workerName", header: t("customs.usage.worker"), size: 80 },
+    { accessorKey: "workerName", header: t("customs.usage.worker"), size: 80, meta: { filterType: "text" as const } },
     {
-      id: "actions", header: t("common.manage"), size: 80,
+      id: "actions", header: t("common.manage"), size: 80, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           {row.original.status === "DRAFT" && (

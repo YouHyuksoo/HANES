@@ -11,7 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { SubconOrder } from '../../../entities/subcon-order.entity';
 import { SubconDelivery } from '../../../entities/subcon-delivery.entity';
 import { SubconReceive } from '../../../entities/subcon-receive.entity';
@@ -53,7 +53,6 @@ export class OutsourcingService {
 
     const queryBuilder = this.vendorMasterRepository
       .createQueryBuilder('vm')
-      .where('vm.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('vm.company = :company', { company });
@@ -90,7 +89,7 @@ export class OutsourcingService {
 
   async findVendorById(id: string) {
     const vendor = await this.vendorMasterRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!vendor) {
@@ -129,8 +128,8 @@ export class OutsourcingService {
   async deleteVendor(id: string) {
     await this.findVendorById(id);
 
-    await this.vendorMasterRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.vendorMasterRepository.delete(id);
+    return { id };
   }
 
   // ============================================================================
@@ -144,7 +143,6 @@ export class OutsourcingService {
     const queryBuilder = this.subconOrderRepository
       .createQueryBuilder('so')
       .leftJoinAndSelect(VendorMaster, 'vm', 'vm.ID = so.VENDOR_ID')
-      .where('so.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('so.company = :company', { company });
@@ -212,7 +210,7 @@ export class OutsourcingService {
 
   async findOrderById(id: string) {
     const order = await this.subconOrderRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!order) {
@@ -417,20 +415,18 @@ export class OutsourcingService {
 
   async getSummary() {
     const [totalOrders, activeOrders, pendingReceive, totalVendors] = await Promise.all([
-      this.subconOrderRepository.count({ where: { deletedAt: IsNull() } }),
+      this.subconOrderRepository.count({ where: {} }),
       this.subconOrderRepository.count({
         where: {
           status: In(['ORDERED', 'DELIVERED', 'PARTIAL_RECV']),
-          deletedAt: IsNull(),
         },
       }),
       this.subconOrderRepository.count({
         where: {
           status: In(['DELIVERED', 'PARTIAL_RECV']),
-          deletedAt: IsNull(),
         },
       }),
-      this.vendorMasterRepository.count({ where: { useYn: 'Y', deletedAt: IsNull() } }),
+      this.vendorMasterRepository.count({ where: { useYn: 'Y' } }),
     ]);
 
     return {
@@ -445,7 +441,6 @@ export class OutsourcingService {
     const orders = await this.subconOrderRepository.find({
       where: {
         status: In(['DELIVERED', 'PARTIAL_RECV']),
-        deletedAt: IsNull(),
       },
     });
 

@@ -103,7 +103,7 @@ export class ReceiptCancelService {
       // LOT 수량 복원
       if (lotId) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { id: lotId, deletedAt: IsNull() },
+          where: { id: lotId },
         });
 
         if (lot) {

@@ -20,16 +20,17 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<ArrivalItem>[]>(
     () => [
-      { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160 },
-      { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100 },
-      { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100 },
-      { accessorKey: 'partCode', header: t('common.partCode'), size: 110 },
-      { accessorKey: 'partName', header: t('common.partName'), size: 130 },
-      { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150 },
+      { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
+      { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100, meta: { filterType: 'date' as const } },
+      { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100, meta: { filterType: 'text' as const } },
+      { accessorKey: 'partCode', header: t('common.partCode'), size: 110, meta: { filterType: 'text' as const } },
+      { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
+      { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'quantity',
         header: t('common.quantity'),
         size: 100,
+        meta: { filterType: 'number' as const },
         cell: ({ row }) => (
           <span className="font-medium">
             {row.original.quantity.toLocaleString()} {row.original.unit}
@@ -40,6 +41,7 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
         accessorKey: 'status',
         header: t('common.status'),
         size: 100,
+        meta: { filterType: 'multi' as const },
         cell: ({ getValue }) => (
           <ArrivalStatusBadge status={getValue() as ArrivalStatus} />
         ),
@@ -48,6 +50,7 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
         accessorKey: 'remark',
         header: t('common.remark'),
         size: 120,
+        meta: { filterType: 'text' as const },
         cell: ({ getValue }) => (
           <span className="text-text-muted">{(getValue() as string) || '-'}</span>
         ),
@@ -56,5 +59,5 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
     [t]
   );
 
-  return <DataGrid data={data} columns={columns} pageSize={10} />;
+  return <DataGrid data={data} columns={columns} pageSize={10} enableColumnFilter />;
 }

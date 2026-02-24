@@ -243,6 +243,7 @@ function ReceiveLabelPage() {
           />
         ),
         size: 40,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => (
           <input
             type="checkbox"
@@ -256,6 +257,7 @@ function ReceiveLabelPage() {
         id: "lotNo",
         header: t("material.col.lotNo"),
         size: 160,
+        meta: { filterType: "text" as const },
         cell: ({ row }) => (
           <span className="font-mono text-xs">{row.original.lotNo}</span>
         ),
@@ -264,18 +266,21 @@ function ReceiveLabelPage() {
         id: "partCode",
         header: t("common.partCode"),
         size: 120,
+        meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.part.partCode,
       },
       {
         id: "partName",
         header: t("common.partName"),
         size: 150,
+        meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.part.partName,
       },
       {
         id: "initQty",
         header: t("material.receiveLabel.qty"),
         size: 80,
+        meta: { filterType: "number" as const },
         cell: ({ row }) => (
           <span className="font-medium">
             {row.original.initQty.toLocaleString()}
@@ -286,6 +291,7 @@ function ReceiveLabelPage() {
         id: "labelCount",
         header: t("material.receiveLabel.labelCount"),
         size: 80,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => (
           <span className="text-primary font-bold">
             {row.original.initQty.toLocaleString()}
@@ -297,18 +303,21 @@ function ReceiveLabelPage() {
         id: "vendor",
         header: t("material.arrival.col.vendor"),
         size: 120,
+        meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.vendor || "-",
       },
       {
         id: "poNo",
         header: t("material.arrival.col.poNo"),
         size: 120,
+        meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.poNo || "-",
       },
       {
         id: "recvDate",
         header: t("material.col.arrivalDate"),
         size: 100,
+        meta: { filterType: "date" as const },
         cell: ({ row }) => row.original.recvDate?.slice(0, 10) || "-",
       },
     ],
@@ -434,6 +443,7 @@ function ReceiveLabelPage() {
             data={filteredLots}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             exportFileName={t("material.receiveLabel.title")}
             toolbarLeft={

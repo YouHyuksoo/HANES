@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProdLineMaster } from '../../../entities/prod-line-master.entity';
 import { CreateProdLineDto, UpdateProdLineDto, ProdLineQueryDto } from '../dto/prod-line.dto';
 
@@ -21,7 +21,6 @@ export class ProdLineService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.prodLineRepository.createQueryBuilder('prodLine')
-      .where('prodLine.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('prodLine.company = :company', { company });
@@ -55,7 +54,7 @@ export class ProdLineService {
 
   async findById(id: string) {
     const prodLine = await this.prodLineRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!prodLine) throw new NotFoundException(`생산라인을 찾을 수 없습니다: ${id}`);
     return prodLine;
@@ -63,7 +62,7 @@ export class ProdLineService {
 
   async create(dto: CreateProdLineDto) {
     const existing = await this.prodLineRepository.findOne({
-      where: { lineCode: dto.lineCode, deletedAt: IsNull() },
+      where: { lineCode: dto.lineCode },
     });
     if (existing) throw new ConflictException(`이미 존재하는 라인 코드입니다: ${dto.lineCode}`);
 
@@ -89,7 +88,7 @@ export class ProdLineService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.prodLineRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.prodLineRepository.delete(id);
+    return { id };
   }
 }

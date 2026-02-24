@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { WarehouseTransferRule } from '../../../entities/warehouse-transfer-rule.entity';
 import { CreateTransferRuleDto, UpdateTransferRuleDto, TransferRuleQueryDto } from '../dto/transfer-rule.dto';
 
@@ -21,7 +21,6 @@ export class TransferRuleService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.transferRuleRepository.createQueryBuilder('rule')
-      .where('rule.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('rule.company = :company', { company });
@@ -64,7 +63,7 @@ export class TransferRuleService {
 
   async findById(id: string) {
     const rule = await this.transferRuleRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!rule) throw new NotFoundException(`창고이동규칙을 찾을 수 없습니다: ${id}`);
     return rule;
@@ -75,7 +74,6 @@ export class TransferRuleService {
       where: {
         fromWarehouseId: dto.fromWarehouseId,
         toWarehouseId: dto.toWarehouseId,
-        deletedAt: IsNull(),
       },
     });
     if (existing) throw new ConflictException(`이미 존재하는 창고이동규칙입니다: ${dto.fromWarehouseId} -> ${dto.toWarehouseId}`);
@@ -98,7 +96,7 @@ export class TransferRuleService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.transferRuleRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.transferRuleRepository.delete(id);
+    return { id };
   }
 }

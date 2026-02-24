@@ -10,6 +10,9 @@
  * 5. TanStack Table의 `Column` 객체를 받아 `setFilterValue`로 필터 적용
  */
 import { Column } from '@tanstack/react-table';
+import { NumberFilterTrigger } from './NumberFilterTrigger';
+import { DateFilterTrigger } from './DateFilterTrigger';
+import { TextFilterTrigger } from './TextFilterTrigger';
 
 /** ColumnFilterInput 컴포넌트 props */
 export interface ColumnFilterInputProps<T> {
@@ -32,6 +35,18 @@ export function ColumnFilterInput<T>({ column, data: allData }: ColumnFilterInpu
   const filterType = meta?.filterType ?? 'text';
 
   if (filterType === 'none' || column.id === 'actions' || column.id === 'select') return null;
+
+  if (filterType === 'number') {
+    return <NumberFilterTrigger column={column} data={allData} />;
+  }
+
+  if (filterType === 'date') {
+    return <DateFilterTrigger column={column} />;
+  }
+
+  if (filterType === 'multi') {
+    return <TextFilterTrigger column={column} data={allData} />;
+  }
 
   const filterValue = (column.getFilterValue() as string) ?? '';
 

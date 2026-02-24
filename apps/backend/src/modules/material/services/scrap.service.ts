@@ -86,7 +86,7 @@ export class ScrapService {
     try {
       // LOT 조회
       const lot = await queryRunner.manager.findOne(MatLot, {
-        where: { id: lotId, deletedAt: IsNull() },
+        where: { id: lotId },
       });
 
       if (!lot) {

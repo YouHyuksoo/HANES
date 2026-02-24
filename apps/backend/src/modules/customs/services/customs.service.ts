@@ -11,7 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { CustomsEntry } from '../../../entities/customs-entry.entity';
 import { CustomsLot } from '../../../entities/customs-lot.entity';
 import { CustomsUsageReport } from '../../../entities/customs-usage-report.entity';
@@ -80,7 +80,6 @@ export class CustomsService {
         'cl.REMAIN_QTY AS cl_remainQty',
         'cl.STATUS AS cl_status',
       ])
-      .where('ce.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('ce.company = :company', { company });
@@ -111,7 +110,6 @@ export class CustomsService {
     // Get total count
     const countQuery = this.customsEntryRepository
       .createQueryBuilder('ce')
-      .where('ce.deletedAt IS NULL');
 
     if (status) {
       countQuery.andWhere('ce.status = :status', { status });
@@ -161,7 +159,7 @@ export class CustomsService {
 
   async findEntryById(id: string) {
     const entry = await this.customsEntryRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!entry) {
@@ -239,8 +237,8 @@ export class CustomsService {
   async deleteEntry(id: string) {
     await this.findEntryById(id);
 
-    await this.customsEntryRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.customsEntryRepository.delete(id);
+    return { id };
   }
 
   // ============================================================================
@@ -452,9 +450,9 @@ export class CustomsService {
 
   async getCustomsSummary() {
     const [totalEntries, pendingEntries, bondedLots, totalBondedQty] = await Promise.all([
-      this.customsEntryRepository.count({ where: { deletedAt: IsNull() } }),
+      this.customsEntryRepository.count({ where: {} }),
       this.customsEntryRepository.count({
-        where: { status: 'PENDING', deletedAt: IsNull() },
+        where: { status: 'PENDING' },
       }),
       this.customsLotRepository.count({ where: { status: 'BONDED' } }),
       this.customsLotRepository

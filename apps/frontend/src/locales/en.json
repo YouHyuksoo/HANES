@@ -271,7 +271,8 @@
     "openMenu": "Open menu",
     "searchPlaceholder": "Search (Ctrl+K)",
     "switchToLight": "Switch to light mode",
-    "switchToDark": "Switch to dark mode"
+    "switchToDark": "Switch to dark mode",
+    "colorTheme": "Toggle color theme"
   },
   "auth": {
     "login": "Login",
@@ -3615,6 +3616,39 @@
     "html": "HTML",
     "markdown": "Markdown",
     "txt": "Text"
+  },
+  "textFilter": {
+    "searchPlaceholder": "Search...",
+    "selectAll": "Select All",
+    "blankLabel": "Blank",
+    "noMatch": "No matching items",
+    "apply": "Filter",
+    "clear": "Clear Filter"
+  },
+  "dateFilter": {
+    "title": "Date Range",
+    "from": "From",
+    "to": "To",
+    "apply": "Filter",
+    "clear": "Clear Filter"
+  },
+  "numberFilter": {
+    "values": "Select Values",
+    "selectAll": "Select All",
+    "blankLabel": "Blank",
+    "conditions": "Range Conditions",
+    "none": "No condition",
+    "eq": "Equals",
+    "neq": "Not equals",
+    "gt": "Greater than",
+    "gte": "Greater than or equal",
+    "lt": "Less than",
+    "lte": "Less than or equal",
+    "blank": "Blank",
+    "notBlank": "Not blank",
+    "valuePlaceholder": "Enter value",
+    "apply": "Filter",
+    "clear": "Clear Filter"
   },
   "tabs": {
     "close": "Close",

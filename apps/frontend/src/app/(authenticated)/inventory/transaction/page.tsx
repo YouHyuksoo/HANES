@@ -152,11 +152,13 @@ export default function TransactionPage() {
       accessorKey: 'transNo',
       header: t('inventory.transaction.transNo'),
       size: 160,
+      meta: { filterType: 'text' as const },
     },
     {
       accessorKey: 'transType',
       header: t('inventory.transaction.transType'),
       size: 130,
+      meta: { filterType: 'multi' as const },
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs font-medium ${getTransTypeColor(row.original.transType)}`}>
           {getTransTypeLabel(row.original.transType)}
@@ -167,42 +169,49 @@ export default function TransactionPage() {
       accessorKey: 'transDate',
       header: t('inventory.transaction.transDate'),
       size: 150,
+      meta: { filterType: 'date' as const },
       cell: ({ row }) => new Date(row.original.transDate).toLocaleString(),
     },
     {
       accessorKey: 'fromWarehouse',
       header: t('inventory.transaction.fromWarehouse'),
       size: 100,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.fromWarehouse?.warehouseCode || '-',
     },
     {
       accessorKey: 'toWarehouse',
       header: t('inventory.transaction.toWarehouse'),
       size: 100,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.toWarehouse?.warehouseCode || '-',
     },
     {
       accessorKey: 'partCode',
       header: t('inventory.transaction.partCode'),
       size: 120,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.part.partCode,
     },
     {
       accessorKey: 'partName',
       header: t('inventory.transaction.partName'),
       size: 150,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.part.partName,
     },
     {
       accessorKey: 'lotNo',
       header: t('inventory.transaction.lot'),
       size: 140,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.lot?.lotNo || '-',
     },
     {
       accessorKey: 'qty',
       header: t('inventory.transaction.qty'),
       size: 100,
+      meta: { filterType: 'number' as const },
       cell: ({ row }) => (
         <span className={row.original.qty < 0 ? 'text-red-600 font-semibold' : 'text-blue-600 font-semibold'}>
           {row.original.qty > 0 ? '+' : ''}{row.original.qty.toLocaleString()}
@@ -213,6 +222,7 @@ export default function TransactionPage() {
       accessorKey: 'status',
       header: t('inventory.transaction.status'),
       size: 80,
+      meta: { filterType: 'multi' as const },
       cell: ({ row }) => (
         <span className={`px-2 py-1 rounded text-xs ${
           row.original.status === 'DONE' ? 'bg-green-100 text-green-800' :
@@ -227,17 +237,20 @@ export default function TransactionPage() {
       accessorKey: 'cancelRef',
       header: t('inventory.transaction.original'),
       size: 130,
+      meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.cancelRef?.transNo || '-',
     },
     {
       accessorKey: 'remark',
       header: t('inventory.transaction.remark'),
       size: 150,
+      meta: { filterType: 'text' as const },
     },
     {
       id: 'actions',
       header: '',
       size: 80,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => (
         row.original.status === 'DONE' && !row.original.transType.includes('CANCEL') && (
           <button onClick={() => handleCancelClick(row.original)} className="p-1 hover:bg-surface rounded" title={t('common.cancel')}>
@@ -289,6 +302,7 @@ export default function TransactionPage() {
             columns={columns}
             isLoading={loading}
             emptyMessage={t('inventory.transaction.emptyMessage')}
+            enableColumnFilter
             enableExport
             exportFileName="거래내역"
             toolbarLeft={

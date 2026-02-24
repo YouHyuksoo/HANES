@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like, DataSource, In } from 'typeorm';
+import { Repository, Like, DataSource, In } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -35,7 +35,6 @@ export class PurchaseOrderService {
     // QueryBuilder로 DB 레벨 필터링 (메모리 필터링 제거)
     const qb = this.purchaseOrderRepository
       .createQueryBuilder('po')
-      .where('po.deletedAt IS NULL');
 
     if (company) qb.andWhere('po.company = :company', { company });
     if (plant) qb.andWhere('po.plant = :plant', { plant });
@@ -100,7 +99,7 @@ export class PurchaseOrderService {
 
   async findById(id: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
 
@@ -128,7 +127,7 @@ export class PurchaseOrderService {
 
   async create(dto: CreatePurchaseOrderDto) {
     const existing = await this.purchaseOrderRepository.findOne({
-      where: { poNo: dto.poNo, deletedAt: IsNull() },
+      where: { poNo: dto.poNo },
     });
     if (existing) throw new ConflictException(`이미 존재하는 PO 번호입니다: ${dto.poNo}`);
 
@@ -250,7 +249,7 @@ export class PurchaseOrderService {
   /** PO 확정 (DRAFT -> CONFIRMED) */
   async confirm(id: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
     if (po.status !== 'DRAFT') {
@@ -264,7 +263,7 @@ export class PurchaseOrderService {
   /** PO 마감 (RECEIVED -> CLOSED) */
   async close(id: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
     if (!['RECEIVED', 'PARTIAL'].includes(po.status)) {
@@ -277,8 +276,8 @@ export class PurchaseOrderService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.purchaseOrderRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.purchaseOrderRepository.delete(id);
+    return { id };
   }
 }
 

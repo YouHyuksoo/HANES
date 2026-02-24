@@ -163,7 +163,7 @@ export default function LocationList() {
   }, [confirmModal.id, fetchData]);
 
   const columns = useMemo<ColumnDef<WarehouseLocation>[]>(() => [
-    { id: "actions", header: "", size: 80, meta: { align: "center" as const }, cell: ({ row }) => (
+    { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
         <button onClick={() => setConfirmModal({ open: true, id: row.original.id })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
@@ -173,14 +173,14 @@ export default function LocationList() {
     { accessorKey: "warehouseName", header: t("inventory.warehouse.warehouseName"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "locationCode", header: t("inventory.location.locationCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "locationName", header: t("inventory.location.locationName"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "zone", header: t("inventory.location.zone"), size: 70, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "rowNo", header: t("inventory.location.rowNo"), size: 60, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "colNo", header: t("inventory.location.colNo"), size: 60, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "levelNo", header: t("inventory.location.levelNo"), size: 60, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "useYn", header: t("inventory.warehouse.use"), size: 60, cell: ({ getValue }) => (
+    { accessorKey: "zone", header: t("inventory.location.zone"), size: 70, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "rowNo", header: t("inventory.location.rowNo"), size: 60, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "colNo", header: t("inventory.location.colNo"), size: 60, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "levelNo", header: t("inventory.location.levelNo"), size: 60, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "useYn", header: t("inventory.warehouse.use"), size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => (
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
     )},
-    { accessorKey: "remark", header: t("common.remark"), size: 150, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "remark", header: t("common.remark"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
   ], [t, openEdit]);
 
   return (

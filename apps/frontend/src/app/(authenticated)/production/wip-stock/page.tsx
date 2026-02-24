@@ -72,6 +72,7 @@ export default function WipStockPage() {
     { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'partType', header: t('production.wipStock.type'), size: 90,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v === 'WIP'
@@ -79,11 +80,11 @@ export default function WipStockPage() {
           : <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{t('production.wipStock.fgLabel')}</span>;
       },
     },
-    { accessorKey: 'whName', header: t('production.wipStock.warehouse'), size: 110 },
-    { accessorKey: 'qty', header: t('production.wipStock.stockQty'), size: 100, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'unit', header: t('production.wipStock.unit'), size: 60 },
+    { accessorKey: 'whName', header: t('production.wipStock.warehouse'), size: 110, meta: { filterType: 'text' as const } },
+    { accessorKey: 'qty', header: t('production.wipStock.stockQty'), size: 100, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'unit', header: t('production.wipStock.unit'), size: 60, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('production.wipStock.lotNo'), size: 130, meta: { filterType: 'text' as const } },
-    { accessorKey: 'updatedAt', header: t('production.wipStock.updatedAt'), size: 110 },
+    { accessorKey: 'updatedAt', header: t('production.wipStock.updatedAt'), size: 110, meta: { filterType: 'date' as const } },
   ], [t]);
 
   return (

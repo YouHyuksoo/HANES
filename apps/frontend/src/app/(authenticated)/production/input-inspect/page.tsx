@@ -216,14 +216,15 @@ export default function InputInspectPage() {
   const hasAnySelection = !!(selectedLine || selectedProcess || selectedEquip || selectedJobOrder || selectedWorker);
 
   const columns = useMemo<ColumnDef<InspectInput>[]>(() => [
-    { accessorKey: 'orderNo', header: t('production.inputInspect.orderNo'), size: 160 },
-    { accessorKey: 'partName', header: t('production.inputInspect.partName'), size: 140 },
-    { accessorKey: 'lotNo', header: t('production.inputInspect.lotNo'), size: 160 },
-    { accessorKey: 'inspectQty', header: t('production.inputInspect.inspectQty'), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'passQty', header: t('production.inputInspect.pass'), size: 80, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'failQty', header: t('production.inputInspect.fail'), size: 80, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'orderNo', header: t('production.inputInspect.orderNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'partName', header: t('production.inputInspect.partName'), size: 140, meta: { filterType: 'text' as const } },
+    { accessorKey: 'lotNo', header: t('production.inputInspect.lotNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'inspectQty', header: t('production.inputInspect.inspectQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'passQty', header: t('production.inputInspect.pass'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'failQty', header: t('production.inputInspect.fail'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
     {
       accessorKey: 'passYn', header: t('production.inputInspect.judgment'), size: 80,
+      meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v === 'Y'
@@ -231,8 +232,8 @@ export default function InputInspectPage() {
           : <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{t('production.inputInspect.fail')}</span>;
       },
     },
-    { accessorKey: 'inspector', header: t('production.inputInspect.inspector'), size: 80 },
-    { accessorKey: 'inspectDate', header: t('production.inputInspect.inspectDate'), size: 100 },
+    { accessorKey: 'inspector', header: t('production.inputInspect.inspector'), size: 80, meta: { filterType: 'text' as const } },
+    { accessorKey: 'inspectDate', header: t('production.inputInspect.inspectDate'), size: 100, meta: { filterType: 'date' as const } },
   ], [t]);
 
   return (

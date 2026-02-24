@@ -182,7 +182,7 @@ export default function IqcItemTab() {
   const columns = useMemo<ColumnDef<IqcItemPool>[]>(() => [
     {
       id: "actions", header: "", size: 70,
-      meta: { align: "center" as const },
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
@@ -194,6 +194,7 @@ export default function IqcItemTab() {
     { accessorKey: "itemName", header: t("master.iqcItem.inspectItem"), size: 160, meta: { filterType: "text" as const } },
     {
       accessorKey: "judgeMethod", header: t("master.iqcItem.judgeMethod", "판정방법"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return <span className={`px-2 py-0.5 text-xs rounded-full ${JUDGE_METHOD_COLORS[v]}`}>{methodLabels[v]}</span>;
@@ -202,9 +203,10 @@ export default function IqcItemTab() {
     { accessorKey: "criteria", header: t("master.iqcItem.spec"), size: 160, meta: { filterType: "text" as const } },
     {
       id: "lslUsl", header: "LSL ~ USL", size: 140,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => <span className="font-mono text-xs">{formatSpec(row.original)}</span>,
     },
-    { accessorKey: "revision", header: t("master.iqcItem.revision", "Rev"), size: 60, meta: { align: "center" as const } },
+    { accessorKey: "revision", header: t("master.iqcItem.revision", "Rev"), size: 60, meta: { align: "center" as const, filterType: "number" as const } },
   ], [t, methodLabels]);
 
   return (

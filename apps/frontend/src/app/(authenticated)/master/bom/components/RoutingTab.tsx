@@ -62,7 +62,7 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
   const columns = useMemo<ColumnDef<RoutingItem>[]>(() => [
     {
       id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const },
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1 justify-center">
           <button onClick={() => { setEditingItem(row.original); setIsModalOpen(true); }} className="p-1 hover:bg-surface rounded">
@@ -74,21 +74,23 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
         </div>
       ),
     },
-    { accessorKey: "seq", header: t("master.routing.seq"), size: 60 },
-    { accessorKey: "processCode", header: t("master.routing.processCode"), size: 100 },
-    { accessorKey: "processName", header: t("master.routing.processName"), size: 140 },
+    { accessorKey: "seq", header: t("master.routing.seq"), size: 60, meta: { filterType: "number" as const } },
+    { accessorKey: "processCode", header: t("master.routing.processCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "processName", header: t("master.routing.processName"), size: 140, meta: { filterType: "text" as const } },
     {
       accessorKey: "processType", header: t("master.routing.processType"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const val = getValue() as string;
         return val ? <ComCodeBadge groupCode="PROCESS_TYPE" code={val} /> : "-";
       },
     },
-    { accessorKey: "equipType", header: t("master.routing.equipType"), size: 80 },
-    { accessorKey: "stdTime", header: t("master.routing.stdTime"), size: 90, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : "-" },
-    { accessorKey: "setupTime", header: t("master.routing.setupTime"), size: 90, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : "-" },
+    { accessorKey: "equipType", header: t("master.routing.equipType"), size: 80, meta: { filterType: "text" as const } },
+    { accessorKey: "stdTime", header: t("master.routing.stdTime"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : "-" },
+    { accessorKey: "setupTime", header: t("master.routing.setupTime"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => getValue() != null ? `${getValue()}s` : "-" },
     {
       accessorKey: "useYn", header: t("master.routing.use"), size: 60,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />,
     },
   ], [t]);
@@ -134,7 +136,7 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
           <p className="text-sm font-medium">{t("master.bom.noRoutingData", "라우팅 데이터가 없습니다")}</p>
         </div>
       ) : (
-        <DataGrid data={data} columns={columns} enableExport exportFileName={`${targetCode}_routing`} />
+        <DataGrid data={data} columns={columns} enableColumnFilter enableExport exportFileName={`${targetCode}_routing`} />
       )}
 
       <RoutingFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchRoutings}

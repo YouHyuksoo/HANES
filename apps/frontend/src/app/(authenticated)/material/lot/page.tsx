@@ -122,6 +122,7 @@ export default function MatLotPage() {
     },
     {
       accessorKey: "recvDate", header: t("material.lot.columns.recvDate"), size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? new Date(v).toLocaleDateString() : "-";
@@ -129,12 +130,12 @@ export default function MatLotPage() {
     },
     {
       accessorKey: "initQty", header: t("material.lot.columns.initQty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => <span>{row.original.initQty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
       accessorKey: "currentQty", header: t("material.lot.columns.currentQty"), size: 100,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
         <span className={row.original.currentQty <= 0 ? "text-text-muted" : "font-semibold"}>
           {row.original.currentQty.toLocaleString()} {row.original.unit || ""}
@@ -142,21 +143,21 @@ export default function MatLotPage() {
       ),
     },
     {
-      accessorKey: "iqcStatus", header: "IQC", size: 80,
+      accessorKey: "iqcStatus", header: "IQC", size: 80, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${getIqcColor(s)}`}>{s}</span>;
       },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 80,
+      accessorKey: "status", header: t("common.status"), size: 80, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(s)}`}>{s}</span>;
       },
     },
     {
-      id: "actions", header: "", size: 50,
+      id: "actions", header: "", size: 50, meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <button className="p-1 hover:bg-surface rounded" title={t("common.detail")}
           onClick={() => { setSelectedLot(row.original); setDetailModalOpen(true); }}>

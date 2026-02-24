@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { IqcItemMaster } from '../../../entities/iqc-item-master.entity';
 import { CreateIqcItemDto, UpdateIqcItemDto, IqcItemQueryDto } from '../dto/iqc-item.dto';
 
@@ -19,8 +19,7 @@ export class IqcItemService {
   async findAll(query: IqcItemQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partId, search, useYn } = query;
 
-    const queryBuilder = this.iqcItemRepository.createQueryBuilder('item')
-      .where('item.deletedAt IS NULL');
+    const queryBuilder = this.iqcItemRepository.createQueryBuilder('item');
 
     if (company) {
       queryBuilder.andWhere('item.company = :company', { company });
@@ -56,7 +55,7 @@ export class IqcItemService {
 
   async findById(id: string) {
     const item = await this.iqcItemRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
 
     if (!item) {
@@ -87,7 +86,7 @@ export class IqcItemService {
   async delete(id: string) {
     const item = await this.findById(id);
 
-    await this.iqcItemRepository.softRemove(item);
+    await this.iqcItemRepository.remove(item);
 
     return { id, deleted: true };
   }

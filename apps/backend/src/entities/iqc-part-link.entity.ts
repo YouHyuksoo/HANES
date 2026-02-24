@@ -15,7 +15,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   Unique,
   ManyToOne,
@@ -66,9 +65,6 @@ export class IqcPartLink {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 
   @ManyToOne(() => PartMaster, { eager: false })
   @JoinColumn({ name: 'PART_ID' })

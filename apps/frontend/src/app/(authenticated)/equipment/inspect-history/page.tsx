@@ -84,9 +84,10 @@ export default function InspectHistoryPage() {
   }), [data]);
 
   const columns = useMemo<ColumnDef<InspectHistory>[]>(() => [
-    { accessorKey: "inspectDate", header: t("equipment.inspectHistory.inspectDate"), size: 110 },
+    { accessorKey: "inspectDate", header: t("equipment.inspectHistory.inspectDate"), size: 110, meta: { filterType: "date" as const } },
     {
       accessorKey: "inspectType", header: t("equipment.inspectHistory.inspectType"), size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_CHECK_TYPE" code={getValue() as string} />,
     },
     {
@@ -104,6 +105,7 @@ export default function InspectHistoryPage() {
     },
     {
       accessorKey: "overallResult", header: t("equipment.inspectHistory.result"), size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_JUDGE" code={getValue() as string} />,
     },
     {

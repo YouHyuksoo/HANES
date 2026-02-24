@@ -14,7 +14,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   Index,
   ManyToOne,
   JoinColumn,
@@ -68,9 +67,6 @@ export class EquipBomRel {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'date' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'date', nullable: true })
-  deletedAt: Date | null;
 
   // Relations
   @ManyToOne(() => EquipMaster, (equip) => equip.bomRels, { onDelete: 'CASCADE' })

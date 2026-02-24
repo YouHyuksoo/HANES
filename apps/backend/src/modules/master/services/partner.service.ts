@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { CreatePartnerDto, UpdatePartnerDto, PartnerQueryDto } from '../dto/partner.dto';
 
@@ -21,7 +21,6 @@ export class PartnerService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.partnerRepository.createQueryBuilder('partner')
-      .where('partner.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('partner.company = :company', { company });
@@ -59,7 +58,7 @@ export class PartnerService {
 
   async findById(id: string) {
     const partner = await this.partnerRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${id}`);
     return partner;
@@ -67,7 +66,7 @@ export class PartnerService {
 
   async findByCode(partnerCode: string) {
     const partner = await this.partnerRepository.findOne({
-      where: { partnerCode, deletedAt: IsNull() },
+      where: { partnerCode },
     });
     if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${partnerCode}`);
     return partner;
@@ -75,7 +74,7 @@ export class PartnerService {
 
   async create(dto: CreatePartnerDto) {
     const existing = await this.partnerRepository.findOne({
-      where: { partnerCode: dto.partnerCode, deletedAt: IsNull() },
+      where: { partnerCode: dto.partnerCode },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 거래처 코드입니다: ${dto.partnerCode}`);
@@ -106,23 +105,23 @@ export class PartnerService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.partnerRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.partnerRepository.delete(id);
+    return { id };
   }
 
   async findByType(partnerType: string) {
     return this.partnerRepository.find({
-      where: { partnerType, useYn: 'Y', deletedAt: IsNull() },
+      where: { partnerType, useYn: 'Y' },
       order: { partnerCode: 'asc' },
     });
   }
 
   async getStatistics() {
     const [totalCount, supplierCount, customerCount, activeCount] = await Promise.all([
-      this.partnerRepository.count({ where: { deletedAt: IsNull() } }),
-      this.partnerRepository.count({ where: { partnerType: 'SUPPLIER', deletedAt: IsNull() } }),
-      this.partnerRepository.count({ where: { partnerType: 'CUSTOMER', deletedAt: IsNull() } }),
-      this.partnerRepository.count({ where: { useYn: 'Y', deletedAt: IsNull() } }),
+      this.partnerRepository.count({ where: {} }),
+      this.partnerRepository.count({ where: { partnerType: 'SUPPLIER' } }),
+      this.partnerRepository.count({ where: { partnerType: 'CUSTOMER' } }),
+      this.partnerRepository.count({ where: { useYn: 'Y' } }),
     ]);
 
     return { totalCount, supplierCount, customerCount, activeCount };

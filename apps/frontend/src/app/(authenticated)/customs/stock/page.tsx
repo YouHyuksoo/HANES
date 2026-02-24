@@ -73,18 +73,18 @@ export default function CustomsStockPage() {
     { accessorKey: "lotNo", header: t("customs.stock.lotNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "partCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "partName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "origin", header: t("customs.entry.origin"), size: 70 },
-    { accessorKey: "qty", header: t("customs.stock.receivedQty"), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: "usedQty", header: t("customs.stock.usedQty"), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "origin", header: t("customs.entry.origin"), size: 70, meta: { filterType: "text" as const } },
+    { accessorKey: "qty", header: t("customs.stock.receivedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: "usedQty", header: t("customs.stock.usedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     {
-      accessorKey: "remainQty", header: t("customs.stock.remainQty"), size: 90,
+      accessorKey: "remainQty", header: t("customs.stock.remainQty"), size: 90, meta: { filterType: "number" as const },
       cell: ({ getValue }) => { const val = getValue() as number; return <span className={val === 0 ? "text-text-muted" : "font-semibold text-primary"}>{val.toLocaleString()}</span>; },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => { const status = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>; },
     },
-    { accessorKey: "declarationDate", header: t("customs.entry.declarationDate"), size: 100 },
+    { accessorKey: "declarationDate", header: t("customs.entry.declarationDate"), size: 100, meta: { filterType: "date" as const } },
   ], [t, statusLabels]);
 
   const stats = useMemo(() => {

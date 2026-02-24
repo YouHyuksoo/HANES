@@ -19,7 +19,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between, ILike, Not, In, DataSource } from 'typeorm';
+import { Repository, Between, ILike, Not, In, DataSource } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -81,7 +81,6 @@ export class ProdResultService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(jobOrderId && { jobOrderId }),
@@ -136,7 +135,7 @@ export class ProdResultService {
    */
   async findById(id: string) {
     const prodResult = await this.prodResultRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['jobOrder', 'jobOrder.part', 'equip', 'worker', 'inspectResults', 'defectLogs'],
     });
 
@@ -203,7 +202,7 @@ export class ProdResultService {
    */
   async findByJobOrderId(jobOrderId: string) {
     return this.prodResultRepository.find({
-      where: { jobOrderId, deletedAt: IsNull() },
+      where: { jobOrderId },
       order: { createdAt: 'DESC' },
       relations: ['equip', 'worker'],
       select: {
@@ -281,7 +280,7 @@ export class ProdResultService {
    */
   private async checkJobOrderQtyLimit(jobOrderId: string, newGoodQty: number, newDefectQty: number): Promise<void> {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { id: jobOrderId, deletedAt: IsNull() },
+      where: { id: jobOrderId },
       select: ['id', 'planQty', 'orderNo'],
     });
     
@@ -294,7 +293,6 @@ export class ProdResultService {
       .select('SUM(pr.goodQty)', 'totalGood')
       .addSelect('SUM(pr.defectQty)', 'totalDefect')
       .where('pr.jobOrderId = :jobOrderId', { jobOrderId })
-      .andWhere('pr.deletedAt IS NULL')
       .andWhere('pr.status != :canceled', { canceled: 'CANCELED' })
       .getRawOne();
 
@@ -321,7 +319,7 @@ export class ProdResultService {
   async create(dto: CreateProdResultDto) {
     // 작업지시 존재 및 상태 확인
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { id: dto.jobOrderId, deletedAt: IsNull() },
+      where: { id: dto.jobOrderId },
     });
 
     if (!jobOrder) {
@@ -341,7 +339,7 @@ export class ProdResultService {
     // 설비 존재 확인 (옵션)
     if (dto.equipId) {
       const equip = await this.equipMasterRepository.findOne({
-        where: { id: dto.equipId, deletedAt: IsNull() },
+        where: { id: dto.equipId },
       });
       if (!equip) {
         throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
@@ -351,7 +349,7 @@ export class ProdResultService {
     // 작업자 존재 확인 (옵션)
     if (dto.workerId) {
       const worker = await this.userRepository.findOne({
-        where: { id: dto.workerId, deletedAt: IsNull() },
+        where: { id: dto.workerId },
       });
       if (!worker) {
         throw new NotFoundException(`작업자를 찾을 수 없습니다: ${dto.workerId}`);
@@ -450,16 +448,14 @@ export class ProdResultService {
   }
 
   /**
-   * 생산실적 삭제 (소프트 삭제)
+   * 생산실적 삭제
    */
   async delete(id: string) {
     await this.findById(id); // 존재 확인
 
-    await this.prodResultRepository.update(id, { deletedAt: new Date() });
+    await this.prodResultRepository.delete(id);
 
-    return this.prodResultRepository.findOne({
-      where: { id },
-    });
+    return { id };
   }
 
   /**
@@ -499,7 +495,6 @@ export class ProdResultService {
               mountedEquipId: prodResult.equipId,
               category: 'MOLD',
               operStatus: 'MOUNTED',
-              deletedAt: IsNull(),
             },
           });
 
@@ -616,7 +611,6 @@ export class ProdResultService {
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
       .where('pr.jobOrderId = :jobOrderId', { jobOrderId })
-      .andWhere('pr.deletedAt IS NULL')
       .andWhere('pr.status != :status', { status: 'CANCELED' })
       .getRawOne();
 
@@ -646,7 +640,6 @@ export class ProdResultService {
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
       .where('pr.equipId = :equipId', { equipId })
-      .andWhere('pr.deletedAt IS NULL')
       .andWhere('pr.status != :status', { status: 'CANCELED' });
 
     if (dateFrom || dateTo) {
@@ -684,7 +677,6 @@ export class ProdResultService {
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
       .where('pr.workerId = :workerId', { workerId })
-      .andWhere('pr.deletedAt IS NULL')
       .andWhere('pr.status != :status', { status: 'CANCELED' });
 
     if (dateFrom || dateTo) {
@@ -717,7 +709,6 @@ export class ProdResultService {
   async getDailySummary(dateFrom: string, dateTo: string) {
     const results = await this.prodResultRepository.find({
       where: {
-        deletedAt: IsNull(),
         status: Not('CANCELED'),
         startAt: Between(new Date(dateFrom), new Date(dateTo)),
       },
@@ -777,9 +768,7 @@ export class ProdResultService {
         'COUNT(DISTINCT jo.id) AS "orderCount"',
         'COUNT(pr.id) AS "resultCount"',
       ])
-      .where('pr.deletedAt IS NULL')
-      .andWhere('pr.status != :status', { status: 'CANCELED' })
-      .andWhere('jo.deletedAt IS NULL')
+      .where('pr.status != :status', { status: 'CANCELED' })
       .groupBy('p.id')
       .addGroupBy('p.partCode')
       .addGroupBy('p.partName')

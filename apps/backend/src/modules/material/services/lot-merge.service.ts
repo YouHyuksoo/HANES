@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, In, Like } from 'typeorm';
+import { Repository, DataSource, In, Like } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -36,8 +36,7 @@ export class LotMergeService {
     const skip = (page - 1) * limit;
 
     const qb = this.matLotRepository.createQueryBuilder('lot')
-      .where('lot.deletedAt IS NULL')
-      .andWhere('lot.currentQty > 0')
+      .where('lot.currentQty > 0')
       .andWhere("lot.status != 'DEPLETED'")
       .andWhere("lot.status != 'HOLD'");
 
@@ -85,7 +84,7 @@ export class LotMergeService {
     try {
       // 모든 LOT 조회
       const lots = await queryRunner.manager.find(MatLot, {
-        where: { id: In(sourceLotIds), deletedAt: IsNull() },
+        where: { id: In(sourceLotIds) },
       });
 
       if (lots.length < 2) {

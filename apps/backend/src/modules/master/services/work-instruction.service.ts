@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { WorkInstruction } from '../../../entities/work-instruction.entity';
 import { CreateWorkInstructionDto, UpdateWorkInstructionDto, WorkInstructionQueryDto } from '../dto/work-instruction.dto';
 
@@ -21,7 +21,6 @@ export class WorkInstructionService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.workInstructionRepository.createQueryBuilder('wi')
-      .where('wi.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('wi.company = :company', { company });
@@ -65,7 +64,7 @@ export class WorkInstructionService {
 
   async findById(id: string) {
     const workInstruction = await this.workInstructionRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!workInstruction) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
     return workInstruction;
@@ -93,7 +92,7 @@ export class WorkInstructionService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.workInstructionRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.workInstructionRepository.delete(id);
+    return { id };
   }
 }

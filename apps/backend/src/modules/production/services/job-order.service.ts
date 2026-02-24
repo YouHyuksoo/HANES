@@ -17,7 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, QueryRunner, FindOptionsSelect } from 'typeorm';
+import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -73,7 +73,6 @@ export class JobOrderService {
     const qb = this.jobOrderRepository
       .createQueryBuilder('jo')
       .leftJoinAndSelect('jo.part', 'part')
-      .where('jo.deletedAt IS NULL');
 
     if (company) qb.andWhere('jo.company = :company', { company });
     if (plant) qb.andWhere('jo.plant = :plant', { plant });
@@ -103,7 +102,7 @@ export class JobOrderService {
   /** 작업지시 단건 조회 (ID) - 내부용 (prodResults 미포함) */
   async findById(id: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
       relations: ['part'],
     });
     if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${id}`);
@@ -116,7 +115,6 @@ export class JobOrderService {
     const prodResults = await this.prodResultRepository
       .createQueryBuilder('pr')
       .where('pr.jobOrderId = :jobOrderId', { jobOrderId: id })
-      .andWhere('pr.deletedAt IS NULL')
       .orderBy('pr.createdAt', 'DESC')
       .take(10)
       .getMany();
@@ -126,7 +124,7 @@ export class JobOrderService {
   /** 작업지시 단건 조회 (작업지시번호) */
   async findByOrderNo(orderNo: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { orderNo, deletedAt: IsNull() },
+      where: { orderNo },
       relations: ['part'],
     });
     if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
@@ -136,12 +134,12 @@ export class JobOrderService {
   /** 작업지시 생성 (트랜잭션 처리, company/plant 포함) */
   async create(dto: CreateJobOrderDto, company?: string, plant?: string) {
     const existing = await this.jobOrderRepository.findOne({
-      where: { orderNo: dto.orderNo, deletedAt: IsNull() },
+      where: { orderNo: dto.orderNo },
     });
     if (existing) throw new ConflictException(`이미 존재하는 작업지시번호입니다: ${dto.orderNo}`);
 
     const part = await this.partMasterRepository.findOne({
-      where: { id: dto.partId, deletedAt: IsNull() },
+      where: { id: dto.partId },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.partId}`);
 
@@ -195,7 +193,6 @@ export class JobOrderService {
       .createQueryBuilder('p')
       .where('p.id IN (:...ids)', { ids: bomItems.map(b => b.childPartId) })
       .andWhere('p.partType = :type', { type: 'WIP' })
-      .andWhere('p.deletedAt IS NULL')
       .getMany();
 
     const wipPartIds = new Set(wipParts.map(p => p.id));
@@ -230,8 +227,8 @@ export class JobOrderService {
   async findTree(parentId?: string) {
     return this.jobOrderRepository.find({
       where: parentId
-        ? { id: parentId, deletedAt: IsNull() }
-        : { parentId: IsNull(), deletedAt: IsNull() },
+        ? { id: parentId }
+        : { parentId: IsNull() },
       relations: ['part', 'children', 'children.part'],
       order: { planDate: 'DESC', createdAt: 'DESC' },
       take: 100,
@@ -265,9 +262,8 @@ export class JobOrderService {
     if (jobOrder.status === 'RUNNING') {
       throw new BadRequestException(`진행 중인 작업지시는 삭제할 수 없습니다.`);
     }
-    const deletedAt = new Date();
-    await this.jobOrderRepository.update(id, { deletedAt });
-    return { id, deletedAt };
+    await this.jobOrderRepository.delete(id);
+    return { id };
   }
 
   /** 작업 시작 (WAITING/PAUSED -> RUNNING) */
@@ -319,7 +315,6 @@ export class JobOrderService {
         .select('SUM(pr.goodQty)', 'totalGoodQty')
         .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
         .where('pr.jobOrderId = :jobOrderId', { jobOrderId: id })
-        .andWhere('pr.deletedAt IS NULL')
         .getRawOne();
 
       await queryRunner.manager.update(JobOrder, id, {
@@ -373,7 +368,7 @@ export class JobOrderService {
   /** ERP 미동기화 작업지시 목록 조회 */
   async findUnsyncedForErp() {
     return this.jobOrderRepository.find({
-      where: { erpSyncYn: 'N', status: 'DONE', deletedAt: IsNull() },
+      where: { erpSyncYn: 'N', status: 'DONE' },
       relations: ['part'],
       select: JOB_ORDER_SELECT,
       order: { endAt: 'ASC' },
@@ -396,7 +391,6 @@ export class JobOrderService {
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
       .where('pr.jobOrderId = :jobOrderId', { jobOrderId: id })
-      .andWhere('pr.deletedAt IS NULL')
       .getRawOne();
 
     const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;

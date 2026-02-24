@@ -132,7 +132,7 @@ export default function PhysicalInvPage() {
     {
       accessorKey: "qty", header: t("material.physicalInv.systemQty"), size: 100,
       cell: ({ row }) => <span>{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
     },
     {
       id: "countedQty", header: t("material.physicalInv.countedQty"), size: 120,
@@ -160,10 +160,11 @@ export default function PhysicalInvPage() {
         const cls = diff > 0 ? "text-blue-600 font-medium" : "text-red-600 font-medium";
         return <span className={cls}>{diff > 0 ? "+" : ""}{diff.toLocaleString()}</span>;
       },
-      meta: { align: "right" as const },
+      meta: { filterType: "none" as const, align: "right" as const },
     },
     {
       accessorKey: "lastCountAt", header: t("material.physicalInv.lastCountDate"), size: 110,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? new Date(v).toLocaleDateString() : <span className="text-text-muted">-</span>;

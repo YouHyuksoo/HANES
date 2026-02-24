@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { CreateProcessDto, UpdateProcessDto, ProcessQueryDto } from '../dto/process.dto';
 
@@ -21,7 +21,6 @@ export class ProcessService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.processRepository.createQueryBuilder('process')
-      .where('process.deletedAt IS NULL');
 
     if (company) {
       queryBuilder.andWhere('process.company = :company', { company });
@@ -60,7 +59,7 @@ export class ProcessService {
 
   async findById(id: string) {
     const process = await this.processRepository.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id },
     });
     if (!process) throw new NotFoundException(`공정을 찾을 수 없습니다: ${id}`);
     return process;
@@ -68,7 +67,7 @@ export class ProcessService {
 
   async create(dto: CreateProcessDto) {
     const existing = await this.processRepository.findOne({
-      where: { processCode: dto.processCode, deletedAt: IsNull() },
+      where: { processCode: dto.processCode },
     });
     if (existing) throw new ConflictException(`이미 존재하는 공정 코드입니다: ${dto.processCode}`);
 
@@ -92,7 +91,7 @@ export class ProcessService {
 
   async delete(id: string) {
     await this.findById(id);
-    await this.processRepository.update(id, { deletedAt: new Date() });
-    return { id, deletedAt: new Date() };
+    await this.processRepository.delete(id);
+    return { id };
   }
 }

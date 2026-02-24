@@ -37,7 +37,7 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
 
   const columns = useMemo<ColumnDef<IssuingLog>[]>(
     () => [
-      { accessorKey: 'createdAt', header: t('consumables.comp.dateTime'), size: 140 },
+      { accessorKey: 'createdAt', header: t('consumables.comp.dateTime'), size: 140, meta: { filterType: 'date' } },
       { accessorKey: 'consumableCode', header: t('consumables.comp.consumableCode'), size: 110 },
       { accessorKey: 'consumableName', header: t('consumables.comp.consumableName'), size: 140 },
       {

@@ -111,7 +111,7 @@ export default function IqcLinkTab() {
   const columns = useMemo<ColumnDef<IqcPartLinkRow>[]>(() => [
     {
       id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const },
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={e => { e.stopPropagation(); openEdit(row.original); }}
@@ -127,16 +127,19 @@ export default function IqcLinkTab() {
     },
     {
       id: "partCode", header: t("master.iqcLink.partCode", "품목코드"), size: 110,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => (
         <span className="font-mono text-xs">{row.original.part?.partCode ?? "-"}</span>
       ),
     },
     {
       id: "partName", header: t("master.iqcLink.partName", "품목명"), size: 160,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.part?.partName ?? "-",
     },
     {
       id: "partnerName", header: t("master.iqcLink.partner", "거래처(공급상)"), size: 150,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => {
         const p = row.original.partner;
         if (!p) return (
@@ -149,6 +152,7 @@ export default function IqcLinkTab() {
     },
     {
       id: "groupName", header: t("master.iqcLink.group", "검사그룹"), size: 150,
+      meta: { filterType: "text" as const },
       cell: ({ row }) => {
         const g = row.original.group;
         if (!g) return "-";
@@ -157,6 +161,7 @@ export default function IqcLinkTab() {
     },
     {
       id: "inspectMethod", header: t("master.iqcGroup.inspectMethod", "검사형태"), size: 100,
+      meta: { filterType: "multi" as const },
       cell: ({ row }) => {
         const g = row.original.group;
         if (!g) return "-";
@@ -170,6 +175,7 @@ export default function IqcLinkTab() {
     },
     {
       accessorKey: "remark", header: t("common.remark"), size: 120,
+      meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
   ], [t, methodLabels, openEdit]);
@@ -182,6 +188,7 @@ export default function IqcLinkTab() {
             data={links}
             columns={columns}
             isLoading={loading}
+            enableColumnFilter
             enableExport
             exportFileName={t("master.iqcLink.tabLinks", "연결관리")}
             toolbarLeft={

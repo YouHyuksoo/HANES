@@ -106,24 +106,27 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
 
   /** Step 1: PO 목록 컬럼 */
   const poColumns = useMemo<ColumnDef<ReceivablePO>[]>(() => [
-    { accessorKey: 'poNo', header: t('material.arrival.col.poNo'), size: 140 },
-    { accessorKey: 'partnerName', header: t('material.arrival.col.vendor'), size: 120 },
+    { accessorKey: 'poNo', header: t('material.arrival.col.poNo'), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: 'partnerName', header: t('material.arrival.col.vendor'), size: 120, meta: { filterType: "text" as const } },
     {
       accessorKey: 'orderDate',
       header: t('material.arrival.col.orderDate'),
       size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) || '-',
     },
     {
       accessorKey: 'dueDate',
       header: t('material.arrival.col.dueDate'),
       size: 100,
+      meta: { filterType: "date" as const },
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) || '-',
     },
     {
       accessorKey: 'status',
       header: t('common.status'),
       size: 90,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const st = getValue() as string;
         const color = st === 'PARTIAL' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
@@ -134,6 +137,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       id: 'remaining',
       header: t('material.arrival.col.remainingQty'),
       size: 100,
+      meta: { filterType: "number" as const },
       cell: ({ row }) => (
         <span className="font-medium text-orange-600">{row.original.totalRemainingQty.toLocaleString()}</span>
       ),
@@ -142,20 +146,22 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
 
   /** Step 2: PO 품목 컬럼 */
   const itemColumns = useMemo<ColumnDef<PoItemForArrival>[]>(() => [
-    { id: 'partCode', header: t('common.partCode'), size: 110, cell: ({ row }) => row.original.part?.partCode },
-    { id: 'partName', header: t('common.partName'), size: 130, cell: ({ row }) => row.original.part?.partName },
-    { accessorKey: 'orderQty', header: t('material.arrival.col.orderQty'), size: 80 },
-    { accessorKey: 'receivedQty', header: t('material.arrival.col.receivedQty'), size: 80 },
+    { id: 'partCode', header: t('common.partCode'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.partCode },
+    { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.partName },
+    { accessorKey: 'orderQty', header: t('material.arrival.col.orderQty'), size: 80, meta: { filterType: "number" as const } },
+    { accessorKey: 'receivedQty', header: t('material.arrival.col.receivedQty'), size: 80, meta: { filterType: "number" as const } },
     {
       accessorKey: 'remainingQty',
       header: t('material.arrival.col.remainingQty'),
       size: 80,
+      meta: { filterType: "number" as const },
       cell: ({ getValue }) => <span className="text-orange-600 font-medium">{(getValue() as number).toLocaleString()}</span>,
     },
     {
       id: 'inputQty',
       header: t('material.arrival.col.inputQty'),
       size: 100,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <Input
           type="number"
@@ -174,6 +180,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       id: 'manufactureDate',
       header: t('material.arrival.col.manufactureDate'),
       size: 140,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <Input
           type="date"
@@ -187,6 +194,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       id: 'warehouse',
       header: t('material.arrival.col.warehouse'),
       size: 130,
+      meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <Select
           options={warehouses}

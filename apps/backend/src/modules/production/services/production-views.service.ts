@@ -12,7 +12,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between, ILike, In } from 'typeorm';
+import { Repository, Between, ILike, In } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -47,7 +47,6 @@ export class ProductionViewsService {
     const queryBuilder = this.jobOrderRepository
       .createQueryBuilder('jo')
       .leftJoinAndSelect('jo.part', 'p')
-      .where('jo.deletedAt IS NULL');
 
     if (company) queryBuilder.andWhere('jo.company = :company', { company });
     if (plant) queryBuilder.andWhere('jo.plant = :plant', { plant });
@@ -131,7 +130,6 @@ export class ProductionViewsService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
     };
 
     if (search) {
@@ -139,8 +137,7 @@ export class ProductionViewsService {
       // For OR condition with lotNo, we need QueryBuilder
       const queryBuilder = this.boxMasterRepository
         .createQueryBuilder('bm')
-        .where('bm.deletedAt IS NULL')
-        .andWhere('(bm.boxNo ILIKE :search OR bm.lotNo ILIKE :search)', {
+        .where('(bm.boxNo ILIKE :search OR bm.lotNo ILIKE :search)', {
           search: `%${search}%`,
         })
         .orderBy('bm.createdAt', 'DESC')
@@ -192,8 +189,7 @@ export class ProductionViewsService {
     const queryBuilder = this.stockRepository
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.part', 'p')
-      .where('s.deletedAt IS NULL')
-      .andWhere('p.partType IN (:...partTypes)', {
+      .where('p.partType IN (:...partTypes)', {
         partTypes: partType ? [partType] : ['WIP', 'FG'],
       })
       .orderBy('s.updatedAt', 'DESC')

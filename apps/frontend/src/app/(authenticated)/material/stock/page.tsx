@@ -197,6 +197,7 @@ function StockPage() {
         accessorKey: "partCode",
         header: t("material.stock.columns.partCode"),
         size: 110,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => (
           <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>
         ),
@@ -205,11 +206,13 @@ function StockPage() {
         accessorKey: "partName",
         header: t("material.stock.columns.partName"),
         size: 140,
+        meta: { filterType: "text" as const },
       },
       {
         accessorKey: "lotNo",
         header: t("material.col.lotNo"),
         size: 150,
+        meta: { filterType: "text" as const },
         cell: ({ getValue }) => (
           <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>
         ),
@@ -218,6 +221,7 @@ function StockPage() {
         accessorKey: "warehouseCode",
         header: t("material.stock.columns.warehouse"),
         size: 100,
+        meta: { filterType: "text" as const },
       },
       {
         accessorKey: "qty",
@@ -228,7 +232,7 @@ function StockPage() {
             {row.original.qty.toLocaleString()} {row.original.unit || ""}
           </span>
         ),
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
       },
       {
         accessorKey: "safetyStock",
@@ -242,12 +246,13 @@ function StockPage() {
             <span className="text-text-muted">-</span>
           );
         },
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
       },
       {
         id: "stockLevel",
         header: t("material.stock.columns.status"),
         size: 80,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => (
           <StockLevelBadge
             quantity={row.original.qty}
@@ -257,16 +262,17 @@ function StockPage() {
         ),
       },
       {
-        id: "manufactureDate",
+        accessorKey: "manufactureDate",
         header: t("material.stock.columns.manufactureDate"),
         size: 100,
+        meta: { filterType: "date" as const },
         cell: ({ row }) => {
           const d = row.original.manufactureDate;
           return d ? String(d).slice(0, 10) : "-";
         },
       },
       {
-        id: "elapsedDays",
+        accessorKey: "elapsedDays",
         header: t("material.stock.columns.elapsedDays"),
         size: 80,
         cell: ({ row }) => {
@@ -274,10 +280,10 @@ function StockPage() {
           if (days == null) return "-";
           return <span>{days}{t("material.stock.columns.dayUnit")}</span>;
         },
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
       },
       {
-        id: "remainingDays",
+        accessorKey: "remainingDays",
         header: t("material.stock.columns.remainingDays"),
         size: 100,
         cell: ({ row }) => {
@@ -295,12 +301,13 @@ function StockPage() {
             </span>
           );
         },
-        meta: { align: "right" as const },
+        meta: { filterType: "number" as const, align: "right" as const },
       },
       {
         id: "shelfLifeStatus",
         header: t("material.stock.columns.shelfLifeStatus"),
         size: 80,
+        meta: { filterType: "none" as const },
         cell: ({ row }) => (
           <ShelfLifeBadge
             remainingDays={row.original.remainingDays}

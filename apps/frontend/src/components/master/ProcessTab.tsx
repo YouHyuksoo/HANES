@@ -119,14 +119,14 @@ export default function ProcessTab() {
       cell: ({ getValue }) => <ComCodeBadge groupCode="PROCESS_TYPE" code={getValue() as string} />,
     },
     { accessorKey: "processCategory", header: t("master.process.processCategory"), size: 90,
-      meta: { filterType: "select" as const, filterOptions: processCategoryOptions.filter(o => o.value) },
+      meta: { filterType: "multi" as const, filterOptions: processCategoryOptions.filter(o => o.value) },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{v}</span> : "-";
       },
     },
     { accessorKey: "sampleInspectYn", header: t("master.process.sampleInspectYn"), size: 80,
-      meta: { filterType: "select" as const, filterOptions: [{ value: "Y", label: "Y" }, { value: "N", label: "N" }] },
+      meta: { filterType: "multi" as const, filterOptions: [{ value: "Y", label: "Y" }, { value: "N", label: "N" }] },
       cell: ({ getValue }) => (
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-orange-500" : "bg-gray-300"}`} />
       ),

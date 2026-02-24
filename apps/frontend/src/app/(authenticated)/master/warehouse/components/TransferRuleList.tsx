@@ -109,7 +109,7 @@ export default function TransferRuleList() {
   }, [confirmModal.id, fetchData]);
 
   const columns = useMemo<ColumnDef<TransferRule>[]>(() => [
-    { id: "actions", header: "", size: 80, meta: { align: "center" as const }, cell: ({ row }) => (
+    { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
         <button onClick={() => setConfirmModal({ open: true, id: row.original.id })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
@@ -117,15 +117,15 @@ export default function TransferRuleList() {
     )},
     { accessorKey: "fromWarehouseCode", header: t("master.transferRule.fromWarehouseCode"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "fromWarehouseName", header: t("master.transferRule.fromWarehouseName"), size: 140, meta: { filterType: "text" as const } },
-    { id: "arrow", header: "", size: 40, cell: () => <ArrowRightLeft className="w-4 h-4 text-text-muted mx-auto" /> },
+    { id: "arrow", header: "", size: 40, meta: { filterType: "none" as const }, cell: () => <ArrowRightLeft className="w-4 h-4 text-text-muted mx-auto" /> },
     { accessorKey: "toWarehouseCode", header: t("master.transferRule.toWarehouseCode"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "toWarehouseName", header: t("master.transferRule.toWarehouseName"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "allowYn", header: t("master.transferRule.allow"), size: 70, cell: ({ getValue }) => (
+    { accessorKey: "allowYn", header: t("master.transferRule.allow"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => (
       <span className={`px-2 py-1 text-xs rounded-full ${getValue() === "Y" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>
         {getValue() === "Y" ? t("master.transferRule.allowed") : t("master.transferRule.denied")}
       </span>
     )},
-    { accessorKey: "remark", header: t("common.remark"), size: 150, cell: ({ getValue }) => getValue() || "-" },
+    { accessorKey: "remark", header: t("common.remark"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
   ], [t, openEdit]);
 
   return (

@@ -92,6 +92,7 @@ export default function ResultSummaryPage() {
     },
     {
       accessorKey: "partType", header: t("production.resultSummary.partType"), size: 70,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
         const cls = v === "FG" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
@@ -102,17 +103,17 @@ export default function ResultSummaryPage() {
     },
     {
       accessorKey: "totalPlanQty", header: t("production.resultSummary.planQty"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,
     },
     {
       accessorKey: "totalGoodQty", header: t("production.resultSummary.goodQty"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span>,
     },
     {
       accessorKey: "totalDefectQty", header: t("production.resultSummary.defectQty"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => {
         const v = getValue() as number;
         return <span className={v > 0 ? "text-red-600 dark:text-red-400 font-medium" : "text-text-muted"}>{v.toLocaleString()}</span>;
@@ -120,22 +121,22 @@ export default function ResultSummaryPage() {
     },
     {
       accessorKey: "achieveRate", header: t("production.resultSummary.achieveRate"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => rateCell(getValue() as number, true),
     },
     {
       accessorKey: "yieldRate", header: t("production.resultSummary.yieldRate"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => rateCell(getValue() as number, true),
     },
     {
       accessorKey: "defectRate", header: t("production.resultSummary.defectRate"), size: 90,
-      meta: { align: "right" as const },
+      meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => rateCell(getValue() as number, false),
     },
     {
       accessorKey: "orderCount", header: t("production.resultSummary.orderCount"), size: 70,
-      meta: { align: "center" as const },
+      meta: { filterType: "number" as const, align: "center" as const },
       cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as number).toLocaleString()}</span>,
     },
   ], [t]);

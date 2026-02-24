@@ -56,7 +56,6 @@ export class ArrivalService {
   async findReceivablePOs(company?: string, plant?: string) {
     const where: any = {
       status: In(['CONFIRMED', 'PARTIAL']),
-      deletedAt: IsNull(),
     };
     if (company) where.company = company;
     if (plant) where.plant = plant;
@@ -110,7 +109,7 @@ export class ArrivalService {
   /** 특정 PO의 입하 가능 품목 조회 */
   async getPoItems(poId: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id: poId, deletedAt: IsNull() },
+      where: { id: poId },
     });
 
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poId}`);
@@ -142,7 +141,7 @@ export class ArrivalService {
   /** PO 기반 입하 등록 (핵심 트랜잭션) */
   async createPoArrival(dto: CreatePoArrivalDto) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id: dto.poId, deletedAt: IsNull() },
+      where: { id: dto.poId },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${dto.poId}`);
     if (!['CONFIRMED', 'PARTIAL'].includes(po.status)) {
@@ -573,7 +572,7 @@ export class ArrivalService {
         .andWhere('tx.transDate BETWEEN :start AND :end', { start: todayStart, end: todayEnd })
         .getRawOne(),
       this.purchaseOrderRepository.count({
-        where: { status: In(['CONFIRMED', 'PARTIAL']), deletedAt: IsNull() },
+        where: { status: In(['CONFIRMED', 'PARTIAL']) },
       }),
       this.stockTransactionRepository.count({
         where: { transType: 'MAT_IN' },

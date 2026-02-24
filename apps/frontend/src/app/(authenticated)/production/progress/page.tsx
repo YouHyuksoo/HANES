@@ -80,12 +80,13 @@ export default function ProgressPage() {
     { accessorKey: 'orderNo', header: t('production.progress.orderNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
     { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lineCode', header: t('production.progress.line'), size: 70 },
-    { accessorKey: 'planQty', header: t('production.progress.planQty'), size: 90, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'goodQty', header: t('production.progress.goodQty'), size: 90, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: 'defectQty', header: t('production.progress.defectQty'), size: 90, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'lineCode', header: t('production.progress.line'), size: 70, meta: { filterType: 'text' as const } },
+    { accessorKey: 'planQty', header: t('production.progress.planQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
+    { accessorKey: 'goodQty', header: t('production.progress.goodQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: 'defectQty', header: t('production.progress.defectQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400">{(getValue() as number).toLocaleString()}</span> },
     {
       id: 'progress', header: t('production.progress.progressRate'), size: 140,
+      meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const { planQty, goodQty } = row.original;
         const p = planQty > 0 ? Math.min(Math.round((goodQty / planQty) * 100), 100) : 0;
@@ -99,8 +100,8 @@ export default function ProgressPage() {
         );
       },
     },
-    { accessorKey: 'status', header: t('production.progress.status'), size: 90, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
-    { accessorKey: 'planDate', header: t('production.progress.planDate'), size: 100 },
+    { accessorKey: 'status', header: t('production.progress.status'), size: 90, meta: { filterType: 'multi' as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
+    { accessorKey: 'planDate', header: t('production.progress.planDate'), size: 100, meta: { filterType: 'date' as const } },
   ], [t]);
 
   return (

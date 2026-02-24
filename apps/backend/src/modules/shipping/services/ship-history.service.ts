@@ -10,7 +10,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -33,7 +33,6 @@ export class ShipHistoryService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: IsNull(),
       ...(company && { company }),
       ...(plant && { plant }),
       ...(status && { status }),
@@ -94,12 +93,11 @@ export class ShipHistoryService {
   /** 출하이력 통계 요약 */
   async getSummary() {
     const [total, byStatus] = await Promise.all([
-      this.shipmentOrderRepository.count({ where: { deletedAt: IsNull() } }),
+      this.shipmentOrderRepository.count({ where: {} }),
       this.shipmentOrderRepository
         .createQueryBuilder('order')
         .select('order.status', 'status')
         .addSelect('COUNT(*)', 'count')
-        .where('order.deletedAt IS NULL')
         .groupBy('order.status')
         .getRawMany(),
     ]);

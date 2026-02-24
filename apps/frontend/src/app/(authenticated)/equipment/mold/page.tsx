@@ -43,25 +43,28 @@ function MoldPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const columns: ColumnDef<Mold>[] = [
-    { accessorKey: 'moldCode', header: t('crimping.mold.code'), size: 100 },
-    { accessorKey: 'moldName', header: t('crimping.mold.name'), size: 150 },
-    { accessorKey: 'terminalName', header: t('crimping.terminal'), size: 120 },
+    { accessorKey: 'moldCode', header: t('crimping.mold.code'), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: 'moldName', header: t('crimping.mold.name'), size: 150, meta: { filterType: "text" as const } },
+    { accessorKey: 'terminalName', header: t('crimping.terminal'), size: 120, meta: { filterType: "text" as const } },
     {
       accessorKey: 'currentShots',
       header: t('crimping.mold.currentShots'),
       size: 100,
+      meta: { filterType: "number" as const },
       cell: ({ getValue }) => Number(getValue()).toLocaleString(),
     },
     {
       accessorKey: 'expectedLife',
       header: t('crimping.mold.expectedLife'),
       size: 100,
+      meta: { filterType: "number" as const },
       cell: ({ getValue }) => Number(getValue()).toLocaleString(),
     },
     {
       accessorKey: 'status',
       header: t('common.status'),
       size: 80,
+      meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const status = getValue() as MoldStatus;
         const config = {
@@ -107,6 +110,7 @@ function MoldPage() {
             columns={columns}
             data={filteredData}
             isLoading={isLoading}
+            enableColumnFilter
             enableExport
             exportFileName={t('crimping.mold.title')}
             onRowClick={(row) => {

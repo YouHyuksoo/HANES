@@ -75,13 +75,13 @@ export default function ResultPage() {
   }, [data]);
 
   const columns = useMemo<ColumnDef<InspectRecord>[]>(() => [
-    { accessorKey: "inspectedAt", header: t("inspection.result.inspectedAt"), size: 150 },
+    { accessorKey: "inspectedAt", header: t("inspection.result.inspectedAt"), size: 150, meta: { filterType: "date" as const } },
     { accessorKey: "serialNo", header: t("inspection.result.serialNo"), size: 170, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: "result", header: t("inspection.result.resultCol"), size: 80, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_RESULT" code={getValue() as string} /> },
-    { accessorKey: "errorCode", header: t("inspection.result.errorCode"), size: 80, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
-    { accessorKey: "errorDesc", header: t("inspection.result.errorDesc"), size: 150, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
-    { accessorKey: "voltage", header: t("inspection.result.voltage"), size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(1)}</span> },
-    { accessorKey: "current", header: t("inspection.result.current"), size: 80, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(2)}</span> },
+    { accessorKey: "result", header: t("inspection.result.resultCol"), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_RESULT" code={getValue() as string} /> },
+    { accessorKey: "errorCode", header: t("inspection.result.errorCode"), size: 80, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
+    { accessorKey: "errorDesc", header: t("inspection.result.errorDesc"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
+    { accessorKey: "voltage", header: t("inspection.result.voltage"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(1)}</span> },
+    { accessorKey: "current", header: t("inspection.result.current"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(2)}</span> },
     { accessorKey: "equipmentNo", header: t("inspection.result.equipmentNo"), size: 90, meta: { filterType: "text" as const } },
   ], [t]);
 
