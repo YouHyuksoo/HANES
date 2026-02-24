@@ -19,7 +19,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ComCode } from '../../../entities/com-code.entity';
 import {
   CreateComCodeDto,

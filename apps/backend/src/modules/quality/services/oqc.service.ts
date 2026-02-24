@@ -19,7 +19,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, In } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';

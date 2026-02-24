@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In, Between, DataSource } from 'typeorm';
+import { Repository, In, Between, DataSource } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';

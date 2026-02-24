@@ -172,6 +172,7 @@
     "material.receive": "物料入库管理",
     "material.request": "出库申请管理",
     "material.issue": "物料出库管理",
+    "material.issueAccount": "出库账户",
     "material.lot": "LOT管理",
     "material.po": "PO管理",
     "material.poStatus": "PO现况查询",
@@ -1884,7 +1885,19 @@
         "processCode": "工序代码",
         "remark": "备注",
         "confirm": "确认入库"
-      }
+      },
+      "boxScan": {
+        "title": "箱码扫描入库",
+        "placeholder": "请扫描箱码",
+        "lookup": "查询",
+        "confirm": "确认入库",
+        "partInfo": "品目信息",
+        "boxQty": "箱内数量",
+        "alreadyReceived": "该箱已入库",
+        "notClosed": "仅CLOSED状态的箱可入库",
+        "success": "箱码入库完成"
+      },
+      "individualReceive": "单独入库"
     },
     "receiptCancel": {
       "title": "产品入库取消",
@@ -3496,7 +3509,7 @@
     "IQC_STATUS": { "PENDING": "等待", "PASS": "合格", "FAIL": "不合格", "HOLD": "保留" },
     "OQC_STATUS": { "PENDING": "等待", "IN_PROGRESS": "检查中", "PASS": "合格", "FAIL": "不合格" },
     "MAT_LOT_STATUS": { "NORMAL": "正常", "HOLD": "保留", "DEPLETED": "耗尽" },
-    "ISSUE_TYPE": { "PROD": "生产", "SUBCON": "外包", "SAMPLE": "样品", "ADJ": "调整" },
+    "ISSUE_TYPE": { "PRODUCTION": "量产", "DEFECT": "不良", "SAMPLE": "样品", "DESIGN_START": "设计开始", "ADJUSTMENT": "库存调整", "LOSS": "损耗", "SUBCONTRACT": "外包", "SCRAP": "报废", "RETURN": "退货", "ETC": "其他" },
     "TRANSACTION_TYPE": { "MAT_IN": "材料入库", "MAT_IN_CANCEL": "材料入库取消", "MAT_OUT": "材料出库", "MAT_OUT_CANCEL": "材料出库取消", "WIP_IN": "半成品入库", "WIP_IN_CANCEL": "半成品入库取消", "WIP_OUT": "半成品出库", "WIP_OUT_CANCEL": "半成品出库取消", "FG_IN": "成品入库", "FG_IN_CANCEL": "成品入库取消", "FG_OUT": "成品出库", "FG_OUT_CANCEL": "成品出库取消", "SUBCON_OUT": "外包出库", "SUBCON_OUT_CANCEL": "外包出库取消", "SUBCON_IN": "外包入库", "SUBCON_IN_CANCEL": "外包入库取消", "PROD_CONSUME": "生产消耗", "PROD_CONSUME_CANCEL": "生产消耗取消", "TRANSFER": "移动", "TRANSFER_CANCEL": "移动取消", "ADJ_PLUS": "调整(+)", "ADJ_MINUS": "调整(-)", "SCRAP": "废弃" },
     "REF_TYPE": { "JOB_ORDER": "作业指示", "SUBCON_ORDER": "外包订单", "SHIPMENT": "出货", "CUSTOMS": "通关", "ADJUST": "调整", "PROD_RESULT": "生产实绩" },
     "PROD_RESULT_STATUS": { "RUNNING": "进行中", "DONE": "完成", "CANCELED": "取消" },

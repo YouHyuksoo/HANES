@@ -172,6 +172,7 @@
     "material.receive": "Nhập kho vật tư",
     "material.request": "Quản lý yêu cầu xuất kho",
     "material.issue": "Xuất kho vật tư",
+    "material.issueAccount": "Tài khoản xuất kho",
     "material.lot": "Quản lý LOT",
     "material.po": "Quản lý PO",
     "material.poStatus": "Tra cứu tình trạng PO",
@@ -1885,7 +1886,19 @@
         "processCode": "Mã công đoạn",
         "remark": "Ghi chú",
         "confirm": "Xác nhận nhập kho"
-      }
+      },
+      "boxScan": {
+        "title": "Nhập kho quét hộp",
+        "placeholder": "Quét mã hộp",
+        "lookup": "Tra cứu",
+        "confirm": "Xác nhận nhập kho",
+        "partInfo": "Thông tin sản phẩm",
+        "boxQty": "SL trong hộp",
+        "alreadyReceived": "Hộp này đã được nhập kho",
+        "notClosed": "Chỉ hộp trạng thái CLOSED mới có thể nhập kho",
+        "success": "Nhập kho hộp hoàn tất"
+      },
+      "individualReceive": "Nhập kho thủ công"
     },
     "receiptCancel": {
       "title": "Hủy nhập kho sản phẩm",
@@ -3497,7 +3510,7 @@
     "IQC_STATUS": { "PENDING": "Đang chờ", "PASS": "Đạt", "FAIL": "Không đạt", "HOLD": "Giữ lại" },
     "OQC_STATUS": { "PENDING": "Đang chờ", "IN_PROGRESS": "Đang kiểm tra", "PASS": "Đạt", "FAIL": "Không đạt" },
     "MAT_LOT_STATUS": { "NORMAL": "Bình thường", "HOLD": "Giữ lại", "DEPLETED": "Đã hết" },
-    "ISSUE_TYPE": { "PROD": "Sản xuất", "SUBCON": "Gia công", "SAMPLE": "Mẫu", "ADJ": "Điều chỉnh" },
+    "ISSUE_TYPE": { "PRODUCTION": "Sản xuất", "DEFECT": "Lỗi", "SAMPLE": "Mẫu", "DESIGN_START": "Bắt đầu thiết kế", "ADJUSTMENT": "Điều chỉnh tồn kho", "LOSS": "Hao hụt", "SUBCONTRACT": "Gia công ngoài", "SCRAP": "Phế liệu", "RETURN": "Trả hàng", "ETC": "Khác" },
     "TRANSACTION_TYPE": { "MAT_IN": "Nhập nguyên liệu", "MAT_IN_CANCEL": "Hủy nhập nguyên liệu", "MAT_OUT": "Xuất nguyên liệu", "MAT_OUT_CANCEL": "Hủy xuất nguyên liệu", "WIP_IN": "Nhập bán thành phẩm", "WIP_IN_CANCEL": "Hủy nhập bán thành phẩm", "WIP_OUT": "Xuất bán thành phẩm", "WIP_OUT_CANCEL": "Hủy xuất bán thành phẩm", "FG_IN": "Nhập thành phẩm", "FG_IN_CANCEL": "Hủy nhập thành phẩm", "FG_OUT": "Xuất thành phẩm", "FG_OUT_CANCEL": "Hủy xuất thành phẩm", "SUBCON_OUT": "Xuất gia công", "SUBCON_OUT_CANCEL": "Hủy xuất gia công", "SUBCON_IN": "Nhập gia công", "SUBCON_IN_CANCEL": "Hủy nhập gia công", "PROD_CONSUME": "Tiêu thụ sản xuất", "PROD_CONSUME_CANCEL": "Hủy tiêu thụ sản xuất", "TRANSFER": "Di chuyển", "TRANSFER_CANCEL": "Hủy di chuyển", "ADJ_PLUS": "Điều chỉnh(+)", "ADJ_MINUS": "Điều chỉnh(-)", "SCRAP": "Loại bỏ" },
     "REF_TYPE": { "JOB_ORDER": "Lệnh sản xuất", "SUBCON_ORDER": "Đơn hàng gia công", "SHIPMENT": "Xuất hàng", "CUSTOMS": "Hải quan", "ADJUST": "Điều chỉnh", "PROD_RESULT": "Kết quả sản xuất" },
     "PROD_RESULT_STATUS": { "RUNNING": "Đang chạy", "DONE": "Hoàn thành", "CANCELED": "Đã hủy" },

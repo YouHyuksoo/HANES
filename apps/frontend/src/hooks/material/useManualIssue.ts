@@ -48,6 +48,7 @@ interface AvailableStockResponse {
 export function useManualIssue() {
   const [warehouseFilter, setWarehouseFilter] = useState('');
   const [searchText, setSearchText] = useState('');
+  const [issueType, setIssueType] = useState<string>('PRODUCTION');
   const [selectedItems, setSelectedItems] = useState<Map<string, number>>(new Map());
   const invalidate = useInvalidateQueries();
 
@@ -122,12 +123,12 @@ export function useManualIssue() {
       const stock = availableStocks.find((s) => s.id === stockId);
       return { lotId: stock?.lotId ?? stockId, issueQty: qty };
     });
-    await api.post('/material/issues', { items });
+    await api.post('/material/issues', { items, issueType });
     setSelectedItems(new Map());
     invalidate(['stocks-available']);
     invalidate(['issue-history']);
     refetch();
-  }, [selectedItems, availableStocks, invalidate, refetch]);
+  }, [selectedItems, availableStocks, issueType, invalidate, refetch]);
 
   return {
     availableStocks,
@@ -137,6 +138,8 @@ export function useManualIssue() {
     setWarehouseFilter,
     searchText,
     setSearchText,
+    issueType,
+    setIssueType,
     selectedItems,
     toggleSelect,
     updateQty,

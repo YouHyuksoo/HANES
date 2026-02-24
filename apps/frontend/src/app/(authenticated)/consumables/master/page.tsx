@@ -7,10 +7,10 @@
  * 초보자 가이드:
  * 1. **목록 조회**: GET /consumables (페이지네이션, 검색, 카테고리 필터)
  * 2. **통계 카드**: GET /consumables/summary (전체/경고/교체 건수)
- * 3. **등록/수정**: ConsumableMasterModal 컴포넌트에서 처리
+ * 3. **등록/수정**: 우측 슬라이드 패널(ConsumableFormPanel)에서 처리
  * 4. **삭제**: DELETE /consumables/:id (소프트 삭제)
  */
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Plus, Edit2, RefreshCw, Search, Wrench, AlertTriangle, XCircle, Trash2,
@@ -20,10 +20,10 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
-import ConsumableMasterModal, {
+import ConsumableFormPanel, {
   type ConsumableItem,
   type ConsumableFormValues,
-} from "@/components/consumables/ConsumableMasterModal";
+} from "./components/ConsumableFormPanel";
 
 function ConsumableMasterPage() {
   const { t } = useTranslation();
@@ -34,10 +34,11 @@ function ConsumableMasterPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stats, setStats] = useState({ total: 0, warning: 0, replace: 0 });
-  const [modalOpen, setModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editing, setEditing] = useState<ConsumableItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const panelAnimateRef = useRef(true);
 
   /* 카테고리 필터 옵션 (전체 + 공통코드) */
   const filterOptions = useMemo(
@@ -86,7 +87,8 @@ function ConsumableMasterPage() {
       } else {
         await api.post("/consumables", form);
       }
-      setModalOpen(false);
+      setIsPanelOpen(false);
+      setEditing(null);
       fetchData();
       fetchSummary();
     } catch {
@@ -114,9 +116,35 @@ function ConsumableMasterPage() {
     }
   };
 
+  /* 패널 닫기 */
+  const handlePanelClose = useCallback(() => {
+    setIsPanelOpen(false);
+    setEditing(null);
+    panelAnimateRef.current = true;
+  }, []);
+
   /* 컬럼 정의 */
   const columns = useMemo<ColumnDef<ConsumableItem>[]>(
     () => [
+      {
+        id: "actions",
+        header: t("common.manage"),
+        size: 90,
+        meta: { filterType: "none" as const },
+        cell: ({ row }) => (
+          <div className="flex gap-1">
+            <button
+              onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditing(row.original); setIsPanelOpen(true); }}
+              className="p-1 hover:bg-surface rounded"
+            >
+              <Edit2 className="w-4 h-4 text-primary" />
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original.id); }} className="p-1 hover:bg-surface rounded">
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+        ),
+      },
       { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 120, meta: { filterType: "text" as const } },
       { accessorKey: "consumableName", header: t("consumables.master.name"), size: 170, meta: { filterType: "text" as const } },
       {
@@ -169,83 +197,71 @@ function ConsumableMasterPage() {
         meta: { filterType: "multi" as const },
         cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} />,
       },
-      {
-        id: "actions",
-        header: t("common.manage"),
-        size: 90,
-        meta: { filterType: "none" as const },
-        cell: ({ row }) => (
-          <div className="flex gap-1">
-            <button
-              onClick={() => { setEditing(row.original); setModalOpen(true); }}
-              className="p-1 hover:bg-surface rounded"
-            >
-              <Edit2 className="w-4 h-4 text-primary" />
-            </button>
-            <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded">
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </button>
-          </div>
-        ),
-      },
     ],
-    [t],
+    [t, isPanelOpen],
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Wrench className="w-7 h-7 text-primary" />
-            {t("consumables.master.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("consumables.master.description")}</p>
+    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+      {/* 좌측: 메인 콘텐츠 */}
+      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Wrench className="w-7 h-7 text-primary" />
+              {t("consumables.master.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("consumables.master.description")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => { fetchData(); fetchSummary(); }}>
+              <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditing(null); setIsPanelOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" /> {t("consumables.master.register")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={() => { fetchData(); fetchSummary(); }}>
-            <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={() => { setEditing(null); setModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" /> {t("consumables.master.register")}
-          </Button>
+
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard label={t("consumables.master.totalConsumables")} value={stats.total} icon={Wrench} color="blue" />
+          <StatCard label={t("consumables.master.statusWarning")} value={stats.warning} icon={AlertTriangle} color="yellow" />
+          <StatCard label={t("consumables.master.statusReplace")} value={stats.replace} icon={XCircle} color="red" />
         </div>
+
+        <Card>
+          <CardContent>
+            <DataGrid
+              data={data}
+              columns={columns}
+              isLoading={loading}
+              enableColumnFilter
+              enableExport
+              exportFileName={t("consumables.master.title")}
+              onRowClick={(row) => { if (isPanelOpen) { panelAnimateRef.current = false; setEditing(row); } }}
+              toolbarLeft={
+                <div className="flex gap-2 items-center">
+                  <Input placeholder={t("consumables.master.searchPlaceholder")}
+                    value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />} />
+                  <Select options={filterOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder={t("consumables.master.category")} />
+                </div>
+              }
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label={t("consumables.master.totalConsumables")} value={stats.total} icon={Wrench} color="blue" />
-        <StatCard label={t("consumables.master.statusWarning")} value={stats.warning} icon={AlertTriangle} color="yellow" />
-        <StatCard label={t("consumables.master.statusReplace")} value={stats.replace} icon={XCircle} color="red" />
-      </div>
-
-      <Card>
-        <CardContent>
-          <DataGrid
-            data={data}
-            columns={columns}
-            isLoading={loading}
-            enableColumnFilter
-            enableExport
-            exportFileName={t("consumables.master.title")}
-            toolbarLeft={
-              <div className="flex gap-2 items-center">
-                <Input placeholder={t("consumables.master.searchPlaceholder")}
-                  value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />} />
-                <Select options={filterOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder={t("consumables.master.category")} />
-              </div>
-            }
-          />
-        </CardContent>
-      </Card>
-
-      <ConsumableMasterModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
-        item={editing}
-        loading={saving}
-      />
+      {/* 우측: 소모품 등록/수정 슬라이드 패널 */}
+      {isPanelOpen && (
+        <ConsumableFormPanel
+          item={editing}
+          onClose={handlePanelClose}
+          onSubmit={handleSubmit}
+          loading={saving}
+          animate={panelAnimateRef.current}
+        />
+      )}
 
       <ConfirmModal
         isOpen={!!deleteTarget}

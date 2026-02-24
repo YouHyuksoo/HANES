@@ -50,6 +50,9 @@ export class MatIssueRequest {
   @Column({ name: 'REJECT_REASON', length: 500, nullable: true })
   rejectReason: string | null;
 
+  @Column({ name: 'ISSUE_TYPE', length: 20, nullable: true })
+  issueType: string | null;
+
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 

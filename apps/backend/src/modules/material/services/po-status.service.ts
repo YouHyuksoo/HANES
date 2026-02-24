@@ -5,7 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Between, Like, In } from 'typeorm';
+import { Repository, Between, Like, In } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';

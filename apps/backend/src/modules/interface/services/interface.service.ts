@@ -10,7 +10,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, MoreThanOrEqual, Between } from 'typeorm';
+import { Repository, MoreThanOrEqual, Between } from 'typeorm';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';

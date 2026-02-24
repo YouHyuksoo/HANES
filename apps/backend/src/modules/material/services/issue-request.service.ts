@@ -82,6 +82,7 @@ export class IssueRequestService {
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
         jobOrderId: dto.jobOrderId ?? null,
+        issueType: dto.issueType ?? null,
         status: 'REQUESTED',
         requester: 'SYSTEM',
         remark: dto.remark ?? null,
@@ -192,7 +193,7 @@ export class IssueRequestService {
       const issueResult = await this.matIssueService.create({
         jobOrderId: request.jobOrderId ?? undefined,
         warehouseCode: dto.warehouseCode,
-        issueType: 'PROD',
+        issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
         items: dto.items.map((i) => ({ lotId: i.lotId, issueQty: i.issueQty })),
         workerId: dto.workerId,
         remark: dto.remark ?? `출고요청 ${request.requestNo} 기반 출고`,

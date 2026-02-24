@@ -172,6 +172,7 @@
     "material.receive": "Material Receiving",
     "material.request": "Issue Request Mgmt",
     "material.issue": "Material Issuing",
+    "material.issueAccount": "Issue Account",
     "material.lot": "LOT Management",
     "material.po": "Purchase Order",
     "material.poStatus": "PO Status Inquiry",
@@ -1884,7 +1885,19 @@
         "processCode": "Process Code",
         "remark": "Remark",
         "confirm": "Confirm Receipt"
-      }
+      },
+      "boxScan": {
+        "title": "Box Scan Receiving",
+        "placeholder": "Scan box number",
+        "lookup": "Lookup",
+        "confirm": "Confirm Receipt",
+        "partInfo": "Part Info",
+        "boxQty": "Box Qty",
+        "alreadyReceived": "This box has already been received",
+        "notClosed": "Only CLOSED boxes can be received",
+        "success": "Box receiving completed"
+      },
+      "individualReceive": "Individual Receive"
     },
     "receiptCancel": {
       "title": "Product Receipt Cancel",
@@ -3496,7 +3509,7 @@
     "IQC_STATUS": { "PENDING": "Pending", "PASS": "Pass", "FAIL": "Fail", "HOLD": "Hold" },
     "OQC_STATUS": { "PENDING": "Pending", "IN_PROGRESS": "In Progress", "PASS": "Pass", "FAIL": "Fail" },
     "MAT_LOT_STATUS": { "NORMAL": "Normal", "HOLD": "Hold", "DEPLETED": "Depleted" },
-    "ISSUE_TYPE": { "PROD": "Production", "SUBCON": "Subcontract", "SAMPLE": "Sample", "ADJ": "Adjustment" },
+    "ISSUE_TYPE": { "PRODUCTION": "Production", "DEFECT": "Defect", "SAMPLE": "Sample", "DESIGN_START": "Design Start", "ADJUSTMENT": "Adjustment", "LOSS": "Loss", "SUBCONTRACT": "Subcontract", "SCRAP": "Scrap", "RETURN": "Return", "ETC": "Etc" },
     "TRANSACTION_TYPE": { "MAT_IN": "Material In", "MAT_IN_CANCEL": "Material In Cancel", "MAT_OUT": "Material Out", "MAT_OUT_CANCEL": "Material Out Cancel", "WIP_IN": "WIP In", "WIP_IN_CANCEL": "WIP In Cancel", "WIP_OUT": "WIP Out", "WIP_OUT_CANCEL": "WIP Out Cancel", "FG_IN": "FG In", "FG_IN_CANCEL": "FG In Cancel", "FG_OUT": "FG Out", "FG_OUT_CANCEL": "FG Out Cancel", "SUBCON_OUT": "Subcon Out", "SUBCON_OUT_CANCEL": "Subcon Out Cancel", "SUBCON_IN": "Subcon In", "SUBCON_IN_CANCEL": "Subcon In Cancel", "PROD_CONSUME": "Production Consume", "PROD_CONSUME_CANCEL": "Production Consume Cancel", "TRANSFER": "Transfer", "TRANSFER_CANCEL": "Transfer Cancel", "ADJ_PLUS": "Adjustment Plus", "ADJ_MINUS": "Adjustment Minus", "SCRAP": "Scrap" },
     "REF_TYPE": { "JOB_ORDER": "Job Order", "SUBCON_ORDER": "Subcon Order", "SHIPMENT": "Shipment", "CUSTOMS": "Customs", "ADJUST": "Adjustment", "PROD_RESULT": "Production Result" },
     "PROD_RESULT_STATUS": { "RUNNING": "Running", "DONE": "Done", "CANCELED": "Canceled" },

@@ -173,6 +173,7 @@
     "material.receive": "자재입고관리",
     "material.request": "출고요청관리",
     "material.issue": "자재출고관리",
+    "material.issueAccount": "출고계정",
     "material.lot": "LOT관리",
     "material.po": "PO관리",
     "material.poStatus": "PO현황조회",
@@ -1946,7 +1947,19 @@
         "processCode": "공정코드",
         "remark": "비고",
         "confirm": "입고확정"
-      }
+      },
+      "boxScan": {
+        "title": "박스 스캔 입고",
+        "placeholder": "박스번호를 스캔하세요",
+        "lookup": "조회",
+        "confirm": "입고확정",
+        "partInfo": "품목정보",
+        "boxQty": "박스수량",
+        "alreadyReceived": "이미 입고된 박스입니다",
+        "notClosed": "CLOSED 상태의 박스만 입고 가능합니다",
+        "success": "박스 입고가 완료되었습니다"
+      },
+      "individualReceive": "개별입고"
     },
     "receiptCancel": {
       "title": "제품입고취소",
@@ -3541,7 +3554,7 @@
     "IQC_STATUS": { "PENDING": "대기", "PASS": "합격", "FAIL": "불합격", "HOLD": "보류" },
     "OQC_STATUS": { "PENDING": "대기", "IN_PROGRESS": "검사중", "PASS": "합격", "FAIL": "불합격" },
     "MAT_LOT_STATUS": { "NORMAL": "정상", "HOLD": "보류", "DEPLETED": "소진" },
-    "ISSUE_TYPE": { "PROD": "생산", "SUBCON": "외주", "SAMPLE": "샘플", "ADJ": "조정" },
+    "ISSUE_TYPE": { "PRODUCTION": "양산", "DEFECT": "불량", "SAMPLE": "샘플", "DESIGN_START": "설계시작", "ADJUSTMENT": "재고조정", "LOSS": "로스", "SUBCONTRACT": "외주", "SCRAP": "폐기", "RETURN": "반품", "ETC": "기타" },
     "TRANSACTION_TYPE": { "MAT_IN": "자재입고", "MAT_IN_CANCEL": "자재입고취소", "MAT_OUT": "자재출고", "MAT_OUT_CANCEL": "자재출고취소", "WIP_IN": "반제품입고", "WIP_IN_CANCEL": "반제품입고취소", "WIP_OUT": "반제품출고", "WIP_OUT_CANCEL": "반제품출고취소", "FG_IN": "완제품입고", "FG_IN_CANCEL": "완제품입고취소", "FG_OUT": "완제품출고", "FG_OUT_CANCEL": "완제품출고취소", "SUBCON_OUT": "외주출고", "SUBCON_OUT_CANCEL": "외주출고취소", "SUBCON_IN": "외주입고", "SUBCON_IN_CANCEL": "외주입고취소", "PROD_CONSUME": "생산소비", "PROD_CONSUME_CANCEL": "생산소비취소", "TRANSFER": "이동", "TRANSFER_CANCEL": "이동취소", "ADJ_PLUS": "조정(+)", "ADJ_MINUS": "조정(-)", "SCRAP": "폐기" },
     "REF_TYPE": { "JOB_ORDER": "작업지시", "SUBCON_ORDER": "외주발주", "SHIPMENT": "출하", "CUSTOMS": "통관", "ADJUST": "조정", "PROD_RESULT": "생산실적" },
     "PROD_RESULT_STATUS": { "RUNNING": "진행중", "DONE": "완료", "CANCELED": "취소" },

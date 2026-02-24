@@ -19,6 +19,7 @@ import { Card, CardContent, Button, Input, Select, ConfirmModal } from '@/compon
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useManualIssue } from '@/hooks/material/useManualIssue';
 import { useWarehouseOptions } from '@/hooks/useMasterOptions';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import type { AvailableStock } from '@/hooks/material/useManualIssue';
 
 export default function ManualIssueTab() {
@@ -27,9 +28,11 @@ export default function ManualIssueTab() {
     availableStocks, isLoading, refetch,
     warehouseFilter, setWarehouseFilter,
     searchText, setSearchText,
+    issueType, setIssueType,
     selectedItems, toggleSelect, updateQty, toggleAll,
     totalIssueQty, handleIssue,
   } = useManualIssue();
+  const issueTypeOptions = useComCodeOptions('ISSUE_TYPE');
 
   const { options: warehouseRawOptions } = useWarehouseOptions('RAW');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -187,6 +190,16 @@ export default function ManualIssueTab() {
                     fullWidth
                   />
                 </div>
+                <div className="w-44 flex-shrink-0">
+                  <Select
+                    label={t('material.issueAccount')}
+                    options={issueTypeOptions}
+                    value={issueType}
+                    onChange={setIssueType}
+                    required
+                    fullWidth
+                  />
+                </div>
                 <Button variant="secondary" size="sm" onClick={() => refetch()} className="flex-shrink-0">
                   <RefreshCw className="w-4 h-4" />
                 </Button>
@@ -204,7 +217,7 @@ export default function ManualIssueTab() {
             </div>
             <Button
               onClick={() => setShowConfirm(true)}
-              disabled={selectedItems.size === 0}
+              disabled={selectedItems.size === 0 || !issueType}
             >
               <Package className="w-4 h-4 mr-1" />
               {t('material.issue.processAction')}

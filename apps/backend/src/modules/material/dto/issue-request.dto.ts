@@ -55,6 +55,12 @@ export class CreateIssueRequestDto {
   @IsString()
   jobOrderId?: string;
 
+  @ApiPropertyOptional({ description: '출고 유형 (ComCode ISSUE_TYPE)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  issueType?: string;
+
   @ApiProperty({ description: '요청 품목 목록', type: [IssueRequestItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
@@ -136,6 +142,12 @@ export class RequestIssueDto {
   @IsOptional()
   @IsString()
   warehouseCode?: string;
+
+  @ApiPropertyOptional({ description: '출고 유형 (ComCode ISSUE_TYPE)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  issueType?: string;
 
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()

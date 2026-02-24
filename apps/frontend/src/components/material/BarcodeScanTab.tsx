@@ -17,9 +17,10 @@ import {
   QrCode, Package, XCircle, AlertTriangle, CheckCircle, Loader2,
 } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Card, CardContent, Button } from '@/components/ui';
+import { Card, CardContent, Button, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useBarcodeScan } from '@/hooks/material/useBarcodeScan';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import type { ScanHistoryItem } from '@/hooks/material/useBarcodeScan';
 
 export default function BarcodeScanTab() {
@@ -28,9 +29,11 @@ export default function BarcodeScanTab() {
 
   const {
     scanInput, setScanInput,
+    issueType, setIssueType,
     scannedLot, scanHistory, isScanning, error,
     handleScan, handleIssue, handleCancel,
   } = useBarcodeScan();
+  const issueTypeOptions = useComCodeOptions('ISSUE_TYPE');
 
   // 페이지 로드 시 입력 필드에 자동 포커스
   useEffect(() => {
@@ -93,6 +96,22 @@ export default function BarcodeScanTab() {
 
   return (
     <div className="space-y-6">
+      {/* 출고계정 선택 */}
+      <Card>
+        <CardContent>
+          <div className="w-64">
+            <Select
+              label={t('material.issueAccount')}
+              options={issueTypeOptions}
+              value={issueType}
+              onChange={setIssueType}
+              required
+              fullWidth
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 스캔 입력 영역 */}
       <Card>
         <CardContent>
@@ -185,7 +204,7 @@ export default function BarcodeScanTab() {
                 <XCircle className="w-4 h-4 mr-1" />
                 {t('common.cancel')}
               </Button>
-              <Button onClick={handleIssueAndFocus}>
+              <Button onClick={handleIssueAndFocus} disabled={!issueType}>
                 <Package className="w-4 h-4 mr-1" />
                 {t('material.issue.fullIssue', { defaultValue: '전량출고' })}
               </Button>

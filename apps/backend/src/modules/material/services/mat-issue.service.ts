@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, IsNull, DataSource } from 'typeorm';
+import { Repository, Between, DataSource } from 'typeorm';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -148,7 +148,7 @@ export class MatIssueService {
           prodResultId, // 생산실적과 연결
           lotId: item.lotId,
           issueQty: item.issueQty,
-          issueType: issueType ?? 'PROD',
+          issueType,
           workerId,
           remark,
           status: 'DONE',
@@ -234,7 +234,7 @@ export class MatIssueService {
 
     const result = await this.create({
       warehouseCode: dto.warehouseCode,
-      issueType: dto.issueType ?? 'PROD',
+      issueType: dto.issueType,
       items: [{ lotId: lot.id, issueQty: lot.currentQty }],
       workerId: dto.workerId,
       remark: dto.remark ?? `바코드 스캔 출고: ${dto.lotNo}`,

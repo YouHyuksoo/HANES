@@ -5,7 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Raw, In } from 'typeorm';
+import { Repository, Raw, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ShelfLifeQueryDto } from '../dto/shelf-life.dto';

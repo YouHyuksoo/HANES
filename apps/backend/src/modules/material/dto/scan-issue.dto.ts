@@ -9,7 +9,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
 
 /** 바코드 스캔 출고 DTO */
 export class ScanIssueDto {
@@ -22,11 +22,11 @@ export class ScanIssueDto {
   @IsString()
   warehouseCode?: string;
 
-  @ApiPropertyOptional({ description: '출고 유형 (PROD, SAMPLE, ETC)' })
-  @IsOptional()
+  @ApiProperty({ description: '출고 유형 (ComCode ISSUE_TYPE)' })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(20)
-  issueType?: string;
+  issueType: string;
 
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()

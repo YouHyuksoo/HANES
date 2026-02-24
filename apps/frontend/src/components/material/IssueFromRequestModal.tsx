@@ -14,10 +14,11 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, Package, AlertTriangle } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Modal, Button, Input } from '@/components/ui';
+import { Modal, Button, Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
+import { useComCodeOptions } from '@/hooks/useComCode';
 
 interface IssueFromRequestModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ interface RequestDetail {
   workOrderNo: string;
   requester: string;
   status: string;
+  issueType?: string;
   items: RequestDetailItem[];
 }
 
@@ -56,6 +58,8 @@ export default function IssueFromRequestModal({
 }: IssueFromRequestModalProps) {
   const { t } = useTranslation();
   const invalidate = useInvalidateQueries();
+  const issueTypeOptions = useComCodeOptions('ISSUE_TYPE');
+  const [issueType, setIssueType] = useState<string>('PRODUCTION');
   const [issueRows, setIssueRows] = useState<IssueRow[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -82,6 +86,10 @@ export default function IssueFromRequestModal({
         issueQty: item.requestQty - (item.issuedQty ?? 0), // 기본값: 잔여량
       })),
     );
+    // 요청에 issueType이 있으면 기본값 설정
+    if (detail.issueType) {
+      setIssueType(detail.issueType);
+    }
   }, [detail]);
 
   // 출고수량 변경
@@ -109,6 +117,7 @@ export default function IssueFromRequestModal({
     try {
       await api.post(`/material/issue-requests/${requestId}/issue`, {
         items: validRows.map((r) => ({ itemId: r.id, issueQty: r.issueQty })),
+        issueType,
       });
       invalidate(['issue-requests']);
       invalidate(['issue-request-detail']);
@@ -119,7 +128,7 @@ export default function IssueFromRequestModal({
     } finally {
       setIsSubmitting(false);
     }
-  }, [issueRows, requestId, invalidate, onClose]);
+  }, [issueRows, requestId, issueType, invalidate, onClose]);
 
   // 컬럼 정의
   const columns = useMemo<ColumnDef<IssueRow>[]>(() => [
@@ -190,6 +199,18 @@ export default function IssueFromRequestModal({
             </div>
           </div>
         )}
+
+        {/* 출고계정 선택 */}
+        <div className="w-64">
+          <Select
+            label={t('material.issueAccount')}
+            options={issueTypeOptions}
+            value={issueType}
+            onChange={setIssueType}
+            required
+            fullWidth
+          />
+        </div>
 
         {/* 에러 메시지 */}
         {errorMsg && (

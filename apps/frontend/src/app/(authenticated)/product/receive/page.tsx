@@ -2,23 +2,24 @@
 
 /**
  * @file src/app/(authenticated)/product/receive/page.tsx
- * @description 제품입고관리 페이지 - 반제품(WIP)/완제품(FG) 입고 등록 및 이력 조회
+ * @description 제품입고관리 페이지 - 박스 스캔 입고 + 개별입고(모달) 지원
  *
  * 초보자 가이드:
- * 1. WIP/FG 탭 전환으로 품목유형 선택
- * 2. 입고등록 모달에서 품목, 창고, 수량, 작업지시번호 입력
- * 3. 입고 이력은 PRODUCT_TRANSACTIONS 테이블에서 조회
+ * 1. 박스 스캔 섹션: 포장 완료 박스를 스캔하여 빠르게 입고
+ * 2. 개별입고 버튼: 수동으로 품목/수량 지정하여 입고
+ * 3. WIP/FG 탭으로 입고 이력 필터링
  * 4. StatCard로 금일 입고 통계 표시
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { PackageCheck, Plus, RefreshCw, Search, Hash, Package } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, Modal, Select } from "@/components/ui";
+import { PackageCheck, RefreshCw, Search, Hash, Package, ClipboardPlus } from "lucide-react";
+import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
-import { usePartOptions, useWarehouseOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
+import BoxScanCard from "./components/BoxScanCard";
+import ReceiveModal from "./components/ReceiveModal";
 
 interface ProductTransaction {
   id: string;
@@ -48,22 +49,8 @@ export default function ProductReceivePage() {
   const [activeTab, setActiveTab] = useState<"WIP" | "FG">("WIP");
   const [data, setData] = useState<ProductTransaction[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // 모달 폼
-  const [form, setForm] = useState({
-    partId: "",
-    warehouseId: "",
-    qty: 1,
-    jobOrderId: "",
-    processCode: "",
-    remark: "",
-  });
-
-  const { options: partOptions } = usePartOptions(activeTab);
-  const { options: warehouseOptions } = useWarehouseOptions(activeTab);
 
   /** 입고 이력 조회 */
   const fetchData = useCallback(async () => {
@@ -73,7 +60,8 @@ export default function ProductReceivePage() {
       const res = await api.get("/inventory/product/transactions", {
         params: { transType, limit: 500 },
       });
-      setData(res.data ?? []);
+      const body = res.data;
+      if (body.success) setData(body.data ?? []);
     } catch {
       setData([]);
     } finally {
@@ -81,13 +69,15 @@ export default function ProductReceivePage() {
     }
   }, [activeTab]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   /** 통계 계산 */
   const stats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const todayDone = data.filter(
-      (d) => d.status === "DONE" && d.qty > 0 && String(d.transDate).slice(0, 10) === today
+      (d) => d.status === "DONE" && d.qty > 0 && String(d.transDate).slice(0, 10) === today,
     );
     const wipCount = data.filter((d) => d.transType === "WIP_IN" && d.status === "DONE").length;
     const fgCount = data.filter((d) => d.transType === "FG_IN" && d.status === "DONE").length;
@@ -99,94 +89,71 @@ export default function ProductReceivePage() {
     };
   }, [data]);
 
-  /** 입고 처리 */
-  const handleSubmit = useCallback(async () => {
-    if (!form.partId || !form.warehouseId || form.qty < 1) return;
-    setSaving(true);
-    try {
-      const endpoint = activeTab === "WIP" ? "/inventory/wip/receive" : "/inventory/fg/receive";
-      await api.post(endpoint, {
-        partId: form.partId,
-        warehouseId: form.warehouseId,
-        qty: form.qty,
-        partType: activeTab,
-        transType: activeTab === "WIP" ? "WIP_IN" : "FG_IN",
-        jobOrderId: form.jobOrderId || undefined,
-        processCode: form.processCode || undefined,
-        remark: form.remark || undefined,
-      });
-      setIsModalOpen(false);
-      setForm({ partId: "", warehouseId: "", qty: 1, jobOrderId: "", processCode: "", remark: "" });
-      fetchData();
-    } catch (e) {
-      console.error("Receive failed:", e);
-    } finally {
-      setSaving(false);
-    }
-  }, [form, activeTab, fetchData]);
-
-  const columns = useMemo<ColumnDef<ProductTransaction>[]>(() => [
-    {
-      accessorKey: "transDate", header: t("productMgmt.receive.col.transDate"), size: 100,
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
-    },
-    {
-      accessorKey: "transNo", header: t("productMgmt.receive.col.transNo"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "transType", header: t("common.type"), size: 90,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        const isCancelType = v.includes("CANCEL");
-        return (
-          <span className={`px-2 py-0.5 rounded text-xs ${isCancelType ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"}`}>
-            {v}
-          </span>
-        );
+  const columns = useMemo<ColumnDef<ProductTransaction>[]>(
+    () => [
+      {
+        accessorKey: "transDate", header: t("productMgmt.receive.col.transDate"), size: 100,
+        cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
       },
-    },
-    {
-      id: "partCode", header: t("common.partCode"), size: 120,
-      meta: { filterType: "text" as const },
-      cell: ({ row }) => <span className="font-mono text-sm">{row.original.part?.partCode || "-"}</span>,
-    },
-    {
-      id: "partName", header: t("common.partName"), size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ row }) => row.original.part?.partName || "-",
-    },
-    {
-      id: "warehouse", header: t("productMgmt.receive.col.warehouse"), size: 110,
-      cell: ({ row }) => row.original.toWarehouse?.warehouseName || "-",
-    },
-    {
-      accessorKey: "qty", header: t("common.quantity"), size: 90,
-      meta: { align: "right" as const },
-      cell: ({ row }) => {
-        const q = row.original.qty;
-        const color = q > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
-        return (
-          <span className={`font-medium ${color}`}>
-            {q > 0 ? "+" : ""}{q.toLocaleString()} {row.original.part?.unit || ""}
-          </span>
-        );
+      {
+        accessorKey: "transNo", header: t("productMgmt.receive.col.transNo"), size: 160,
+        meta: { filterType: "text" as const },
+        cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
       },
-    },
-    {
-      accessorKey: "jobOrderId", header: t("productMgmt.receive.col.jobOrderId"), size: 130,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      accessorKey: "status", header: t("common.status"), size: 80,
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
+      {
+        accessorKey: "transType", header: t("common.type"), size: 90,
+        cell: ({ getValue }) => {
+          const v = getValue() as string;
+          const cancel = v.includes("CANCEL");
+          return (
+            <span className={`px-2 py-0.5 rounded text-xs ${cancel ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"}`}>
+              {v}
+            </span>
+          );
+        },
       },
-    },
-  ], [t]);
+      {
+        id: "partCode", header: t("common.partCode"), size: 120,
+        meta: { filterType: "text" as const },
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.part?.partCode || "-"}</span>,
+      },
+      {
+        id: "partName", header: t("common.partName"), size: 150,
+        meta: { filterType: "text" as const },
+        cell: ({ row }) => row.original.part?.partName || "-",
+      },
+      {
+        id: "warehouse", header: t("productMgmt.receive.col.warehouse"), size: 110,
+        cell: ({ row }) => row.original.toWarehouse?.warehouseName || "-",
+      },
+      {
+        accessorKey: "qty", header: t("common.quantity"), size: 90,
+        meta: { align: "right" as const },
+        cell: ({ row }) => {
+          const q = row.original.qty;
+          const c = q > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+          return (
+            <span className={`font-medium ${c}`}>
+              {q > 0 ? "+" : ""}{q.toLocaleString()} {row.original.part?.unit || ""}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "jobOrderId", header: t("productMgmt.receive.col.jobOrderId"), size: 130,
+        meta: { filterType: "text" as const },
+        cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+      },
+      {
+        accessorKey: "status", header: t("common.status"), size: 80,
+        cell: ({ getValue }) => {
+          const s = getValue() as string;
+          return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
+        },
+      },
+    ],
+    [t],
+  );
 
   const tabs = [
     { key: "WIP" as const, label: t("productMgmt.receive.tabWip") },
@@ -204,96 +171,99 @@ export default function ProductReceivePage() {
           </h1>
           <p className="text-text-muted mt-1">{t("productMgmt.receive.subtitle")}</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" />{t("productMgmt.receive.registerReceive")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+          <Button onClick={() => setIsModalOpen(true)}>
+            <ClipboardPlus className="w-4 h-4 mr-1" />
+            {t("productMgmt.receive.individualReceive")}
+          </Button>
+        </div>
       </div>
 
       {/* StatCards */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t("productMgmt.receive.stats.todayCount")} value={stats.todayCount} icon={Hash} color="blue" />
-        <StatCard label={t("productMgmt.receive.stats.todayQty")} value={stats.todayQty} icon={Package} color="green" />
-        <StatCard label={t("productMgmt.receive.stats.wipCount")} value={stats.wipCount} icon={PackageCheck} color="yellow" />
-        <StatCard label={t("productMgmt.receive.stats.fgCount")} value={stats.fgCount} icon={PackageCheck} color="purple" />
+        <StatCard
+          label={t("productMgmt.receive.stats.todayCount")}
+          value={stats.todayCount}
+          icon={Hash}
+          color="blue"
+        />
+        <StatCard
+          label={t("productMgmt.receive.stats.todayQty")}
+          value={stats.todayQty}
+          icon={Package}
+          color="green"
+        />
+        <StatCard
+          label={t("productMgmt.receive.stats.wipCount")}
+          value={stats.wipCount}
+          icon={PackageCheck}
+          color="yellow"
+        />
+        <StatCard
+          label={t("productMgmt.receive.stats.fgCount")}
+          value={stats.fgCount}
+          icon={PackageCheck}
+          color="purple"
+        />
       </div>
+
+      {/* 박스 스캔 입고 */}
+      <BoxScanCard onSuccess={fetchData} />
 
       {/* 탭 */}
       <div className="flex gap-1 border-b border-border">
         {tabs.map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.key
                 ? "border-primary text-primary"
                 : "border-transparent text-text-muted hover:text-text hover:border-border"
-            }`}>
+            }`}
+          >
             {tab.label}
           </button>
         ))}
       </div>
 
       {/* DataGrid */}
-      <Card><CardContent>
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport
-          exportFileName={t("productMgmt.receive.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("common.search")} value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
+      <Card>
+        <CardContent>
+          <DataGrid
+            data={data}
+            columns={columns}
+            isLoading={loading}
+            enableColumnFilter
+            enableExport
+            exportFileName={t("productMgmt.receive.title")}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t("common.search")}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
-            </div>
-          } />
-      </CardContent></Card>
+            }
+          />
+        </CardContent>
+      </Card>
 
-      {/* 입고등록 모달 */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
-        title={t("productMgmt.receive.modal.title")} size="lg">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text mb-1">{t("productMgmt.receive.modal.partType")}</label>
-              <div className="flex gap-2">
-                {tabs.map((tab) => (
-                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 px-3 py-2 text-sm rounded-md border transition-colors ${
-                      activeTab === tab.key
-                        ? "bg-primary text-white border-primary"
-                        : "bg-surface border-border text-text hover:bg-muted"
-                    }`}>
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Select label={t("productMgmt.receive.modal.partId")} options={partOptions}
-              value={form.partId} onChange={(v) => setForm({ ...form, partId: v })} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Select label={t("productMgmt.receive.modal.warehouseId")} options={warehouseOptions}
-              value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} />
-            <Input label={t("productMgmt.receive.modal.qty")} type="number" min={1}
-              value={String(form.qty)} onChange={(e) => setForm({ ...form, qty: Number(e.target.value) })} fullWidth />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label={t("productMgmt.receive.modal.jobOrderId")}
-              value={form.jobOrderId} onChange={(e) => setForm({ ...form, jobOrderId: e.target.value })} fullWidth />
-            <Input label={t("productMgmt.receive.modal.processCode")}
-              value={form.processCode} onChange={(e) => setForm({ ...form, processCode: e.target.value })} fullWidth />
-          </div>
-          <Input label={t("productMgmt.receive.modal.remark")}
-            value={form.remark} onChange={(e) => setForm({ ...form, remark: e.target.value })} fullWidth />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleSubmit} disabled={saving || !form.partId || !form.warehouseId}>
-              {saving ? t("common.saving") : t("productMgmt.receive.modal.confirm")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {/* 개별입고 모달 */}
+      <ReceiveModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchData}
+        defaultPartType={activeTab}
+      />
     </div>
   );
 }

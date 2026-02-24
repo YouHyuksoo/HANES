@@ -1,0 +1,25 @@
+-- 출고계정(Issue Account) ComCode seed 데이터
+-- 기존 ISSUE_TYPE 값: PROD, SUBCON, SAMPLE, ADJ → 새 코드값으로 전환
+-- COM_CODES 단일 테이블 (COM_CODE_GROUPS 없음)
+-- 컬럼: COMPANY(NOT NULL), PLANT_CD(NOT NULL), USE_YN(Y/N), ATTR1(색상)
+-- JSHANES 사이트 기준: COMPANY='40', PLANT_CD='1000'
+
+MERGE INTO "COM_CODES" t
+USING (
+  SELECT 'ISSUE_TYPE' AS "GROUP_CODE", 'PRODUCTION'   AS "DETAIL_CODE", '양산'     AS "CODE_NAME", 1  AS "SORT_ORDER", 'blue'    AS "ATTR1" FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'DEFECT',       '불량',       2,  'red'     FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'SAMPLE',       '샘플',       3,  'purple'  FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'DESIGN_START', '설계시작',   4,  'cyan'    FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'ADJUSTMENT',   '재고조정',   5,  'yellow'  FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'LOSS',         '로스',       6,  'orange'  FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'SUBCONTRACT',  '외주',       7,  'green'   FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'SCRAP',        '폐기',       8,  'red'     FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'RETURN',       '반품',       9,  'gray'    FROM DUAL UNION ALL
+  SELECT 'ISSUE_TYPE', 'ETC',          '기타',       10, 'default' FROM DUAL
+) s ON (t."COMPANY" = '40' AND t."PLANT_CD" = '1000' AND t."GROUP_CODE" = s."GROUP_CODE" AND t."DETAIL_CODE" = s."DETAIL_CODE")
+WHEN NOT MATCHED THEN INSERT (
+  "ID", "COMPANY", "PLANT_CD", "GROUP_CODE", "DETAIL_CODE", "CODE_NAME", "SORT_ORDER", "USE_YN", "ATTR1", "CREATED_AT", "UPDATED_AT"
+) VALUES (
+  SYS_GUID(), '40', '1000', s."GROUP_CODE", s."DETAIL_CODE", s."CODE_NAME", s."SORT_ORDER", 'Y', s."ATTR1", SYSDATE, SYSDATE
+);
+COMMIT;

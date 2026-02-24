@@ -16,6 +16,8 @@ import { Search, RefreshCw, XCircle } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Card, CardContent, Button, Input, Select, Modal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import ComCodeBadge from '@/components/ui/ComCodeBadge';
+import { useComCodeOptions } from '@/hooks/useComCode';
 import api from '@/services/api';
 
 /** 출고 이력 레코드 타입 */
@@ -43,7 +45,9 @@ export default function IssueHistoryTab() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [issueTypeFilter, setIssueTypeFilter] = useState('');
   const [dateFrom, setDateFrom] = useState(getToday);
+  const issueTypeOptions = useComCodeOptions('ISSUE_TYPE');
   const [dateTo, setDateTo] = useState(getToday);
 
   /** 취소 모달 상태 */
@@ -63,6 +67,7 @@ export default function IssueHistoryTab() {
     try {
       const params: Record<string, string> = { limit: '200' };
       if (statusFilter) params.status = statusFilter;
+      if (issueTypeFilter) params.issueType = issueTypeFilter;
       if (dateFrom) params.issueDateFrom = dateFrom;
       if (dateTo) params.issueDateTo = dateTo;
       const res = await api.get('/material/issues', { params });
@@ -82,7 +87,7 @@ export default function IssueHistoryTab() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, dateFrom, dateTo]);
+  }, [searchText, statusFilter, issueTypeFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
@@ -138,17 +143,10 @@ export default function IssueHistoryTab() {
     },
     {
       accessorKey: 'issueType',
-      header: t('common.type'),
-      size: 80,
+      header: t('material.issueAccount'),
+      size: 100,
       meta: { filterType: 'multi' as const },
-      cell: ({ getValue }) => {
-        const type = getValue() as string;
-        return (
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-            {type}
-          </span>
-        );
-      },
+      cell: ({ getValue }) => <ComCodeBadge groupCode="ISSUE_TYPE" code={getValue() as string} />,
     },
     { accessorKey: 'jobOrderNo', header: t('material.col.workOrder'), size: 160, meta: { filterType: 'text' as const } },
     {
@@ -238,6 +236,14 @@ export default function IssueHistoryTab() {
                     options={statusOptions}
                     value={statusFilter}
                     onChange={setStatusFilter}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Select
+                    options={[{ value: '', label: t('common.all') }, ...issueTypeOptions]}
+                    value={issueTypeFilter}
+                    onChange={setIssueTypeFilter}
                     fullWidth
                   />
                 </div>

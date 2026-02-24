@@ -12,7 +12,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, In, Between, DataSource } from 'typeorm';
+import { Repository, In, Between, DataSource } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';

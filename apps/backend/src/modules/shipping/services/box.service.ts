@@ -118,7 +118,22 @@ export class BoxService {
       throw new NotFoundException(`박스를 찾을 수 없습니다: ${boxNo}`);
     }
 
-    return box;
+    // 품목 정보 조인하여 반환
+    const part = await this.partRepository.findOne({
+      where: { id: box.partId },
+    });
+
+    return {
+      ...box,
+      part: part
+        ? {
+            partCode: part.partCode,
+            partName: part.partName,
+            partType: part.partType,
+            unit: part.unit,
+          }
+        : null,
+    };
   }
 
   /**

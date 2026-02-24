@@ -22,6 +22,7 @@ import { Card, CardContent, Button, Input, Select, StatCard, Modal, ConfirmModal
 import DataGrid from '@/components/data-grid/DataGrid';
 import { IssueRequestStatusBadge } from '@/components/material';
 import IssueFromRequestModal from '@/components/material/IssueFromRequestModal';
+import ComCodeBadge from '@/components/ui/ComCodeBadge';
 import { useIssueRequests } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestRecord } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestStatus } from '@/components/material';
@@ -105,6 +106,13 @@ export default function IssueRequestTab() {
       cell: ({ getValue }) => (
         <span className="font-medium">{(getValue() as number)?.toLocaleString()}</span>
       ),
+    },
+    {
+      accessorKey: 'issueType',
+      header: t('material.issueAccount'),
+      size: 100,
+      meta: { filterType: 'multi' as const },
+      cell: ({ getValue }) => getValue() ? <ComCodeBadge groupCode="ISSUE_TYPE" code={getValue() as string} /> : <span className="text-text-muted">-</span>,
     },
     {
       accessorKey: 'status',

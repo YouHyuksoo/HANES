@@ -128,9 +128,10 @@ export type IqcStatusValue = typeof IQC_STATUS_VALUES[number];
 export const MAT_LOT_STATUS_VALUES = ['NORMAL', 'HOLD', 'DEPLETED'] as const;
 export type MatLotStatusValue = typeof MAT_LOT_STATUS_VALUES[number];
 
-// ===== 출고 유형 =====
-export const ISSUE_TYPE_VALUES = ['PROD', 'SUBCON', 'SAMPLE', 'ADJ'] as const;
-export type IssueTypeValue = typeof ISSUE_TYPE_VALUES[number];
+// ===== 출고 유형 (ComCode ISSUE_TYPE 그룹으로 이관됨) =====
+// @deprecated ComCode 'ISSUE_TYPE' 그룹 사용. 백엔드 DTO 검증에서 @IsIn 제거됨.
+// export const ISSUE_TYPE_VALUES = ['PROD', 'SUBCON', 'SAMPLE', 'ADJ'] as const;
+// export type IssueTypeValue = typeof ISSUE_TYPE_VALUES[number];
 
 // ===== 생산실적 상태 =====
 export const PROD_RESULT_STATUS_VALUES = ['RUNNING', 'DONE', 'CANCELED'] as const;

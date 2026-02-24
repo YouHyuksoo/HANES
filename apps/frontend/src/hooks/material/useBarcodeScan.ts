@@ -44,6 +44,7 @@ export interface ScanHistoryItem {
  */
 export function useBarcodeScan() {
   const [scanInput, setScanInput] = useState('');
+  const [issueType, setIssueType] = useState<string>('PRODUCTION');
   const [scannedLot, setScannedLot] = useState<ScannedLot | null>(null);
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -75,7 +76,7 @@ export function useBarcodeScan() {
 
     setError(null);
     try {
-      const res = await api.post('/material/issues/scan', { lotNo: scannedLot.lotNo });
+      const res = await api.post('/material/issues/scan', { lotNo: scannedLot.lotNo, issueType });
       const issueData = res.data?.data ?? res.data;
 
       // 이력 추가 (최신순)
@@ -98,7 +99,7 @@ export function useBarcodeScan() {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setError(axiosErr.response?.data?.message || '출고 처리에 실패했습니다.');
     }
-  }, [scannedLot]);
+  }, [scannedLot, issueType]);
 
   // 스캔 결과 취소
   const handleCancel = useCallback(() => {
@@ -110,6 +111,8 @@ export function useBarcodeScan() {
   return {
     scanInput,
     setScanInput,
+    issueType,
+    setIssueType,
     scannedLot,
     scanHistory,
     isScanning,
