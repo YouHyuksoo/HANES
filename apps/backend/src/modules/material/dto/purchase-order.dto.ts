@@ -17,9 +17,9 @@ import { Type } from 'class-transformer';
 
 /** PO 품목 DTO */
 export class CreatePurchaseOrderItemDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '발주 수량' })
   @IsInt()

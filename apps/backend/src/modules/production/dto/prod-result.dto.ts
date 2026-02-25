@@ -8,7 +8,7 @@
  * 3. **QueryDto**: 목록 조회 시 필터링/페이지네이션 옵션
  *
  * 실제 DB 스키마 (prod_results 테이블):
- * - jobOrderId로 작업지시와 연결
+ * - orderNo로 작업지시와 연결
  * - status: RUNNING, DONE, CANCELED
  * - cycleTime: 사이클 타임 (초)
  */
@@ -36,12 +36,12 @@ export type ProdResultStatus = typeof PROD_RESULT_STATUS_VALUES[number];
 export class CreateProdResultDto {
   @ApiProperty({ description: '작업지시 ID', example: 'clxxx...' })
   @IsString()
-  jobOrderId: string;
+  orderNo: string;
 
   @ApiPropertyOptional({ description: '설비 ID', example: 'clxxx...' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: '작업자 ID', example: 'clxxx...' })
   @IsOptional()
@@ -131,12 +131,12 @@ export class ProdResultQueryDto {
   @ApiPropertyOptional({ description: '작업지시 ID 필터' })
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @ApiPropertyOptional({ description: '설비 ID 필터' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: '작업자 ID 필터' })
   @IsOptional()
@@ -178,7 +178,7 @@ export class ProdResultQueryDto {
  */
 export class ProdResultSummaryDto {
   @ApiProperty({ description: '작업지시 ID' })
-  jobOrderId: string;
+  orderNo: string;
 
   @ApiProperty({ description: '총 양품 수량' })
   totalGoodQty: number;

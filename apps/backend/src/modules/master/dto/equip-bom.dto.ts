@@ -29,12 +29,12 @@ export class CreateEquipBomItemDto {
   @ApiProperty({ description: '품목 코드', example: 'PART-001', maxLength: 50 })
   @IsString()
   @MaxLength(50)
-  itemCode: string;
+  bomItemCode: string;
 
   @ApiProperty({ description: '품목명', example: '커팅 블레이드', maxLength: 200 })
   @IsString()
   @MaxLength(200)
-  itemName: string;
+  bomItemName: string;
 
   @ApiProperty({
     description: '품목 유형',
@@ -139,9 +139,9 @@ export class EquipBomItemQueryDto {
 // ========================================
 
 export class CreateEquipBomRelDto {
-  @ApiProperty({ description: '설비 ID', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @ApiProperty({ description: '설비 코드', example: 'EQ-001' })
   @IsString()
-  equipId: string;
+  equipCode: string;
 
   @ApiProperty({ description: 'BOM 품목 ID', example: '550e8400-e29b-41d4-a716-446655440001' })
   @IsString()
@@ -190,10 +190,10 @@ export class EquipBomRelQueryDto {
   @Type(() => Number)
   limit?: number = 20;
 
-  @ApiPropertyOptional({ description: '설비 ID' })
+  @ApiPropertyOptional({ description: '설비 코드' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: 'BOM 품목 ID' })
   @IsOptional()

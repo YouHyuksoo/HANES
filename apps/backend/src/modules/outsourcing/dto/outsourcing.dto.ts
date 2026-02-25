@@ -129,12 +129,12 @@ export class CreateSubconOrderDto {
 
   @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partCode: string;
+  itemCode: string;
 
   @ApiPropertyOptional({ description: '품목명' })
   @IsOptional()
   @IsString()
-  partName?: string;
+  itemName?: string;
 
   @ApiProperty({ description: '발주 수량' })
   @IsInt()

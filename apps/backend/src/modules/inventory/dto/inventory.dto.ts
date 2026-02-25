@@ -76,10 +76,10 @@ export class CreateLotDto {
   lotNo: string;
 
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @IsString()
-  partType: string; // RAW, WIP, FG
+  itemType: string; // RAW, WIP, FG
 
   @IsNumber()
   @Min(0)
@@ -113,7 +113,7 @@ export class CreateLotDto {
 
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @IsOptional()
   @IsString()
@@ -136,7 +136,7 @@ export class CreateTransactionDto {
   toWarehouseId?: string;
 
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @IsOptional()
   @IsString()
@@ -172,7 +172,7 @@ export class ReceiveStockDto {
   warehouseId: string;
 
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @IsOptional()
   @IsString()
@@ -212,7 +212,7 @@ export class IssueStockDto {
   warehouseId: string;
 
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @IsOptional()
   @IsString()
@@ -255,7 +255,7 @@ export class TransferStockDto {
   toWarehouseId: string;
 
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @IsOptional()
   @IsString()
@@ -310,11 +310,11 @@ export class StockQueryDto {
 
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @IsOptional()
   @IsString()
-  partType?: string;
+  itemType?: string;
 
   @IsOptional()
   @IsString()
@@ -331,7 +331,7 @@ export class TransactionQueryDto {
 
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @IsOptional()
   @IsString()

@@ -160,7 +160,7 @@ export class WipStockQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(['WIP', 'FG'])
-  partType?: string;
+  itemType?: string;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드, 품목명)' })
   @IsOptional()

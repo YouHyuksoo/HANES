@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **CreateEquipInspectItemDto**: 설비별 점검항목 생성 (유형, 주기)
- * 2. **EquipInspectItemQueryDto**: equipId, inspectType 필터 지원
+ * 2. **EquipInspectItemQueryDto**: equipCode, inspectType 필터 지원
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -14,7 +14,7 @@ import { Type } from 'class-transformer';
 export class CreateEquipInspectItemDto {
   @ApiProperty({ description: '설비 ID' })
   @IsString()
-  equipId: string;
+  equipCode: string;
 
   @ApiProperty({ description: '점검 유형', enum: ['DAILY', 'PERIODIC'] })
   @IsString()
@@ -72,7 +72,7 @@ export class EquipInspectItemQueryDto {
   @ApiPropertyOptional({ description: '설비 ID 필터' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: '점검 유형 필터' })
   @IsOptional()

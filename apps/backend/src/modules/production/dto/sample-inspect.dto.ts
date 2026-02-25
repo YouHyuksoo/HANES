@@ -59,7 +59,7 @@ export class SampleMeasurementDto {
 export class CreateSampleInspectDto {
   @ApiProperty({ description: '작업지시 ID' })
   @IsString()
-  jobOrderId: string;
+  orderNo: string;
 
   @ApiProperty({ description: '검사일', example: '2026-02-21' })
   @IsDateString()

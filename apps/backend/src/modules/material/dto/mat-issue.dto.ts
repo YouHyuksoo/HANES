@@ -24,10 +24,10 @@ export class IssueItemDto {
 }
 
 export class CreateMatIssueDto {
-  @ApiPropertyOptional({ description: '작업지시 ID' })
+  @ApiPropertyOptional({ description: '작업지시 번호' })
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @ApiPropertyOptional({ description: '생산실적 ID (자재 투입 연결)' })
   @IsOptional()
@@ -78,10 +78,10 @@ export class MatIssueQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '작업지시 ID' })
+  @ApiPropertyOptional({ description: '작업지시 번호' })
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @ApiPropertyOptional({ description: 'LOT ID' })
   @IsOptional()

@@ -52,8 +52,8 @@ export class LotMergeQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '품목 ID 필터' })
+  @ApiPropertyOptional({ description: '품목 코드 필터' })
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 }

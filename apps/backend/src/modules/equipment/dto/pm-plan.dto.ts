@@ -84,7 +84,7 @@ export class PmPlanItemDto {
 export class CreatePmPlanDto {
   @ApiProperty({ description: '설비 ID' })
   @IsString()
-  equipId: string;
+  equipCode: string;
 
   @ApiProperty({ description: '계획 코드' })
   @IsString()
@@ -165,7 +165,7 @@ export class PmPlanQueryDto {
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: 'PM 유형', enum: PM_TYPE })
   @IsOptional()
@@ -198,7 +198,7 @@ export class CreatePmWorkOrderDto {
 
   @ApiProperty({ description: '설비 ID' })
   @IsString()
-  equipId: string;
+  equipCode: string;
 
   @ApiPropertyOptional({ description: 'WO 유형', enum: WO_TYPE, default: 'PLANNED' })
   @IsOptional()
@@ -365,7 +365,7 @@ export class PmWorkOrderQueryDto {
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: '상태' })
   @IsOptional()

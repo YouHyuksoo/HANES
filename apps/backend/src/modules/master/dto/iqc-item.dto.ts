@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **CreateIqcItemDto**: 품목별 IQC 검사항목 생성 (LSL/USL 규격)
- * 2. **IqcItemQueryDto**: partId 기반 필터링 지원
+ * 2. **IqcItemQueryDto**: itemCode 기반 필터링 지원
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -12,9 +12,9 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn, IsNumber, IsBoo
 import { Type } from 'class-transformer';
 
 export class CreateIqcItemDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '검사 순서', example: 1 })
   @Type(() => Number)
@@ -88,10 +88,10 @@ export class IqcItemQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '품목 ID 필터' })
+  @ApiPropertyOptional({ description: '품목 코드 필터' })
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

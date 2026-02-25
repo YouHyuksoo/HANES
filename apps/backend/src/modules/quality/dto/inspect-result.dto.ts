@@ -265,8 +265,8 @@ export class BarcodeInspectResponseDto {
 
   @ApiProperty({ description: '제품 정보', required: false })
   productInfo?: {
-    partCode?: string;
-    partName?: string;
+    itemCode?: string;
+    itemName?: string;
     orderNo?: string;
   };
 }

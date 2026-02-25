@@ -14,9 +14,9 @@ export class CreateMatLotDto {
   @MaxLength(50)
   lotNo: string;
 
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '초기 수량', example: 1000 })
   @IsInt()
@@ -97,7 +97,7 @@ export class MatLotQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

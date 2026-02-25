@@ -28,7 +28,7 @@ import { Type } from 'class-transformer';
 export class CreateOqcRequestDto {
   @ApiProperty({ description: '품목 ID' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '박스 ID 배열', type: [String] })
   @IsArray()

@@ -21,9 +21,9 @@ export class ArrivalItemDto {
   @IsString()
   poItemId: string;
 
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '입하 수량' })
   @IsInt()
@@ -84,9 +84,9 @@ export class CreatePoArrivalDto {
 
 /** 수동 입하 등록 DTO */
 export class CreateManualArrivalDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '입고 창고 ID' })
   @IsString()

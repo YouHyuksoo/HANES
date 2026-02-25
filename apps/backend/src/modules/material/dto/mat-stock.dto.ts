@@ -28,10 +28,10 @@ export class StockQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '품목 ID' })
+  @ApiPropertyOptional({ description: '품목 코드' })
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @ApiPropertyOptional({ description: '창고 코드' })
   @IsOptional()
@@ -55,9 +55,9 @@ export class StockQueryDto {
 }
 
 export class StockAdjustDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '창고 코드' })
   @IsString()
@@ -84,9 +84,9 @@ export class StockAdjustDto {
 }
 
 export class StockTransferDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '출고 창고 코드' })
   @IsString()

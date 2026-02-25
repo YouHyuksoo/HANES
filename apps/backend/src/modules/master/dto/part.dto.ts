@@ -12,17 +12,17 @@ export class CreatePartDto {
   @ApiProperty({ description: '품목 코드', example: 'P-001' })
   @IsString()
   @MaxLength(50)
-  partCode: string;
+  itemCode: string;
 
   @ApiProperty({ description: '품목명', example: '전선 A타입' })
   @IsString()
   @MaxLength(200)
-  partName: string;
+  itemName: string;
 
   @ApiProperty({ description: '품목 유형', enum: PART_TYPE_VALUES })
   @IsString()
   @IsIn([...PART_TYPE_VALUES])
-  partType: string;
+  itemType: string;
 
   @ApiPropertyOptional({ description: '품번 (Part Number)', example: 'WIRE-AWG18-R' })
   @IsOptional()
@@ -194,7 +194,7 @@ export class PartQueryDto {
   @IsOptional()
   @IsString()
   @IsIn([...PART_TYPE_VALUES])
-  partType?: string;
+  itemType?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

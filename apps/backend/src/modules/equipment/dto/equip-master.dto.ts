@@ -166,7 +166,7 @@ export class AssignJobOrderDto {
   @ApiProperty({ description: '작업지시 ID (null이면 해제)', example: 'job-order-uuid' })
   @IsOptional()
   @IsString()
-  jobOrderId?: string | null;
+  orderNo?: string | null;
 }
 
 /**

@@ -12,9 +12,9 @@ export class CreateMiscReceiptDto {
   @IsString()
   warehouseId: string;
 
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiPropertyOptional({ description: 'LOT ID' })
   @IsOptional()

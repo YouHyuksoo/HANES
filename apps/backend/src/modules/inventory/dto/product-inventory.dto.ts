@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * - 원자재 수불은 inventory.dto.ts의 ReceiveStockDto/IssueStockDto 사용
  * - 제품 수불은 이 파일의 ProductReceiveStockDto/ProductIssueStockDto 사용
- * - 차이점: jobOrderId(작업지시), processCode(공정코드), partType 추가
+ * - 차이점: orderNo(작업지시), processCode(공정코드), itemType 추가
  */
 import { IsString, IsOptional, IsNumber, IsIn, IsDate, Min } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -16,10 +16,11 @@ export class ProductReceiveStockDto {
   warehouseId: string;
 
   @IsString()
-  partId: string;
+  itemCode: string;
 
+  @IsOptional()
   @IsIn(['WIP', 'FG'])
-  partType: string;
+  itemType?: string;
 
   @IsOptional()
   @IsString()
@@ -29,12 +30,13 @@ export class ProductReceiveStockDto {
   @Min(1)
   qty: number;
 
+  @IsOptional()
   @IsString()
-  transType: string;
+  transType?: string;
 
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @IsOptional()
   @IsString()
@@ -67,10 +69,11 @@ export class ProductIssueStockDto {
   warehouseId: string;
 
   @IsString()
-  partId: string;
+  itemCode: string;
 
+  @IsOptional()
   @IsIn(['WIP', 'FG'])
-  partType: string;
+  itemType?: string;
 
   @IsOptional()
   @IsString()
@@ -80,8 +83,9 @@ export class ProductIssueStockDto {
   @Min(1)
   qty: number;
 
+  @IsOptional()
   @IsString()
-  transType: string;
+  transType?: string;
 
   @IsOptional()
   @IsString()
@@ -89,7 +93,7 @@ export class ProductIssueStockDto {
 
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @IsOptional()
   @IsString()
@@ -109,6 +113,10 @@ export class ProductIssueStockDto {
 
   @IsOptional()
   @IsString()
+  issueType?: string;
+
+  @IsOptional()
+  @IsString()
   remark?: string;
 }
 
@@ -120,11 +128,11 @@ export class ProductTransactionQueryDto {
 
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @IsOptional()
   @IsString()
-  partType?: string;
+  itemType?: string;
 
   @IsOptional()
   @IsString()
@@ -173,11 +181,11 @@ export class ProductStockQueryDto {
 
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @IsOptional()
   @IsString()
-  partType?: string;
+  itemType?: string;
 
   @IsOptional()
   @IsString()

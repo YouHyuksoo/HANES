@@ -26,12 +26,12 @@ export class CreateIqcItemPoolDto {
   @ApiProperty({ description: '항목코드', example: 'IQC-001' })
   @IsString()
   @MaxLength(20)
-  itemCode: string;
+  inspItemCode: string;
 
   @ApiProperty({ description: '항목명', example: '외관검사(전선)' })
   @IsString()
   @MaxLength(100)
-  itemName: string;
+  inspItemName: string;
 
   @ApiProperty({ description: '판정방법 (VISUAL/MEASURE)', example: 'VISUAL' })
   @IsString()

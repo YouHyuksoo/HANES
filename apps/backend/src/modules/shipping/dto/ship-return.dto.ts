@@ -34,7 +34,7 @@ const DISPOSAL_TYPE = ['RESTOCK', 'SCRAP', 'REPAIR'] as const;
 export class ShipReturnItemDto {
   @ApiProperty({ description: '품목 ID' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '반품 수량', minimum: 1 })
   @Type(() => Number)

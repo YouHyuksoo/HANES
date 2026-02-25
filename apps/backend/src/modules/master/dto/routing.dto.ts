@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **CreateRoutingDto**: 품목별 공정순서 생성
- * 2. **RoutingQueryDto**: partId 기반 필터링 지원
+ * 2. **RoutingQueryDto**: itemCode 기반 필터링 지원
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -12,9 +12,9 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn, IsNumber } from
 import { Type } from 'class-transformer';
 
 export class CreateRoutingDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '공정 순서', example: 1 })
   @Type(() => Number)
@@ -117,10 +117,10 @@ export class RoutingQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '품목 ID 필터' })
+  @ApiPropertyOptional({ description: '품목 코드 필터' })
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

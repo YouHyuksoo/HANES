@@ -32,7 +32,7 @@ const SHIP_ORDER_STATUS = ['DRAFT', 'CONFIRMED', 'SHIPPING', 'SHIPPED'] as const
 export class ShipOrderItemDto {
   @ApiProperty({ description: '품목 ID' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '지시 수량', minimum: 1 })
   @Type(() => Number)

@@ -32,7 +32,7 @@ const OVERALL_RESULT = ['PASS', 'FAIL', 'CONDITIONAL'] as const;
 export class CreateEquipInspectDto {
   @ApiProperty({ description: '설비 ID' })
   @IsString()
-  equipId: string;
+  equipCode: string;
 
   @ApiProperty({ description: '점검 유형', enum: INSPECT_TYPE })
   @IsString()
@@ -122,7 +122,7 @@ export class EquipInspectQueryDto {
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: '점검 유형', enum: INSPECT_TYPE })
   @IsOptional()

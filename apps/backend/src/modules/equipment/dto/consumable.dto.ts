@@ -261,7 +261,7 @@ export class RegisterReplacementDto {
 export class MountToEquipDto {
   @ApiProperty({ description: '설비 ID', example: 'equip-001' })
   @IsString()
-  equipId: string;
+  equipCode: string;
 
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()

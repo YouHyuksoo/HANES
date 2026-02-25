@@ -65,5 +65,5 @@ export class ProductHoldQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(['WIP', 'FG'])
-  partType?: string;
+  itemType?: string;
 }

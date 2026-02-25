@@ -12,9 +12,9 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-va
 import { Type } from 'class-transformer';
 
 export class CreateIqcPartLinkDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiPropertyOptional({ description: '거래처 ID (null이면 기본 검사그룹)' })
   @IsOptional()

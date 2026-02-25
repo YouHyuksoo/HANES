@@ -135,7 +135,7 @@ export class CreateCustomsLotDto {
 
   @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partCode: string;
+  itemCode: string;
 
   @ApiProperty({ description: '수량' })
   @IsInt()
@@ -167,7 +167,7 @@ export class CreateUsageReportDto {
   @ApiPropertyOptional({ description: '작업지시 ID' })
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @ApiProperty({ description: '사용 수량' })
   @IsInt()

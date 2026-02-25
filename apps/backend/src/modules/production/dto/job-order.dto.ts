@@ -40,7 +40,7 @@ export class CreateJobOrderDto {
 
   @ApiProperty({ description: '품목 ID', example: 'clxxx...' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiPropertyOptional({ description: '라인 코드', example: 'LINE-01', maxLength: 50 })
   @IsOptional()
@@ -159,7 +159,7 @@ export class JobOrderQueryDto {
   @ApiPropertyOptional({ description: '품목 ID 필터' })
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @ApiPropertyOptional({ description: '라인 코드 필터' })
   @IsOptional()

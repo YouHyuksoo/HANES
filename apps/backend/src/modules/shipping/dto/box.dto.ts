@@ -42,7 +42,7 @@ export class CreateBoxDto {
 
   @ApiProperty({ description: '품목 ID', example: 'clxxx...' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '수량', example: 100, minimum: 0 })
   @IsInt()
@@ -102,7 +102,7 @@ export class BoxQueryDto {
   @ApiPropertyOptional({ description: '품목 ID 필터' })
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @ApiPropertyOptional({ description: '팔레트 ID 필터' })
   @IsOptional()

@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **CreateWorkInstructionDto**: 품목/공정별 작업지침 생성
- * 2. **WorkInstructionQueryDto**: partId, processCode 필터 지원
+ * 2. **WorkInstructionQueryDto**: itemCode, processCode 필터 지원
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -12,9 +12,9 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-va
 import { Type } from 'class-transformer';
 
 export class CreateWorkInstructionDto {
-  @ApiProperty({ description: '품목 ID' })
+  @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiPropertyOptional({ description: '공정 코드' })
   @IsOptional()
@@ -69,10 +69,10 @@ export class WorkInstructionQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '품목 ID 필터' })
+  @ApiPropertyOptional({ description: '품목 코드 필터' })
   @IsOptional()
   @IsString()
-  partId?: string;
+  itemCode?: string;
 
   @ApiPropertyOptional({ description: '공정 코드 필터' })
   @IsOptional()

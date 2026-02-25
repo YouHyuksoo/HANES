@@ -108,12 +108,12 @@ export class JobOrderInboundDto {
 
   @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partCode: string;
+  itemCode: string;
 
   @ApiPropertyOptional({ description: '품목명' })
   @IsOptional()
   @IsString()
-  partName?: string;
+  itemName?: string;
 
   @ApiProperty({ description: '계획 수량' })
   @IsInt()
@@ -145,11 +145,11 @@ export class JobOrderInboundDto {
 export class BomSyncDto {
   @ApiProperty({ description: '상위 품목 코드' })
   @IsString()
-  parentPartCode: string;
+  parentItemCode: string;
 
   @ApiProperty({ description: '하위 품목 코드' })
   @IsString()
-  childPartCode: string;
+  childItemCode: string;
 
   @ApiProperty({ description: '소요량' })
   @Type(() => Number)
@@ -173,15 +173,15 @@ export class BomSyncDto {
 export class PartSyncDto {
   @ApiProperty({ description: '품목 코드' })
   @IsString()
-  partCode: string;
+  itemCode: string;
 
   @ApiProperty({ description: '품목명' })
   @IsString()
-  partName: string;
+  itemName: string;
 
   @ApiProperty({ description: '품목 유형', enum: ['RAW', 'WIP', 'FG'] })
   @IsString()
-  partType: string;
+  itemType: string;
 
   @ApiPropertyOptional({ description: '규격' })
   @IsOptional()

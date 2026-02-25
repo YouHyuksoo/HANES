@@ -185,7 +185,7 @@ export class CreateConsumableLogDto {
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: '출고사유', enum: ['PRODUCTION', 'REPAIR', 'OTHER'] })
   @IsOptional()
@@ -258,7 +258,7 @@ export class UpdateShotCountDto {
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
   @IsString()
-  equipId?: string;
+  equipCode?: string;
 }
 
 export class ResetShotCountDto {

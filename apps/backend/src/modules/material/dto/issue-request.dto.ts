@@ -27,9 +27,9 @@ import { Type } from 'class-transformer';
 
 /** 출고요청 품목 DTO */
 export class IssueRequestItemDto {
-  @ApiProperty({ description: '품목 ID (PART_MASTERS FK)' })
+  @ApiProperty({ description: '품목 코드 (ITEM_MASTERS FK)' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '요청 수량' })
   @IsInt()
@@ -50,10 +50,10 @@ export class IssueRequestItemDto {
 
 /** 출고요청 생성 DTO */
 export class CreateIssueRequestDto {
-  @ApiPropertyOptional({ description: '작업지시 ID' })
+  @ApiPropertyOptional({ description: '작업지시 번호' })
   @IsOptional()
   @IsString()
-  jobOrderId?: string;
+  orderNo?: string;
 
   @ApiPropertyOptional({ description: '출고 유형 (ComCode ISSUE_TYPE)' })
   @IsOptional()

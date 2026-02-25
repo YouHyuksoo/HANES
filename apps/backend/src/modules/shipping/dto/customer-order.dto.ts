@@ -40,7 +40,7 @@ const CUSTOMER_ORDER_STATUS = [
 export class CustomerOrderItemDto {
   @ApiProperty({ description: '품목 ID' })
   @IsString()
-  partId: string;
+  itemCode: string;
 
   @ApiProperty({ description: '수주 수량', minimum: 1 })
   @Type(() => Number)

@@ -8,13 +8,13 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsDateString, IsNumbe
 import { Type } from 'class-transformer';
 
 export class CreateBomDto {
-  @ApiProperty({ description: '상위 품목 ID' })
+  @ApiProperty({ description: '상위 품목 코드' })
   @IsString()
-  parentPartId: string;
+  parentItemCode: string;
 
-  @ApiProperty({ description: '하위 품목 ID' })
+  @ApiProperty({ description: '하위 품목 코드' })
   @IsString()
-  childPartId: string;
+  childItemCode: string;
 
   @ApiProperty({ description: '단위 소요량', example: 1.5 })
   @IsNumber()
@@ -98,15 +98,15 @@ export class BomQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '상위 품목 ID' })
+  @ApiPropertyOptional({ description: '상위 품목 코드' })
   @IsOptional()
   @IsString()
-  parentPartId?: string;
+  parentItemCode?: string;
 
-  @ApiPropertyOptional({ description: '하위 품목 ID' })
+  @ApiPropertyOptional({ description: '하위 품목 코드' })
   @IsOptional()
   @IsString()
-  childPartId?: string;
+  childItemCode?: string;
 
   @ApiPropertyOptional({ description: '리비전' })
   @IsOptional()
