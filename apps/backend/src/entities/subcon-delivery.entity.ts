@@ -1,23 +1,32 @@
+/**
+ * @file subcon-delivery.entity.ts
+ * @description 외주납품(SubconDelivery) 엔티티 - 외주 가공 납품 정보를 기록한다.
+ *              시퀀스 PK 사용, orderId → orderNo로 SubconOrder 참조.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. ORDER_NO로 SubconOrder(외주발주)를 참조
+ * 3. DELIVERY_NO: 납품번호 (유니크)
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
   Index,
   Unique,
 } from 'typeorm';
 
 @Entity({ name: 'SUBCON_DELIVERIES' })
 @Unique(['deliveryNo'])
-@Index(['orderId'])
+@Index(['orderNo'])
 @Index(['deliveredAt'])
 export class SubconDelivery {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'ORDER_ID', length: 255 })
-  orderId: string;
+  @Column({ name: 'ORDER_NO', length: 50 })
+  orderNo: string;
 
   @Column({ name: 'DELIVERY_NO', length: 255, unique: true })
   deliveryNo: string;

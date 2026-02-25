@@ -1,13 +1,13 @@
 /**
- * @file src/entities/sample-inspect-result.entity.ts
+ * @file sample-inspect-result.entity.ts
  * @description 반제품 샘플검사 결과 엔티티 - 낱개단위 측정값 저장
+ *              시퀀스 PK 사용, jobOrderId → orderNo로 JobOrder 참조.
  *
  * 초보자 가이드:
- * 1. **목적**: 반제품 생산 시 샘플검사 측정값을 낱개(샘플)별로 기록
- * 2. **관계**: JobOrder(작업지시) → SampleInspectResult (1:N)
- * 3. **측정값**: 각 샘플에 대한 측정값, 상/하한치, 자동 합불 판정
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. ORDER_NO로 JobOrder(작업지시)를 참조
+ * 3. 각 샘플에 대한 측정값, 상/하한치, 자동 합불 판정
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -21,18 +21,18 @@ import {
 import { JobOrder } from './job-order.entity';
 
 @Entity({ name: 'SAMPLE_INSPECT_RESULTS' })
-@Index(['jobOrderId'])
+@Index(['orderNo'])
 @Index(['inspectDate'])
 @Index(['passYn'])
 export class SampleInspectResult {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'JOB_ORDER_ID', length: 36 })
-  jobOrderId: string;
+  @Column({ name: 'ORDER_NO', length: 50 })
+  orderNo: string;
 
   @ManyToOne(() => JobOrder)
-  @JoinColumn({ name: 'JOB_ORDER_ID' })
+  @JoinColumn({ name: 'ORDER_NO' })
   jobOrder: JobOrder;
 
   @Column({ name: 'INSPECT_DATE', type: 'date' })

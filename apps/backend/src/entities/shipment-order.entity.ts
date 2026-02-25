@@ -1,22 +1,26 @@
+/**
+ * @file shipment-order.entity.ts
+ * @description 출하지시(ShipmentOrder) 엔티티 - 출하 지시 정보를 관리한다.
+ *              shipOrderNo를 자연키 PK로 사용.
+ *
+ * 초보자 가이드:
+ * 1. SHIP_ORDER_NO가 PK (UUID 대신 자연키)
+ * 2. 상태 흐름: DRAFT → CONFIRMED → SHIPPED → CLOSED
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'SHIPMENT_ORDERS' })
-@Unique(['shipOrderNo'])
 @Index(['status'])
 @Index(['dueDate'])
 export class ShipmentOrder {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'SHIP_ORDER_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'SHIP_ORDER_NO', length: 50 })
   shipOrderNo: string;
 
   @Column({ name: 'CUSTOMER_ID', length: 255, nullable: true })
@@ -54,5 +58,4 @@ export class ShipmentOrder {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

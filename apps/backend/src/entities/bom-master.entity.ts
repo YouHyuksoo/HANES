@@ -1,36 +1,42 @@
+/**
+ * @file bom-master.entity.ts
+ * @description BOM 마스터(BomMaster) 엔티티 - 부모/자식 품목 간 BOM 관계를 정의한다.
+ *              복합 PK: (parentItemCode, childItemCode, revision)
+ *              parentPartId → parentItemCode, childPartId → childItemCode로 변환됨.
+ *
+ * 초보자 가이드:
+ * 1. 복합 PK: PARENT_ITEM_CODE + CHILD_ITEM_CODE + REVISION
+ * 2. UUID id 필드 없음
+ * 3. ItemMaster의 itemCode를 직접 참조
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'BOM_MASTERS' })
-@Unique(['parentPartId', 'childPartId', 'revision'])
-@Index(['parentPartId'])
-@Index(['childPartId'])
+@Index(['parentItemCode'])
+@Index(['childItemCode'])
 @Index(['bomGrp'])
 export class BomMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryColumn({ name: 'PARENT_ITEM_CODE', length: 50 })
+  parentItemCode: string;
 
-  @Column({ name: 'PARENT_PART_ID', length: 36 })
-  parentPartId: string;
+  @PrimaryColumn({ name: 'CHILD_ITEM_CODE', length: 50 })
+  childItemCode: string;
 
-  @Column({ name: 'CHILD_PART_ID', length: 36 })
-  childPartId: string;
+  @PrimaryColumn({ name: 'REVISION', length: 10, default: 'A' })
+  revision: string;
 
   @Column({ name: 'QTY_PER', type: 'decimal', precision: 10, scale: 4 })
   qtyPer: number;
 
   @Column({ name: 'SEQ', type: 'int', default: 0 })
   seq: number;
-
-  @Column({ name: 'REVISION', length: 10, default: 'A' })
-  revision: string;
 
   @Column({ name: 'BOM_GRP', length: 50, nullable: true })
   bomGrp: string | null;
@@ -73,13 +79,4 @@ export class BomMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  // Relations will be added when PartMaster entity is fully integrated
-  // @ManyToOne(() => PartMaster, (part) => part.bomParents)
-  // @JoinColumn({ name: 'PARENT_PART_ID' })
-  // parentPart: PartMaster;
-
-  // @ManyToOne(() => PartMaster, (part) => part.bomChildren)
-  // @JoinColumn({ name: 'CHILD_PART_ID' })
-  // childPart: PartMaster;
 }

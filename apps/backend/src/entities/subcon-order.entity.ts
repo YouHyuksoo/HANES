@@ -1,23 +1,27 @@
+/**
+ * @file subcon-order.entity.ts
+ * @description 외주발주(SubconOrder) 엔티티 - 외주 가공 발주 정보를 관리한다.
+ *              orderNo를 자연키 PK로 사용.
+ *
+ * 초보자 가이드:
+ * 1. ORDER_NO가 PK (UUID 대신 자연키)
+ * 2. 상태 흐름: ORDERED → DELIVERED → RECEIVED → CLOSED
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'SUBCON_ORDERS' })
-@Unique(['orderNo'])
 @Index(['vendorId'])
 @Index(['status'])
 @Index(['orderDate'])
 export class SubconOrder {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'ORDER_NO', length: 255, unique: true })
+  @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
   @Column({ name: 'VENDOR_ID', length: 255 })
@@ -73,5 +77,4 @@ export class SubconOrder {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

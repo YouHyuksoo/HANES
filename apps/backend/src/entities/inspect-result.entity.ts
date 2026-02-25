@@ -1,3 +1,12 @@
+/**
+ * @file inspect-result.entity.ts
+ * @description 검사결과(InspectResult) 엔티티 - 생산실적별 검사 결과를 기록한다.
+ *              시퀀스 PK 사용, prodResultId는 number 타입으로 ProdResult 참조.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. PROD_RESULT_ID(number)로 ProdResult를 참조
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -16,11 +25,11 @@ import { ProdResult } from './prod-result.entity';
 @Index(['serialNo'])
 @Index(['inspectScope'])
 export class InspectResult {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'PROD_RESULT_ID', length: 255 })
-  prodResultId: string;
+  @Column({ name: 'PROD_RESULT_ID', type: 'int' })
+  prodResultId: number;
 
   @ManyToOne(() => ProdResult, (prodResult) => prodResult.inspectResults)
   @JoinColumn({ name: 'PROD_RESULT_ID' })

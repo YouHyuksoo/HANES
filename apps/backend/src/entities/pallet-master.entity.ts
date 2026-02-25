@@ -1,22 +1,27 @@
+/**
+ * @file pallet-master.entity.ts
+ * @description 파레트 마스터(PalletMaster) 엔티티 - 파레트 정보를 관리한다.
+ *              palletNo를 자연키 PK로 사용.
+ *
+ * 초보자 가이드:
+ * 1. PALLET_NO가 PK (UUID 대신 자연키)
+ * 2. 박스 수량, 총 수량, 상태 관리
+ * 3. 상태: OPEN → CLOSED
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'PALLET_MASTERS' })
-@Unique(['palletNo'])
 @Index(['status'])
 @Index(['shipmentId'])
 export class PalletMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'PALLET_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'PALLET_NO', length: 50 })
   palletNo: string;
 
   @Column({ name: 'BOX_COUNT', type: 'int', default: 0 })
@@ -51,5 +56,4 @@ export class PalletMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

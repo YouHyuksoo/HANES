@@ -1,15 +1,15 @@
 /**
- * @file src/entities/iqc-item-pool.entity.ts
- * @description IQC 검사항목 풀(Pool) 엔티티 — 전역 검사항목 정의 마스터
+ * @file iqc-item-pool.entity.ts
+ * @description IQC 검사항목 풀(Pool) 엔티티 - 전역 검사항목 정의 마스터
+ *              시퀀스 PK 사용. 충돌 해결: itemCode → inspItemCode, itemName → inspItemName.
  *
  * 초보자 가이드:
- * 1. IQC 검사항목의 글로벌 정의 테이블 (IQC-001, IQC-002 등)
- * 2. IQC_GROUP_ITEMS에서 ITEM_ID로 참조됨
- * 3. JUDGE_METHOD: VISUAL(육안) / MEASURE(계측)
- * 4. 계측 항목은 LSL/USL/UNIT으로 규격 범위 정의
- * 5. REVISION으로 항목 버전 관리
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. INSP_ITEM_CODE: 검사항목 코드 (IQC-001 등) - 품목코드(itemCode)와 구분
+ * 3. INSP_ITEM_NAME: 검사항목명
+ * 4. JUDGE_METHOD: VISUAL(육안) / MEASURE(계측)
+ * 5. 계측 항목은 LSL/USL/UNIT으로 규격 범위 정의
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -20,16 +20,16 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'IQC_ITEM_POOL' })
-@Index(['itemCode'], { unique: true })
+@Index(['inspItemCode'], { unique: true })
 export class IqcItemPool {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'ITEM_CODE', length: 20 })
-  itemCode: string;
+  @Column({ name: 'INSP_ITEM_CODE', length: 20 })
+  inspItemCode: string;
 
-  @Column({ name: 'ITEM_NAME', length: 100 })
-  itemName: string;
+  @Column({ name: 'INSP_ITEM_NAME', length: 100 })
+  inspItemName: string;
 
   @Column({ name: 'JUDGE_METHOD', length: 20 })
   judgeMethod: string;

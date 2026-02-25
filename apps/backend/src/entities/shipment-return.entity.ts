@@ -1,3 +1,13 @@
+/**
+ * @file shipment-return.entity.ts
+ * @description 출하반품(ShipmentReturn) 엔티티 - 출하 후 반품 정보를 관리한다.
+ *              시퀀스 PK 사용.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. RETURN_NO: 반품번호 (유니크)
+ * 3. 상태 흐름: DRAFT → CONFIRMED → CLOSED
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -13,8 +23,8 @@ import {
 @Index(['shipmentId'])
 @Index(['status'])
 export class ShipmentReturn {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'RETURN_NO', length: 50, unique: true })
   returnNo: string;
@@ -51,5 +61,4 @@ export class ShipmentReturn {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

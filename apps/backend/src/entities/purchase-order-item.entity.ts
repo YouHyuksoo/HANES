@@ -1,3 +1,13 @@
+/**
+ * @file purchase-order-item.entity.ts
+ * @description 구매발주 품목(PurchaseOrderItem) 엔티티 - 발주별 품목 내역을 관리한다.
+ *              시퀀스 PK 사용, poId → poNo, partId → itemCode로 변환됨.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. PO_NO로 PurchaseOrder(발주)를 참조
+ * 3. ITEM_CODE로 ItemMaster(품목)를 참조
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,17 +18,17 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'PURCHASE_ORDER_ITEMS' })
-@Index(['poId'])
-@Index(['partId'])
+@Index(['poNo'])
+@Index(['itemCode'])
 export class PurchaseOrderItem {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'PO_ID', length: 255 })
-  poId: string;
+  @Column({ name: 'PO_NO', length: 50 })
+  poNo: string;
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'ORDER_QTY', type: 'int' })
   orderQty: number;

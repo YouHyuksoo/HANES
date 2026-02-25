@@ -1,3 +1,13 @@
+/**
+ * @file shipment-return-item.entity.ts
+ * @description 출하반품 품목(ShipmentReturnItem) 엔티티 - 반품별 품목 내역을 관리한다.
+ *              시퀀스 PK 사용, returnId → returnId 유지, partId → itemCode로 변환됨.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. RETURN_ID로 ShipmentReturn(반품)을 참조
+ * 3. ITEM_CODE로 ItemMaster(품목)를 참조
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,16 +19,16 @@ import {
 
 @Entity({ name: 'SHIPMENT_RETURN_ITEMS' })
 @Index(['returnId'])
-@Index(['partId'])
+@Index(['itemCode'])
 export class ShipmentReturnItem {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'RETURN_ID', length: 255 })
-  returnId: string;
+  @Column({ name: 'RETURN_ID', type: 'int' })
+  returnId: number;
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'RETURN_QTY', type: 'int' })
   returnQty: number;

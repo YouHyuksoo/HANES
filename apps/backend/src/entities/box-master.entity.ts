@@ -1,27 +1,32 @@
+/**
+ * @file box-master.entity.ts
+ * @description 박스 마스터(BoxMaster) 엔티티 - 포장 박스 정보를 관리한다.
+ *              boxNo를 자연키 PK로 사용, partId → itemCode로 변환됨.
+ *
+ * 초보자 가이드:
+ * 1. BOX_NO가 PK (UUID 대신 자연키)
+ * 2. ITEM_CODE로 ItemMaster(품목)를 참조
+ * 3. 상태: OPEN → CLOSED
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'BOX_MASTERS' })
-@Unique(['boxNo'])
-@Index(['partId'])
-@Index(['palletId'])
+@Index(['itemCode'])
+@Index(['palletNo'])
 @Index(['status'])
 export class BoxMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'BOX_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'BOX_NO', length: 50 })
   boxNo: string;
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;
@@ -29,8 +34,8 @@ export class BoxMaster {
   @Column({ name: 'SERIAL_LIST', type: 'clob', nullable: true })
   serialList: string | null;
 
-  @Column({ name: 'PALLET_ID', length: 255, nullable: true })
-  palletId: string | null;
+  @Column({ name: 'PALLET_NO', length: 50, nullable: true })
+  palletNo: string | null;
 
   @Column({ name: 'STATUS', length: 50, default: 'OPEN' })
   status: string;

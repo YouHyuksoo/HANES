@@ -1,11 +1,20 @@
+/**
+ * @file job-order.entity.ts
+ * @description 작업지시(JobOrder) 엔티티 - 생산 작업지시 정보를 관리한다.
+ *              orderNo를 자연키 PK로 사용하며, partId → itemCode로 변환됨.
+ *
+ * 초보자 가이드:
+ * 1. ORDER_NO가 PK (UUID 대신 자연키)
+ * 2. ITEM_CODE로 ItemMaster(품목)를 참조
+ * 3. PARENT_ORDER_NO로 부모 작업지시를 self-reference
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
   OneToMany,
   ManyToOne,
   JoinColumn,
@@ -14,32 +23,28 @@ import { ProdResult } from './prod-result.entity';
 import { PartMaster } from './part-master.entity';
 
 @Entity({ name: 'JOB_ORDERS' })
-@Unique(['orderNo'])
 @Index(['status'])
 @Index(['planDate'])
 @Index(['lineCode'])
 export class JobOrder {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'ORDER_NO', length: 255, unique: true })
+  @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
-  @Column({ name: 'PARENT_ID', length: 36, nullable: true })
-  parentId: string | null;
+  @Column({ name: 'PARENT_ORDER_NO', length: 50, nullable: true })
+  parentOrderNo: string | null;
 
   @ManyToOne(() => JobOrder, (jo) => jo.children, { nullable: true })
-  @JoinColumn({ name: 'PARENT_ID' })
+  @JoinColumn({ name: 'PARENT_ORDER_NO' })
   parent: JobOrder | null;
 
   @OneToMany(() => JobOrder, (jo) => jo.parent)
   children: JobOrder[];
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @ManyToOne(() => PartMaster, { nullable: true })
-  @JoinColumn({ name: 'PART_ID' })
+  @JoinColumn({ name: 'ITEM_CODE' })
   part: PartMaster | null;
 
   @Column({ name: 'LINE_CODE', length: 255, nullable: true })

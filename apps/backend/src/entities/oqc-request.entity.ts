@@ -1,17 +1,17 @@
 /**
- * @file src/entities/oqc-request.entity.ts
+ * @file oqc-request.entity.ts
  * @description OQC(출하검사) 의뢰 엔티티 - 출하 전 제품 품질 검증 요청
+ *              requestNo를 자연키 PK로 사용, partId → itemCode로 변환됨.
  *
  * 초보자 가이드:
- * 1. **목적**: 출하 전 박스 단위 품질검사 의뢰 관리
- * 2. **상태 흐름**: PENDING(대기) → IN_PROGRESS(검사중) → PASS/FAIL(판정)
- * 3. **관계**: OqcRequest 1:N OqcRequestBox (의뢰에 여러 박스 연결)
- * 4. **details**: 검사 상세 데이터를 JSON(CLOB)으로 저장
+ * 1. REQUEST_NO가 PK (UUID 대신 자연키)
+ * 2. ITEM_CODE로 ItemMaster(품목)를 참조
+ * 3. 상태 흐름: PENDING → IN_PROGRESS → PASS/FAIL
+ * 4. OqcRequest 1:N OqcRequestBox
  */
-
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -22,17 +22,14 @@ import { OqcRequestBox } from './oqc-request-box.entity';
 
 @Entity({ name: 'OQC_REQUESTS' })
 @Index(['status'])
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['requestDate'])
 export class OqcRequest {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'REQUEST_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'REQUEST_NO', length: 50 })
   requestNo: string;
 
-  @Column({ name: 'PART_ID', length: 36 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'CUSTOMER', length: 100, nullable: true })
   customer: string | null;

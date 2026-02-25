@@ -1,23 +1,27 @@
+/**
+ * @file customer-order.entity.ts
+ * @description 고객주문(CustomerOrder) 엔티티 - 고객 수주 정보를 관리한다.
+ *              orderNo를 자연키 PK로 사용.
+ *
+ * 초보자 가이드:
+ * 1. ORDER_NO가 PK (UUID 대신 자연키)
+ * 2. 상태 흐름: RECEIVED → CONFIRMED → SHIPPED → CLOSED
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'CUSTOMER_ORDERS' })
-@Unique(['orderNo'])
 @Index(['status'])
 @Index(['orderDate'])
 @Index(['customerId'])
 export class CustomerOrder {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'ORDER_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
   @Column({ name: 'CUSTOMER_ID', length: 255, nullable: true })

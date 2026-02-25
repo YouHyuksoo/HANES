@@ -1,3 +1,13 @@
+/**
+ * @file iqc-log.entity.ts
+ * @description IQC 검사이력(IqcLog) 엔티티 - 수입검사 결과를 기록한다.
+ *              시퀀스 PK 사용, partId → itemCode로 변환됨.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. ITEM_CODE로 ItemMaster(품목)를 참조
+ * 3. 검사유형(INITIAL/RETEST), 결과(PASS/FAIL) 관리
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,13 +18,13 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'IQC_LOGS' })
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['lotNo'])
 @Index(['inspectType'])
 @Index(['result'])
 export class IqcLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'LOT_ID', length: 255, nullable: true })
   lotId: string | null;
@@ -22,8 +32,8 @@ export class IqcLog {
   @Column({ name: 'LOT_NO', length: 100, nullable: true })
   lotNo: string | null;
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'INSPECT_TYPE', length: 50, default: 'INITIAL' })
   inspectType: string;

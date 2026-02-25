@@ -5,8 +5,8 @@
  * 초보자 가이드:
  * - issueType: 출고 유형 (PRODUCTION, MANUAL, SCRAP 등)
  * - id: SEQUENCE 자동증분 PK
- * - lotId: 출고 LOT번호, jobOrderId: 작업지시 참조
- * - prodResultId: 생산실적 ID (자재 투입 이력 연결)
+ * - lotId: 출고 LOT번호, orderNo: 작업지시 참조
+ * - prodResultId: 생산실적 ID (number, 자재 투입 이력 연결)
  */
 import {
   Entity,
@@ -21,7 +21,7 @@ import {
 import { ProdResult } from './prod-result.entity';
 
 @Entity({ name: 'MAT_ISSUES' })
-@Index(['jobOrderId'])
+@Index(['orderNo'])
 @Index(['lotId'])
 @Index(['issueType'])
 @Index(['issueNo'])
@@ -32,11 +32,11 @@ export class MatIssue {
   @Column({ name: 'ISSUE_NO', length: 50, nullable: true })
   issueNo: string | null;
 
-  @Column({ name: 'JOB_ORDER_ID', length: 50, nullable: true })
-  jobOrderId: string | null;
+  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  orderNo: string | null;
 
-  @Column({ name: 'PROD_RESULT_ID', length: 36, nullable: true })
-  prodResultId: string | null;
+  @Column({ name: 'PROD_RESULT_ID', type: 'int', nullable: true })
+  prodResultId: number | null;
 
   @ManyToOne(() => ProdResult, { nullable: true })
   @JoinColumn({ name: 'PROD_RESULT_ID' })

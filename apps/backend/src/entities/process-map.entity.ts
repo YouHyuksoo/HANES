@@ -1,3 +1,13 @@
+/**
+ * @file process-map.entity.ts
+ * @description 공정맵(ProcessMap) 엔티티 - 품목별 공정 순서를 정의한다.
+ *              시퀀스 PK 사용, partId → itemCode로 변환됨.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. ITEM_CODE로 ItemMaster(품목)를 참조
+ * 3. SEQ로 공정 순서를 관리
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,15 +19,15 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'PROCESS_MAPS' })
-@Unique(['partId', 'seq'])
-@Index(['partId'])
+@Unique(['itemCode', 'seq'])
+@Index(['itemCode'])
 @Index(['processType'])
 export class ProcessMap {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'SEQ', type: 'int' })
   seq: number;
@@ -78,5 +88,4 @@ export class ProcessMap {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

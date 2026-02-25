@@ -1,14 +1,14 @@
 /**
- * @file src/entities/iqc-part-link.entity.ts
+ * @file iqc-part-link.entity.ts
  * @description IQC 품목-거래처-검사그룹 연결 엔티티
+ *              시퀀스 PK 사용, partId → itemCode로 변환됨.
  *
  * 초보자 가이드:
- * 1. 품목(Part) + 거래처(Partner/공급상) → 검사그룹(IqcGroup) 매핑
- * 2. 같은 품목이라도 거래처에 따라 다른 검사그룹 적용 가능
- * 3. PARTNER_ID가 null이면 "기본 검사그룹" (거래처 무관)
- * 4. PART_ID + PARTNER_ID 복합 유니크 제약
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. 품목(ITEM_CODE) + 거래처(PARTNER_ID) → 검사그룹(GROUP_ID) 매핑
+ * 3. 같은 품목이라도 거래처에 따라 다른 검사그룹 적용 가능
+ * 4. PARTNER_ID가 null이면 "기본 검사그룹" (거래처 무관)
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -25,16 +25,16 @@ import { PartnerMaster } from './partner-master.entity';
 import { IqcGroup } from './iqc-group.entity';
 
 @Entity({ name: 'IQC_PART_LINKS' })
-@Unique(['partId', 'partnerId'])
-@Index(['partId'])
+@Unique(['itemCode', 'partnerId'])
+@Index(['itemCode'])
 @Index(['partnerId'])
 @Index(['groupId'])
 export class IqcPartLink {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'PARTNER_ID', length: 255, nullable: true })
   partnerId: string | null;
@@ -67,7 +67,7 @@ export class IqcPartLink {
   updatedAt: Date;
 
   @ManyToOne(() => PartMaster, { eager: false })
-  @JoinColumn({ name: 'PART_ID' })
+  @JoinColumn({ name: 'ITEM_CODE' })
   part: PartMaster;
 
   @ManyToOne(() => PartnerMaster, { eager: false, nullable: true })

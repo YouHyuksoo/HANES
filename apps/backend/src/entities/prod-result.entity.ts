@@ -1,3 +1,13 @@
+/**
+ * @file prod-result.entity.ts
+ * @description 생산실적(ProdResult) 엔티티 - 작업지시별 생산 결과를 기록한다.
+ *              시퀀스 PK 사용, orderNo로 JobOrder 참조, equipCode/workerCode로 참조.
+ *
+ * 초보자 가이드:
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. ORDER_NO로 JobOrder(작업지시)를 참조
+ * 3. EQUIP_CODE로 EquipMaster, WORKER_CODE로 WorkerMaster 참조
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -17,33 +27,33 @@ import { WorkerMaster } from './worker-master.entity';
 import { MatIssue } from './mat-issue.entity';
 
 @Entity({ name: 'PROD_RESULTS' })
-@Index(['jobOrderId'])
-@Index(['equipId'])
-@Index(['workerId'])
+@Index(['orderNo'])
+@Index(['equipCode'])
+@Index(['workerCode'])
 @Index(['status'])
 export class ProdResult {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'JOB_ORDER_ID', length: 255 })
-  jobOrderId: string;
+  @Column({ name: 'ORDER_NO', length: 50 })
+  orderNo: string;
 
   @ManyToOne(() => JobOrder, (jobOrder) => jobOrder.prodResults)
-  @JoinColumn({ name: 'JOB_ORDER_ID' })
+  @JoinColumn({ name: 'ORDER_NO' })
   jobOrder: JobOrder;
 
-  @Column({ name: 'EQUIP_ID', length: 255, nullable: true })
-  equipId: string | null;
+  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  equipCode: string | null;
 
   @ManyToOne(() => EquipMaster)
-  @JoinColumn({ name: 'EQUIP_ID' })
+  @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
   equip: EquipMaster | null;
 
-  @Column({ name: 'WORKER_ID', length: 255, nullable: true })
-  workerId: string | null;
+  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  workerCode: string | null;
 
   @ManyToOne(() => WorkerMaster)
-  @JoinColumn({ name: 'WORKER_ID' })
+  @JoinColumn({ name: 'WORKER_CODE', referencedColumnName: 'workerCode' })
   worker: WorkerMaster | null;
 
   @Column({ name: 'LOT_NO', length: 255, nullable: true })

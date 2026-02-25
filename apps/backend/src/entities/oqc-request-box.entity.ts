@@ -1,13 +1,13 @@
 /**
- * @file src/entities/oqc-request-box.entity.ts
+ * @file oqc-request-box.entity.ts
  * @description OQC 의뢰-박스 연결 엔티티 - 검사 의뢰에 포함된 박스 목록
+ *              시퀀스 PK 사용, oqcRequestId → requestNo로 OqcRequest 참조.
  *
  * 초보자 가이드:
- * 1. **목적**: OQC 의뢰에 어떤 박스가 포함되었는지 관리
- * 2. **IS_SAMPLE**: 'Y'면 샘플로 선정된 박스
- * 3. **관계**: OqcRequest(부모) 1:N OqcRequestBox
+ * 1. ID는 자동 증가 시퀀스 (number)
+ * 2. REQUEST_NO로 OqcRequest(검사의뢰)를 참조
+ * 3. IS_SAMPLE: 'Y'면 샘플로 선정된 박스
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -21,20 +21,17 @@ import {
 import { OqcRequest } from './oqc-request.entity';
 
 @Entity({ name: 'OQC_REQUEST_BOXES' })
-@Index(['oqcRequestId'])
-@Index(['boxId'])
+@Index(['requestNo'])
+@Index(['boxNo'])
 export class OqcRequestBox {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'OQC_REQUEST_ID', length: 36 })
-  oqcRequestId: string;
+  @Column({ name: 'REQUEST_NO', length: 50 })
+  requestNo: string;
 
-  @Column({ name: 'BOX_ID', length: 36 })
-  boxId: string;
-
-  @Column({ name: 'BOX_NO', length: 50, nullable: true })
-  boxNo: string | null;
+  @Column({ name: 'BOX_NO', length: 50 })
+  boxNo: string;
 
   @Column({ name: 'QTY', type: 'int', default: 0 })
   qty: number;
@@ -61,6 +58,6 @@ export class OqcRequestBox {
   updatedAt: Date;
 
   @ManyToOne(() => OqcRequest, (req) => req.boxes)
-  @JoinColumn({ name: 'OQC_REQUEST_ID' })
+  @JoinColumn({ name: 'REQUEST_NO' })
   oqcRequest: OqcRequest;
 }
