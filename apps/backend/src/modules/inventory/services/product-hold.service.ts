@@ -25,7 +25,7 @@ export class ProductHoldService {
   ) {}
 
   async findAll(query: ProductHoldQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, search, status, partType } = query;
+    const { page = 1, limit = 50, search, status, itemType } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -34,8 +34,8 @@ export class ProductHoldService {
     };
 
     if (status) where.status = status;
-    if (partType) where.partType = partType;
-    if (search) where.partId = Like(`%${search}%`);
+    if (itemType) where.itemType = itemType;
+    if (search) where.itemCode = Like(`%${search}%`);
 
     const [data, total] = await Promise.all([
       this.productStockRepository.find({
@@ -48,18 +48,18 @@ export class ProductHoldService {
     ]);
 
     /* part 정보 조인 */
-    const partIds = [...new Set(data.map((s) => s.partId).filter(Boolean))];
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+    const itemCodes = [...new Set(data.map((s) => s.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     const flatData = data.map((stock) => {
-      const part = partMap.get(stock.partId);
+      const part = partMap.get(stock.itemCode);
       return {
         ...stock,
-        partCode: part?.partCode ?? null,
-        partName: part?.partName ?? null,
+        itemCode: part?.itemCode ?? null,
+        itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
       };
     });
@@ -82,13 +82,13 @@ export class ProductHoldService {
     });
 
     const updated = await this.productStockRepository.findOne({ where: { id: stockId } });
-    const part = await this.partMasterRepository.findOne({ where: { id: updated!.partId } });
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });
 
     return {
       id: stockId,
       status: 'HOLD',
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       qty: updated!.qty,
       reason,
     };
@@ -108,13 +108,13 @@ export class ProductHoldService {
     });
 
     const updated = await this.productStockRepository.findOne({ where: { id: stockId } });
-    const part = await this.partMasterRepository.findOne({ where: { id: updated!.partId } });
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });
 
     return {
       id: stockId,
       status: 'NORMAL',
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       qty: updated!.qty,
       reason,
     };

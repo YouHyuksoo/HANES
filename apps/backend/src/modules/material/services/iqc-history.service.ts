@@ -53,17 +53,17 @@ export class IqcHistoryService {
       // 검색어가 있으면 품목 검색 후 필터링
       const parts = await this.partMasterRepository.find({
         where: [
-          { partCode: Like(`%${search}%`) },
-          { partName: Like(`%${search}%`) },
+          { itemCode: Like(`%${search}%`) },
+          { itemName: Like(`%${search}%`) },
         ],
       });
-      const partIds = parts.map((p) => p.id);
+      const itemCodes = parts.map((p) => p.itemCode);
 
       // LOT 번호로도 검색
       const lots = await this.matLotRepository.find({
         where: { lotNo: Like(`%${search}%`) },
       });
-      const lotIds = lots.map((l) => l.id);
+      const lotNos = lots.map((l) => l.lotNo);
 
       // 복합 조건으로 IQC 로그 검색
       const queryBuilder = this.iqcLogRepository.createQueryBuilder('iqc');
@@ -84,15 +84,15 @@ export class IqcHistoryService {
         });
       }
 
-      if (partIds.length > 0 || lotIds.length > 0) {
+      if (itemCodes.length > 0 || lotNos.length > 0) {
         const conditions: string[] = [];
-        if (partIds.length > 0) {
-          conditions.push('iqc.partId IN (:...partIds)');
+        if (itemCodes.length > 0) {
+          conditions.push('iqc.itemCode IN (:...itemCodes)');
         }
-        if (lotIds.length > 0) {
-          conditions.push('iqc.lotId IN (:...lotIds)');
+        if (lotNos.length > 0) {
+          conditions.push('iqc.lotNo IN (:...lotNos)');
         }
-        queryBuilder.andWhere(`(${conditions.join(' OR ')})`, { partIds, lotIds });
+        queryBuilder.andWhere(`(${conditions.join(' OR ')})`, { itemCodes, lotNos });
       } else {
         // 검색 결과가 없으면 빈 결과 반환
         return { data: [], total: 0, page, limit };
@@ -119,30 +119,30 @@ export class IqcHistoryService {
     }
 
     // 관련 정보 조회
-    const partIds = data.map((log) => log.partId).filter(Boolean);
-    const lotIds = data.map((log) => log.lotId).filter(Boolean) as string[];
+    const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
+    const lotNos = data.map((log) => log.lotNo).filter(Boolean) as string[];
 
     const [parts, lots, receivings] = await Promise.all([
-      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
-      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
-      lotIds.length > 0 ? this.matReceivingRepository.find({ where: { lotId: In(lotIds), status: 'DONE' } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
+      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
+      lotNos.length > 0 ? this.matReceivingRepository.find({ where: { lotId: In(lotNos), status: 'DONE' } }) : Promise.resolve([]),
     ]);
 
-    const partMap = new Map(parts.map((p) => [p.id, p]));
-    const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
     const receivedLotIds = new Set(receivings.map((r) => r.lotId));
 
     // 중첩 객체 평면화
     const flattenedData = data.map((log) => {
-      const part = partMap.get(log.partId);
-      const lot = log.lotId ? lotMap.get(log.lotId) : null;
+      const part = partMap.get(log.itemCode);
+      const lot = log.lotNo ? lotMap.get(log.lotNo) : null;
       return {
         ...log,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         unit: part?.unit,
         lotNo: lot?.lotNo,
-        received: log.lotId ? receivedLotIds.has(log.lotId) : false,
+        received: log.lotNo ? receivedLotIds.has(log.lotNo) : false,
       };
     });
 
@@ -151,22 +151,21 @@ export class IqcHistoryService {
 
   async createResult(dto: CreateIqcResultDto) {
     const lot = await this.matLotRepository.findOne({
-      where: { id: dto.lotId },
+      where: { lotNo: dto.lotNo },
     });
     if (!lot) {
-      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotId}`);
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotNo}`);
     }
 
     // LOT iqcStatus 업데이트
-    await this.matLotRepository.update(dto.lotId, {
+    await this.matLotRepository.update(dto.lotNo, {
       iqcStatus: dto.result,
     });
 
     // IqcLog 생성
     const log = this.iqcLogRepository.create({
-      lotId: dto.lotId,
       lotNo: lot.lotNo,
-      partId: lot.partId,
+      itemCode: lot.itemCode,
       inspectType: dto.inspectType || 'INITIAL',
       result: dto.result,
       details: dto.details || null,
@@ -178,14 +177,14 @@ export class IqcHistoryService {
 
     // part 정보 조회
     const part = await this.partMasterRepository.findOne({
-      where: { id: lot.partId },
+      where: { itemCode: lot.itemCode },
     });
 
     return {
       ...saved,
       lotNo: lot.lotNo,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
     };
   }
 
@@ -200,9 +199,9 @@ export class IqcHistoryService {
     }
 
     // 이미 입고된 LOT인지 확인
-    if (log.lotId) {
+    if (log.lotNo) {
       const receiving = await this.matReceivingRepository.findOne({
-        where: { lotId: log.lotId, status: 'DONE' },
+        where: { lotId: log.lotNo, status: 'DONE' },
       });
       if (receiving) {
         throw new BadRequestException('이미 입고된 LOT은 IQC 판정을 취소할 수 없습니다.');
@@ -216,8 +215,8 @@ export class IqcHistoryService {
     });
 
     // LOT의 iqcStatus를 PENDING으로 복원
-    if (log.lotId) {
-      await this.matLotRepository.update(log.lotId, {
+    if (log.lotNo) {
+      await this.matLotRepository.update(log.lotNo, {
         iqcStatus: 'PENDING',
       });
     }

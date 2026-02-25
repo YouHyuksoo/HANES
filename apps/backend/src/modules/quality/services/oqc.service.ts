@@ -54,7 +54,7 @@ export class OqcService {
 
     const qb = this.oqcRequestRepo
       .createQueryBuilder('oqc')
-      .leftJoinAndMapOne('oqc.part', PartMaster, 'part', 'oqc.partId = part.id')
+      .leftJoinAndMapOne('oqc.part', PartMaster, 'part', 'oqc.itemCode = part.itemCode')
 
     if (company) qb.andWhere('oqc.company = :company', { company });
     if (status) qb.andWhere('oqc.status = :status', { status });
@@ -63,7 +63,7 @@ export class OqcService {
     if (toDate) qb.andWhere('oqc.requestDate <= :toDate', { toDate });
     if (search) {
       qb.andWhere(
-        '(oqc.requestNo LIKE :search OR part.partCode LIKE :search OR part.partName LIKE :search)',
+        '(oqc.requestNo LIKE :search OR part.itemCode LIKE :search OR part.itemName LIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -89,18 +89,18 @@ export class OqcService {
     }
 
     // 품목 정보 조인
-    const part = await this.partRepo.findOne({ where: { id: oqcRequest.partId } });
+    const part = await this.partRepo.findOne({ where: { itemCode: oqcRequest.itemCode } });
 
     return { ...oqcRequest, part };
   }
 
   /** 의뢰 생성 — requestNo 자동채번, 박스 유효성 검사, oqcStatus=PENDING */
   async createRequest(dto: CreateOqcRequestDto, company?: string, createdBy?: string) {
-    const { partId, boxIds, customer, requestDate, sampleSize } = dto;
+    const { itemCode, boxIds, customer, requestDate, sampleSize } = dto;
 
     // 1. 박스 유효성: status=CLOSED + oqcStatus IS NULL
     const boxes = await this.boxRepo.find({
-      where: { id: In(boxIds) },
+      where: { boxNo: In(boxIds) },
     });
 
     if (boxes.length !== boxIds.length) {
@@ -142,7 +142,7 @@ export class OqcService {
     try {
       const oqcRequest = queryRunner.manager.create(OqcRequest, {
         requestNo,
-        partId,
+        itemCode,
         customer: customer || null,
         requestDate: requestDate ? new Date(requestDate) : today,
         totalBoxCount: boxes.length,
@@ -290,14 +290,14 @@ export class OqcService {
   }
 
   /** 검사 가능 박스 목록 (CLOSED + oqcStatus IS NULL) */
-  async getAvailableBoxes(partId?: string, company?: string) {
+  async getAvailableBoxes(itemCode?: string, company?: string) {
     const qb = this.boxRepo
       .createQueryBuilder('box')
-      .leftJoinAndMapOne('box.part', PartMaster, 'part', 'box.partId = part.id')
+      .leftJoinAndMapOne('box.part', PartMaster, 'part', 'box.itemCode = part.itemCode')
       .where('box.status = :status', { status: 'CLOSED' })
       .andWhere('box.oqcStatus IS NULL')
 
-    if (partId) qb.andWhere('box.partId = :partId', { partId });
+    if (itemCode) qb.andWhere('box.itemCode = :itemCode', { itemCode });
     if (company) qb.andWhere('box.company = :company', { company });
 
     qb.orderBy('box.boxNo', 'ASC');

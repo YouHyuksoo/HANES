@@ -57,18 +57,18 @@ export class AdjustmentService {
     ]);
 
     // part 정보 조회 및 중첩 객체 평면화
-    const partIds = data.map((log) => log.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+    const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     const flattenedData = data.map((log) => {
-      const part = partMap.get(log.partId);
+      const part = partMap.get(log.itemCode);
       return {
         ...log,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         unit: part?.unit,
       };
     });
@@ -77,7 +77,7 @@ export class AdjustmentService {
   }
 
   async create(dto: CreateAdjustmentDto) {
-    const { warehouseCode, partId, lotId, afterQty, reason, createdBy } = dto;
+    const { warehouseCode, itemCode, lotNo, afterQty, reason, createdBy } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -86,25 +86,25 @@ export class AdjustmentService {
     try {
       // 품목 확인
       const part = await queryRunner.manager.findOne(PartMaster, {
-        where: { id: partId },
+        where: { itemCode },
       });
       if (!part) {
-        throw new NotFoundException(`품목을 찾을 수 없습니다: ${partId}`);
+        throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
       }
 
       // LOT 확인 (lotId가 있는 경우)
-      if (lotId) {
+      if (lotNo) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { id: lotId },
+          where: { lotNo: lotNo },
         });
         if (!lot) {
-          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
         }
       }
 
       // 기존 재고 조회
       let stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode, partId, ...(lotId && { lotId }) },
+        where: { warehouseCode, itemCode, ...(lotNo && { lotNo }) },
       });
 
       const beforeQty = stock?.qty ?? 0;
@@ -122,8 +122,8 @@ export class AdjustmentService {
         }
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode,
-          partId,
-          lotId: lotId || null,
+          itemCode,
+          lotNo: lotNo || null,
           qty: afterQty,
           availableQty: afterQty,
           reservedQty: 0,
@@ -132,11 +132,11 @@ export class AdjustmentService {
       }
 
       // LOT 재고도 업데이트 (lotId가 있는 경우)
-      if (lotId) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { id: lotId } });
+      if (lotNo) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: lotNo } });
         if (lot) {
           const newLotQty = lot.currentQty + diffQty;
-          await queryRunner.manager.update(MatLot, lotId, {
+          await queryRunner.manager.update(MatLot, lotNo, {
             currentQty: Math.max(0, newLotQty),
             status: newLotQty <= 0 ? 'DEPLETED' : lot.status,
           });
@@ -146,8 +146,8 @@ export class AdjustmentService {
       // 보정 이력 생성
       const invAdjLog = queryRunner.manager.create(InvAdjLog, {
         warehouseCode,
-        partId,
-        lotId: lotId || null,
+        itemCode,
+        lotNo: lotNo || null,
         adjType: 'ADJUST',
         beforeQty,
         afterQty,
@@ -165,8 +165,8 @@ export class AdjustmentService {
         transDate: new Date(),
         fromWarehouseId: diffQty < 0 ? warehouseCode : null,
         toWarehouseId: diffQty >= 0 ? warehouseCode : null,
-        partId,
-        lotId: lotId || null,
+        itemCode,
+        lotNo: lotNo || null,
         qty: Math.abs(diffQty),
         refType: 'ADJUSTMENT',
         refId: invAdjLog.id,
@@ -181,14 +181,14 @@ export class AdjustmentService {
       return {
         id: invAdjLog.id,
         warehouseCode,
-        partId,
-        lotId,
+        itemCode,
+        lotNo,
         beforeQty,
         afterQty,
         diffQty,
         reason,
-        partCode: part.partCode,
-        partName: part.partName,
+        itemCode: part.itemCode,
+        itemName: part.itemName,
         unit: part.unit,
       };
     } catch (err) {

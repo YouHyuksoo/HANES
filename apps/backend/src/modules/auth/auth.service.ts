@@ -64,7 +64,7 @@ export class AuthService {
     }
 
     // 최근 로그인 시간 업데이트
-    await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+    await this.userRepository.update({ email: user.email }, { lastLoginAt: new Date() });
 
     this.logger.log(`User logged in: ${user.email}`);
 
@@ -73,7 +73,7 @@ export class AuthService {
 
     // 활동 로그 기록 (비동기, 실패해도 로그인에 영향 없음)
     this.activityLogService.logActivity({
-      userId: user.id,
+      userId: user.email,
       userEmail: user.email,
       userName: user.name,
       activityType: 'LOGIN',
@@ -86,9 +86,9 @@ export class AuthService {
     const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(user.role);
 
     return {
-      token: user.id, // userId를 토큰으로 사용
+      token: user.email, // email을 토큰으로 사용
       user: {
-        id: user.id,
+        id: user.email,
         email: user.email,
         name: user.name,
         empNo: user.empNo,
@@ -127,9 +127,9 @@ export class AuthService {
     this.logger.log(`User registered: ${savedUser.email}`);
 
     return {
-      token: savedUser.id,
+      token: savedUser.email,
       user: {
-        id: savedUser.id,
+        id: savedUser.email,
         email: savedUser.email,
         name: savedUser.name,
         empNo: savedUser.empNo,
@@ -145,9 +145,8 @@ export class AuthService {
    */
   async me(userId: string) {
     const user = await this.userRepository.findOne({
-      where: { id: userId },
+      where: { email: userId },
       select: [
-        'id',
         'email',
         'name',
         'empNo',

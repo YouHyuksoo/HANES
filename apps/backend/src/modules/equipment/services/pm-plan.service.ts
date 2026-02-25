@@ -45,12 +45,12 @@ export class PmPlanService {
 
   /** PM 계획 목록 조회 */
   async findAllPlans(query: PmPlanQueryDto) {
-    const { page = 1, limit = 50, equipId, pmType, search, dueDateFrom, dueDateTo } = query;
+    const { page = 1, limit = 50, equipCode, pmType, search, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.pmPlanRepo.createQueryBuilder('plan');
 
-    if (equipId) qb.andWhere('plan.equipId = :equipId', { equipId });
+    if (equipCode) qb.andWhere('plan.equipCode = :equipCode', { equipCode });
     if (pmType) qb.andWhere('plan.pmType = :pmType', { pmType });
     if (search) {
       qb.andWhere(
@@ -76,15 +76,15 @@ export class PmPlanService {
       .getMany();
 
     const planIds = plans.map((p) => p.id);
-    const equipIds = [...new Set(plans.map((p) => p.equipId))];
+    const equipIds = [...new Set(plans.map((p) => p.equipCode))];
 
     const equips = equipIds.length > 0
       ? await this.equipMasterRepo.find({
-          where: { id: In(equipIds) },
-          select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+          where: { equipCode: In(equipIds) },
+          select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
         })
       : [];
-    const equipMap = new Map(equips.map((e) => [e.id, e]));
+    const equipMap = new Map(equips.map((e) => [e.equipCode, e]));
 
     // 계획별 항목 수 조회
     let itemCountMap = new Map<string, number>();
@@ -101,12 +101,12 @@ export class PmPlanService {
     }
 
     const data = plans.map((plan) => {
-      const equip = equipMap.get(plan.equipId);
+      const equip = equipMap.get(plan.equipCode);
       return {
         ...plan,
         itemCount: itemCountMap.get(plan.id) || 0,
         equip: {
-          id: equip?.id || plan.equipId,
+          equipCode: equip?.equipCode || plan.equipCode,
           equipCode: equip?.equipCode || '-',
           equipName: equip?.equipName || '-',
           lineCode: equip?.lineCode || null,
@@ -127,8 +127,8 @@ export class PmPlanService {
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
 
     const equip = await this.equipMasterRepo.findOne({
-      where: { id: plan.equipId },
-      select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+      where: { equipCode: plan.equipCode },
+      select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
     });
 
     if (plan.items) {
@@ -141,9 +141,9 @@ export class PmPlanService {
   /** PM 계획 생성 */
   async createPlan(dto: CreatePmPlanDto) {
     const equip = await this.equipMasterRepo.findOne({
-      where: { id: dto.equipId },
+      where: { equipCode: dto.equipCode },
     });
-    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
+    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
 
     const nextDueAt = this.calculateNextDueAt(
       new Date(),
@@ -153,7 +153,7 @@ export class PmPlanService {
     );
 
     const plan = this.pmPlanRepo.create({
-      equipId: dto.equipId,
+      equipCode: dto.equipCode,
       planCode: dto.planCode,
       planName: dto.planName,
       pmType: dto.pmType || 'TIME_BASED',
@@ -195,7 +195,7 @@ export class PmPlanService {
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
 
-    if (dto.equipId !== undefined) plan.equipId = dto.equipId;
+    if (dto.equipCode !== undefined) plan.equipCode = dto.equipCode;
     if (dto.planCode !== undefined) plan.planCode = dto.planCode;
     if (dto.planName !== undefined) plan.planName = dto.planName;
     if (dto.pmType !== undefined) plan.pmType = dto.pmType;
@@ -288,7 +288,7 @@ export class PmPlanService {
       const wo = this.pmWorkOrderRepo.create({
         workOrderNo,
         pmPlanId: plan.id,
-        equipId: plan.equipId,
+        equipCode: plan.equipCode,
         woType: 'PLANNED',
         scheduledDate,
         dueDate: scheduledDate,
@@ -308,9 +308,9 @@ export class PmPlanService {
   /** WO 수동 생성 */
   async createWorkOrder(dto: CreatePmWorkOrderDto) {
     const equip = await this.equipMasterRepo.findOne({
-      where: { id: dto.equipId },
+      where: { equipCode: dto.equipCode },
     });
-    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
+    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
 
     const dateStr = dto.scheduledDate.substring(0, 10).replace(/-/g, '');
     const workOrderNo = await this.generateWoNumber(dateStr);
@@ -318,7 +318,7 @@ export class PmPlanService {
     const wo = this.pmWorkOrderRepo.create({
       workOrderNo,
       pmPlanId: dto.pmPlanId || null,
-      equipId: dto.equipId,
+      equipCode: dto.equipCode,
       woType: dto.woType || 'PLANNED',
       scheduledDate: new Date(dto.scheduledDate),
       dueDate: new Date(dto.scheduledDate),
@@ -369,7 +369,7 @@ export class PmPlanService {
 
     if (wo.pmPlanId) {
       const plan = await this.pmPlanRepo.findOne({
-        where: { id: wo.pmPlanId },
+        where: { planCode: wo.pmPlanId },
       });
       if (plan) {
         plan.lastExecutedAt = new Date();
@@ -404,12 +404,12 @@ export class PmPlanService {
 
   /** WO 목록 조회 */
   async findAllWorkOrders(query: PmWorkOrderQueryDto) {
-    const { page = 1, limit = 50, equipId, status, search } = query;
+    const { page = 1, limit = 50, equipCode, status, search } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo');
 
-    if (equipId) qb.andWhere('wo.equipId = :equipId', { equipId });
+    if (equipCode) qb.andWhere('wo.equipCode = :equipCode', { equipCode });
     if (status) qb.andWhere('wo.status = :status', { status });
     if (search) {
       qb.andWhere('LOWER(wo.workOrderNo) LIKE LOWER(:search)', { search: `%${search}%` });
@@ -423,21 +423,21 @@ export class PmPlanService {
       .take(limit)
       .getMany();
 
-    const equipIds = [...new Set(workOrders.map((wo) => wo.equipId))];
+    const equipIds = [...new Set(workOrders.map((wo) => wo.equipCode))];
     const equips = equipIds.length > 0
       ? await this.equipMasterRepo.find({
-          where: { id: In(equipIds) },
-          select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+          where: { equipCode: In(equipIds) },
+          select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
         })
       : [];
-    const equipMap = new Map(equips.map((e) => [e.id, e]));
+    const equipMap = new Map(equips.map((e) => [e.equipCode, e]));
 
     const data = workOrders.map((wo) => {
-      const equip = equipMap.get(wo.equipId);
+      const equip = equipMap.get(wo.equipCode);
       return {
         ...wo,
         equip: {
-          id: equip?.id || wo.equipId,
+          equipCode: equip?.equipCode || wo.equipCode,
           equipCode: equip?.equipCode || '-',
           equipName: equip?.equipName || '-',
           lineCode: equip?.lineCode || null,
@@ -463,7 +463,7 @@ export class PmPlanService {
     const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
-      .leftJoin(EquipMaster, 'equip', 'wo.equipId = equip.id')
+      .leftJoin(EquipMaster, 'equip', 'wo.equipCode = equip.equipCode')
       .where('wo.scheduledDate BETWEEN :startDate AND :endDate', { startDate, endDate });
 
     if (lineCode) qb.andWhere('equip.lineCode = :lineCode', { lineCode });
@@ -525,21 +525,21 @@ export class PmPlanService {
       .where('wo.scheduledDate BETWEEN :dayStart AND :dayEnd', { dayStart, dayEnd });
 
     if (lineCode || equipType) {
-      qb.leftJoin(EquipMaster, 'equip', 'wo.equipId = equip.id');
+      qb.leftJoin(EquipMaster, 'equip', 'wo.equipCode = equip.equipCode');
       if (lineCode) qb.andWhere('equip.lineCode = :lineCode', { lineCode });
       if (equipType) qb.andWhere('equip.equipType = :equipType', { equipType });
     }
 
     const workOrders = await qb.orderBy('wo.scheduledDate', 'ASC').getMany();
 
-    const equipIds = [...new Set(workOrders.map((wo) => wo.equipId))];
+    const equipIds = [...new Set(workOrders.map((wo) => wo.equipCode))];
     const equips = equipIds.length > 0
       ? await this.equipMasterRepo.find({
-          where: { id: In(equipIds) },
-          select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+          where: { equipCode: In(equipIds) },
+          select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
         })
       : [];
-    const equipMap = new Map(equips.map((e) => [e.id, e]));
+    const equipMap = new Map(equips.map((e) => [e.equipCode, e]));
 
     const woIds = workOrders.map((wo) => wo.id);
     const allResults = woIds.length > 0
@@ -557,14 +557,14 @@ export class PmPlanService {
 
     const result = await Promise.all(
       workOrders.map(async (wo) => {
-        const equip = equipMap.get(wo.equipId);
+        const equip = equipMap.get(wo.equipCode);
 
         let planItems: PmPlanItem[] = [];
         let planName: string | null = null;
         if (wo.pmPlanId) {
           const plan = await this.pmPlanRepo.findOne({
-            where: { id: wo.pmPlanId },
-            select: ['id', 'planName'],
+            where: { planCode: wo.pmPlanId },
+            select: ['planCode', 'planName'],
           });
           planName = plan?.planName || null;
           const rawItems = await this.pmPlanItemRepo.find({

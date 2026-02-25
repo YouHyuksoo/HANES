@@ -40,15 +40,15 @@ export class HoldService {
       // 먼저 품목 검색
       const parts = await this.partMasterRepository.find({
         where: [
-          { partCode: Like(`%${search}%`) },
-          { partName: Like(`%${search}%`) },
+          { itemCode: Like(`%${search}%`) },
+          { itemName: Like(`%${search}%`) },
         ],
       });
-      const partIds = parts.map((p) => p.id);
+      const itemCodes = parts.map((p) => p.itemCode);
 
       where.lotNo = Like(`%${search}%`);
-      if (partIds.length > 0) {
-        // partId 조건 추가 (OR 조건을 위해 별도 처리 필요)
+      if (itemCodes.length > 0) {
+        // itemCode 조건 추가 (OR 조건을 위해 별도 처리 필요)
       }
     }
 
@@ -63,26 +63,26 @@ export class HoldService {
     ]);
 
     // part 정보 조회 및 중첩 객체 평면화
-    const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+    const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // 재고 정보 조회
-    const lotIds = data.map((lot) => lot.id);
-    const stocks = lotIds.length > 0
-      ? await this.matStockRepository.find({ where: { lotId: In(lotIds) } })
+    const lotNos = data.map((lot) => lot.lotNo);
+    const stocks = lotNos.length > 0
+      ? await this.matStockRepository.find({ where: { lotNo: In(lotNos) } })
       : [];
-    const stockMap = new Map(stocks.map((s) => [s.lotId, s]));
+    const stockMap = new Map(stocks.map((s) => [s.lotNo, s]));
 
     const flattenedData = data.map((lot) => {
-      const part = partMap.get(lot.partId);
-      const stock = stockMap.get(lot.id);
+      const part = partMap.get(lot.itemCode);
+      const stock = stockMap.get(lot.lotNo);
       return {
         ...lot,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         unit: part?.unit,
         warehouseCode: stock?.warehouseCode,
       };
@@ -92,14 +92,14 @@ export class HoldService {
   }
 
   async hold(dto: HoldActionDto) {
-    const { lotId, reason } = dto;
+    const { lotNo, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { id: lotId },
+      where: { lotNo: lotNo },
     });
 
     if (!lot) {
-      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
     }
 
     if (lot.status === 'HOLD') {
@@ -111,32 +111,32 @@ export class HoldService {
     }
 
     // HOLD 상태로 변경
-    await this.matLotRepository.update(lotId, {
+    await this.matLotRepository.update(lotNo, {
       status: 'HOLD',
     });
 
-    const updatedLot = await this.matLotRepository.findOne({ where: { id: lotId } });
-    const part = await this.partMasterRepository.findOne({ where: { id: updatedLot!.partId } });
+    const updatedLot = await this.matLotRepository.findOne({ where: { lotNo: lotNo } });
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: updatedLot!.itemCode } });
 
     return {
-      id: lotId,
+      id: lotNo,
       status: 'HOLD',
       lotNo: updatedLot?.lotNo,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       reason,
     };
   }
 
   async release(dto: ReleaseHoldDto) {
-    const { lotId, reason } = dto;
+    const { lotNo, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { id: lotId },
+      where: { lotNo: lotNo },
     });
 
     if (!lot) {
-      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
     }
 
     if (lot.status !== 'HOLD') {
@@ -144,19 +144,19 @@ export class HoldService {
     }
 
     // NORMAL 상태로 변경
-    await this.matLotRepository.update(lotId, {
+    await this.matLotRepository.update(lotNo, {
       status: 'NORMAL',
     });
 
-    const updatedLot = await this.matLotRepository.findOne({ where: { id: lotId } });
-    const part = await this.partMasterRepository.findOne({ where: { id: updatedLot!.partId } });
+    const updatedLot = await this.matLotRepository.findOne({ where: { lotNo: lotNo } });
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: updatedLot!.itemCode } });
 
     return {
-      id: lotId,
+      id: lotNo,
       status: 'NORMAL',
       lotNo: updatedLot?.lotNo,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       reason,
     };
   }

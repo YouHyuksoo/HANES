@@ -79,7 +79,7 @@ export class ReceiptCancelService {
         throw new BadRequestException('입고 트랜잭션만 취소할 수 있습니다.');
       }
 
-      const { partId, lotId, toWarehouseId, qty } = originalTransaction;
+      const { itemCode, lotNo, toWarehouseId, qty } = originalTransaction;
 
       if (!toWarehouseId) {
         throw new BadRequestException('입고 창고 정보가 없습니다.');
@@ -87,7 +87,7 @@ export class ReceiptCancelService {
 
       // 재고 확인 및 차감
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { partId, warehouseCode: toWarehouseId, ...(lotId && { lotId }) },
+        where: { itemCode, warehouseCode: toWarehouseId, ...(lotNo && { lotNo }) },
       });
 
       if (!stock || stock.qty < qty) {
@@ -101,13 +101,13 @@ export class ReceiptCancelService {
       });
 
       // LOT 수량 복원
-      if (lotId) {
+      if (lotNo) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { id: lotId },
+          where: { lotNo: lotNo },
         });
 
         if (lot) {
-          await queryRunner.manager.update(MatLot, lot.id, {
+          await queryRunner.manager.update(MatLot, lot.lotNo, {
             currentQty: lot.currentQty - qty,
           });
         }
@@ -133,8 +133,8 @@ export class ReceiptCancelService {
         transType: 'RECEIPT_CANCEL',
         transDate: new Date(),
         fromWarehouseId: toWarehouseId,
-        partId,
-        lotId,
+        itemCode,
+        lotNo,
         qty: -qty,
         refType: 'TRANSACTION',
         refId: originalTransaction.id,

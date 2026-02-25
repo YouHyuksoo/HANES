@@ -10,7 +10,7 @@
  * API 구조:
  * - GET    /                        : 생산실적 목록 (페이지네이션)
  * - GET    /:id                     : 생산실적 단건 조회
- * - GET    /job-order/:jobOrderId   : 작업지시별 실적 목록
+ * - GET    /job-order/:orderNo   : 작업지시별 실적 목록
  * - POST   /                        : 생산실적 생성
  * - PUT    /:id                     : 생산실적 수정
  * - DELETE /:id                     : 생산실적 삭제
@@ -67,12 +67,12 @@ export class ProdResultController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('job-order/:jobOrderId')
+  @Get('job-order/:orderNo')
   @ApiOperation({ summary: '작업지시별 생산실적 목록', description: '특정 작업지시의 모든 생산실적 조회' })
-  @ApiParam({ name: 'jobOrderId', description: '작업지시 ID' })
+  @ApiParam({ name: 'orderNo', description: '작업지시 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByJobOrderId(@Param('jobOrderId') jobOrderId: string) {
-    const data = await this.prodResultService.findByJobOrderId(jobOrderId);
+  async findByJobOrderId(@Param('orderNo') orderNo: string) {
+    const data = await this.prodResultService.findByJobOrderId(orderNo);
     return ResponseUtil.success(data);
   }
 
@@ -146,27 +146,27 @@ export class ProdResultController {
 
   // ===== 실적 집계 =====
 
-  @Get('summary/job-order/:jobOrderId')
+  @Get('summary/job-order/:orderNo')
   @ApiOperation({ summary: '작업지시별 실적 집계', description: '양품/불량 수량, 불량률, 평균 사이클 타임 등' })
-  @ApiParam({ name: 'jobOrderId', description: '작업지시 ID' })
+  @ApiParam({ name: 'orderNo', description: '작업지시 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getSummaryByJobOrder(@Param('jobOrderId') jobOrderId: string) {
-    const data = await this.prodResultService.getSummaryByJobOrder(jobOrderId);
+  async getSummaryByJobOrder(@Param('orderNo') orderNo: string) {
+    const data = await this.prodResultService.getSummaryByJobOrder(orderNo);
     return ResponseUtil.success(data);
   }
 
-  @Get('summary/equip/:equipId')
+  @Get('summary/equip/:equipCode')
   @ApiOperation({ summary: '설비별 실적 집계', description: '기간 필터링 지원' })
-  @ApiParam({ name: 'equipId', description: '설비 ID' })
+  @ApiParam({ name: 'equipCode', description: '설비 ID' })
   @ApiQuery({ name: 'dateFrom', required: false, description: '시작일 (YYYY-MM-DD)' })
   @ApiQuery({ name: 'dateTo', required: false, description: '종료일 (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getSummaryByEquip(
-    @Param('equipId') equipId: string,
+    @Param('equipCode') equipCode: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
-    const data = await this.prodResultService.getSummaryByEquip(equipId, dateFrom, dateTo);
+    const data = await this.prodResultService.getSummaryByEquip(equipCode, dateFrom, dateTo);
     return ResponseUtil.success(data);
   }
 

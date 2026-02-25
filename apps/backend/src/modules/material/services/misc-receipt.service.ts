@@ -50,11 +50,11 @@ export class MiscReceiptService {
       // 검색어가 있으면 품목 검색 후 필터링
       const parts = await this.partMasterRepository.find({
         where: [
-          { partCode: Like(`%${search}%`) },
-          { partName: Like(`%${search}%`) },
+          { itemCode: Like(`%${search}%`) },
+          { itemName: Like(`%${search}%`) },
         ],
       });
-      const partIds = parts.map((p) => p.id);
+      const itemCodes = parts.map((p) => p.itemCode);
 
       const queryBuilder = this.stockTransactionRepository.createQueryBuilder('trans')
         .where('trans.transType = :transType', { transType: 'MISC_IN' });
@@ -69,8 +69,8 @@ export class MiscReceiptService {
         });
       }
 
-      if (partIds.length > 0) {
-        queryBuilder.andWhere('trans.partId IN (:...partIds)', { partIds });
+      if (itemCodes.length > 0) {
+        queryBuilder.andWhere('trans.itemCode IN (:...itemCodes)', { itemCodes });
       } else {
         // 품목 검색 결과가 없으면 빈 결과 반환
         return { data: [], total: 0, page, limit };
@@ -97,31 +97,31 @@ export class MiscReceiptService {
     }
 
     // 관련 정보 조회
-    const partIds = data.map((trans) => trans.partId).filter(Boolean);
-    const lotIds = data.map((trans) => trans.lotId).filter(Boolean) as string[];
+    const itemCodes = data.map((trans) => trans.itemCode).filter(Boolean);
+    const lotNos = data.map((trans) => trans.lotNo).filter(Boolean) as string[];
     const warehouseIds = data
       .map((trans) => trans.toWarehouseId)
       .filter(Boolean) as string[];
 
     const [parts, lots, warehouses] = await Promise.all([
-      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
-      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
-      warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { id: In(warehouseIds) } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
+      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
+      warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds) } }) : Promise.resolve([]),
     ]);
 
-    const partMap = new Map(parts.map((p) => [p.id, p]));
-    const lotMap = new Map(lots.map((l) => [l.id, l]));
-    const warehouseMap = new Map(warehouses.map((w) => [w.id, w]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
     // 중첩 객체 평면화
     const flattenedData = data.map((trans) => {
-      const part = partMap.get(trans.partId);
-      const lot = trans.lotId ? lotMap.get(trans.lotId) : null;
+      const part = partMap.get(trans.itemCode);
+      const lot = trans.lotNo ? lotMap.get(trans.lotNo) : null;
       const warehouse = trans.toWarehouseId ? warehouseMap.get(trans.toWarehouseId) : null;
       return {
         ...trans,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         unit: part?.unit,
         lotNo: lot?.lotNo,
         warehouseCode: warehouse?.warehouseCode,
@@ -133,7 +133,7 @@ export class MiscReceiptService {
   }
 
   async create(dto: CreateMiscReceiptDto) {
-    const { warehouseId, partId, lotId, qty, remark, workerId } = dto;
+    const { warehouseId, itemCode, lotNo, qty, remark, workerId } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -142,7 +142,7 @@ export class MiscReceiptService {
     try {
       // 창고 확인
       const warehouse = await queryRunner.manager.findOne(Warehouse, {
-        where: { id: warehouseId },
+        where: { warehouseCode: warehouseId },
       });
       if (!warehouse) {
         throw new NotFoundException(`창고를 찾을 수 없습니다: ${warehouseId}`);
@@ -150,19 +150,19 @@ export class MiscReceiptService {
 
       // 품목 확인
       const part = await queryRunner.manager.findOne(PartMaster, {
-        where: { id: partId },
+        where: { itemCode },
       });
       if (!part) {
-        throw new NotFoundException(`품목을 찾을 수 없습니다: ${partId}`);
+        throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
       }
 
       // LOT 확인 (lotId가 있는 경우)
-      if (lotId) {
+      if (lotNo) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { id: lotId },
+          where: { lotNo: lotNo },
         });
         if (!lot) {
-          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
         }
       }
 
@@ -171,7 +171,7 @@ export class MiscReceiptService {
 
       // 재고 업데이트 또는 생성
       const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: warehouse.warehouseCode, partId, ...(lotId && { lotId }) },
+        where: { warehouseCode: warehouse.warehouseCode, itemCode, ...(lotNo && { lotNo }) },
       });
 
       if (existingStock) {
@@ -182,8 +182,8 @@ export class MiscReceiptService {
       } else {
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode: warehouse.warehouseCode,
-          partId,
-          lotId: lotId || null,
+          itemCode,
+          lotNo: lotNo || null,
           qty,
           availableQty: qty,
           reservedQty: 0,
@@ -192,10 +192,10 @@ export class MiscReceiptService {
       }
 
       // LOT 수량 업데이트 (lotId가 있는 경우)
-      if (lotId) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { id: lotId } });
+      if (lotNo) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: lotNo } });
         if (lot) {
-          await queryRunner.manager.update(MatLot, lotId, {
+          await queryRunner.manager.update(MatLot, lotNo, {
             currentQty: lot.currentQty + qty,
             status: lot.status === 'DEPLETED' ? 'NORMAL' : lot.status,
           });
@@ -208,8 +208,8 @@ export class MiscReceiptService {
         transType: 'MISC_IN',
         transDate: new Date(),
         toWarehouseId: warehouse.warehouseCode,
-        partId,
-        lotId: lotId || null,
+        itemCode,
+        lotNo: lotNo || null,
         qty,
         refType: 'MISC_RECEIPT',
         workerId,
@@ -226,10 +226,10 @@ export class MiscReceiptService {
         warehouseId,
         warehouseCode: warehouse.warehouseCode,
         warehouseName: warehouse.warehouseName,
-        partId,
-        partCode: part.partCode,
-        partName: part.partName,
-        lotId,
+        itemCode,
+        itemCode: part.itemCode,
+        itemName: part.itemName,
+        lotNo,
         qty,
         remark,
         workerId,

@@ -38,19 +38,19 @@ export class BomService {
   async findParents(search?: string, effectiveDate?: string) {
     try {
       let queryBuilder = this.bomRepository.createQueryBuilder('bom')
-        .select('bom.parentPartId', 'parentPartId')
+        .select('bom.parentItemCode', 'parentItemCode')
         .addSelect('COUNT(bom.id)', 'bomCount')
         .where('bom.useYn = :useYn', { useYn: 'Y' })
-        .groupBy('bom.parentPartId');
+        .groupBy('bom.parentItemCode');
 
       queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
 
     if (search) {
       // 부모 품목 정보 조회를 위해 PartMaster와 조인
       queryBuilder = queryBuilder
-        .innerJoin(PartMaster, 'parent', 'parent.id = bom.parentPartId')
+        .innerJoin(PartMaster, 'parent', 'parent.itemCode = bom.parentItemCode')
         .andWhere(
-          '(UPPER(parent.partCode) LIKE UPPER(:search) OR UPPER(parent.partName) LIKE UPPER(:search) OR UPPER(parent.partNo) LIKE UPPER(:search))',
+          '(UPPER(parent.itemCode) LIKE UPPER(:search) OR UPPER(parent.itemName) LIKE UPPER(:search) OR UPPER(parent.partNo) LIKE UPPER(:search))',
           { search: `%${search}%` }
         );
     }
@@ -59,17 +59,17 @@ export class BomService {
 
     if (grouped.length === 0) return [];
 
-    const parentIds = grouped.map((g) => g.parentPartId);
+    const parentIds = grouped.map((g) => g.parentItemCode);
     const parents = await this.partRepository.find({
-      where: { id: In(parentIds) },
-      select: ['id', 'partCode', 'partName', 'partNo', 'partType', 'spec', 'unit', 'customer', 'remark'],
-      order: { partCode: 'asc' },
+      where: { itemCode: In(parentIds) },
+      select: ['itemCode', 'itemName', 'partNo', 'itemType', 'spec', 'unit', 'customer', 'remark'],
+      order: { itemCode: 'asc' },
     });
 
-    const countMap = new Map(grouped.map((g) => [g.parentPartId, parseInt(g.bomCount, 10)]));
+    const countMap = new Map(grouped.map((g) => [g.parentItemCode, parseInt(g.bomCount, 10)]));
     return parents.map((p) => ({
       ...p,
-      bomCount: countMap.get(p.id) || 0,
+      bomCount: countMap.get(p.itemCode) || 0,
     }));
     } catch (error) {
       console.error('[BomService.findParents] Error:', error);
@@ -78,12 +78,12 @@ export class BomService {
   }
 
   async findAll(query: BomQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, parentPartId, childPartId, revision } = query;
+    const { page = 1, limit = 10, parentItemCode, childItemCode, revision } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.bomRepository.createQueryBuilder('bom')
-      .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.id = bom.parentPartId')
-      .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.id = bom.childPartId')
+      .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.itemCode = bom.parentItemCode')
+      .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.itemCode = bom.childItemCode')
 
     if (company) {
       queryBuilder.andWhere('bom.company = :company', { company });
@@ -92,12 +92,12 @@ export class BomService {
       queryBuilder.andWhere('bom.plant = :plant', { plant });
     }
 
-    if (parentPartId) {
-      queryBuilder.andWhere('bom.parentPartId = :parentPartId', { parentPartId });
+    if (parentItemCode) {
+      queryBuilder.andWhere('bom.parentItemCode = :parentItemCode', { parentItemCode });
     }
 
-    if (childPartId) {
-      queryBuilder.andWhere('bom.childPartId = :childPartId', { childPartId });
+    if (childItemCode) {
+      queryBuilder.andWhere('bom.childItemCode = :childItemCode', { childItemCode });
     }
 
     if (revision) {
@@ -106,7 +106,7 @@ export class BomService {
 
     const [data, total] = await Promise.all([
       queryBuilder
-        .orderBy('bom.parentPartId', 'ASC')
+        .orderBy('bom.parentItemCode', 'ASC')
         .addOrderBy('bom.seq', 'ASC')
         .skip(skip)
         .take(limit)
@@ -119,8 +119,8 @@ export class BomService {
 
   async findById(id: string) {
     const bom = await this.bomRepository.createQueryBuilder('bom')
-      .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.id = bom.parentPartId')
-      .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.id = bom.childPartId')
+      .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.itemCode = bom.parentItemCode')
+      .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.itemCode = bom.childItemCode')
       .where('bom.id = :id', { id })
       .getOne();
 
@@ -128,10 +128,10 @@ export class BomService {
     return bom;
   }
 
-  async findByParentId(parentPartId: string, effectiveDate?: string) {
+  async findByParentId(parentItemCode: string, effectiveDate?: string) {
     let queryBuilder = this.bomRepository.createQueryBuilder('bom')
-      .leftJoinAndSelect(PartMaster, 'childPart', 'childPart.id = bom.childPartId')
-      .where('bom.parentPartId = :parentPartId', { parentPartId })
+      .leftJoinAndSelect(PartMaster, 'childPart', 'childPart.itemCode = bom.childItemCode')
+      .where('bom.parentItemCode = :parentItemCode', { parentItemCode })
       .andWhere('bom.useYn = :useYn', { useYn: 'Y' });
 
     queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
@@ -147,7 +147,7 @@ export class BomService {
    * CONNECT BY PRIOR: 자식으로 재귀 탐색
    * LEVEL: 계층 깊이
    */
-  async findHierarchy(parentPartId: string, depth: number = 3, effectiveDate?: string) {
+  async findHierarchy(parentItemCode: string, depth: number = 3, effectiveDate?: string) {
     const safeDepth = Math.min(Math.max(Math.floor(Number(depth) || 3), 1), 10);
     const params: string[] = [];
 
@@ -159,7 +159,7 @@ export class BomService {
     }
 
     const parentIdx = params.length + 1;
-    params.push(parentPartId);
+    params.push(parentItemCode);
 
     let dateFilterConnect = '';
     if (effectiveDate) {
@@ -171,8 +171,8 @@ export class BomService {
     const query = `
       SELECT
         b.ID as id,
-        b.PARENT_PART_ID as parentPartId,
-        b.CHILD_PART_ID as childPartId,
+        b.PARENT_ITEM_CODE as parentItemCode,
+        b.CHILD_ITEM_CODE as childItemCode,
         b.QTY_PER as qtyPer,
         b.SEQ as seq,
         b.REVISION as revision,
@@ -181,19 +181,19 @@ export class BomService {
         b.VALID_FROM as validFrom,
         b.VALID_TO as validTo,
         b.USE_YN as useYn,
-        p.PART_CODE as partCode,
-        p.PART_NAME as partName,
+        p.ITEM_CODE as itemCode,
+        p.ITEM_NAME as itemName,
         p.PART_NO as partNo,
-        p.PART_TYPE as partType,
+        p.PART_TYPE as itemType,
         p.UNIT as unit,
         LEVEL as lvl
       FROM BOM_MASTERS b
-      JOIN PART_MASTERS p ON b.CHILD_PART_ID = p.ID
+      JOIN ITEM_MASTERS p ON b.CHILD_ITEM_CODE = p.ITEM_CODE
       WHERE b.DELETED_AT IS NULL
         AND b.USE_YN = 'Y'
         ${dateFilter}
-      START WITH b.PARENT_PART_ID = :${parentIdx}
-      CONNECT BY PRIOR b.CHILD_PART_ID = b.PARENT_PART_ID
+      START WITH b.PARENT_ITEM_CODE = :${parentIdx}
+      CONNECT BY PRIOR b.CHILD_ITEM_CODE = b.PARENT_ITEM_CODE
         AND LEVEL <= ${safeDepth}
         AND b.DELETED_AT IS NULL
         AND b.USE_YN = 'Y'
@@ -217,10 +217,10 @@ export class BomService {
       const node = {
         id: row.ID || row.id,
         level: Number(row.LVL || row.lvl),
-        partCode: row.PARTCODE || row.partCode,
+        itemCode: row.PARTCODE || row.itemCode,
         partNo: row.PARTNO || row.partNo,
-        partName: row.PARTNAME || row.partName,
-        partType: row.PARTTYPE || row.partType,
+        itemName: row.PARTNAME || row.itemName,
+        itemType: row.PARTTYPE || row.itemType,
         qtyPer: Number(row.QTYPER || row.qtyPer),
         unit: row.UNIT || row.unit,
         revision: row.REVISION || row.revision,
@@ -230,7 +230,7 @@ export class BomService {
         validFrom: row.VALIDFROM || row.validFrom,
         validTo: row.VALIDTO || row.validTo,
         useYn: row.USEYN || row.useYn,
-        childPartId: row.CHILDPARTID || row.childPartId,
+        childItemCode: row.CHILDITEMCODE || row.childItemCode,
         children: [],
       };
       map.set(node.id, node);
@@ -239,7 +239,7 @@ export class BomService {
     // 부모-자식 관계 설정
     for (const row of rows) {
       const nodeId = row.ID || row.id;
-      const parentId = row.PARENTPARTID || row.parentPartId;
+      const parentId = row.PARENTITEMCODE || row.parentItemCode;
       const node = map.get(nodeId);
       
       // parentId가 현재 row들 중에 있는지 확인
@@ -255,14 +255,14 @@ export class BomService {
   }
 
   async create(dto: CreateBomDto) {
-    if (dto.parentPartId === dto.childPartId) {
+    if (dto.parentItemCode === dto.childItemCode) {
       throw new ConflictException('상위 품목과 하위 품목이 같을 수 없습니다.');
     }
 
     const existing = await this.bomRepository.findOne({
       where: {
-        parentPartId: dto.parentPartId,
-        childPartId: dto.childPartId,
+        parentItemCode: dto.parentItemCode,
+        childItemCode: dto.childItemCode,
         revision: dto.revision ?? 'A',
       },
     });
@@ -270,8 +270,8 @@ export class BomService {
     if (existing) throw new ConflictException('이미 존재하는 BOM입니다.');
 
     const bom = this.bomRepository.create({
-      parentPartId: dto.parentPartId,
-      childPartId: dto.childPartId,
+      parentItemCode: dto.parentItemCode,
+      childItemCode: dto.childItemCode,
       qtyPer: dto.qtyPer,
       seq: dto.seq ?? 0,
       revision: dto.revision ?? 'A',

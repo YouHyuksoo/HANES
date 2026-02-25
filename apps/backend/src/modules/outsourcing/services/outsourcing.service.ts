@@ -160,7 +160,7 @@ export class OutsourcingService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(UPPER(so.orderNo) LIKE UPPER(:search) OR UPPER(so.partCode) LIKE UPPER(:search) OR UPPER(so.partName) LIKE UPPER(:search))',
+        '(UPPER(so.orderNo) LIKE UPPER(:search) OR UPPER(so.itemCode) LIKE UPPER(:search) OR UPPER(so.itemName) LIKE UPPER(:search))',
         { search: `%${search}%` },
       );
     }
@@ -185,7 +185,7 @@ export class OutsourcingService {
     const data = await Promise.all(
       orders.map(async (order) => {
         const vendor = await this.vendorMasterRepository.findOne({
-          where: { id: order.vendorId },
+          where: { partnerCode: order.vendorId },
           select: ['vendorCode', 'vendorName'],
         });
         const deliveryCount = await this.subconDeliveryRepository.count({
@@ -218,7 +218,7 @@ export class OutsourcingService {
     }
 
     const vendor = await this.vendorMasterRepository.findOne({
-      where: { id: order.vendorId },
+      where: { partnerCode: order.vendorId },
     });
 
     const deliveries = await this.subconDeliveryRepository.find({
@@ -247,8 +247,8 @@ export class OutsourcingService {
     const order = this.subconOrderRepository.create({
       orderNo,
       vendorId: dto.vendorId,
-      partCode: dto.partCode,
-      partName: dto.partName,
+      itemCode: dto.itemCode,
+      itemName: dto.itemName,
       orderQty: dto.orderQty,
       unitPrice: dto.unitPrice,
       orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
@@ -263,8 +263,8 @@ export class OutsourcingService {
     await this.findOrderById(id);
 
     const updateData: Partial<SubconOrder> = {};
-    if (dto.partCode !== undefined) updateData.partCode = dto.partCode;
-    if (dto.partName !== undefined) updateData.partName = dto.partName;
+    if (dto.itemCode !== undefined) updateData.itemCode = dto.itemCode;
+    if (dto.itemName !== undefined) updateData.itemName = dto.itemName;
     if (dto.orderQty !== undefined) updateData.orderQty = dto.orderQty;
     if (dto.unitPrice !== undefined) updateData.unitPrice = dto.unitPrice;
     if (dto.orderDate !== undefined) updateData.orderDate = new Date(dto.orderDate);
@@ -467,7 +467,7 @@ export class OutsourcingService {
     const vendorIds = Object.keys(stockByVendor);
     for (const vendorId of vendorIds) {
       const vendor = await this.vendorMasterRepository.findOne({
-        where: { id: vendorId },
+        where: { partnerCode: vendorId },
         select: ['vendorCode', 'vendorName'],
       });
       if (vendor) {

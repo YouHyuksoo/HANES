@@ -17,7 +17,7 @@ export class PartService {
   ) {}
 
   async findAll(query: PartQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 20, partType, search, customer, useYn } = query;
+    const { page = 1, limit = 20, itemType, search, customer, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.partRepository.createQueryBuilder('p')
@@ -29,8 +29,8 @@ export class PartService {
       queryBuilder.andWhere('p.plant = :plant', { plant });
     }
 
-    if (partType) {
-      queryBuilder.andWhere('p.partType = :partType', { partType });
+    if (itemType) {
+      queryBuilder.andWhere('p.itemType = :itemType', { itemType });
     }
 
     if (useYn) {
@@ -43,14 +43,14 @@ export class PartService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(UPPER(p.partCode) LIKE UPPER(:search) OR UPPER(p.partName) LIKE UPPER(:search) OR UPPER(p.partNo) LIKE UPPER(:search) OR UPPER(p.custPartNo) LIKE UPPER(:search) OR UPPER(p.spec) LIKE UPPER(:search))',
+        '(UPPER(p.itemCode) LIKE UPPER(:search) OR UPPER(p.itemName) LIKE UPPER(:search) OR UPPER(p.partNo) LIKE UPPER(:search) OR UPPER(p.custPartNo) LIKE UPPER(:search) OR UPPER(p.spec) LIKE UPPER(:search))',
         { search: `%${search}%` }
       );
     }
 
     const [data, total] = await Promise.all([
       queryBuilder
-        .orderBy('p.partCode', 'ASC')
+        .orderBy('p.itemCode', 'ASC')
         .skip(skip)
         .take(limit)
         .getMany(),
@@ -60,35 +60,35 @@ export class PartService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(itemCode: string) {
     const part = await this.partRepository.findOne({
-      where: { id },
+      where: { itemCode },
     });
-    if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${id}`);
+    if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
     return part;
   }
 
-  async findByCode(partCode: string) {
+  async findByCode(itemCode: string) {
     const part = await this.partRepository.findOne({
-      where: { partCode },
+      where: { itemCode },
     });
-    if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${partCode}`);
+    if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
     return part;
   }
 
   async create(dto: CreatePartDto) {
     const existing = await this.partRepository.findOne({
-      where: { partCode: dto.partCode },
+      where: { itemCode: dto.itemCode },
     });
 
-    if (existing) throw new ConflictException(`이미 존재하는 품목 코드입니다: ${dto.partCode}`);
+    if (existing) throw new ConflictException(`이미 존재하는 품목 코드입니다: ${dto.itemCode}`);
 
     const part = this.partRepository.create({
-      partCode: dto.partCode,
-      partName: dto.partName,
+      itemCode: dto.itemCode,
+      itemName: dto.itemName,
       partNo: dto.partNo,
       custPartNo: dto.custPartNo,
-      partType: dto.partType,
+      itemType: dto.itemType,
       productType: dto.productType,
       spec: dto.spec,
       rev: dto.rev,
@@ -110,22 +110,22 @@ export class PartService {
     return this.partRepository.save(part);
   }
 
-  async update(id: string, dto: UpdatePartDto) {
-    await this.findById(id);
-    await this.partRepository.update(id, dto);
-    return this.findById(id);
+  async update(itemCode: string, dto: UpdatePartDto) {
+    await this.findById(itemCode);
+    await this.partRepository.update(itemCode, dto);
+    return this.findById(itemCode);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.partRepository.delete(id);
-    return { id };
+  async delete(itemCode: string) {
+    await this.findById(itemCode);
+    await this.partRepository.delete(itemCode);
+    return { itemCode };
   }
 
-  async findByType(partType: string) {
+  async findByType(itemType: string) {
     return this.partRepository.find({
-      where: { partType, useYn: 'Y' },
-      order: { partCode: 'asc' },
+      where: { itemType, useYn: 'Y' },
+      order: { itemCode: 'asc' },
     });
   }
 }

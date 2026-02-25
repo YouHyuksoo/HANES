@@ -57,8 +57,8 @@ export class EquipBomService {
     // 검색어 처리
     if (search) {
       where = [
-        { ...whereConditions, itemCode: Like(`%${search}%`) },
-        { ...whereConditions, itemName: Like(`%${search}%`) },
+        { ...whereConditions, bomItemCode: Like(`%${search}%`) },
+        { ...whereConditions, bomItemName: Like(`%${search}%`) },
       ];
     }
 
@@ -72,8 +72,8 @@ export class EquipBomService {
     return { data, total, page, limit };
   }
 
-  async findItemById(id: string): Promise<EquipBomItem> {
-    const item = await this.bomItemRepo.findOne({ where: { id } });
+  async findItemById(bomItemCode: string): Promise<EquipBomItem> {
+    const item = await this.bomItemRepo.findOne({ where: { bomItemCode } });
     if (!item) {
       throw new NotFoundException('BOM 품목을 찾을 수 없습니다.');
     }
@@ -101,15 +101,15 @@ export class EquipBomService {
   // ========================================
 
   async findAllRels(query: EquipBomRelQueryDto) {
-    const { page = 1, limit = 20, equipId, bomItemId, itemType, useYn } = query;
+    const { page = 1, limit = 20, equipCode, bomItemId, itemType, useYn } = query;
 
     const queryBuilder = this.bomRelRepo
       .createQueryBuilder('rel')
       .leftJoinAndSelect('rel.equipment', 'equip')
       .leftJoinAndSelect('rel.bomItem', 'item');
 
-    if (equipId) {
-      queryBuilder.andWhere('rel.equipId = :equipId', { equipId });
+    if (equipCode) {
+      queryBuilder.andWhere('rel.equipCode = :equipCode', { equipCode });
     }
 
     if (bomItemId) {
@@ -144,9 +144,9 @@ export class EquipBomService {
     return rel;
   }
 
-  async findRelsByEquipId(equipId: string): Promise<EquipBomRel[]> {
+  async findRelsByEquipId(equipCode: string): Promise<EquipBomRel[]> {
     return this.bomRelRepo.find({
-      where: { equipId, useYn: 'Y' },
+      where: { equipCode, useYn: 'Y' },
       relations: ['bomItem'],
       order: { createdAt: 'DESC' },
     });
@@ -180,16 +180,16 @@ export class EquipBomService {
   // 특정 설비의 BOM 목록 조회
   // ========================================
 
-  async getEquipBomList(equipId: string) {
+  async getEquipBomList(equipCode: string) {
     const rels = await this.bomRelRepo.find({
-      where: { equipId, useYn: 'Y' },
+      where: { equipCode, useYn: 'Y' },
       relations: ['bomItem'],
       order: { createdAt: 'DESC' },
     });
 
     return rels.map((rel) => ({
       id: rel.id,
-      equipId: rel.equipId,
+      equipCode: rel.equipCode,
       bomItemId: rel.bomItemId,
       quantity: rel.quantity,
       installDate: rel.installDate,
@@ -197,9 +197,8 @@ export class EquipBomService {
       remark: rel.remark,
       useYn: rel.useYn,
       bomItem: {
-        id: rel.bomItem.id,
-        itemCode: rel.bomItem.itemCode,
-        itemName: rel.bomItem.itemName,
+        bomItemCode: rel.bomItem.bomItemCode,
+        bomItemName: rel.bomItem.bomItemName,
         itemType: rel.bomItem.itemType,
         spec: rel.bomItem.spec,
         maker: rel.bomItem.maker,

@@ -357,12 +357,12 @@ export class EquipMasterService {
     const equip = await this.findById(id);
 
     await this.equipMasterRepository.update(id, {
-      currentJobOrderId: dto.jobOrderId ?? null,
+      currentJobOrderId: dto.orderNo ?? null,
     });
 
     this.logger.log(
-      dto.jobOrderId
-        ? `설비 작업지시 할당: ${equip.equipCode} → ${dto.jobOrderId}`
+      dto.orderNo
+        ? `설비 작업지시 할당: ${equip.equipCode} → ${dto.orderNo}`
         : `설비 작업지시 해제: ${equip.equipCode}`,
     );
 

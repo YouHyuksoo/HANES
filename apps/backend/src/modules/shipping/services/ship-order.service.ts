@@ -75,14 +75,13 @@ export class ShipOrderService {
         const itemsWithPart = await Promise.all(
           items.map(async (item) => {
             const part = await this.partRepository.findOne({
-              where: { id: item.partId },
-              select: ['id', 'partCode', 'partName'],
+              where: { itemCode: item.itemCode },
+              select: ['itemCode', 'itemName'],
             });
             return {
               ...item,
-              partId: part?.id ?? item.partId,
-              partCode: part?.partCode,
-              partName: part?.partName,
+              itemCode: part?.itemCode ?? item.itemCode,
+              itemName: part?.itemName,
             };
           })
         );
@@ -112,14 +111,13 @@ export class ShipOrderService {
     const itemsWithPart = await Promise.all(
       items.map(async (item) => {
         const part = await this.partRepository.findOne({
-          where: { id: item.partId },
-          select: ['id', 'partCode', 'partName'],
+          where: { itemCode: item.itemCode },
+          select: ['itemCode', 'itemName'],
         });
         return {
           ...item,
-          partId: part?.id ?? item.partId,
-          partCode: part?.partCode,
-          partName: part?.partName,
+          itemCode: part?.itemCode ?? item.itemCode,
+          itemName: part?.itemName,
         };
       })
     );
@@ -159,7 +157,7 @@ export class ShipOrderService {
         const items = dto.items.map((item) =>
           this.shipOrderItemRepository.create({
             shipOrderId: savedOrder.id,
-            partId: item.partId,
+            itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
             remark: item.remark,
@@ -197,7 +195,7 @@ export class ShipOrderService {
         const items = dto.items.map((item) =>
           this.shipOrderItemRepository.create({
             shipOrderId: id,
-            partId: item.partId,
+            itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
             remark: item.remark,

@@ -3,7 +3,7 @@
  * @description 자재 LOT 병합 비즈니스 로직 (TypeORM)
  *
  * 초보자 가이드:
- * 1. 같은 품목(partId)의 LOT만 병합 가능
+ * 1. 같은 품목(itemCode)의 LOT만 병합 가능
  * 2. 대상 LOT에 수량 합산, 원본 LOT은 DEPLETED 처리
  * 3. MatStock도 동기화, StockTransaction 이력 기록
  */
@@ -32,7 +32,7 @@ export class LotMergeService {
   ) {}
 
   async findMergeableLots(query: LotMergeQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, search, partId } = query;
+    const { page = 1, limit = 50, search, itemCode } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.matLotRepository.createQueryBuilder('lot')
@@ -43,8 +43,8 @@ export class LotMergeService {
     if (company) qb.andWhere('lot.company = :company', { company });
     if (plant) qb.andWhere('lot.plant = :plant', { plant });
 
-    if (partId) {
-      qb.andWhere('lot.partId = :partId', { partId });
+    if (itemCode) {
+      qb.andWhere('lot.itemCode = :itemCode', { itemCode });
     }
     if (search) {
       qb.andWhere(
@@ -54,21 +54,21 @@ export class LotMergeService {
     }
 
     const [lots, total] = await Promise.all([
-      qb.orderBy('lot.partId', 'ASC')
+      qb.orderBy('lot.itemCode', 'ASC')
         .addOrderBy('lot.lotNo', 'ASC')
         .skip(skip).take(limit).getMany(),
       qb.getCount(),
     ]);
 
-    const partIds = lots.map(l => l.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) }, select: ['id', 'partCode', 'partName', 'unit'] })
+    const itemCodes = lots.map(l => l.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName', 'unit'] })
       : [];
     const partMap = new Map(parts.map(p => [p.id, p]));
 
     const data = lots.map(lot => {
-      const part = partMap.get(lot.partId);
-      return { ...lot, partCode: part?.partCode, partName: part?.partName, unit: part?.unit };
+      const part = partMap.get(lot.itemCode);
+      return { ...lot, itemCode: part?.itemCode, itemName: part?.itemName, unit: part?.unit };
     });
 
     return { data, total, page, limit };
@@ -84,7 +84,7 @@ export class LotMergeService {
     try {
       // 모든 LOT 조회
       const lots = await queryRunner.manager.find(MatLot, {
-        where: { id: In(sourceLotIds) },
+        where: { lotNo: In(sourceLotIds) },
       });
 
       if (lots.length < 2) {
@@ -92,8 +92,8 @@ export class LotMergeService {
       }
 
       // 같은 품목인지 검증
-      const partIds = new Set(lots.map(l => l.partId));
-      if (partIds.size > 1) {
+      const itemCodes = new Set(lots.map(l => l.itemCode));
+      if (itemCodes.size > 1) {
         throw new BadRequestException('서로 다른 품목의 LOT은 병합할 수 없습니다.');
       }
 
@@ -119,7 +119,7 @@ export class LotMergeService {
       const totalMergeQty = sources.reduce((sum, l) => sum + l.currentQty, 0);
 
       // 품목 정보
-      const part = await queryRunner.manager.findOne(PartMaster, { where: { id: target.partId } });
+      const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode: target.itemCode } });
 
       // 대상 LOT에 수량 합산
       const newTargetQty = target.currentQty + totalMergeQty;
@@ -138,7 +138,7 @@ export class LotMergeService {
 
       // MatStock 동기화 — 대상 재고에 합산, 원본 재고 0으로
       const targetStock = await queryRunner.manager.findOne(MatStock, {
-        where: { lotId: target.id },
+        where: { lotNo: target.id },
       });
 
       if (targetStock) {
@@ -150,7 +150,7 @@ export class LotMergeService {
 
       for (const src of sources) {
         const srcStock = await queryRunner.manager.findOne(MatStock, {
-          where: { lotId: src.id },
+          where: { lotNo: src.id },
         });
         if (srcStock) {
           await queryRunner.manager.update(MatStock, srcStock.id, {
@@ -167,8 +167,8 @@ export class LotMergeService {
         transNo,
         transType: 'LOT_MERGE',
         transDate: new Date(),
-        partId: target.partId,
-        lotId: target.id,
+        itemCode: target.itemCode,
+        lotNo: target.id,
         qty: totalMergeQty,
         refType: 'LOT_MERGE',
         refId: target.id,
@@ -184,8 +184,8 @@ export class LotMergeService {
         mergedLotNos: sources.map(s => s.lotNo),
         totalMergedQty: totalMergeQty,
         newTotalQty: newTargetQty,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();

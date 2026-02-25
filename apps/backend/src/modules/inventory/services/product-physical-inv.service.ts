@@ -45,19 +45,19 @@ export class ProductPhysicalInvService {
 
     const qb = this.stockRepository
       .createQueryBuilder('s')
-      .leftJoin(PartMaster, 'p', 'p.id = s.partId')
-      .leftJoin(MatLot, 'l', 'l.id = s.lotId')
+      .leftJoin(PartMaster, 'p', 'p.id = s.itemCode')
+      .leftJoin(MatLot, 'l', 'l.id = s.lotNo')
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode')
       .select([
         's.id AS "id"',
         's.warehouseCode AS "warehouseId"',
         'w.warehouseName AS "warehouseName"',
-        's.partId AS "partId"',
-        'p.partCode AS "partCode"',
-        'p.partName AS "partName"',
+        's.itemCode AS "itemCode"',
+        'p.itemCode AS "itemCode"',
+        'p.itemName AS "itemName"',
         'p.unit AS "unit"',
-        'p.partType AS "partType"',
-        's.lotId AS "lotId"',
+        'p.itemType AS "itemType"',
+        's.lotNo AS "lotNo"',
         'l.lotNo AS "lotNo"',
         's.qty AS "qty"',
         's.reservedQty AS "reservedQty"',
@@ -78,12 +78,12 @@ export class ProductPhysicalInvService {
 
     if (search) {
       qb.andWhere(
-        '(LOWER(p.partCode) LIKE :search OR LOWER(p.partName) LIKE :search)',
+        '(LOWER(p.itemCode) LIKE :search OR LOWER(p.itemName) LIKE :search)',
         { search: `%${search.toLowerCase()}%` },
       );
     }
 
-    qb.orderBy('p.partCode', 'ASC').addOrderBy('l.lotNo', 'ASC');
+    qb.orderBy('p.itemCode', 'ASC').addOrderBy('l.lotNo', 'ASC');
 
     const total = await qb.getCount();
     const data = await qb.offset(skip).limit(limit).getRawMany();
@@ -97,18 +97,18 @@ export class ProductPhysicalInvService {
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
-      .leftJoin(PartMaster, 'part', 'part.id = log.partId')
-      .leftJoin(MatLot, 'lot', 'lot.id = log.lotId')
+      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
+      .leftJoin(MatLot, 'lot', 'lot.lotNo = log.lotNo')
       .leftJoin(Warehouse, 'wh', 'wh.id = log.warehouseCode')
       .select([
         'log.id AS "id"',
         'log.warehouseCode AS "warehouseId"',
         'wh.warehouseName AS "warehouseName"',
-        'log.partId AS "partId"',
-        'part.partCode AS "partCode"',
-        'part.partName AS "partName"',
+        'log.itemCode AS "itemCode"',
+        'part.itemCode AS "itemCode"',
+        'part.itemName AS "itemName"',
         'part.unit AS "unit"',
-        'log.lotId AS "lotId"',
+        'log.lotNo AS "lotNo"',
         'lot.lotNo AS "lotNo"',
         'log.beforeQty AS "beforeQty"',
         'log.afterQty AS "afterQty"',
@@ -138,7 +138,7 @@ export class ProductPhysicalInvService {
     }
     if (search) {
       qb.andWhere(
-        '(LOWER(part.partCode) LIKE :search OR LOWER(part.partName) LIKE :search)',
+        '(LOWER(part.itemCode) LIKE :search OR LOWER(part.itemName) LIKE :search)',
         { search: `%${search.toLowerCase()}%` },
       );
     }
@@ -184,8 +184,8 @@ export class ProductPhysicalInvService {
         // InvAdjLog 기록
         const invAdjLog = queryRunner.manager.create(InvAdjLog, {
           warehouseCode: stock.warehouseCode,
-          partId: stock.partId,
-          lotId: stock.lotId,
+          itemCode: stock.itemCode,
+          lotNo: stock.lotNo,
           adjType: 'PRODUCT_PHYSICAL_COUNT',
           beforeQty,
           afterQty,

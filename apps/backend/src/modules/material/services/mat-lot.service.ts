@@ -20,11 +20,11 @@ export class MatLotService {
   ) {}
 
   async findAll(query: MatLotQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, partId, lotNo, vendor, iqcStatus, status } = query;
+    const { page = 1, limit = 10, itemCode, lotNo, vendor, iqcStatus, status } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
-      ...(partId && { partId }),
+      ...(itemCode && { itemCode }),
       ...(lotNo && { lotNo: Like(`%${lotNo}%`) }),
       ...(vendor && { vendor: Like(`%${vendor}%`) }),
       ...(iqcStatus && { iqcStatus }),
@@ -44,18 +44,18 @@ export class MatLotService {
     ]);
 
     // part 정보 조회 및 중첩 객체 평면화
-    const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+    const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     const flattenedData = data.map((lot) => {
-      const part = partMap.get(lot.partId);
+      const part = partMap.get(lot.itemCode);
       return {
         ...lot,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         unit: part?.unit,
       };
     });
@@ -70,12 +70,12 @@ export class MatLotService {
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${id}`);
 
-    const part = lot.partId ? await this.partMasterRepository.findOne({ where: { id: lot.partId } }) : null;
+    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
 
     return {
       ...lot,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       unit: part?.unit,
     };
   }
@@ -87,12 +87,12 @@ export class MatLotService {
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
 
-    const part = lot.partId ? await this.partMasterRepository.findOne({ where: { id: lot.partId } }) : null;
+    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
 
     return {
       ...lot,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       unit: part?.unit,
     };
   }
@@ -106,7 +106,7 @@ export class MatLotService {
 
     const lot = this.matLotRepository.create({
       lotNo: dto.lotNo,
-      partId: dto.partId,
+      itemCode: dto.itemCode,
       initQty: dto.initQty,
       currentQty: dto.currentQty ?? dto.initQty,
       recvDate: dto.recvDate ? new Date(dto.recvDate) : new Date(),
@@ -120,12 +120,12 @@ export class MatLotService {
     });
 
     const saved = await this.matLotRepository.save(lot);
-    const part = await this.partMasterRepository.findOne({ where: { id: saved.partId } });
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: saved.itemCode } });
 
     return {
       ...saved,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       unit: part?.unit,
     };
   }
@@ -143,12 +143,12 @@ export class MatLotService {
     await this.matLotRepository.update(id, updateData);
 
     const lot = await this.matLotRepository.findOne({ where: { id } });
-    const part = lot?.partId ? await this.partMasterRepository.findOne({ where: { id: lot.partId } }) : null;
+    const part = lot?.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
 
     return {
       ...lot,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       unit: part?.unit,
     };
   }

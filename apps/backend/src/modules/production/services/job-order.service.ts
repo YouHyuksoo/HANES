@@ -32,7 +32,7 @@ import {
 
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
 const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
-  id: true, orderNo: true, partId: true, lineCode: true,
+  id: true, orderNo: true, itemCode: true, lineCode: true,
   planQty: true, planDate: true, priority: true, status: true,
   erpSyncYn: true, goodQty: true, defectQty: true,
   startAt: true, endAt: true, remark: true,
@@ -65,7 +65,7 @@ export class JobOrderService {
   /** 작업지시 목록 조회 */
   async findAll(query: JobOrderQueryDto, company?: string, plant?: string) {
     const {
-      page = 1, limit = 50, search, orderNo, partId,
+      page = 1, limit = 50, search, orderNo, itemCode,
       lineCode, status, planDateFrom, planDateTo, erpSyncYn,
     } = query;
     const skip = (page - 1) * limit;
@@ -77,7 +77,7 @@ export class JobOrderService {
     if (company) qb.andWhere('jo.company = :company', { company });
     if (plant) qb.andWhere('jo.plant = :plant', { plant });
     if (orderNo) qb.andWhere('LOWER(jo.orderNo) LIKE :orderNo', { orderNo: `%${orderNo.toLowerCase()}%` });
-    if (partId) qb.andWhere('jo.partId = :partId', { partId });
+    if (itemCode) qb.andWhere('jo.itemCode = :itemCode', { itemCode });
     if (lineCode) qb.andWhere('jo.lineCode = :lineCode', { lineCode });
     if (status) qb.andWhere('jo.status = :status', { status });
     if (erpSyncYn) qb.andWhere('jo.erpSyncYn = :erpSyncYn', { erpSyncYn });
@@ -85,7 +85,7 @@ export class JobOrderService {
     if (planDateTo) qb.andWhere('jo.planDate <= :planDateTo', { planDateTo: new Date(planDateTo) });
     if (search) {
       qb.andWhere(
-        '(LOWER(jo.orderNo) LIKE :search OR LOWER(part.partCode) LIKE :search OR LOWER(part.partName) LIKE :search)',
+        '(LOWER(jo.orderNo) LIKE :search OR LOWER(part.itemCode) LIKE :search OR LOWER(part.itemName) LIKE :search)',
         { search: `%${search.toLowerCase()}%` },
       );
     }
@@ -114,7 +114,7 @@ export class JobOrderService {
     const jobOrder = await this.findById(id);
     const prodResults = await this.prodResultRepository
       .createQueryBuilder('pr')
-      .where('pr.jobOrderId = :jobOrderId', { jobOrderId: id })
+      .where('pr.orderNo = :orderNo', { orderNo: id })
       .orderBy('pr.createdAt', 'DESC')
       .take(10)
       .getMany();
@@ -139,9 +139,9 @@ export class JobOrderService {
     if (existing) throw new ConflictException(`이미 존재하는 작업지시번호입니다: ${dto.orderNo}`);
 
     const part = await this.partMasterRepository.findOne({
-      where: { id: dto.partId },
+      where: { itemCode: dto.itemCode },
     });
-    if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.partId}`);
+    if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -150,7 +150,7 @@ export class JobOrderService {
     try {
       const jobOrder = queryRunner.manager.create(JobOrder, {
         orderNo: dto.orderNo,
-        partId: dto.partId,
+        itemCode: dto.itemCode,
         parentId: dto.parentId || null,
         lineCode: dto.lineCode,
         planQty: dto.planQty,
@@ -184,27 +184,27 @@ export class JobOrderService {
   /** BOM 기반 반제품 작업지시 자동생성 (트랜잭션 내에서 일괄 저장) */
   private async createChildOrders(queryRunner: QueryRunner, parent: JobOrder, dto: CreateJobOrderDto) {
     const bomItems = await this.bomMasterRepository.find({
-      where: { parentPartId: parent.partId, useYn: 'Y' },
+      where: { parentItemCode: parent.itemCode, useYn: 'Y' },
       order: { seq: 'ASC' },
     });
     if (bomItems.length === 0) return;
 
     const wipParts = await this.partMasterRepository
       .createQueryBuilder('p')
-      .where('p.id IN (:...ids)', { ids: bomItems.map(b => b.childPartId) })
-      .andWhere('p.partType = :type', { type: 'WIP' })
+      .where('p.itemCode IN (:...ids)', { ids: bomItems.map(b => b.childItemCode) })
+      .andWhere('p.itemType = :type', { type: 'WIP' })
       .getMany();
 
-    const wipPartIds = new Set(wipParts.map(p => p.id));
+    const wipPartIds = new Set(wipParts.map(p => p.itemCode));
     const childOrders: JobOrder[] = [];
 
     for (let i = 0; i < bomItems.length; i++) {
       const bom = bomItems[i];
-      if (!wipPartIds.has(bom.childPartId)) continue;
+      if (!wipPartIds.has(bom.childItemCode)) continue;
 
       childOrders.push(queryRunner.manager.create(JobOrder, {
         orderNo: `${parent.orderNo}-${String(i + 1).padStart(2, '0')}`,
-        partId: bom.childPartId,
+        itemCode: bom.childItemCode,
         parentId: parent.id,
         lineCode: dto.lineCode,
         planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
@@ -314,7 +314,7 @@ export class JobOrderService {
         .createQueryBuilder(ProdResult, 'pr')
         .select('SUM(pr.goodQty)', 'totalGoodQty')
         .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
-        .where('pr.jobOrderId = :jobOrderId', { jobOrderId: id })
+        .where('pr.orderNo = :orderNo', { orderNo: id })
         .getRawOne();
 
       await queryRunner.manager.update(JobOrder, id, {
@@ -390,7 +390,7 @@ export class JobOrderService {
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
-      .where('pr.jobOrderId = :jobOrderId', { jobOrderId: id })
+      .where('pr.orderNo = :orderNo', { orderNo: id })
       .getRawOne();
 
     const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
@@ -398,7 +398,7 @@ export class JobOrderService {
     const totalQty = totalGoodQty + totalDefectQty;
 
     return {
-      jobOrderId: id,
+      orderNo: id,
       orderNo: jobOrder.orderNo,
       planQty: jobOrder.planQty,
       totalGoodQty,

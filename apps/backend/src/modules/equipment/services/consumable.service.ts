@@ -584,12 +584,12 @@ export class ConsumableService {
     try {
       await queryRunner.manager.update(ConsumableMaster, id, {
         operStatus: 'MOUNTED',
-        mountedEquipId: dto.equipId,
+        mountedEquipId: dto.equipCode,
       });
 
       await queryRunner.manager.save(ConsumableMountLog, {
         consumableId: id,
-        equipId: dto.equipId,
+        equipCode: dto.equipCode,
         action: 'MOUNT',
         workerId: dto.workerId ?? null,
         remark: dto.remark ?? null,
@@ -600,7 +600,7 @@ export class ConsumableService {
       await queryRunner.commitTransaction();
 
       this.logger.log(
-        `금형 장착: ${consumable.consumableCode} → 설비 ${dto.equipId}`,
+        `금형 장착: ${consumable.consumableCode} → 설비 ${dto.equipCode}`,
       );
 
       return this.findById(id);
@@ -644,7 +644,7 @@ export class ConsumableService {
 
       await queryRunner.manager.save(ConsumableMountLog, {
         consumableId: id,
-        equipId: previousEquipId,
+        equipCode: previousEquipId,
         action: 'UNMOUNT',
         workerId: dto.workerId ?? null,
         remark: dto.remark ?? null,
@@ -688,7 +688,7 @@ export class ConsumableService {
       if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipId) {
         await queryRunner.manager.save(ConsumableMountLog, {
           consumableId: id,
-          equipId: consumable.mountedEquipId,
+          equipCode: consumable.mountedEquipId,
           action: 'UNMOUNT',
           workerId: dto.workerId ?? null,
           remark: '수리 전환으로 인한 자동 해제',
@@ -732,10 +732,10 @@ export class ConsumableService {
   /**
    * 특정 설비에 장착된 금형 목록 조회
    */
-  async findMountedByEquip(equipId: string) {
+  async findMountedByEquip(equipCode: string) {
     return this.consumableMasterRepository.find({
       where: {
-        mountedEquipId: equipId,
+        mountedEquipId: equipCode,
         operStatus: 'MOUNTED',
       },
       order: { consumableCode: 'ASC' },

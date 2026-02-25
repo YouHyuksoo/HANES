@@ -106,21 +106,21 @@ export class SysConfigService {
 
   /** 설정 수정 */
   async update(id: string, dto: UpdateSysConfigDto) {
-    const config = await this.sysConfigRepository.findOne({ where: { id } });
+    const config = await this.sysConfigRepository.findOne({ where: { configKey: id } });
     if (!config) throw new NotFoundException(`설정을 찾을 수 없습니다: ${id}`);
-    await this.sysConfigRepository.update(id, dto);
-    return this.sysConfigRepository.findOne({ where: { id } });
+    await this.sysConfigRepository.update({ configKey: id }, dto);
+    return this.sysConfigRepository.findOne({ where: { configKey: id } });
   }
 
   /** 일괄 수정 (관리 페이지 저장 버튼) */
   async bulkUpdate(dto: BulkUpdateSysConfigDto) {
     const results = [];
     for (const item of dto.items) {
-      await this.sysConfigRepository.update(item.id, {
+      await this.sysConfigRepository.update({ configKey: item.id }, {
         configValue: item.configValue,
       });
       const updated = await this.sysConfigRepository.findOne({
-        where: { id: item.id },
+        where: { configKey: item.id },
       });
       if (updated) results.push(updated);
     }
@@ -129,9 +129,9 @@ export class SysConfigService {
 
   /** 설정 삭제 */
   async remove(id: string) {
-    const config = await this.sysConfigRepository.findOne({ where: { id } });
+    const config = await this.sysConfigRepository.findOne({ where: { configKey: id } });
     if (!config) throw new NotFoundException(`설정을 찾을 수 없습니다: ${id}`);
-    await this.sysConfigRepository.delete(id);
+    await this.sysConfigRepository.delete({ configKey: id });
     return { id, deleted: true };
   }
 }

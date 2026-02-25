@@ -172,7 +172,7 @@ export class EquipMasterController {
   @SwaggerResponse({ status: 404, description: '설비를 찾을 수 없음' })
   async assignJobOrder(@Param('id') id: string, @Body() dto: AssignJobOrderDto) {
     const data = await this.equipMasterService.assignJobOrder(id, dto);
-    return ResponseUtil.success(data, dto.jobOrderId ? '작업지시가 할당되었습니다.' : '작업지시가 해제되었습니다.');
+    return ResponseUtil.success(data, dto.orderNo ? '작업지시가 할당되었습니다.' : '작업지시가 해제되었습니다.');
   }
 
   // =============================================

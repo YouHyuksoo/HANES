@@ -47,19 +47,19 @@ export class IssueRequestService {
     return `${prefix}${String(count + 1).padStart(3, '0')}`;
   }
 
-  /** 품목 목록에 partCode/partName 평탄화 */
+  /** 품목 목록에 itemCode/itemName 평탄화 */
   private async flattenItems(items: MatIssueRequestItem[]) {
-    const partIds = items.map((i) => i.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const itemCodes = items.map((i) => i.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return items.map((item) => {
-      const part = partMap.get(item.partId);
+      const part = partMap.get(item.itemCode);
       return {
         ...item,
-        partCode: part?.partCode ?? null,
-        partName: part?.partName ?? null,
+        itemCode: part?.itemCode ?? null,
+        itemName: part?.itemName ?? null,
         unit: item.unit ?? part?.unit ?? null,
       };
     });
@@ -81,7 +81,7 @@ export class IssueRequestService {
       const requestNo = await this.generateRequestNo();
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
-        jobOrderId: dto.jobOrderId ?? null,
+        orderNo: dto.orderNo ?? null,
         issueType: dto.issueType ?? null,
         status: 'REQUESTED',
         requester: 'SYSTEM',
@@ -92,7 +92,7 @@ export class IssueRequestService {
       const items = dto.items.map((item) =>
         queryRunner.manager.create(MatIssueRequestItem, {
           requestId: saved.id,
-          partId: item.partId,
+          itemCode: item.itemCode,
           requestQty: item.requestQty,
           issuedQty: 0,
           unit: item.unit,
@@ -191,10 +191,10 @@ export class IssueRequestService {
     await queryRunner.startTransaction();
     try {
       const issueResult = await this.matIssueService.create({
-        jobOrderId: request.jobOrderId ?? undefined,
+        orderNo: request.orderNo ?? undefined,
         warehouseCode: dto.warehouseCode,
         issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
-        items: dto.items.map((i) => ({ lotId: i.lotId, issueQty: i.issueQty })),
+        items: dto.items.map((i) => ({ lotNo: i.lotNo, issueQty: i.issueQty })),
         workerId: dto.workerId,
         remark: dto.remark ?? `출고요청 ${request.requestNo} 기반 출고`,
       });

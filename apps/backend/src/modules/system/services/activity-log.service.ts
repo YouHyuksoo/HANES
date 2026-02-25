@@ -49,8 +49,7 @@ export class ActivityLogService {
       if (!isEnabled) return;
 
       const log = this.activityLogRepository.create({
-        userId: params.userId,
-        userEmail: params.userEmail ?? null,
+        userEmail: params.userId ?? params.userEmail ?? null,
         userName: params.userName ?? null,
         activityType: params.activityType,
         pagePath: params.pagePath ?? null,

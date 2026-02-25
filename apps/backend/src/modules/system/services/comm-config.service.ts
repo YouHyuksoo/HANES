@@ -65,7 +65,7 @@ export class CommConfigService {
   /** 단건 조회 (ID) */
   async findById(id: string) {
     const config = await this.commConfigRepository.findOne({
-      where: { id },
+      where: { configName: id },
     });
 
     if (!config) {
@@ -96,7 +96,6 @@ export class CommConfigService {
         useYn: 'Y',
       },
       select: [
-        'id',
         'configName',
         'commType',
         'host',
@@ -146,7 +145,7 @@ export class CommConfigService {
       const existing = await this.commConfigRepository.findOne({
         where: { configName: dto.configName },
       });
-      if (existing && existing.id !== id) {
+      if (existing && existing.configName !== id) {
         throw new ConflictException(`이미 등록된 설정 이름입니다: ${dto.configName}`);
       }
     }
@@ -166,7 +165,7 @@ export class CommConfigService {
     if (dto.extraConfig !== undefined) updateData.extraConfig = JSON.stringify(dto.extraConfig);
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.commConfigRepository.update(id, updateData);
+    await this.commConfigRepository.update({ configName: id }, updateData);
     return this.findById(id);
   }
 
@@ -174,7 +173,7 @@ export class CommConfigService {
   async remove(id: string) {
     await this.findById(id);
 
-    await this.commConfigRepository.delete(id);
+    await this.commConfigRepository.delete({ configName: id });
 
     return { message: '통신설정이 삭제되었습니다.' };
   }

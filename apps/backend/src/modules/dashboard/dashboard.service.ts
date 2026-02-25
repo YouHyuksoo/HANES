@@ -65,7 +65,7 @@ export class DashboardService {
     return orders.map((o) => ({
       id: o.id,
       orderNo: o.orderNo,
-      partName: o.part?.partName ?? '-',
+      itemName: o.part?.itemName ?? '-',
       line: o.lineCode ?? '-',
       planQty: o.planQty,
       actualQty: o.goodQty,

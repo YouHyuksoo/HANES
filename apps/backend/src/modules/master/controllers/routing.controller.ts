@@ -3,7 +3,7 @@
  * @description 공정라우팅(ProcessMap) CRUD API 컨트롤러
  *
  * 초보자 가이드:
- * 1. **GET /master/routings**: 라우팅 목록 조회 (partId 필터 지원)
+ * 1. **GET /master/routings**: 라우팅 목록 조회 (itemCode 필터 지원)
  * 2. **POST /master/routings**: 라우팅 생성
  * 3. **PUT /master/routings/:id**: 라우팅 수정
  * 4. **DELETE /master/routings/:id**: 라우팅 삭제

@@ -41,7 +41,6 @@ export class UserService {
     return this.userRepository.find({
       where,
       select: [
-        'id',
         'email',
         'name',
         'empNo',
@@ -59,9 +58,8 @@ export class UserService {
   /** 사용자 상세 조회 */
   async findOne(id: string) {
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { email: id },
       select: [
-        'id',
         'email',
         'name',
         'empNo',
@@ -106,7 +104,7 @@ export class UserService {
     this.logger.log(`User created: ${savedUser.email}`);
 
     return {
-      id: savedUser.id,
+      id: savedUser.email,
       email: savedUser.email,
       name: savedUser.name,
       empNo: savedUser.empNo,
@@ -122,12 +120,11 @@ export class UserService {
   async update(id: string, dto: UpdateUserDto) {
     await this.findOne(id); // 존재 확인
 
-    await this.userRepository.update(id, dto);
+    await this.userRepository.update({ email: id }, dto);
 
     const user = await this.userRepository.findOne({
-      where: { id },
+      where: { email: id },
       select: [
-        'id',
         'email',
         'name',
         'empNo',
@@ -148,7 +145,7 @@ export class UserService {
   async remove(id: string) {
     await this.findOne(id);
 
-    await this.userRepository.delete(id);
+    await this.userRepository.delete({ email: id });
 
     this.logger.log(`User deleted: ${id}`);
     return { message: '사용자가 삭제되었습니다.' };
@@ -158,7 +155,7 @@ export class UserService {
   async updatePhoto(id: string, photoUrl: string | null) {
     const user = await this.findOne(id);
     
-    await this.userRepository.update(id, { photoUrl });
+    await this.userRepository.update({ email: id }, { photoUrl });
     
     this.logger.log(`User photo updated: ${user.email}`);
     return { 

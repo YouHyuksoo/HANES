@@ -41,10 +41,11 @@ export class ProductInventoryService {
     const today = new Date();
     const prefix = `PTX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
-    const lastTrans = await this.transactionRepository.findOne({
-      where: { transNo: prefix },
-      order: { transNo: 'DESC' },
-    });
+    const lastTrans = await this.transactionRepository
+      .createQueryBuilder('t')
+      .where('t.transNo LIKE :prefix', { prefix: `${prefix}%` })
+      .orderBy('t.transNo', 'DESC')
+      .getOne();
 
     let seq = 1;
     if (lastTrans) {
@@ -70,10 +71,10 @@ export class ProductInventoryService {
         transType: dto.transType,
         transDate: new Date(),
         toWarehouseId: dto.warehouseId,
-        partId: dto.partId,
-        partType: dto.partType,
-        lotId: dto.lotId,
-        jobOrderId: dto.jobOrderId,
+        itemCode: dto.itemCode,
+        itemType: dto.itemType,
+        lotNo: dto.lotNo,
+        orderNo: dto.orderNo,
         processCode: dto.processCode,
         qty: dto.qty,
         unitPrice: dto.unitPrice,
@@ -89,7 +90,7 @@ export class ProductInventoryService {
 
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.warehouseId, partId: dto.partId, lotId: dto.lotId || IsNull() },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
       });
 
       if (existingStock) {
@@ -100,10 +101,10 @@ export class ProductInventoryService {
       } else {
         await queryRunner.manager.save(ProductStock, {
           warehouseCode: dto.warehouseId,
-          partId: dto.partId,
-          partType: dto.partType,
-          lotId: dto.lotId || null,
-          jobOrderId: dto.jobOrderId || null,
+          itemCode: dto.itemCode,
+          itemType: dto.itemType,
+          lotNo: dto.lotNo || null,
+          orderNo: dto.orderNo || null,
           processCode: dto.processCode || null,
           qty: dto.qty,
           reservedQty: 0,
@@ -132,7 +133,7 @@ export class ProductInventoryService {
     try {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.warehouseId, partId: dto.partId, lotId: dto.lotId || IsNull() },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -146,15 +147,16 @@ export class ProductInventoryService {
         transDate: new Date(),
         fromWarehouseId: dto.warehouseId,
         toWarehouseId: dto.toWarehouseId,
-        partId: dto.partId,
-        partType: dto.partType,
-        lotId: dto.lotId,
-        jobOrderId: dto.jobOrderId,
+        itemCode: dto.itemCode,
+        itemType: dto.itemType,
+        lotNo: dto.lotNo,
+        orderNo: dto.orderNo,
         processCode: dto.processCode,
         qty: -dto.qty,
         refType: dto.refType,
         refId: dto.refId,
         workerId: dto.workerId,
+        issueType: dto.issueType,
         remark: dto.remark,
         status: 'DONE',
       });
@@ -170,7 +172,7 @@ export class ProductInventoryService {
       // 4. 이동 대상 창고가 있으면 입고 처리
       if (dto.toWarehouseId) {
         const targetStock = await queryRunner.manager.findOne(ProductStock, {
-          where: { warehouseCode: dto.toWarehouseId, partId: dto.partId, lotId: dto.lotId || IsNull() },
+          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
         });
 
         if (targetStock) {
@@ -181,10 +183,10 @@ export class ProductInventoryService {
         } else {
           await queryRunner.manager.save(ProductStock, {
             warehouseCode: dto.toWarehouseId,
-            partId: dto.partId,
-            partType: dto.partType,
-            lotId: dto.lotId || null,
-            jobOrderId: dto.jobOrderId || null,
+            itemCode: dto.itemCode,
+            itemType: dto.itemType,
+            lotNo: dto.lotNo || null,
+            orderNo: dto.orderNo || null,
             processCode: dto.processCode || null,
             qty: dto.qty,
             reservedQty: 0,
@@ -235,10 +237,10 @@ export class ProductInventoryService {
         transDate: new Date(),
         fromWarehouseId: originalTrans.toWarehouseId,
         toWarehouseId: originalTrans.fromWarehouseId,
-        partId: originalTrans.partId,
-        partType: originalTrans.partType,
-        lotId: originalTrans.lotId,
-        jobOrderId: originalTrans.jobOrderId,
+        itemCode: originalTrans.itemCode,
+        itemType: originalTrans.itemType,
+        lotNo: originalTrans.lotNo,
+        orderNo: originalTrans.orderNo,
         processCode: originalTrans.processCode,
         qty: -originalTrans.qty,
         unitPrice: originalTrans.unitPrice,
@@ -247,6 +249,7 @@ export class ProductInventoryService {
         refId: originalTrans.refId,
         cancelRefId: originalTrans.id,
         workerId: dto.workerId,
+        issueType: originalTrans.issueType,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,
         status: 'DONE',
       });
@@ -258,8 +261,8 @@ export class ProductInventoryService {
         const stock = await queryRunner.manager.findOne(ProductStock, {
           where: {
             warehouseCode: originalTrans.toWarehouseId,
-            partId: originalTrans.partId,
-            lotId: originalTrans.lotId || IsNull(),
+            itemCode: originalTrans.itemCode,
+            lotNo: originalTrans.lotNo || IsNull(),
           },
         });
 
@@ -280,8 +283,8 @@ export class ProductInventoryService {
         const stock = await queryRunner.manager.findOne(ProductStock, {
           where: {
             warehouseCode: originalTrans.fromWarehouseId,
-            partId: originalTrans.partId,
-            lotId: originalTrans.lotId || IsNull(),
+            itemCode: originalTrans.itemCode,
+            lotNo: originalTrans.lotNo || IsNull(),
           },
         });
 
@@ -293,9 +296,9 @@ export class ProductInventoryService {
         } else {
           await queryRunner.manager.save(ProductStock, {
             warehouseCode: originalTrans.fromWarehouseId,
-            partId: originalTrans.partId,
-            partType: originalTrans.partType || 'WIP',
-            lotId: originalTrans.lotId || null,
+            itemCode: originalTrans.itemCode,
+            itemType: originalTrans.itemType || 'WIP',
+            lotNo: originalTrans.lotNo || null,
             qty: Math.abs(originalTrans.qty),
             reservedQty: 0,
             availableQty: Math.abs(originalTrans.qty),
@@ -330,33 +333,33 @@ export class ProductInventoryService {
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (query.warehouseId) where.warehouseCode = query.warehouseId;
-    if (query.partId) where.partId = query.partId;
-    if (query.partType) where.partType = query.partType;
-    if (query.lotId) where.lotId = query.lotId;
+    if (query.itemCode) where.itemCode = query.itemCode;
+    if (query.itemType) where.itemType = query.itemType;
+    if (query.lotNo) where.lotNo = query.lotNo;
 
     const stocks = await this.stockRepository.find({
       where,
-      select: ['id', 'warehouseCode', 'partId', 'partType', 'lotId', 'jobOrderId', 'processCode', 'qty', 'reservedQty', 'availableQty'],
-      order: { warehouseCode: 'ASC', partId: 'ASC' },
+      select: ['id', 'warehouseCode', 'itemCode', 'itemType', 'lotNo', 'orderNo', 'processCode', 'qty', 'reservedQty', 'availableQty'],
+      order: { warehouseCode: 'ASC', itemCode: 'ASC' },
     });
 
     let filtered = query.includeZero ? stocks : stocks.filter((s) => s.qty > 0);
     if (filtered.length === 0) return [];
 
     const whCodes = [...new Set(filtered.map((s) => s.warehouseCode).filter(Boolean))];
-    const partIds = [...new Set(filtered.map((s) => s.partId).filter(Boolean))];
+    const itemCodes = [...new Set(filtered.map((s) => s.itemCode).filter(Boolean))];
 
     const warehouses = whCodes.length > 0 ? await this.warehouseRepository.find({
       where: { warehouseCode: In(whCodes) },
       select: ['id', 'warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
-    const parts = partIds.length > 0 ? await this.partMasterRepository.find({
-      where: { id: In(partIds) },
-      select: ['id', 'partCode', 'partName', 'partType', 'unit'],
+    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
+      where: { itemCode: In(itemCodes) },
+      select: ['itemCode', 'itemName', 'itemType', 'unit'],
     }) : [];
 
     const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w] as const));
-    const partMap = new Map(parts.map((p) => [p.id, p] as const));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
 
     if (query.warehouseType) {
       filtered = filtered.filter((s) => whMap.get(s.warehouseCode)?.warehouseType === query.warehouseType);
@@ -364,20 +367,20 @@ export class ProductInventoryService {
 
     return filtered.map((s) => {
       const wh = whMap.get(s.warehouseCode);
-      const part = partMap.get(s.partId);
+      const part = partMap.get(s.itemCode);
       return {
         id: s.id,
         warehouseId: s.warehouseCode,
-        partId: s.partId,
-        partType: s.partType,
-        lotId: s.lotId,
-        jobOrderId: s.jobOrderId,
+        itemCode: s.itemCode,
+        itemType: s.itemType,
+        lotNo: s.lotNo,
+        orderNo: s.orderNo,
         processCode: s.processCode,
         qty: s.qty,
         reservedQty: s.reservedQty,
         availableQty: s.availableQty,
-        partCode: part?.partCode || null,
-        partName: part?.partName || null,
+        itemCode: part?.itemCode || null,
+        itemName: part?.itemName || null,
         unit: part?.unit || null,
         warehouseCode: wh?.warehouseCode || null,
         warehouseName: wh?.warehouseName || null,
@@ -391,9 +394,9 @@ export class ProductInventoryService {
     const where: any = {};
     if (company) where.company = company;
     if (plant) where.plant = plant;
-    if (query.partId) where.partId = query.partId;
-    if (query.partType) where.partType = query.partType;
-    if (query.lotId) where.lotId = query.lotId;
+    if (query.itemCode) where.itemCode = query.itemCode;
+    if (query.itemType) where.itemType = query.itemType;
+    if (query.lotNo) where.lotNo = query.lotNo;
     if (query.refType) where.refType = query.refType;
     if (query.refId) where.refId = query.refId;
 
@@ -420,7 +423,10 @@ export class ProductInventoryService {
       qb.andWhere('trans.transDate >= :dateFrom', { dateFrom: query.dateFrom });
     }
     if (query.dateTo) {
-      qb.andWhere('trans.transDate <= :dateTo', { dateTo: query.dateTo });
+      // dateTo를 해당일 23:59:59로 설정 (자정 기준이면 당일 데이터 누락됨)
+      const endOfDay = new Date(query.dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      qb.andWhere('trans.transDate <= :dateTo', { dateTo: endOfDay });
     }
 
     const transactions = await qb
@@ -433,19 +439,19 @@ export class ProductInventoryService {
 
     // 관련 데이터 일괄 조회
     const whIds = [...new Set(transactions.flatMap((t) => [t.fromWarehouseId, t.toWarehouseId].filter(Boolean)))];
-    const partIds = [...new Set(transactions.map((t) => t.partId).filter(Boolean))];
+    const itemCodes = [...new Set(transactions.map((t) => t.itemCode).filter(Boolean))];
 
-    const warehouses = whIds.length > 0 ? await this.warehouseRepository.find({ where: { id: In(whIds as string[]) } }) : [];
-    const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds as string[]) } }) : [];
+    const warehouses = whIds.length > 0 ? await this.warehouseRepository.find({ where: { warehouseCode: In(whIds as string[]) } }) : [];
+    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes as string[]) } }) : [];
 
-    const whMap = new Map(warehouses.map((w) => [w.id, w]));
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return transactions.map((t) => ({
       ...t,
       fromWarehouse: t.fromWarehouseId ? whMap.get(t.fromWarehouseId) || null : null,
       toWarehouse: t.toWarehouseId ? whMap.get(t.toWarehouseId) || null : null,
-      part: partMap.get(t.partId) || null,
+      part: partMap.get(t.itemCode) || null,
     }));
   }
 }

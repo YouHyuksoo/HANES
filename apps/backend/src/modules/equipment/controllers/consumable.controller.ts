@@ -127,11 +127,11 @@ export class ConsumableController {
   // 금형 장착/해제/수리 관리
   // =============================================
 
-  @Get('mounted/:equipId')
+  @Get('mounted/:equipCode')
   @ApiOperation({ summary: '설비별 장착된 금형 조회' })
-  @ApiParam({ name: 'equipId', description: '설비 ID' })
-  async findMountedByEquip(@Param('equipId') equipId: string) {
-    const data = await this.consumableService.findMountedByEquip(equipId);
+  @ApiParam({ name: 'equipCode', description: '설비 ID' })
+  async findMountedByEquip(@Param('equipCode') equipCode: string) {
+    const data = await this.consumableService.findMountedByEquip(equipCode);
     return ResponseUtil.success(data);
   }
 

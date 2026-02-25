@@ -63,9 +63,9 @@ export class PurchaseOrderService {
     const poIds = data.map((po) => po.id);
     const items = await this.purchaseOrderItemRepository.find({ where: { poId: In(poIds) } });
 
-    const partIds = [...new Set(items.map((item) => item.partId).filter(Boolean))];
-    const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const itemCodes = [...new Set(items.map((item) => item.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // PO별 아이템 그룹화
     const itemsByPoId = new Map<string, typeof items>();
@@ -79,11 +79,11 @@ export class PurchaseOrderService {
     const result = data.map((po) => {
       const poItems = itemsByPoId.get(po.id) || [];
       const enrichedItems = poItems.map((item) => {
-        const part = partMap.get(item.partId);
+        const part = partMap.get(item.itemCode);
         return {
           ...item,
-          partCode: part?.partCode,
-          partName: part?.partName,
+          itemCode: part?.itemCode,
+          itemName: part?.itemName,
           unit: part?.unit,
         };
       });
@@ -107,18 +107,18 @@ export class PurchaseOrderService {
       where: { poId: id },
     });
 
-    const partIds = items.map((item) => item.partId).filter(Boolean);
-    const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return {
       ...po,
       items: items.map((item) => {
-        const part = partMap.get(item.partId);
+        const part = partMap.get(item.itemCode);
         return {
           ...item,
-          partCode: part?.partCode,
-          partName: part?.partName,
+          itemCode: part?.itemCode,
+          itemName: part?.itemName,
           unit: part?.unit,
         };
       }),
@@ -156,7 +156,7 @@ export class PurchaseOrderService {
       const itemEntities = dto.items.map((item) =>
         queryRunner.manager.create(PurchaseOrderItem, {
           poId: savedPo.id,
-          partId: item.partId,
+          itemCode: item.itemCode,
           orderQty: item.orderQty,
           unitPrice: item.unitPrice,
           remark: item.remark,
@@ -165,20 +165,20 @@ export class PurchaseOrderService {
       const savedItems = await queryRunner.manager.save(itemEntities);
 
       // part 정보 조회
-      const partIds = savedItems.map((item: PurchaseOrderItem) => item.partId).filter(Boolean);
-      const parts = partIds.length > 0 ? await this.partMasterRepository.find({ where: { id: In(partIds) } }) : [];
-      const partMap = new Map(parts.map((p) => [p.id, p]));
+      const itemCodes = savedItems.map((item: PurchaseOrderItem) => item.itemCode).filter(Boolean);
+      const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+      const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
       await queryRunner.commitTransaction();
 
       return {
         ...savedPo,
         items: savedItems.map((item: PurchaseOrderItem) => {
-          const part = partMap.get(item.partId);
+          const part = partMap.get(item.itemCode);
           return {
             ...item,
-            partCode: part?.partCode,
-            partName: part?.partName,
+            itemCode: part?.itemCode,
+            itemName: part?.itemName,
             unit: part?.unit,
           };
         }),
@@ -220,7 +220,7 @@ export class PurchaseOrderService {
         const itemEntities = items.map((item) =>
           queryRunner.manager.create(PurchaseOrderItem, {
             poId: id,
-            partId: item.partId,
+            itemCode: item.itemCode,
             orderQty: item.orderQty,
             unitPrice: item.unitPrice,
             remark: item.remark,

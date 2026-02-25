@@ -3,7 +3,7 @@
  * @description 작업지도서 CRUD API 컨트롤러
  *
  * 초보자 가이드:
- * 1. **GET /master/work-instructions**: 작업지도서 목록 (partId, processCode 필터)
+ * 1. **GET /master/work-instructions**: 작업지도서 목록 (itemCode, processCode 필터)
  * 2. **POST /master/work-instructions**: 작업지도서 생성
  * 3. **PUT /master/work-instructions/:id**: 작업지도서 수정
  * 4. **DELETE /master/work-instructions/:id**: 작업지도서 삭제

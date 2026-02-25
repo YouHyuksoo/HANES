@@ -32,7 +32,7 @@ export class SampleInspectService {
   /** 샘플검사 일괄 입력 */
   async create(dto: CreateSampleInspectDto) {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { id: dto.jobOrderId },
+      where: { orderNo: dto.orderNo },
     });
     if (!jobOrder) {
       throw new NotFoundException('작업지시를 찾을 수 없습니다.');
@@ -46,7 +46,7 @@ export class SampleInspectService {
       const records: SampleInspectResult[] = [];
       for (const sample of dto.samples) {
         const entity = queryRunner.manager.create(SampleInspectResult, {
-          jobOrderId: dto.jobOrderId,
+          orderNo: dto.orderNo,
           inspectDate: new Date(dto.inspectDate),
           inspectorName: dto.inspectorName,
           inspectType: dto.inspectType || null,
@@ -78,14 +78,14 @@ export class SampleInspectService {
 
     const qb = this.sampleInspectRepository
       .createQueryBuilder('si')
-      .leftJoin(JobOrder, 'jo', 'jo.id = si.jobOrderId')
-      .leftJoin(PartMaster, 'p', 'p.id = jo.partId')
+      .leftJoin(JobOrder, 'jo', 'jo.id = si.orderNo')
+      .leftJoin(PartMaster, 'p', 'p.id = jo.itemCode')
       .select([
         'si.id AS "id"',
-        'si.jobOrderId AS "jobOrderId"',
+        'si.orderNo AS "orderNo"',
         'jo.orderNo AS "orderNo"',
-        'p.partCode AS "partCode"',
-        'p.partName AS "partName"',
+        'p.itemCode AS "itemCode"',
+        'p.itemName AS "itemName"',
         'si.inspectDate AS "inspectDate"',
         'si.inspectorName AS "inspectorName"',
         'si.inspectType AS "inspectType"',
@@ -122,7 +122,7 @@ export class SampleInspectService {
 
     if (search) {
       qb.andWhere(
-        '(jo.orderNo LIKE :search OR p.partCode LIKE :search OR p.partName LIKE :search OR si.inspectorName LIKE :search)',
+        '(jo.orderNo LIKE :search OR p.itemCode LIKE :search OR p.itemName LIKE :search OR si.inspectorName LIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -132,9 +132,9 @@ export class SampleInspectService {
   }
 
   /** 특정 작업지시의 샘플검사 목록 */
-  async findByJobOrder(jobOrderId: string) {
+  async findByJobOrder(orderNo: string) {
     return this.sampleInspectRepository.find({
-      where: { jobOrderId },
+      where: { orderNo },
       order: { inspectDate: 'DESC', sampleNo: 'ASC' },
     });
   }

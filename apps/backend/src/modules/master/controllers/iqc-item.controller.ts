@@ -3,7 +3,7 @@
  * @description IQC 검사항목마스터 CRUD API 컨트롤러
  *
  * 초보자 가이드:
- * 1. **GET /master/iqc-items**: 검사항목 목록 조회 (partId 필터)
+ * 1. **GET /master/iqc-items**: 검사항목 목록 조회 (itemCode 필터)
  * 2. **POST /master/iqc-items**: 검사항목 생성
  * 3. **PUT /master/iqc-items/:id**: 검사항목 수정
  * 4. **DELETE /master/iqc-items/:id**: 검사항목 삭제

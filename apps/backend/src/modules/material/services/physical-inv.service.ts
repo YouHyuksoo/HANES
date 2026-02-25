@@ -49,24 +49,24 @@ export class PhysicalInvService {
     ]);
 
     // part, lot 정보 조회
-    const partIds = data.map((stock) => stock.partId).filter(Boolean);
-    const lotIds = data.map((stock) => stock.lotId).filter(Boolean) as string[];
+    const itemCodes = data.map((stock) => stock.itemCode).filter(Boolean);
+    const lotNos = data.map((stock) => stock.lotNo).filter(Boolean) as string[];
 
     const [parts, lots] = await Promise.all([
-      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
-      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
+      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
     ]);
 
-    const partMap = new Map(parts.map((p) => [p.id, p]));
-    const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
 
     let result = data.map((stock) => {
-      const part = partMap.get(stock.partId);
-      const lot = stock.lotId ? lotMap.get(stock.lotId) : null;
+      const part = partMap.get(stock.itemCode);
+      const lot = stock.lotNo ? lotMap.get(stock.lotNo) : null;
       return {
         ...stock,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         lotNo: lot?.lotNo,
       };
     });
@@ -76,8 +76,8 @@ export class PhysicalInvService {
       const searchLower = search.toLowerCase();
       result = result.filter(
         (stock) =>
-          stock.partCode?.toLowerCase().includes(searchLower) ||
-          stock.partName?.toLowerCase().includes(searchLower),
+          stock.itemCode.toLowerCase().includes(searchLower) ||
+          stock.itemName.toLowerCase().includes(searchLower),
       );
     }
 
@@ -89,16 +89,16 @@ export class PhysicalInvService {
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
-      .leftJoin(PartMaster, 'part', 'part.id = log.partId')
-      .leftJoin(MatLot, 'lot', 'lot.id = log.lotId')
+      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
+      .leftJoin(MatLot, 'lot', 'lot.lotNo = log.lotNo')
       .select([
         'log.id AS "id"',
         'log.warehouseCode AS "warehouseCode"',
-        'log.partId AS "partId"',
-        'part.partCode AS "partCode"',
-        'part.partName AS "partName"',
+        'log.itemCode AS "itemCode"',
+        'part.itemCode AS "itemCode"',
+        'part.itemName AS "itemName"',
         'part.unit AS "unit"',
-        'log.lotId AS "lotId"',
+        'log.lotNo AS "lotNo"',
         'lot.lotNo AS "lotNo"',
         'log.beforeQty AS "beforeQty"',
         'log.afterQty AS "afterQty"',
@@ -125,7 +125,7 @@ export class PhysicalInvService {
     }
     if (search) {
       qb.andWhere(
-        '(LOWER(part.partCode) LIKE :search OR LOWER(part.partName) LIKE :search)',
+        '(LOWER(part.itemCode) LIKE :search OR LOWER(part.itemName) LIKE :search)',
         { search: `%${search.toLowerCase()}%` },
       );
     }
@@ -174,8 +174,8 @@ export class PhysicalInvService {
         // 조정 이력 기록
         const invAdjLog = queryRunner.manager.create(InvAdjLog, {
           warehouseCode: stock.warehouseCode,
-          partId: stock.partId,
-          lotId: stock.lotId,
+          itemCode: stock.itemCode,
+          lotNo: stock.lotNo,
           adjType: 'PHYSICAL_COUNT',
           beforeQty,
           afterQty,

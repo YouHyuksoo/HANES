@@ -106,11 +106,11 @@ export class InventoryController {
    */
   @Get('lots')
   async getLots(
-    @Query('partId') partId?: string,
-    @Query('partType') partType?: string,
+    @Query('itemCode') itemCode?: string,
+    @Query('itemType') itemType?: string,
     @Query('status') status?: string,
   ) {
-    return this.inventoryService.getLots({ partId, partType, status });
+    return this.inventoryService.getLots({ itemCode, itemType, status });
   }
 
   /**
@@ -147,17 +147,17 @@ export class InventoryController {
   @Get('stocks/summary')
   async getStockSummary(
     @Query('warehouseType') warehouseType?: string,
-    @Query('partType') partType?: string,
+    @Query('itemType') itemType?: string,
   ) {
-    return this.inventoryService.getStockSummary({ warehouseType, partType });
+    return this.inventoryService.getStockSummary({ warehouseType, itemType });
   }
 
   /**
    * 특정 품목의 창고별 재고
    */
-  @Get('stocks/by-part/:partId')
-  async getStockByPart(@Param('partId') partId: string) {
-    return this.inventoryService.getStock({ partId });
+  @Get('stocks/by-part/:itemCode')
+  async getStockByPart(@Param('itemCode') itemCode: string) {
+    return this.inventoryService.getStock({ itemCode });
   }
 
   /**
@@ -263,7 +263,7 @@ export class InventoryController {
   async receiveWip(@Body() dto: ProductReceiveStockDto) {
     return this.productInventoryService.receiveStock({
       ...dto,
-      partType: 'WIP',
+      itemType: 'WIP',
       transType: 'WIP_IN',
     });
   }
@@ -275,7 +275,7 @@ export class InventoryController {
   async issueWip(@Body() dto: ProductIssueStockDto) {
     return this.productInventoryService.issueStock({
       ...dto,
-      partType: 'WIP',
+      itemType: 'WIP',
       transType: 'WIP_OUT',
     });
   }
@@ -287,7 +287,7 @@ export class InventoryController {
   async receiveFg(@Body() dto: ProductReceiveStockDto) {
     return this.productInventoryService.receiveStock({
       ...dto,
-      partType: 'FG',
+      itemType: 'FG',
       transType: 'FG_IN',
     });
   }
@@ -299,7 +299,7 @@ export class InventoryController {
   async issueFg(@Body() dto: ProductIssueStockDto) {
     return this.productInventoryService.issueStock({
       ...dto,
-      partType: 'FG',
+      itemType: 'FG',
       transType: 'FG_OUT',
     });
   }

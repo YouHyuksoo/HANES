@@ -79,8 +79,8 @@ export class CustomerOrderService {
         const itemsWithPart = await Promise.all(
           items.map(async (item) => {
             const part = await this.partRepository.findOne({
-              where: { id: item.partId },
-              select: ['id', 'partCode', 'partName'],
+              where: { itemCode: item.itemCode },
+              select: ['itemCode', 'itemName'],
             });
             return {
               ...item,
@@ -114,8 +114,8 @@ export class CustomerOrderService {
     const itemsWithPart = await Promise.all(
       items.map(async (item) => {
         const part = await this.partRepository.findOne({
-          where: { id: item.partId },
-          select: ['id', 'partCode', 'partName'],
+          where: { itemCode: item.itemCode },
+          select: ['itemCode', 'itemName'],
         });
         return {
           ...item,
@@ -161,7 +161,7 @@ export class CustomerOrderService {
         const items = dto.items.map((item) =>
           this.customerOrderItemRepository.create({
             orderId: savedOrder.id,
-            partId: item.partId,
+            itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
             unitPrice: item.unitPrice,
@@ -200,7 +200,7 @@ export class CustomerOrderService {
         const items = dto.items.map((item) =>
           this.customerOrderItemRepository.create({
             orderId: id,
-            partId: item.partId,
+            itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
             unitPrice: item.unitPrice,

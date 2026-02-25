@@ -47,13 +47,13 @@ export class IqcItemPoolService {
 
     if (search) {
       qb.andWhere(
-        '(item.itemCode LIKE :search OR item.itemName LIKE :search)',
+        '(item.inspItemCode LIKE :search OR item.inspItemName LIKE :search)',
         { search: `%${search}%` },
       );
     }
 
     const [data, total] = await qb
-      .orderBy('item.itemCode', 'ASC')
+      .orderBy('item.inspItemCode', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
@@ -73,10 +73,10 @@ export class IqcItemPoolService {
 
   async create(dto: CreateIqcItemPoolDto) {
     const existing = await this.repo.findOne({
-      where: { itemCode: dto.itemCode },
+      where: { inspItemCode: dto.inspItemCode },
     });
     if (existing) {
-      throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.itemCode}`);
+      throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.inspItemCode}`);
     }
 
     const entity = this.repo.create(dto);
@@ -86,12 +86,12 @@ export class IqcItemPoolService {
   async update(id: string, dto: UpdateIqcItemPoolDto) {
     const item = await this.findById(id);
 
-    if (dto.itemCode && dto.itemCode !== item.itemCode) {
+    if (dto.inspItemCode && dto.inspItemCode !== item.inspItemCode) {
       const dup = await this.repo.findOne({
-        where: { itemCode: dto.itemCode },
+        where: { inspItemCode: dto.inspItemCode },
       });
       if (dup) {
-        throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.itemCode}`);
+        throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.inspItemCode}`);
       }
     }
 

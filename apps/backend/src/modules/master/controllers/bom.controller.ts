@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **GET /parents**: BOM에 등재된 모품목(부모품목) 목록 + 자품목 수
- * 2. **GET /hierarchy/:parentPartId**: 부모품목 기준 트리 구조 조회
+ * 2. **GET /hierarchy/:parentItemCode**: 부모품목 기준 트리 구조 조회
  * 3. **CRUD**: 추가/수정/삭제 모두 DB에 반영
  */
 
@@ -32,28 +32,28 @@ export class BomController {
     return ResponseUtil.success(data);
   }
 
-  @Get('hierarchy/:parentPartId')
+  @Get('hierarchy/:parentItemCode')
   @ApiOperation({ summary: 'BOM 계층 조회' })
-  @ApiParam({ name: 'parentPartId', description: '상위 품목 ID' })
+  @ApiParam({ name: 'parentItemCode', description: '상위 품목 ID' })
   @ApiQuery({ name: 'depth', required: false, description: '조회 깊이 (기본 3)' })
   @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
   async findHierarchy(
-    @Param('parentPartId') parentPartId: string,
+    @Param('parentItemCode') parentItemCode: string,
     @Query('depth') depth?: number,
     @Query('effectiveDate') effectiveDate?: string,
   ) {
-    const data = await this.bomService.findHierarchy(parentPartId, depth ?? 3, effectiveDate);
+    const data = await this.bomService.findHierarchy(parentItemCode, depth ?? 3, effectiveDate);
     return ResponseUtil.success(data);
   }
 
-  @Get('parent/:parentPartId')
+  @Get('parent/:parentItemCode')
   @ApiOperation({ summary: '상위 품목 기준 BOM 조회' })
   @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
   async findByParentId(
-    @Param('parentPartId') parentPartId: string,
+    @Param('parentItemCode') parentItemCode: string,
     @Query('effectiveDate') effectiveDate?: string,
   ) {
-    const data = await this.bomService.findByParentId(parentPartId, effectiveDate);
+    const data = await this.bomService.findByParentId(parentItemCode, effectiveDate);
     return ResponseUtil.success(data);
   }
 

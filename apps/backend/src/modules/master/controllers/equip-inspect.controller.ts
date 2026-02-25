@@ -3,7 +3,7 @@
  * @description 설비점검항목마스터 CRUD API 컨트롤러
  *
  * 초보자 가이드:
- * 1. **GET /master/equip-inspect-items**: 점검항목 목록 (equipId, inspectType 필터)
+ * 1. **GET /master/equip-inspect-items**: 점검항목 목록 (equipCode, inspectType 필터)
  * 2. **POST /master/equip-inspect-items**: 점검항목 생성
  * 3. **PUT /master/equip-inspect-items/:id**: 점검항목 수정
  * 4. **DELETE /master/equip-inspect-items/:id**: 점검항목 삭제

@@ -30,16 +30,15 @@ export class EquipInspectService {
   /** 점검 목록 조회 */
   async findAll(query: EquipInspectQueryDto, company?: string, plant?: string) {
     const {
-      page = 1, limit = 10, equipId, inspectType,
+      page = 1, limit = 10, equipCode, inspectType,
       overallResult, search, inspectDateFrom, inspectDateTo,
     } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.equipInspectLogRepository.createQueryBuilder('log')
-      .leftJoinAndSelect(EquipMaster, 'equip', 'log.equipId = equip.id')
+      .leftJoinAndSelect(EquipMaster, 'equip', 'log.equipCode = equip.equipCode')
       .select([
         'log',
-        'equip.id AS equip_id',
         'equip.equipCode AS equip_code',
         'equip.equipName AS equip_name',
         'equip.lineCode AS equip_lineCode',
@@ -51,8 +50,8 @@ export class EquipInspectService {
     if (plant) {
       queryBuilder.andWhere('log.plant = :plant', { plant });
     }
-    if (equipId) {
-      queryBuilder.andWhere('log.equipId = :equipId', { equipId });
+    if (equipCode) {
+      queryBuilder.andWhere('log.equipCode = :equipCode', { equipCode });
     }
     if (inspectType) {
       queryBuilder.andWhere('log.inspectType = :inspectType', { inspectType });
@@ -86,7 +85,6 @@ export class EquipInspectService {
     const data = logs.map((log) => ({
       ...log.log,
       equip: {
-        id: log.equip_id,
         equipCode: log.equip_code,
         equipName: log.equip_name,
         lineCode: log.equip_lineCode,
@@ -106,8 +104,8 @@ export class EquipInspectService {
 
     // Get equip info
     const equip = await this.equipMasterRepository.findOne({
-      where: { id: log.equipId },
-      select: ['id', 'equipCode', 'equipName', 'lineCode'],
+      where: { equipCode: log.equipCode },
+      select: ['equipCode', 'equipName', 'lineCode'],
     });
 
     return {
@@ -123,12 +121,12 @@ export class EquipInspectService {
   ) {
     // 설비 존재 확인
     const equip = await this.equipMasterRepository.findOne({
-      where: { id: dto.equipId },
+      where: { equipCode: dto.equipCode },
     });
-    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipId}`);
+    if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
 
     const log = this.equipInspectLogRepository.create({
-      equipId: dto.equipId,
+      equipCode: dto.equipCode,
       inspectType: dto.inspectType,
       inspectDate: new Date(dto.inspectDate),
       inspectorName: dto.inspectorName,
@@ -144,7 +142,6 @@ export class EquipInspectService {
     return {
       ...saved,
       equip: {
-        id: equip.id,
         equipCode: equip.equipCode,
         equipName: equip.equipName,
         lineCode: equip.lineCode,
@@ -158,7 +155,7 @@ export class EquipInspectService {
 
     const updateData: Partial<EquipInspectLog> = {};
 
-    if (dto.equipId !== undefined) updateData.equipId = dto.equipId;
+    if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
     if (dto.inspectType !== undefined) updateData.inspectType = dto.inspectType;
     if (dto.inspectDate !== undefined) updateData.inspectDate = new Date(dto.inspectDate);
     if (dto.inspectorName !== undefined) updateData.inspectorName = dto.inspectorName;
@@ -170,8 +167,8 @@ export class EquipInspectService {
 
     // Get equip info for response
     const equip = await this.equipMasterRepository.findOne({
-      where: { id: updateData.equipId || log.equipId },
-      select: ['id', 'equipCode', 'equipName', 'lineCode'],
+      where: { equipCode: updateData.equipCode || log.equipCode },
+      select: ['equipCode', 'equipName', 'lineCode'],
     });
 
     const updated = await this.equipInspectLogRepository.findOne({ where: { id } });
@@ -210,8 +207,8 @@ export class EquipInspectService {
     // 1) 사용중인 설비 목록 (lineCode 필터)
     const equipWhere: Record<string, unknown> = { useYn: 'Y' };
     if (lineCode) equipWhere.lineCode = lineCode;
-    const equips = await this.equipMasterRepository.find({ where: equipWhere, select: ['id', 'lineCode'] });
-    const equipIds = equips.map((e) => e.id);
+    const equips = await this.equipMasterRepository.find({ where: equipWhere, select: ['equipCode', 'lineCode'] });
+    const equipIds = equips.map((e) => e.equipCode);
     if (equipIds.length === 0) {
       return Array.from({ length: daysInMonth }, (_, i) => ({
         date: `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`,
@@ -224,15 +221,15 @@ export class EquipInspectService {
       .createQueryBuilder('item')
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
-      .andWhere('item.equipId IN (:...equipIds)', { equipIds })
+      .andWhere('item.equipCode IN (:...equipCodes)', { equipIds })
       .getMany();
 
     // 설비별 점검항목 그룹핑
     const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
     for (const item of allItems) {
-      const list = itemsByEquip.get(item.equipId) || [];
+      const list = itemsByEquip.get(item.equipCode) || [];
       list.push(item);
-      itemsByEquip.set(item.equipId, list);
+      itemsByEquip.set(item.equipCode, list);
     }
 
     // 3) 해당 월의 점검로그 조회
@@ -242,7 +239,7 @@ export class EquipInspectService {
       .andWhere('log.inspectDate BETWEEN :start AND :end', {
         start: startDate, end: endDate,
       })
-      .andWhere('log.equipId IN (:...equipIds)', { equipIds })
+      .andWhere('log.equipCode IN (:...equipCodes)', { equipIds })
       .getMany();
 
     // 날짜별 로그 인덱싱
@@ -266,14 +263,14 @@ export class EquipInspectService {
 
       // 해당 날짜에 점검 대상인 설비 수 산출
       let totalEquips = 0;
-      for (const [equipId, items] of itemsByEquip) {
+      for (const [equipCode, items] of itemsByEquip) {
         const hasDue = items.some((item) => this.isDue(item.cycle, dateObj));
         if (hasDue) totalEquips++;
       }
 
       // 해당 날짜의 로그에서 완료 설비 추출
       const dayLogs = logsByDate.get(dateStr) || [];
-      const completedEquipIds = new Set(dayLogs.map((l) => l.equipId));
+      const completedEquipIds = new Set(dayLogs.map((l) => l.equipCode));
       const completed = completedEquipIds.size;
       const pass = dayLogs.filter((l) => l.overallResult === 'PASS').length;
       const fail = dayLogs.filter((l) => l.overallResult !== 'PASS').length;
@@ -306,26 +303,26 @@ export class EquipInspectService {
     if (lineCode) equipWhere.lineCode = lineCode;
     const equips = await this.equipMasterRepository.find({
       where: equipWhere,
-      select: ['id', 'equipCode', 'equipName', 'lineCode', 'equipType'],
+      select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
     });
     if (equips.length === 0) return [];
 
-    const equipIds = equips.map((e) => e.id);
+    const equipIds = equips.map((e) => e.equipCode);
 
     // 2) 점검항목 조회
     const allItems = await this.inspectItemRepository
       .createQueryBuilder('item')
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
-      .andWhere('item.equipId IN (:...equipIds)', { equipIds })
+      .andWhere('item.equipCode IN (:...equipCodes)', { equipIds })
       .orderBy('item.seq', 'ASC')
       .getMany();
 
     const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
     for (const item of allItems) {
-      const list = itemsByEquip.get(item.equipId) || [];
+      const list = itemsByEquip.get(item.equipCode) || [];
       list.push(item);
-      itemsByEquip.set(item.equipId, list);
+      itemsByEquip.set(item.equipCode, list);
     }
 
     // 3) 해당 날짜의 점검로그
@@ -338,22 +335,22 @@ export class EquipInspectService {
       .createQueryBuilder('log')
       .where('log.inspectType = :type', { type: inspectType })
       .andWhere('log.inspectDate BETWEEN :start AND :end', { start: dayStart, end: dayEnd })
-      .andWhere('log.equipId IN (:...equipIds)', { equipIds })
+      .andWhere('log.equipCode IN (:...equipCodes)', { equipIds })
       .getMany();
 
     const logByEquip = new Map<string, EquipInspectLog>();
     for (const log of logs) {
-      logByEquip.set(log.equipId, log);
+      logByEquip.set(log.equipCode, log);
     }
 
     // 4) 설비별 스케줄 구성 (isDue인 항목이 있는 설비만)
     const result = [];
     for (const equip of equips) {
-      const items = itemsByEquip.get(equip.id) || [];
+      const items = itemsByEquip.get(equip.equipCode) || [];
       const dueItems = items.filter((item) => this.isDue(item.cycle, dateObj));
       if (dueItems.length === 0) continue;
 
-      const log = logByEquip.get(equip.id);
+      const log = logByEquip.get(equip.equipCode);
       let details: { items?: Array<{ itemId: string; seq: number; itemName: string; result: string; remark: string }> } | null = null;
       if (log?.details) {
         try { details = JSON.parse(log.details); } catch { details = null; }
@@ -373,7 +370,6 @@ export class EquipInspectService {
       });
 
       result.push({
-        equipId: equip.id,
         equipCode: equip.equipCode,
         equipName: equip.equipName,
         lineCode: equip.lineCode,

@@ -41,9 +41,9 @@ export class WarehouseLocationService {
     // 창고명 매핑
     const whIds = [...new Set(locations.map((l) => l.warehouseId))];
     const warehouses = whIds.length > 0
-      ? await this.warehouseRepo.find({ where: { id: In(whIds) } })
+      ? await this.warehouseRepo.find({ where: { warehouseCode: In(whIds) } })
       : [];
-    const whMap = new Map(warehouses.map((w) => [w.id, w]));
+    const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
     return {
       success: true,

@@ -47,7 +47,7 @@ export class VendorBarcodeMappingService {
 
     if (search) {
       qb.andWhere(
-        '(UPPER(m.vendorBarcode) LIKE UPPER(:search) OR UPPER(m.partCode) LIKE UPPER(:search) OR UPPER(m.partName) LIKE UPPER(:search))',
+        '(UPPER(m.vendorBarcode) LIKE UPPER(:search) OR UPPER(m.itemCode) LIKE UPPER(:search) OR UPPER(m.itemName) LIKE UPPER(:search))',
         { search: `%${search}%` },
       );
     }

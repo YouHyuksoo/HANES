@@ -45,14 +45,13 @@ export class ShipReturnService {
     const itemsWithPart = await Promise.all(
       items.map(async (item) => {
         const part = await this.partRepository.findOne({
-          where: { id: item.partId },
-          select: ['id', 'partCode', 'partName'],
+          where: { itemCode: item.itemCode },
+          select: ['itemCode', 'itemName'],
         });
         return {
           ...item,
-          partId: part?.id ?? item.partId,
-          partCode: part?.partCode,
-          partName: part?.partName,
+          itemCode: part?.itemCode ?? item.itemCode,
+          itemName: part?.itemName,
         };
       })
     );
@@ -100,8 +99,8 @@ export class ShipReturnService {
       data.map(async (item) => {
         const shipOrder = item.shipmentId
           ? await this.shipOrderRepository.findOne({
-              where: { id: item.shipmentId },
-              select: ['id', 'shipOrderNo', 'customerName'],
+              where: { shipOrderNo: item.shipmentId },
+              select: ['shipOrderNo', 'customerName'],
             })
           : null;
 
@@ -126,8 +125,8 @@ export class ShipReturnService {
 
     const shipOrder = ret.shipmentId
       ? await this.shipOrderRepository.findOne({
-          where: { id: ret.shipmentId },
-          select: ['id', 'shipOrderNo', 'customerName'],
+          where: { shipOrderNo: ret.shipmentId },
+          select: ['shipOrderNo', 'customerName'],
         })
       : null;
 
@@ -166,7 +165,7 @@ export class ShipReturnService {
         const items = dto.items.map((item) =>
           this.shipReturnItemRepository.create({
             returnId: savedReturn.id,
-            partId: item.partId,
+            itemCode: item.itemCode,
             returnQty: item.returnQty,
             disposalType: item.disposalType ?? 'RESTOCK',
             remark: item.remark,
@@ -204,7 +203,7 @@ export class ShipReturnService {
         const items = dto.items.map((item) =>
           this.shipReturnItemRepository.create({
             returnId: id,
-            partId: item.partId,
+            itemCode: item.itemCode,
             returnQty: item.returnQty,
             disposalType: item.disposalType ?? 'RESTOCK',
             remark: item.remark,

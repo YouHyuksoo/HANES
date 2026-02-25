@@ -94,7 +94,7 @@ export class PalletService {
    */
   async findById(id: string) {
     const pallet = await this.palletRepository.findOne({
-      where: { id },
+      where: { palletNo: id },
     });
 
     if (!pallet) {
@@ -157,7 +157,7 @@ export class PalletService {
     if (dto.shipmentId !== undefined) updateData.shipmentId = dto.shipmentId;
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.palletRepository.update({ id }, updateData);
+    await this.palletRepository.update({ palletNo: id }, updateData);
 
     return this.findById(id);
   }
@@ -249,7 +249,7 @@ export class PalletService {
 
       const updatedPallet = await queryRunner.manager.update(
         PalletMaster,
-        { id },
+        { palletNo: id },
         {
           boxCount: parseInt(palletSummary?.count) || 0,
           totalQty: parseInt(palletSummary?.totalQty) || 0,
@@ -315,7 +315,7 @@ export class PalletService {
 
       await queryRunner.manager.update(
         PalletMaster,
-        { id },
+        { palletNo: id },
         {
           boxCount: parseInt(palletSummary?.count) || 0,
           totalQty: parseInt(palletSummary?.totalQty) || 0,
@@ -351,7 +351,7 @@ export class PalletService {
     }
 
     await this.palletRepository.update(
-      { id },
+      { palletNo: id },
       {
         status: 'CLOSED',
         closeAt: new Date(),
@@ -377,7 +377,7 @@ export class PalletService {
     }
 
     await this.palletRepository.update(
-      { id },
+      { palletNo: id },
       {
         status: 'OPEN',
         closeAt: null,
@@ -427,7 +427,7 @@ export class PalletService {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
-        { id },
+        { palletNo: id },
         {
           shipmentId: dto.shipmentId,
           status: 'LOADED',
@@ -498,7 +498,7 @@ export class PalletService {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
-        { id },
+        { palletNo: id },
         {
           shipmentId: null,
           status: 'CLOSED',
@@ -569,18 +569,18 @@ export class PalletService {
     // 품목별 수량 집계 - 박스 기준
     const partSummary = await this.boxRepository
       .createQueryBuilder('box')
-      .select('box.partId', 'partId')
+      .select('box.itemCode', 'itemCode')
       .addSelect('COUNT(*)', 'boxCount')
       .addSelect('SUM(box.qty)', 'qty')
       .where('box.palletId = :palletId', { palletId: id })
-      .groupBy('box.partId')
+      .groupBy('box.itemCode')
       .getRawMany();
 
     // 품목 정보 조회
-    const partIds = partSummary.map(p => p.partId);
+    const itemCodes = partSummary.map(p => p.itemCode);
     const parts = await this.partRepository.find({
-      where: partIds.length > 0 ? { id: In(partIds) } : {},
-      select: ['id', 'partCode', 'partName'],
+      where: itemCodes.length > 0 ? { id: In(itemCodes) } : {},
+      select: ['itemCode', 'itemName'],
     });
 
     const partsMap = new Map(parts.map(p => [p.id, p]));
@@ -593,7 +593,7 @@ export class PalletService {
       totalQty: pallet.totalQty,
       closeAt: pallet.closeAt,
       partBreakdown: partSummary.map(ps => ({
-        part: partsMap.get(ps.partId),
+        part: partsMap.get(ps.itemCode),
         boxCount: parseInt(ps.boxCount),
         qty: parseInt(ps.qty) || 0,
       })),

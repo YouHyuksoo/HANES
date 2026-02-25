@@ -170,17 +170,17 @@ export class InterfaceService {
     try {
       // 품목 확인
       const part = await this.partMasterRepository.findOne({
-        where: { partCode: dto.partCode },
+        where: { itemCode: dto.itemCode },
       });
 
       if (!part) {
-        throw new BadRequestException(`품목을 찾을 수 없습니다: ${dto.partCode}`);
+        throw new BadRequestException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
       }
 
       // 작업지시 생성
       const jobOrder = this.jobOrderRepository.create({
         orderNo: dto.erpOrderNo,
-        partId: part.id,
+        itemCode: part.itemCode,
         planQty: dto.planQty,
         lineCode: dto.lineCode,
         planDate: dto.planDate ? new Date(dto.planDate) : null,
@@ -214,10 +214,10 @@ export class InterfaceService {
       const results = await Promise.all(
         dtos.map(async (dto) => {
           const parentPart = await this.partMasterRepository.findOne({
-            where: { partCode: dto.parentPartCode },
+            where: { itemCode: dto.parentPartCode },
           });
           const childPart = await this.partMasterRepository.findOne({
-            where: { partCode: dto.childPartCode },
+            where: { itemCode: dto.childPartCode },
           });
 
           if (!parentPart || !childPart) {
@@ -227,8 +227,8 @@ export class InterfaceService {
           // upsert 대신 find -> create/update 사용
           const existingBom = await this.bomMasterRepository.findOne({
             where: {
-              parentPartId: parentPart.id,
-              childPartId: childPart.id,
+              parentItemCode: parentPart.itemCode,
+              childItemCode: childPart.itemCode,
               revision: dto.revision ?? 'A',
             },
           });
@@ -242,8 +242,8 @@ export class InterfaceService {
           } else {
             // 생성
             const newBom = this.bomMasterRepository.create({
-              parentPartId: parentPart.id,
-              childPartId: childPart.id,
+              parentItemCode: parentPart.itemCode,
+              childItemCode: childPart.itemCode,
               qtyPer: dto.qtyPer,
               revision: dto.revision ?? 'A',
               ecoNo: dto.ecoNo,
@@ -280,14 +280,14 @@ export class InterfaceService {
         dtos.map(async (dto) => {
           // upsert 대신 find -> create/update 사용
           const existingPart = await this.partMasterRepository.findOne({
-            where: { partCode: dto.partCode },
+            where: { itemCode: dto.itemCode },
           });
 
           if (existingPart) {
             // 업데이트
             await this.partMasterRepository.update(existingPart.id, {
-              partName: dto.partName,
-              partType: dto.partType,
+              itemName: dto.itemName,
+              itemType: dto.itemType,
               spec: dto.spec,
               unit: dto.unit ?? 'EA',
               drawNo: dto.drawNo,
@@ -296,9 +296,9 @@ export class InterfaceService {
           } else {
             // 생성
             const newPart = this.partMasterRepository.create({
-              partCode: dto.partCode,
-              partName: dto.partName,
-              partType: dto.partType,
+              itemCode: dto.itemCode,
+              itemName: dto.itemName,
+              itemType: dto.itemType,
               spec: dto.spec,
               unit: dto.unit ?? 'EA',
               drawNo: dto.drawNo,
@@ -307,7 +307,7 @@ export class InterfaceService {
             await this.partMasterRepository.save(newPart);
           }
 
-          return { success: true, partCode: dto.partCode };
+          return { success: true, itemCode: dto.itemCode };
         })
       );
 

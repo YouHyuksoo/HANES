@@ -102,9 +102,10 @@ export class ShipmentService {
   /**
    * 출하 단건 조회 (ID)
    */
-  async findById(id: string) {
+  async findById(id: string | number) {
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
     const shipment = await this.shipmentRepository.findOne({
-      where: { id },
+      where: { id: numId },
     });
 
     if (!shipment) {
@@ -180,7 +181,7 @@ export class ShipmentService {
     if (dto.remark !== undefined) updateData.remark = dto.remark;
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.shipmentRepository.update({ id }, updateData);
+    await this.shipmentRepository.update({ id: typeof id === 'string' ? parseInt(id, 10) : id }, updateData);
 
     return this.findById(id);
   }
@@ -201,7 +202,7 @@ export class ShipmentService {
       throw new BadRequestException('팔레트가 적재된 출하는 삭제할 수 없습니다. 먼저 팔레트를 하차해주세요.');
     }
 
-    await this.shipmentRepository.delete(id);
+    await this.shipmentRepository.delete(typeof id === 'string' ? parseInt(id, 10) : id);
 
     return { id, deleted: true };
   }
@@ -222,12 +223,12 @@ export class ShipmentService {
     // 팔레트 존재 및 상태 확인
     const pallets = await this.palletRepository.find({
       where: {
-        id: In(dto.palletIds),
+        palletNo: In(dto.palletIds),
       },
     });
 
     if (pallets.length !== dto.palletIds.length) {
-      const foundIds = pallets.map(p => p.id);
+      const foundIds = pallets.map(p => p.palletNo);
       const notFound = dto.palletIds.filter(pid => !foundIds.includes(pid));
       throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${notFound.join(', ')}`);
     }
@@ -253,7 +254,7 @@ export class ShipmentService {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
-        { id: In(dto.palletIds) },
+        { palletNo: In(dto.palletIds) },
         {
           shipmentId: id,
           status: 'LOADED',
@@ -271,7 +272,7 @@ export class ShipmentService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id },
+        { id: typeof id === 'string' ? parseInt(id, 10) : id },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
@@ -304,13 +305,13 @@ export class ShipmentService {
     // 팔레트가 이 출하에 있는지 확인
     const pallets = await this.palletRepository.find({
       where: {
-        id: In(dto.palletIds),
+        palletNo: In(dto.palletIds),
         shipmentId: id,
       },
     });
 
     if (pallets.length !== dto.palletIds.length) {
-      const foundIds = pallets.map(p => p.id);
+      const foundIds = pallets.map(p => p.palletNo);
       const notFound = dto.palletIds.filter(pid => !foundIds.includes(pid));
       throw new NotFoundException(`이 출하에 없는 팔레트입니다: ${notFound.join(', ')}`);
     }
@@ -324,7 +325,7 @@ export class ShipmentService {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
-        { id: In(dto.palletIds) },
+        { palletNo: In(dto.palletIds) },
         {
           shipmentId: null,
           status: 'CLOSED',
@@ -342,7 +343,7 @@ export class ShipmentService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id },
+        { id: typeof id === 'string' ? parseInt(id, 10) : id },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
@@ -378,7 +379,7 @@ export class ShipmentService {
     }
 
     await this.shipmentRepository.update(
-      { id },
+      { id: typeof id === 'string' ? parseInt(id, 10) : id },
       { status: 'LOADED' }
     );
 
@@ -400,10 +401,10 @@ export class ShipmentService {
     // OQC 검증: 팔레트 내 박스 중 oqcStatus가 FAIL 또는 PENDING이면 출하 차단
     const pallets = await this.palletRepository.find({
       where: { shipmentId: id },
-      select: ['id'],
+      select: ['palletNo'],
     });
 
-    const palletIds = pallets.map(p => p.id);
+    const palletIds = pallets.map(p => p.palletNo);
     if (palletIds.length > 0) {
       const failedBoxes = await this.boxRepository
         .createQueryBuilder('box')
@@ -445,7 +446,7 @@ export class ShipmentService {
       // 출하 상태 업데이트
       await queryRunner.manager.update(
         ShipmentLog,
-        { id },
+        { id: typeof id === 'string' ? parseInt(id, 10) : id },
         {
           status: 'SHIPPED',
           shipAt: new Date(),
@@ -474,7 +475,7 @@ export class ShipmentService {
     }
 
     await this.shipmentRepository.update(
-      { id },
+      { id: typeof id === 'string' ? parseInt(id, 10) : id },
       { status: 'DELIVERED' }
     );
 
@@ -518,7 +519,7 @@ export class ShipmentService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id },
+        { id: typeof id === 'string' ? parseInt(id, 10) : id },
         updateData
       );
 
@@ -542,7 +543,7 @@ export class ShipmentService {
     const updateData: any = { status: dto.status };
     if (dto.remark) updateData.remark = dto.remark;
 
-    await this.shipmentRepository.update({ id }, updateData);
+    await this.shipmentRepository.update({ id: typeof id === 'string' ? parseInt(id, 10) : id }, updateData);
 
     return this.findById(id);
   }
@@ -556,7 +557,7 @@ export class ShipmentService {
     await this.findById(id); // 존재 확인
 
     await this.shipmentRepository.update(
-      { id },
+      { id: typeof id === 'string' ? parseInt(id, 10) : id },
       { erpSyncYn: dto.erpSyncYn }
     );
 
@@ -579,9 +580,10 @@ export class ShipmentService {
   /**
    * ERP 동기화 완료 처리 (일괄)
    */
-  async markAsSynced(ids: string[]) {
+  async markAsSynced(ids: (string | number)[]) {
+    const numIds = ids.map(id => typeof id === 'string' ? parseInt(id, 10) : id);
     await this.shipmentRepository.update(
-      { id: In(ids) },
+      { id: In(numIds) },
       { erpSyncYn: 'Y' }
     );
 
@@ -716,9 +718,9 @@ export class ShipmentService {
     const result = await Promise.all(
       pallets.map(async (pallet) => {
         const boxes = await this.boxRepository.find({
-          where: { palletId: pallet.id },
+          where: { palletNo: In([pallet.palletNo]) },
           order: { boxNo: 'ASC' },
-          select: ['id', 'boxNo', 'partId', 'qty', 'status'],
+          select: ['boxNo', 'itemCode', 'qty', 'status'],
         });
         return { ...pallet, boxes };
       }),
@@ -749,7 +751,7 @@ export class ShipmentService {
     return {
       verified: true,
       palletNo: pallet.palletNo,
-      palletId: pallet.id,
+      palletId: pallet.palletNo,
       boxCount: pallet.boxCount,
       totalQty: pallet.totalQty,
       status: pallet.status,
@@ -767,25 +769,25 @@ export class ShipmentService {
       .createQueryBuilder('box')
       .innerJoin(PalletMaster, 'pallet', 'box.palletId = pallet.id')
       .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
-      .select(['box.partId', 'box.qty'])
+      .select(['box.itemCode', 'box.qty'])
       .getMany();
 
     // 품목별 집계
     const partSummary = new Map<string, {
-      partId: string;
+      itemCode: string;
       boxCount: number;
       qty: number;
     }>();
 
     boxesWithParts.forEach(box => {
-      const existing = partSummary.get(box.partId) || {
-        partId: box.partId,
+      const existing = partSummary.get(box.itemCode) || {
+        itemCode: box.itemCode,
         boxCount: 0,
         qty: 0,
       };
 
-      partSummary.set(box.partId, {
-        partId: box.partId,
+      partSummary.set(box.itemCode, {
+        itemCode: box.itemCode,
         boxCount: existing.boxCount + 1,
         qty: existing.qty + box.qty,
       });

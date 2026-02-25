@@ -24,10 +24,10 @@ export class PartController {
     return ResponseUtil.success(data);
   }
 
-  @Get('code/:partCode')
+  @Get('code/:itemCode')
   @ApiOperation({ summary: '품목 코드로 조회' })
-  async findByCode(@Param('partCode') partCode: string) {
-    const data = await this.partService.findByCode(partCode);
+  async findByCode(@Param('itemCode') itemCode: string) {
+    const data = await this.partService.findByCode(itemCode);
     return ResponseUtil.success(data);
   }
 

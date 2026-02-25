@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **MatIssue 테이블**: 작업지시/외주처로의 자재 불출 이력
- * 2. **주요 필드**: issueNo, jobOrderId, lotId, issueQty, issueType
+ * 2. **주요 필드**: issueNo, orderNo, lotNo, issueQty, issueType
  * 3. **출고 유형**: PROD(생산), SUBCON(외주), SAMPLE(샘플), ADJ(조정)
  * 4. **StockTransaction 연동**: 출고 시 MAT_OUT 타입 수불 트랜잭션도 함께 생성
  */
@@ -48,29 +48,27 @@ export class MatIssueService {
   private async flattenIssue(issue: MatIssue) {
     if (!issue) return null;
 
-    const lot = issue.lotId ? await this.matLotRepository.findOne({ where: { id: issue.lotId } }) : null;
-    const part = lot?.partId ? await this.partMasterRepository.findOne({ where: { id: lot.partId } }) : null;
-    const jobOrder = issue.jobOrderId ? await this.jobOrderRepository.findOne({ where: { id: issue.jobOrderId } }) : null;
+    const lot = issue.lotNo ? await this.matLotRepository.findOne({ where: { lotNo: issue.lotNo } }) : null;
+    const part = lot?.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
+    const jobOrder = issue.orderNo ? await this.jobOrderRepository.findOne({ where: { orderNo: issue.orderNo } }) : null;
 
     return {
       ...issue,
-      lotId: lot?.id ?? null,
       lotNo: lot?.lotNo ?? null,
-      partId: part?.id ?? null,
-      partCode: part?.partCode ?? null,
-      partName: part?.partName ?? null,
+      itemCode: part?.itemCode ?? null,
+      itemName: part?.itemName ?? null,
       unit: part?.unit ?? null,
       jobOrderNo: jobOrder?.orderNo ?? null,
     };
   }
 
   async findAll(query: MatIssueQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, jobOrderId, lotId, issueType, issueDateFrom, issueDateTo, status } = query;
+    const { page = 1, limit = 10, orderNo, lotNo, issueType, issueDateFrom, issueDateTo, status } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
-      ...(jobOrderId && { jobOrderId }),
-      ...(lotId && { lotId }),
+      ...(orderNo && { orderNo }),
+      ...(lotNo && { lotNo }),
       ...(issueType && { issueType }),
       ...(status && { status }),
       ...(company && { company }),
@@ -108,7 +106,7 @@ export class MatIssueService {
   }
 
   async create(dto: CreateMatIssueDto) {
-    const { jobOrderId, prodResultId, warehouseCode, issueType, items, remark, workerId } = dto;
+    const { orderNo, prodResultId, warehouseCode, issueType, items, remark, workerId } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -122,11 +120,11 @@ export class MatIssueService {
       for (const item of items) {
         // LOT 유효성 확인
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { id: item.lotId },
+          where: { lotNo: item.lotNo },
         });
 
         if (!lot) {
-          throw new BadRequestException(`LOT을 찾을 수 없습니다: ${item.lotId}`);
+          throw new BadRequestException(`LOT을 찾을 수 없습니다: ${item.lotNo}`);
         }
 
         if (lot.iqcStatus !== 'PASS') {
@@ -144,9 +142,9 @@ export class MatIssueService {
         // 1. 출고 이력 생성 (issueNo 포함)
         const issue = queryRunner.manager.create(MatIssue, {
           issueNo,
-          jobOrderId,
+          orderNo,
           prodResultId, // 생산실적과 연결
-          lotId: item.lotId,
+          lotNo: item.lotNo,
           issueQty: item.issueQty,
           issueType,
           workerId,
@@ -161,8 +159,8 @@ export class MatIssueService {
           transNo,
           transType: 'MAT_OUT',
           fromWarehouseId: warehouseCode || null,
-          partId: lot.partId,
-          lotId: item.lotId,
+          itemCode: lot.itemCode,
+          lotNo: item.lotNo,
           qty: -item.issueQty,
           remark: remark || `자재출고: ${lot.lotNo}`,
           workerId,
@@ -173,7 +171,7 @@ export class MatIssueService {
         await queryRunner.manager.save(stockTx);
 
         // 3. LOT 재고 차감
-        await queryRunner.manager.update(MatLot, lot.id, {
+        await queryRunner.manager.update(MatLot, lot.lotNo, {
           currentQty: lot.currentQty - item.issueQty,
           status: lot.currentQty - item.issueQty === 0 ? 'DEPLETED' : lot.status,
         });
@@ -181,7 +179,7 @@ export class MatIssueService {
         // 4. 창고 재고 차감 (warehouseCode가 있는 경우)
         if (warehouseCode) {
           const stock = await queryRunner.manager.findOne(MatStock, {
-            where: { partId: lot.partId, warehouseCode, lotId: lot.id },
+            where: { itemCode: lot.itemCode, warehouseCode, lotNo: lot.lotNo },
           });
 
           if (stock) {
@@ -235,21 +233,21 @@ export class MatIssueService {
     const result = await this.create({
       warehouseCode: dto.warehouseCode,
       issueType: dto.issueType,
-      items: [{ lotId: lot.id, issueQty: lot.currentQty }],
+      items: [{ lotNo: lot.lotNo, issueQty: lot.currentQty }],
       workerId: dto.workerId,
       remark: dto.remark ?? `바코드 스캔 출고: ${dto.lotNo}`,
     });
 
     const part = await this.partMasterRepository.findOne({
-      where: { id: lot.partId },
+      where: { itemCode: lot.itemCode },
     });
 
     return {
       ...result[0],
       lotNo: lot.lotNo,
       issuedQty: lot.currentQty,
-      partCode: part?.partCode,
-      partName: part?.partName,
+      itemCode: part?.itemCode,
+      itemName: part?.itemName,
       unit: part?.unit,
     };
   }
@@ -283,8 +281,8 @@ export class MatIssueService {
           transNo: cancelTransNo,
           transType: 'MAT_OUT',
           fromWarehouseId: originalTx.fromWarehouseId,
-          partId: originalTx.partId,
-          lotId: originalTx.lotId,
+          itemCode: originalTx.itemCode,
+          lotNo: originalTx.lotNo,
           qty: -originalTx.qty,
           remark: reason || `출고취소 역분개: ${originalTx.transNo}`,
           refType: 'MAT_ISSUE_CANCEL',
@@ -299,10 +297,10 @@ export class MatIssueService {
       }
 
       // 3. LOT 재고 복구
-      if (rawIssue.lotId) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { id: rawIssue.lotId } });
+      if (rawIssue.lotNo) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: rawIssue.lotNo } });
         if (lot) {
-          await queryRunner.manager.update(MatLot, lot.id, {
+          await queryRunner.manager.update(MatLot, lot.lotNo, {
             currentQty: lot.currentQty + rawIssue.issueQty,
             status: 'NORMAL',
           });
@@ -310,8 +308,8 @@ export class MatIssueService {
       }
 
       // 4. 창고 재고 복구 (stock이 있는 경우)
-      const stock = rawIssue.lotId ? await queryRunner.manager.findOne(MatStock, {
-        where: { lotId: rawIssue.lotId },
+      const stock = rawIssue.lotNo ? await queryRunner.manager.findOne(MatStock, {
+        where: { lotNo: rawIssue.lotNo },
       }) : null;
 
       if (stock) {

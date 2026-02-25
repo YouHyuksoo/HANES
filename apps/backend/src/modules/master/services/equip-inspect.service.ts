@@ -17,7 +17,7 @@ export class EquipInspectService {
   ) {}
 
   async findAll(query: EquipInspectItemQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, equipId, inspectType, search, useYn } = query;
+    const { page = 1, limit = 10, equipCode, inspectType, search, useYn } = query;
 
     const queryBuilder = this.equipInspectRepository.createQueryBuilder('item');
 
@@ -28,8 +28,8 @@ export class EquipInspectService {
       queryBuilder.andWhere('item.plant = :plant', { plant });
     }
 
-    if (equipId) {
-      queryBuilder.andWhere('item.equipId = :equipId', { equipId });
+    if (equipCode) {
+      queryBuilder.andWhere('item.equipCode = :equipCode', { equipCode });
     }
 
     if (inspectType) {
@@ -42,13 +42,13 @@ export class EquipInspectService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(item.itemName LIKE :search OR item.equipId LIKE :search)',
+        '(item.itemName LIKE :search OR item.equipCode LIKE :search)',
         { search: `%${search}%` },
       );
     }
 
     const [data, total] = await queryBuilder
-      .orderBy('item.equipId', 'ASC')
+      .orderBy('item.equipCode', 'ASC')
       .addOrderBy('item.seq', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)

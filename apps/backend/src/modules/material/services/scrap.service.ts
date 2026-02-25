@@ -52,24 +52,24 @@ export class ScrapService {
     ]);
 
     // part, lot 정보 조회
-    const partIds = data.map((t) => t.partId).filter(Boolean);
-    const lotIds = data.map((t) => t.lotId).filter(Boolean) as string[];
+    const itemCodes = data.map((t) => t.itemCode).filter(Boolean);
+    const lotNos = data.map((t) => t.lotNo).filter(Boolean) as string[];
 
     const [parts, lots] = await Promise.all([
-      partIds.length > 0 ? this.partMasterRepository.find({ where: { id: In(partIds) } }) : Promise.resolve([]),
-      lotIds.length > 0 ? this.matLotRepository.find({ where: { id: In(lotIds) } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
+      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
     ]);
 
-    const partMap = new Map(parts.map((p) => [p.id, p]));
-    const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
 
     const result = data.map((transaction) => {
-      const part = partMap.get(transaction.partId);
-      const lot = transaction.lotId ? lotMap.get(transaction.lotId) : null;
+      const part = partMap.get(transaction.itemCode);
+      const lot = transaction.lotNo ? lotMap.get(transaction.lotNo) : null;
       return {
         ...transaction,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         lotNo: lot?.lotNo,
       };
     });
@@ -78,7 +78,7 @@ export class ScrapService {
   }
 
   async create(dto: CreateScrapDto) {
-    const { lotId, warehouseId, qty, reason, workerId } = dto;
+    const { lotNo, warehouseId, qty, reason, workerId } = dto;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -86,11 +86,11 @@ export class ScrapService {
     try {
       // LOT 조회
       const lot = await queryRunner.manager.findOne(MatLot, {
-        where: { id: lotId },
+        where: { lotNo: lotNo },
       });
 
       if (!lot) {
-        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
       }
 
       if (lot.currentQty < qty) {
@@ -99,7 +99,7 @@ export class ScrapService {
 
       // 재고 확인
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { partId: lot.partId, warehouseCode: warehouseId, lotId },
+        where: { itemCode: lot.itemCode, warehouseCode: warehouseId, lotNo },
       });
 
       if (!stock || stock.qty < qty) {
@@ -113,7 +113,7 @@ export class ScrapService {
       });
 
       // LOT 수량 차감
-      await queryRunner.manager.update(MatLot, lot.id, {
+      await queryRunner.manager.update(MatLot, lot.lotNo, {
         currentQty: lot.currentQty - qty,
       });
 
@@ -124,11 +124,11 @@ export class ScrapService {
         transType: 'SCRAP',
         transDate: new Date(),
         fromWarehouseId: warehouseId,
-        partId: lot.partId,
-        lotId,
+        itemCode: lot.itemCode,
+        lotNo,
         qty,
         refType: 'LOT',
-        refId: lotId,
+        refId: lotNo,
         workerId,
         remark: reason,
       });
@@ -139,7 +139,7 @@ export class ScrapService {
 
       return {
         id: savedTransaction.id,
-        lotId,
+        lotNo,
         warehouseId,
         qty,
         reason,

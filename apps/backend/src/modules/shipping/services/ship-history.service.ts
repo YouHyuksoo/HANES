@@ -70,8 +70,8 @@ export class ShipHistoryService {
         const itemsWithPart = await Promise.all(
           items.map(async (item) => {
             const part = await this.partRepository.findOne({
-              where: { id: item.partId },
-              select: ['id', 'partCode', 'partName'],
+              where: { itemCode: item.itemCode },
+              select: ['itemCode', 'itemName'],
             });
             return {
               ...item,

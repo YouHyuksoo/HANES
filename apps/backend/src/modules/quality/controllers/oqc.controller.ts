@@ -59,14 +59,14 @@ export class OqcController {
 
   @Get('available-boxes')
   @ApiOperation({ summary: '검사 가능 박스 목록', description: 'CLOSED + OQC 미의뢰 박스' })
-  @ApiQuery({ name: 'partId', required: false, description: '품목 ID로 필터링' })
+  @ApiQuery({ name: 'itemCode', required: false, description: '품목 ID로 필터링' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getAvailableBoxes(
-    @Query('partId') partId?: string,
+    @Query('itemCode') itemCode?: string,
     @Req() req?: Request,
   ) {
     const company = req?.headers['x-company'] as string | undefined;
-    const data = await this.oqcService.getAvailableBoxes(partId, company);
+    const data = await this.oqcService.getAvailableBoxes(itemCode, company);
     return ResponseUtil.success(data);
   }
 

@@ -190,10 +190,10 @@ export class InspectResultService {
     }
 
     // 3. prodResultId가 없으면 TraceLog의 lotId나 다른 정보로 추적
-    if (!prodResultId && traceLog.lotId) {
+    if (!prodResultId && traceLog.lotNo) {
       // lotId로 생산실적 검색
       const prodResult = await this.prodResultRepository.findOne({
-        where: { lotNo: traceLog.lotId },
+        where: { lotNo: traceLog.lotNo },
         order: { createdAt: 'DESC' },
       });
       if (prodResult) {
@@ -237,8 +237,8 @@ export class InspectResultService {
       passYn: saved.passYn,
       inspectAt: saved.inspectAt,
       productInfo: {
-        partCode: prodResult.jobOrder?.part?.partCode,
-        partName: prodResult.jobOrder?.part?.partName,
+        itemCode: prodResult.jobOrder?.part?.itemCode,
+        itemName: prodResult.jobOrder?.part?.itemName,
         orderNo: prodResult.jobOrder?.orderNo,
       },
     };
@@ -277,9 +277,9 @@ export class InspectResultService {
     }
 
     // lotId로 생산실적 검색
-    if (!prodResult && traceLog.lotId) {
+    if (!prodResult && traceLog.lotNo) {
       prodResult = await this.prodResultRepository.findOne({
-        where: { lotNo: traceLog.lotId },
+        where: { lotNo: traceLog.lotNo },
         order: { createdAt: 'DESC' },
         relations: ['jobOrder', 'jobOrder.part'],
       });
@@ -296,8 +296,8 @@ export class InspectResultService {
       barcode,
       serialNo: traceLog.serialNo,
       productInfo: prodResult ? {
-        partCode: prodResult.jobOrder?.part?.partCode,
-        partName: prodResult.jobOrder?.part?.partName,
+        itemCode: prodResult.jobOrder?.part?.itemCode,
+        itemName: prodResult.jobOrder?.part?.itemName,
         orderNo: prodResult.jobOrder?.orderNo,
         prodResultId: prodResult.id,
         productionDate: prodResult.createdAt,

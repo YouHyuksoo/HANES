@@ -40,12 +40,12 @@ export class SampleInspectController {
     return ResponseUtil.success(result.data);
   }
 
-  @Get('job-order/:jobOrderId')
+  @Get('job-order/:orderNo')
   @ApiOperation({ summary: '작업지시별 샘플검사 조회' })
-  @ApiParam({ name: 'jobOrderId', description: '작업지시 ID' })
+  @ApiParam({ name: 'orderNo', description: '작업지시 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByJobOrder(@Param('jobOrderId') jobOrderId: string) {
-    const data = await this.sampleInspectService.findByJobOrder(jobOrderId);
+  async findByJobOrder(@Param('orderNo') orderNo: string) {
+    const data = await this.sampleInspectService.findByJobOrder(orderNo);
     return ResponseUtil.success(data);
   }
 

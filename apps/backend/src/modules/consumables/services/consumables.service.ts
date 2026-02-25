@@ -103,7 +103,7 @@ export class ConsumablesService {
    */
   async findById(id: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id },
+      where: { consumableCode: id },
     });
 
     if (!consumable) {
@@ -155,11 +155,10 @@ export class ConsumablesService {
       const existing = await this.consumableMasterRepository.findOne({
         where: {
           consumableCode: dto.consumableCode,
-          id: id, // exclude current id
         },
       });
 
-      if (existing) {
+      if (existing && existing.consumableCode !== id) {
         throw new ConflictException(`이미 존재하는 소모품 코드입니다: ${dto.consumableCode}`);
       }
     }
@@ -178,7 +177,7 @@ export class ConsumablesService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.consumableMasterRepository.update(id, updateData);
+    await this.consumableMasterRepository.update({ consumableCode: id }, updateData);
     return this.findById(id);
   }
 
@@ -188,7 +187,7 @@ export class ConsumablesService {
   async delete(id: string) {
     await this.findById(id);
 
-    await this.consumableMasterRepository.delete(id);
+    await this.consumableMasterRepository.delete({ consumableCode: id });
     return { id, deleted: true };
   }
 
@@ -370,7 +369,7 @@ export class ConsumablesService {
     try {
       // 소모품 존재 확인
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { id: dto.consumableId },
+        where: { consumableCode: dto.consumableId },
       });
 
       if (!consumable) {
@@ -409,7 +408,7 @@ export class ConsumablesService {
         incomingType: dto.incomingType || null,
         department: dto.department || null,
         lineId: dto.lineId || null,
-        equipId: dto.equipId || null,
+        equipCode: dto.equipCode || null,
         issueReason: dto.issueReason || null,
         returnReason: dto.returnReason || null,
       });
@@ -419,7 +418,7 @@ export class ConsumablesService {
       // 재고 업데이트
       await queryRunner.manager.update(
         ConsumableMaster,
-        dto.consumableId,
+        { consumableCode: dto.consumableId },
         {
           stockQty: consumable.stockQty + stockDelta,
           lastReplaceAt: dto.logType === 'IN' ? new Date() : consumable.lastReplaceAt,
@@ -450,7 +449,7 @@ export class ConsumablesService {
 
     try {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { id: dto.consumableId },
+        where: { consumableCode: dto.consumableId },
       });
 
       if (!consumable) {
@@ -473,12 +472,12 @@ export class ConsumablesService {
       });
 
       // 로그 기록 (선택적)
-      if (dto.equipId) {
+      if (dto.equipCode) {
         const log = queryRunner.manager.create(ConsumableLog, {
           consumableId: dto.consumableId,
           logType: 'USAGE',
           qty: dto.addCount,
-          equipId: dto.equipId,
+          equipCode: dto.equipCode,
           remark: `타수 업데이트: +${dto.addCount}`,
         });
         await queryRunner.manager.save(ConsumableLog, log);
@@ -512,7 +511,7 @@ export class ConsumablesService {
 
     try {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { id: dto.consumableId },
+        where: { consumableCode: dto.consumableId },
       });
 
       if (!consumable) {

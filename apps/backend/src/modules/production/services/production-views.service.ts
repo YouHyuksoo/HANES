@@ -6,7 +6,7 @@
  * 1. **작업진행현황**: JobOrder + ProdResult 집계를 조합한 대시보드 데이터
  * 2. **샘플검사이력**: InspectResult 테이블 조회
  * 3. **포장실적**: BoxMaster 테이블 조회
- * 4. **반제품/제품재고**: Stock 테이블에서 partType=WIP/FG 필터링
+ * 4. **반제품/제품재고**: Stock 테이블에서 itemType=WIP/FG 필터링
  * 5. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
  */
 
@@ -70,7 +70,7 @@ export class ProductionViewsService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(jo.orderNo ILIKE :search OR p.partCode ILIKE :search OR p.partName ILIKE :search)',
+        '(jo.orderNo ILIKE :search OR p.itemCode ILIKE :search OR p.itemName ILIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -183,21 +183,21 @@ export class ProductionViewsService {
    * 반제품/제품 재고 조회
    */
   async getWipStock(query: WipStockQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, partType, search } = query;
+    const { page = 1, limit = 10, itemType, search } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.stockRepository
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.part', 'p')
-      .where('p.partType IN (:...partTypes)', {
-        partTypes: partType ? [partType] : ['WIP', 'FG'],
+      .where('p.itemType IN (:...itemTypes)', {
+        itemTypes: itemType ? [itemType] : ['WIP', 'FG'],
       })
       .orderBy('s.updatedAt', 'DESC')
       .skip(skip)
       .take(limit);
 
     if (search) {
-      queryBuilder.andWhere('(p.partCode ILIKE :search OR p.partName ILIKE :search)', {
+      queryBuilder.andWhere('(p.itemCode ILIKE :search OR p.itemName ILIKE :search)', {
         search: `%${search}%`,
       });
     }

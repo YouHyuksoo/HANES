@@ -41,11 +41,11 @@ export class ShelfLifeService {
     ]);
 
     // part 정보 조회
-    const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+    const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -56,7 +56,7 @@ export class ShelfLifeService {
 
     // 만료 상태 계산
     let result = data.map((lot) => {
-      const part = partMap.get(lot.partId);
+      const part = partMap.get(lot.itemCode);
       const expireDate = lot.expireDate ? new Date(lot.expireDate) : null;
       let status: 'EXPIRED' | 'NEAR_EXPIRY' | 'VALID' = 'VALID';
       let daysUntilExpiry: number | null = null;
@@ -74,8 +74,8 @@ export class ShelfLifeService {
 
       return {
         ...lot,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         unit: part?.unit,
         expiryStatus: status,
         daysUntilExpiry,
@@ -93,8 +93,8 @@ export class ShelfLifeService {
       result = result.filter(
         (item) =>
           item.lotNo?.toLowerCase().includes(searchLower) ||
-          item.partCode?.toLowerCase().includes(searchLower) ||
-          item.partName?.toLowerCase().includes(searchLower),
+          item.itemCode.toLowerCase().includes(searchLower) ||
+          item.itemName.toLowerCase().includes(searchLower),
       );
     }
 

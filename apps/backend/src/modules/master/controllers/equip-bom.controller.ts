@@ -9,7 +9,7 @@
  * 4. **PUT /master/equip-bom/items/:id**: BOM 품목 수정
  * 5. **DELETE /master/equip-bom/items/:id**: BOM 품목 삭제
  * 6. **GET /master/equip-bom/rels**: 설비-BOM 연결 목록
- * 7. **GET /master/equip-bom/equip/:equipId**: 특정 설비의 BOM 목록
+ * 7. **GET /master/equip-bom/equip/:equipCode**: 특정 설비의 BOM 목록
  * 8. **POST /master/equip-bom/rels**: 설비-BOM 연결 생성
  * 9. **PUT /master/equip-bom/rels/:id**: 설비-BOM 연결 수정
  * 10. **DELETE /master/equip-bom/rels/:id**: 설비-BOM 연결 삭제
@@ -103,10 +103,10 @@ export class EquipBomController {
     return ResponseUtil.success(data);
   }
 
-  @Get('equip/:equipId')
+  @Get('equip/:equipCode')
   @ApiOperation({ summary: '특정 설비의 BOM 목록 조회' })
-  async getEquipBomList(@Param('equipId') equipId: string) {
-    const data = await this.equipBomService.getEquipBomList(equipId);
+  async getEquipBomList(@Param('equipCode') equipCode: string) {
+    const data = await this.equipBomService.getEquipBomList(equipCode);
     return ResponseUtil.success(data);
   }
 

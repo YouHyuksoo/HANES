@@ -54,7 +54,7 @@ export class LabelPrintService {
 
   /**
    * ZPL 변수 치환 - 템플릿의 변수 플레이스홀더를 LOT 실제 데이터로 교체
-   * @param dto templateId + lotIds
+   * @param dto templateId + lotNos
    * @returns zplDataList(치환된 ZPL 배열), lotDetails(LOT 정보 배열)
    */
   async generateZpl(dto: GenerateZplDto) {
@@ -75,21 +75,21 @@ export class LabelPrintService {
     const zplDataList: string[] = [];
     const lotDetails: any[] = [];
 
-    for (const lotId of dto.lotIds) {
-      const lot = await this.matLotRepo.findOne({ where: { id: lotId } });
+    for (const lotNo of dto.lotNos) {
+      const lot = await this.matLotRepo.findOne({ where: { lotNo: lotNo } });
       if (!lot) {
-        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotId}`);
+        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
       }
 
       const part = await this.partMasterRepo.findOne({
-        where: { id: lot.partId },
+        where: { itemCode: lot.itemCode },
       });
 
       // 변수 치환 맵
       const vars: Record<string, string> = {
         '{{lotNo}}': lot.lotNo,
-        '{{partCode}}': part?.partCode ?? '',
-        '{{partName}}': part?.partName ?? '',
+        '{{itemCode}}': part?.itemCode ?? '',
+        '{{itemName}}': part?.itemName ?? '',
         '{{qty}}': String(lot.initQty),
         '{{unit}}': part?.unit ?? 'EA',
         '{{vendor}}': lot.vendor ?? '',
@@ -109,10 +109,10 @@ export class LabelPrintService {
 
       zplDataList.push(zpl);
       lotDetails.push({
-        lotId: lot.id,
         lotNo: lot.lotNo,
-        partCode: part?.partCode ?? '',
-        partName: part?.partName ?? '',
+        lotNo: lot.lotNo,
+        itemCode: part?.itemCode ?? '',
+        itemName: part?.itemName ?? '',
         qty: lot.initQty,
         unit: part?.unit ?? 'EA',
       });
@@ -181,7 +181,7 @@ export class LabelPrintService {
       category: dto.category,
       printMode: dto.printMode,
       printerName: dto.printerName ?? null,
-      lotIds: JSON.stringify(dto.lotIds),
+      lotNos: JSON.stringify(dto.lotNos),
       labelCount: dto.labelCount,
       status: dto.status ?? 'SUCCESS',
       errorMsg: dto.errorMsg ?? null,

@@ -11,7 +11,7 @@
  * 실제 DB 스키마 (box_masters 테이블):
  * - boxNo가 유니크 키
  * - status: OPEN, CLOSED, SHIPPED
- * - partId로 PartMaster와 연결
+ * - itemCode로 PartMaster와 연결
  * - palletId로 PalletMaster와 연결 (nullable)
  */
 
@@ -61,7 +61,7 @@ export class BoxService {
       page = 1,
       limit = 10,
       boxNo,
-      partId,
+      itemCode,
       palletId,
       status,
       unassigned,
@@ -72,7 +72,7 @@ export class BoxService {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(boxNo && { boxNo: ILike(`%${boxNo}%`) }),
-      ...(partId && { partId }),
+      ...(itemCode && { itemCode }),
       ...(palletId && { palletId }),
       ...(status && { status }),
       ...(unassigned && { palletId: IsNull() }),
@@ -120,16 +120,16 @@ export class BoxService {
 
     // 품목 정보 조인하여 반환
     const part = await this.partRepository.findOne({
-      where: { id: box.partId },
+      where: { itemCode: box.itemCode },
     });
 
     return {
       ...box,
       part: part
         ? {
-            partCode: part.partCode,
-            partName: part.partName,
-            partType: part.partType,
+            itemCode: part.itemCode,
+            itemName: part.itemName,
+            itemType: part.itemType,
             unit: part.unit,
           }
         : null,
@@ -151,16 +151,16 @@ export class BoxService {
 
     // 품목 존재 확인
     const part = await this.partRepository.findOne({
-      where: { id: dto.partId },
+      where: { itemCode: dto.itemCode },
     });
 
     if (!part) {
-      throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.partId}`);
+      throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
     }
 
     const box = this.boxRepository.create({
       boxNo: dto.boxNo,
-      partId: dto.partId,
+      itemCode: dto.itemCode,
       qty: dto.qty,
       serialList: dto.serialList ? JSON.stringify(dto.serialList) : null,
       status: 'OPEN',
@@ -237,7 +237,7 @@ export class BoxService {
     // 혼입방지: 시리얼(LOT)의 품목이 박스의 품목과 일치하는지 검증
     for (const serial of dto.serials) {
       const lot = await this.lotRepository.findOne({ where: { lotNo: serial } });
-      if (lot && lot.partId !== box.partId) {
+      if (lot && lot.itemCode !== box.itemCode) {
         throw new BadRequestException(
           `혼입방지: 시리얼 "${serial}"의 품목이 박스 품목과 다릅니다.`,
         );
@@ -245,7 +245,7 @@ export class BoxService {
     }
 
     // 과포장방지: 품목의 포장단위 초과 검증
-    const part = await this.partRepository.findOne({ where: { id: box.partId } });
+    const part = await this.partRepository.findOne({ where: { itemCode: box.itemCode } });
     const packUnit = part?.packUnit ? parseInt(part.packUnit, 10) : 0;
     if (packUnit > 0 && existingSerials.length + dto.serials.length > packUnit) {
       throw new BadRequestException(
@@ -377,7 +377,7 @@ export class BoxService {
 
     // 팔레트 존재 및 상태 확인
     const pallet = await this.palletRepository.findOne({
-      where: { id: dto.palletId },
+      where: { palletNo: dto.palletId },
     });
 
     if (!pallet) {
@@ -395,7 +395,7 @@ export class BoxService {
 
     try {
       // 박스 업데이트
-      await queryRunner.manager.update(BoxMaster, { id }, { palletId: dto.palletId });
+      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletId: dto.palletId });
 
       // 팔레트 집계 업데이트
       const palletSummary = await queryRunner.manager
@@ -405,7 +405,7 @@ export class BoxService {
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
 
-      await queryRunner.manager.update(PalletMaster, { id: dto.palletId }, {
+      await queryRunner.manager.update(PalletMaster, { palletNo: dto.palletId }, {
         boxCount: parseInt(palletSummary.count) || 0,
         totalQty: parseInt(palletSummary.totalQty) || 0,
       });
@@ -433,7 +433,7 @@ export class BoxService {
 
     // 팔레트가 OPEN 상태일 때만 제거 가능
     const pallet = await this.palletRepository.findOne({
-      where: { id: box.palletId },
+      where: { palletNo: box.palletId },
     });
 
     if (!pallet) {
@@ -453,7 +453,7 @@ export class BoxService {
 
     try {
       // 박스 업데이트
-      await queryRunner.manager.update(BoxMaster, { id }, { palletId: null });
+      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletId: null });
 
       // 팔레트 집계 업데이트
       const palletSummary = await queryRunner.manager
@@ -463,7 +463,7 @@ export class BoxService {
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
 
-      await queryRunner.manager.update(PalletMaster, { id: palletId }, {
+      await queryRunner.manager.update(PalletMaster, { palletNo: palletId }, {
         boxCount: parseInt(palletSummary?.count) || 0,
         totalQty: parseInt(palletSummary?.totalQty) || 0,
       });
@@ -494,9 +494,9 @@ export class BoxService {
   /**
    * 품목별 박스 목록 조회
    */
-  async findByPartId(partId: string, status?: BoxStatus) {
+  async findByPartId(itemCode: string, status?: BoxStatus) {
     const where: any = {
-      partId,
+      itemCode,
       ...(status && { status }),
     };
 

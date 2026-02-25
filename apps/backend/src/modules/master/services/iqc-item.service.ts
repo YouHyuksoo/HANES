@@ -17,7 +17,7 @@ export class IqcItemService {
   ) {}
 
   async findAll(query: IqcItemQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, partId, search, useYn } = query;
+    const { page = 1, limit = 10, itemCode, search, useYn } = query;
 
     const queryBuilder = this.iqcItemRepository.createQueryBuilder('item');
 
@@ -28,8 +28,8 @@ export class IqcItemService {
       queryBuilder.andWhere('item.plant = :plant', { plant });
     }
 
-    if (partId) {
-      queryBuilder.andWhere('item.partId = :partId', { partId });
+    if (itemCode) {
+      queryBuilder.andWhere('item.itemCode = :itemCode', { itemCode });
     }
 
     if (useYn) {
@@ -38,13 +38,13 @@ export class IqcItemService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(item.inspectItem LIKE :search OR item.partId LIKE :search OR item.spec LIKE :search)',
+        '(item.inspectItem LIKE :search OR item.itemCode LIKE :search OR item.spec LIKE :search)',
         { search: `%${search}%` },
       );
     }
 
     const [data, total] = await queryBuilder
-      .orderBy('item.partId', 'ASC')
+      .orderBy('item.itemCode', 'ASC')
       .addOrderBy('item.seq', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)

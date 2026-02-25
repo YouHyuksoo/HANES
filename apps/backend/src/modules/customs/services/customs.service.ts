@@ -74,7 +74,7 @@ export class CustomsService {
       .addSelect([
         'cl.id AS cl_id',
         'cl.LOT_NO AS cl_lotNo',
-        'cl.PART_CODE AS cl_partCode',
+        'cl.ITEM_CODE AS cl_itemCode',
         'cl.QTY AS cl_qty',
         'cl.USED_QTY AS cl_usedQty',
         'cl.REMAIN_QTY AS cl_remainQty',
@@ -139,11 +139,11 @@ export class CustomsService {
     const lots = entryIds.length > 0
       ? await this.customsLotRepository.find({
           where: { entryId: In(entryIds) },
-          select: ['id', 'entryId', 'lotNo', 'partCode', 'qty', 'usedQty', 'remainQty', 'status'],
+          select: ['id', 'entryId', 'lotNo', 'itemCode', 'qty', 'usedQty', 'remainQty', 'status'],
         })
       : [];
 
-    const lotsByEntryId = new Map<string, CustomsLot[]>();
+    const lotsByEntryId = new Map<number, CustomsLot[]>();
     for (const lot of lots) {
       if (!lotsByEntryId.has(lot.entryId)) lotsByEntryId.set(lot.entryId, []);
       lotsByEntryId.get(lot.entryId)!.push(lot);
@@ -157,9 +157,10 @@ export class CustomsService {
     return { data, total, page, limit };
   }
 
-  async findEntryById(id: string) {
+  async findEntryById(id: string | number) {
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
     const entry = await this.customsEntryRepository.findOne({
-      where: { id },
+      where: { id: numId },
     });
 
     if (!entry) {
@@ -167,7 +168,7 @@ export class CustomsService {
     }
 
     const lots = await this.customsLotRepository.find({
-      where: { entryId: id },
+      where: { entryId: numId },
     });
 
     // 일괄 조회로 N+1 방지
@@ -176,7 +177,7 @@ export class CustomsService {
       ? await this.customsUsageReportRepository.find({ where: { customsLotId: In(lotIds) } })
       : [];
 
-    const reportsByLotId = new Map<string, CustomsUsageReport[]>();
+    const reportsByLotId = new Map<number, CustomsUsageReport[]>();
     for (const report of reports) {
       if (!reportsByLotId.has(report.customsLotId)) reportsByLotId.set(report.customsLotId, []);
       reportsByLotId.get(report.customsLotId)!.push(report);
@@ -215,7 +216,7 @@ export class CustomsService {
     return this.customsEntryRepository.save(entry);
   }
 
-  async updateEntry(id: string, dto: UpdateCustomsEntryDto) {
+  async updateEntry(id: string | number, dto: UpdateCustomsEntryDto) {
     await this.findEntryById(id);
 
     const updateData: Partial<CustomsEntry> = {};
@@ -230,14 +231,16 @@ export class CustomsService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.customsEntryRepository.update(id, updateData);
-    return this.findEntryById(id);
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+    await this.customsEntryRepository.update(numId, updateData);
+    return this.findEntryById(numId);
   }
 
-  async deleteEntry(id: string) {
-    await this.findEntryById(id);
+  async deleteEntry(id: string | number) {
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+    await this.findEntryById(numId);
 
-    await this.customsEntryRepository.delete(id);
+    await this.customsEntryRepository.delete(numId);
     return { id };
   }
 
@@ -245,9 +248,10 @@ export class CustomsService {
   // 보세자재 LOT (Customs Lot)
   // ============================================================================
 
-  async findLotsByEntryId(entryId: string) {
+  async findLotsByEntryId(entryId: string | number) {
+    const numEntryId = typeof entryId === 'string' ? parseInt(entryId, 10) : entryId;
     const lots = await this.customsLotRepository.find({
-      where: { entryId },
+      where: { entryId: numEntryId },
       order: { createdAt: 'DESC' },
     });
 
@@ -257,7 +261,7 @@ export class CustomsService {
       ? await this.customsUsageReportRepository.find({ where: { customsLotId: In(lotIds) } })
       : [];
 
-    const reportsByLotId = new Map<string, CustomsUsageReport[]>();
+    const reportsByLotId = new Map<number, CustomsUsageReport[]>();
     for (const report of reports) {
       if (!reportsByLotId.has(report.customsLotId)) reportsByLotId.set(report.customsLotId, []);
       reportsByLotId.get(report.customsLotId)!.push(report);
@@ -269,9 +273,10 @@ export class CustomsService {
     }));
   }
 
-  async findLotById(id: string) {
+  async findLotById(id: string | number) {
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
     const lot = await this.customsLotRepository.findOne({
-      where: { id },
+      where: { id: numId },
     });
 
     if (!lot) {
@@ -283,7 +288,7 @@ export class CustomsService {
     });
 
     const reports = await this.customsUsageReportRepository.find({
-      where: { customsLotId: id },
+      where: { customsLotId: numId },
     });
 
     return { ...lot, entry, usageReports: reports };
@@ -291,9 +296,9 @@ export class CustomsService {
 
   async createLot(dto: CreateCustomsLotDto) {
     const lot = this.customsLotRepository.create({
-      entryId: dto.entryId,
+      entryId: typeof dto.entryId === 'string' ? parseInt(dto.entryId, 10) : dto.entryId,
       lotNo: dto.lotNo,
-      partCode: dto.partCode,
+      itemCode: dto.itemCode,
       qty: dto.qty,
       remainQty: dto.qty,
       unitPrice: dto.unitPrice,
@@ -302,14 +307,15 @@ export class CustomsService {
     return this.customsLotRepository.save(lot);
   }
 
-  async updateLot(id: string, dto: UpdateCustomsLotDto) {
+  async updateLot(id: string | number, dto: UpdateCustomsLotDto) {
     await this.findLotById(id);
 
     const updateData: Partial<CustomsLot> = {};
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.customsLotRepository.update(id, updateData);
-    return this.findLotById(id);
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+    await this.customsLotRepository.update(numId, updateData);
+    return this.findLotById(numId);
   }
 
   // ============================================================================
@@ -377,7 +383,8 @@ export class CustomsService {
   }
 
   async createUsageReport(dto: CreateUsageReportDto) {
-    const lot = await this.findLotById(dto.customsLotId);
+    const numLotId = typeof dto.customsLotId === 'string' ? parseInt(dto.customsLotId, 10) : dto.customsLotId;
+    const lot = await this.findLotById(numLotId);
 
     if (lot.remainQty < dto.usageQty) {
       throw new BadRequestException(
@@ -398,10 +405,9 @@ export class CustomsService {
     return this.dataSource.transaction(async (manager) => {
       const report = manager.create(CustomsUsageReport, {
         reportNo,
-        customsLotId: dto.customsLotId,
-        jobOrderId: dto.jobOrderId,
+        customsLotId: numLotId,
         usageQty: dto.usageQty,
-        workerId: dto.workerId,
+        workerCode: dto.workerId,
         remark: dto.remark,
       });
 
@@ -414,7 +420,7 @@ export class CustomsService {
 
       await manager.update(
         CustomsLot,
-        { id: dto.customsLotId },
+        { id: numLotId },
         {
           usedQty: newUsedQty,
           remainQty: newRemainQty,
@@ -426,9 +432,10 @@ export class CustomsService {
     });
   }
 
-  async updateUsageReport(id: string, dto: UpdateUsageReportDto) {
+  async updateUsageReport(id: string | number, dto: UpdateUsageReportDto) {
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
     const report = await this.customsUsageReportRepository.findOne({
-      where: { id },
+      where: { id: numId },
     });
 
     if (!report) {
@@ -440,8 +447,8 @@ export class CustomsService {
     if (dto.status === 'REPORTED') updateData.reportDate = new Date();
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.customsUsageReportRepository.update(id, updateData);
-    return this.customsUsageReportRepository.findOne({ where: { id } });
+    await this.customsUsageReportRepository.update(numId, updateData);
+    return this.customsUsageReportRepository.findOne({ where: { id: numId } });
   }
 
   // ============================================================================

@@ -17,7 +17,7 @@ export class WorkInstructionService {
   ) {}
 
   async findAll(query: WorkInstructionQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, partId, processCode, useYn } = query;
+    const { page = 1, limit = 10, search, itemCode, processCode, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.workInstructionRepository.createQueryBuilder('wi')
@@ -29,8 +29,8 @@ export class WorkInstructionService {
       queryBuilder.andWhere('wi.plant = :plant', { plant });
     }
 
-    if (partId) {
-      queryBuilder.andWhere('wi.partId = :partId', { partId });
+    if (itemCode) {
+      queryBuilder.andWhere('wi.itemCode = :itemCode', { itemCode });
     }
 
     if (processCode) {
@@ -43,14 +43,14 @@ export class WorkInstructionService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(UPPER(wi.partId) LIKE UPPER(:search) OR UPPER(wi.title) LIKE UPPER(:search) OR UPPER(wi.processCode) LIKE UPPER(:search))',
+        '(UPPER(wi.itemCode) LIKE UPPER(:search) OR UPPER(wi.title) LIKE UPPER(:search) OR UPPER(wi.processCode) LIKE UPPER(:search))',
         { search: `%${search}%` }
       );
     }
 
     const [data, total] = await Promise.all([
       queryBuilder
-        .orderBy('wi.partId', 'ASC')
+        .orderBy('wi.itemCode', 'ASC')
         .addOrderBy('wi.processCode', 'ASC')
         .addOrderBy('wi.revision', 'DESC')
         .skip(skip)
@@ -72,7 +72,7 @@ export class WorkInstructionService {
 
   async create(dto: CreateWorkInstructionDto) {
     const workInstruction = this.workInstructionRepository.create({
-      partId: dto.partId,
+      itemCode: dto.itemCode,
       processCode: dto.processCode,
       title: dto.title,
       content: dto.content,

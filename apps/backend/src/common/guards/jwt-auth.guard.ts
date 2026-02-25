@@ -58,8 +58,8 @@ export class JwtAuthGuard implements CanActivate {
     try {
       // DB에서 userId로 사용자 조회
       const user = await this.userRepository.findOne({
-        where: { id: token },
-        select: ['id', 'email', 'role', 'status', 'company'],
+        where: { email: token },
+        select: ['email', 'role', 'status', 'company'],
       });
 
       if (!user || user.status !== 'ACTIVE') {
@@ -72,7 +72,7 @@ export class JwtAuthGuard implements CanActivate {
 
       // 요청 객체에 사용자 정보 추가
       (request as AuthenticatedRequest).user = {
-        id: user.id,
+        id: user.email,
         email: user.email,
         role: user.role,
         company: companyHeader || user.company || undefined,

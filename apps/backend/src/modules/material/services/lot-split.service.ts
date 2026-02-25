@@ -53,26 +53,26 @@ export class LotSplitService {
     ]);
 
     // part 정보 조회 및 중첩 객체 평면화
-    const partIds = data.map((lot) => lot.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+    const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // 재고 정보 조회
-    const lotIds = data.map((lot) => lot.id);
-    const stocks = lotIds.length > 0
-      ? await this.matStockRepository.find({ where: { lotId: In(lotIds) } })
+    const lotNos = data.map((lot) => lot.lotNo);
+    const stocks = lotNos.length > 0
+      ? await this.matStockRepository.find({ where: { lotNo: In(lotNos) } })
       : [];
-    const stockMap = new Map(stocks.map((s) => [s.lotId, s]));
+    const stockMap = new Map(stocks.map((s) => [s.lotNo, s]));
 
     const flattenedData = data.map((lot) => {
-      const part = partMap.get(lot.partId);
-      const stock = stockMap.get(lot.id);
+      const part = partMap.get(lot.itemCode);
+      const stock = stockMap.get(lot.lotNo);
       return {
         ...lot,
-        partCode: part?.partCode,
-        partName: part?.partName,
+        itemCode: part?.itemCode,
+        itemName: part?.itemName,
         unit: part?.unit,
         warehouseCode: stock?.warehouseCode,
       };
@@ -91,7 +91,7 @@ export class LotSplitService {
     try {
       // 원본 LOT 조회
       const sourceLot = await queryRunner.manager.findOne(MatLot, {
-        where: { id: sourceLotId },
+        where: { lotNo: sourceLotId },
       });
 
       if (!sourceLot) {
@@ -112,16 +112,16 @@ export class LotSplitService {
 
       // 품목 정보 조회
       const part = await queryRunner.manager.findOne(PartMaster, {
-        where: { id: sourceLot.partId },
+        where: { itemCode: sourceLot.itemCode },
       });
       if (!part) {
-        throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.partId}`);
+        throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.itemCode}`);
       }
 
       // 분할 가능 여부 체크
       if (part.isSplittable === 'N') {
         throw new BadRequestException(
-          `해당 품목은 분할할 수 없습니다. 품번: ${part.partCode}, 분할 설정: ${part.isSplittable}`
+          `해당 품목은 분할할 수 없습니다. 품번: ${part.itemCode}, 분할 설정: ${part.isSplittable}`
         );
       }
 
@@ -146,7 +146,7 @@ export class LotSplitService {
       // 새 LOT 생성
       const newLot = queryRunner.manager.create(MatLot, {
         lotNo: generatedLotNo,
-        partId: sourceLot.partId,
+        itemCode: sourceLot.itemCode,
         initQty: splitQty,
         currentQty: splitQty,
         recvDate: new Date(),
@@ -162,7 +162,7 @@ export class LotSplitService {
 
       // 재고 정보도 분할 (원본 LOT의 재고가 있는 경우)
       const sourceStock = await queryRunner.manager.findOne(MatStock, {
-        where: { lotId: sourceLotId },
+        where: { lotNo: sourceLotId },
       });
 
       if (sourceStock) {
@@ -177,8 +177,8 @@ export class LotSplitService {
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode: sourceStock.warehouseCode,
           locationCode: sourceStock.locationCode,
-          partId: sourceStock.partId,
-          lotId: newLot.id,
+          itemCode: sourceStock.itemCode,
+          lotNo: newLot.id,
           qty: splitQty,
           availableQty: splitQty,
           reservedQty: 0,
@@ -192,8 +192,8 @@ export class LotSplitService {
         transNo,
         transType: 'LOT_SPLIT',
         transDate: new Date(),
-        partId: sourceLot.partId,
-        lotId: sourceLotId,
+        itemCode: sourceLot.itemCode,
+        lotNo: sourceLotId,
         qty: splitQty,
         refType: 'LOT_SPLIT',
         refId: newLot.id,
@@ -209,9 +209,9 @@ export class LotSplitService {
         sourceLotNo: sourceLot.lotNo,
         newLotNo: generatedLotNo,
         splitQty,
-        partId: sourceLot.partId,
-        partCode: part.partCode,
-        partName: part.partName,
+        itemCode: sourceLot.itemCode,
+        itemCode: part.itemCode,
+        itemName: part.itemName,
         sourceRemainingQty: newSourceQty,
       };
     } catch (err) {

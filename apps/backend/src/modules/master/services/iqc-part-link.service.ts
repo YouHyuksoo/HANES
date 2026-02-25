@@ -38,7 +38,7 @@ export class IqcPartLinkService {
 
     if (search) {
       qb.andWhere(
-        '(part.partCode LIKE :search OR part.partName LIKE :search OR partner.partnerName LIKE :search)',
+        '(part.itemCode LIKE :search OR part.itemName LIKE :search OR partner.partnerName LIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -52,7 +52,7 @@ export class IqcPartLinkService {
     }
 
     const [data, total] = await qb
-      .orderBy('part.partCode', 'ASC')
+      .orderBy('part.itemCode', 'ASC')
       .addOrderBy('partner.partnerCode', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)
@@ -76,7 +76,7 @@ export class IqcPartLinkService {
 
   async create(dto: CreateIqcPartLinkDto) {
     const whereCondition: any = {
-      partId: dto.partId,
+      itemCode: dto.itemCode,
     };
 
     if (dto.partnerId) {
@@ -91,7 +91,7 @@ export class IqcPartLinkService {
     }
 
     const entity = this.linkRepo.create({
-      partId: dto.partId,
+      itemCode: dto.itemCode,
       partnerId: dto.partnerId || null,
       groupId: dto.groupId,
       remark: dto.remark || null,
@@ -105,7 +105,7 @@ export class IqcPartLinkService {
   async update(id: string, dto: UpdateIqcPartLinkDto) {
     const link = await this.findById(id);
 
-    if (dto.partId !== undefined) link.partId = dto.partId;
+    if (dto.itemCode !== undefined) link.itemCode = dto.itemCode;
     if (dto.partnerId !== undefined) link.partnerId = dto.partnerId || null;
     if (dto.groupId !== undefined) link.groupId = dto.groupId;
     if (dto.remark !== undefined) link.remark = dto.remark || null;

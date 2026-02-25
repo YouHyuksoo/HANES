@@ -29,11 +29,11 @@ export class MatStockController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('summary/:partId')
+  @Get('summary/:itemCode')
   @ApiOperation({ summary: '품목별 재고 요약' })
-  @ApiParam({ name: 'partId', description: '품목 ID' })
-  async getSummary(@Param('partId') partId: string) {
-    const data = await this.matStockService.getStockSummary(partId);
+  @ApiParam({ name: 'itemCode', description: '품목 ID' })
+  async getSummary(@Param('itemCode') itemCode: string) {
+    const data = await this.matStockService.getStockSummary(itemCode);
     return ResponseUtil.success(data);
   }
 

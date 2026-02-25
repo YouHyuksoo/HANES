@@ -62,11 +62,11 @@ export class PoStatusService {
     });
 
     // part 정보 조회
-    const partIds = items.map((item) => item.partId).filter(Boolean);
-    const parts = partIds.length > 0
-      ? await this.partMasterRepository.find({ where: { id: In(partIds) } })
+    const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
+    const parts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p) => [p.id, p]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // PO별로 품목 그룹화
     const itemsByPoId = new Map<string, typeof items>();
@@ -84,11 +84,11 @@ export class PoStatusService {
       const receiveRate = totalOrderQty > 0 ? Math.round((totalReceivedQty / totalOrderQty) * 100) : 0;
 
       const itemsWithPartInfo = poItems.map((item) => {
-        const part = partMap.get(item.partId);
+        const part = partMap.get(item.itemCode);
         return {
           ...item,
-          partCode: part?.partCode,
-          partName: part?.partName,
+          itemCode: part?.itemCode,
+          itemName: part?.itemName,
           unit: part?.unit,
           receiveRate: item.orderQty > 0 ? Math.round((item.receivedQty / item.orderQty) * 100) : 0,
         };
