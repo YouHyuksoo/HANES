@@ -1,22 +1,27 @@
+/**
+ * @file entities/prod-line-master.entity.ts
+ * @description 생산라인 마스터 엔티티 - 생산라인 정보를 관리한다.
+ *              lineCode를 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. lineCode가 PK (UUID 대신 자연키)
+ * 2. lineType으로 라인 유형 분류
+ * 3. oper: ERP 공정코드 매핑
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'PROD_LINE_MASTERS' })
-@Unique(['lineCode'])
 @Index(['lineType'])
 @Index(['oper'])
 export class ProdLineMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'LINE_CODE', length: 255, unique: true })
+  @PrimaryColumn({ name: 'LINE_CODE', length: 50 })
   lineCode: string;
 
   @Column({ name: 'LINE_NAME', length: 255 })
@@ -57,5 +62,4 @@ export class ProdLineMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

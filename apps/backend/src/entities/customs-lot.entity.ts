@@ -1,3 +1,14 @@
+/**
+ * @file entities/customs-lot.entity.ts
+ * @description 보세 LOT 엔티티 - 수입신고별 LOT 정보를 관리한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. entryId: 수입신고 ID 참조 (number)
+ * 3. status: BONDED(보세), CONSUMED(소진) 등
+ * 4. remainQty = qty - usedQty
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -12,17 +23,17 @@ import {
 @Index(['lotNo'])
 @Index(['status'])
 export class CustomsLot {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'ENTRY_ID', length: 255 })
-  entryId: string;
+  @Column({ name: 'ENTRY_ID', type: 'number' })
+  entryId: number;
 
   @Column({ name: 'LOT_NO', length: 100 })
   lotNo: string;
 
-  @Column({ name: 'PART_CODE', length: 50 })
-  partCode: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;

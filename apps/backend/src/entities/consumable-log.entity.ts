@@ -1,3 +1,13 @@
+/**
+ * @file entities/consumable-log.entity.ts
+ * @description 소모품 입출고/이동 로그 엔티티 - 소모품 이력을 관리한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. consumableCode: 대상 소모품 코드
+ * 3. logType: INCOMING(입고), ISSUE(출고), RETURN(반납) 등
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,14 +18,14 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CONSUMABLE_LOGS' })
-@Index(['consumableId'])
+@Index(['consumableCode'])
 @Index(['logType'])
 export class ConsumableLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'CONSUMABLE_ID', length: 50 })
-  consumableId: string;
+  @Column({ name: 'CONSUMABLE_CODE', length: 50 })
+  consumableCode: string;
 
   @Column({ name: 'LOG_TYPE', length: 50 })
   logType: string;
@@ -23,8 +33,8 @@ export class ConsumableLog {
   @Column({ name: 'QTY', type: 'int', default: 1 })
   qty: number;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerId: string | null;
+  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  workerCode: string | null;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
@@ -62,11 +72,11 @@ export class ConsumableLog {
   @Column({ name: 'DEPARTMENT', length: 50, nullable: true })
   department: string | null;
 
-  @Column({ name: 'LINE_ID', length: 50, nullable: true })
-  lineId: string | null;
+  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
+  lineCode: string | null;
 
-  @Column({ name: 'EQUIPMENT_ID', length: 50, nullable: true })
-  equipId: string | null;
+  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  equipCode: string | null;
 
   @Column({ name: 'ISSUE_REASON', length: 200, nullable: true })
   issueReason: string | null;

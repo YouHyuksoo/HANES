@@ -1,20 +1,28 @@
+/**
+ * @file entities/company-master.entity.ts
+ * @description 회사 마스터 엔티티 - 회사 정보를 관리한다.
+ *              복합 PK: (companyCode, plant). 패턴 C.
+ *
+ * 초보자 가이드:
+ * 1. 복합 PK: companyCode + plant
+ * 2. bizNo: 사업자등록번호
+ * 3. 한 회사가 여러 공장(plant)을 가질 수 있음
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'COMPANY_MASTERS' })
-@Unique(['companyCode', 'plant'])
 export class CompanyMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'COMPANY_CODE', length: 50 })
+  @PrimaryColumn({ name: 'COMPANY_CODE', length: 50 })
   companyCode: string;
+
+  @PrimaryColumn({ name: 'PLANT_CD', length: 50, default: '-' })
+  plant: string;
 
   @Column({ name: 'COMPANY_NAME', length: 100 })
   companyName: string;
@@ -45,9 +53,6 @@ export class CompanyMaster {
 
   @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
-
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
 
   @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

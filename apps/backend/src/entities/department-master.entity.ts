@@ -1,6 +1,16 @@
+/**
+ * @file entities/department-master.entity.ts
+ * @description 부서 마스터 엔티티 - 부서 정보를 관리한다.
+ *              deptCode를 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. deptCode가 PK (UUID 대신 자연키)
+ * 2. parentDeptCode: 상위 부서 코드 (트리 구조)
+ * 3. sortOrder: 정렬 순서
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -8,10 +18,7 @@ import {
 
 @Entity({ name: 'DEPARTMENT_MASTERS' })
 export class DepartmentMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'DEPT_CODE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'DEPT_CODE', length: 50 })
   deptCode: string;
 
   @Column({ name: 'DEPT_NAME', length: 100 })

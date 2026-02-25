@@ -1,11 +1,13 @@
 /**
  * @file entities/vendor-barcode-mapping.entity.ts
  * @description 자재 제조사 바코드 매핑 엔티티
+ *              SEQUENCE(패턴 B)를 사용한다. partId -> itemCode 변경.
  *
  * 초보자 가이드:
- * 1. 제조사가 부여한 바코드(vendorBarcode)를 MES 내 품목(partId)과 매핑
- * 2. 바코드 스캔 시 이 테이블을 조회하여 자동으로 파트넘버를 변환
- * 3. 하나의 제조사 바코드 패턴이 하나의 품목에 매핑됨
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. vendorBarcode: 제조사 바코드 값 (유니크)
+ * 3. itemCode: MES 품목코드 (ITEM_MASTERS.ITEM_CODE 참조)
+ * 4. matchType: EXACT(정확히), PREFIX(접두사), REGEX(정규식)
  */
 import {
   Entity,
@@ -18,27 +20,23 @@ import {
 
 @Entity({ name: 'VENDOR_BARCODE_MAPPINGS' })
 @Index(['vendorBarcode'], { unique: true })
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['vendorCode'])
 export class VendorBarcodeMapping {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   /** 제조사 바코드 값 (스캔 원본) */
   @Column({ name: 'VENDOR_BARCODE', length: 200 })
   vendorBarcode: string;
 
-  /** MES 품목 ID (PART_MASTERS.ID 참조) */
-  @Column({ name: 'PART_ID', length: 36, nullable: true })
-  partId: string | null;
-
-  /** MES 품번 (PART_MASTERS.PART_CODE 참조, 조회 편의용) */
-  @Column({ name: 'PART_CODE', length: 50, nullable: true })
-  partCode: string | null;
+  /** MES 품목코드 (ITEM_MASTERS.ITEM_CODE 참조) */
+  @Column({ name: 'ITEM_CODE', length: 50, nullable: true })
+  itemCode: string | null;
 
   /** MES 품명 (조회 편의용) */
-  @Column({ name: 'PART_NAME', length: 100, nullable: true })
-  partName: string | null;
+  @Column({ name: 'ITEM_NAME', length: 100, nullable: true })
+  itemName: string | null;
 
   /** 제조사 코드 (VENDOR_MASTERS 참조) */
   @Column({ name: 'VENDOR_CODE', length: 50, nullable: true })
@@ -52,7 +50,7 @@ export class VendorBarcodeMapping {
   @Column({ name: 'MAPPING_RULE', length: 200, nullable: true })
   mappingRule: string | null;
 
-  /** 바코드 유형 (EXACT: 정확히 일치, PREFIX: 접두사 매칭, REGEX: 정규식) */
+  /** 바코드 유형 (EXACT: 정확히, PREFIX: 접두사, REGEX: 정규식) */
   @Column({ name: 'MATCH_TYPE', length: 20, default: 'EXACT' })
   matchType: string;
 
@@ -81,5 +79,4 @@ export class VendorBarcodeMapping {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

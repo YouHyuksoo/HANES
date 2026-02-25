@@ -1,25 +1,31 @@
+/**
+ * @file entities/com-code.entity.ts
+ * @description 공통코드 엔티티 - 시스템 전체에서 사용하는 코드를 관리한다.
+ *              복합 PK: (groupCode, detailCode). 패턴 C.
+ *
+ * 초보자 가이드:
+ * 1. 복합 PK: groupCode + detailCode
+ * 2. groupCode: 코드 그룹 (예: PART_TYPE, WAREHOUSE_TYPE)
+ * 3. detailCode: 그룹 내 상세 코드 (예: MAT, PROD)
+ * 4. attr1~attr3: 추가 속성 (색상, 아이콘 등)
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'COM_CODES' })
-@Unique(['groupCode', 'detailCode'])
 @Index(['groupCode'])
 @Index(['parentCode'])
 export class ComCode {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'GROUP_CODE', length: 50 })
+  @PrimaryColumn({ name: 'GROUP_CODE', length: 50 })
   groupCode: string;
 
-  @Column({ name: 'DETAIL_CODE', length: 50 })
+  @PrimaryColumn({ name: 'DETAIL_CODE', length: 50 })
   detailCode: string;
 
   @Column({ name: 'PARENT_CODE', length: 50, nullable: true })

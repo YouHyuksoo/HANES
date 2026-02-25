@@ -1,16 +1,18 @@
 /**
- * @file src/entities/equip-bom-item.entity.ts
+ * @file entities/equip-bom-item.entity.ts
  * @description 설비 BOM 품목 마스터 Entity
+ *              bomItemCode를 자연키 PK로 사용한다.
+ *              기존 itemCode/itemName은 PartMaster와 충돌 방지를 위해
+ *              bomItemCode/bomItemName으로 변경.
  *
  * 초보자 가이드:
- * 1. **EQUIP_BOM_ITEMS** 테이블 매핑
+ * 1. bomItemCode가 PK (UUID 대신 자연키)
  * 2. 부품(PART)과 소모품(CONSUMABLE)을 구분하여 관리
  * 3. 재고, 교체주기, 안전재고 등을 관리
  */
-
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -25,14 +27,11 @@ export type BomItemType = 'PART' | 'CONSUMABLE';
 @Index(['itemType'])
 @Index(['useYn'])
 export class EquipBomItem {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryColumn({ name: 'BOM_ITEM_CODE', length: 50 })
+  bomItemCode: string;
 
-  @Column({ name: 'ITEM_CODE', length: 50, unique: true })
-  itemCode: string;
-
-  @Column({ name: 'ITEM_NAME', length: 200 })
-  itemName: string;
+  @Column({ name: 'BOM_ITEM_NAME', length: 200 })
+  bomItemName: string;
 
   @Column({ name: 'ITEM_TYPE', length: 20, default: 'PART' })
   itemType: BomItemType;

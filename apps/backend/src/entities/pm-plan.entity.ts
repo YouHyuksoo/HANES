@@ -1,37 +1,34 @@
 /**
  * @file entities/pm-plan.entity.ts
  * @description PM(예방보전) 계획 마스터 엔티티
+ *              planCode를 자연키 PK로 사용한다.
  *
  * 초보자 가이드:
- * 1. **PM 계획**: 설비별 보전항목/주기/부품 정의
- * 2. **관계**: OneToMany → PmPlanItem (보전 항목들)
- * 3. **주기 계산**: cycleType + cycleValue로 nextDueAt 자동 계산
+ * 1. planCode가 PK (UUID 대신 자연키)
+ * 2. equipCode: 대상 설비 코드
+ * 3. cycleType + cycleValue로 nextDueAt 자동 계산
+ * 4. items: PM 계획 세부항목 (1:N)
  */
-
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
   OneToMany,
-  AfterLoad,
 } from 'typeorm';
 import { PmPlanItem } from './pm-plan-item.entity';
 
 @Entity({ name: 'PM_PLANS' })
-@Index(['equipId'])
+@Index(['equipCode'])
 @Index(['nextDueAt'])
 export class PmPlan {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'EQUIP_ID', length: 255 })
-  equipId: string;
-
-  @Column({ name: 'PLAN_CODE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'PLAN_CODE', length: 50 })
   planCode: string;
+
+  @Column({ name: 'EQUIP_CODE', length: 50 })
+  equipCode: string;
 
   @Column({ name: 'PLAN_NAME', length: 200 })
   planName: string;
@@ -86,9 +83,4 @@ export class PmPlan {
 
   @OneToMany(() => PmPlanItem, (item) => item.pmPlan, { cascade: true })
   items: PmPlanItem[];
-
-  @AfterLoad()
-  convertRawId() {
-    if (Buffer.isBuffer(this.id)) this.id = (this.id as any).toString('hex').toUpperCase();
-  }
 }

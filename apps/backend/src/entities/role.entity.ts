@@ -1,32 +1,26 @@
 /**
- * @file src/entities/role.entity.ts
+ * @file entities/role.entity.ts
  * @description 역할(Role) 엔티티 - RBAC 역할 정의 테이블
+ *              code를 자연키 PK로 사용한다.
  *
  * 초보자 가이드:
- * 1. **ROLES 테이블**: 시스템에서 사용하는 역할(ADMIN, MANAGER 등)을 정의
- * 2. **isSystem**: true인 역할은 삭제/수정 불가 (ADMIN 등 기본 역할)
- * 3. **permissions**: 이 역할에 할당된 메뉴 권한 목록 (RoleMenuPermission과 1:N 관계)
-
+ * 1. code가 PK (ADMIN, MANAGER 등)
+ * 2. isSystem: true인 역할은 삭제/수정 불가
+ * 3. permissions: 이 역할에 할당된 메뉴 권한 목록 (RoleMenuPermission과 1:N)
  */
-
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
   OneToMany,
 } from 'typeorm';
 import { RoleMenuPermission } from './role-menu-permission.entity';
 
 @Entity({ name: 'ROLES' })
-@Index(['code'], { unique: true })
 export class Role {
-  @PrimaryGeneratedColumn('increment', { name: 'ID' })
-  id: number;
-
-  @Column({ name: 'CODE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'CODE', length: 50 })
   code: string;
 
   @Column({ name: 'NAME', length: 100 })

@@ -1,21 +1,26 @@
+/**
+ * @file entities/worker-master.entity.ts
+ * @description 작업자 마스터 엔티티 - 작업자 정보를 관리한다.
+ *              workerCode를 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. workerCode가 PK (UUID 대신 자연키)
+ * 2. processIds: CLOB에 JSON 배열로 담당 공정 목록 저장
+ * 3. qrCode: QR 스캔용 코드
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'WORKER_MASTERS' })
-@Unique(['workerCode'])
 @Index(['dept'])
 export class WorkerMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'WORKER_CODE', length: 255, unique: true })
+  @PrimaryColumn({ name: 'WORKER_CODE', length: 50 })
   workerCode: string;
 
   @Column({ name: 'WORKER_NAME', length: 255 })
@@ -74,5 +79,4 @@ export class WorkerMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

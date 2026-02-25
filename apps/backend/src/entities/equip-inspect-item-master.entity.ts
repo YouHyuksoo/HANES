@@ -1,3 +1,14 @@
+/**
+ * @file entities/equip-inspect-item-master.entity.ts
+ * @description 설비 점검항목 마스터 엔티티 - 설비별 점검항목을 관리한다.
+ *              자연키 없으므로 SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. equipCode: 대상 설비 코드
+ * 3. inspectType: 점검 유형 (일상, 정기 등)
+ * 4. seq: 항목 순서
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,14 +19,14 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'EQUIP_INSPECT_ITEM_MASTERS' })
-@Index(['equipId'])
+@Index(['equipCode'])
 @Index(['inspectType'])
 export class EquipInspectItemMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'EQUIP_ID', length: 255 })
-  equipId: string;
+  @Column({ name: 'EQUIP_CODE', length: 50 })
+  equipCode: string;
 
   @Column({ name: 'INSPECT_TYPE', length: 50 })
   inspectType: string;

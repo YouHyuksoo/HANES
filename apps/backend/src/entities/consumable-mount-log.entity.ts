@@ -1,13 +1,14 @@
 /**
  * @file entities/consumable-mount-log.entity.ts
  * @description 금형 장착/해제 이력 엔티티
+ *              SEQUENCE(패턴 B)를 사용한다.
  *
  * 초보자 가이드:
- * - 금형(소모품)이 어떤 설비에 장착/해제되었는지 이력을 추적
- * - ACTION: MOUNT(장착), UNMOUNT(해제)
- * - 설비별/금형별 이력 조회 가능
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. consumableCode: 금형(소모품) 코드
+ * 3. equipCode: 장착 대상 설비 코드
+ * 4. action: MOUNT(장착), UNMOUNT(해제)
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -17,23 +18,23 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CONSUMABLE_MOUNT_LOGS' })
-@Index(['consumableId'])
-@Index(['equipId'])
+@Index(['consumableCode'])
+@Index(['equipCode'])
 export class ConsumableMountLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'CONSUMABLE_ID', length: 50 })
-  consumableId: string;
+  @Column({ name: 'CONSUMABLE_CODE', length: 50 })
+  consumableCode: string;
 
-  @Column({ name: 'EQUIP_ID', length: 50 })
-  equipId: string;
+  @Column({ name: 'EQUIP_CODE', length: 50 })
+  equipCode: string;
 
   @Column({ name: 'ACTION', length: 20 })
   action: string;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerId: string | null;
+  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  workerCode: string | null;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

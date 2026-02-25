@@ -1,6 +1,16 @@
+/**
+ * @file entities/user.entity.ts
+ * @description 사용자 엔티티 - 시스템 사용자 정보를 관리한다.
+ *              email을 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. email이 PK (UUID 대신 자연키)
+ * 2. role: OPERATOR, MANAGER, ADMIN 등
+ * 3. status: ACTIVE, INACTIVE 등
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -11,10 +21,7 @@ import {
 @Index(['role'])
 @Index(['status'])
 export class User {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'EMAIL', length: 255, unique: true })
+  @PrimaryColumn({ name: 'EMAIL', length: 255 })
   email: string;
 
   @Column({ name: 'PASSWORD', length: 255, default: 'admin123' })
@@ -58,5 +65,4 @@ export class User {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

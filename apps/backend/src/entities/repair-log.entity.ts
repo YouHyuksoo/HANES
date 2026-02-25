@@ -1,3 +1,13 @@
+/**
+ * @file entities/repair-log.entity.ts
+ * @description 수리 이력 엔티티 - 불량에 대한 수리 결과를 기록한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. defectLogId: 불량 로그 ID 참조
+ * 3. result: 수리 결과 (PASS, FAIL, SCRAP 등)
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,16 +19,16 @@ import {
 
 @Entity({ name: 'REPAIR_LOGS' })
 @Index(['defectLogId'])
-@Index(['workerId'])
+@Index(['workerCode'])
 export class RepairLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'DEFECT_LOG_ID', length: 255 })
-  defectLogId: string;
+  @Column({ name: 'DEFECT_LOG_ID', type: 'number' })
+  defectLogId: number;
 
-  @Column({ name: 'WORKER_ID', length: 255, nullable: true })
-  workerId: string | null;
+  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  workerCode: string | null;
 
   @Column({ name: 'REPAIR_ACTION', length: 500, nullable: true })
   repairAction: string | null;

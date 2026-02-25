@@ -1,3 +1,13 @@
+/**
+ * @file entities/warehouse-transfer-rule.entity.ts
+ * @description 창고 이동 규칙 엔티티 - 창고 간 이동 허용 여부를 관리한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. fromWarehouseCode + toWarehouseCode: 복합 유니크
+ * 3. allowYn: 이동 허용 여부
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,18 +19,18 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'WAREHOUSE_TRANSFER_RULES' })
-@Unique(['fromWarehouseId', 'toWarehouseId'])
-@Index(['fromWarehouseId'])
-@Index(['toWarehouseId'])
+@Unique(['fromWarehouseCode', 'toWarehouseCode'])
+@Index(['fromWarehouseCode'])
+@Index(['toWarehouseCode'])
 export class WarehouseTransferRule {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'FROM_WAREHOUSE_ID', length: 50 })
-  fromWarehouseId: string;
+  @Column({ name: 'FROM_WAREHOUSE_CODE', length: 50 })
+  fromWarehouseCode: string;
 
-  @Column({ name: 'TO_WAREHOUSE_ID', length: 50 })
-  toWarehouseId: string;
+  @Column({ name: 'TO_WAREHOUSE_CODE', length: 50 })
+  toWarehouseCode: string;
 
   @Column({ name: 'ALLOW_YN', length: 1, default: 'Y' })
   allowYn: string;
@@ -45,5 +55,4 @@ export class WarehouseTransferRule {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

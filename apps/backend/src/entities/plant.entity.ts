@@ -1,44 +1,44 @@
+/**
+ * @file entities/plant.entity.ts
+ * @description 공장 조직 엔티티 - 공장/공장동/라인/셀 계층구조를 관리한다.
+ *              복합 PK: (plantCode, shopCode, lineCode, cellCode). 패턴 C.
+ *              self-reference 관계로 부모-자식 트리 구조.
+ *
+ * 초보자 가이드:
+ * 1. 복합 PK: plantCode + shopCode + lineCode + cellCode
+ * 2. plantType: PLANT(공장), SHOP(공장동), LINE(라인), CELL(셀)
+ * 3. parent/children: 자기참조 관계 (트리 구조)
+ * 4. shopCode/lineCode/cellCode가 null이면 상위 레벨
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
 } from 'typeorm';
 
 @Entity({ name: 'PLANTS' })
-@Unique(['plantCode', 'shopCode', 'lineCode', 'cellCode'])
 @Index(['plantType'])
-@Index(['parentId'])
 export class Plant {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'PLANT_CODE', length: 50 })
+  @PrimaryColumn({ name: 'PLANT_CODE', length: 50 })
   plantCode: string;
 
-  @Column({ name: 'SHOP_CODE', length: 50, nullable: true })
-  shopCode: string | null;
+  @PrimaryColumn({ name: 'SHOP_CODE', length: 50, default: '-' })
+  shopCode: string;
 
-  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
-  lineCode: string | null;
+  @PrimaryColumn({ name: 'LINE_CODE', length: 50, default: '-' })
+  lineCode: string;
 
-  @Column({ name: 'CELL_CODE', length: 50, nullable: true })
-  cellCode: string | null;
+  @PrimaryColumn({ name: 'CELL_CODE', length: 50, default: '-' })
+  cellCode: string;
 
   @Column({ name: 'PLANT_NAME', length: 100 })
   plantName: string;
 
   @Column({ name: 'PLANT_TYPE', length: 50, nullable: true })
   plantType: string | null;
-
-  @Column({ name: 'PARENT_ID', nullable: true })
-  parentId: string | null;
 
   @Column({ name: 'SORT_ORDER', type: 'int', default: 0 })
   sortOrder: number;
@@ -63,12 +63,4 @@ export class Plant {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  // Self-relation: Plant hierarchy
-  @ManyToOne(() => Plant, (plant) => plant.children, { nullable: true })
-  @JoinColumn({ name: 'PARENT_ID' })
-  parent: Plant | null;
-
-  @OneToMany(() => Plant, (plant) => plant.parent)
-  children: Plant[];
 }

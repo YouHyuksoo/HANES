@@ -1,3 +1,13 @@
+/**
+ * @file entities/equip-inspect-log.entity.ts
+ * @description 설비 점검 이력 엔티티 - 설비 점검 결과를 저장한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. equipCode: 대상 설비 코드
+ * 3. details: CLOB JSON으로 항목별 점검 결과 저장
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,15 +18,15 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'EQUIP_INSPECT_LOGS' })
-@Index(['equipId'])
+@Index(['equipCode'])
 @Index(['inspectType'])
 @Index(['inspectDate'])
 export class EquipInspectLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'EQUIP_ID', length: 255 })
-  equipId: string;
+  @Column({ name: 'EQUIP_CODE', length: 50 })
+  equipCode: string;
 
   @Column({ name: 'INSPECT_TYPE', length: 50 })
   inspectType: string;

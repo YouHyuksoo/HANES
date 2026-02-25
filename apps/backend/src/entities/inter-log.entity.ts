@@ -1,3 +1,14 @@
+/**
+ * @file entities/inter-log.entity.ts
+ * @description 인터페이스 로그 엔티티 - 외부 시스템 연동 이력을 관리한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. direction: INBOUND(수신) / OUTBOUND(송신)
+ * 3. status: PENDING, SUCCESS, FAILED
+ * 4. payload: 연동 데이터 (CLOB)
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -12,8 +23,8 @@ import {
 @Index(['status'])
 @Index(['interfaceId'])
 export class InterLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'DIRECTION', length: 50 })
   direction: string;

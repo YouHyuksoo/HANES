@@ -1,15 +1,14 @@
 /**
  * @file entities/pm-wo-result.entity.ts
  * @description PM Work Order 실행 결과 엔티티 (정규화 테이블)
+ *              SEQUENCE(패턴 B)를 사용한다.
  *
  * 초보자 가이드:
- * 1. **역할**: WO 실행 시 항목별 PASS/FAIL 결과를 저장
- * 2. **관계**: ManyToOne → PmWorkOrder (부모 WO)
- * 3. **이전 방식**: PM_WORK_ORDERS.DETAILS CLOB에 JSON으로 저장했으나,
- *    정규화를 위해 별도 테이블로 분리
- * 4. **항목 유형**: CHECK, REPLACE, CLEAN, ADJUST, LUBRICATE
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. workOrderId: 부모 WO의 ID (number)
+ * 3. 항목 유형: CHECK, REPLACE, CLEAN, ADJUST, LUBRICATE
+ * 4. result: PASS / FAIL
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -19,21 +18,20 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-  AfterLoad,
 } from 'typeorm';
 import { PmWorkOrder } from './pm-work-order.entity';
 
 @Entity({ name: 'PM_WO_RESULTS' })
 @Index(['workOrderId'])
 export class PmWoResult {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'WORK_ORDER_ID', type: 'raw', length: 16 })
-  workOrderId: string;
+  @Column({ name: 'WORK_ORDER_ID', type: 'number' })
+  workOrderId: number;
 
-  @Column({ name: 'PM_PLAN_ITEM_ID', type: 'raw', length: 16, nullable: true })
-  pmPlanItemId: string | null;
+  @Column({ name: 'PM_PLAN_ITEM_ID', type: 'number', nullable: true })
+  pmPlanItemId: number | null;
 
   @Column({ name: 'SEQ', type: 'number' })
   seq: number;
@@ -62,11 +60,4 @@ export class PmWoResult {
   @ManyToOne(() => PmWorkOrder, (wo) => wo.results, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'WORK_ORDER_ID' })
   workOrder: PmWorkOrder;
-
-  @AfterLoad()
-  convertRawIds() {
-    if (Buffer.isBuffer(this.id)) this.id = (this.id as any).toString('hex').toUpperCase();
-    if (Buffer.isBuffer(this.workOrderId)) this.workOrderId = (this.workOrderId as any).toString('hex').toUpperCase();
-    if (Buffer.isBuffer(this.pmPlanItemId)) this.pmPlanItemId = (this.pmPlanItemId as any).toString('hex').toUpperCase();
-  }
 }

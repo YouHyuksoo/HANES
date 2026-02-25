@@ -1,11 +1,13 @@
 /**
  * @file entities/label-print-log.entity.ts
  * @description 라벨 발행 이력 엔티티 (LABEL_PRINT_LOGS 테이블)
+ *              SEQUENCE(패턴 B)를 사용한다.
  *
  * 초보자 가이드:
- * - 라벨을 발행할 때마다 이력을 저장하는 테이블
- * - 누가, 언제, 몇 장을, 어떤 프린터로 발행했는지 추적
- * - STATUS: SUCCESS(성공), FAILED(실패)
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. templateId: 라벨 템플릿 ID (number)
+ * 3. STATUS: SUCCESS(성공), FAILED(실패)
+ * 4. printMode: BROWSER(브라우저) / ZPL(직접출력)
  */
 import {
   Entity,
@@ -21,11 +23,11 @@ import {
 @Index(['printedAt'])
 @Index(['status'])
 export class LabelPrintLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'TEMPLATE_ID', type: 'raw', length: 16, nullable: true })
-  templateId: string | null;
+  @Column({ name: 'TEMPLATE_ID', type: 'number', nullable: true })
+  templateId: number | null;
 
   @Column({ name: 'CATEGORY', length: 20 })
   category: string;
@@ -42,8 +44,8 @@ export class LabelPrintLog {
   @Column({ name: 'LABEL_COUNT', type: 'number', default: 0 })
   labelCount: number;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerId: string | null;
+  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  workerCode: string | null;
 
   @Column({ name: 'PRINTED_AT', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   printedAt: Date;

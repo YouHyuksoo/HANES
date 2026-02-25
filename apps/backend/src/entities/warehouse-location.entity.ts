@@ -1,31 +1,27 @@
 /**
  * @file entities/warehouse-location.entity.ts
  * @description 창고 로케이션(세부위치) 엔티티 - 창고 내 bin/rack/shelf 등 위치 관리
+ *              복합 PK: (warehouseCode, locationCode). SEQUENCE 대신 자연키 사용.
  *
  * 초보자 가이드:
  * 1. 하나의 창고(Warehouse)는 여러 로케이션을 가질 수 있음
- * 2. 로케이션코드는 창고 내에서 유일
+ * 2. 복합 PK: warehouseCode + locationCode
  * 3. zone/row/column으로 물리적 위치 식별
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
 @Entity({ name: 'WAREHOUSE_LOCATIONS' })
-@Index(['warehouseId', 'locationCode'], { unique: true })
 export class WarehouseLocation {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryColumn({ name: 'WAREHOUSE_CODE', length: 50 })
+  warehouseCode: string;
 
-  @Column({ name: 'WAREHOUSE_ID', length: 255 })
-  warehouseId: string;
-
-  @Column({ name: 'LOCATION_CODE', length: 50 })
+  @PrimaryColumn({ name: 'LOCATION_CODE', length: 50 })
   locationCode: string;
 
   @Column({ name: 'LOCATION_NAME', length: 100 })

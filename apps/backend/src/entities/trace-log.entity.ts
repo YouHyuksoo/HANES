@@ -1,3 +1,14 @@
+/**
+ * @file entities/trace-log.entity.ts
+ * @description 추적 로그 엔티티 - 제품/자재 이동 추적 이력을 관리한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. 팔레트/박스/LOT/자재LOT/시리얼 등 다양한 추적 대상
+ * 3. eventType: 이벤트 유형 (입고, 출고, 이동 등)
+ * 4. self-reference: parent/children으로 트리 구조
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -18,8 +29,8 @@ import {
 @Index(['serialNo'])
 @Index(['eventType'])
 export class TraceLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'TRACE_TIME', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   traceTime: Date;
@@ -36,11 +47,11 @@ export class TraceLog {
   @Column({ name: 'MAT_LOT_ID', length: 255, nullable: true })
   matLotId: string | null;
 
-  @Column({ name: 'EQUIP_ID', length: 255, nullable: true })
-  equipId: string | null;
+  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  equipCode: string | null;
 
-  @Column({ name: 'WORKER_ID', length: 255, nullable: true })
-  workerId: string | null;
+  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  workerCode: string | null;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
@@ -54,8 +65,8 @@ export class TraceLog {
   @Column({ name: 'EVENT_DATA', type: 'clob', nullable: true })
   eventData: string | null;
 
-  @Column({ name: 'PARENT_ID', length: 36, nullable: true })
-  parentId: string | null;
+  @Column({ name: 'PARENT_ID', type: 'number', nullable: true })
+  parentId: number | null;
 
   @ManyToOne(() => TraceLog, (trace) => trace.children, { nullable: true })
   @JoinColumn({ name: 'PARENT_ID' })
@@ -82,7 +93,7 @@ export class TraceLog {
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 
-  /** 
+  /**
    * 시리얼 트리깊이 계산 (루트=0, 자식=1, 손자=2...)
    * 주의: Entity에서 직접 호출 시 parent가 로드되지 않았으면 0을 반환
    */

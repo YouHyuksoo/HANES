@@ -1,13 +1,14 @@
 /**
  * @file entities/pm-plan-item.entity.ts
  * @description PM 계획 세부항목 엔티티
+ *              SEQUENCE(패턴 B)를 사용한다.
  *
  * 초보자 가이드:
- * 1. **항목 유형**: CHECK(점검), REPLACE(교체), CLEAN(청소), ADJUST(조정), LUBRICATE(윤활)
- * 2. **관계**: ManyToOne → PmPlan (부모 계획), CASCADE 삭제
- * 3. **예비부품**: sparePartCode/sparePartQty로 필요 부품 관리
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. pmPlanCode: 부모 PM 계획의 planCode
+ * 3. 항목 유형: CHECK(점검), REPLACE(교체), CLEAN(청소), ADJUST(조정), LUBRICATE(윤활)
+ * 4. sparePartCode/sparePartQty: 필요 예비부품 관리
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -17,18 +18,17 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
-  AfterLoad,
 } from 'typeorm';
 import { PmPlan } from './pm-plan.entity';
 
 @Entity({ name: 'PM_PLAN_ITEMS' })
-@Index(['pmPlanId'])
+@Index(['pmPlanCode'])
 export class PmPlanItem {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'PM_PLAN_ID', type: 'raw', length: 16 })
-  pmPlanId: string;
+  @Column({ name: 'PM_PLAN_CODE', length: 50 })
+  pmPlanCode: string;
 
   @Column({ name: 'SEQ', type: 'number' })
   seq: number;
@@ -64,12 +64,6 @@ export class PmPlanItem {
   updatedAt: Date;
 
   @ManyToOne(() => PmPlan, (plan) => plan.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'PM_PLAN_ID' })
+  @JoinColumn({ name: 'PM_PLAN_CODE', referencedColumnName: 'planCode' })
   pmPlan: PmPlan;
-
-  @AfterLoad()
-  convertRawIds() {
-    if (Buffer.isBuffer(this.id)) this.id = (this.id as any).toString('hex').toUpperCase();
-    if (Buffer.isBuffer(this.pmPlanId)) this.pmPlanId = (this.pmPlanId as any).toString('hex').toUpperCase();
-  }
 }

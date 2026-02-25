@@ -1,3 +1,14 @@
+/**
+ * @file entities/work-instruction.entity.ts
+ * @description 작업지시서 엔티티 - 품목별 공정 작업지시서를 관리한다.
+ *              SEQUENCE(패턴 B)를 사용한다. partId -> itemCode 변경.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. itemCode: 대상 품목 코드 (ITEM_MASTERS.ITEM_CODE 참조)
+ * 3. content: 작업지시 내용 (CLOB)
+ * 4. revision: 리비전 (A, B, C...)
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,14 +19,14 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'WORK_INSTRUCTIONS' })
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['processCode'])
 export class WorkInstruction {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'PART_ID', length: 255 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
@@ -52,5 +63,4 @@ export class WorkInstruction {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

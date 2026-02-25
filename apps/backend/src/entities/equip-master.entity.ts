@@ -1,6 +1,17 @@
+/**
+ * @file entities/equip-master.entity.ts
+ * @description 설비 마스터 엔티티 - 설비 정보를 관리한다.
+ *              equipCode를 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. equipCode가 PK (UUID 대신 자연키)
+ * 2. equipType으로 설비 유형 분류
+ * 3. commConfig: JSON 문자열로 통신 설정 저장 (Oracle CLOB)
+ * 4. bomRels: 설비 BOM 관계 (1:N)
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -14,10 +25,7 @@ import { EquipBomRel } from './equip-bom-rel.entity';
 @Index(['lineCode'])
 @Index(['status'])
 export class EquipMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'EQUIP_CODE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'EQUIP_CODE', length: 50 })
   equipCode: string;
 
   @Column({ name: 'EQUIP_NAME', length: 100 })
@@ -47,7 +55,7 @@ export class EquipMaster {
   @Column({ name: 'COMM_TYPE', length: 50, nullable: true })
   commType: string | null;
 
-  // Oracle stores JSON as CLOB - requires manual parse/stringify
+  /** Oracle stores JSON as CLOB - requires manual parse/stringify */
   @Column({ name: 'COMM_CONFIG', type: 'clob', nullable: true })
   commConfig: string | null;
 
@@ -85,7 +93,7 @@ export class EquipMaster {
   @OneToMany(() => EquipBomRel, (rel) => rel.equipment)
   bomRels: EquipBomRel[];
 
-  // Helper method to parse commConfig from JSON string
+  /** Helper method to parse commConfig from JSON string */
   getCommConfigObject(): Record<string, unknown> | null {
     if (!this.commConfig) return null;
     try {
@@ -95,7 +103,7 @@ export class EquipMaster {
     }
   }
 
-  // Helper method to set commConfig as JSON string
+  /** Helper method to set commConfig as JSON string */
   setCommConfigObject(obj: Record<string, unknown>): void {
     this.commConfig = JSON.stringify(obj);
   }

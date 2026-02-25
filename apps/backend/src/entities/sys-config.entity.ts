@@ -1,16 +1,17 @@
 /**
  * @file entities/sys-config.entity.ts
  * @description 시스템 환경설정 엔티티 (SYS_CONFIGS 테이블)
+ *              configKey를 자연키 PK로 사용한다.
  *
  * 초보자 가이드:
- * - 시스템 전체에서 사용하는 설정값을 관리하는 테이블
- * - configGroup으로 카테고리 분류 (MATERIAL, PRODUCTION, QUALITY, SYSTEM)
- * - configType: BOOLEAN(Y/N), SELECT(선택), NUMBER(숫자), TEXT(문자열)
- * - options: SELECT 타입일 때 선택지 JSON (e.g. [{"value":"V","label":"L"}])
+ * 1. configKey가 PK (UUID 대신 자연키) - 예: ENABLE_ACTIVITY_LOG
+ * 2. configGroup으로 카테고리 분류 (MATERIAL, PRODUCTION, QUALITY, SYSTEM)
+ * 3. configType: BOOLEAN(Y/N), SELECT(선택), NUMBER(숫자), TEXT(문자열)
+ * 4. options: SELECT 타입일 때 선택지 JSON
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -19,16 +20,12 @@ import {
 
 @Entity({ name: 'SYS_CONFIGS' })
 @Index(['configGroup'])
-@Index(['configKey'])
 export class SysConfig {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryColumn({ name: 'CONFIG_KEY', length: 100 })
+  configKey: string;
 
   @Column({ name: 'CONFIG_GROUP', length: 50 })
   configGroup: string;
-
-  @Column({ name: 'CONFIG_KEY', length: 100 })
-  configKey: string;
 
   @Column({ name: 'CONFIG_VALUE', length: 500 })
   configValue: string;

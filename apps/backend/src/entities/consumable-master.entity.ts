@@ -1,6 +1,17 @@
+/**
+ * @file entities/consumable-master.entity.ts
+ * @description 소모품/금형 마스터 엔티티 - 소모품 정보를 관리한다.
+ *              consumableCode를 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. consumableCode가 PK (UUID 대신 자연키)
+ * 2. category: 소모품 분류
+ * 3. operStatus: WAREHOUSE(창고), MOUNTED(장착) 등
+ * 4. mountedEquipCode: 현재 장착된 설비코드
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -11,10 +22,7 @@ import {
 @Index(['category'])
 @Index(['status'])
 export class ConsumableMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'CONSUMABLE_CODE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'CONSUMABLE_CODE', length: 50 })
   consumableCode: string;
 
   @Column({ name: 'NAME', length: 100 })
@@ -59,8 +67,8 @@ export class ConsumableMaster {
   @Column({ name: 'OPER_STATUS', length: 20, default: 'WAREHOUSE' })
   operStatus: string;
 
-  @Column({ name: 'MOUNTED_EQUIP_ID', length: 50, nullable: true })
-  mountedEquipId: string | null;
+  @Column({ name: 'MOUNTED_EQUIP_CODE', length: 50, nullable: true })
+  mountedEquipCode: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;

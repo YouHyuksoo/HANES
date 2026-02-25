@@ -1,13 +1,14 @@
 /**
- * @file src/entities/equip-bom-rel.entity.ts
+ * @file entities/equip-bom-rel.entity.ts
  * @description 설비-BOM 품목 연결 관계 Entity
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *              equipCode/bomItemCode로 FK 참조.
  *
  * 초보자 가이드:
- * 1. **EQUIP_BOM_RELS** 테이블 매핑
+ * 1. id가 자동증가 PK (SEQUENCE)
  * 2. 설비와 BOM 품목의 N:M 관계를 관리
  * 3. 설치일, 수량, 유효기한 등을 관리
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -22,18 +23,18 @@ import { EquipMaster } from './equip-master.entity';
 import { EquipBomItem } from './equip-bom-item.entity';
 
 @Entity({ name: 'EQUIP_BOM_RELS' })
-@Index(['equipId'])
-@Index(['bomItemId'])
+@Index(['equipCode'])
+@Index(['bomItemCode'])
 @Index(['useYn'])
 export class EquipBomRel {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'EQUIP_ID', length: 36 })
-  equipId: string;
+  @Column({ name: 'EQUIP_CODE', length: 50 })
+  equipCode: string;
 
-  @Column({ name: 'BOM_ITEM_ID', length: 36 })
-  bomItemId: string;
+  @Column({ name: 'BOM_ITEM_CODE', length: 50 })
+  bomItemCode: string;
 
   @Column({ name: 'QUANTITY', type: 'float', default: 1 })
   quantity: number;
@@ -70,10 +71,10 @@ export class EquipBomRel {
 
   // Relations
   @ManyToOne(() => EquipMaster, (equip) => equip.bomRels, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'EQUIP_ID', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
   equipment: EquipMaster;
 
   @ManyToOne(() => EquipBomItem, (item) => item.equipRels, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'BOM_ITEM_ID', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'BOM_ITEM_CODE', referencedColumnName: 'bomItemCode' })
   bomItem: EquipBomItem;
 }

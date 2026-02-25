@@ -1,6 +1,16 @@
+/**
+ * @file entities/comm-config.entity.ts
+ * @description 통신 설정 엔티티 - 시리얼/TCP 등 통신 설정을 관리한다.
+ *              configName을 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. configName이 PK (UUID 대신 자연키)
+ * 2. commType: SERIAL, TCP, MODBUS 등
+ * 3. 시리얼 설정: baudRate, dataBits, stopBits, parity 등
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -10,10 +20,7 @@ import {
 @Entity({ name: 'COMM_CONFIGS' })
 @Index(['commType'])
 export class CommConfig {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'CONFIG_NAME', length: 100, unique: true })
+  @PrimaryColumn({ name: 'CONFIG_NAME', length: 100 })
   configName: string;
 
   @Column({ name: 'COMM_TYPE', length: 50 })

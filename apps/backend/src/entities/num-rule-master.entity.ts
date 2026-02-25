@@ -1,6 +1,16 @@
+/**
+ * @file entities/num-rule-master.entity.ts
+ * @description 채번규칙 마스터 엔티티 - 문서/LOT 채번 규칙을 관리한다.
+ *              ruleType을 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. ruleType이 PK (UUID 대신 자연키) - 예: LOT_NO, JOB_ORDER 등
+ * 2. pattern: 채번 패턴 (예: {PREFIX}{YYYYMMDD}{SEQ})
+ * 3. resetType: DAILY(일별), MONTHLY(월별) 시퀀스 리셋
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -8,10 +18,7 @@ import {
 
 @Entity({ name: 'NUM_RULE_MASTERS' })
 export class NumRuleMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'RULE_TYPE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'RULE_TYPE', length: 50 })
   ruleType: string;
 
   @Column({ name: 'RULE_NAME', length: 100 })

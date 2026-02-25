@@ -1,6 +1,16 @@
+/**
+ * @file entities/warehouse.entity.ts
+ * @description 창고 마스터 엔티티 - 창고 정보를 관리한다.
+ *              warehouseCode를 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. warehouseCode가 PK (UUID 대신 자연키)
+ * 2. warehouseType: MAT(원자재), PROD(제품), WIP(재공) 등
+ * 3. isDefault: 기본 창고 여부
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -12,10 +22,7 @@ import {
 @Index(['plantCode'])
 @Index(['lineCode'])
 export class Warehouse {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'WAREHOUSE_CODE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'WAREHOUSE_CODE', length: 50 })
   warehouseCode: string;
 
   @Column({ name: 'WAREHOUSE_NAME', length: 100 })
@@ -59,5 +66,4 @@ export class Warehouse {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

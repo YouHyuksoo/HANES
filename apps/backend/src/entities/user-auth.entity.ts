@@ -1,3 +1,13 @@
+/**
+ * @file entities/user-auth.entity.ts
+ * @description 사용자 메뉴 권한 엔티티 - 사용자별 메뉴 접근 권한을 관리한다.
+ *              SEQUENCE(패턴 B)를 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. userEmail + menuCode 복합 유니크
+ * 3. canRead/canWrite/canDelete/canExport: 메뉴별 CRUD 권한
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,14 +19,14 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'USER_AUTHS' })
-@Unique(['userId', 'menuCode'])
-@Index(['userId'])
+@Unique(['userEmail', 'menuCode'])
+@Index(['userEmail'])
 export class UserAuth {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
-  @Column({ name: 'USER_ID', length: 255 })
-  userId: string;
+  @Column({ name: 'USER_EMAIL', length: 255 })
+  userEmail: string;
 
   @Column({ name: 'MENU_CODE', length: 100 })
   menuCode: string;

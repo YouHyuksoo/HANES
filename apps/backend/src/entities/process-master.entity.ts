@@ -1,21 +1,26 @@
+/**
+ * @file entities/process-master.entity.ts
+ * @description 공정 마스터 엔티티 - 생산 공정 정보를 관리한다.
+ *              processCode를 자연키 PK로 사용한다.
+ *
+ * 초보자 가이드:
+ * 1. processCode가 PK (UUID 대신 자연키)
+ * 2. processType으로 공정 유형 분류
+ * 3. sampleInspectYn: 이 공정에서 표본검사 수행 여부
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'PROCESS_MASTERS' })
-@Unique(['processCode'])
 @Index(['processType'])
 export class ProcessMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'PROCESS_CODE', length: 255, unique: true })
+  @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;
 
   @Column({ name: 'PROCESS_NAME', length: 255 })
@@ -56,5 +61,4 @@ export class ProcessMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }

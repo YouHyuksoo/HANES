@@ -1,14 +1,14 @@
 /**
  * @file entities/pm-work-order.entity.ts
  * @description PM Work Order(작업지시) 엔티티
+ *              SEQUENCE(패턴 B)를 사용한다.
  *
  * 초보자 가이드:
- * 1. **WO 유형**: PLANNED(계획), EMERGENCY(긴급), BREAKDOWN(고장)
- * 2. **상태 흐름**: PLANNED → IN_PROGRESS → COMPLETED / CANCELLED / OVERDUE
- * 3. **details**: CLOB JSON - 항목별 실행 결과 저장
- * 4. **채번 규칙**: PM-YYYYMMDD-NNN (일별 시퀀스)
+ * 1. id가 자동증가 PK (SEQUENCE)
+ * 2. workOrderNo: 채번된 WO 번호 (유니크)
+ * 3. WO 유형: PLANNED(계획), EMERGENCY(긴급), BREAKDOWN(고장)
+ * 4. 상태 흐름: PLANNED -> IN_PROGRESS -> COMPLETED / CANCELLED / OVERDUE
  */
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -17,26 +17,25 @@ import {
   UpdateDateColumn,
   OneToMany,
   Index,
-  AfterLoad,
 } from 'typeorm';
 import { PmWoResult } from './pm-wo-result.entity';
 
 @Entity({ name: 'PM_WORK_ORDERS' })
-@Index(['equipId'])
+@Index(['equipCode'])
 @Index(['status'])
 @Index(['scheduledDate'])
 export class PmWorkOrder {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'WORK_ORDER_NO', length: 20, unique: true })
   workOrderNo: string;
 
-  @Column({ name: 'PM_PLAN_ID', type: 'raw', length: 16, nullable: true })
-  pmPlanId: string | null;
+  @Column({ name: 'PM_PLAN_CODE', length: 50, nullable: true })
+  pmPlanCode: string | null;
 
-  @Column({ name: 'EQUIP_ID', length: 255 })
-  equipId: string;
+  @Column({ name: 'EQUIP_CODE', length: 50 })
+  equipCode: string;
 
   @Column({ name: 'WO_TYPE', length: 20, default: 'PLANNED' })
   woType: string;
@@ -59,8 +58,8 @@ export class PmWorkOrder {
   @Column({ name: 'PRIORITY', length: 10, default: 'MEDIUM' })
   priority: string;
 
-  @Column({ name: 'ASSIGNED_WORKER_ID', length: 255, nullable: true })
-  assignedWorkerId: string | null;
+  @Column({ name: 'ASSIGNED_WORKER_CODE', length: 50, nullable: true })
+  assignedWorkerCode: string | null;
 
   @Column({ name: 'OVERALL_RESULT', length: 20, nullable: true })
   overallResult: string | null;
@@ -91,10 +90,4 @@ export class PmWorkOrder {
 
   @OneToMany(() => PmWoResult, (result) => result.workOrder, { cascade: true })
   results: PmWoResult[];
-
-  @AfterLoad()
-  convertRawIds() {
-    if (Buffer.isBuffer(this.id)) this.id = (this.id as any).toString('hex').toUpperCase();
-    if (Buffer.isBuffer(this.pmPlanId)) this.pmPlanId = (this.pmPlanId as any).toString('hex').toUpperCase();
-  }
 }
