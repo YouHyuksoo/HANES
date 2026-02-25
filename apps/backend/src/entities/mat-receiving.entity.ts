@@ -6,6 +6,7 @@
  * 1. **MAT_RECEIVINGS**: IQC 합격건의 입고 이력을 관리하는 전용 테이블
  * 2. **receiveNo**: 같은 배치의 입고 아이템은 동일한 입고번호를 가짐
  * 3. **StockTransaction과의 관계**: 입고 시 MatReceiving + StockTransaction 모두 생성
+ * 4. **id**: SEQUENCE 자동증분 PK
  */
 
 import {
@@ -20,11 +21,11 @@ import {
 @Entity({ name: 'MAT_RECEIVINGS' })
 @Index(['receiveNo'])
 @Index(['lotId'])
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['receiveDate'])
 export class MatReceiving {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'RECEIVE_NO', length: 50 })
   receiveNo: string;
@@ -32,8 +33,8 @@ export class MatReceiving {
   @Column({ name: 'LOT_ID', length: 50 })
   lotId: string;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;

@@ -5,8 +5,9 @@
  * 초보자 가이드:
  * - MatIssueRequest의 상세 품목 테이블
  * - requestId로 헤더(MAT_ISSUE_REQUESTS)와 연결
- * - partId로 품목 마스터(PART_MASTERS)와 연결
+ * - itemCode로 품목 마스터(ITEM_MASTERS)와 연결
  * - requestQty: 요청 수량, issuedQty: 실제 출고된 수량
+ * - id: SEQUENCE 자동증분 PK
  */
 
 import {
@@ -20,16 +21,16 @@ import {
 
 @Entity({ name: 'MAT_ISSUE_REQUEST_ITEMS' })
 @Index(['requestId'])
-@Index(['partId'])
+@Index(['itemCode'])
 export class MatIssueRequestItem {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'REQUEST_ID', length: 50 })
   requestId: string;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'REQUEST_QTY', type: 'int' })
   requestQty: number;

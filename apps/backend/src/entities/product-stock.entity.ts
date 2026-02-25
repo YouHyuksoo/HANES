@@ -3,48 +3,43 @@
  * @description 제품 재고 엔티티 - 창고별 반제품/완제품 현재고
  *
  * 초보자 가이드:
+ * - 복합 PK: (warehouseCode, itemCode, lotNo) 조합으로 재고 식별
  * - 원자재(RAW)는 MAT_STOCKS, 제품(WIP/FG)은 PRODUCT_STOCKS 테이블 사용
- * - warehouseCode + partId + lotId 복합 유니크 키
  * - qty: 총수량, reservedQty: 예약수량, availableQty: 가용수량
- * - partType: 'WIP'(반제품) 또는 'FG'(완제품)
- * - jobOrderId: 작업지시 참조, processCode: 공정코드
+ * - itemType: 'WIP'(반제품) 또는 'FG'(완제품)
+ * - orderNo: 작업지시 참조, processCode: 공정코드
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'PRODUCT_STOCKS' })
-@Unique(['warehouseCode', 'partId', 'lotId'])
 @Index(['warehouseCode'])
-@Index(['partId'])
-@Index(['partType'])
+@Index(['itemCode'])
+@Index(['itemType'])
 export class ProductStock {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'WAREHOUSE_CODE', length: 50 })
+  @PrimaryColumn({ name: 'WAREHOUSE_CODE', length: 50 })
   warehouseCode: string;
+
+  @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
+
+  @PrimaryColumn({ name: 'LOT_NO', length: 50 })
+  lotNo: string;
 
   @Column({ name: 'LOCATION_CODE', length: 50, nullable: true })
   locationCode: string | null;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_TYPE', length: 10 })
+  itemType: string;
 
-  @Column({ name: 'PART_TYPE', length: 10 })
-  partType: string;
-
-  @Column({ name: 'LOT_ID', length: 50, nullable: true })
-  lotId: string | null;
-
-  @Column({ name: 'JOB_ORDER_ID', length: 50, nullable: true })
-  jobOrderId: string | null;
+  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  orderNo: string | null;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;

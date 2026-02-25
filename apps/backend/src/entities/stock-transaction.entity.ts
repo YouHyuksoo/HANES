@@ -1,3 +1,13 @@
+/**
+ * @file src/entities/stock-transaction.entity.ts
+ * @description 원자재 수불 트랜잭션 엔티티 - 원자재 입고/출고/이동 이력 (수불원장)
+ *
+ * 초보자 가이드:
+ * - transType: MAT_IN(입고), MAT_OUT(출고), MAT_ADJ(조정) 등
+ * - 삭제 금지, 취소 시 원본 참조(cancelRefId) + 음수 수량
+ * - id: SEQUENCE 자동증분 PK
+ * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -12,13 +22,13 @@ import {
 @Index(['transDate'])
 @Index(['fromWarehouseId'])
 @Index(['toWarehouseId'])
-@Index(['partId'])
-@Index(['lotId'])
+@Index(['itemCode'])
+@Index(['lotNo'])
 @Index(['refType', 'refId'])
 @Index(['cancelRefId'])
 export class StockTransaction {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'TRANS_NO', length: 50, unique: true })
   transNo: string;
@@ -35,11 +45,11 @@ export class StockTransaction {
   @Column({ name: 'TO_WAREHOUSE_ID', length: 50, nullable: true })
   toWarehouseId: string | null;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
-  @Column({ name: 'LOT_ID', length: 50, nullable: true })
-  lotId: string | null;
+  @Column({ name: 'LOT_NO', length: 50, nullable: true })
+  lotNo: string | null;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;

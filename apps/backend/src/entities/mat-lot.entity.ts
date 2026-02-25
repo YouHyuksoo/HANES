@@ -1,6 +1,16 @@
+/**
+ * @file src/entities/mat-lot.entity.ts
+ * @description 원자재 LOT 엔티티 - LOT 단위 추적/관리
+ *
+ * 초보자 가이드:
+ * - lotNo가 PK (자연키) - LOT번호로 직접 식별
+ * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
+ * - iqcStatus: IQC 검사 상태 (PENDING/PASS/FAIL)
+ * - status: LOT 상태 (NORMAL/HOLD/SCRAPPED)
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -8,18 +18,15 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'MAT_LOTS' })
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['status'])
 @Index(['iqcStatus'])
 export class MatLot {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'LOT_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'LOT_NO', length: 50 })
   lotNo: string;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'INIT_QTY', type: 'int' })
   initQty: number;

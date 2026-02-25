@@ -8,6 +8,7 @@
  * 3. **invoiceNo**: 공급상 인보이스 번호 (거래 추적용)
  * 4. **vendorId/vendorName**: 공급상(거래처) 정보
  * 5. **StockTransaction과의 관계**: 입하 시 MatArrival + StockTransaction(MAT_IN) 모두 생성
+ * 6. **id**: SEQUENCE 자동증분 PK
  */
 
 import {
@@ -22,13 +23,13 @@ import {
 @Entity({ name: 'MAT_ARRIVALS' })
 @Index(['arrivalNo'])
 @Index(['lotId'])
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['arrivalDate'])
 @Index(['invoiceNo'])
 @Index(['vendorId'])
 export class MatArrival {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'ARRIVAL_NO', length: 50 })
   arrivalNo: string;
@@ -54,8 +55,8 @@ export class MatArrival {
   @Column({ name: 'LOT_ID', length: 50 })
   lotId: string;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;

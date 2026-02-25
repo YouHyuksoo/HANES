@@ -1,3 +1,13 @@
+/**
+ * @file src/entities/inv-adj-log.entity.ts
+ * @description 재고 조정 로그 엔티티 - 재고 조정(실사/수동) 이력 기록
+ *
+ * 초보자 가이드:
+ * - adjType: 조정 유형 (PHYSICAL_INV, MANUAL_ADJ 등)
+ * - beforeQty/afterQty/diffQty: 조정 전/후/차이 수량
+ * - id: SEQUENCE 자동증분 PK
+ * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -9,20 +19,20 @@ import {
 
 @Entity({ name: 'INV_ADJ_LOGS' })
 @Index(['warehouseCode'])
-@Index(['partId'])
+@Index(['itemCode'])
 @Index(['adjType'])
 export class InvAdjLog {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'WAREHOUSE_CODE', length: 50 })
   warehouseCode: string;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
-  @Column({ name: 'LOT_ID', length: 50, nullable: true })
-  lotId: string | null;
+  @Column({ name: 'LOT_NO', length: 50, nullable: true })
+  lotNo: string | null;
 
   @Column({ name: 'ADJ_TYPE', length: 50 })
   adjType: string;

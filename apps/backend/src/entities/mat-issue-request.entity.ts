@@ -4,9 +4,9 @@
  *
  * 초보자 가이드:
  * - 자재 출고를 요청하는 헤더 테이블
- * - 상태 흐름: REQUESTED → APPROVED → COMPLETED (또는 REJECTED)
+ * - 상태 흐름: REQUESTED -> APPROVED -> COMPLETED (또는 REJECTED)
  * - 요청 품목은 MatIssueRequestItem 엔티티에서 관리
-
+ * - id: SEQUENCE 자동증분 PK
  */
 
 import {
@@ -23,8 +23,8 @@ import {
 @Index(['status'])
 @Index(['requestDate'])
 export class MatIssueRequest {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'REQUEST_NO', length: 50, unique: true })
   requestNo: string;

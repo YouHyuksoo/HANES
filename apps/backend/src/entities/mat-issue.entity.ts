@@ -1,3 +1,13 @@
+/**
+ * @file src/entities/mat-issue.entity.ts
+ * @description 자재 출고 엔티티 - 작업지시 기반 자재 투입/출고 이력
+ *
+ * 초보자 가이드:
+ * - issueType: 출고 유형 (PRODUCTION, MANUAL, SCRAP 등)
+ * - id: SEQUENCE 자동증분 PK
+ * - lotId: 출고 LOT번호, jobOrderId: 작업지시 참조
+ * - prodResultId: 생산실적 ID (자재 투입 이력 연결)
+ */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -16,8 +26,8 @@ import { ProdResult } from './prod-result.entity';
 @Index(['issueType'])
 @Index(['issueNo'])
 export class MatIssue {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'ISSUE_NO', length: 50, nullable: true })
   issueNo: string | null;
@@ -26,7 +36,7 @@ export class MatIssue {
   jobOrderId: string | null;
 
   @Column({ name: 'PROD_RESULT_ID', length: 36, nullable: true })
-  prodResultId: string | null; // 생산실적 ID (자재 투입 이력 연결)
+  prodResultId: string | null;
 
   @ManyToOne(() => ProdResult, { nullable: true })
   @JoinColumn({ name: 'PROD_RESULT_ID' })

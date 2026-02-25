@@ -6,8 +6,9 @@
  * - 원자재(RAW) 수불은 STOCK_TRANSACTIONS, 제품(WIP/FG) 수불은 PRODUCT_TRANSACTIONS
  * - transType: WIP_IN, FG_IN, WIP_OUT, FG_OUT 등
  * - 삭제 금지, 취소 시 원본 참조(cancelRefId) + 음수 수량
- * - partType: 'WIP'(반제품) 또는 'FG'(완제품)
- * - jobOrderId: 작업지시 참조, processCode: 공정코드
+ * - itemType: 'WIP'(반제품) 또는 'FG'(완제품)
+ * - orderNo: 작업지시 참조, processCode: 공정코드
+ * - id: SEQUENCE 자동증분 PK
  */
 import {
   Entity,
@@ -23,13 +24,13 @@ import {
 @Index(['transDate'])
 @Index(['fromWarehouseId'])
 @Index(['toWarehouseId'])
-@Index(['partId'])
-@Index(['lotId'])
+@Index(['itemCode'])
+@Index(['lotNo'])
 @Index(['refType', 'refId'])
 @Index(['cancelRefId'])
 export class ProductTransaction {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryGeneratedColumn({ name: 'ID' })
+  id: number;
 
   @Column({ name: 'TRANS_NO', length: 50, unique: true })
   transNo: string;
@@ -46,17 +47,17 @@ export class ProductTransaction {
   @Column({ name: 'TO_WAREHOUSE_ID', length: 50, nullable: true })
   toWarehouseId: string | null;
 
-  @Column({ name: 'PART_ID', length: 50 })
-  partId: string;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
-  @Column({ name: 'PART_TYPE', length: 10, nullable: true })
-  partType: string | null;
+  @Column({ name: 'ITEM_TYPE', length: 10, nullable: true })
+  itemType: string | null;
 
-  @Column({ name: 'LOT_ID', length: 50, nullable: true })
-  lotId: string | null;
+  @Column({ name: 'LOT_NO', length: 50, nullable: true })
+  lotNo: string | null;
 
-  @Column({ name: 'JOB_ORDER_ID', length: 50, nullable: true })
-  jobOrderId: string | null;
+  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  orderNo: string | null;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
@@ -81,6 +82,9 @@ export class ProductTransaction {
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
+
+  @Column({ name: 'ISSUE_TYPE', length: 20, nullable: true })
+  issueType: string | null;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
