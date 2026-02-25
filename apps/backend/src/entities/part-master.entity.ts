@@ -1,33 +1,36 @@
+/**
+ * @file part-master.entity.ts
+ * @description 품목 마스터(ItemMaster) 엔티티 - 자재/제품/반제품 등 모든 품목 정보를 관리한다.
+ *              테이블명은 ITEM_MASTERS이며, itemCode를 자연키 PK로 사용한다.
+ *              클래스명은 기존 참조 호환을 위해 PartMaster를 유지한다.
+ */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
 } from 'typeorm';
 
-@Entity({ name: 'PART_MASTERS' })
-@Index(['partType'])
+@Entity({ name: 'ITEM_MASTERS' })
+@Index(['itemType'])
 @Index(['customer'])
 export class PartMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
+  @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
-  @Column({ name: 'PART_CODE', length: 50, unique: true })
-  partCode: string;
+  @Column({ name: 'ITEM_NAME', length: 100 })
+  itemName: string;
 
-  @Column({ name: 'PART_NAME', length: 100 })
-  partName: string;
-
-  @Column({ name: 'PART_NO', length: 50, nullable: true })
-  partNo: string | null;
+  @Column({ name: 'ITEM_NO', length: 50, nullable: true })
+  itemNo: string | null;
 
   @Column({ name: 'CUST_PART_NO', length: 50, nullable: true })
   custPartNo: string | null;
 
-  @Column({ name: 'PART_TYPE', length: 50 })
-  partType: string;
+  @Column({ name: 'ITEM_TYPE', length: 50 })
+  itemType: string;
 
   @Column({ name: 'PRODUCT_TYPE', length: 50, nullable: true })
   productType: string | null;
@@ -109,5 +112,4 @@ export class PartMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
 }
