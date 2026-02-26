@@ -20,7 +20,7 @@ import {
 
 @Entity({ name: 'MAT_RECEIVINGS' })
 @Index(['receiveNo'])
-@Index(['lotId'])
+@Index(['matUid'])
 @Index(['itemCode'])
 @Index(['receiveDate'])
 export class MatReceiving {
@@ -30,8 +30,8 @@ export class MatReceiving {
   @Column({ name: 'RECEIVE_NO', length: 50 })
   receiveNo: string;
 
-  @Column({ name: 'LOT_ID', length: 50 })
-  lotId: string;
+  @Column({ name: 'MAT_UID', length: 50 })
+  matUid: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

@@ -33,7 +33,7 @@ export class ConsumableMountLog {
   @Column({ name: 'ACTION', length: 20 })
   action: string;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerCode: string | null;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })

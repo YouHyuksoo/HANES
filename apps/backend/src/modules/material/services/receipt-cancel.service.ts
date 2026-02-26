@@ -79,7 +79,7 @@ export class ReceiptCancelService {
         throw new BadRequestException('입고 트랜잭션만 취소할 수 있습니다.');
       }
 
-      const { itemCode, lotNo, toWarehouseId, qty } = originalTransaction;
+      const { itemCode, matUid, toWarehouseId, qty } = originalTransaction;
 
       if (!toWarehouseId) {
         throw new BadRequestException('입고 창고 정보가 없습니다.');
@@ -87,7 +87,7 @@ export class ReceiptCancelService {
 
       // 재고 확인 및 차감
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode: toWarehouseId, ...(lotNo && { lotNo }) },
+        where: { itemCode, warehouseCode: toWarehouseId, ...(matUid && { matUid }) },
       });
 
       if (!stock || stock.qty < qty) {
@@ -96,18 +96,18 @@ export class ReceiptCancelService {
 
       // 재고 차감
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
         { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
       );
 
       // LOT 수량 복원
-      if (lotNo) {
+      if (matUid) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { lotNo: lotNo },
+          where: { matUid: matUid },
         });
 
         if (lot) {
-          await queryRunner.manager.update(MatLot, lot.lotNo, {
+          await queryRunner.manager.update(MatLot, lot.matUid, {
             currentQty: lot.currentQty - qty,
           });
         }
@@ -134,7 +134,7 @@ export class ReceiptCancelService {
         transDate: new Date(),
         fromWarehouseId: toWarehouseId,
         itemCode,
-        lotNo,
+        matUid,
         qty: -qty,
         refType: 'TRANSACTION',
         refId: String(originalTransaction.id),

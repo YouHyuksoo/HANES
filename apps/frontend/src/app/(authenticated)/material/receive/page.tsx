@@ -42,7 +42,7 @@ export default function ReceivingPage() {
       const init: Record<string, ReceiveInput> = {};
       lots.forEach((lot) => {
         init[lot.id] = {
-          lotId: lot.id,
+          matUid: lot.id,
           qty: lot.remainingQty,
           warehouseCode: lot.arrivalWarehouse?.id || '',
           manufactureDate: lot.manufactureDate ? String(lot.manufactureDate).slice(0, 10) : '',
@@ -79,8 +79,8 @@ export default function ReceivingPage() {
   useEffect(() => { refresh(); }, [refresh]);
 
   /** 입력 변경 핸들러 */
-  const handleInputChange = (lotId: string, field: keyof ReceiveInput, value: string | number | boolean) => {
-    setInputs((prev) => ({ ...prev, [lotId]: { ...prev[lotId], [field]: value } }));
+  const handleInputChange = (matUid: string, field: keyof ReceiveInput, value: string | number | boolean) => {
+    setInputs((prev) => ({ ...prev, [matUid]: { ...prev[matUid], [field]: value } }));
   };
 
   /** 전체 선택 */
@@ -101,8 +101,8 @@ export default function ReceivingPage() {
     setSubmitting(true);
     try {
       await api.post('/material/receiving', {
-        items: selectedItems.map(({ lotId, qty, warehouseCode, manufactureDate }) => ({
-          lotId, qty, warehouseCode,
+        items: selectedItems.map(({ matUid, qty, warehouseCode, manufactureDate }) => ({
+          matUid, qty, warehouseCode,
           ...(manufactureDate && { manufactureDate }),
         })),
       });

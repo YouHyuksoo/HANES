@@ -27,7 +27,7 @@ export class RepairLog {
   @Column({ name: 'DEFECT_LOG_ID', type: 'number' })
   defectLogId: number;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerCode: string | null;
 
   @Column({ name: 'REPAIR_ACTION', length: 500, nullable: true })

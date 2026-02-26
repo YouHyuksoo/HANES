@@ -20,7 +20,7 @@ import api from "@/services/api";
 
 interface SplittableLot {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode?: string;
   itemName?: string;
   currentQty: number;
@@ -83,7 +83,7 @@ export default function LotSplitPage() {
 
   const columns = useMemo<ColumnDef<SplittableLot>[]>(() => [
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 160,
+      accessorKey: "matUid", header: "LOT No.", size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
@@ -161,7 +161,7 @@ export default function LotSplitPage() {
           <div className="space-y-4">
             <div className="p-3 bg-surface-alt dark:bg-surface rounded-lg border border-border">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-text-muted">LOT:</span> <span className="font-mono font-medium">{selectedLot.lotNo}</span></div>
+                <div><span className="text-text-muted">LOT:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
                 <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
                 <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
                 <div><span className="text-text-muted">{t("material.lotSplit.currentQty")}:</span> <span className="font-semibold">{selectedLot.currentQty.toLocaleString()} {selectedLot.unit || ""}</span></div>

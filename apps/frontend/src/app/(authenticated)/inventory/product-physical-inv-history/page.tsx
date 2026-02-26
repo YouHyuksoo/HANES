@@ -25,8 +25,7 @@ interface InvHistoryItem {
   itemCode: string;
   itemName?: string;
   unit?: string;
-  lotId?: string;
-  lotNo?: string;
+  prdUid?: string;
   beforeQty: number;
   afterQty: number;
   diffQty: number;
@@ -98,7 +97,7 @@ export default function ProductPhysicalInvHistoryPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 150,
+      accessorKey: "prdUid", header: "LOT No.", size: 150,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>,
     },

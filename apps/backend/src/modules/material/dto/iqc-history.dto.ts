@@ -8,9 +8,9 @@ import { IsString, IsOptional, IsInt, Min, Max, IsDateString, IsIn, IsNotEmpty }
 import { Type } from 'class-transformer';
 
 export class CreateIqcResultDto {
-  @ApiProperty({ description: 'LOT ID' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotId: string;
+  matUid: string;
 
   @ApiProperty({ description: '검사 결과', enum: ['PASS', 'FAIL'] })
   @IsString()

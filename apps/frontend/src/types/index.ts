@@ -94,7 +94,7 @@ export interface ProductionResult {
 
 export interface MaterialLot {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   qty: number;
@@ -126,7 +126,7 @@ export interface InspectionResult {
 export interface DefectLog {
   id: string;
   serialNo?: string;
-  lotNo?: string;
+  matUid?: string;
   defectCode: string;
   defectName: string;
   qty: number;

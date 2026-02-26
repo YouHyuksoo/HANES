@@ -14,7 +14,7 @@ import { api } from '@/services/api';
 
 interface LotData {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemType: string;
   initQty: number;
@@ -33,12 +33,12 @@ interface LotData {
     unit: string;
   };
   parentLot?: {
-    lotNo: string;
+    matUid: string;
   };
 }
 
 interface LotDetail extends LotData {
-  childLots: Array<{ id: string; lotNo: string; itemType: string }>;
+  childLots: Array<{ id: string; matUid: string; itemType: string }>;
   stocks: Array<{
     id: string;
     qty: number;
@@ -108,7 +108,7 @@ export default function LotPage() {
   const [filters, setFilters] = useState({
     itemType: '',
     status: '',
-    lotNo: '',
+    matUid: '',
   });
 
   const fetchLots = async () => {
@@ -148,8 +148,8 @@ export default function LotPage() {
 
   const columns: ColumnDef<LotData>[] = useMemo(() => [
     {
-      accessorKey: 'lotNo',
-      header: t('inventory.lot.lotNo'),
+      accessorKey: 'matUid',
+      header: t('inventory.lot.matUid'),
       size: 160,
       meta: { filterType: 'text' as const },
     },
@@ -254,7 +254,7 @@ export default function LotPage() {
       header: t('inventory.lot.parentLot'),
       size: 140,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => row.original.parentLot?.lotNo || '-',
+      cell: ({ row }) => row.original.parentLot?.matUid || '-',
     },
     {
       id: 'actions',
@@ -272,10 +272,10 @@ export default function LotPage() {
   // 필터링
   const filteredLots = useMemo(() => {
     return lots.filter(lot => {
-      if (filters.lotNo && !lot.lotNo.includes(filters.lotNo)) return false;
+      if (filters.matUid && !lot.matUid.includes(filters.matUid)) return false;
       return true;
     });
-  }, [lots, filters.lotNo]);
+  }, [lots, filters.matUid]);
 
   // 통계
   const normalCount = lots.filter(l => l.status === 'NORMAL').length;
@@ -314,7 +314,7 @@ export default function LotPage() {
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
-                  <Input placeholder={t('inventory.lot.searchLotNo')} value={filters.lotNo} onChange={(e) => setFilters({ ...filters, lotNo: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                  <Input placeholder={t('inventory.lot.searchMatUid')} value={filters.matUid} onChange={(e) => setFilters({ ...filters, matUid: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-32 flex-shrink-0">
                   <Select options={PART_TYPES} value={filters.itemType} onChange={(v) => setFilters({ ...filters, itemType: v })} fullWidth />
@@ -375,8 +375,8 @@ export default function LotPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-2">
                   <div className="flex justify-between border-b pb-2">
-                    <span className="text-gray-500">{t('inventory.lot.lotNo')}</span>
-                    <span className="font-medium">{selectedLot.lotNo}</span>
+                    <span className="text-gray-500">{t('inventory.lot.matUid')}</span>
+                    <span className="font-medium">{selectedLot.matUid}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
                     <span className="text-gray-500">{t('inventory.lot.partType')}</span>

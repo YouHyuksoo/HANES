@@ -38,13 +38,13 @@ export class LabelPrintLog {
   @Column({ name: 'PRINTER_NAME', length: 100, nullable: true })
   printerName: string | null;
 
-  @Column({ name: 'LOT_IDS', type: 'clob', nullable: true })
-  lotIds: string | null;
+  @Column({ name: 'UID_LIST', type: 'clob', nullable: true })
+  uidList: string | null;
 
   @Column({ name: 'LABEL_COUNT', type: 'number', default: 0 })
   labelCount: number;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerCode: string | null;
 
   @Column({ name: 'PRINTED_AT', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

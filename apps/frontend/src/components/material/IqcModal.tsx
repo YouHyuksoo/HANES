@@ -140,7 +140,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
           <p className="text-sm text-text-muted">{t("material.iqc.arrivalNoLabel")}: <span className="font-medium text-text">{selectedItem.receiveNo}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.supplierLabel")}: <span className="font-medium text-text">{selectedItem.supplierName}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.partLabel")}: <span className="font-medium text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span></p>
-          <p className="text-sm text-text-muted">{t("material.iqc.lotLabel")}: <span className="font-medium text-text">{selectedItem.lotNo}</span></p>
+          <p className="text-sm text-text-muted">{t("material.iqc.matUidLabel")}: <span className="font-medium text-text">{selectedItem.matUid}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.quantityLabel")}: <span className="font-medium text-text">{selectedItem.quantity.toLocaleString()} {selectedItem.unit}</span></p>
         </div>
 

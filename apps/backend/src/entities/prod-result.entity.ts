@@ -6,7 +6,7 @@
  * 초보자 가이드:
  * 1. ID는 자동 증가 시퀀스 (number)
  * 2. ORDER_NO로 JobOrder(작업지시)를 참조
- * 3. EQUIP_CODE로 EquipMaster, WORKER_CODE로 WorkerMaster 참조
+ * 3. EQUIP_CODE로 EquipMaster, WORKER_ID로 WorkerMaster 참조
  */
 import {
   Entity,
@@ -49,15 +49,15 @@ export class ProdResult {
   @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
   equip: EquipMaster | null;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerCode: string | null;
 
   @ManyToOne(() => WorkerMaster)
-  @JoinColumn({ name: 'WORKER_CODE', referencedColumnName: 'workerCode' })
+  @JoinColumn({ name: 'WORKER_ID', referencedColumnName: 'workerCode' })
   worker: WorkerMaster | null;
 
-  @Column({ name: 'LOT_NO', length: 255, nullable: true })
-  lotNo: string | null;
+  @Column({ name: 'PRD_UID', length: 255, nullable: true })
+  prdUid: string | null;
 
   @Column({ name: 'PROCESS_CODE', length: 255, nullable: true })
   processCode: string | null;

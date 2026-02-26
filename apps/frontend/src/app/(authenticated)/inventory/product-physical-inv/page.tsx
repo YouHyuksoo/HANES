@@ -28,8 +28,7 @@ interface StockForCount {
   itemCode: string;
   itemName?: string;
   itemType?: string;
-  lotId?: string;
-  lotNo?: string;
+  prdUid?: string;
   qty: number;
   unit?: string;
   lastCountAt?: string;
@@ -118,7 +117,7 @@ export default function ProductPhysicalInvPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 150,
+      accessorKey: "prdUid", header: "LOT No.", size: 150,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>,
     },

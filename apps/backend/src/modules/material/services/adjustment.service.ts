@@ -77,7 +77,7 @@ export class AdjustmentService {
   }
 
   async create(dto: CreateAdjustmentDto) {
-    const { warehouseCode, itemCode, lotId: lotNo, afterQty, reason, createdBy } = dto;
+    const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -92,19 +92,19 @@ export class AdjustmentService {
         throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
       }
 
-      // LOT 확인 (lotId가 있는 경우)
-      if (lotNo) {
+      // LOT 확인 (matUid가 있는 경우)
+      if (matUid) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { lotNo: lotNo },
+          where: { matUid: matUid },
         });
         if (!lot) {
-          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
         }
       }
 
       // 기존 재고 조회
       let stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode, itemCode, ...(lotNo && { lotNo }) },
+        where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
       });
 
       const beforeQty = stock?.qty ?? 0;
@@ -113,7 +113,7 @@ export class AdjustmentService {
       // 재고 업데이트 또는 생성
       if (stock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
           { qty: afterQty, availableQty: afterQty - stock.reservedQty },
         );
       } else {
@@ -123,7 +123,7 @@ export class AdjustmentService {
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode,
           itemCode,
-          lotNo: lotNo || null,
+          matUid: matUid || null,
           qty: afterQty,
           availableQty: afterQty,
           reservedQty: 0,
@@ -131,12 +131,12 @@ export class AdjustmentService {
         stock = await queryRunner.manager.save(newStock);
       }
 
-      // LOT 재고도 업데이트 (lotId가 있는 경우)
-      if (lotNo) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: lotNo } });
+      // LOT 재고도 업데이트 (matUid가 있는 경우)
+      if (matUid) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: matUid } });
         if (lot) {
           const newLotQty = lot.currentQty + diffQty;
-          await queryRunner.manager.update(MatLot, lotNo, {
+          await queryRunner.manager.update(MatLot, matUid, {
             currentQty: Math.max(0, newLotQty),
             status: newLotQty <= 0 ? 'DEPLETED' : lot.status,
           });
@@ -147,7 +147,7 @@ export class AdjustmentService {
       const invAdjLog = queryRunner.manager.create(InvAdjLog, {
         warehouseCode,
         itemCode,
-        lotNo: lotNo || null,
+        matUid: matUid || null,
         adjType: 'ADJUST',
         beforeQty,
         afterQty,
@@ -166,7 +166,7 @@ export class AdjustmentService {
         fromWarehouseId: diffQty < 0 ? warehouseCode : null,
         toWarehouseId: diffQty >= 0 ? warehouseCode : null,
         itemCode,
-        lotNo: lotNo || null,
+        matUid: matUid || null,
         qty: Math.abs(diffQty),
         refType: 'ADJUSTMENT',
         refId: String(invAdjLog.id),
@@ -182,7 +182,7 @@ export class AdjustmentService {
         id: invAdjLog.id,
         warehouseCode,
         itemCode: part.itemCode,
-        lotNo,
+        matUid,
         beforeQty,
         afterQty,
         diffQty,

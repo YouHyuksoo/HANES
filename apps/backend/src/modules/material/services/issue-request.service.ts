@@ -194,7 +194,7 @@ export class IssueRequestService {
         orderNo: request.jobOrderId ?? undefined,
         warehouseCode: dto.warehouseCode,
         issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
-        items: dto.items.map((i) => ({ lotId: i.lotId, issueQty: i.issueQty })),
+        items: dto.items.map((i) => ({ matUid: i.matUid, issueQty: i.issueQty })),
         workerId: dto.workerId,
         remark: dto.remark ?? `출고요청 ${request.requestNo} 기반 출고`,
       });

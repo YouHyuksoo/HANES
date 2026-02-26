@@ -16,7 +16,7 @@ import { LabelDesign } from '../../../master/label/types';
 /** 라벨 아이템 데이터 */
 export interface LabelItem {
   key: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   sub: string;
@@ -62,7 +62,7 @@ const LabelPreviewRenderer = forwardRef<HTMLDivElement, LabelPreviewRendererProp
                 }}
               >
                 <BarcodeCanvas
-                  value={item.lotNo}
+                  value={item.matUid}
                   format={design.barcode.format}
                 />
               </div>

@@ -48,14 +48,14 @@ export class LotMergeService {
     }
     if (search) {
       qb.andWhere(
-        '(UPPER(lot.lotNo) LIKE UPPER(:search))',
+        '(UPPER(lot.matUid) LIKE UPPER(:search))',
         { search: `%${search}%` },
       );
     }
 
     const [lots, total] = await Promise.all([
       qb.orderBy('lot.itemCode', 'ASC')
-        .addOrderBy('lot.lotNo', 'ASC')
+        .addOrderBy('lot.matUid', 'ASC')
         .skip(skip).take(limit).getMany(),
       qb.getCount(),
     ]);
@@ -84,7 +84,7 @@ export class LotMergeService {
     try {
       // 모든 LOT 조회
       const lots = await queryRunner.manager.find(MatLot, {
-        where: { lotNo: In(sourceLotIds) },
+        where: { matUid: In(sourceLotIds) },
       });
 
       if (lots.length < 2) {
@@ -100,22 +100,22 @@ export class LotMergeService {
       // HOLD/DEPLETED 상태 검증
       for (const lot of lots) {
         if (lot.status === 'HOLD') {
-          throw new BadRequestException(`HOLD 상태인 LOT은 병합할 수 없습니다: ${lot.lotNo}`);
+          throw new BadRequestException(`HOLD 상태인 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
         if (lot.status === 'DEPLETED' || lot.currentQty <= 0) {
-          throw new BadRequestException(`재고가 없는 LOT은 병합할 수 없습니다: ${lot.lotNo}`);
+          throw new BadRequestException(`재고가 없는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
       }
 
       // 대상 LOT 결정 (지정되지 않으면 첫 번째)
       const target = targetLotId
-        ? lots.find(l => l.lotNo === targetLotId)
+        ? lots.find(l => l.matUid === targetLotId)
         : lots[0];
       if (!target) {
         throw new NotFoundException('대상 LOT을 찾을 수 없습니다.');
       }
 
-      const sources = lots.filter(l => l.lotNo !== target.lotNo);
+      const sources = lots.filter(l => l.matUid !== target.matUid);
       const totalMergeQty = sources.reduce((sum, l) => sum + l.currentQty, 0);
 
       // 품목 정보
@@ -123,14 +123,14 @@ export class LotMergeService {
 
       // 대상 LOT에 수량 합산
       const newTargetQty = target.currentQty + totalMergeQty;
-      await queryRunner.manager.update(MatLot, target.lotNo, {
+      await queryRunner.manager.update(MatLot, target.matUid, {
         currentQty: newTargetQty,
         initQty: target.initQty + totalMergeQty,
       });
 
       // 원본 LOT들 소진 처리
       for (const src of sources) {
-        await queryRunner.manager.update(MatLot, src.lotNo, {
+        await queryRunner.manager.update(MatLot, src.matUid, {
           currentQty: 0,
           status: 'DEPLETED',
         });
@@ -138,23 +138,23 @@ export class LotMergeService {
 
       // MatStock 동기화 — 대상 재고에 합산, 원본 재고 0으로
       const targetStock = await queryRunner.manager.findOne(MatStock, {
-        where: { lotNo: target.lotNo },
+        where: { matUid: target.matUid },
       });
 
       if (targetStock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, lotNo: targetStock.lotNo },
+          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, matUid: targetStock.matUid },
           { qty: targetStock.qty + totalMergeQty, availableQty: targetStock.availableQty + totalMergeQty },
         );
       }
 
       for (const src of sources) {
         const srcStock = await queryRunner.manager.findOne(MatStock, {
-          where: { lotNo: src.lotNo },
+          where: { matUid: src.matUid },
         });
         if (srcStock) {
           await queryRunner.manager.update(MatStock,
-            { warehouseCode: srcStock.warehouseCode, itemCode: srcStock.itemCode, lotNo: srcStock.lotNo },
+            { warehouseCode: srcStock.warehouseCode, itemCode: srcStock.itemCode, matUid: srcStock.matUid },
             { qty: 0, availableQty: 0 },
           );
         }
@@ -162,25 +162,25 @@ export class LotMergeService {
 
       // 트랜잭션 이력
       const transNo = await this.generateTransNo();
-      const sourceNos = sources.map(s => s.lotNo).join(', ');
+      const sourceNos = sources.map(s => s.matUid).join(', ');
       await queryRunner.manager.save(StockTransaction, {
         transNo,
         transType: 'LOT_MERGE',
         transDate: new Date(),
         itemCode: target.itemCode,
-        lotNo: target.lotNo,
+        matUid: target.matUid,
         qty: totalMergeQty,
         refType: 'LOT_MERGE',
-        refId: target.lotNo,
-        remark: remark || `LOT 병합: [${sourceNos}] → ${target.lotNo}`,
+        refId: target.matUid,
+        remark: remark || `LOT 병합: [${sourceNos}] → ${target.matUid}`,
         status: 'DONE',
       });
 
       await queryRunner.commitTransaction();
 
       return {
-        targetLotNo: target.lotNo,
-        mergedLotNos: sources.map(s => s.lotNo),
+        targetLotNo: target.matUid,
+        mergedLotNos: sources.map(s => s.matUid),
         totalMergedQty: totalMergeQty,
         newTotalQty: newTargetQty,
         itemCode: part?.itemCode,

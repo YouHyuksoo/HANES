@@ -313,7 +313,7 @@ export class OutsourcingService {
       const delivery = manager.create(SubconDelivery, {
         orderNo: dto.orderId,
         deliveryNo,
-        lotNo: dto.lotNo,
+        matUid: dto.matUid,
         qty: dto.qty,
         workerId: dto.workerId,
         remark: dto.remark,
@@ -366,7 +366,7 @@ export class OutsourcingService {
       const receive = manager.create(SubconReceive, {
         orderNo: dto.orderId,
         receiveNo,
-        lotNo: dto.lotNo,
+        matUid: dto.matUid,
         qty: dto.qty,
         goodQty,
         defectQty,

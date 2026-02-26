@@ -53,24 +53,24 @@ export class ScrapService {
 
     // part, lot 정보 조회
     const itemCodes = data.map((t) => t.itemCode).filter(Boolean);
-    const lotNos = data.map((t) => t.lotNo).filter(Boolean) as string[];
+    const matUids = data.map((t) => t.matUid).filter(Boolean) as string[];
 
     const [parts, lots] = await Promise.all([
       itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
 
     const result = data.map((transaction) => {
       const part = partMap.get(transaction.itemCode);
-      const lot = transaction.lotNo ? lotMap.get(transaction.lotNo) : null;
+      const lot = transaction.matUid ? lotMap.get(transaction.matUid) : null;
       return {
         ...transaction,
         itemCode: part?.itemCode,
         itemName: part?.itemName,
-        lotNo: lot?.lotNo,
+        matUid: lot?.matUid,
       };
     });
 
@@ -78,7 +78,7 @@ export class ScrapService {
   }
 
   async create(dto: CreateScrapDto) {
-    const { lotId: lotNo, warehouseId, qty, reason, workerId } = dto;
+    const { matUid, warehouseId, qty, reason, workerId } = dto;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -86,11 +86,11 @@ export class ScrapService {
     try {
       // LOT 조회
       const lot = await queryRunner.manager.findOne(MatLot, {
-        where: { lotNo: lotNo },
+        where: { matUid: matUid },
       });
 
       if (!lot) {
-        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
       }
 
       if (lot.currentQty < qty) {
@@ -99,7 +99,7 @@ export class ScrapService {
 
       // 재고 확인
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode: lot.itemCode, warehouseCode: warehouseId, lotNo },
+        where: { itemCode: lot.itemCode, warehouseCode: warehouseId, matUid },
       });
 
       if (!stock || stock.qty < qty) {
@@ -108,12 +108,12 @@ export class ScrapService {
 
       // 재고 차감
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
         { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
       );
 
       // LOT 수량 차감
-      await queryRunner.manager.update(MatLot, lot.lotNo, {
+      await queryRunner.manager.update(MatLot, lot.matUid, {
         currentQty: lot.currentQty - qty,
       });
 
@@ -125,10 +125,10 @@ export class ScrapService {
         transDate: new Date(),
         fromWarehouseId: warehouseId,
         itemCode: lot.itemCode,
-        lotNo,
+        matUid,
         qty,
         refType: 'LOT',
-        refId: lotNo,
+        refId: matUid,
         workerId,
         remark: reason,
       });
@@ -139,7 +139,7 @@ export class ScrapService {
 
       return {
         id: savedTransaction.id,
-        lotNo,
+        matUid,
         warehouseId,
         qty,
         reason,

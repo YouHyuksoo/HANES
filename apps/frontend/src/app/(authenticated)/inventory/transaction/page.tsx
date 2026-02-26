@@ -20,7 +20,7 @@ interface TransactionData {
   fromWarehouseCode?: string;
   toWarehouseCode?: string;
   itemCode: string;
-  lotId?: string;
+  matUid?: string;
   qty: number;
   unitPrice?: number;
   totalAmount?: number;
@@ -33,7 +33,7 @@ interface TransactionData {
   fromWarehouse?: { warehouseCode: string; warehouseName: string };
   toWarehouse?: { warehouseCode: string; warehouseName: string };
   part: { itemCode: string; itemName: string };
-  lot?: { lotNo: string };
+  lot?: { matUid: string };
   cancelRef?: { transNo: string };
 }
 
@@ -201,11 +201,11 @@ export default function TransactionPage() {
       cell: ({ row }) => row.original.part.itemName,
     },
     {
-      accessorKey: 'lotNo',
+      accessorKey: 'matUid',
       header: t('inventory.transaction.lot'),
       size: 140,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => row.original.lot?.lotNo || '-',
+      cell: ({ row }) => row.original.lot?.matUid || '-',
     },
     {
       accessorKey: 'qty',

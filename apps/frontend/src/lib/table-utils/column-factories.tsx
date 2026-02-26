@@ -350,15 +350,15 @@ export function createWarehouseColumns<T>(
 }
 
 /**
- * LOT 번호 컬럼 생성
+ * 자재 UID 컬럼 생성
  */
-export function createLotNoColumn<T>(
+export function createMatUidColumn<T>(
   t: ReturnType<typeof useTranslation>["t"],
   options: ColumnFactoryOptions = {}
 ): ColumnDef<T, unknown> {
   return {
-    accessorKey: "lotNo",
-    header: t("lot.no", "LOT번호"),
+    accessorKey: "matUid",
+    header: t("material.col.matUid", "자재UID"),
     size: options.size ?? 150,
   };
 }

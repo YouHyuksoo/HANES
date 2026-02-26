@@ -39,7 +39,7 @@ export class LotSplitService {
     };
 
     if (search) {
-      where.lotNo = Like(`%${search}%`);
+      where.matUid = Like(`%${search}%`);
     }
 
     const [data, total] = await Promise.all([
@@ -60,15 +60,15 @@ export class LotSplitService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // 재고 정보 조회
-    const lotNos = data.map((lot) => lot.lotNo);
-    const stocks = lotNos.length > 0
-      ? await this.matStockRepository.find({ where: { lotNo: In(lotNos) } })
+    const matUids = data.map((lot) => lot.matUid);
+    const stocks = matUids.length > 0
+      ? await this.matStockRepository.find({ where: { matUid: In(matUids) } })
       : [];
-    const stockMap = new Map(stocks.map((s) => [s.lotNo, s]));
+    const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
     const flattenedData = data.map((lot) => {
       const part = partMap.get(lot.itemCode);
-      const stock = stockMap.get(lot.lotNo);
+      const stock = stockMap.get(lot.matUid);
       return {
         ...lot,
         itemCode: part?.itemCode,
@@ -91,7 +91,7 @@ export class LotSplitService {
     try {
       // 원본 LOT 조회
       const sourceLot = await queryRunner.manager.findOne(MatLot, {
-        where: { lotNo: sourceLotId },
+        where: { matUid: sourceLotId },
       });
 
       if (!sourceLot) {
@@ -126,11 +126,11 @@ export class LotSplitService {
       }
 
       // 새 LOT 번호 생성 (미지정 시 자동 생성)
-      const generatedLotNo = newLotNo || (await this.generateLotNo(sourceLot.lotNo));
+      const generatedLotNo = newLotNo || (await this.generateLotNo(sourceLot.matUid));
 
       // 중복 LOT 번호 확인
       const existingLot = await queryRunner.manager.findOne(MatLot, {
-        where: { lotNo: generatedLotNo },
+        where: { matUid: generatedLotNo },
       });
       if (existingLot) {
         throw new BadRequestException(`이미 존재하는 LOT 번호입니다: ${generatedLotNo}`);
@@ -145,7 +145,7 @@ export class LotSplitService {
 
       // 새 LOT 생성
       const newLot = queryRunner.manager.create(MatLot, {
-        lotNo: generatedLotNo,
+        matUid: generatedLotNo,
         itemCode: sourceLot.itemCode,
         initQty: splitQty,
         currentQty: splitQty,
@@ -162,14 +162,14 @@ export class LotSplitService {
 
       // 재고 정보도 분할 (원본 LOT의 재고가 있는 경우)
       const sourceStock = await queryRunner.manager.findOne(MatStock, {
-        where: { lotNo: sourceLotId },
+        where: { matUid: sourceLotId },
       });
 
       if (sourceStock) {
         // 원본 재고 차감
         const newSourceStockQty = sourceStock.qty - splitQty;
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, lotNo: sourceStock.lotNo },
+          { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid },
           { qty: newSourceStockQty, availableQty: newSourceStockQty - sourceStock.reservedQty },
         );
 
@@ -178,7 +178,7 @@ export class LotSplitService {
           warehouseCode: sourceStock.warehouseCode,
           locationCode: sourceStock.locationCode,
           itemCode: sourceStock.itemCode,
-          lotNo: newLot.lotNo,
+          matUid: newLot.matUid,
           qty: splitQty,
           availableQty: splitQty,
           reservedQty: 0,
@@ -193,20 +193,20 @@ export class LotSplitService {
         transType: 'LOT_SPLIT',
         transDate: new Date(),
         itemCode: sourceLot.itemCode,
-        lotNo: sourceLotId,
+        matUid: sourceLotId,
         qty: splitQty,
         refType: 'LOT_SPLIT',
-        refId: newLot.lotNo,
-        remark: remark || `LOT 분할: ${sourceLot.lotNo} → ${generatedLotNo}`,
+        refId: newLot.matUid,
+        remark: remark || `LOT 분할: ${sourceLot.matUid} → ${generatedLotNo}`,
         status: 'DONE',
       });
 
       await queryRunner.commitTransaction();
 
       return {
-        lotNo: newLot.lotNo,
+        matUid: newLot.matUid,
         parentLotNo: sourceLotId,
-        sourceLotNo: sourceLot.lotNo,
+        sourceLotNo: sourceLot.matUid,
         newLotNo: generatedLotNo,
         splitQty,
         itemCode: part.itemCode,
@@ -231,14 +231,14 @@ export class LotSplitService {
 
     // 기존 분할 LOT 검색
     const existingLots = await this.matLotRepository.find({
-      where: { lotNo: Like(`${prefix}%`) },
-      order: { lotNo: 'DESC' },
+      where: { matUid: Like(`${prefix}%`) },
+      order: { matUid: 'DESC' },
     });
 
     let seq = 1;
     if (existingLots.length > 0) {
       const lastLot = existingLots[0];
-      const match = lastLot.lotNo.match(/-S(\d+)$/);
+      const match = lastLot.matUid.match(/-S(\d+)$/);
       if (match) {
         seq = parseInt(match[1], 10) + 1;
       }

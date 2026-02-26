@@ -16,10 +16,10 @@ export class CreateMiscReceiptDto {
   @IsString()
   itemCode: string;
 
-  @ApiPropertyOptional({ description: 'LOT ID' })
+  @ApiPropertyOptional({ description: '자재 UID' })
   @IsOptional()
   @IsString()
-  lotId?: string;
+  matUid?: string;
 
   @ApiProperty({ description: '입고 수량' })
   @IsInt()

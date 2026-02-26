@@ -37,6 +37,7 @@ import { SystemModule } from './modules/system/system.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { RoleModule } from './modules/role/role.module';
 import { NumRuleModule } from './modules/num-rule/num-rule.module';
+import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [
@@ -102,6 +103,9 @@ import { NumRuleModule } from './modules/num-rule/num-rule.module';
 
     // 채번 서비스 (SELECT FOR UPDATE 기반 번호 생성)
     NumRuleModule,
+
+    // 공유 모듈 (UidGeneratorService 등)
+    SharedModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -59,11 +59,11 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
       cell: ({ row }) => row.original.part?.itemName,
     },
     {
-      id: 'lotNo',
-      header: t('material.col.lotNo'),
+      id: 'matUid',
+      header: t('material.col.matUid'),
       size: 150,
       meta: { filterType: "text" as const },
-      cell: ({ row }) => row.original.lot?.lotNo || '-',
+      cell: ({ row }) => row.original.lot?.matUid || '-',
     },
     {
       accessorKey: 'qty',

@@ -3,7 +3,7 @@
  * @description 자재출고 스캔 플로우 훅 - LOT 바코드 스캔 → 재고 조회 → 출고 처리
  *
  * 초보자 가이드:
- * 1. handleScan(lotNo): LOT 바코드 스캔 → 해당 LOT의 재고 정보 조회
+ * 1. handleScan(matUid): 자재UID 바코드 스캔 → 해당 LOT의 재고 정보 조회
  * 2. handleIssue(): 스캔한 LOT 전량 출고 처리
  * 3. history: 출고 완료 이력 (최신순 정렬)
  * 4. handleReset(): 스캔 데이터 초기화 (다음 스캔 준비)
@@ -13,7 +13,7 @@ import { api } from "@/services/api";
 
 /** LOT 재고 정보 */
 export interface MatLotData {
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   remainQty: number;
@@ -23,7 +23,7 @@ export interface MatLotData {
 
 /** 출고 이력 항목 */
 export interface IssuingHistoryItem {
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   issuedQty: number;
@@ -36,7 +36,7 @@ interface UseMatIssuingScanReturn {
   isIssuing: boolean;
   error: string | null;
   history: IssuingHistoryItem[];
-  handleScan: (lotNo: string) => Promise<void>;
+  handleScan: (matUid: string) => Promise<void>;
   handleIssue: () => Promise<boolean>;
   handleReset: () => void;
 }
@@ -56,14 +56,14 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<IssuingHistoryItem[]>([]);
 
-  /** LOT 바코드 스캔 → 재고 조회 */
-  const handleScan = useCallback(async (lotNo: string) => {
+  /** 자재UID 바코드 스캔 → 재고 조회 */
+  const handleScan = useCallback(async (matUid: string) => {
     setIsScanning(true);
     setError(null);
     setScannedLot(null);
     try {
       const { data } = await api.get<MatLotData>(
-        `/material/lots/by-lotno/${encodeURIComponent(lotNo)}`,
+        `/material/lots/by-uid/${encodeURIComponent(matUid)}`,
       );
       setScannedLot(data);
     } catch (err: unknown) {
@@ -83,11 +83,11 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
     setError(null);
     try {
       await api.post("/material/issues/scan", {
-        lotNo: scannedLot.lotNo,
+        matUid: scannedLot.matUid,
       });
       setHistory((prev) => [
         {
-          lotNo: scannedLot.lotNo,
+          matUid: scannedLot.matUid,
           itemCode: scannedLot.itemCode,
           itemName: scannedLot.itemName,
           issuedQty: scannedLot.remainQty,

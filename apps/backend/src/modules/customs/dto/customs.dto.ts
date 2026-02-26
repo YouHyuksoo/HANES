@@ -121,7 +121,7 @@ export class CustomsEntryQueryDto {
 }
 
 // ============================================================================
-// 보세자재 LOT (Customs Lot) DTOs
+// 보세자재 UID (Customs Mat) DTOs
 // ============================================================================
 
 export class CreateCustomsLotDto {
@@ -129,9 +129,9 @@ export class CreateCustomsLotDto {
   @IsString()
   entryId: string;
 
-  @ApiProperty({ description: 'LOT 번호' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotNo: string;
+  matUid: string;
 
   @ApiProperty({ description: '품목 코드' })
   @IsString()

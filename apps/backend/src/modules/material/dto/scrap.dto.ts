@@ -8,9 +8,9 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsDateString } from '
 import { Type } from 'class-transformer';
 
 export class CreateScrapDto {
-  @ApiProperty({ description: 'LOT ID' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotId: string;
+  matUid: string;
 
   @ApiProperty({ description: '창고 ID (출고 창고)' })
   @IsString()

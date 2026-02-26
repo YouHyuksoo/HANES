@@ -2,17 +2,18 @@
 
 /**
  * @file src/app/(authenticated)/material/receive-label/page.tsx
- * @description 입고라벨 발행 페이지 - IQC 합격 LOT 선택 후 자재롯트 라벨 발행
+ * @description 입고라벨 발행 페이지 - IQC 합격 입하 건 선택 후 자재시리얼 생성 및 라벨 발행
  *
  * 초보자 가이드:
- * 1. **대상**: IQC 합격(PASSED) LOT 중 라벨 발행할 건을 체크박스로 선택
- * 2. **발행**: 출력 방식(브라우저/ZPL USB/ZPL TCP) 선택 후 "라벨 발행" 클릭
- * 3. **템플릿**: 기준정보 > 라벨관리 > 자재롯트라벨 탭에서 디자인 저장
+ * 1. **대상**: IQC 합격(PASS) 입하 건을 DataGrid에 표시
+ * 2. **선택**: 체크박스로 입하 건 선택 (전체선택/개별선택)
+ * 3. **발행**: "라벨 발행" 클릭 → 선택 건마다 POST create → matUid 생성 → 라벨 인쇄
+ * 4. **자동추적**: 발행 완료 시 이력 기록 → 목록 자동 새로고침
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Printer, Search, RefreshCw, Tag, CheckCircle, Package, FileText, Info,
+  Printer, Search, RefreshCw, Tag, CheckCircle, Package, Info,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -22,35 +23,34 @@ import { LabelDesign, MAT_LOT_DEFAULT_DESIGN } from "../../master/label/types";
 import PrintActionBar from "./components/PrintActionBar";
 import LabelPreviewRenderer, { LabelItem } from "./components/LabelPreviewRenderer";
 import PrintHistorySection from "./components/PrintHistorySection";
-import { PassedLot, useReceiveLabelColumns } from "./components/useReceiveLabelColumns";
+import { LabelableArrival, useReceiveLabelColumns } from "./components/useReceiveLabelColumns";
+import { useLabelIssue } from "./components/useLabelIssue";
 
 /** 템플릿 정보 */
 interface TemplateInfo { id: string; printMode: string; }
 
 function ReceiveLabelPage() {
   const { t } = useTranslation();
-  const [lots, setLots] = useState<PassedLot[]>([]);
+  const [arrivals, setArrivals] = useState<LabelableArrival[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showUnlabeledOnly, setShowUnlabeledOnly] = useState(true);
   const [labelDesign, setLabelDesign] = useState<LabelDesign>(MAT_LOT_DEFAULT_DESIGN);
   const [printing, setPrinting] = useState(false);
   const [template, setTemplate] = useState<TemplateInfo | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const { isEnabled } = useSysConfigStore();
   const isAutoReceive = isEnabled('IQC_AUTO_RECEIVE');
-  const [autoReceiveResult, setAutoReceiveResult] = useState<{
-    received: string[]; skipped: string[]; warehouseName?: string;
-  } | null>(null);
 
-  /** IQC 합격 LOT 조회 */
+  /** IQC 합격 입하 건 조회 */
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/material/receiving/receivable");
+      const res = await api.get("/material/receive-label/arrivals");
       const raw = res.data?.data ?? res.data;
-      setLots(Array.isArray(raw) ? raw : raw?.data ?? []);
-    } catch { setLots([]); }
+      setArrivals(Array.isArray(raw) ? raw : raw?.data ?? []);
+    } catch { setArrivals([]); }
     finally { setLoading(false); }
   }, []);
 
@@ -59,7 +59,7 @@ function ReceiveLabelPage() {
     try {
       const res = await api.get("/master/label-templates", { params: { category: "mat_lot" } });
       const templates = res.data?.data ?? [];
-      const tpl = templates.find((t: { isDefault: boolean }) => t.isDefault) || templates[0];
+      const tpl = templates.find((tp: { isDefault: boolean }) => tp.isDefault) || templates[0];
       if (tpl) {
         setTemplate({ id: tpl.id, printMode: tpl.printMode ?? 'BROWSER' });
         if (tpl.designData) {
@@ -71,31 +71,43 @@ function ReceiveLabelPage() {
 
   useEffect(() => { fetchData(); fetchTemplate(); }, [fetchData, fetchTemplate]);
 
-  /** 검색 필터 */
-  const filteredLots = useMemo(() => {
-    if (!searchText.trim()) return lots;
-    const q = searchText.toLowerCase();
-    return lots.filter((lot) =>
-      lot.lotNo.toLowerCase().includes(q) || lot.part.itemCode.toLowerCase().includes(q) ||
-      lot.part.itemName.toLowerCase().includes(q) || (lot.vendor ?? "").toLowerCase().includes(q));
-  }, [lots, searchText]);
+  /** 필터링된 입하 목록 (미발행 필터 + 검색) */
+  const filteredArrivals = useMemo(() => {
+    let result = arrivals;
+    if (showUnlabeledOnly) result = result.filter((a) => !a.labelPrinted);
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      result = result.filter((a) =>
+        a.arrivalNo.toLowerCase().includes(q) ||
+        (a.itemCode ?? "").toLowerCase().includes(q) ||
+        (a.itemName ?? "").toLowerCase().includes(q) ||
+        (a.vendor ?? "").toLowerCase().includes(q));
+    }
+    return result;
+  }, [arrivals, showUnlabeledOnly, searchText]);
+
+  /** 발행 비즈니스 로직 훅 */
+  const {
+    issuing, createdUids, autoReceiveResult,
+    createMatUids, handleAutoReceive, logBrowserPrint,
+    clearCreatedUids, clearAutoReceiveResult,
+  } = useLabelIssue({ filteredArrivals, selectedIds, isAutoReceive, onRefresh: fetchData });
 
   /** 통계 */
   const stats = useMemo(() => {
-    const sel = filteredLots.filter((l) => selectedIds.has(l.id));
+    const unlabeled = arrivals.filter((a) => !a.labelPrinted);
+    const sel = filteredArrivals.filter((a) => selectedIds.has(a.id));
     return {
-      totalLots: filteredLots.length,
-      totalQty: filteredLots.reduce((s, l) => s + l.initQty, 0),
-      selectedLots: sel.length,
-      selectedQty: sel.reduce((s, l) => s + l.initQty, 0),
+      unlabeledCount: unlabeled.length, totalCount: filteredArrivals.length,
+      selectedCount: sel.length, selectedQty: sel.reduce((s, a) => s + a.qty, 0),
     };
-  }, [filteredLots, selectedIds]);
+  }, [arrivals, filteredArrivals, selectedIds]);
 
   const toggleAll = useCallback((checked: boolean) => {
-    setSelectedIds(checked ? new Set(filteredLots.map((l) => l.id)) : new Set());
-  }, [filteredLots]);
+    setSelectedIds(checked ? new Set(filteredArrivals.map((a) => a.id)) : new Set());
+  }, [filteredArrivals]);
 
-  const toggleItem = useCallback((id: string) => {
+  const toggleItem = useCallback((id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -103,29 +115,18 @@ function ReceiveLabelPage() {
     });
   }, []);
 
-  const allSelected = filteredLots.length > 0 && filteredLots.every((l) => selectedIds.has(l.id));
+  const allSelected = filteredArrivals.length > 0 && filteredArrivals.every((a) => selectedIds.has(a.id));
   const columns = useReceiveLabelColumns({ allSelected, selectedIds, toggleAll, toggleItem });
 
-  /** 자동입고 처리 */
-  const handleAutoReceive = useCallback(async () => {
-    const selected = filteredLots.filter((l) => selectedIds.has(l.id));
-    if (!isAutoReceive || selected.length === 0) return;
-    try {
-      const res = await api.post("/material/receiving/auto", { lotIds: selected.map((l) => l.id) });
-      const result = res.data?.data;
-      if (result) {
-        setAutoReceiveResult(result);
-        if (result.received?.length > 0) fetchData();
-      }
-    } catch (err) { console.error("Auto-receive failed:", err); }
-  }, [filteredLots, selectedIds, isAutoReceive, fetchData]);
-
-  /** 브라우저 인쇄 (자동입고 포함) */
+  /** 브라우저 인쇄 (matUid 생성 → 자동입고 → 인쇄 → 이력기록 → 새로고침) */
   const handleBrowserPrint = useCallback(async () => {
     if (selectedIds.size === 0) return;
-    await handleAutoReceive();
+    const created = await createMatUids();
+    if (created.length === 0) return;
+    const matUids = created.map((c) => c.matUid);
+    await handleAutoReceive(matUids);
     setPrinting(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       if (!printRef.current) { setPrinting(false); return; }
       const win = window.open("", "_blank");
       if (!win) { setPrinting(false); return; }
@@ -137,22 +138,20 @@ function ReceiveLabelPage() {
         </head><body><div class="label-grid">${printRef.current.innerHTML}</div>
         <script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
       win.document.close();
+      await logBrowserPrint(matUids);
       setPrinting(false);
+      setSelectedIds(new Set());
+      clearCreatedUids();
+      fetchData();
     }, 500);
-  }, [selectedIds, handleAutoReceive, labelDesign, t]);
+  }, [selectedIds, createMatUids, handleAutoReceive, labelDesign, t, logBrowserPrint, fetchData, clearCreatedUids]);
 
-  /** 선택된 LOT -> 라벨 데이터 */
-  const labelItems = useMemo<LabelItem[]>(() => {
-    const selected = filteredLots.filter((l) => selectedIds.has(l.id));
-    const result: LabelItem[] = [];
-    for (const lot of selected) {
-      for (let i = 0; i < lot.initQty; i++) {
-        result.push({ key: `${lot.id}-${i}`, lotNo: lot.lotNo, itemCode: lot.part.itemCode,
-          itemName: lot.part.itemName, sub: `${lot.vendor ?? ""} | ${lot.recvDate?.slice(0, 10) ?? ""}` });
-      }
-    }
-    return result;
-  }, [filteredLots, selectedIds]);
+  /** 생성된 matUid → 라벨 데이터 */
+  const labelItems = useMemo<LabelItem[]>(() =>
+    createdUids.map((c) => ({
+      key: c.matUid, matUid: c.matUid,
+      itemCode: c.itemCode ?? "", itemName: c.itemName ?? "", sub: "",
+    })), [createdUids]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -169,15 +168,16 @@ function ReceiveLabelPage() {
             <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
           </Button>
           <PrintActionBar
-            selectedCount={stats.selectedLots} selectedQty={stats.selectedQty}
+            selectedCount={stats.selectedCount} selectedQty={stats.selectedQty}
             templateId={template?.id ?? null} templatePrintMode={template?.printMode ?? 'BROWSER'}
-            selectedLotIds={Array.from(selectedIds)} onBrowserPrint={handleBrowserPrint}
-            printing={printing}
+            selectedLotIds={createdUids.map((c) => c.matUid)} onBrowserPrint={handleBrowserPrint}
+            printing={printing || issuing}
+            onPrintComplete={() => { setSelectedIds(new Set()); clearCreatedUids(); fetchData(); }}
           />
         </div>
       </div>
 
-      {/* 자동입고 설정 상태 배너 */}
+      {/* 자동입고 배너 */}
       <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm ${
         isAutoReceive
           ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
@@ -195,9 +195,9 @@ function ReceiveLabelPage() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t("material.receiveLabel.stats.totalLots")} value={stats.totalLots} icon={Package} color="blue" />
-        <StatCard label={t("material.receiveLabel.stats.totalQty")} value={stats.totalQty} icon={FileText} color="gray" />
-        <StatCard label={t("material.receiveLabel.stats.selectedLots")} value={stats.selectedLots} icon={CheckCircle} color="green" />
+        <StatCard label={t("material.receiveLabel.stats.unlabeledLots")} value={stats.unlabeledCount} icon={Package} color="blue" />
+        <StatCard label={t("material.receiveLabel.stats.totalLots")} value={stats.totalCount} icon={Tag} color="gray" />
+        <StatCard label={t("material.receiveLabel.stats.selectedLots")} value={stats.selectedCount} icon={CheckCircle} color="green" />
         <StatCard label={t("material.receiveLabel.stats.selectedLabels")} value={stats.selectedQty} icon={Printer} color="purple" />
       </div>
 
@@ -211,7 +211,7 @@ function ReceiveLabelPage() {
                 {t("material.receiveLabel.autoReceive.success", {
                   count: autoReceiveResult.received.length, warehouse: autoReceiveResult.warehouseName || "" })}
               </span>
-              <button onClick={() => setAutoReceiveResult(null)} className="ml-auto text-green-400 hover:text-green-600">
+              <button onClick={() => clearAutoReceiveResult()} className="ml-auto text-green-400 hover:text-green-600">
                 <span className="text-xs">x</span>
               </button>
             </div>
@@ -227,21 +227,52 @@ function ReceiveLabelPage() {
         </div>
       )}
 
-      {/* 검색 + 테이블 */}
+      {/* 생성된 자재시리얼 결과 배너 */}
+      {createdUids.length > 0 && (
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="w-4 h-4 text-indigo-500 shrink-0" />
+            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+              {t("material.receiveLabel.issueSuccess", { count: createdUids.length })}
+            </span>
+            <button onClick={clearCreatedUids} className="ml-auto text-indigo-400 hover:text-indigo-600">
+              <span className="text-xs">x</span>
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {createdUids.slice(0, 20).map((c) => (
+              <span key={c.matUid}
+                className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-800/50 text-indigo-700 dark:text-indigo-300 rounded text-xs font-mono">
+                {c.matUid}
+              </span>
+            ))}
+            {createdUids.length > 20 && (
+              <span className="text-xs text-indigo-500 dark:text-indigo-400">+{createdUids.length - 20}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* DataGrid */}
       <Card><CardContent>
-        <DataGrid data={filteredLots} columns={columns} isLoading={loading}
+        <DataGrid data={filteredArrivals} columns={columns} isLoading={loading || issuing}
           enableColumnFilter enableExport exportFileName={t("material.receiveLabel.title")}
           toolbarLeft={
-            <Input placeholder={t("material.receiveLabel.searchPlaceholder")}
-              value={searchText} onChange={(e) => setSearchText(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />} />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setShowUnlabeledOnly(!showUnlabeledOnly); setSelectedIds(new Set()); }}
+                className={`px-3 py-1.5 text-xs rounded-full font-medium transition-colors whitespace-nowrap ${
+                  showUnlabeledOnly ? "bg-primary text-white"
+                    : "bg-surface border border-border text-text-muted hover:text-text"
+                }`}>{t("material.receiveLabel.unlabeledOnly")}</button>
+              <Input placeholder={t("material.receiveLabel.searchPlaceholder")}
+                value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />} />
+            </div>
           } />
       </CardContent></Card>
 
-      {/* 발행 이력 */}
       <PrintHistorySection category="mat_lot" />
-
-      {/* 인쇄용 라벨 렌더링 (숨김) */}
       <LabelPreviewRenderer ref={printRef} items={labelItems} design={labelDesign} visible={printing} />
     </div>
   );

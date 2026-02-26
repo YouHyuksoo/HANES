@@ -19,18 +19,15 @@ import {
 
 @Entity({ name: 'IQC_LOGS' })
 @Index(['itemCode'])
-@Index(['lotNo'])
+@Index(['arrivalNo'])
 @Index(['inspectType'])
 @Index(['result'])
 export class IqcLog {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
-  @Column({ name: 'LOT_ID', length: 255, nullable: true })
-  lotId: string | null;
-
-  @Column({ name: 'LOT_NO', length: 100, nullable: true })
-  lotNo: string | null;
+  @Column({ name: 'ARRIVAL_NO', length: 50, nullable: true })
+  arrivalNo: string | null;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

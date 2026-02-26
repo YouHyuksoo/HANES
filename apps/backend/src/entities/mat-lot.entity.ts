@@ -3,7 +3,7 @@
  * @description 원자재 LOT 엔티티 - LOT 단위 추적/관리
  *
  * 초보자 가이드:
- * - lotNo가 PK (자연키) - LOT번호로 직접 식별
+ * - matUid가 PK (자재시리얼) - 자재 고유식별자로 직접 식별
  * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
  * - iqcStatus: IQC 검사 상태 (PENDING/PASS/FAIL)
  * - status: LOT 상태 (NORMAL/HOLD/SCRAPPED)
@@ -22,8 +22,8 @@ import {
 @Index(['status'])
 @Index(['iqcStatus'])
 export class MatLot {
-  @PrimaryColumn({ name: 'LOT_NO', length: 50 })
-  lotNo: string;
+  @PrimaryColumn({ name: 'MAT_UID', length: 50 })
+  matUid: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

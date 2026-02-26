@@ -10,23 +10,23 @@ import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
-@ApiTags('자재관리 - LOT')
+@ApiTags('자재관리 - 자재시리얼')
 @Controller('material/lots')
 export class MatLotController {
   constructor(private readonly matLotService: MatLotService) {}
 
   @Get()
-  @ApiOperation({ summary: 'LOT 목록 조회' })
+  @ApiOperation({ summary: '자재시리얼 목록 조회' })
   async findAll(@Query() query: MatLotQueryDto, @Company() company: string, @Plant() plant: string) {
     const result = await this.matLotService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('lotno/:lotNo')
-  @ApiOperation({ summary: 'LOT 번호로 조회' })
-  @ApiParam({ name: 'lotNo', description: 'LOT 번호' })
-  async findByLotNo(@Param('lotNo') lotNo: string) {
-    const data = await this.matLotService.findByLotNo(lotNo);
+  @Get('by-uid/:matUid')
+  @ApiOperation({ summary: '자재시리얼(matUid)로 조회' })
+  @ApiParam({ name: 'matUid', description: '자재시리얼' })
+  async findByMatUid(@Param('matUid') matUid: string) {
+    const data = await this.matLotService.findByMatUid(matUid);
     return ResponseUtil.success(data);
   }
 

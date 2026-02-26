@@ -18,7 +18,7 @@ export interface IqcItem {
   arrivalDate: string;
   supplierName: string;
   itemName: string;
-  lotNo: string;
+  matUid: string;
   quantity: number;
   unit: string;
   status: IqcStatus;
@@ -60,11 +60,11 @@ export function useIqcData() {
       const mapped: IqcItem[] = lots.map((lot: any) => ({
         id: lot.id,
         itemCode: lot.itemCode || '',
-        receiveNo: lot.lotNo || '-',
+        receiveNo: lot.matUid || '-',
         arrivalDate: lot.createdAt || '',
         supplierName: lot.vendor || '-',
         itemName: lot.itemName || '',
-        lotNo: lot.lotNo || '',
+        matUid: lot.matUid || '',
         quantity: lot.currentQty ?? 0,
         unit: lot.unit || 'EA',
         status: mapToFrontendStatus(lot.iqcStatus || 'PENDING'),
@@ -89,7 +89,7 @@ export function useIqcData() {
         !searchText ||
         item.receiveNo.toLowerCase().includes(searchText.toLowerCase()) ||
         item.itemName.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.lotNo.toLowerCase().includes(searchText.toLowerCase());
+        item.matUid.toLowerCase().includes(searchText.toLowerCase());
       return matchStatus && matchSearch;
     });
   }, [items, statusFilter, searchText]);
@@ -113,7 +113,7 @@ export function useIqcData() {
     try {
       const result = finalResult === 'PASSED' ? 'PASS' : 'FAIL';
       await api.post('/material/iqc-history', {
-        lotId: selectedItem.id,
+        matUid: selectedItem.id,
         result,
         inspectorName: resultForm.inspector || undefined,
         remark: resultForm.remark || undefined,

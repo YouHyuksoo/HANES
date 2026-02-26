@@ -68,10 +68,10 @@ export class StockAdjustDto {
   @IsString()
   locationCode?: string;
 
-  @ApiPropertyOptional({ description: 'LOT ID' })
+  @ApiPropertyOptional({ description: '자재 UID' })
   @IsOptional()
   @IsString()
-  lotId?: string;
+  matUid?: string;
 
   @ApiProperty({ description: '조정 수량 (양수: 증가, 음수: 감소)' })
   @IsNumber()
@@ -101,8 +101,8 @@ export class StockTransferDto {
   @Min(1)
   qty: number;
 
-  @ApiPropertyOptional({ description: 'LOT ID' })
+  @ApiPropertyOptional({ description: '자재 UID' })
   @IsOptional()
   @IsString()
-  lotId?: string;
+  matUid?: string;
 }

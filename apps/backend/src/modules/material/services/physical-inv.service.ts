@@ -50,24 +50,24 @@ export class PhysicalInvService {
 
     // part, lot 정보 조회
     const itemCodes = data.map((stock) => stock.itemCode).filter(Boolean);
-    const lotNos = data.map((stock) => stock.lotNo).filter(Boolean) as string[];
+    const matUids = data.map((stock) => stock.matUid).filter(Boolean) as string[];
 
     const [parts, lots] = await Promise.all([
       itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
 
     let result = data.map((stock) => {
       const part = partMap.get(stock.itemCode);
-      const lot = stock.lotNo ? lotMap.get(stock.lotNo) : null;
+      const lot = stock.matUid ? lotMap.get(stock.matUid) : null;
       return {
         ...stock,
         itemCode: part?.itemCode,
         itemName: part?.itemName,
-        lotNo: lot?.lotNo,
+        matUid: lot?.matUid,
       };
     });
 
@@ -90,7 +90,7 @@ export class PhysicalInvService {
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
       .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
-      .leftJoin(MatLot, 'lot', 'lot.lotNo = log.lotNo')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid')
       .select([
         'log.id AS "id"',
         'log.warehouseCode AS "warehouseCode"',
@@ -98,8 +98,8 @@ export class PhysicalInvService {
         'part.itemCode AS "itemCode"',
         'part.itemName AS "itemName"',
         'part.unit AS "unit"',
-        'log.lotNo AS "lotNo"',
-        'lot.lotNo AS "lotNo"',
+        'log.matUid AS "matUid"',
+        'lot.matUid AS "matUid"',
         'log.beforeQty AS "beforeQty"',
         'log.afterQty AS "afterQty"',
         'log.diffQty AS "diffQty"',
@@ -151,10 +151,10 @@ export class PhysicalInvService {
       const results = [];
 
       for (const item of items) {
-        // stockId는 "warehouseCode::itemCode::lotNo" 형태의 복합키 문자열
+        // stockId는 "warehouseCode::itemCode::matUid" 형태의 복합키 문자열
         const [whCode, itCode, ltNo] = item.stockId.split('::');
         const stock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: whCode, itemCode: itCode, lotNo: ltNo || '' },
+          where: { warehouseCode: whCode, itemCode: itCode, matUid: ltNo || '' },
         });
 
         if (!stock) {
@@ -167,7 +167,7 @@ export class PhysicalInvService {
 
         // 재고 업데이트
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
           { qty: afterQty, availableQty: afterQty - stock.reservedQty, lastCountAt: new Date() },
         );
 
@@ -175,7 +175,7 @@ export class PhysicalInvService {
         const invAdjLog = queryRunner.manager.create(InvAdjLog, {
           warehouseCode: stock.warehouseCode,
           itemCode: stock.itemCode,
-          lotNo: stock.lotNo,
+          matUid: stock.matUid,
           adjType: 'PHYSICAL_COUNT',
           beforeQty,
           afterQty,

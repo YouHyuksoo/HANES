@@ -1,0 +1,18 @@
+-- ============================================================================
+-- HANES MES - UUID→자연키/SEQUENCE 마이그레이션 가이드
+-- ============================================================================
+-- 실행 순서:
+--   1. 01_column_renames.sql   : FK 컬럼명 변경 + PART_MASTERS 컬럼 리네임
+--   2. 02_table_rename.sql     : PART_MASTERS → ITEM_MASTERS 테이블 리네임
+--   3. 03_pk_restructure.sql   : UUID PK → 자연키/SEQUENCE PK 전환
+--   4. 04_create_sequences.sql : 트랜잭션 테이블 SEQUENCE 생성 + ID 변환
+--
+-- 주의사항:
+--   - 반드시 DB 백업 후 실행
+--   - 서비스 중지 상태에서 실행
+--   - 각 스크립트는 멱등성(idempotent) 보장 (중복 실행 안전)
+--   - 에러 발생 시 해당 단계에서 중단하고 원인 확인
+-- ============================================================================
+
+-- 백업 확인
+-- expdp test/password@JSHNSMES directory=DATA_PUMP_DIR dumpfile=hanes_backup.dmp logfile=hanes_backup.log schemas=test

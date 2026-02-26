@@ -73,7 +73,7 @@ export class ProductInventoryService {
         toWarehouseId: dto.warehouseId,
         itemCode: dto.itemCode,
         itemType: dto.itemType,
-        lotNo: dto.lotId,
+        prdUid: dto.prdUid,
         orderNo: dto.orderNo,
         processCode: dto.processCode,
         qty: dto.qty,
@@ -90,12 +90,12 @@ export class ProductInventoryService {
 
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
       });
 
       if (existingStock) {
         await queryRunner.manager.update(ProductStock,
-          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, lotNo: existingStock.lotNo },
+          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, prdUid: existingStock.prdUid },
           { qty: existingStock.qty + dto.qty, availableQty: existingStock.qty + dto.qty - existingStock.reservedQty },
         );
       } else {
@@ -103,7 +103,7 @@ export class ProductInventoryService {
           warehouseCode: dto.warehouseId,
           itemCode: dto.itemCode,
           itemType: dto.itemType,
-          lotNo: dto.lotId || null,
+          prdUid: dto.prdUid || null,
           orderNo: dto.orderNo || null,
           processCode: dto.processCode || null,
           qty: dto.qty,
@@ -133,7 +133,7 @@ export class ProductInventoryService {
     try {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -149,7 +149,7 @@ export class ProductInventoryService {
         toWarehouseId: dto.toWarehouseId,
         itemCode: dto.itemCode,
         itemType: dto.itemType,
-        lotNo: dto.lotId,
+        prdUid: dto.prdUid,
         orderNo: dto.orderNo,
         processCode: dto.processCode,
         qty: -dto.qty,
@@ -165,19 +165,19 @@ export class ProductInventoryService {
 
       // 3. 출고 창고 재고 감소
       await queryRunner.manager.update(ProductStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid },
         { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
       );
 
       // 4. 이동 대상 창고가 있으면 입고 처리
       if (dto.toWarehouseId) {
         const targetStock = await queryRunner.manager.findOne(ProductStock, {
-          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
+          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
         });
 
         if (targetStock) {
           await queryRunner.manager.update(ProductStock,
-            { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, lotNo: targetStock.lotNo },
+            { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, prdUid: targetStock.prdUid },
             { qty: targetStock.qty + dto.qty, availableQty: targetStock.qty + dto.qty - targetStock.reservedQty },
           );
         } else {
@@ -185,7 +185,7 @@ export class ProductInventoryService {
             warehouseCode: dto.toWarehouseId,
             itemCode: dto.itemCode,
             itemType: dto.itemType,
-            lotNo: dto.lotId || null,
+            prdUid: dto.prdUid || null,
             orderNo: dto.orderNo || null,
             processCode: dto.processCode || null,
             qty: dto.qty,
@@ -239,7 +239,7 @@ export class ProductInventoryService {
         toWarehouseId: originalTrans.fromWarehouseId,
         itemCode: originalTrans.itemCode,
         itemType: originalTrans.itemType,
-        lotNo: originalTrans.lotNo,
+        prdUid: originalTrans.prdUid,
         orderNo: originalTrans.orderNo,
         processCode: originalTrans.processCode,
         qty: -originalTrans.qty,
@@ -262,7 +262,7 @@ export class ProductInventoryService {
           where: {
             warehouseCode: originalTrans.toWarehouseId,
             itemCode: originalTrans.itemCode,
-            lotNo: originalTrans.lotNo || IsNull(),
+            prdUid: originalTrans.prdUid || IsNull(),
           },
         });
 
@@ -272,7 +272,7 @@ export class ProductInventoryService {
             throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
           }
           await queryRunner.manager.update(ProductStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid },
             { qty: newQty, availableQty: newQty - stock.reservedQty },
           );
         }
@@ -284,13 +284,13 @@ export class ProductInventoryService {
           where: {
             warehouseCode: originalTrans.fromWarehouseId,
             itemCode: originalTrans.itemCode,
-            lotNo: originalTrans.lotNo || IsNull(),
+            prdUid: originalTrans.prdUid || IsNull(),
           },
         });
 
         if (stock) {
           await queryRunner.manager.update(ProductStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid },
             { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
           );
         } else {
@@ -298,7 +298,7 @@ export class ProductInventoryService {
             warehouseCode: originalTrans.fromWarehouseId,
             itemCode: originalTrans.itemCode,
             itemType: originalTrans.itemType || 'WIP',
-            lotNo: originalTrans.lotNo || null,
+            prdUid: originalTrans.prdUid || null,
             qty: Math.abs(originalTrans.qty),
             reservedQty: 0,
             availableQty: Math.abs(originalTrans.qty),
@@ -335,11 +335,11 @@ export class ProductInventoryService {
     if (query.warehouseId) where.warehouseCode = query.warehouseId;
     if (query.itemCode) where.itemCode = query.itemCode;
     if (query.itemType) where.itemType = query.itemType;
-    if (query.lotId) where.lotNo = query.lotId;
+    if (query.prdUid) where.prdUid = query.prdUid;
 
     const stocks = await this.stockRepository.find({
       where,
-      select: ['warehouseCode', 'itemCode', 'itemType', 'lotNo', 'orderNo', 'processCode', 'qty', 'reservedQty', 'availableQty'],
+      select: ['warehouseCode', 'itemCode', 'itemType', 'prdUid', 'orderNo', 'processCode', 'qty', 'reservedQty', 'availableQty'],
       order: { warehouseCode: 'ASC', itemCode: 'ASC' },
     });
 
@@ -372,7 +372,7 @@ export class ProductInventoryService {
         warehouseId: s.warehouseCode,
         itemCode: s.itemCode,
         itemType: s.itemType,
-        lotNo: s.lotNo,
+        prdUid: s.prdUid,
         orderNo: s.orderNo,
         processCode: s.processCode,
         qty: s.qty,
@@ -394,7 +394,7 @@ export class ProductInventoryService {
     if (plant) where.plant = plant;
     if (query.itemCode) where.itemCode = query.itemCode;
     if (query.itemType) where.itemType = query.itemType;
-    if (query.lotId) where.lotNo = query.lotId;
+    if (query.prdUid) where.prdUid = query.prdUid;
     if (query.refType) where.refType = query.refType;
     if (query.refId) where.refId = query.refId;
 

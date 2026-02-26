@@ -98,32 +98,32 @@ export class MiscReceiptService {
 
     // 관련 정보 조회
     const itemCodes = data.map((trans) => trans.itemCode).filter(Boolean);
-    const lotNos = data.map((trans) => trans.lotNo).filter(Boolean) as string[];
+    const matUids = data.map((trans) => trans.matUid).filter(Boolean) as string[];
     const warehouseIds = data
       .map((trans) => trans.toWarehouseId)
       .filter(Boolean) as string[];
 
     const [parts, lots, warehouses] = await Promise.all([
       itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
       warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
     // 중첩 객체 평면화
     const flattenedData = data.map((trans) => {
       const part = partMap.get(trans.itemCode);
-      const lot = trans.lotNo ? lotMap.get(trans.lotNo) : null;
+      const lot = trans.matUid ? lotMap.get(trans.matUid) : null;
       const warehouse = trans.toWarehouseId ? warehouseMap.get(trans.toWarehouseId) : null;
       return {
         ...trans,
         itemCode: part?.itemCode,
         itemName: part?.itemName,
         unit: part?.unit,
-        lotNo: lot?.lotNo,
+        matUid: lot?.matUid,
         warehouseCode: warehouse?.warehouseCode,
         warehouseName: warehouse?.warehouseName,
       };
@@ -133,7 +133,7 @@ export class MiscReceiptService {
   }
 
   async create(dto: CreateMiscReceiptDto) {
-    const { warehouseId, itemCode, lotId: lotNo, qty, remark, workerId } = dto;
+    const { warehouseId, itemCode, matUid, qty, remark, workerId } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -156,13 +156,13 @@ export class MiscReceiptService {
         throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
       }
 
-      // LOT 확인 (lotId가 있는 경우)
-      if (lotNo) {
+      // LOT 확인 (matUid가 있는 경우)
+      if (matUid) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { lotNo: lotNo },
+          where: { matUid: matUid },
         });
         if (!lot) {
-          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
         }
       }
 
@@ -171,19 +171,19 @@ export class MiscReceiptService {
 
       // 재고 업데이트 또는 생성
       const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: warehouse.warehouseCode, itemCode, ...(lotNo && { lotNo }) },
+        where: { warehouseCode: warehouse.warehouseCode, itemCode, ...(matUid && { matUid }) },
       });
 
       if (existingStock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, lotNo: existingStock.lotNo },
+          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, matUid: existingStock.matUid },
           { qty: existingStock.qty + qty, availableQty: existingStock.availableQty + qty },
         );
       } else {
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode: warehouse.warehouseCode,
           itemCode,
-          lotNo: lotNo || null,
+          matUid: matUid || null,
           qty,
           availableQty: qty,
           reservedQty: 0,
@@ -191,11 +191,11 @@ export class MiscReceiptService {
         await queryRunner.manager.save(newStock);
       }
 
-      // LOT 수량 업데이트 (lotId가 있는 경우)
-      if (lotNo) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: lotNo } });
+      // LOT 수량 업데이트 (matUid가 있는 경우)
+      if (matUid) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: matUid } });
         if (lot) {
-          await queryRunner.manager.update(MatLot, lotNo, {
+          await queryRunner.manager.update(MatLot, matUid, {
             currentQty: lot.currentQty + qty,
             status: lot.status === 'DEPLETED' ? 'NORMAL' : lot.status,
           });
@@ -209,7 +209,7 @@ export class MiscReceiptService {
         transDate: new Date(),
         toWarehouseId: warehouse.warehouseCode,
         itemCode,
-        lotNo: lotNo || null,
+        matUid: matUid || null,
         qty,
         refType: 'MISC_RECEIPT',
         workerId,
@@ -228,7 +228,7 @@ export class MiscReceiptService {
         warehouseName: warehouse.warehouseName,
         itemCode: part.itemCode,
         itemName: part.itemName,
-        lotNo,
+        matUid,
         qty,
         remark,
         workerId,

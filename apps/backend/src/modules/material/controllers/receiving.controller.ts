@@ -36,7 +36,7 @@ export class ReceivingController {
   }
 
   @Get('receivable')
-  @ApiOperation({ summary: '입고 가능 LOT 목록 (IQC 합격 + 미입고)' })
+  @ApiOperation({ summary: '입고 가능 목록 (IQC 합격 + 미입고)' })
   async findReceivable(@Company() company: string, @Plant() plant: string) {
     const data = await this.receivingService.findReceivable(company, plant);
     return ResponseUtil.success(data);
@@ -46,7 +46,7 @@ export class ReceivingController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '자동입고 처리 (라벨 발행 시)' })
   async autoReceive(@Body() dto: AutoReceiveDto) {
-    const data = await this.receivingService.autoReceive(dto.lotIds, dto.workerId);
+    const data = await this.receivingService.autoReceive(dto.matUids, dto.workerId);
     return ResponseUtil.success(data);
   }
 

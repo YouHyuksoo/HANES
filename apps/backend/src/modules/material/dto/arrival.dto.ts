@@ -34,11 +34,15 @@ export class ArrivalItemDto {
   @IsString()
   warehouseId: string;
 
-  @ApiPropertyOptional({ description: 'LOT 번호 (미입력 시 자동 생성)' })
+  @ApiPropertyOptional({ description: '공급업체 UID' })
   @IsOptional()
   @IsString()
-  @MaxLength(50)
-  lotNo?: string;
+  supUid?: string;
+
+  @ApiPropertyOptional({ description: '인보이스 번호' })
+  @IsOptional()
+  @IsString()
+  invoiceNo?: string;
 
   @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD)' })
   @IsOptional()
@@ -97,22 +101,21 @@ export class CreateManualArrivalDto {
   @Min(1)
   qty: number;
 
-  @ApiPropertyOptional({ description: 'LOT 번호 (미입력 시 자동 생성)' })
+  @ApiPropertyOptional({ description: '공급업체 UID' })
   @IsOptional()
   @IsString()
-  @MaxLength(50)
-  lotNo?: string;
-
-  @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD)' })
-  @IsOptional()
-  @IsDateString()
-  manufactureDate?: string;
+  supUid?: string;
 
   @ApiPropertyOptional({ description: '인보이스 번호' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   invoiceNo?: string;
+
+  @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  manufactureDate?: string;
 
   @ApiPropertyOptional({ description: '공급업체 ID' })
   @IsOptional()

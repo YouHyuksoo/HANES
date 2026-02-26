@@ -3,8 +3,8 @@
  * @description 바코드 스캔 기반 자재 출고 DTO
  *
  * 초보자 가이드:
- * - 현장에서 LOT 바코드를 스캔하여 즉시 출고 처리할 때 사용
- * - lotNo: 스캔한 LOT 번호
+ * - 현장에서 자재 바코드를 스캔하여 즉시 출고 처리할 때 사용
+ * - matUid: 스캔한 자재 UID
  * - issueType: 출고 유형 (PROD=생산출고, SAMPLE=샘플출고 등)
  */
 
@@ -13,9 +13,9 @@ import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
 
 /** 바코드 스캔 출고 DTO */
 export class ScanIssueDto {
-  @ApiProperty({ description: '스캔한 LOT 번호' })
+  @ApiProperty({ description: '스캔한 자재 UID' })
   @IsString()
-  lotNo: string;
+  matUid: string;
 
   @ApiPropertyOptional({ description: '출고 창고 코드' })
   @IsOptional()

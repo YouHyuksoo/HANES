@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. ID는 자동 증가 시퀀스 (number)
- * 2. ORDER_NO로 CustomerOrder(수주)를 참조
+ * 2. ORDER_ID로 CustomerOrder(수주)를 참조
  * 3. ITEM_CODE로 ItemMaster(품목)를 참조
  */
 import {
@@ -24,7 +24,7 @@ export class CustomerOrderItem {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
-  @Column({ name: 'ORDER_NO', length: 50 })
+  @Column({ name: 'ORDER_ID', length: 50 })
   orderNo: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })

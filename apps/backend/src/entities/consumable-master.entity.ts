@@ -67,7 +67,7 @@ export class ConsumableMaster {
   @Column({ name: 'OPER_STATUS', length: 20, default: 'WAREHOUSE' })
   operStatus: string;
 
-  @Column({ name: 'MOUNTED_EQUIP_CODE', length: 50, nullable: true })
+  @Column({ name: 'MOUNTED_EQUIP_ID', length: 50, nullable: true })
   mountedEquipCode: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })

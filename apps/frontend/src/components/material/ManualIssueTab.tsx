@@ -94,7 +94,7 @@ export default function ManualIssueTab() {
     },
     { accessorKey: 'itemCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('common.partName', { defaultValue: '품목명' }), size: 150, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'matUid', header: t('material.col.matUid'), size: 150, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'iqcStatus',
       header: 'IQC',

@@ -190,11 +190,11 @@ export class InspectResultService {
       }
     }
 
-    // 3. prodResultId가 없으면 TraceLog의 lotId나 다른 정보로 추적
-    if (!prodResultId && traceLog.lotId) {
-      // lotId로 생산실적 검색
+    // 3. prodResultId가 없으면 TraceLog의 prdUid나 다른 정보로 추적
+    if (!prodResultId && traceLog.prdUid) {
+      // prdUid로 생산실적 검색
       const prodResult = await this.prodResultRepository.findOne({
-        where: { lotNo: traceLog.lotId },
+        where: { prdUid: traceLog.prdUid },
         order: { createdAt: 'DESC' },
       });
       if (prodResult) {
@@ -277,10 +277,10 @@ export class InspectResultService {
       }
     }
 
-    // lotId로 생산실적 검색
-    if (!prodResult && traceLog.lotId) {
+    // prdUid로 생산실적 검색
+    if (!prodResult && traceLog.prdUid) {
       prodResult = await this.prodResultRepository.findOne({
-        where: { lotNo: traceLog.lotId },
+        where: { prdUid: traceLog.prdUid },
         order: { createdAt: 'DESC' },
         relations: ['jobOrder', 'jobOrder.part'],
       });

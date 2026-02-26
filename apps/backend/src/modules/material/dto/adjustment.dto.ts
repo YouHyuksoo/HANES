@@ -16,10 +16,10 @@ export class CreateAdjustmentDto {
   @IsString()
   itemCode: string;
 
-  @ApiPropertyOptional({ description: 'LOT ID' })
+  @ApiPropertyOptional({ description: '자재 UID' })
   @IsOptional()
   @IsString()
-  lotId?: string;
+  matUid?: string;
 
   @ApiProperty({ description: '보정 후 수량' })
   @IsInt()

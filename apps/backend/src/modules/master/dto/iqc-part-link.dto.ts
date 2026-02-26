@@ -22,8 +22,9 @@ export class CreateIqcPartLinkDto {
   partnerId?: string;
 
   @ApiProperty({ description: '검사그룹 ID' })
-  @IsString()
-  groupId: string;
+  @IsInt()
+  @Type(() => Number)
+  groupId: number;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

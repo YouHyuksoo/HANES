@@ -20,7 +20,7 @@ import api from "@/services/api";
 interface CustomsLot {
   id: string;
   entryNo: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   origin: string;
@@ -70,7 +70,7 @@ export default function CustomsStockPage() {
 
   const columns = useMemo<ColumnDef<CustomsLot>[]>(() => [
     { accessorKey: "entryNo", header: t("customs.entry.entryNo"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "lotNo", header: t("customs.stock.lotNo"), size: 130, meta: { filterType: "text" as const } },
+    { accessorKey: "matUid", header: t("customs.stock.matUid"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "origin", header: t("customs.entry.origin"), size: 70, meta: { filterType: "text" as const } },

@@ -8,9 +8,9 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-va
 import { Type } from 'class-transformer';
 
 export class HoldActionDto {
-  @ApiProperty({ description: 'LOT ID' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotId: string;
+  matUid: string;
 
   @ApiProperty({ description: '홀드 사유' })
   @IsString()
@@ -19,9 +19,9 @@ export class HoldActionDto {
 }
 
 export class ReleaseHoldDto {
-  @ApiProperty({ description: 'LOT ID' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotId: string;
+  matUid: string;
 
   @ApiPropertyOptional({ description: '해제 사유' })
   @IsOptional()

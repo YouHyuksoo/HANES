@@ -27,10 +27,10 @@ export class SubconOrder {
   @Column({ name: 'VENDOR_ID', length: 255 })
   vendorId: string;
 
-  @Column({ name: 'PART_CODE', length: 255 })
+  @Column({ name: 'ITEM_CODE', length: 255 })
   partCode: string;
 
-  @Column({ name: 'PART_NAME', length: 255, nullable: true })
+  @Column({ name: 'ITEM_NAME', length: 255, nullable: true })
   partName: string | null;
 
   @Column({ name: 'ORDER_QTY', type: 'int' })

@@ -6,7 +6,7 @@
  * 초보자 가이드:
  * 1. ORDER_NO가 PK (UUID 대신 자연키)
  * 2. ITEM_CODE로 ItemMaster(품목)를 참조
- * 3. PARENT_ORDER_NO로 부모 작업지시를 self-reference
+ * 3. PARENT_ID로 부모 작업지시를 self-reference
  */
 import {
   Entity,
@@ -30,11 +30,11 @@ export class JobOrder {
   @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
-  @Column({ name: 'PARENT_ORDER_NO', length: 50, nullable: true })
+  @Column({ name: 'PARENT_ID', length: 50, nullable: true })
   parentOrderNo: string | null;
 
   @ManyToOne(() => JobOrder, (jo) => jo.children, { nullable: true })
-  @JoinColumn({ name: 'PARENT_ORDER_NO' })
+  @JoinColumn({ name: 'PARENT_ID' })
   parent: JobOrder | null;
 
   @OneToMany(() => JobOrder, (jo) => jo.parent)

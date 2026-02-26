@@ -13,9 +13,9 @@ import { IsString, IsNotEmpty, IsOptional, IsInt, Min, Max, IsIn, IsDateString, 
 import { Type } from 'class-transformer';
 
 export class IssueItemDto {
-  @ApiProperty({ description: 'LOT ID' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotId: string;
+  matUid: string;
 
   @ApiProperty({ description: '출고 수량' })
   @IsInt()
@@ -83,10 +83,10 @@ export class MatIssueQueryDto {
   @IsString()
   orderNo?: string;
 
-  @ApiPropertyOptional({ description: 'LOT ID' })
+  @ApiPropertyOptional({ description: '자재 UID' })
   @IsOptional()
   @IsString()
-  lotId?: string;
+  matUid?: string;
 
   @ApiPropertyOptional({ description: '출고 유형 필터 (ComCode ISSUE_TYPE)' })
   @IsOptional()

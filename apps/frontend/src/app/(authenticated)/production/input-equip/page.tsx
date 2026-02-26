@@ -30,7 +30,7 @@ interface EquipInspect {
   orderNo: string;
   itemName: string;
   equipName: string;
-  lotNo: string;
+  matUid: string;
   measuredValue: number;
   lowerLimit: number;
   upperLimit: number;
@@ -65,7 +65,7 @@ export default function InputEquipPage() {
     clearSelection,
   } = useInputEquipStore();
 
-  const [form, setForm] = useState({ lotNo: '', measuredValue: '', remark: '' });
+  const [form, setForm] = useState({ matUid: '', measuredValue: '', remark: '' });
 
   /** 라인 목록 로드 */
   useEffect(() => {
@@ -190,12 +190,12 @@ export default function InputEquipPage() {
         workerId: selectedWorker.id,
         equipCode: selectedEquip.equipCode,
         processCode: selectedProcess?.processCode,
-        lotNo: form.lotNo || undefined,
+        matUid: form.matUid || undefined,
         measuredValue: Number(form.measuredValue) || undefined,
         remark: form.remark || undefined,
       });
       setIsModalOpen(false);
-      setForm({ lotNo: '', measuredValue: '', remark: '' });
+      setForm({ matUid: '', measuredValue: '', remark: '' });
       fetchData();
     } catch (e) {
       console.error('Save failed:', e);
@@ -219,7 +219,7 @@ export default function InputEquipPage() {
     { accessorKey: 'orderNo', header: t('production.inputEquip.orderNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('production.inputEquip.partName'), size: 140, meta: { filterType: 'text' as const } },
     { accessorKey: 'equipName', header: t('production.inputEquip.inspectEquip'), size: 110, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lotNo', header: t('production.inputEquip.lotNo'), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'matUid', header: t('production.inputEquip.matUid'), size: 150, meta: { filterType: 'text' as const } },
     {
       id: 'range', header: t('production.inputEquip.inspectRange'), size: 120,
       meta: { filterType: 'none' as const },
@@ -452,7 +452,7 @@ export default function InputEquipPage() {
             <div><span className="text-text-muted">{t('production.inputEquip.partName')}:</span> <span className="font-medium">{selectedJobOrder?.itemName}</span></div>
           </div>
 
-          <Input label={t('production.inputEquip.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
+          <Input label={t('production.inputEquip.matUid')} value={form.matUid} onChange={e => setForm(p => ({ ...p, matUid: e.target.value }))} fullWidth />
           <Input label={t('production.inputEquip.measuredValue')} type="number" step="0.1" value={form.measuredValue} onChange={e => setForm(p => ({ ...p, measuredValue: e.target.value }))} fullWidth />
           <Input label={t('production.inputEquip.remark')} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">

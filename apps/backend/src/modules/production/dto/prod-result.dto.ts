@@ -48,11 +48,11 @@ export class CreateProdResultDto {
   @IsString()
   workerId?: string;
 
-  @ApiPropertyOptional({ description: 'LOT 번호', example: 'LOT-20250126-001', maxLength: 50 })
+  @ApiPropertyOptional({ description: '제품 UID', example: 'PRD-20250126-001', maxLength: 50 })
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  lotNo?: string;
+  prdUid?: string;
 
   @ApiPropertyOptional({ description: '공정 코드', example: 'CUT', maxLength: 50 })
   @IsOptional()
@@ -143,10 +143,10 @@ export class ProdResultQueryDto {
   @IsString()
   workerId?: string;
 
-  @ApiPropertyOptional({ description: 'LOT 번호 검색' })
+  @ApiPropertyOptional({ description: '제품 UID 검색' })
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  prdUid?: string;
 
   @ApiPropertyOptional({ description: '공정 코드 필터' })
   @IsOptional()

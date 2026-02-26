@@ -33,10 +33,11 @@ interface PrintActionBarProps {
 
 /** ZPL 생성 API 호출 후 인쇄 로그 저장하는 공통 헬퍼 */
 async function generateAndLogZpl(
-  templateId: string, lotIds: string[], method: PrintMethod, printedCount: number,
+  templateId: string, matUids: string[], method: PrintMethod, printedCount: number,
 ) {
   await api.post('/material/label-print/log', {
-    templateId, lotIds, printMethod: method, printedCount,
+    templateId, category: 'mat_lot', printMode: method,
+    uidList: matUids, labelCount: printedCount, status: 'SUCCESS',
   });
 }
 
@@ -68,7 +69,7 @@ export default function PrintActionBar({
     if (!templateId || selectedLotIds.length === 0) return;
     setZplPrinting(true);
     try {
-      const res = await api.post('/material/label-print/generate', { templateId, lotIds: selectedLotIds });
+      const res = await api.post('/material/label-print/generate', { templateId, matUids: selectedLotIds });
       const zplDataList: string[] = res.data?.data ?? [];
       if (printMethod === 'ZPL_USB') {
         let ok = 0;

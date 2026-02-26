@@ -36,6 +36,8 @@ import { ProductionViewsController } from './controllers/production-views.contro
 import { ProductionViewsService } from './services/production-views.service';
 import { SampleInspectController } from './controllers/sample-inspect.controller';
 import { SampleInspectService } from './services/sample-inspect.service';
+import { ProductLabelController } from './controllers/product-label.controller';
+import { ProductLabelService } from './services/product-label.service';
 import { InventoryModule } from '../inventory/inventory.module';
 
 // Entities
@@ -53,10 +55,11 @@ import { BoxMaster } from '../../entities/box-master.entity';
 import { MatStock } from '../../entities/mat-stock.entity';
 import { BomMaster } from '../../entities/bom-master.entity';
 import { SampleInspectResult } from '../../entities/sample-inspect-result.entity';
+import { LabelPrintLog } from '../../entities/label-print-log.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog]),
     InventoryModule,
   ],
   controllers: [
@@ -64,12 +67,14 @@ import { SampleInspectResult } from '../../entities/sample-inspect-result.entity
     ProdResultController,
     ProductionViewsController,
     SampleInspectController,
+    ProductLabelController,
   ],
   providers: [
     JobOrderService,
     ProdResultService,
     ProductionViewsService,
     SampleInspectService,
+    ProductLabelService,
   ],
   exports: [
     JobOrderService,

@@ -67,13 +67,13 @@ export class ProductHoldService {
     return { data: flatData, total, page, limit };
   }
 
-  /** stockId를 복합 PK로 파싱 ("warehouseCode::itemCode::lotNo") */
-  private parseStockId(stockId: string): { warehouseCode: string; itemCode: string; lotNo: string } {
-    const [warehouseCode, itemCode, lotNo] = stockId.split('::');
-    if (!warehouseCode || !itemCode || !lotNo) {
+  /** stockId를 복합 PK로 파싱 ("warehouseCode::itemCode::prdUid") */
+  private parseStockId(stockId: string): { warehouseCode: string; itemCode: string; prdUid: string } {
+    const [warehouseCode, itemCode, prdUid] = stockId.split('::');
+    if (!warehouseCode || !itemCode || !prdUid) {
       throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${stockId} (예: WH001::ITEM001::LOT001)`);
     }
-    return { warehouseCode, itemCode, lotNo };
+    return { warehouseCode, itemCode, prdUid };
   }
 
   async hold(dto: ProductHoldActionDto) {

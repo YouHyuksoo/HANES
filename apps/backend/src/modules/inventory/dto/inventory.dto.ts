@@ -69,11 +69,11 @@ export class UpdateWarehouseDto {
 }
 
 // ============================================================================
-// LOT DTO
+// 자재 UID DTO
 // ============================================================================
 export class CreateLotDto {
   @IsString()
-  lotNo: string;
+  matUid: string;
 
   @IsString()
   itemCode: string;
@@ -140,7 +140,7 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @IsNumber()
   qty: number;
@@ -176,7 +176,7 @@ export class ReceiveStockDto {
 
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @IsNumber()
   @Min(1)
@@ -216,7 +216,7 @@ export class IssueStockDto {
 
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @IsNumber()
   @Min(1)
@@ -259,7 +259,7 @@ export class TransferStockDto {
 
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @IsNumber()
   @Min(1)
@@ -318,7 +318,7 @@ export class StockQueryDto {
 
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @IsOptional()
   includeZero?: boolean;
@@ -335,7 +335,7 @@ export class TransactionQueryDto {
 
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @IsOptional()
   @IsString()

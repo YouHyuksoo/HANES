@@ -20,7 +20,7 @@ import api from "@/services/api";
 
 interface MergeableLot {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName?: string;
   unit?: string;
@@ -113,7 +113,7 @@ export default function LotMergePage() {
           className="w-4 h-4 rounded border-border accent-primary" />
       ),
     },
-    { accessorKey: "lotNo", header: t("material.lotMerge.lotNo"), size: 160,
+    { accessorKey: "matUid", header: t("material.lotMerge.matUid"), size: 160,
       meta: { filterType: "text" as const },
     },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 110,
@@ -177,7 +177,7 @@ export default function LotMergePage() {
         <div className="grid grid-cols-4 gap-4">
           <StatCard label={t("material.lotMerge.selectedCount")} value={selectedLots.length} icon={CheckSquare} color="blue" />
           <StatCard label={t("material.lotMerge.totalQty")} value={totalMergeQty.toLocaleString()} icon={Merge} color="purple" />
-          <StatCard label={t("material.lotMerge.targetLot")} value={selectedLots[0]?.lotNo || "-"} icon={Merge} color="green" />
+          <StatCard label={t("material.lotMerge.targetLot")} value={selectedLots[0]?.matUid || "-"} icon={Merge} color="green" />
           <StatCard label={t("common.status")}
             value={partMismatch ? t("material.lotMerge.partMismatch") : t("material.lotMerge.ready")}
             icon={AlertCircle} color={partMismatch ? "red" : "green"} />
@@ -221,11 +221,11 @@ export default function LotMergePage() {
           <div className="bg-surface-alt dark:bg-surface rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-text-muted">{t("material.lotMerge.targetLot")}:</span>
-              <span className="font-semibold text-text">{selectedLots[0]?.lotNo}</span>
+              <span className="font-semibold text-text">{selectedLots[0]?.matUid}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-text-muted">{t("material.lotMerge.mergingLots")}:</span>
-              <span className="text-text">{selectedLots.slice(1).map(l => l.lotNo).join(", ")}</span>
+              <span className="text-text">{selectedLots.slice(1).map(l => l.matUid).join(", ")}</span>
             </div>
             <div className="flex justify-between text-sm border-t border-border pt-2">
               <span className="text-text-muted">{t("material.lotMerge.totalQty")}:</span>

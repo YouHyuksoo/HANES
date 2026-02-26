@@ -31,7 +31,7 @@ export class PmWorkOrder {
   @Column({ name: 'WORK_ORDER_NO', length: 20, unique: true })
   workOrderNo: string;
 
-  @Column({ name: 'PM_PLAN_CODE', length: 50, nullable: true })
+  @Column({ name: 'PM_PLAN_ID', type: 'raw', nullable: true })
   pmPlanCode: string | null;
 
   @Column({ name: 'EQUIP_CODE', length: 50 })
@@ -58,7 +58,7 @@ export class PmWorkOrder {
   @Column({ name: 'PRIORITY', length: 10, default: 'MEDIUM' })
   priority: string;
 
-  @Column({ name: 'ASSIGNED_WORKER_CODE', length: 50, nullable: true })
+  @Column({ name: 'ASSIGNED_WORKER_ID', length: 255, nullable: true })
   assignedWorkerCode: string | null;
 
   @Column({ name: 'OVERALL_RESULT', length: 20, nullable: true })

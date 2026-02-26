@@ -39,8 +39,8 @@ export class IqcPartLink {
   @Column({ name: 'PARTNER_ID', length: 255, nullable: true })
   partnerId: string | null;
 
-  @Column({ name: 'GROUP_ID', length: 255 })
-  groupId: string;
+  @Column({ name: 'GROUP_ID' })
+  groupId: number;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

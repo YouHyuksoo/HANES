@@ -35,7 +35,7 @@ interface ArrivalStockItem {
   itemCode: string;
   itemName: string;
   unit: string;
-  lotNo: string;
+  matUid: string;
   arrivalQty: number;
   currentStock: number;
   warehouseName: string;
@@ -147,8 +147,8 @@ export default function ArrivalStockPage() {
         meta: { filterType: "text" as const },
       },
       {
-        accessorKey: "lotNo",
-        header: t("material.arrivalStock.lotNo"),
+        accessorKey: "matUid",
+        header: t("material.arrivalStock.matUid"),
         size: 170,
         meta: { filterType: "text" as const },
         cell: ({ getValue }) => (

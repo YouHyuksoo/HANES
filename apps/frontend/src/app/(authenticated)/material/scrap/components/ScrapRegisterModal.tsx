@@ -27,8 +27,7 @@ interface StockItem {
   id: string;
   itemCode: string;
   itemName: string;
-  lotId: string;
-  lotNo: string;
+  matUid: string;
   availableQty: number;
 }
 
@@ -65,8 +64,7 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
           id: s.id,
           itemCode: s.part?.itemCode || "",
           itemName: s.part?.itemName || "",
-          lotId: s.lotId || "",
-          lotNo: s.lot?.lotNo || "",
+          matUid: s.matUid || s.lot?.matUid || "",
           availableQty: s.availableQty,
         }));
       setStocks(list);
@@ -77,7 +75,7 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
     { value: "", label: t("common.select") },
     ...stocks.map(s => ({
       value: s.id,
-      label: `${s.itemCode} - ${s.itemName} (${s.lotNo || "N/A"}) [${s.availableQty}]`,
+      label: `${s.itemCode} - ${s.itemName} (${s.matUid || "N/A"}) [${s.availableQty}]`,
     })),
   ], [t, stocks]);
 
@@ -92,7 +90,7 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
       await api.post("/inventory/scrap", {
         warehouseCode: form.warehouseCode,
         itemCode: selectedStock.itemCode,
-        lotId: selectedStock.lotId || undefined,
+        matUid: selectedStock.matUid || undefined,
         qty: Number(form.qty),
         transType: "SCRAP",
         remark: form.reason,

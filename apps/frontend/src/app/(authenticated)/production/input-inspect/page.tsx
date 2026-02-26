@@ -26,7 +26,7 @@ interface InspectInput {
   id: string;
   orderNo: string;
   itemName: string;
-  lotNo: string;
+  matUid: string;
   inspectQty: number;
   passQty: number;
   failQty: number;
@@ -63,7 +63,7 @@ export default function InputInspectPage() {
     clearSelection,
   } = useInputInspectStore();
 
-  const [form, setForm] = useState({ lotNo: '', inspectQty: '', passQty: '', failQty: '', passYn: 'Y', remark: '' });
+  const [form, setForm] = useState({ matUid: '', inspectQty: '', passQty: '', failQty: '', passYn: 'Y', remark: '' });
 
   // 라인 목록 로드
   useEffect(() => {
@@ -104,7 +104,7 @@ export default function InputInspectPage() {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: '5000' };
-      if (searchText) params.lotNo = searchText;
+      if (searchText) params.matUid = searchText;
       if (selectedJobOrder) params.orderNo = selectedJobOrder.orderNo;
       if (selectedEquip) params.equipCode = selectedEquip.equipCode;
       const res = await api.get('/production/prod-results', { params });
@@ -189,13 +189,13 @@ export default function InputInspectPage() {
         workerId: selectedWorker.id,
         equipCode: selectedEquip.equipCode,
         processCode: selectedProcess?.processCode,
-        lotNo: form.lotNo || undefined,
+        matUid: form.matUid || undefined,
         goodQty: Number(form.passQty) || 0,
         defectQty: Number(form.failQty) || 0,
         remark: form.remark || undefined,
       });
       setIsModalOpen(false);
-      setForm({ lotNo: '', inspectQty: '', passQty: '', failQty: '', passYn: 'Y', remark: '' });
+      setForm({ matUid: '', inspectQty: '', passQty: '', failQty: '', passYn: 'Y', remark: '' });
       fetchData();
     } catch (e) {
       console.error('Save failed:', e);
@@ -218,7 +218,7 @@ export default function InputInspectPage() {
   const columns = useMemo<ColumnDef<InspectInput>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputInspect.orderNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('production.inputInspect.partName'), size: 140, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lotNo', header: t('production.inputInspect.lotNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'matUid', header: t('production.inputInspect.matUid'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'inspectQty', header: t('production.inputInspect.inspectQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'passQty', header: t('production.inputInspect.pass'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'failQty', header: t('production.inputInspect.fail'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
@@ -441,7 +441,7 @@ export default function InputInspectPage() {
             <div><span className="text-text-muted">{t('production.inputInspect.partName')}:</span> <span className="font-medium">{selectedJobOrder?.itemName}</span></div>
           </div>
 
-          <Input label={t('production.inputInspect.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
+          <Input label={t('production.inputInspect.matUid')} value={form.matUid} onChange={e => setForm(p => ({ ...p, matUid: e.target.value }))} fullWidth />
           <div className="grid grid-cols-3 gap-4">
             <Input label={t('production.inputInspect.inspectQty')} type="number" value={form.inspectQty} onChange={e => setForm(p => ({ ...p, inspectQty: e.target.value }))} fullWidth />
             <Input label={t('production.inputInspect.passQty')} type="number" value={form.passQty} onChange={e => setForm(p => ({ ...p, passQty: e.target.value }))} fullWidth />

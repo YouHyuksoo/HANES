@@ -54,7 +54,7 @@ export class LabelPrintService {
 
   /**
    * ZPL 변수 치환 - 템플릿의 변수 플레이스홀더를 LOT 실제 데이터로 교체
-   * @param dto templateId + lotNos
+   * @param dto templateId + matUids
    * @returns zplDataList(치환된 ZPL 배열), lotDetails(LOT 정보 배열)
    */
   async generateZpl(dto: GenerateZplDto) {
@@ -75,10 +75,10 @@ export class LabelPrintService {
     const zplDataList: string[] = [];
     const lotDetails: any[] = [];
 
-    for (const lotNo of dto.lotIds) {
-      const lot = await this.matLotRepo.findOne({ where: { lotNo: lotNo } });
+    for (const matUid of dto.matUids) {
+      const lot = await this.matLotRepo.findOne({ where: { matUid: matUid } });
       if (!lot) {
-        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
       }
 
       const part = await this.partMasterRepo.findOne({
@@ -87,14 +87,14 @@ export class LabelPrintService {
 
       // 변수 치환 맵
       const vars: Record<string, string> = {
-        '{{lotNo}}': lot.lotNo,
+        '{{matUid}}': lot.matUid,
         '{{itemCode}}': part?.itemCode ?? '',
         '{{itemName}}': part?.itemName ?? '',
         '{{qty}}': String(lot.initQty),
         '{{unit}}': part?.unit ?? 'EA',
         '{{vendor}}': lot.vendor ?? '',
         '{{recvDate}}': formatDate(lot.recvDate),
-        '{{barcode}}': lot.lotNo,
+        '{{barcode}}': lot.matUid,
         '{{custom1}}': '',
         '{{custom2}}': '',
         '{{custom3}}': '',
@@ -109,7 +109,7 @@ export class LabelPrintService {
 
       zplDataList.push(zpl);
       lotDetails.push({
-        lotNo: lot.lotNo,
+        matUid: lot.matUid,
         itemCode: part?.itemCode ?? '',
         itemName: part?.itemName ?? '',
         qty: lot.initQty,
@@ -180,7 +180,7 @@ export class LabelPrintService {
       category: dto.category,
       printMode: dto.printMode,
       printerName: dto.printerName ?? null,
-      lotIds: JSON.stringify(dto.lotIds),
+      uidList: JSON.stringify(dto.uidList),
       labelCount: dto.labelCount,
       status: dto.status ?? 'SUCCESS',
       errorMsg: dto.errorMsg ?? null,

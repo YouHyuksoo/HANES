@@ -92,7 +92,7 @@ export class ShelfLifeService {
       const searchLower = search.toLowerCase();
       result = result.filter(
         (item) =>
-          item.lotNo?.toLowerCase().includes(searchLower) ||
+          item.matUid?.toLowerCase().includes(searchLower) ||
           item.itemCode.toLowerCase().includes(searchLower) ||
           item.itemName.toLowerCase().includes(searchLower),
       );

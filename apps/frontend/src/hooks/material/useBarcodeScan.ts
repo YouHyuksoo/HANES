@@ -15,7 +15,7 @@ import { api } from '@/services/api';
 /** 스캔된 LOT 정보 */
 export interface ScannedLot {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   qty: number;
@@ -29,7 +29,7 @@ export interface ScannedLot {
 
 /** 스캔 출고 이력 */
 export interface ScanHistoryItem {
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   issueQty: number;
@@ -50,15 +50,15 @@ export function useBarcodeScan() {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // LOT번호로 조회
+  // 자재UID로 조회
   const handleScan = useCallback(async () => {
-    const lotNo = scanInput.trim();
-    if (!lotNo) return;
+    const matUid = scanInput.trim();
+    if (!matUid) return;
 
     setIsScanning(true);
     setError(null);
     try {
-      const res = await api.get(`/material/lots/by-lotno/${encodeURIComponent(lotNo)}`);
+      const res = await api.get(`/material/lots/by-uid/${encodeURIComponent(matUid)}`);
       const lotData = res.data?.data ?? res.data;
       setScannedLot(lotData);
     } catch (err: unknown) {
@@ -76,13 +76,13 @@ export function useBarcodeScan() {
 
     setError(null);
     try {
-      const res = await api.post('/material/issues/scan', { lotNo: scannedLot.lotNo, issueType });
+      const res = await api.post('/material/issues/scan', { matUid: scannedLot.matUid, issueType });
       const issueData = res.data?.data ?? res.data;
 
       // 이력 추가 (최신순)
       setScanHistory((prev) => [
         {
-          lotNo: scannedLot.lotNo,
+          matUid: scannedLot.matUid,
           itemCode: scannedLot.itemCode,
           itemName: scannedLot.itemName,
           issueQty: issueData?.issueQty ?? scannedLot.remainQty ?? scannedLot.qty,

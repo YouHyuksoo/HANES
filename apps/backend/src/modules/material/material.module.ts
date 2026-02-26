@@ -85,6 +85,8 @@ import { IssueRequestController } from './controllers/issue-request.controller';
 import { IssueRequestService } from './services/issue-request.service';
 import { LabelPrintController } from './controllers/label-print.controller';
 import { LabelPrintService } from './services/label-print.service';
+import { ReceiveLabelController } from './controllers/receive-label.controller';
+import { ReceiveLabelService } from './services/receive-label.service';
 
 @Module({
   imports: [
@@ -131,6 +133,7 @@ import { LabelPrintService } from './services/label-print.service';
     ReceivingController,
     IssueRequestController,
     LabelPrintController,
+    ReceiveLabelController,
   ],
   providers: [
     MatLotService,
@@ -152,6 +155,7 @@ import { LabelPrintService } from './services/label-print.service';
     ReceivingService,
     IssueRequestService,
     LabelPrintService,
+    ReceiveLabelService,
   ],
   exports: [
     MatLotService,

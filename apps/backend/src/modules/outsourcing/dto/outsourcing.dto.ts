@@ -220,10 +220,10 @@ export class CreateSubconDeliveryDto {
   @IsString()
   orderId: string;
 
-  @ApiPropertyOptional({ description: 'LOT 번호' })
+  @ApiPropertyOptional({ description: '자재 UID' })
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @ApiProperty({ description: '출고 수량' })
   @IsInt()
@@ -250,10 +250,10 @@ export class CreateSubconReceiveDto {
   @IsString()
   orderId: string;
 
-  @ApiPropertyOptional({ description: 'LOT 번호' })
+  @ApiPropertyOptional({ description: '자재 UID' })
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @ApiProperty({ description: '입고 수량' })
   @IsInt()

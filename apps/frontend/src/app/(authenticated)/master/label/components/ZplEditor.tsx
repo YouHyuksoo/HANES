@@ -24,21 +24,21 @@ interface ZplEditorProps {
 
 /** 미리보기용 샘플 값 */
 const SAMPLE_VALUES: Record<string, string> = {
-  '{{lotNo}}': 'L20260222-1HMX',
+  '{{matUid}}': 'MAT-20260222-1HMX',
   '{{itemCode}}': '1020',
   '{{itemName}}': 'SAMPLE PART',
   '{{qty}}': '300',
   '{{unit}}': 'EA',
   '{{vendor}}': 'ABC Corp',
   '{{recvDate}}': '2026-02-22',
-  '{{barcode}}': 'L20260222-1HMX',
+  '{{barcode}}': 'MAT-20260222-1HMX',
   '{{custom1}}': '', '{{custom2}}': '', '{{custom3}}': '',
   '{{custom4}}': '', '{{custom5}}': '',
 };
 
 /** 삽입 가능한 변수 목록 */
 const VARIABLES = [
-  '{{lotNo}}', '{{itemCode}}', '{{itemName}}', '{{qty}}',
+  '{{matUid}}', '{{itemCode}}', '{{itemName}}', '{{qty}}',
   '{{unit}}', '{{vendor}}', '{{recvDate}}', '{{barcode}}',
   '{{custom1}}', '{{custom2}}', '{{custom3}}', '{{custom4}}', '{{custom5}}',
 ];

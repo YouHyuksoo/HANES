@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * - issueType: 출고 유형 (PRODUCTION, MANUAL, SCRAP 등)
  * - id: SEQUENCE 자동증분 PK
- * - lotId: 출고 LOT번호, orderNo: 작업지시 참조
+ * - matUid: 출고 자재시리얼, orderNo: 작업지시 참조
  * - prodResultId: 생산실적 ID (number, 자재 투입 이력 연결)
  */
 import {
@@ -22,7 +22,7 @@ import { ProdResult } from './prod-result.entity';
 
 @Entity({ name: 'MAT_ISSUES' })
 @Index(['orderNo'])
-@Index(['lotId'])
+@Index(['matUid'])
 @Index(['issueType'])
 @Index(['issueNo'])
 export class MatIssue {
@@ -42,8 +42,8 @@ export class MatIssue {
   @JoinColumn({ name: 'PROD_RESULT_ID' })
   prodResult: ProdResult | null;
 
-  @Column({ name: 'LOT_ID', length: 50 })
-  lotId: string;
+  @Column({ name: 'MAT_UID', length: 50 })
+  matUid: string;
 
   @Column({ name: 'ISSUE_QTY', type: 'int' })
   issueQty: number;

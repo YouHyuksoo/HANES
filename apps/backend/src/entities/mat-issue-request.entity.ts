@@ -29,7 +29,7 @@ export class MatIssueRequest {
   @Column({ name: 'REQUEST_NO', length: 50, unique: true })
   requestNo: string;
 
-  @Column({ name: 'JOB_ORDER_ID', length: 50, nullable: true })
+  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
   jobOrderId: string | null;
 
   @Column({ name: 'REQUEST_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

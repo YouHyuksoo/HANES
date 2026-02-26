@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. ID는 자동 증가 시퀀스 (number)
- * 2. PO_NO로 PurchaseOrder(발주)를 참조
+ * 2. PO_ID로 PurchaseOrder(발주)를 참조
  * 3. ITEM_CODE로 ItemMaster(품목)를 참조
  */
 import {
@@ -24,7 +24,7 @@ export class PurchaseOrderItem {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
-  @Column({ name: 'PO_NO', length: 50 })
+  @Column({ name: 'PO_ID', length: 50 })
   poNo: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })

@@ -24,7 +24,7 @@ interface ReceiptTransaction {
   transType: string;
   itemCode: string;
   itemName: string;
-  lotNo: string;
+  matUid: string;
   warehouseName: string;
   qty: number;
   unit: string;
@@ -123,7 +123,7 @@ export default function ReceiptCancelPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 150,
+      accessorKey: "matUid", header: "LOT No.", size: 150,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },

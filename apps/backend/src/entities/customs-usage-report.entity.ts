@@ -32,8 +32,8 @@ export class CustomsUsageReport {
   @Column({ name: 'CUSTOMS_LOT_ID', type: 'number' })
   customsLotId: number;
 
-  @Column({ name: 'JOB_ORDER_ID', type: 'number', nullable: true })
-  jobOrderId: number | null;
+  @Column({ name: 'ORDER_NO', length: 36, nullable: true })
+  jobOrderId: string | null;
 
   @Column({ name: 'USAGE_QTY', type: 'int' })
   usageQty: number;
@@ -47,7 +47,7 @@ export class CustomsUsageReport {
   @Column({ name: 'STATUS', length: 50, default: 'DRAFT' })
   status: string;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerCode: string | null;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })

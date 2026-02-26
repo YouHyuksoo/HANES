@@ -72,7 +72,7 @@ export class ProdResultService {
       orderNo,
       equipCode,
       workerId,
-      lotNo,
+      prdUid,
       processCode,
       status,
       startTimeFrom,
@@ -86,7 +86,7 @@ export class ProdResultService {
       ...(orderNo && { orderNo }),
       ...(equipCode && { equipCode }),
       ...(workerId && { workerCode: workerId }),
-      ...(lotNo && { lotNo: ILike(`%${lotNo}%`) }),
+      ...(prdUid && { prdUid: ILike(`%${prdUid}%`) }),
       ...(processCode && { processCode }),
       ...(status && { status }),
       ...(startTimeFrom || startTimeTo
@@ -111,7 +111,7 @@ export class ProdResultService {
           orderNo: true,
           equipCode: true,
           workerCode: true,
-          lotNo: true,
+          prdUid: true,
           processCode: true,
           goodQty: true,
           defectQty: true,
@@ -172,11 +172,11 @@ export class ProdResultService {
     });
 
     // LOT 및 품목 정보 추가
-    const lotIds = issues.map(i => i.lotId).filter(Boolean);
-    const lots = lotIds.length > 0
-      ? await this.dataSource.getRepository('MatLot').find({ where: { lotNo: In(lotIds) } })
+    const matUids = issues.map(i => i.matUid).filter(Boolean);
+    const lots = matUids.length > 0
+      ? await this.dataSource.getRepository('MatLot').find({ where: { matUid: In(matUids) } })
       : [];
-    const lotMap = new Map(lots.map((l: any) => [l.lotNo, l]));
+    const lotMap = new Map(lots.map((l: any) => [l.matUid, l]));
 
     const itemCodes = lots.map((l: any) => l.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
@@ -185,11 +185,11 @@ export class ProdResultService {
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
     return issues.map(issue => {
-      const lot = lotMap.get(issue.lotId);
+      const lot = lotMap.get(issue.matUid);
       const part = lot ? partMap.get(lot.itemCode) : null;
       return {
         ...issue,
-        lotNo: lot?.lotNo,
+        matUid: lot?.matUid,
         itemCode: part?.itemCode,
         itemName: part?.itemName,
         unit: part?.unit,
@@ -210,7 +210,7 @@ export class ProdResultService {
         orderNo: true,
         equipCode: true,
         workerCode: true,
-        lotNo: true,
+        prdUid: true,
         processCode: true,
         goodQty: true,
         defectQty: true,
@@ -360,7 +360,7 @@ export class ProdResultService {
       orderNo: dto.orderNo,
       equipCode: dto.equipCode,
       workerCode: dto.workerId,
-      lotNo: dto.lotNo,
+      prdUid: dto.prdUid,
       processCode: dto.processCode,
       goodQty: dto.goodQty ?? 0,
       defectQty: dto.defectQty ?? 0,
@@ -381,7 +381,7 @@ export class ProdResultService {
         orderNo: true,
         equipCode: true,
         workerCode: true,
-        lotNo: true,
+        prdUid: true,
         processCode: true,
         goodQty: true,
         defectQty: true,
@@ -412,7 +412,7 @@ export class ProdResultService {
     const updateData: any = {};
     if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
     if (dto.workerId !== undefined) updateData.workerCode = dto.workerId;
-    if (dto.lotNo !== undefined) updateData.lotNo = dto.lotNo;
+    if (dto.prdUid !== undefined) updateData.prdUid = dto.prdUid;
     if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
     if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
     if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
@@ -432,7 +432,7 @@ export class ProdResultService {
         orderNo: true,
         equipCode: true,
         workerCode: true,
-        lotNo: true,
+        prdUid: true,
         processCode: true,
         goodQty: true,
         defectQty: true,
@@ -542,7 +542,7 @@ export class ProdResultService {
         orderNo: true,
         equipCode: true,
         workerCode: true,
-        lotNo: true,
+        prdUid: true,
         processCode: true,
         goodQty: true,
         defectQty: true,

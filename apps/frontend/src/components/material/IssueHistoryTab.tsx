@@ -29,7 +29,7 @@ interface IssueRecord {
   issueType: string;
   status: string;
   remark: string | null;
-  lotNo: string | null;
+  matUid: string | null;
   itemCode: string | null;
   itemName: string | null;
   unit: string | null;
@@ -78,7 +78,7 @@ export default function IssueHistoryTab() {
           r.issueNo?.toLowerCase().includes(keyword) ||
           r.itemCode?.toLowerCase().includes(keyword) ||
           r.itemName?.toLowerCase().includes(keyword) ||
-          r.lotNo?.toLowerCase().includes(keyword)
+          r.matUid?.toLowerCase().includes(keyword)
         );
       }
       setRecords(data);
@@ -126,7 +126,7 @@ export default function IssueHistoryTab() {
     },
     { accessorKey: 'itemCode', header: t('common.partCode'), size: 120, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('common.partName'), size: 150, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'matUid', header: t('material.col.matUid'), size: 160, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'issueQty',
       header: t('common.quantity'),
@@ -280,8 +280,8 @@ export default function IssueHistoryTab() {
                 {cancelTarget.issueQty.toLocaleString()} {cancelTarget.unit}
               </p>
               <p>
-                <span className="text-text-muted">{t('material.col.lotNo')}:</span>{' '}
-                {cancelTarget.lotNo}
+                <span className="text-text-muted">{t('material.col.matUid')}:</span>{' '}
+                {cancelTarget.matUid}
               </p>
             </div>
           )}

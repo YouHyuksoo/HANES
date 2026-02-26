@@ -31,8 +31,8 @@ export class InvAdjLog {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'LOT_NO', length: 50, nullable: true })
-  lotNo: string | null;
+  @Column({ name: 'MAT_UID', length: 50, nullable: true })
+  matUid: string | null;
 
   @Column({ name: 'ADJ_TYPE', length: 50 })
   adjType: string;

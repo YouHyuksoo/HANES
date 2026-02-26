@@ -25,7 +25,7 @@ import {
 @Index(['fromWarehouseId'])
 @Index(['toWarehouseId'])
 @Index(['itemCode'])
-@Index(['lotNo'])
+@Index(['prdUid'])
 @Index(['refType', 'refId'])
 @Index(['cancelRefId'])
 export class ProductTransaction {
@@ -53,8 +53,8 @@ export class ProductTransaction {
   @Column({ name: 'ITEM_TYPE', length: 10, nullable: true })
   itemType: string | null;
 
-  @Column({ name: 'LOT_NO', length: 50, nullable: true })
-  lotNo: string | null;
+  @Column({ name: 'PRD_UID', length: 50, nullable: true })
+  prdUid: string | null;
 
   @Column({ name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;

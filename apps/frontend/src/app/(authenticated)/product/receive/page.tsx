@@ -28,7 +28,7 @@ interface ProductTransaction {
   transDate: string;
   itemCode: string;
   itemType: string;
-  lotId: string | null;
+  prdUid: string | null;
   orderNo: string | null;
   processCode: string | null;
   qty: number;

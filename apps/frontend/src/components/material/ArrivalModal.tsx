@@ -38,10 +38,10 @@ export default function ArrivalModal({ isOpen, onClose, form, setForm, onSubmit 
           fullWidth
         />
         <Input
-          label={t('material.col.lotNo')}
-          placeholder={t('material.arrival.lotNoPlaceholder')}
-          value={form.lotNo}
-          onChange={(e) => setForm((prev) => ({ ...prev, lotNo: e.target.value }))}
+          label={t('material.col.supUid')}
+          placeholder={t('material.arrival.supUidPlaceholder')}
+          value={form.supUid}
+          onChange={(e) => setForm((prev) => ({ ...prev, supUid: e.target.value }))}
           fullWidth
         />
         <Input

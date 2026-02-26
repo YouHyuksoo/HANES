@@ -23,7 +23,7 @@ export class PartMaster {
   @Column({ name: 'ITEM_NAME', length: 100 })
   itemName: string;
 
-  @Column({ name: 'ITEM_NO', length: 50, nullable: true })
+  @Column({ name: 'PART_NO', length: 50, nullable: true })
   itemNo: string | null;
 
   @Column({ name: 'CUST_PART_NO', length: 50, nullable: true })

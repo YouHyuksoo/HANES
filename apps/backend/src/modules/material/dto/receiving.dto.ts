@@ -3,9 +3,9 @@
  * @description 입고관리 DTO - IQC 합격건 일괄/분할 입고 처리, 자동입고(라벨 발행 시)
  *
  * 초보자 가이드:
- * 1. **입고 대상**: 입하(Arrival)를 통해 생성된 LOT 중 IQC 합격(PASS)된 건
- * 2. **일괄 입고**: 여러 LOT를 한번에 입고 확정
- * 3. **분할 입고**: LOT 수량의 일부만 입고 (나머지는 추후 입고)
+ * 1. **입고 대상**: 입하(Arrival)를 통해 생성된 자재 중 IQC 합격(PASS)된 건
+ * 2. **일괄 입고**: 여러 자재를 한번에 입고 확정
+ * 3. **분할 입고**: 자재 수량의 일부만 입고 (나머지는 추후 입고)
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -15,13 +15,13 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-/** 입고 품목 DTO (LOT 단위) */
+/** 입고 품목 DTO (matUid 단위) */
 export class ReceiveItemDto {
-  @ApiProperty({ description: 'LOT ID' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotId: string;
+  matUid: string;
 
-  @ApiProperty({ description: '입고 수량 (분할 입고 시 LOT 잔량 이하)' })
+  @ApiProperty({ description: '입고 수량 (분할 입고 시 자재 잔량 이하)' })
   @IsInt()
   @Min(1)
   qty: number;
@@ -91,10 +91,10 @@ export class ReceivingQueryDto {
 
 /** 자동입고 요청 DTO (라벨 발행 시 호출) */
 export class AutoReceiveDto {
-  @ApiProperty({ description: '입고 대상 LOT ID 목록' })
+  @ApiProperty({ description: '입고 대상 자재 UID 목록' })
   @IsArray()
   @IsString({ each: true })
-  lotIds: string[];
+  matUids: string[];
 
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()

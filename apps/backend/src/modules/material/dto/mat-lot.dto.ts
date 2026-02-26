@@ -1,6 +1,6 @@
 /**
  * @file src/modules/material/dto/mat-lot.dto.ts
- * @description 자재LOT 관련 DTO 정의
+ * @description 자재 UID(matUid) 관련 DTO 정의
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -9,10 +9,10 @@ import { Type } from 'class-transformer';
 import { IQC_STATUS_VALUES, MAT_LOT_STATUS_VALUES } from '@harness/shared';
 
 export class CreateMatLotDto {
-  @ApiProperty({ description: 'LOT 번호', example: 'LOT-20260126-001' })
+  @ApiProperty({ description: '자재 UID', example: 'MAT-20260126-001' })
   @IsString()
   @MaxLength(50)
-  lotNo: string;
+  matUid: string;
 
   @ApiProperty({ description: '품목 코드' })
   @IsString()
@@ -102,7 +102,7 @@ export class MatLotQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  lotNo?: string;
+  matUid?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

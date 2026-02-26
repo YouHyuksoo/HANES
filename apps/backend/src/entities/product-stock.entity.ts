@@ -3,7 +3,7 @@
  * @description 제품 재고 엔티티 - 창고별 반제품/완제품 현재고
  *
  * 초보자 가이드:
- * - 복합 PK: (warehouseCode, itemCode, lotNo) 조합으로 재고 식별
+ * - 복합 PK: (warehouseCode, itemCode, prdUid) 조합으로 재고 식별
  * - 원자재(RAW)는 MAT_STOCKS, 제품(WIP/FG)은 PRODUCT_STOCKS 테이블 사용
  * - qty: 총수량, reservedQty: 예약수량, availableQty: 가용수량
  * - itemType: 'WIP'(반제품) 또는 'FG'(완제품)
@@ -29,8 +29,8 @@ export class ProductStock {
   @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @PrimaryColumn({ name: 'LOT_NO', length: 50 })
-  lotNo: string;
+  @PrimaryColumn({ name: 'PRD_UID', length: 50 })
+  prdUid: string;
 
   @Column({ name: 'LOCATION_CODE', length: 50, nullable: true })
   locationCode: string | null;

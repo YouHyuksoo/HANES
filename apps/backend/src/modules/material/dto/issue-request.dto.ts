@@ -120,9 +120,9 @@ export class RequestIssueItemDto {
   @IsString()
   requestItemId: string;
 
-  @ApiProperty({ description: 'LOT ID' })
+  @ApiProperty({ description: '자재 UID' })
   @IsString()
-  lotId: string;
+  matUid: string;
 
   @ApiProperty({ description: '출고 수량' })
   @IsInt()

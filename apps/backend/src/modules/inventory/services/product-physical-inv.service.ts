@@ -46,17 +46,17 @@ export class ProductPhysicalInvService {
     const qb = this.stockRepository
       .createQueryBuilder('s')
       .leftJoin(PartMaster, 'p', 'p.itemCode = s.itemCode')
-      .leftJoin(MatLot, 'l', 'l.lotNo = s.lotNo')
+      .leftJoin(MatLot, 'l', 'l.matUid = s.prdUid')
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode')
       .select([
-        's.warehouseCode || \'::\'  || s.itemCode || \'::\'  || s.lotNo AS "id"',
+        's.warehouseCode || \'::\'  || s.itemCode || \'::\'  || s.prdUid AS "id"',
         's.warehouseCode AS "warehouseId"',
         'w.warehouseName AS "warehouseName"',
         's.itemCode AS "itemCode"',
         'p.itemName AS "itemName"',
         'p.unit AS "unit"',
         'p.itemType AS "itemType"',
-        's.lotNo AS "lotNo"',
+        's.prdUid AS "prdUid"',
         's.qty AS "qty"',
         's.reservedQty AS "reservedQty"',
         's.availableQty AS "availableQty"',
@@ -81,7 +81,7 @@ export class ProductPhysicalInvService {
       );
     }
 
-    qb.orderBy('p.itemCode', 'ASC').addOrderBy('l.lotNo', 'ASC');
+    qb.orderBy('p.itemCode', 'ASC').addOrderBy('l.matUid', 'ASC');
 
     const total = await qb.getCount();
     const data = await qb.offset(skip).limit(limit).getRawMany();
@@ -96,7 +96,7 @@ export class ProductPhysicalInvService {
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
       .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
-      .leftJoin(MatLot, 'lot', 'lot.lotNo = log.lotNo')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid')
       .leftJoin(Warehouse, 'wh', 'wh.warehouseCode = log.warehouseCode')
       .select([
         'log.id AS "id"',
@@ -105,7 +105,7 @@ export class ProductPhysicalInvService {
         'log.itemCode AS "itemCode"',
         'part.itemName AS "itemName"',
         'part.unit AS "unit"',
-        'log.lotNo AS "lotNo"',
+        'log.matUid AS "prdUid"',
         'log.beforeQty AS "beforeQty"',
         'log.afterQty AS "afterQty"',
         'log.diffQty AS "diffQty"',
@@ -158,13 +158,13 @@ export class ProductPhysicalInvService {
       const results = [];
 
       for (const item of items) {
-        // stockId는 복합키 "warehouseCode::itemCode::lotNo" 형식
-        const [warehouseCode, itemCode, lotNo] = item.stockId.split('::');
-        if (!warehouseCode || !itemCode || !lotNo) {
+        // stockId는 복합키 "warehouseCode::itemCode::prdUid" 형식
+        const [warehouseCode, itemCode, prdUid] = item.stockId.split('::');
+        if (!warehouseCode || !itemCode || !prdUid) {
           throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${item.stockId}`);
         }
 
-        const compositeKey = { warehouseCode, itemCode, lotNo };
+        const compositeKey = { warehouseCode, itemCode, prdUid };
         const stock = await queryRunner.manager.findOne(ProductStock, {
           where: compositeKey,
         });
@@ -188,7 +188,7 @@ export class ProductPhysicalInvService {
         const invAdjLog = queryRunner.manager.create(InvAdjLog, {
           warehouseCode: stock.warehouseCode,
           itemCode: stock.itemCode,
-          lotNo: stock.lotNo,
+          matUid: stock.prdUid,
           adjType: 'PRODUCT_PHYSICAL_COUNT',
           beforeQty,
           afterQty,

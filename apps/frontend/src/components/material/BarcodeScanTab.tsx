@@ -75,7 +75,7 @@ export default function BarcodeScanTab() {
     },
     { accessorKey: 'itemCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('common.partName', { defaultValue: '품목명' }), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'matUid', header: t('material.col.matUid'), size: 160, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'issueQty',
       header: t('material.col.issuedQty'),
@@ -177,8 +177,8 @@ export default function BarcodeScanTab() {
                     value={scannedLot.itemName}
                   />
                   <InfoItem
-                    label={t('material.col.lotNo')}
-                    value={scannedLot.lotNo}
+                    label={t('material.col.matUid')}
+                    value={scannedLot.matUid}
                     highlight
                   />
                   <InfoItem

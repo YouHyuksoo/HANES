@@ -22,7 +22,6 @@ import {
 
 @Entity({ name: 'MAT_ARRIVALS' })
 @Index(['arrivalNo'])
-@Index(['lotId'])
 @Index(['itemCode'])
 @Index(['arrivalDate'])
 @Index(['invoiceNo'])
@@ -52,9 +51,6 @@ export class MatArrival {
   @Column({ name: 'VENDOR_NAME', length: 200, nullable: true })
   vendorName: string | null;
 
-  @Column({ name: 'LOT_ID', length: 50 })
-  lotId: string;
-
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
@@ -75,6 +71,12 @@ export class MatArrival {
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
+
+  @Column({ name: 'IQC_STATUS', length: 20, default: "'PENDING'" })
+  iqcStatus: string;
+
+  @Column({ name: 'SUP_UID', length: 50, nullable: true })
+  supUid: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;

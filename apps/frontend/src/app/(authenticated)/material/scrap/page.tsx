@@ -26,7 +26,7 @@ interface ScrapRecord {
   transDate: string;
   itemCode: string;
   itemName?: string;
-  lotNo?: string;
+  matUid?: string;
   qty: number;
   warehouseName?: string;
   remark: string;
@@ -58,7 +58,7 @@ export default function ScrapPage() {
         transDate: r.transDate,
         itemCode: r.part?.itemCode || "",
         itemName: r.part?.itemName || "",
-        lotNo: r.lot?.lotNo || r.lotId || "",
+        matUid: r.lot?.matUid || r.matUid || "",
         qty: Math.abs(r.qty),
         warehouseName: r.fromWarehouse?.warehouseName || "",
         remark: r.remark || "",
@@ -100,7 +100,7 @@ export default function ScrapPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 160,
+      accessorKey: "matUid", header: "LOT No.", size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },

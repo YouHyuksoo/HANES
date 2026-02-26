@@ -23,7 +23,7 @@ interface PrintLog {
   category: string;
   printMode: string;
   printerName: string | null;
-  lotIds: string | null;
+  uidList: string | null;
   labelCount: number;
   workerId: string | null;
   printedAt: string;

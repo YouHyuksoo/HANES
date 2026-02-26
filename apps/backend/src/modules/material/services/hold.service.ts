@@ -46,7 +46,7 @@ export class HoldService {
       });
       const itemCodes = parts.map((p) => p.itemCode);
 
-      where.lotNo = Like(`%${search}%`);
+      where.matUid = Like(`%${search}%`);
       if (itemCodes.length > 0) {
         // itemCode 조건 추가 (OR 조건을 위해 별도 처리 필요)
       }
@@ -70,15 +70,15 @@ export class HoldService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // 재고 정보 조회
-    const lotNos = data.map((lot) => lot.lotNo);
-    const stocks = lotNos.length > 0
-      ? await this.matStockRepository.find({ where: { lotNo: In(lotNos) } })
+    const matUids = data.map((lot) => lot.matUid);
+    const stocks = matUids.length > 0
+      ? await this.matStockRepository.find({ where: { matUid: In(matUids) } })
       : [];
-    const stockMap = new Map(stocks.map((s) => [s.lotNo, s]));
+    const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
     const flattenedData = data.map((lot) => {
       const part = partMap.get(lot.itemCode);
-      const stock = stockMap.get(lot.lotNo);
+      const stock = stockMap.get(lot.matUid);
       return {
         ...lot,
         itemCode: part?.itemCode,
@@ -92,14 +92,14 @@ export class HoldService {
   }
 
   async hold(dto: HoldActionDto) {
-    const { lotId: lotNo, reason } = dto;
+    const { matUid, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo: lotNo },
+      where: { matUid: matUid },
     });
 
     if (!lot) {
-      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
     }
 
     if (lot.status === 'HOLD') {
@@ -111,17 +111,17 @@ export class HoldService {
     }
 
     // HOLD 상태로 변경
-    await this.matLotRepository.update(lotNo, {
+    await this.matLotRepository.update(matUid, {
       status: 'HOLD',
     });
 
-    const updatedLot = await this.matLotRepository.findOne({ where: { lotNo: lotNo } });
+    const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid } });
     const part = await this.partMasterRepository.findOne({ where: { itemCode: updatedLot!.itemCode } });
 
     return {
-      id: lotNo,
+      id: matUid,
       status: 'HOLD',
-      lotNo: updatedLot?.lotNo,
+      matUid: updatedLot?.matUid,
       itemCode: part?.itemCode,
       itemName: part?.itemName,
       reason,
@@ -129,14 +129,14 @@ export class HoldService {
   }
 
   async release(dto: ReleaseHoldDto) {
-    const { lotId: lotNo, reason } = dto;
+    const { matUid, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo: lotNo },
+      where: { matUid: matUid },
     });
 
     if (!lot) {
-      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
     }
 
     if (lot.status !== 'HOLD') {
@@ -144,17 +144,17 @@ export class HoldService {
     }
 
     // NORMAL 상태로 변경
-    await this.matLotRepository.update(lotNo, {
+    await this.matLotRepository.update(matUid, {
       status: 'NORMAL',
     });
 
-    const updatedLot = await this.matLotRepository.findOne({ where: { lotNo: lotNo } });
+    const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid } });
     const part = await this.partMasterRepository.findOne({ where: { itemCode: updatedLot!.itemCode } });
 
     return {
-      id: lotNo,
+      id: matUid,
       status: 'NORMAL',
-      lotNo: updatedLot?.lotNo,
+      matUid: updatedLot?.matUid,
       itemCode: part?.itemCode,
       itemName: part?.itemName,
       reason,

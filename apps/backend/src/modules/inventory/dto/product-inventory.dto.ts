@@ -24,7 +24,7 @@ export class ProductReceiveStockDto {
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  prdUid?: string;
 
   @IsNumber()
   @Min(1)
@@ -77,7 +77,7 @@ export class ProductIssueStockDto {
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  prdUid?: string;
 
   @IsNumber()
   @Min(1)
@@ -136,7 +136,7 @@ export class ProductTransactionQueryDto {
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  prdUid?: string;
 
   @IsOptional()
   @IsString()
@@ -189,7 +189,7 @@ export class ProductStockQueryDto {
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  prdUid?: string;
 
   @IsOptional()
   includeZero?: boolean;

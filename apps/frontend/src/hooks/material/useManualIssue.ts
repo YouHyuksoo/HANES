@@ -16,8 +16,7 @@ import { api } from '@/services/api';
 /** 가용 재고 아이템 */
 export interface AvailableStock {
   id: string;
-  lotId: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   unit: string;
@@ -121,7 +120,7 @@ export function useManualIssue() {
   const handleIssue = useCallback(async () => {
     const items = [...selectedItems.entries()].map(([stockId, qty]) => {
       const stock = availableStocks.find((s) => s.id === stockId);
-      return { lotId: stock?.lotId ?? stockId, issueQty: qty };
+      return { matUid: stock?.matUid ?? stockId, issueQty: qty };
     });
     await api.post('/material/issues', { items, issueType });
     setSelectedItems(new Map());

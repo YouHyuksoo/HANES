@@ -27,7 +27,7 @@ export class PmPlanItem {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
-  @Column({ name: 'PM_PLAN_CODE', length: 50 })
+  @Column({ name: 'PM_PLAN_ID', length: 50 })
   pmPlanCode: string;
 
   @Column({ name: 'SEQ', type: 'number' })
@@ -64,6 +64,6 @@ export class PmPlanItem {
   updatedAt: Date;
 
   @ManyToOne(() => PmPlan, (plan) => plan.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'PM_PLAN_CODE', referencedColumnName: 'planCode' })
+  @JoinColumn({ name: 'PM_PLAN_ID', referencedColumnName: 'planCode' })
   pmPlan: PmPlan;
 }

@@ -20,7 +20,7 @@ import api from '@/services/api';
 interface PackResult {
   id: string;
   boxNo: string;
-  lotNo: string;
+  prdUid: string;
   itemCode: string;
   itemName: string;
   packQty: number;
@@ -66,7 +66,7 @@ export default function PackResultPage() {
   const columns = useMemo<ColumnDef<PackResult>[]>(() => [
     { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 100, meta: { filterType: 'date' as const } },
     { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lotNo', header: t('production.packResult.lotNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'prdUid', header: t('production.packResult.prdUid'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
     { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },

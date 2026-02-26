@@ -3,7 +3,7 @@
  * @description 자재 재고실사 훅 - LOT 스캔 → 시스템 수량 조회 → 실사 수량 입력/확인
  *
  * 초보자 가이드:
- * 1. handleScan(lotNo): LOT 바코드 스캔 → 시스템 재고 수량 조회
+ * 1. handleScan(matUid): 자재UID 바코드 스캔 → 시스템 재고 수량 조회
  * 2. handleCount(actualQty): 실사 수량 입력 → 서버에 실사 결과 전송
  * 3. history: 실사 완료 이력 (최신순), 차이 값 포함
  * 4. difference = actualQty - systemQty (양수=초과, 음수=부족)
@@ -13,7 +13,7 @@ import { api } from "@/services/api";
 
 /** LOT 재고 정보 (실사용) */
 export interface MatLotCountData {
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   systemQty: number;
@@ -23,7 +23,7 @@ export interface MatLotCountData {
 
 /** 실사 이력 항목 */
 export interface CountHistoryItem {
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   systemQty: number;
@@ -38,7 +38,7 @@ interface UseMatInventoryCountReturn {
   isCounting: boolean;
   error: string | null;
   history: CountHistoryItem[];
-  handleScan: (lotNo: string) => Promise<void>;
+  handleScan: (matUid: string) => Promise<void>;
   handleCount: (actualQty: number) => Promise<boolean>;
   handleReset: () => void;
 }
@@ -58,14 +58,14 @@ export function useMatInventoryCount(): UseMatInventoryCountReturn {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<CountHistoryItem[]>([]);
 
-  /** LOT 바코드 스캔 → 시스템 수량 조회 */
-  const handleScan = useCallback(async (lotNo: string) => {
+  /** 자재UID 바코드 스캔 → 시스템 수량 조회 */
+  const handleScan = useCallback(async (matUid: string) => {
     setIsScanning(true);
     setError(null);
     setScannedLot(null);
     try {
       const { data } = await api.get<MatLotCountData>(
-        `/material/lots/by-lotno/${encodeURIComponent(lotNo)}`,
+        `/material/lots/by-uid/${encodeURIComponent(matUid)}`,
       );
       setScannedLot(data);
     } catch (err: unknown) {
@@ -86,14 +86,14 @@ export function useMatInventoryCount(): UseMatInventoryCountReturn {
       setError(null);
       try {
         await api.post("/material/inventory-count", {
-          lotNo: scannedLot.lotNo,
+          matUid: scannedLot.matUid,
           systemQty: scannedLot.systemQty,
           actualQty,
         });
         const difference = actualQty - scannedLot.systemQty;
         setHistory((prev) => [
           {
-            lotNo: scannedLot.lotNo,
+            matUid: scannedLot.matUid,
             itemCode: scannedLot.itemCode,
             itemName: scannedLot.itemName,
             systemQty: scannedLot.systemQty,

@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. ID는 자동 증가 시퀀스 (number)
- * 2. ORDER_NO로 SubconOrder(외주발주)를 참조
+ * 2. ORDER_ID로 SubconOrder(외주발주)를 참조
  * 3. DELIVERY_NO: 납품번호 (유니크)
  */
 import {
@@ -25,14 +25,14 @@ export class SubconDelivery {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
-  @Column({ name: 'ORDER_NO', length: 50 })
+  @Column({ name: 'ORDER_ID', length: 50 })
   orderNo: string;
 
   @Column({ name: 'DELIVERY_NO', length: 255, unique: true })
   deliveryNo: string;
 
-  @Column({ name: 'LOT_NO', length: 255, nullable: true })
-  lotNo: string | null;
+  @Column({ name: 'MAT_UID', length: 50, nullable: true })
+  matUid: string | null;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;

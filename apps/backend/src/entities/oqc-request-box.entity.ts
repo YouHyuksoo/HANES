@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. ID는 자동 증가 시퀀스 (number)
- * 2. REQUEST_NO로 OqcRequest(검사의뢰)를 참조
+ * 2. OQC_REQUEST_ID로 OqcRequest(검사의뢰)를 참조
  * 3. IS_SAMPLE: 'Y'면 샘플로 선정된 박스
  */
 import {
@@ -27,7 +27,7 @@ export class OqcRequestBox {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
-  @Column({ name: 'REQUEST_NO', length: 50 })
+  @Column({ name: 'OQC_REQUEST_ID', length: 50 })
   requestNo: string;
 
   @Column({ name: 'BOX_NO', length: 50 })
@@ -58,6 +58,6 @@ export class OqcRequestBox {
   updatedAt: Date;
 
   @ManyToOne(() => OqcRequest, (req) => req.boxes)
-  @JoinColumn({ name: 'REQUEST_NO' })
+  @JoinColumn({ name: 'OQC_REQUEST_ID' })
   oqcRequest: OqcRequest;
 }

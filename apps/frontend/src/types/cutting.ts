@@ -27,7 +27,7 @@ export interface CuttingOrder {
   prodQty: number;       // 생산 수량
   equipCode: string;     // 절단기 코드
   status: CuttingOrderStatus;
-  reelLotNo?: string;    // 투입 릴 LOT
+  reelMatUid?: string;    // 투입 릴 LOT
   remark?: string;
 }
 
@@ -46,7 +46,7 @@ export interface CuttingResult {
   defectQty: number;
   equipCode: string;
   workerName: string;
-  reelLotNo: string;
+  reelMatUid: string;
   startAt: string;
   endAt: string;
 }
@@ -54,7 +54,7 @@ export interface CuttingResult {
 /** 릴(전선 보빈) 인터페이스 */
 export interface WireReel {
   id: string;
-  lotNo: string;
+  matUid: string;
   wireCode: string;
   wireName: string;
   wireSpec: string;

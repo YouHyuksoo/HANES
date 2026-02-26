@@ -1,6 +1,11 @@
 /**
  * @file src/modules/material/services/iqc-history.service.ts
  * @description IQC 이력 조회 서비스 (TypeORM)
+ *
+ * 초보자 가이드:
+ * - IqcLog 엔티티는 arrivalNo 필드로 MatArrival과 연결 (matUid 필드 없음)
+ * - CreateIqcResultDto의 matUid는 MatLot 조회용이며, IqcLog에는 arrivalNo로 저장
+ * - 검색 시 MatLot(matUid)과 IqcLog(arrivalNo)를 각각 조회하여 매칭
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -57,13 +62,7 @@ export class IqcHistoryService {
           { itemName: Like(`%${search}%`) },
         ],
       });
-      const itemCodes = parts.map((p) => p.itemCode);
-
-      // LOT 번호로도 검색
-      const lots = await this.matLotRepository.find({
-        where: { lotNo: Like(`%${search}%`) },
-      });
-      const lotNos = lots.map((l) => l.lotNo);
+      const searchItemCodes = parts.map((p) => p.itemCode);
 
       // 복합 조건으로 IQC 로그 검색
       const queryBuilder = this.iqcLogRepository.createQueryBuilder('iqc');
@@ -84,18 +83,11 @@ export class IqcHistoryService {
         });
       }
 
-      if (itemCodes.length > 0 || lotNos.length > 0) {
-        const conditions: string[] = [];
-        if (itemCodes.length > 0) {
-          conditions.push('iqc.itemCode IN (:...itemCodes)');
-        }
-        if (lotNos.length > 0) {
-          conditions.push('iqc.lotNo IN (:...lotNos)');
-        }
-        queryBuilder.andWhere(`(${conditions.join(' OR ')})`, { itemCodes, lotNos });
+      if (searchItemCodes.length > 0) {
+        queryBuilder.andWhere('iqc.itemCode IN (:...searchItemCodes)', { searchItemCodes });
       } else {
-        // 검색 결과가 없으면 빈 결과 반환
-        return { data: [], total: 0, page, limit };
+        // arrivalNo로도 검색
+        queryBuilder.andWhere('(iqc.arrivalNo LIKE :search OR iqc.itemCode LIKE :search)', { search: `%${search}%` });
       }
 
       [data, total] = await Promise.all([
@@ -120,29 +112,22 @@ export class IqcHistoryService {
 
     // 관련 정보 조회
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
-    const lotNos = data.map((log) => log.lotNo).filter(Boolean) as string[];
+    const arrivalNos = data.map((log) => log.arrivalNo).filter(Boolean) as string[];
 
-    const [parts, lots, receivings] = await Promise.all([
+    const [partsResult] = await Promise.all([
       itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
-      lotNos.length > 0 ? this.matReceivingRepository.find({ where: { lotId: In(lotNos), status: 'DONE' } }) : Promise.resolve([]),
     ]);
 
-    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
-    const receivedLotIds = new Set(receivings.map((r) => r.lotId));
+    const partMap = new Map(partsResult.map((p) => [p.itemCode, p]));
 
     // 중첩 객체 평면화
     const flattenedData = data.map((log) => {
       const part = partMap.get(log.itemCode);
-      const lot = log.lotNo ? lotMap.get(log.lotNo) : null;
       return {
         ...log,
         itemCode: part?.itemCode,
         itemName: part?.itemName,
         unit: part?.unit,
-        lotNo: lot?.lotNo,
-        received: log.lotNo ? receivedLotIds.has(log.lotNo) : false,
       };
     });
 
@@ -151,20 +136,20 @@ export class IqcHistoryService {
 
   async createResult(dto: CreateIqcResultDto) {
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo: dto.lotId },
+      where: { matUid: dto.matUid },
     });
     if (!lot) {
-      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotId}`);
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
     }
 
     // LOT iqcStatus 업데이트
-    await this.matLotRepository.update(dto.lotId, {
+    await this.matLotRepository.update(dto.matUid, {
       iqcStatus: dto.result,
     });
 
-    // IqcLog 생성
+    // IqcLog 생성 (IqcLog에는 arrivalNo 사용, matUid 필드 없음)
     const log = this.iqcLogRepository.create({
-      lotNo: lot.lotNo,
+      arrivalNo: null, // arrivalNo는 별도 연결 필요시 설정
       itemCode: lot.itemCode,
       inspectType: dto.inspectType || 'INITIAL',
       result: dto.result,
@@ -182,7 +167,7 @@ export class IqcHistoryService {
 
     return {
       ...saved,
-      lotNo: lot.lotNo,
+      matUid: lot.matUid,
       itemCode: part?.itemCode,
       itemName: part?.itemName,
     };
@@ -198,10 +183,10 @@ export class IqcHistoryService {
       throw new BadRequestException('이미 취소된 판정입니다.');
     }
 
-    // 이미 입고된 LOT인지 확인
-    if (log.lotNo) {
+    // 이미 입고된 LOT인지 확인 (itemCode 기준으로 최근 입고 체크)
+    if (log.itemCode) {
       const receiving = await this.matReceivingRepository.findOne({
-        where: { lotId: log.lotNo, status: 'DONE' },
+        where: { itemCode: log.itemCode, status: 'DONE' },
       });
       if (receiving) {
         throw new BadRequestException('이미 입고된 LOT은 IQC 판정을 취소할 수 없습니다.');
@@ -214,11 +199,17 @@ export class IqcHistoryService {
       remark: dto.reason,
     });
 
-    // LOT의 iqcStatus를 PENDING으로 복원
-    if (log.lotNo) {
-      await this.matLotRepository.update(log.lotNo, {
-        iqcStatus: 'PENDING',
+    // LOT의 iqcStatus를 PENDING으로 복원 (itemCode 기준으로 LOT 찾기)
+    if (log.itemCode) {
+      const lot = await this.matLotRepository.findOne({
+        where: { itemCode: log.itemCode, iqcStatus: log.result },
+        order: { createdAt: 'DESC' },
       });
+      if (lot) {
+        await this.matLotRepository.update(lot.matUid, {
+          iqcStatus: 'PENDING',
+        });
+      }
     }
 
     return { id, status: 'CANCELED' };

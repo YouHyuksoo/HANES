@@ -21,7 +21,7 @@ import type { ReceivableLot, ReceiveInput } from './types';
 interface ReceivableTableProps {
   data: ReceivableLot[];
   inputs: Record<string, ReceiveInput>;
-  onInputChange: (lotId: string, field: keyof ReceiveInput, value: string | number | boolean) => void;
+  onInputChange: (matUid: string, field: keyof ReceiveInput, value: string | number | boolean) => void;
   onSelectAll: (checked: boolean) => void;
   allSelected: boolean;
 }
@@ -30,9 +30,9 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
   const { t } = useTranslation();
   const { options: warehouses } = useWarehouseOptions();
 
-  const handleQtyChange = useCallback((lotId: string, value: string, max: number) => {
+  const handleQtyChange = useCallback((matUid: string, value: string, max: number) => {
     const num = Math.min(Math.max(0, Number(value) || 0), max);
-    onInputChange(lotId, 'qty', num);
+    onInputChange(matUid, 'qty', num);
   }, [onInputChange]);
 
   const columns = useMemo<ColumnDef<ReceivableLot>[]>(() => [
@@ -57,7 +57,7 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
         />
       ),
     },
-    { id: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lotNo },
+    { id: 'matUid', header: t('material.col.matUid'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.matUid },
     { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.poNo || '-' },
     { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.itemCode },
     { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.itemName },

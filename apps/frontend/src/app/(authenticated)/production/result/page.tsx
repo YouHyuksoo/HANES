@@ -36,7 +36,7 @@ interface ProdResult {
   equipName: string;
   workerName: string;
   workerDept: string;
-  lotNo: string;
+  prdUid: string;
   goodQty: number;
   defectQty: number;
   totalQty: number;
@@ -121,7 +121,7 @@ export default function ProdResultPage() {
           </div>
         )
       },
-      { accessorKey: 'lotNo', header: t('production.result.lotNo'), size: 150, meta: { filterType: 'text' as const } },
+      { accessorKey: 'prdUid', header: t('production.result.prdUid'), size: 150, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'goodQty', header: t('production.result.goodQty'), size: 70,
         meta: { filterType: 'number' as const },

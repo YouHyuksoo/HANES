@@ -20,7 +20,7 @@ import api from "@/services/api";
 
 interface MatLotItem {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode?: string;
   itemName?: string;
   initQty: number;
@@ -66,7 +66,7 @@ export default function MatLotPage() {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: "5000" };
-      if (searchText) params.lotNo = searchText;
+      if (searchText) params.matUid = searchText;
       if (statusFilter) params.status = statusFilter;
       if (iqcFilter) params.iqcStatus = iqcFilter;
       const res = await api.get("/material/lots", { params });
@@ -103,7 +103,7 @@ export default function MatLotPage() {
 
   const columns = useMemo<ColumnDef<MatLotItem>[]>(() => [
     {
-      accessorKey: "lotNo", header: t("material.lot.columns.lotNo"), size: 160,
+      accessorKey: "matUid", header: t("material.lot.columns.matUid"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
@@ -218,8 +218,8 @@ export default function MatLotPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="space-y-2">
                 <div className="flex justify-between border-b border-border pb-2">
-                  <span className="text-text-muted">{t("material.lot.columns.lotNo")}</span>
-                  <span className="font-mono font-medium">{selectedLot.lotNo}</span>
+                  <span className="text-text-muted">{t("material.lot.columns.matUid")}</span>
+                  <span className="font-mono font-medium">{selectedLot.matUid}</span>
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">{t("common.partCode")}</span>

@@ -22,7 +22,7 @@ import api from "@/services/api";
 
 interface HoldLot {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   currentQty: number;
@@ -84,7 +84,7 @@ export default function HoldPage() {
     setSaving(true);
     try {
       const url = actionType === "hold" ? "/material/hold/hold" : "/material/hold/release";
-      await api.post(url, { lotId: selectedLot.id, reason });
+      await api.post(url, { matUid: selectedLot.id, reason });
       setIsModalOpen(false);
       setReason("");
       setSelectedLot(null);
@@ -98,7 +98,7 @@ export default function HoldPage() {
 
   const columns = useMemo<ColumnDef<HoldLot>[]>(() => [
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 160,
+      accessorKey: "matUid", header: "LOT No.", size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
@@ -197,7 +197,7 @@ export default function HoldPage() {
                 : "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
             }`}>
               <div className="grid grid-cols-2 gap-3">
-                <div><span className="text-text-muted">LOT:</span> <span className="font-mono font-medium">{selectedLot.lotNo}</span></div>
+                <div><span className="text-text-muted">LOT:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
                 <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
                 <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
                 <div><span className="text-text-muted">{t("material.hold.currentQty")}:</span> <span className="font-medium">{selectedLot.currentQty.toLocaleString()}</span></div>

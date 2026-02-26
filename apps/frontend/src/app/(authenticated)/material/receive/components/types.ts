@@ -12,7 +12,7 @@ export interface PartInfo {
 
 export interface LotInfo {
   id: string;
-  lotNo: string;
+  matUid: string;
   poNo?: string | null;
   vendor?: string | null;
   initQty?: number;
@@ -26,7 +26,7 @@ export interface WarehouseInfo {
 /** 입고 가능 LOT (IQC 합격 + 미입고) */
 export interface ReceivableLot {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemType: string;
   initQty: number;
@@ -68,7 +68,7 @@ export interface ReceivingStats {
 
 /** 일괄 입고 입력 항목 */
 export interface ReceiveInput {
-  lotId: string;
+  matUid: string;
   qty: number;
   warehouseCode: string;
   manufactureDate: string;

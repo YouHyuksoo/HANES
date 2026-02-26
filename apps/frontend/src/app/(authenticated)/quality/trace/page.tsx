@@ -18,7 +18,8 @@ import api from "@/services/api";
 
 interface TraceRecord {
   serialNo: string;
-  lotNo: string;
+  matUid: string;
+  prdUid: string;
   itemNo: string;
   itemName: string;
   workOrderNo: string;
@@ -47,7 +48,7 @@ interface FourMData {
 
 interface ManData { process: string; processName: string; operatorId: string; operatorName: string; timestamp: string; }
 interface MachineData { process: string; processName: string; equipmentNo: string; equipmentName: string; timestamp: string; }
-interface MaterialData { materialCode: string; materialName: string; lotNo: string; usedQty: number; unit: string; supplier: string; }
+interface MaterialData { materialCode: string; materialName: string; matUid: string; usedQty: number; unit: string; supplier: string; }
 interface MethodData { process: string; processName: string; specName: string; specValue: string; actualValue: string; result: "OK" | "NG"; }
 
 function TimelineItemComponent({ item, isLast }: { item: TimelineItem; isLast: boolean }) {
@@ -141,7 +142,7 @@ function FourMSection({ data, activeTab, setActiveTab, t }: { data: FourMData; a
                 <tr className="border-b border-border">
                   <th className="text-left py-2 px-3 text-text-muted font-medium">{t("quality.trace.materialCode")}</th>
                   <th className="text-left py-2 px-3 text-text-muted font-medium">{t("quality.trace.materialName")}</th>
-                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t("quality.trace.lotNo")}</th>
+                  <th className="text-left py-2 px-3 text-text-muted font-medium">{t("quality.trace.matUid")}</th>
                   <th className="text-right py-2 px-3 text-text-muted font-medium">{t("quality.trace.usedQty")}</th>
                   <th className="text-left py-2 px-3 text-text-muted font-medium">{t("quality.trace.supplier")}</th>
                 </tr>
@@ -151,7 +152,7 @@ function FourMSection({ data, activeTab, setActiveTab, t }: { data: FourMData; a
                   <tr key={idx} className="border-b border-border last:border-0">
                     <td className="py-2 px-3 font-mono text-primary">{item.materialCode}</td>
                     <td className="py-2 px-3 text-text">{item.materialName}</td>
-                    <td className="py-2 px-3 font-mono text-text-muted text-xs">{item.lotNo}</td>
+                    <td className="py-2 px-3 font-mono text-text-muted text-xs">{item.matUid}</td>
                     <td className="py-2 px-3 text-right text-text">{item.usedQty} {item.unit}</td>
                     <td className="py-2 px-3 text-text">{item.supplier}</td>
                   </tr>
@@ -252,7 +253,8 @@ export default function TracePage() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.serialNo")}</div><div className="font-mono font-semibold text-primary">{traceData.serialNo}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.lotNo")}</div><div className="font-mono text-text">{traceData.lotNo}</div></div>
+                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.matUid")}</div><div className="font-mono text-text">{traceData.matUid}</div></div>
+                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.prdUid")}</div><div className="font-mono text-text">{traceData.prdUid}</div></div>
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partNo")}</div><div className="text-text">{traceData.itemNo}</div></div>
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partName")}</div><div className="text-text">{traceData.itemName}</div></div>
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.workOrderNo")}</div><div className="text-text">{traceData.workOrderNo}</div></div>

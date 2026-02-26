@@ -20,7 +20,7 @@ import api from "@/services/api";
 
 interface ShelfLifeItem {
   id: string;
-  lotNo: string;
+  matUid: string;
   itemCode?: string;
   itemName?: string;
   currentQty: number;
@@ -84,7 +84,7 @@ export default function ShelfLifePage() {
 
   const columns = useMemo<ColumnDef<ShelfLifeItem>[]>(() => [
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 160,
+      accessorKey: "matUid", header: "LOT No.", size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },

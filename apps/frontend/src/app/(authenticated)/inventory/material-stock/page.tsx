@@ -33,7 +33,7 @@ interface StockItem {
   warehouseCode: string;
   locationCode?: string | null;
   itemCode: string;
-  lotId?: string | null;
+  matUid?: string | null;
   qty: number;
   reservedQty: number;
   availableQty: number;
@@ -41,7 +41,6 @@ interface StockItem {
   unit?: string;
   safetyStock?: number;
   expiryDays?: number;
-  lotNo?: string | null;
   manufactureDate?: string | null;
   expireDate?: string | null;
   elapsedDays?: number | null;
@@ -204,8 +203,8 @@ function MaterialStockPage() {
         size: 140,
       },
       {
-        accessorKey: "lotNo",
-        header: t("material.col.lotNo"),
+        accessorKey: "matUid",
+        header: t("material.col.matUid"),
         size: 150,
         cell: ({ getValue }) => (
           <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>

@@ -42,7 +42,7 @@ export default function ReceivingConfirmModal({
             {t('material.receive.partLabel')}: <span className="font-medium text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span>
           </p>
           <p className="text-sm text-text-muted">
-            {t('material.receive.lotLabel')}: <span className="font-medium text-text">{selectedItem.lotNo}</span>
+            {t('material.receive.matUidLabel')}: <span className="font-medium text-text">{selectedItem.matUid}</span>
           </p>
           <p className="text-sm text-text-muted">
             {t('material.receive.quantityLabel')}: <span className="font-medium text-text">{selectedItem.quantity.toLocaleString()} {selectedItem.unit}</span>

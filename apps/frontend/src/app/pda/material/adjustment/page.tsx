@@ -49,8 +49,8 @@ export default function MaterialAdjustmentPage() {
 
   /** 바코드 스캔 처리 */
   const onScan = useCallback(
-    async (lotNo: string) => {
-      await handleScan(lotNo);
+    async (matUid: string) => {
+      await handleScan(matUid);
     },
     [handleScan],
   );
@@ -66,8 +66,8 @@ export default function MaterialAdjustmentPage() {
     if (!scannedLot) return [];
     return [
       {
-        label: t("pda.issuing.lotNo"),
-        value: scannedLot.lotNo,
+        label: t("pda.issuing.matUid"),
+        value: scannedLot.matUid,
         highlight: true,
       },
       { label: t("pda.receiving.partCode"), value: scannedLot.itemCode },
@@ -113,7 +113,7 @@ export default function MaterialAdjustmentPage() {
             {item.itemCode}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {item.lotNo}
+            {item.matUid}
           </p>
         </div>
         <div className="text-right">
@@ -212,7 +212,7 @@ export default function MaterialAdjustmentPage() {
       <ScanHistoryList
         items={history}
         renderItem={renderHistoryItem}
-        keyExtractor={(item, idx) => `${item.lotNo}-${idx}`}
+        keyExtractor={(item, idx) => `${item.matUid}-${idx}`}
       />
 
       {/* 하단 버튼 */}

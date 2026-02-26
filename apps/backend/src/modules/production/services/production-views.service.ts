@@ -111,7 +111,7 @@ export class ProductionViewsService {
     }
 
     if (search) {
-      queryBuilder.andWhere('pr.lotNo ILIKE :search', { search: `%${search}%` });
+      queryBuilder.andWhere('pr.prdUid ILIKE :search', { search: `%${search}%` });
     }
 
     const [data, total] = await Promise.all([
@@ -134,10 +134,10 @@ export class ProductionViewsService {
 
     if (search) {
       where.boxNo = ILike(`%${search}%`);
-      // For OR condition with lotNo, we need QueryBuilder
+      // For OR condition with prdUid, we need QueryBuilder
       const queryBuilder = this.boxMasterRepository
         .createQueryBuilder('bm')
-        .where('(bm.boxNo ILIKE :search OR bm.lotNo ILIKE :search)', {
+        .where('(bm.boxNo ILIKE :search OR bm.prdUid ILIKE :search)', {
           search: `%${search}%`,
         })
         .orderBy('bm.createdAt', 'DESC')

@@ -1,6 +1,12 @@
 /**
  * @file src/modules/material/services/mat-lot.service.ts
  * @description 자재LOT 비즈니스 로직 서비스 (TypeORM)
+ *
+ * 초보자 가이드:
+ * - MatLot의 PK는 matUid (자재 고유 식별자)
+ * - itemCode로 품목마스터(PartMaster)와 연결
+ * - iqcStatus: IQC 검사 상태 (PENDING/PASS/FAIL)
+ * - status: LOT 상태 (NORMAL/HOLD/SCRAPPED/DEPLETED)
  */
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
@@ -20,12 +26,12 @@ export class MatLotService {
   ) {}
 
   async findAll(query: MatLotQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, itemCode, lotNo, vendor, iqcStatus, status } = query;
+    const { page = 1, limit = 10, itemCode, matUid, vendor, iqcStatus, status } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
       ...(itemCode && { itemCode }),
-      ...(lotNo && { lotNo: Like(`%${lotNo}%`) }),
+      ...(matUid && { matUid: Like(`%${matUid}%`) }),
       ...(vendor && { vendor: Like(`%${vendor}%`) }),
       ...(iqcStatus && { iqcStatus }),
       ...(status && { status }),
@@ -63,12 +69,12 @@ export class MatLotService {
     return { data: flattenedData, total, page, limit };
   }
 
-  async findById(lotNo: string) {
+  async findById(matUid: string) {
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo },
+      where: { matUid },
     });
 
-    if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+    if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
 
     const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
 
@@ -80,12 +86,12 @@ export class MatLotService {
     };
   }
 
-  async findByLotNo(lotNo: string) {
+  async findByMatUid(matUid: string) {
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo },
+      where: { matUid },
     });
 
-    if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
+    if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
 
     const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
 
@@ -99,13 +105,13 @@ export class MatLotService {
 
   async create(dto: CreateMatLotDto) {
     const existing = await this.matLotRepository.findOne({
-      where: { lotNo: dto.lotNo },
+      where: { matUid: dto.matUid },
     });
 
-    if (existing) throw new ConflictException(`이미 존재하는 LOT 번호입니다: ${dto.lotNo}`);
+    if (existing) throw new ConflictException(`이미 존재하는 자재 UID입니다: ${dto.matUid}`);
 
     const lot = this.matLotRepository.create({
-      lotNo: dto.lotNo,
+      matUid: dto.matUid,
       itemCode: dto.itemCode,
       initQty: dto.initQty,
       currentQty: dto.currentQty ?? dto.initQty,
@@ -130,8 +136,8 @@ export class MatLotService {
     };
   }
 
-  async update(lotNo: string, dto: UpdateMatLotDto) {
-    await this.findById(lotNo);
+  async update(matUid: string, dto: UpdateMatLotDto) {
+    await this.findById(matUid);
 
     const updateData: any = {};
     if (dto.iqcStatus) updateData.iqcStatus = dto.iqcStatus;
@@ -140,9 +146,9 @@ export class MatLotService {
     if (dto.vendor) updateData.vendor = dto.vendor;
     if (dto.origin) updateData.origin = dto.origin;
 
-    await this.matLotRepository.update(lotNo, updateData);
+    await this.matLotRepository.update(matUid, updateData);
 
-    const lot = await this.matLotRepository.findOne({ where: { lotNo } });
+    const lot = await this.matLotRepository.findOne({ where: { matUid } });
     const part = lot?.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
 
     return {
@@ -153,39 +159,39 @@ export class MatLotService {
     };
   }
 
-  async delete(lotNo: string) {
-    const lot = await this.findById(lotNo);
+  async delete(matUid: string) {
+    const lot = await this.findById(matUid);
     if (lot.currentQty > 0) {
       throw new BadRequestException('재고가 남아있는 LOT은 삭제할 수 없습니다.');
     }
-    await this.matLotRepository.delete(lotNo);
-    return { lotNo };
+    await this.matLotRepository.delete(matUid);
+    return { matUid };
   }
 
-  async consumeQty(lotNo: string, qty: number) {
-    const lot = await this.findById(lotNo);
+  async consumeQty(matUid: string, qty: number) {
+    const lot = await this.findById(matUid);
     if (lot.currentQty < qty) {
       throw new BadRequestException(`재고 부족: 현재 ${lot.currentQty}, 요청 ${qty}`);
     }
 
     const newQty = lot.currentQty - qty;
-    await this.matLotRepository.update(lotNo, {
+    await this.matLotRepository.update(matUid, {
       currentQty: newQty,
       status: newQty === 0 ? 'DEPLETED' : lot.status,
     });
 
-    return this.matLotRepository.findOne({ where: { lotNo } });
+    return this.matLotRepository.findOne({ where: { matUid } });
   }
 
-  async returnQty(lotNo: string, qty: number) {
-    const lot = await this.findById(lotNo);
+  async returnQty(matUid: string, qty: number) {
+    const lot = await this.findById(matUid);
     const newQty = lot.currentQty + qty;
 
-    await this.matLotRepository.update(lotNo, {
+    await this.matLotRepository.update(matUid, {
       currentQty: newQty,
       status: newQty > 0 && lot.status === 'DEPLETED' ? 'NORMAL' : lot.status,
     });
 
-    return this.matLotRepository.findOne({ where: { lotNo } });
+    return this.matLotRepository.findOne({ where: { matUid } });
   }
 }

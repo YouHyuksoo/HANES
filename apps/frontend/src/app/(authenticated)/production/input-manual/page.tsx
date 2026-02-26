@@ -27,7 +27,7 @@ interface ManualResult {
   orderNo: string;
   itemName: string;
   workerName: string;
-  lotNo: string;
+  matUid: string;
   goodQty: number;
   defectQty: number;
   workDate: string;
@@ -63,9 +63,9 @@ export default function InputManualPage() {
     clearSelection,
   } = useInputManualStore();
 
-  const lotNoRef = useRef<HTMLInputElement>(null);
+  const matUidRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    lotNo: '', goodQty: '', defectQty: '', startAt: '', endAt: '', remark: '',
+    matUid: '', goodQty: '', defectQty: '', startAt: '', endAt: '', remark: '',
   });
 
   // 라인 목록 로드
@@ -108,7 +108,7 @@ export default function InputManualPage() {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: '5000' };
-      if (searchText) params.lotNo = searchText;
+      if (searchText) params.matUid = searchText;
       if (selectedJobOrder) params.orderNo = selectedJobOrder.orderNo;
       if (selectedEquip) params.equipCode = selectedEquip.equipCode;
       const res = await api.get('/production/prod-results', { params });
@@ -194,7 +194,7 @@ export default function InputManualPage() {
         equipCode: selectedEquip.equipCode,
         workerId: selectedWorker.id,
         processCode: selectedProcess?.processCode,
-        lotNo: form.lotNo || undefined,
+        matUid: form.matUid || undefined,
         goodQty: Number(form.goodQty) || 0,
         defectQty: Number(form.defectQty) || 0,
         startAt: form.startAt ? `${new Date().toISOString().split('T')[0]}T${form.startAt}` : undefined,
@@ -202,7 +202,7 @@ export default function InputManualPage() {
         remark: form.remark || undefined,
       });
       setIsModalOpen(false);
-      setForm({ lotNo: '', goodQty: '', defectQty: '', startAt: '', endAt: '', remark: '' });
+      setForm({ matUid: '', goodQty: '', defectQty: '', startAt: '', endAt: '', remark: '' });
       fetchData();
     } catch (e) {
       console.error('Save failed:', e);
@@ -217,7 +217,7 @@ export default function InputManualPage() {
     if (!selectedJobOrder) { setIsJobOrderModalOpen(true); return; }
     if (!selectedWorker) { setIsWorkerModalOpen(true); return; }
     setIsModalOpen(true);
-    setTimeout(() => lotNoRef.current?.focus(), 100);
+    setTimeout(() => matUidRef.current?.focus(), 100);
   }, [selectedEquip, selectedJobOrder, selectedWorker]);
 
   const allSelected = !!(selectedLine && selectedProcess && selectedEquip && selectedJobOrder && selectedWorker);
@@ -227,7 +227,7 @@ export default function InputManualPage() {
     { accessorKey: 'orderNo', header: t('production.inputManual.orderNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('production.inputManual.partName'), size: 150, meta: { filterType: 'text' as const } },
     { accessorKey: 'workerName', header: t('production.inputManual.worker'), size: 80, meta: { filterType: 'text' as const } },
-    { accessorKey: 'lotNo', header: t('production.inputManual.lotNo'), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'matUid', header: t('production.inputManual.matUid'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'goodQty', header: t('production.inputManual.good'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'defectQty', header: t('production.inputManual.defect'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-red-600 dark:text-red-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: 'workDate', header: t('production.inputManual.workDate'), size: 100, meta: { filterType: 'date' as const } },
@@ -444,8 +444,8 @@ export default function InputManualPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input ref={lotNoRef} label={t('production.inputManual.lotNo')} value={form.lotNo}
-              onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />
+            <Input ref={matUidRef} label={t('production.inputManual.matUid')} value={form.matUid}
+              onChange={e => setForm(p => ({ ...p, matUid: e.target.value }))} fullWidth />
             <div />
             <Input label={t('production.inputManual.goodQty')} type="number" value={form.goodQty}
               onChange={e => setForm(p => ({ ...p, goodQty: e.target.value }))} fullWidth />

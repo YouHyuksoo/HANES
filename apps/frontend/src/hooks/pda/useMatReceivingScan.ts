@@ -24,7 +24,7 @@ export interface MatArrivalData {
 
 /** 입고 완료 이력 항목 */
 export interface ReceivingHistoryItem {
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   receivedQty: number;
@@ -89,12 +89,12 @@ export function useMatReceivingScan(): UseMatReceivingScanReturn {
           arrivalId: scannedData.id,
           receivedQty,
           warehouseCode,
-          lotNo: `LOT-${Date.now()}`,
+          matUid: `MAT-${Date.now()}`,
         });
         // 이력 추가 (최신 항목이 상단)
         setHistory((prev) => [
           {
-            lotNo: `LOT-${Date.now()}`,
+            matUid: `MAT-${Date.now()}`,
             itemCode: scannedData.itemCode,
             itemName: scannedData.itemName,
             receivedQty,

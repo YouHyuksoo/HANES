@@ -7,6 +7,9 @@
  * 2. **수동 입하**: PO 없이 직접 입하 등록
  * 3. **입하 취소**: 역분개 방식 (원본 CANCELED + 반대 트랜잭션 생성)
  * 4. **Stock upsert**: 입하 시 Stock 테이블 현재고 업데이트
+ *
+ * NOTE: LOT 생성은 라벨 발행 시점에 수행됨 (입하 시에는 LOT 미생성)
+ * NOTE: lotNo 필드는 matUid로 리네이밍됨 (자재 고유 식별자)
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -174,31 +177,11 @@ export class ArrivalService {
 
       for (const item of dto.items) {
         const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
-        const lotNo = item.lotNo || await this.numRuleService.nextNumberInTx(queryRunner, 'LOT');
 
-        // 1. LOT 생성 (제조일자 + 유효기한 자동 계산)
+        // 품목 정보 조회
         const part = await this.partMasterRepository.findOne({ where: { itemCode: item.itemCode } });
-        const mfgDate = item.manufactureDate ? new Date(item.manufactureDate) : null;
-        let expDate: Date | null = null;
-        if (mfgDate && part?.expiryDate && part.expiryDate > 0) {
-          expDate = new Date(mfgDate);
-          expDate.setDate(expDate.getDate() + part.expiryDate);
-        }
 
-        const lot = queryRunner.manager.create(MatLot, {
-          lotNo,
-          itemCode: item.itemCode,
-          initQty: item.receivedQty,
-          currentQty: item.receivedQty,
-          recvDate: new Date(),
-          manufactureDate: mfgDate,
-          expireDate: expDate,
-          poNo: po.poNo,
-          vendor: po.partnerName,
-        });
-        const savedLot = await queryRunner.manager.save(lot);
-
-        // 2. MatArrival 생성 (입하 업무 테이블)
+        // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
         const arrival = queryRunner.manager.create(MatArrival, {
           arrivalNo,
           invoiceNo: dto.invoiceNo || null,
@@ -207,24 +190,24 @@ export class ArrivalService {
           poNo: po.poNo,
           vendorId: po.partnerId,
           vendorName: po.partnerName,
-          lotId: savedLot.lotNo,
+          supUid: item.supUid || null,
           itemCode: item.itemCode,
           qty: item.receivedQty,
           warehouseCode: item.warehouseId,
           arrivalType: 'PO',
           workerId: dto.workerId,
           remark: item.remark || dto.remark,
+          iqcStatus: 'PENDING',
           status: 'DONE',
         });
         await queryRunner.manager.save(arrival);
 
-        // 3. StockTransaction 생성 (수불원장)
+        // 2. StockTransaction 생성 (수불원장)
         const stockTx = queryRunner.manager.create(StockTransaction, {
           transNo,
           transType: 'MAT_IN',
           toWarehouseId: item.warehouseId,
           itemCode: item.itemCode,
-          lotNo: savedLot.lotNo,
           qty: item.receivedQty,
           remark: item.remark || dto.remark,
           workerId: dto.workerId,
@@ -233,10 +216,10 @@ export class ArrivalService {
         });
         const savedTx = await queryRunner.manager.save(stockTx);
 
-        // 4. Stock upsert (현재고 반영)
-        await this.upsertStock(queryRunner.manager, item.warehouseId, item.itemCode, savedLot.lotNo, item.receivedQty);
+        // 3. Stock upsert (현재고 반영)
+        await this.upsertStock(queryRunner.manager, item.warehouseId, item.itemCode, null, item.receivedQty);
 
-        // 5. PurchaseOrderItem.receivedQty 증가
+        // 4. PurchaseOrderItem.receivedQty 증가
         const poItem = poItems.find((pi) => pi.id === Number(item.poItemId));
         if (poItem) {
           await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
@@ -254,7 +237,6 @@ export class ArrivalService {
           itemName: part?.itemName,
           itemType: part?.itemType,
           unit: part?.unit,
-          lotNo: savedLot?.lotNo,
           warehouseCode: warehouse?.warehouseCode,
           warehouseName: warehouse?.warehouseName,
         });
@@ -282,52 +264,34 @@ export class ArrivalService {
     try {
       const arrivalNo = await this.numRuleService.nextNumberInTx(queryRunner, 'ARRIVAL');
       const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
-      const lotNo = dto.lotNo || await this.numRuleService.nextNumberInTx(queryRunner, 'LOT');
-      // 1. LOT 생성 (제조일자 + 유효기한 자동 계산)
+
+      // 품목 정보 조회
       const part = await this.partMasterRepository.findOne({ where: { itemCode: dto.itemCode } });
-      const mfgDate = dto.manufactureDate ? new Date(dto.manufactureDate) : null;
-      let expDate: Date | null = null;
-      if (mfgDate && part?.expiryDate && part.expiryDate > 0) {
-        expDate = new Date(mfgDate);
-        expDate.setDate(expDate.getDate() + part.expiryDate);
-      }
 
-      const lot = queryRunner.manager.create(MatLot, {
-        lotNo,
-        itemCode: dto.itemCode,
-        initQty: dto.qty,
-        currentQty: dto.qty,
-        recvDate: new Date(),
-        manufactureDate: mfgDate,
-        expireDate: expDate,
-        vendor: dto.vendor,
-      });
-      const savedLot = await queryRunner.manager.save(lot);
-
-      // 2. MatArrival 생성 (입하 업무 테이블)
+      // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
       const arrival = queryRunner.manager.create(MatArrival, {
         arrivalNo,
         invoiceNo: dto.invoiceNo || null,
         vendorId: dto.vendorId || null,
         vendorName: dto.vendor || null,
-        lotId: savedLot.lotNo,
+        supUid: dto.supUid || null,
         itemCode: dto.itemCode,
         qty: dto.qty,
         warehouseCode: dto.warehouseId,
         arrivalType: 'MANUAL',
         workerId: dto.workerId,
         remark: dto.remark,
+        iqcStatus: 'PENDING',
         status: 'DONE',
       });
       await queryRunner.manager.save(arrival);
 
-      // 3. StockTransaction 생성 (수불원장)
+      // 2. StockTransaction 생성 (수불원장)
       const stockTx = queryRunner.manager.create(StockTransaction, {
         transNo,
         transType: 'MAT_IN',
         toWarehouseId: dto.warehouseId,
         itemCode: dto.itemCode,
-        lotNo: savedLot.lotNo,
         qty: dto.qty,
         remark: dto.remark,
         workerId: dto.workerId,
@@ -335,8 +299,8 @@ export class ArrivalService {
       });
       const savedTx = await queryRunner.manager.save(stockTx);
 
-      // 4. Stock upsert
-      await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.itemCode, savedLot.lotNo, dto.qty);
+      // 3. Stock upsert
+      await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.itemCode, null, dto.qty);
 
       // warehouse 정보 조회 (part는 이미 위에서 조회)
       const warehouse = await this.warehouseRepository.findOne({ where: { warehouseCode: dto.warehouseId } });
@@ -350,7 +314,6 @@ export class ArrivalService {
         itemName: part?.itemName,
         itemType: part?.itemType,
         unit: part?.unit,
-        lotNo: savedLot?.lotNo,
         warehouseCode: warehouse?.warehouseCode,
         warehouseName: warehouse?.warehouseName,
       };
@@ -406,30 +369,31 @@ export class ArrivalService {
 
     // part, lot, warehouse 정보 조회
     const itemCodes = data.map((item) => item.itemCode).filter(Boolean);
-    const lotNos = data.map((item) => item.lotNo).filter(Boolean) as string[];
+    const matUids = data.map((item) => item.matUid).filter(Boolean) as string[];
     const warehouseIds = data.map((item) => item.toWarehouseId).filter(Boolean) as string[];
 
     const [parts, lots, warehouses] = await Promise.all([
       itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      lotNos.length > 0 ? this.matLotRepository.find({ where: { lotNo: In(lotNos) } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
       warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds) } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
-    // MatArrival 정보 조회 (인보이스번호, 거래처 등)
-    const arrivalRecords = lotNos.length > 0
-      ? await this.matArrivalRepository.find({ where: { lotId: In(lotNos) } })
+    // MatArrival 정보 조회 (인보이스번호, 거래처 등) — arrivalNo 기준으로 조회
+    // NOTE: MatArrival에는 matUid 필드가 없음. itemCode 기준으로 매칭
+    const arrivalRecords = itemCodes.length > 0
+      ? await this.matArrivalRepository.find({ where: { itemCode: In(itemCodes), status: 'DONE' } })
       : [];
-    const arrivalByLotId = new Map(arrivalRecords.map((a) => [a.lotId, a]));
+    const arrivalByItemCode = new Map(arrivalRecords.map((a) => [a.itemCode, a]));
 
     const flattenedData = data.map((item) => {
       const part = partMap.get(item.itemCode);
-      const lot = item.lotNo ? lotMap.get(item.lotNo) : null;
+      const lot = item.matUid ? lotMap.get(item.matUid) : null;
       const warehouse = item.toWarehouseId ? warehouseMap.get(item.toWarehouseId) : null;
-      const arrival = item.lotNo ? arrivalByLotId.get(item.lotNo) : null;
+      const arrival = item.itemCode ? arrivalByItemCode.get(item.itemCode) : null;
 
       return {
         ...item,
@@ -437,7 +401,7 @@ export class ArrivalService {
         itemName: part?.itemName,
         itemType: part?.itemType,
         unit: part?.unit,
-        lotNo: lot?.lotNo,
+        matUid: lot?.matUid,
         warehouseCode: warehouse?.warehouseCode,
         warehouseName: warehouse?.warehouseName,
         arrivalNo: arrival?.arrivalNo,
@@ -471,10 +435,11 @@ export class ArrivalService {
       // 1. 원본 CANCELED 처리
       await queryRunner.manager.update(StockTransaction, Number(dto.transactionId), { status: 'CANCELED' });
 
-      // 1-1. MatArrival도 CANCELED 처리 (LOT 기준으로 찾기)
-      if (original.lotNo) {
+      // 1-1. MatArrival도 CANCELED 처리 (itemCode 기준으로 찾기)
+      if (original.itemCode) {
         const arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
-          where: { lotId: original.lotNo, status: 'DONE' },
+          where: { itemCode: original.itemCode, status: 'DONE' },
+          order: { arrivalDate: 'DESC' },
         });
         if (arrivalRecord) {
           await queryRunner.manager.update(MatArrival, arrivalRecord.id, { status: 'CANCELED' });
@@ -487,7 +452,7 @@ export class ArrivalService {
         transType: 'MAT_IN_CANCEL',
         fromWarehouseId: original.toWarehouseId,
         itemCode: original.itemCode,
-        lotNo: original.lotNo,
+        matUid: original.matUid,
         qty: -original.qty,
         remark: dto.reason,
         workerId: dto.workerId,
@@ -499,16 +464,16 @@ export class ArrivalService {
       // 3. Stock 감소
       if (original.toWarehouseId) {
         await this.upsertStock(
-          queryRunner.manager, original.toWarehouseId, original.itemCode, original.lotNo, -original.qty,
+          queryRunner.manager, original.toWarehouseId, original.itemCode, original.matUid, -original.qty,
         );
       }
 
       // 4. LOT.currentQty 감소
-      if (original.lotNo) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: original.lotNo } });
+      if (original.matUid) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: original.matUid } });
         if (lot) {
           const newQty = Math.max(0, lot.currentQty - original.qty);
-          await queryRunner.manager.update(MatLot, lot.lotNo, {
+          await queryRunner.manager.update(MatLot, lot.matUid, {
             currentQty: newQty,
             status: newQty === 0 ? 'DEPLETED' : lot.status,
           });
@@ -529,7 +494,7 @@ export class ArrivalService {
       // part, lot, warehouse 정보 조회
       const [part, lot, toWarehouse] = await Promise.all([
         this.partMasterRepository.findOne({ where: { itemCode: original.itemCode } }),
-        original.lotNo ? this.matLotRepository.findOne({ where: { lotNo: original.lotNo } }) : null,
+        original.matUid ? this.matLotRepository.findOne({ where: { matUid: original.matUid } }) : null,
         original.toWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: original.toWarehouseId } }) : null,
       ]);
 
@@ -541,7 +506,7 @@ export class ArrivalService {
         itemName: part?.itemName,
         itemType: part?.itemType,
         unit: part?.unit,
-        lotNo: lot?.lotNo,
+        matUid: lot?.matUid,
         warehouseCode: toWarehouse?.warehouseCode,
         warehouseName: toWarehouse?.warehouseName,
       };
@@ -614,15 +579,13 @@ export class ArrivalService {
       };
     }
 
-    // 관련 ID 수집
+    // 관련 ID 수집 (MatArrival에는 matUid 없음 — itemCode 기준으로 조회)
     const itemCodes = [...new Set(arrivals.map((a) => a.itemCode))];
-    const lotNos = [...new Set(arrivals.map((a) => a.lotId))];
     const warehouseCodes = [...new Set(arrivals.map((a) => a.warehouseCode))];
 
     // 병렬 조회
-    const [parts, lots, warehouses, stocks] = await Promise.all([
+    const [parts, warehouses, stocks] = await Promise.all([
       this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }),
-      this.matLotRepository.find({ where: { lotNo: In(lotNos) } }),
       this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes) } }),
       this.matStockRepository.find({
         where: { itemCode: In(itemCodes), warehouseCode: In(warehouseCodes) },
@@ -630,21 +593,19 @@ export class ArrivalService {
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-    const lotMap = new Map(lots.map((l) => [l.lotNo, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
-    // Stock 맵: warehouseCode_itemCode_lotNo → qty
+    // Stock 맵: warehouseCode_itemCode → qty
     const stockMap = new Map<string, number>();
     for (const s of stocks) {
-      const key = `${s.warehouseCode}_${s.itemCode}_${s.lotNo || ''}`;
+      const key = `${s.warehouseCode}_${s.itemCode}`;
       stockMap.set(key, (stockMap.get(key) || 0) + s.qty);
     }
 
     let data = arrivals.map((a) => {
       const part = partMap.get(a.itemCode);
-      const lot = lotMap.get(a.lotId);
       const warehouse = warehouseMap.get(a.warehouseCode);
-      const stockKey = `${a.warehouseCode}_${a.itemCode}_${a.lotId || ''}`;
+      const stockKey = `${a.warehouseCode}_${a.itemCode}`;
       const currentStock = stockMap.get(stockKey) ?? 0;
 
       return {
@@ -656,14 +617,11 @@ export class ArrivalService {
         itemCode: part?.itemCode,
         itemName: part?.itemName,
         unit: part?.unit,
-        lotNo: lot?.lotNo,
         arrivalQty: a.qty,
         currentStock,
         warehouseName: warehouse?.warehouseName || a.warehouseCode,
         arrivalType: a.arrivalType,
         arrivalDate: a.arrivalDate,
-        manufactureDate: lot?.manufactureDate,
-        expireDate: lot?.expireDate,
       };
     });
 
@@ -675,8 +633,7 @@ export class ArrivalService {
         (d.itemName && d.itemName.toLowerCase().includes(s)) ||
         (d.poNo && d.poNo.toLowerCase().includes(s)) ||
         (d.invoiceNo && d.invoiceNo.toLowerCase().includes(s)) ||
-        (d.arrivalNo && d.arrivalNo.toLowerCase().includes(s)) ||
-        (d.lotNo && d.lotNo.toLowerCase().includes(s)),
+        (d.arrivalNo && d.arrivalNo.toLowerCase().includes(s)),
       );
     }
 
@@ -685,7 +642,7 @@ export class ArrivalService {
       totalArrivalQty: data.reduce((sum, d) => sum + d.arrivalQty, 0),
       totalCurrentStock: data.reduce((sum, d) => sum + d.currentStock, 0),
       partCount: new Set(data.map((d) => d.itemCode)).size,
-      lotCount: new Set(data.map((d) => d.lotNo)).size,
+      lotCount: 0,
     };
 
     return { data, stats };
@@ -717,22 +674,22 @@ export class ArrivalService {
   }
 
   /** MatStock upsert (현재고 증감) */
-  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, lotNo: string | null, qtyDelta: number) {
+  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number) {
     const existing = await manager.findOne(MatStock, {
-      where: { warehouseCode, itemCode, lotNo: lotNo || null },
+      where: { warehouseCode, itemCode, matUid: matUid || null },
     });
 
     if (existing) {
       const newQty = Math.max(0, existing.qty + qtyDelta);
       await manager.update(MatStock,
-        { warehouseCode: existing.warehouseCode, itemCode: existing.itemCode, lotNo: existing.lotNo },
+        { warehouseCode: existing.warehouseCode, itemCode: existing.itemCode, matUid: existing.matUid },
         { qty: newQty, availableQty: Math.max(0, newQty - existing.reservedQty) },
       );
     } else if (qtyDelta > 0) {
       const newStock = manager.create(MatStock, {
         warehouseCode,
         itemCode,
-        lotNo,
+        matUid,
         qty: qtyDelta,
         availableQty: qtyDelta,
       });

@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. id가 자동증가 PK (SEQUENCE)
- * 2. 팔레트/박스/LOT/자재LOT/시리얼 등 다양한 추적 대상
+ * 2. 팔레트/박스/자재UID/제품UID/시리얼 등 다양한 추적 대상
  * 3. eventType: 이벤트 유형 (입고, 출고, 이동 등)
  * 4. self-reference: parent/children으로 트리 구조
  */
@@ -24,7 +24,8 @@ import {
 @Entity({ name: 'TRACE_LOGS' })
 @Index(['palletId'])
 @Index(['boxId'])
-@Index(['lotId'])
+@Index(['matUid'])
+@Index(['prdUid'])
 @Index(['matLotId'])
 @Index(['serialNo'])
 @Index(['eventType'])
@@ -41,8 +42,11 @@ export class TraceLog {
   @Column({ name: 'BOX_ID', length: 255, nullable: true })
   boxId: string | null;
 
-  @Column({ name: 'LOT_ID', length: 255, nullable: true })
-  lotId: string | null;
+  @Column({ name: 'MAT_UID', length: 50, nullable: true })
+  matUid: string | null;
+
+  @Column({ name: 'PRD_UID', length: 50, nullable: true })
+  prdUid: string | null;
 
   @Column({ name: 'MAT_LOT_ID', length: 255, nullable: true })
   matLotId: string | null;
@@ -50,7 +54,7 @@ export class TraceLog {
   @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerCode: string | null;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })

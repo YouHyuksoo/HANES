@@ -236,7 +236,7 @@ export class BoxService {
 
     // 혼입방지: 시리얼(LOT)의 품목이 박스의 품목과 일치하는지 검증
     for (const serial of dto.serials) {
-      const lot = await this.lotRepository.findOne({ where: { lotNo: serial } });
+      const lot = await this.lotRepository.findOne({ where: { matUid: serial } });
       if (lot && lot.itemCode !== box.itemCode) {
         throw new BadRequestException(
           `혼입방지: 시리얼 "${serial}"의 품목이 박스 품목과 다릅니다.`,

@@ -199,7 +199,7 @@ export default function MaterialReceivingPage() {
       <ScanHistoryList
         items={history}
         renderItem={renderHistoryItem}
-        keyExtractor={(item, idx) => `${item.lotNo}-${idx}`}
+        keyExtractor={(item, idx) => `${item.matUid}-${idx}`}
       />
 
       {/* 하단 버튼 */}

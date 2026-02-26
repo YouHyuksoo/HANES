@@ -20,7 +20,7 @@ import api from "@/services/api";
 interface UsageReport {
   id: string;
   reportNo: string;
-  lotNo: string;
+  matUid: string;
   itemCode: string;
   itemName: string;
   usageQty: number;
@@ -51,7 +51,7 @@ export default function CustomsUsagePage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [form, setForm] = useState({ lotNo: "", usageQty: "", jobOrderNo: "", remark: "" });
+  const [form, setForm] = useState({ matUid: "", usageQty: "", jobOrderNo: "", remark: "" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -74,7 +74,7 @@ export default function CustomsUsagePage() {
     try {
       await api.post("/customs/usage", form);
       setIsModalOpen(false);
-      setForm({ lotNo: "", usageQty: "", jobOrderNo: "", remark: "" });
+      setForm({ matUid: "", usageQty: "", jobOrderNo: "", remark: "" });
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
@@ -103,7 +103,7 @@ export default function CustomsUsagePage() {
 
   const columns = useMemo<ColumnDef<UsageReport>[]>(() => [
     { accessorKey: "reportNo", header: t("customs.usage.reportNo"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "lotNo", header: t("customs.stock.lotNo"), size: 130, meta: { filterType: "text" as const } },
+    { accessorKey: "matUid", header: t("customs.stock.matUid"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "usageQty", header: t("customs.usage.usageQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
@@ -178,7 +178,7 @@ export default function CustomsUsagePage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("customs.usage.registerUsage")} size="lg">
         <div className="space-y-4">
-          <Input label={t("customs.stock.lotNo")} placeholder="LOT250125-001" value={form.lotNo} onChange={(e) => setForm((p) => ({ ...p, lotNo: e.target.value }))} fullWidth />
+          <Input label={t("customs.stock.matUid")} placeholder="MAT250125-001" value={form.matUid} onChange={(e) => setForm((p) => ({ ...p, matUid: e.target.value }))} fullWidth />
           <Input label={t("customs.usage.usageQty")} type="number" placeholder="100" value={form.usageQty} onChange={(e) => setForm((p) => ({ ...p, usageQty: e.target.value }))} fullWidth />
           <Input label={t("customs.usage.jobOrder")} placeholder="JO-2025-001" value={form.jobOrderNo} onChange={(e) => setForm((p) => ({ ...p, jobOrderNo: e.target.value }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />

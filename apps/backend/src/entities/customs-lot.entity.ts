@@ -20,7 +20,7 @@ import {
 
 @Entity({ name: 'CUSTOMS_LOTS' })
 @Index(['entryId'])
-@Index(['lotNo'])
+@Index(['matUid'])
 @Index(['status'])
 export class CustomsLot {
   @PrimaryGeneratedColumn({ name: 'ID' })
@@ -29,8 +29,8 @@ export class CustomsLot {
   @Column({ name: 'ENTRY_ID', type: 'number' })
   entryId: number;
 
-  @Column({ name: 'LOT_NO', length: 100 })
-  lotNo: string;
+  @Column({ name: 'MAT_UID', length: 100 })
+  matUid: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

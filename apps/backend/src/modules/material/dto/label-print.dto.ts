@@ -20,10 +20,10 @@ export class GenerateZplDto {
   @IsString()
   templateId: string;
 
-  @ApiProperty({ description: 'LOT ID 배열', type: [String] })
+  @ApiProperty({ description: '자재 UID 배열', type: [String] })
   @IsArray()
   @IsString({ each: true })
-  lotIds: string[];
+  matUids: string[];
 }
 
 /** TCP/IP 프린터 전송 요청 */
@@ -65,10 +65,10 @@ export class CreatePrintLogDto {
   @MaxLength(100)
   printerName?: string;
 
-  @ApiProperty({ description: 'LOT ID 배열', type: [String] })
+  @ApiProperty({ description: '자재 UID 배열', type: [String] })
   @IsArray()
   @IsString({ each: true })
-  lotIds: string[];
+  uidList: string[];
 
   @ApiProperty({ description: '출력 매수' })
   @IsInt()

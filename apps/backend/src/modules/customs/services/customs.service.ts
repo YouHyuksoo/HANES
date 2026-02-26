@@ -73,7 +73,7 @@ export class CustomsService {
       ])
       .addSelect([
         'cl.id AS cl_id',
-        'cl.LOT_NO AS cl_lotNo',
+        'cl.MAT_UID AS cl_matUid',
         'cl.ITEM_CODE AS cl_itemCode',
         'cl.QTY AS cl_qty',
         'cl.USED_QTY AS cl_usedQty',
@@ -139,7 +139,7 @@ export class CustomsService {
     const lots = entryIds.length > 0
       ? await this.customsLotRepository.find({
           where: { entryId: In(entryIds) },
-          select: ['id', 'entryId', 'lotNo', 'itemCode', 'qty', 'usedQty', 'remainQty', 'status'],
+          select: ['id', 'entryId', 'matUid', 'itemCode', 'qty', 'usedQty', 'remainQty', 'status'],
         })
       : [];
 
@@ -297,7 +297,7 @@ export class CustomsService {
   async createLot(dto: CreateCustomsLotDto) {
     const lot = this.customsLotRepository.create({
       entryId: typeof dto.entryId === 'string' ? parseInt(dto.entryId, 10) : dto.entryId,
-      lotNo: dto.lotNo,
+      matUid: dto.matUid,
       itemCode: dto.itemCode,
       qty: dto.qty,
       remainQty: dto.qty,

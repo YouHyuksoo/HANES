@@ -21,8 +21,7 @@ import api from "@/services/api";
 
 interface IqcHistoryItem {
   id: string;
-  lotId?: string;
-  lotNo?: string;
+  matUid?: string;
   itemCode?: string;
   itemName?: string;
   unit?: string;
@@ -154,7 +153,7 @@ export default function IqcHistoryPage() {
       },
     },
     {
-      accessorKey: "lotNo", header: "LOT No.", size: 160,
+      accessorKey: "matUid", header: "LOT No.", size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
@@ -271,7 +270,7 @@ export default function IqcHistoryPage() {
             <div className="p-3 bg-surface-secondary rounded-lg space-y-1 text-sm">
               <p>
                 <span className="text-text-muted">LOT No.:</span>{" "}
-                {cancelTarget.lotNo}
+                {cancelTarget.matUid}
               </p>
               <p>
                 <span className="text-text-muted">{t("common.partName")}:</span>{" "}

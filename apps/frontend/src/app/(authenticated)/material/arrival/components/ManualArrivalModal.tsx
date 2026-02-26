@@ -26,7 +26,7 @@ interface FormState {
   itemCode: string;
   warehouseCode: string;
   qty: string;
-  lotNo: string;
+  supUid: string;
   manufactureDate: string;
   vendor: string;
   remark: string;
@@ -36,7 +36,7 @@ const INITIAL_FORM: FormState = {
   itemCode: '',
   warehouseCode: '',
   qty: '',
-  lotNo: '',
+  supUid: '',
   manufactureDate: '',
   vendor: '',
   remark: '',
@@ -63,7 +63,7 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
         itemCode: form.itemCode,
         warehouseCode: form.warehouseCode,
         qty: Number(form.qty),
-        lotNo: form.lotNo || undefined,
+        supUid: form.supUid || undefined,
         manufactureDate: form.manufactureDate || undefined,
         vendor: form.vendor || undefined,
         remark: form.remark || undefined,
@@ -105,10 +105,10 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
           fullWidth
         />
         <Input
-          label={t('material.col.lotNo')}
-          placeholder={t('material.arrival.lotNoPlaceholder')}
-          value={form.lotNo}
-          onChange={(e) => handleChange('lotNo', e.target.value)}
+          label={t('material.col.supUid')}
+          placeholder={t('material.arrival.supUidPlaceholder')}
+          value={form.supUid}
+          onChange={(e) => handleChange('supUid', e.target.value)}
           fullWidth
         />
         <Input

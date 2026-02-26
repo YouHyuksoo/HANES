@@ -19,7 +19,7 @@ export interface PartInfo {
 /** LOT 정보 (API 응답 공통) */
 export interface LotInfo {
   id: string;
-  lotNo: string;
+  matUid: string;
   poNo?: string | null;
   vendor?: string | null;
 }
@@ -80,7 +80,8 @@ export interface ArrivalItemInput {
   itemCode: string;
   receivedQty: number;
   warehouseCode: string;
-  lotNo?: string;
+  supUid?: string;
+  invoiceNo?: string;
   manufactureDate?: string;
   remark?: string;
 }
