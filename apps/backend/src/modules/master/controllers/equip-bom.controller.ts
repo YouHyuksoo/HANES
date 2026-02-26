@@ -99,7 +99,7 @@ export class EquipBomController {
   @Get('rels/:id')
   @ApiOperation({ summary: '설비-BOM 연결 상세 조회' })
   async findRelById(@Param('id') id: string) {
-    const data = await this.equipBomService.findRelById(id);
+    const data = await this.equipBomService.findRelById(+id);
     return ResponseUtil.success(data);
   }
 
@@ -121,14 +121,14 @@ export class EquipBomController {
   @Put('rels/:id')
   @ApiOperation({ summary: '설비-BOM 연결 수정' })
   async updateRel(@Param('id') id: string, @Body() dto: UpdateEquipBomRelDto) {
-    const data = await this.equipBomService.updateRel(id, dto);
+    const data = await this.equipBomService.updateRel(+id, dto);
     return ResponseUtil.success(data, '설비-BOM 연결이 수정되었습니다.');
   }
 
   @Delete('rels/:id')
   @ApiOperation({ summary: '설비-BOM 연결 삭제' })
   async deleteRel(@Param('id') id: string) {
-    await this.equipBomService.deleteRel(id);
+    await this.equipBomService.deleteRel(+id);
     return ResponseUtil.success(null, '설비-BOM 연결이 삭제되었습니다.');
   }
 }

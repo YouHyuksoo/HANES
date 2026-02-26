@@ -146,7 +146,7 @@ export class PmWorkOrderController {
   @ApiOperation({ summary: 'WO 실행' })
   @ApiParam({ name: 'id', description: 'WO ID' })
   async execute(@Param('id') id: string, @Body() dto: ExecutePmWorkOrderDto) {
-    const data = await this.pmPlanService.executeWorkOrder(id, dto);
+    const data = await this.pmPlanService.executeWorkOrder(+id, dto);
     return ResponseUtil.success(data, 'Work Order가 완료되었습니다.');
   }
 
@@ -154,7 +154,7 @@ export class PmWorkOrderController {
   @ApiOperation({ summary: 'WO 취소' })
   @ApiParam({ name: 'id', description: 'WO ID' })
   async cancel(@Param('id') id: string) {
-    const data = await this.pmPlanService.cancelWorkOrder(id);
+    const data = await this.pmPlanService.cancelWorkOrder(+id);
     return ResponseUtil.success(data, 'Work Order가 취소되었습니다.');
   }
 }

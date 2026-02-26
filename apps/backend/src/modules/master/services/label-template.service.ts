@@ -57,7 +57,7 @@ export class LabelTemplateService {
 
   async findById(id: string) {
     const template = await this.labelTemplateRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!template) {
@@ -105,7 +105,7 @@ export class LabelTemplateService {
     const updated = await this.labelTemplateRepository.save({
       ...template,
       ...updateData,
-      id,
+      id: +id,
     });
 
     return updated;

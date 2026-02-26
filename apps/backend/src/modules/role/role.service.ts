@@ -48,9 +48,9 @@ export class RoleService {
   }
 
   /** 역할 상세 조회 (권한 포함) */
-  async findOne(id: number) {
+  async findOne(code: string) {
     const role = await this.roleRepository.findOne({
-      where: { id },
+      where: { code },
       relations: ['permissions'],
     });
 
@@ -82,54 +82,54 @@ export class RoleService {
     });
 
     const saved = await this.roleRepository.save(role);
-    this.logger.log(`Role created: ${saved.code} (${saved.id})`);
+    this.logger.log(`Role created: ${saved.code}`);
     return saved;
   }
 
   /** 역할 수정 */
-  async update(id: number, dto: UpdateRoleDto, userId?: string) {
-    const role = await this.findOne(id);
+  async update(code: string, dto: UpdateRoleDto, userId?: string) {
+    const role = await this.findOne(code);
 
-    await this.roleRepository.update(id, {
+    await this.roleRepository.update({ code }, {
       ...dto,
       updatedBy: userId || role.updatedBy,
     });
 
     const updated = await this.roleRepository.findOne({
-      where: { id },
+      where: { code },
       relations: ['permissions'],
     });
 
-    this.logger.log(`Role updated: ${updated!.code} (${id})`);
+    this.logger.log(`Role updated: ${code}`);
     return updated;
   }
 
   /** 역할 삭제 (소프트 삭제) */
-  async remove(id: number) {
-    const role = await this.findOne(id);
+  async remove(code: string) {
+    const role = await this.findOne(code);
 
     if (role.isSystem) {
       throw new BadRequestException('시스템 기본 역할은 삭제할 수 없습니다.');
     }
 
-    await this.roleRepository.delete(id);
-    this.logger.log(`Role deleted: ${role.code} (${id})`);
+    await this.roleRepository.delete({ code });
+    this.logger.log(`Role deleted: ${code}`);
     return { message: '역할이 삭제되었습니다.' };
   }
 
   /** 특정 역할의 메뉴 권한 목록 조회 (메뉴 코드 배열) */
-  async getPermissions(roleId: number): Promise<string[]> {
+  async getPermissions(roleCode: string): Promise<string[]> {
     const permissions = await this.permissionRepository.find({
-      where: { roleId, canAccess: true },
+      where: { roleCode, canAccess: true },
     });
 
     return permissions.map((p) => p.menuCode);
   }
 
   /** 메뉴 권한 일괄 업데이트 (기존 삭제 후 새로 INSERT) */
-  async updatePermissions(roleId: number, dto: UpdatePermissionsDto) {
+  async updatePermissions(roleCode: string, dto: UpdatePermissionsDto) {
     // ADMIN 역할은 권한 수정 불가 (모든 메뉴 접근 가능)
-    const role = await this.findOne(roleId);
+    const role = await this.findOne(roleCode);
     if (role.code === 'ADMIN') {
       throw new BadRequestException(
         'ADMIN 역할의 권한은 수정할 수 없습니다. (모든 메뉴 접근 가능)',
@@ -137,12 +137,12 @@ export class RoleService {
     }
 
     // 기존 권한 전체 삭제
-    await this.permissionRepository.delete({ roleId });
+    await this.permissionRepository.delete({ roleCode });
 
     // 새 권한 INSERT
     const entities = dto.menuCodes.map((menuCode) =>
       this.permissionRepository.create({
-        roleId,
+        roleCode,
         menuCode,
         canAccess: true,
       }),
@@ -151,11 +151,11 @@ export class RoleService {
     await this.permissionRepository.save(entities);
 
     this.logger.log(
-      `Permissions updated for role ${role.code}: ${dto.menuCodes.length} menus`,
+      `Permissions updated for role ${roleCode}: ${dto.menuCodes.length} menus`,
     );
 
     return {
-      roleId,
+      roleCode,
       menuCodes: dto.menuCodes,
       message: '메뉴 권한이 업데이트되었습니다.',
     };
@@ -180,7 +180,7 @@ export class RoleService {
     }
 
     const permissions = await this.permissionRepository.find({
-      where: { roleId: role.id, canAccess: true },
+      where: { roleCode, canAccess: true },
     });
 
     return permissions.map((p) => p.menuCode);

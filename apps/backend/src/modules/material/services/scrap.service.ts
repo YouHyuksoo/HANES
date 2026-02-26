@@ -78,7 +78,7 @@ export class ScrapService {
   }
 
   async create(dto: CreateScrapDto) {
-    const { lotNo, warehouseId, qty, reason, workerId } = dto;
+    const { lotId: lotNo, warehouseId, qty, reason, workerId } = dto;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -107,10 +107,10 @@ export class ScrapService {
       }
 
       // 재고 차감
-      await queryRunner.manager.update(MatStock, stock.id, {
-        qty: stock.qty - qty,
-        availableQty: stock.availableQty - qty,
-      });
+      await queryRunner.manager.update(MatStock,
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+        { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
+      );
 
       // LOT 수량 차감
       await queryRunner.manager.update(MatLot, lot.lotNo, {

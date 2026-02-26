@@ -57,7 +57,7 @@ export class EquipInspectService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(id: number) {
     const item = await this.equipInspectRepository.findOne({
       where: { id },
     });
@@ -75,7 +75,7 @@ export class EquipInspectService {
     return saved;
   }
 
-  async update(id: string, dto: UpdateEquipInspectItemDto) {
+  async update(id: number, dto: UpdateEquipInspectItemDto) {
     const item = await this.findById(id);
 
     const updated = await this.equipInspectRepository.save({
@@ -87,7 +87,7 @@ export class EquipInspectService {
     return updated;
   }
 
-  async delete(id: string) {
+  async delete(id: number) {
     const item = await this.findById(id);
 
     await this.equipInspectRepository.remove(item);

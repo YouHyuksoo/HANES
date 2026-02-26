@@ -60,24 +60,24 @@ export class PurchaseOrderService {
     if (data.length === 0) return { data: [], total, page, limit };
 
     // 품목 정보 일괄 조회 (N+1 방지)
-    const poIds = data.map((po) => po.id);
-    const items = await this.purchaseOrderItemRepository.find({ where: { poId: In(poIds) } });
+    const poNos = data.map((po) => po.poNo);
+    const items = await this.purchaseOrderItemRepository.find({ where: { poNo: In(poNos) } });
 
     const itemCodes = [...new Set(items.map((item) => item.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // PO별 아이템 그룹화
-    const itemsByPoId = new Map<string, typeof items>();
+    const itemsByPoNo = new Map<string, typeof items>();
     for (const item of items) {
-      if (!itemsByPoId.has(item.poId)) {
-        itemsByPoId.set(item.poId, []);
+      if (!itemsByPoNo.has(item.poNo)) {
+        itemsByPoNo.set(item.poNo, []);
       }
-      itemsByPoId.get(item.poId)!.push(item);
+      itemsByPoNo.get(item.poNo)!.push(item);
     }
 
     const result = data.map((po) => {
-      const poItems = itemsByPoId.get(po.id) || [];
+      const poItems = itemsByPoNo.get(po.poNo) || [];
       const enrichedItems = poItems.map((item) => {
         const part = partMap.get(item.itemCode);
         return {
@@ -97,14 +97,14 @@ export class PurchaseOrderService {
     return { data: result, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(poNo: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id },
+      where: { poNo },
     });
-    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
+    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
 
     const items = await this.purchaseOrderItemRepository.find({
-      where: { poId: id },
+      where: { poNo },
     });
 
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
@@ -155,7 +155,7 @@ export class PurchaseOrderService {
       // 품목 생성
       const itemEntities = dto.items.map((item) =>
         queryRunner.manager.create(PurchaseOrderItem, {
-          poId: savedPo.id,
+          poNo: savedPo.poNo,
           itemCode: item.itemCode,
           orderQty: item.orderQty,
           unitPrice: item.unitPrice,
@@ -191,8 +191,8 @@ export class PurchaseOrderService {
     }
   }
 
-  async update(id: string, dto: UpdatePurchaseOrderDto) {
-    await this.findById(id);
+  async update(poNo: string, dto: UpdatePurchaseOrderDto) {
+    await this.findById(poNo);
     const { items, ...poData } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -202,7 +202,7 @@ export class PurchaseOrderService {
     try {
       if (items) {
         // 기존 품목 삭제
-        await queryRunner.manager.delete(PurchaseOrderItem, { poId: id });
+        await queryRunner.manager.delete(PurchaseOrderItem, { poNo });
 
         const totalAmount = items.reduce((sum, item) => sum + (item.orderQty * (item.unitPrice ?? 0)), 0);
 
@@ -214,12 +214,12 @@ export class PurchaseOrderService {
         if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
         if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
 
-        await queryRunner.manager.update(PurchaseOrder, id, updateData);
+        await queryRunner.manager.update(PurchaseOrder, poNo, updateData);
 
         // 새 품목 생성
         const itemEntities = items.map((item) =>
           queryRunner.manager.create(PurchaseOrderItem, {
-            poId: id,
+            poNo,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             unitPrice: item.unitPrice,
@@ -232,7 +232,7 @@ export class PurchaseOrderService {
         if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
         if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
 
-        await queryRunner.manager.update(PurchaseOrder, id, updateData);
+        await queryRunner.manager.update(PurchaseOrder, poNo, updateData);
       }
 
       await queryRunner.commitTransaction();
@@ -243,41 +243,41 @@ export class PurchaseOrderService {
       await queryRunner.release();
     }
 
-    return this.findById(id);
+    return this.findById(poNo);
   }
 
   /** PO 확정 (DRAFT -> CONFIRMED) */
-  async confirm(id: string) {
+  async confirm(poNo: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id },
+      where: { poNo },
     });
-    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
+    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
     if (po.status !== 'DRAFT') {
       throw new BadRequestException(`DRAFT 상태의 PO만 확정할 수 있습니다. 현재 상태: ${po.status}`);
     }
 
-    await this.purchaseOrderRepository.update(id, { status: 'CONFIRMED' });
-    return this.findById(id);
+    await this.purchaseOrderRepository.update(poNo, { status: 'CONFIRMED' });
+    return this.findById(poNo);
   }
 
   /** PO 마감 (RECEIVED -> CLOSED) */
-  async close(id: string) {
+  async close(poNo: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id },
+      where: { poNo },
     });
-    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${id}`);
+    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
     if (!['RECEIVED', 'PARTIAL'].includes(po.status)) {
       throw new BadRequestException(`마감 가능한 상태가 아닙니다. 현재 상태: ${po.status}`);
     }
 
-    await this.purchaseOrderRepository.update(id, { status: 'CLOSED' });
-    return this.findById(id);
+    await this.purchaseOrderRepository.update(poNo, { status: 'CLOSED' });
+    return this.findById(poNo);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.purchaseOrderRepository.delete(id);
-    return { id };
+  async delete(poNo: string) {
+    await this.findById(poNo);
+    await this.purchaseOrderRepository.delete(poNo);
+    return { poNo };
   }
 }
 

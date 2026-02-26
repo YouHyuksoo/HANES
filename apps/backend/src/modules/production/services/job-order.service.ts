@@ -32,7 +32,7 @@ import {
 
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
 const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
-  id: true, orderNo: true, itemCode: true, lineCode: true,
+  orderNo: true, itemCode: true, lineCode: true,
   planQty: true, planDate: true, priority: true, status: true,
   erpSyncYn: true, goodQty: true, defectQty: true,
   startAt: true, endAt: true, remark: true,
@@ -56,9 +56,9 @@ export class JobOrderService {
   ) {}
 
   /** 작업지시 단건 조회 + select 필드 적용 (내부 헬퍼) */
-  private findOneWithSelect(id: string) {
+  private findOneWithSelect(orderNo: string) {
     return this.jobOrderRepository.findOne({
-      where: { id }, relations: ['part'], select: JOB_ORDER_SELECT,
+      where: { orderNo }, relations: ['part'], select: JOB_ORDER_SELECT,
     });
   }
 
@@ -99,22 +99,22 @@ export class JobOrderService {
     return { data, total, page, limit };
   }
 
-  /** 작업지시 단건 조회 (ID) - 내부용 (prodResults 미포함) */
-  async findById(id: string) {
+  /** 작업지시 단건 조회 (orderNo) - 내부용 (prodResults 미포함) */
+  async findById(orderNo: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { id },
+      where: { orderNo },
       relations: ['part'],
     });
-    if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${id}`);
+    if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
     return jobOrder;
   }
 
-  /** 작업지시 상세 조회 (ID) - API용 (prodResults 최근 10건 포함, DB 레벨 제한) */
-  async findByIdWithResults(id: string) {
-    const jobOrder = await this.findById(id);
+  /** 작업지시 상세 조회 (orderNo) - API용 (prodResults 최근 10건 포함, DB 레벨 제한) */
+  async findByIdWithResults(orderNo: string) {
+    const jobOrder = await this.findById(orderNo);
     const prodResults = await this.prodResultRepository
       .createQueryBuilder('pr')
-      .where('pr.orderNo = :orderNo', { orderNo: id })
+      .where('pr.orderNo = :orderNo', { orderNo })
       .orderBy('pr.createdAt', 'DESC')
       .take(10)
       .getMany();
@@ -151,7 +151,7 @@ export class JobOrderService {
       const jobOrder = queryRunner.manager.create(JobOrder, {
         orderNo: dto.orderNo,
         itemCode: dto.itemCode,
-        parentId: dto.parentId || null,
+        parentOrderNo: dto.parentId || null,
         lineCode: dto.lineCode,
         planQty: dto.planQty,
         planDate: dto.planDate ? new Date(dto.planDate) : null,
@@ -170,7 +170,7 @@ export class JobOrderService {
 
       await queryRunner.commitTransaction();
       return this.jobOrderRepository.findOne({
-        where: { id: saved.id },
+        where: { orderNo: saved.orderNo },
         relations: ['part', 'children', 'children.part'],
       });
     } catch (err) {
@@ -205,7 +205,7 @@ export class JobOrderService {
       childOrders.push(queryRunner.manager.create(JobOrder, {
         orderNo: `${parent.orderNo}-${String(i + 1).padStart(2, '0')}`,
         itemCode: bom.childItemCode,
-        parentId: parent.id,
+        parentOrderNo: parent.orderNo,
         lineCode: dto.lineCode,
         planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
         planDate: dto.planDate ? new Date(dto.planDate) : null,
@@ -224,11 +224,11 @@ export class JobOrderService {
   }
 
   /** 작업지시 트리 조회 (완제품 기준 계층구조) */
-  async findTree(parentId?: string) {
+  async findTree(parentOrderNo?: string) {
     return this.jobOrderRepository.find({
-      where: parentId
-        ? { id: parentId }
-        : { parentId: IsNull() },
+      where: parentOrderNo
+        ? { orderNo: parentOrderNo }
+        : { parentOrderNo: IsNull() },
       relations: ['part', 'children', 'children.part'],
       order: { planDate: 'DESC', createdAt: 'DESC' },
       take: 100,
@@ -252,7 +252,7 @@ export class JobOrderService {
     if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.jobOrderRepository.update(id, updateData);
+    await this.jobOrderRepository.update({ orderNo: id }, updateData);
     return this.findOneWithSelect(id);
   }
 
@@ -262,7 +262,7 @@ export class JobOrderService {
     if (jobOrder.status === 'RUNNING') {
       throw new BadRequestException(`진행 중인 작업지시는 삭제할 수 없습니다.`);
     }
-    await this.jobOrderRepository.delete(id);
+    await this.jobOrderRepository.delete({ orderNo: id });
     return { id };
   }
 
@@ -277,7 +277,7 @@ export class JobOrderService {
     const updateData: Partial<JobOrder> = { status: 'RUNNING' };
     if (!jobOrder.startAt) updateData.startAt = new Date();
 
-    await this.jobOrderRepository.update(id, updateData);
+    await this.jobOrderRepository.update({ orderNo: id }, updateData);
     return this.findOneWithSelect(id);
   }
 
@@ -289,7 +289,7 @@ export class JobOrderService {
         `현재 상태(${jobOrder.status})에서는 일시정지할 수 없습니다. RUNNING 상태여야 합니다.`,
       );
     }
-    await this.jobOrderRepository.update(id, { status: 'PAUSED' });
+    await this.jobOrderRepository.update({ orderNo: id }, { status: 'PAUSED' });
     return this.findOneWithSelect(id);
   }
 
@@ -317,7 +317,7 @@ export class JobOrderService {
         .where('pr.orderNo = :orderNo', { orderNo: id })
         .getRawOne();
 
-      await queryRunner.manager.update(JobOrder, id, {
+      await queryRunner.manager.update(JobOrder, { orderNo: id }, {
         status: 'DONE',
         endAt: new Date(),
         goodQty: summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0,
@@ -345,7 +345,7 @@ export class JobOrderService {
 
     const updateData: Partial<JobOrder> = { status: 'CANCELED', endAt: new Date() };
     if (remark) updateData.remark = remark;
-    await this.jobOrderRepository.update(id, updateData);
+    await this.jobOrderRepository.update({ orderNo: id }, updateData);
     return this.findOneWithSelect(id);
   }
 
@@ -354,15 +354,15 @@ export class JobOrderService {
     await this.findById(id);
     const updateData: Partial<JobOrder> = { status: dto.status };
     if (dto.remark) updateData.remark = dto.remark;
-    await this.jobOrderRepository.update(id, updateData);
+    await this.jobOrderRepository.update({ orderNo: id }, updateData);
     return this.findOneWithSelect(id);
   }
 
   /** ERP 동기화 플래그 업데이트 */
   async updateErpSyncYn(id: string, dto: UpdateErpSyncDto) {
     await this.findById(id);
-    await this.jobOrderRepository.update(id, { erpSyncYn: dto.erpSyncYn });
-    return this.jobOrderRepository.findOne({ where: { id } });
+    await this.jobOrderRepository.update({ orderNo: id }, { erpSyncYn: dto.erpSyncYn });
+    return this.jobOrderRepository.findOne({ where: { orderNo: id } });
   }
 
   /** ERP 미동기화 작업지시 목록 조회 */
@@ -376,9 +376,14 @@ export class JobOrderService {
   }
 
   /** ERP 동기화 완료 처리 (일괄) */
-  async markAsSynced(ids: string[]) {
-    await this.jobOrderRepository.update(ids, { erpSyncYn: 'Y' });
-    return { count: ids.length };
+  async markAsSynced(orderNos: string[]) {
+    await this.jobOrderRepository
+      .createQueryBuilder()
+      .update()
+      .set({ erpSyncYn: 'Y' })
+      .where('orderNo IN (:...orderNos)', { orderNos })
+      .execute();
+    return { count: orderNos.length };
   }
 
   /** 작업지시 실적 집계 */
@@ -390,7 +395,7 @@ export class JobOrderService {
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
-      .where('pr.orderNo = :orderNo', { orderNo: id })
+      .where('pr.orderNo = :orderNo', { orderNo: jobOrder.orderNo })
       .getRawOne();
 
     const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
@@ -398,7 +403,6 @@ export class JobOrderService {
     const totalQty = totalGoodQty + totalDefectQty;
 
     return {
-      orderNo: id,
       orderNo: jobOrder.orderNo,
       planQty: jobOrder.planQty,
       totalGoodQty,

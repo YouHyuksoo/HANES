@@ -59,7 +59,7 @@ export class ModelSuffixService {
 
   async findById(id: string) {
     const suffix = await this.modelSuffixRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!suffix) {
@@ -97,7 +97,7 @@ export class ModelSuffixService {
           },
       });
 
-      if (existing && existing.id !== id) {
+      if (existing && existing.id !== +id) {
         throw new ConflictException('이미 존재하는 모델접미사 조합입니다.');
       }
     }
@@ -105,7 +105,7 @@ export class ModelSuffixService {
     const updated = await this.modelSuffixRepository.save({
       ...suffix,
       ...dto,
-      id,
+      id: +id,
     });
 
     return updated;

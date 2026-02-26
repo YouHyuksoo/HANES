@@ -64,7 +64,7 @@ export class InterfaceController {
   @ApiParam({ name: 'id', description: '로그 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findLogById(@Param('id') id: string) {
-    const data = await this.interfaceService.findLogById(id);
+    const data = await this.interfaceService.findLogById(+id);
     return ResponseUtil.success(data);
   }
 
@@ -74,7 +74,7 @@ export class InterfaceController {
   @ApiParam({ name: 'id', description: '로그 ID' })
   @ApiResponse({ status: 200, description: '재시도 성공' })
   async retryLog(@Param('id') id: string) {
-    const data = await this.interfaceService.retryLog(id);
+    const data = await this.interfaceService.retryLog(+id);
     return ResponseUtil.success(data, '재시도가 완료되었습니다.');
   }
 
@@ -83,7 +83,7 @@ export class InterfaceController {
   @ApiOperation({ summary: '인터페이스 로그 일괄 재시도' })
   @ApiResponse({ status: 200, description: '일괄 재시도 성공' })
   async bulkRetry(@Body() dto: BulkRetryDto) {
-    const data = await this.interfaceService.bulkRetry(dto.logIds);
+    const data = await this.interfaceService.bulkRetry(dto.logIds.map(Number));
     return ResponseUtil.success(data, '일괄 재시도가 완료되었습니다.');
   }
 

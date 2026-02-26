@@ -63,7 +63,7 @@ export class IqcPartLinkService {
 
   async findById(id: string) {
     const link = await this.linkRepo.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['part', 'partner', 'group'],
     });
 
@@ -99,7 +99,7 @@ export class IqcPartLinkService {
     });
 
     const saved = await this.linkRepo.save(entity);
-    return this.findById(saved.id);
+    return this.findById(String(saved.id));
   }
 
   async update(id: string, dto: UpdateIqcPartLinkDto) {

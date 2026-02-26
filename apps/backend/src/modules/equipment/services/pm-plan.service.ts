@@ -75,7 +75,7 @@ export class PmPlanService {
       .take(limit)
       .getMany();
 
-    const planIds = plans.map((p) => p.id);
+    const planCodes = plans.map((p) => p.planCode);
     const equipIds = [...new Set(plans.map((p) => p.equipCode))];
 
     const equips = equipIds.length > 0
@@ -88,26 +88,25 @@ export class PmPlanService {
 
     // 계획별 항목 수 조회
     let itemCountMap = new Map<string, number>();
-    if (planIds.length > 0) {
+    if (planCodes.length > 0) {
       const itemCounts = await this.pmPlanItemRepo
         .createQueryBuilder('item')
-        .select('item.pmPlanId', 'pmPlanId')
+        .select('item.pmPlanCode', 'pmPlanCode')
         .addSelect('COUNT(*)', 'cnt')
-        .where('item.pmPlanId IN (:...planIds)', { planIds })
+        .where('item.pmPlanCode IN (:...planCodes)', { planCodes })
         .andWhere('item.useYn = :useYn', { useYn: 'Y' })
-        .groupBy('item.pmPlanId')
+        .groupBy('item.pmPlanCode')
         .getRawMany();
-      itemCountMap = new Map(itemCounts.map((r: any) => [r.pmPlanId, parseInt(r.cnt, 10)]));
+      itemCountMap = new Map(itemCounts.map((r: any) => [r.pmPlanCode, parseInt(r.cnt, 10)]));
     }
 
     const data = plans.map((plan) => {
       const equip = equipMap.get(plan.equipCode);
       return {
         ...plan,
-        itemCount: itemCountMap.get(plan.id) || 0,
+        itemCount: itemCountMap.get(plan.planCode) || 0,
         equip: {
           equipCode: equip?.equipCode || plan.equipCode,
-          equipCode: equip?.equipCode || '-',
           equipName: equip?.equipName || '-',
           lineCode: equip?.lineCode || null,
           equipType: equip?.equipType || null,
@@ -119,12 +118,12 @@ export class PmPlanService {
   }
 
   /** PM 계획 상세 조회 (items 포함) */
-  async findPlanById(id: string) {
+  async findPlanById(planCode: string) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { id },
+      where: { planCode },
       relations: ['items'],
     });
-    if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
+    if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
 
     const equip = await this.equipMasterRepo.findOne({
       where: { equipCode: plan.equipCode },
@@ -171,7 +170,7 @@ export class PmPlanService {
     if (dto.items?.length) {
       const items = dto.items.map((item) =>
         this.pmPlanItemRepo.create({
-          pmPlanId: saved.id,
+          pmPlanCode: saved.planCode,
           seq: item.seq,
           itemName: item.itemName,
           itemType: item.itemType || 'CHECK',
@@ -185,18 +184,17 @@ export class PmPlanService {
       await this.pmPlanItemRepo.save(items);
     }
 
-    return this.findPlanById(saved.id);
+    return this.findPlanById(saved.planCode);
   }
 
   /** PM 계획 수정 */
-  async updatePlan(id: string, dto: UpdatePmPlanDto) {
+  async updatePlan(planCode: string, dto: UpdatePmPlanDto) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { id },
+      where: { planCode },
     });
-    if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
+    if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
 
     if (dto.equipCode !== undefined) plan.equipCode = dto.equipCode;
-    if (dto.planCode !== undefined) plan.planCode = dto.planCode;
     if (dto.planName !== undefined) plan.planName = dto.planName;
     if (dto.pmType !== undefined) plan.pmType = dto.pmType;
     if (dto.cycleType !== undefined) plan.cycleType = dto.cycleType;
@@ -218,11 +216,11 @@ export class PmPlanService {
     await this.pmPlanRepo.save(plan);
 
     if (dto.items !== undefined) {
-      await this.pmPlanItemRepo.delete({ pmPlanId: id });
+      await this.pmPlanItemRepo.delete({ pmPlanCode: planCode });
       if (dto.items.length > 0) {
         const items = dto.items.map((item) =>
           this.pmPlanItemRepo.create({
-            pmPlanId: id,
+            pmPlanCode: planCode,
             seq: item.seq,
             itemName: item.itemName,
             itemType: item.itemType || 'CHECK',
@@ -237,17 +235,17 @@ export class PmPlanService {
       }
     }
 
-    return this.findPlanById(id);
+    return this.findPlanById(planCode);
   }
 
   /** PM 계획 삭제 (소프트) */
-  async deletePlan(id: string) {
+  async deletePlan(planCode: string) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { id },
+      where: { planCode },
     });
-    if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${id}`);
-    await this.pmPlanRepo.delete(id);
-    return { id, deleted: true };
+    if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
+    await this.pmPlanRepo.delete(planCode);
+    return { planCode, deleted: true };
   }
 
   // ─── Work Order 관리 ────────────────────────────────────
@@ -273,7 +271,7 @@ export class PmPlanService {
 
       const existing = await this.pmWorkOrderRepo.findOne({
         where: {
-          pmPlanId: plan.id,
+          pmPlanCode: plan.planCode,
           scheduledDate: scheduledDate,
         },
       });
@@ -287,7 +285,7 @@ export class PmPlanService {
 
       const wo = this.pmWorkOrderRepo.create({
         workOrderNo,
-        pmPlanId: plan.id,
+        pmPlanCode: plan.planCode,
         equipCode: plan.equipCode,
         woType: 'PLANNED',
         scheduledDate,
@@ -317,14 +315,14 @@ export class PmPlanService {
 
     const wo = this.pmWorkOrderRepo.create({
       workOrderNo,
-      pmPlanId: dto.pmPlanId || null,
+      pmPlanCode: dto.pmPlanId || null,
       equipCode: dto.equipCode,
       woType: dto.woType || 'PLANNED',
       scheduledDate: new Date(dto.scheduledDate),
       dueDate: new Date(dto.scheduledDate),
       status: 'PLANNED',
       priority: dto.priority || 'MEDIUM',
-      assignedWorkerId: dto.assignedWorkerId || null,
+      assignedWorkerCode: dto.assignedWorkerId || null,
     });
 
     const saved = await this.pmWorkOrderRepo.save(wo);
@@ -332,7 +330,7 @@ export class PmPlanService {
   }
 
   /** WO 실행 */
-  async executeWorkOrder(id: string, dto: ExecutePmWorkOrderDto) {
+  async executeWorkOrder(id: number, dto: ExecutePmWorkOrderDto) {
     const wo = await this.pmWorkOrderRepo.findOne({
       where: { id },
     });
@@ -346,7 +344,7 @@ export class PmPlanService {
     wo.completedAt = new Date();
     wo.overallResult = dto.overallResult;
     wo.remark = dto.remark || null;
-    if (dto.assignedWorkerId) wo.assignedWorkerId = dto.assignedWorkerId;
+    if (dto.assignedWorkerId) wo.assignedWorkerCode = dto.assignedWorkerId;
     if (!wo.startedAt) wo.startedAt = new Date();
 
     await this.pmWorkOrderRepo.save(wo);
@@ -355,7 +353,7 @@ export class PmPlanService {
       const results = dto.items.map((item) =>
         this.pmWoResultRepo.create({
           workOrderId: wo.id,
-          pmPlanItemId: item.itemId || null,
+          pmPlanItemId: item.itemId ?? null,
           seq: item.seq,
           itemName: item.itemName,
           itemType: item.itemType || 'CHECK',
@@ -367,9 +365,9 @@ export class PmPlanService {
       await this.pmWoResultRepo.save(results);
     }
 
-    if (wo.pmPlanId) {
+    if (wo.pmPlanCode) {
       const plan = await this.pmPlanRepo.findOne({
-        where: { planCode: wo.pmPlanId },
+        where: { planCode: wo.pmPlanCode },
       });
       if (plan) {
         plan.lastExecutedAt = new Date();
@@ -387,7 +385,7 @@ export class PmPlanService {
   }
 
   /** WO 취소 */
-  async cancelWorkOrder(id: string) {
+  async cancelWorkOrder(id: number) {
     const wo = await this.pmWorkOrderRepo.findOne({
       where: { id },
     });
@@ -438,7 +436,6 @@ export class PmPlanService {
         ...wo,
         equip: {
           equipCode: equip?.equipCode || wo.equipCode,
-          equipCode: equip?.equipCode || '-',
           equipName: equip?.equipName || '-',
           lineCode: equip?.lineCode || null,
           equipType: equip?.equipType || null,
@@ -548,7 +545,7 @@ export class PmPlanService {
           order: { seq: 'ASC' },
         })
       : [];
-    const resultsMap = new Map<string, PmWoResult[]>();
+    const resultsMap = new Map<number, PmWoResult[]>();
     for (const r of allResults) {
       const list = resultsMap.get(r.workOrderId) || [];
       list.push(r);
@@ -561,14 +558,14 @@ export class PmPlanService {
 
         let planItems: PmPlanItem[] = [];
         let planName: string | null = null;
-        if (wo.pmPlanId) {
+        if (wo.pmPlanCode) {
           const plan = await this.pmPlanRepo.findOne({
-            where: { planCode: wo.pmPlanId },
+            where: { planCode: wo.pmPlanCode },
             select: ['planCode', 'planName'],
           });
           planName = plan?.planName || null;
           const rawItems = await this.pmPlanItemRepo.find({
-            where: { pmPlanId: wo.pmPlanId, useYn: 'Y' },
+            where: { pmPlanCode: wo.pmPlanCode, useYn: 'Y' },
             order: { seq: 'ASC' },
           });
           planItems = rawItems;

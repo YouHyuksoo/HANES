@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Plant } from '../../../entities/plant.entity';
 import { CreatePlantDto, UpdatePlantDto, PlantQueryDto } from '../dto/plant.dto';
 
@@ -17,11 +17,10 @@ export class PlantService {
   ) {}
 
   async findAll(query: PlantQueryDto, company?: string) {
-    const { page = 1, limit = 10, plantType, search, useYn, parentId } = query;
+    const { page = 1, limit = 10, plantType, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.plantRepository.createQueryBuilder('plant')
-      .leftJoinAndSelect('plant.parent', 'parent')
 
     if (company) {
       queryBuilder.andWhere('plant.company = :company', { company });
@@ -33,10 +32,6 @@ export class PlantService {
 
     if (useYn) {
       queryBuilder.andWhere('plant.useYn = :useYn', { useYn });
-    }
-
-    if (parentId) {
-      queryBuilder.andWhere('plant.parentId = :parentId', { parentId });
     }
 
     if (search) {
@@ -59,28 +54,24 @@ export class PlantService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(plantCode: string, shopCode = '-', lineCode = '-', cellCode = '-') {
     const plant = await this.plantRepository.findOne({
-      where: { id },
-      relations: ['parent', 'children'],
+      where: { plantCode, shopCode, lineCode, cellCode },
     });
 
-    if (!plant) throw new NotFoundException(`공장/라인을 찾을 수 없습니다: ${id}`);
+    if (!plant) throw new NotFoundException(`공장/라인을 찾을 수 없습니다: ${plantCode}/${shopCode}/${lineCode}/${cellCode}`);
     return plant;
   }
 
-  async findHierarchy(rootId?: string) {
+  async findHierarchy(plantCode?: string) {
     const where: any = {};
-    if (rootId) {
-      where.id = rootId;
-    } else {
-      where.parentId = IsNull();
+    if (plantCode) {
+      where.plantCode = plantCode;
     }
 
     return this.plantRepository.find({
       where,
       order: { sortOrder: 'asc' },
-      relations: ['children', 'children.children'],
     });
   }
 
@@ -88,9 +79,9 @@ export class PlantService {
     const existing = await this.plantRepository.findOne({
       where: {
         plantCode: dto.plantCode,
-        shopCode: dto.shopCode ?? IsNull(),
-        lineCode: dto.lineCode ?? IsNull(),
-        cellCode: dto.cellCode ?? IsNull(),
+        shopCode: dto.shopCode ?? '-',
+        lineCode: dto.lineCode ?? '-',
+        cellCode: dto.cellCode ?? '-',
       },
     });
 
@@ -98,12 +89,11 @@ export class PlantService {
 
     const plant = this.plantRepository.create({
       plantCode: dto.plantCode,
-      shopCode: dto.shopCode,
-      lineCode: dto.lineCode,
-      cellCode: dto.cellCode,
+      shopCode: dto.shopCode ?? '-',
+      lineCode: dto.lineCode ?? '-',
+      cellCode: dto.cellCode ?? '-',
       plantName: dto.plantName,
       plantType: dto.plantType,
-      parentId: dto.parentId,
       sortOrder: dto.sortOrder ?? 0,
       useYn: dto.useYn ?? 'Y',
     });
@@ -111,21 +101,17 @@ export class PlantService {
     return this.plantRepository.save(plant);
   }
 
-  async update(id: string, dto: UpdatePlantDto) {
-    await this.findById(id);
-    await this.plantRepository.update(id, dto);
-    return this.findById(id);
+  async update(plantCode: string, dto: UpdatePlantDto, shopCode = '-', lineCode = '-', cellCode = '-') {
+    await this.findById(plantCode, shopCode, lineCode, cellCode);
+    await this.plantRepository.update({ plantCode, shopCode, lineCode, cellCode }, dto);
+    return this.findById(plantCode, shopCode, lineCode, cellCode);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    const childCount = await this.plantRepository.count({
-      where: { parentId: id },
-    });
-    if (childCount > 0) throw new ConflictException(`하위 항목이 존재합니다`);
-    
-    await this.plantRepository.delete(id);
-    return { id };
+  async delete(plantCode: string, shopCode = '-', lineCode = '-', cellCode = '-') {
+    await this.findById(plantCode, shopCode, lineCode, cellCode);
+
+    await this.plantRepository.delete({ plantCode, shopCode, lineCode, cellCode });
+    return { plantCode, shopCode, lineCode, cellCode };
   }
 
   async findByType(plantType: string) {

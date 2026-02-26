@@ -43,7 +43,7 @@ export class PartService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(UPPER(p.itemCode) LIKE UPPER(:search) OR UPPER(p.itemName) LIKE UPPER(:search) OR UPPER(p.partNo) LIKE UPPER(:search) OR UPPER(p.custPartNo) LIKE UPPER(:search) OR UPPER(p.spec) LIKE UPPER(:search))',
+        '(UPPER(p.itemCode) LIKE UPPER(:search) OR UPPER(p.itemName) LIKE UPPER(:search) OR UPPER(p.itemNo) LIKE UPPER(:search) OR UPPER(p.custPartNo) LIKE UPPER(:search) OR UPPER(p.spec) LIKE UPPER(:search))',
         { search: `%${search}%` }
       );
     }
@@ -86,7 +86,7 @@ export class PartService {
     const part = this.partRepository.create({
       itemCode: dto.itemCode,
       itemName: dto.itemName,
-      partNo: dto.partNo,
+      itemNo: dto.partNo,
       custPartNo: dto.custPartNo,
       itemType: dto.itemType,
       productType: dto.productType,

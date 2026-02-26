@@ -55,7 +55,7 @@ export class IqcItemService {
 
   async findById(id: string) {
     const item = await this.iqcItemRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!item) {
@@ -77,7 +77,7 @@ export class IqcItemService {
     const updated = await this.iqcItemRepository.save({
       ...item,
       ...dto,
-      id,
+      id: +id,
     });
 
     return updated;

@@ -57,11 +57,11 @@ export class ProcessService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(processCode: string) {
     const process = await this.processRepository.findOne({
-      where: { id },
+      where: { processCode },
     });
-    if (!process) throw new NotFoundException(`공정을 찾을 수 없습니다: ${id}`);
+    if (!process) throw new NotFoundException(`공정을 찾을 수 없습니다: ${processCode}`);
     return process;
   }
 
@@ -83,15 +83,15 @@ export class ProcessService {
     return this.processRepository.save(process);
   }
 
-  async update(id: string, dto: UpdateProcessDto) {
-    await this.findById(id);
-    await this.processRepository.update(id, dto);
-    return this.findById(id);
+  async update(processCode: string, dto: UpdateProcessDto) {
+    await this.findById(processCode);
+    await this.processRepository.update({ processCode }, dto);
+    return this.findById(processCode);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.processRepository.delete(id);
-    return { id };
+  async delete(processCode: string) {
+    await this.findById(processCode);
+    await this.processRepository.delete({ processCode });
+    return { processCode };
   }
 }

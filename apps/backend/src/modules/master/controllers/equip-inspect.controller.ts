@@ -31,7 +31,7 @@ export class EquipInspectController {
   @Get(':id')
   @ApiOperation({ summary: '설비점검항목 상세 조회' })
   async findById(@Param('id') id: string) {
-    const data = await this.equipInspectService.findById(id);
+    const data = await this.equipInspectService.findById(+id);
     return ResponseUtil.success(data);
   }
 
@@ -46,14 +46,14 @@ export class EquipInspectController {
   @Put(':id')
   @ApiOperation({ summary: '설비점검항목 수정' })
   async update(@Param('id') id: string, @Body() dto: UpdateEquipInspectItemDto) {
-    const data = await this.equipInspectService.update(id, dto);
+    const data = await this.equipInspectService.update(+id, dto);
     return ResponseUtil.success(data, '설비점검항목이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '설비점검항목 삭제' })
   async delete(@Param('id') id: string) {
-    await this.equipInspectService.delete(id);
+    await this.equipInspectService.delete(+id);
     return ResponseUtil.success(null, '설비점검항목이 삭제되었습니다.');
   }
 }

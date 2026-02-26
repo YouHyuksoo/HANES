@@ -72,7 +72,7 @@ export class VendorBarcodeMappingService {
   /** 상세 조회 */
   async findById(id: string) {
     const mapping = await this.repo.findOne({
-      where: { id },
+      where: { id: +id },
     });
     if (!mapping) {
       throw new NotFoundException(`바코드 매핑을 찾을 수 없습니다: ${id}`);
@@ -103,14 +103,14 @@ export class VendorBarcodeMappingService {
   /** 수정 */
   async update(id: string, dto: UpdateVendorBarcodeMappingDto) {
     await this.findById(id);
-    await this.repo.update(id, dto);
+    await this.repo.update(+id, dto);
     return this.findById(id);
   }
 
   /** 삭제 (Soft Delete) */
   async delete(id: string) {
     await this.findById(id);
-    await this.repo.delete(id);
+    await this.repo.delete(+id);
     return { id };
   }
 

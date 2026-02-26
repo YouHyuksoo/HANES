@@ -151,9 +151,10 @@ export class PhysicalInvService {
       const results = [];
 
       for (const item of items) {
-        // 기존 재고 조회
+        // stockId는 "warehouseCode::itemCode::lotNo" 형태의 복합키 문자열
+        const [whCode, itCode, ltNo] = item.stockId.split('::');
         const stock = await queryRunner.manager.findOne(MatStock, {
-          where: { id: item.stockId },
+          where: { warehouseCode: whCode, itemCode: itCode, lotNo: ltNo || '' },
         });
 
         if (!stock) {
@@ -165,11 +166,10 @@ export class PhysicalInvService {
         const diffQty = afterQty - beforeQty;
 
         // 재고 업데이트
-        await queryRunner.manager.update(MatStock, stock.id, {
-          qty: afterQty,
-          availableQty: afterQty - stock.reservedQty,
-          lastCountAt: new Date(),
-        });
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+          { qty: afterQty, availableQty: afterQty - stock.reservedQty, lastCountAt: new Date() },
+        );
 
         // 조정 이력 기록
         const invAdjLog = queryRunner.manager.create(InvAdjLog, {

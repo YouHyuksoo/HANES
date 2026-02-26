@@ -26,12 +26,12 @@ export class WarehouseLocationService {
     private readonly warehouseRepo: Repository<Warehouse>,
   ) {}
 
-  async findAll(warehouseId?: string, company?: string, plant?: string) {
+  async findAll(warehouseCode?: string, company?: string, plant?: string) {
     const where: any = {
       ...(company && { company }),
       ...(plant && { plant }),
     };
-    if (warehouseId) where.warehouseId = warehouseId;
+    if (warehouseCode) where.warehouseCode = warehouseCode;
 
     const locations = await this.locationRepo.find({
       where,
@@ -39,7 +39,7 @@ export class WarehouseLocationService {
     });
 
     // 창고명 매핑
-    const whIds = [...new Set(locations.map((l) => l.warehouseId))];
+    const whIds = [...new Set(locations.map((l) => l.warehouseCode))];
     const warehouses = whIds.length > 0
       ? await this.warehouseRepo.find({ where: { warehouseCode: In(whIds) } })
       : [];
@@ -48,7 +48,7 @@ export class WarehouseLocationService {
     return {
       success: true,
       data: locations.map((loc) => {
-        const wh = whMap.get(loc.warehouseId);
+        const wh = whMap.get(loc.warehouseCode);
         return {
           ...loc,
           warehouseCode: wh?.warehouseCode ?? '',
@@ -60,7 +60,7 @@ export class WarehouseLocationService {
 
   async create(dto: CreateWarehouseLocationDto) {
     const existing = await this.locationRepo.findOne({
-      where: { warehouseId: dto.warehouseId, locationCode: dto.locationCode },
+      where: { warehouseCode: dto.warehouseCode, locationCode: dto.locationCode },
     });
     if (existing) {
       throw new ConflictException(
@@ -74,7 +74,9 @@ export class WarehouseLocationService {
   }
 
   async update(id: string, dto: UpdateWarehouseLocationDto) {
-    const location = await this.locationRepo.findOne({ where: { id } });
+    // id is composite key encoded as "warehouseCode::locationCode"
+    const [warehouseCode, locationCode] = id.split('::');
+    const location = await this.locationRepo.findOne({ where: { warehouseCode, locationCode } });
     if (!location) {
       throw new NotFoundException(`로케이션을 찾을 수 없습니다: ${id}`);
     }
@@ -85,7 +87,9 @@ export class WarehouseLocationService {
   }
 
   async remove(id: string) {
-    const location = await this.locationRepo.findOne({ where: { id } });
+    // id is composite key encoded as "warehouseCode::locationCode"
+    const [warehouseCode, locationCode] = id.split('::');
+    const location = await this.locationRepo.findOne({ where: { warehouseCode, locationCode } });
     if (!location) {
       throw new NotFoundException(`로케이션을 찾을 수 없습니다: ${id}`);
     }

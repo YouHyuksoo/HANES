@@ -67,7 +67,7 @@ export class PeriodicInspectController {
   @ApiOperation({ summary: '정기점검 상세 조회' })
   @ApiParam({ name: 'id', description: '점검 ID' })
   async findById(@Param('id') id: string) {
-    const data = await this.equipInspectService.findById(id);
+    const data = await this.equipInspectService.findById(+id);
     return ResponseUtil.success(data);
   }
 
@@ -84,7 +84,7 @@ export class PeriodicInspectController {
   @ApiOperation({ summary: '정기점검 수정' })
   @ApiParam({ name: 'id', description: '점검 ID' })
   async update(@Param('id') id: string, @Body() dto: UpdateEquipInspectDto) {
-    const data = await this.equipInspectService.update(id, dto);
+    const data = await this.equipInspectService.update(+id, dto);
     return ResponseUtil.success(data, '정기점검이 수정되었습니다.');
   }
 
@@ -92,7 +92,7 @@ export class PeriodicInspectController {
   @ApiOperation({ summary: '정기점검 삭제' })
   @ApiParam({ name: 'id', description: '점검 ID' })
   async delete(@Param('id') id: string) {
-    await this.equipInspectService.delete(id);
+    await this.equipInspectService.delete(+id);
     return ResponseUtil.success(null, '정기점검이 삭제되었습니다.');
   }
 }

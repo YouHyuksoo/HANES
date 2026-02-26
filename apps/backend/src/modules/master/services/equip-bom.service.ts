@@ -133,7 +133,7 @@ export class EquipBomService {
     return { data, total, page, limit };
   }
 
-  async findRelById(id: string): Promise<EquipBomRel> {
+  async findRelById(id: number): Promise<EquipBomRel> {
     const rel = await this.bomRelRepo.findOne({
       where: { id },
       relations: ['equipment', 'bomItem'],
@@ -161,7 +161,7 @@ export class EquipBomService {
     return this.bomRelRepo.save(rel);
   }
 
-  async updateRel(id: string, dto: UpdateEquipBomRelDto): Promise<EquipBomRel> {
+  async updateRel(id: number, dto: UpdateEquipBomRelDto): Promise<EquipBomRel> {
     const rel = await this.findRelById(id);
     Object.assign(rel, {
       ...dto,
@@ -171,7 +171,7 @@ export class EquipBomService {
     return this.bomRelRepo.save(rel);
   }
 
-  async deleteRel(id: string): Promise<void> {
+  async deleteRel(id: number): Promise<void> {
     const rel = await this.findRelById(id);
     await this.bomRelRepo.remove(rel);
   }
@@ -190,7 +190,7 @@ export class EquipBomService {
     return rels.map((rel) => ({
       id: rel.id,
       equipCode: rel.equipCode,
-      bomItemId: rel.bomItemId,
+      bomItemCode: rel.bomItemCode,
       quantity: rel.quantity,
       installDate: rel.installDate,
       expireDate: rel.expireDate,

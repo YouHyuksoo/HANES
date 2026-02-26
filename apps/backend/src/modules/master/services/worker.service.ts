@@ -70,12 +70,12 @@ export class WorkerService {
     return { data: parsedData, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(workerCode: string) {
     const item = await this.workerRepository.findOne({
-      where: { id },
+      where: { workerCode },
     });
-    if (!item) throw new NotFoundException(`작업자를 찾을 수 없습니다: ${id}`);
-    
+    if (!item) throw new NotFoundException(`작업자를 찾을 수 없습니다: ${workerCode}`);
+
     return {
       ...item,
       processIds: item.processIds ? JSON.parse(item.processIds) : [],
@@ -112,21 +112,21 @@ export class WorkerService {
     };
   }
 
-  async update(id: string, dto: UpdateWorkerDto) {
-    await this.findById(id);
-    
+  async update(workerCode: string, dto: UpdateWorkerDto) {
+    await this.findById(workerCode);
+
     const updateData: any = { ...dto };
     if (dto.processIds !== undefined) {
       updateData.processIds = dto.processIds ? JSON.stringify(dto.processIds) : null;
     }
 
-    await this.workerRepository.update(id, updateData);
-    return this.findById(id);
+    await this.workerRepository.update({ workerCode }, updateData);
+    return this.findById(workerCode);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.workerRepository.delete(id);
-    return { id };
+  async delete(workerCode: string) {
+    await this.findById(workerCode);
+    await this.workerRepository.delete({ workerCode });
+    return { workerCode };
   }
 }

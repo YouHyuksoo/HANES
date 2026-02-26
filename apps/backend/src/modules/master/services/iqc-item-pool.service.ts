@@ -63,7 +63,7 @@ export class IqcItemPoolService {
 
   async findById(id: string) {
     const item = await this.repo.findOne({
-      where: { id },
+      where: { id: +id },
     });
     if (!item) {
       throw new NotFoundException('검사항목을 찾을 수 없습니다.');

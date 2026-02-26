@@ -66,7 +66,7 @@ export class IssueRequestService {
   }
 
   /** 요청 헤더 조회 + 존재 검증 */
-  private async getRequestOrFail(id: string) {
+  private async getRequestOrFail(id: number) {
     const request = await this.requestRepository.findOne({ where: { id } });
     if (!request) throw new NotFoundException(`출고요청을 찾을 수 없습니다: ${id}`);
     return request;
@@ -81,7 +81,7 @@ export class IssueRequestService {
       const requestNo = await this.generateRequestNo();
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
-        orderNo: dto.orderNo ?? null,
+        jobOrderId: dto.orderNo ?? null,
         issueType: dto.issueType ?? null,
         status: 'REQUESTED',
         requester: 'SYSTEM',
@@ -91,7 +91,7 @@ export class IssueRequestService {
 
       const items = dto.items.map((item) =>
         queryRunner.manager.create(MatIssueRequestItem, {
-          requestId: saved.id,
+          requestId: String(saved.id),
           itemCode: item.itemCode,
           requestQty: item.requestQty,
           issuedQty: 0,
@@ -124,7 +124,7 @@ export class IssueRequestService {
 
     const result = await Promise.all(
       data.map(async (req) => {
-        const items = await this.requestItemRepository.find({ where: { requestId: req.id } });
+        const items = await this.requestItemRepository.find({ where: { requestId: String(req.id) } });
         const flatItems = await this.flattenItems(items);
         return {
           ...req,
@@ -147,15 +147,15 @@ export class IssueRequestService {
   }
 
   /** 출고요청 상세 조회 (헤더 + 품목) */
-  async findById(id: string) {
+  async findById(id: number) {
     const request = await this.getRequestOrFail(id);
-    const items = await this.requestItemRepository.find({ where: { requestId: id } });
+    const items = await this.requestItemRepository.find({ where: { requestId: String(id) } });
     const flatItems = await this.flattenItems(items);
     return { ...request, items: flatItems };
   }
 
   /** 출고요청 승인 (REQUESTED -> APPROVED) */
-  async approve(id: string) {
+  async approve(id: number) {
     const request = await this.getRequestOrFail(id);
     if (request.status !== 'REQUESTED') {
       throw new BadRequestException(`승인할 수 없는 상태입니다: ${request.status}`);
@@ -165,7 +165,7 @@ export class IssueRequestService {
   }
 
   /** 출고요청 반려 (REQUESTED -> REJECTED) */
-  async reject(id: string, dto: RejectIssueRequestDto) {
+  async reject(id: number, dto: RejectIssueRequestDto) {
     const request = await this.getRequestOrFail(id);
     if (request.status !== 'REQUESTED') {
       throw new BadRequestException(`반려할 수 없는 상태입니다: ${request.status}`);
@@ -180,7 +180,7 @@ export class IssueRequestService {
    * - MatIssueService.create()로 실제 출고 수행
    * - 모든 품목 완전 출고 시 COMPLETED 처리
    */
-  async issueFromRequest(id: string, dto: RequestIssueDto) {
+  async issueFromRequest(id: number, dto: RequestIssueDto) {
     const request = await this.getRequestOrFail(id);
     if (request.status !== 'APPROVED') {
       throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED만 가능): ${request.status}`);
@@ -191,10 +191,10 @@ export class IssueRequestService {
     await queryRunner.startTransaction();
     try {
       const issueResult = await this.matIssueService.create({
-        orderNo: request.orderNo ?? undefined,
+        orderNo: request.jobOrderId ?? undefined,
         warehouseCode: dto.warehouseCode,
         issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
-        items: dto.items.map((i) => ({ lotNo: i.lotNo, issueQty: i.issueQty })),
+        items: dto.items.map((i) => ({ lotId: i.lotId, issueQty: i.issueQty })),
         workerId: dto.workerId,
         remark: dto.remark ?? `출고요청 ${request.requestNo} 기반 출고`,
       });
@@ -202,7 +202,7 @@ export class IssueRequestService {
       // 각 요청 품목의 issuedQty 갱신
       for (const dtoItem of dto.items) {
         const reqItem = await this.requestItemRepository.findOne({
-          where: { id: dtoItem.requestItemId },
+          where: { id: Number(dtoItem.requestItemId) },
         });
         if (reqItem) {
           await queryRunner.manager.update(MatIssueRequestItem, reqItem.id, {
@@ -212,10 +212,10 @@ export class IssueRequestService {
       }
 
       // 모든 품목 완전 출고 여부 확인
-      const allItems = await this.requestItemRepository.find({ where: { requestId: id } });
+      const allItems = await this.requestItemRepository.find({ where: { requestId: String(id) } });
       const allCompleted = allItems.every((item) => {
         const addedQty = dto.items
-          .filter((d) => d.requestItemId === item.id)
+          .filter((d) => Number(d.requestItemId) === item.id)
           .reduce((sum, d) => sum + d.issueQty, 0);
         return (item.issuedQty + addedQty) >= item.requestQty;
       });

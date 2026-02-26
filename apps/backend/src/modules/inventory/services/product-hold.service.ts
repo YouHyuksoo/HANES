@@ -67,21 +67,31 @@ export class ProductHoldService {
     return { data: flatData, total, page, limit };
   }
 
+  /** stockId를 복합 PK로 파싱 ("warehouseCode::itemCode::lotNo") */
+  private parseStockId(stockId: string): { warehouseCode: string; itemCode: string; lotNo: string } {
+    const [warehouseCode, itemCode, lotNo] = stockId.split('::');
+    if (!warehouseCode || !itemCode || !lotNo) {
+      throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${stockId} (예: WH001::ITEM001::LOT001)`);
+    }
+    return { warehouseCode, itemCode, lotNo };
+  }
+
   async hold(dto: ProductHoldActionDto) {
     const { stockId, reason } = dto;
+    const compositeKey = this.parseStockId(stockId);
 
-    const stock = await this.productStockRepository.findOne({ where: { id: stockId } });
+    const stock = await this.productStockRepository.findOne({ where: compositeKey });
     if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
     if (stock.status === 'HOLD') throw new BadRequestException('이미 HOLD 상태입니다.');
     if (stock.qty <= 0) throw new BadRequestException('수량이 0인 재고는 HOLD할 수 없습니다.');
 
-    await this.productStockRepository.update(stockId, {
+    await this.productStockRepository.update(compositeKey, {
       status: 'HOLD',
       holdReason: reason,
       holdAt: new Date(),
     });
 
-    const updated = await this.productStockRepository.findOne({ where: { id: stockId } });
+    const updated = await this.productStockRepository.findOne({ where: compositeKey });
     const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });
 
     return {
@@ -96,18 +106,19 @@ export class ProductHoldService {
 
   async release(dto: ProductReleaseHoldDto) {
     const { stockId, reason } = dto;
+    const compositeKey = this.parseStockId(stockId);
 
-    const stock = await this.productStockRepository.findOne({ where: { id: stockId } });
+    const stock = await this.productStockRepository.findOne({ where: compositeKey });
     if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
     if (stock.status !== 'HOLD') throw new BadRequestException('HOLD 상태가 아닙니다.');
 
-    await this.productStockRepository.update(stockId, {
+    await this.productStockRepository.update(compositeKey, {
       status: 'NORMAL',
       holdReason: null,
       holdAt: null,
     });
 
-    const updated = await this.productStockRepository.findOne({ where: { id: stockId } });
+    const updated = await this.productStockRepository.findOne({ where: compositeKey });
     const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });
 
     return {

@@ -183,7 +183,7 @@ export class PalletService {
       throw new BadRequestException('출하에 할당된 팔레트는 삭제할 수 없습니다. 먼저 출하에서 제거해주세요.');
     }
 
-    await this.palletRepository.delete(id);
+    await this.palletRepository.delete({ palletNo: id });
 
     return { id, deleted: true };
   }
@@ -204,13 +204,13 @@ export class PalletService {
     // 박스 존재 및 상태 확인
     const boxes = await this.boxRepository.find({
       where: {
-        id: In(dto.boxIds),
+        boxNo: In(dto.boxIds),
       },
     });
 
     if (boxes.length !== dto.boxIds.length) {
-      const foundIds = boxes.map(b => b.id);
-      const notFound = dto.boxIds.filter(boxId => !foundIds.includes(boxId));
+      const foundNos = boxes.map(b => b.boxNo);
+      const notFound = dto.boxIds.filter(boxId => !foundNos.includes(boxId));
       throw new NotFoundException(`박스를 찾을 수 없습니다: ${notFound.join(', ')}`);
     }
 
@@ -221,7 +221,7 @@ export class PalletService {
     }
 
     // 이미 다른 팔레트에 할당된 박스 확인
-    const assignedBoxes = boxes.filter(b => b.palletId && b.palletId !== id);
+    const assignedBoxes = boxes.filter(b => b.palletNo && b.palletNo !== id);
     if (assignedBoxes.length > 0) {
       throw new BadRequestException(`이미 다른 팔레트에 할당된 박스가 있습니다: ${assignedBoxes.map(b => b.boxNo).join(', ')}`);
     }
@@ -235,14 +235,14 @@ export class PalletService {
       // 박스 업데이트
       await queryRunner.manager.update(
         BoxMaster,
-        { id: In(dto.boxIds) },
-        { palletId: id }
+        { boxNo: In(dto.boxIds) },
+        { palletNo: id }
       );
 
       // 팔레트 집계 업데이트
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
-        .where('box.palletId = :palletId', { palletId: id })
+        .where('box.palletNo = :palletNo', { palletNo: id })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
@@ -281,14 +281,14 @@ export class PalletService {
     // 박스가 이 팔레트에 있는지 확인
     const boxes = await this.boxRepository.find({
       where: {
-        id: In(dto.boxIds),
-        palletId: id,
+        boxNo: In(dto.boxIds),
+        palletNo: id,
       },
     });
 
     if (boxes.length !== dto.boxIds.length) {
-      const foundIds = boxes.map(b => b.id);
-      const notFound = dto.boxIds.filter(boxId => !foundIds.includes(boxId));
+      const foundNos = boxes.map(b => b.boxNo);
+      const notFound = dto.boxIds.filter(boxId => !foundNos.includes(boxId));
       throw new NotFoundException(`이 팔레트에 없는 박스입니다: ${notFound.join(', ')}`);
     }
 
@@ -301,14 +301,14 @@ export class PalletService {
       // 박스 업데이트
       await queryRunner.manager.update(
         BoxMaster,
-        { id: In(dto.boxIds) },
-        { palletId: null }
+        { boxNo: In(dto.boxIds) },
+        { palletNo: null }
       );
 
       // 팔레트 집계 업데이트
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
-        .where('box.palletId = :palletId', { palletId: id })
+        .where('box.palletNo = :palletNo', { palletNo: id })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
@@ -572,21 +572,20 @@ export class PalletService {
       .select('box.itemCode', 'itemCode')
       .addSelect('COUNT(*)', 'boxCount')
       .addSelect('SUM(box.qty)', 'qty')
-      .where('box.palletId = :palletId', { palletId: id })
+      .where('box.palletNo = :palletNo', { palletNo: id })
       .groupBy('box.itemCode')
       .getRawMany();
 
     // 품목 정보 조회
     const itemCodes = partSummary.map(p => p.itemCode);
     const parts = await this.partRepository.find({
-      where: itemCodes.length > 0 ? { id: In(itemCodes) } : {},
+      where: itemCodes.length > 0 ? { itemCode: In(itemCodes) } : {},
       select: ['itemCode', 'itemName'],
     });
 
-    const partsMap = new Map(parts.map(p => [p.id, p]));
+    const partsMap = new Map(parts.map(p => [p.itemCode, p]));
 
     return {
-      palletId: id,
       palletNo: pallet.palletNo,
       status: pallet.status,
       boxCount: pallet.boxCount,

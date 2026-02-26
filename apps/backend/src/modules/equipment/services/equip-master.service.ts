@@ -100,13 +100,13 @@ export class EquipMasterService {
   /**
    * 설비 단건 조회 (ID)
    */
-  async findById(id: string) {
+  async findById(equipCode: string) {
     const equip = await this.equipMasterRepository.findOne({
-      where: { id },
+      where: { equipCode },
     });
 
     if (!equip) {
-      throw new NotFoundException(`설비를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`설비를 찾을 수 없습니다: ${equipCode}`);
     }
 
     return equip;
@@ -163,26 +163,11 @@ export class EquipMasterService {
   /**
    * 설비 수정
    */
-  async update(id: string, dto: UpdateEquipMasterDto) {
-    await this.findById(id);
-
-    // 코드 변경 시 중복 확인
-    if (dto.equipCode) {
-      const existing = await this.equipMasterRepository.findOne({
-        where: {
-          equipCode: dto.equipCode,
-          id: id, // exclude current id
-        },
-      });
-
-      if (existing) {
-        throw new ConflictException(`이미 존재하는 설비 코드입니다: ${dto.equipCode}`);
-      }
-    }
+  async update(equipCode: string, dto: UpdateEquipMasterDto) {
+    await this.findById(equipCode);
 
     const updateData: Partial<EquipMaster> = {};
 
-    if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
     if (dto.equipName !== undefined) updateData.equipName = dto.equipName;
     if (dto.equipType !== undefined) updateData.equipType = dto.equipType;
     if (dto.modelName !== undefined) updateData.modelName = dto.modelName;
@@ -197,18 +182,18 @@ export class EquipMasterService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.equipMasterRepository.update(id, updateData);
-    return this.findById(id);
+    await this.equipMasterRepository.update(equipCode, updateData);
+    return this.findById(equipCode);
   }
 
   /**
    * 설비 삭제 (소프트 삭제)
    */
-  async delete(id: string) {
-    await this.findById(id);
+  async delete(equipCode: string) {
+    await this.findById(equipCode);
 
-    await this.equipMasterRepository.delete(id);
-    return { id, deleted: true };
+    await this.equipMasterRepository.delete(equipCode);
+    return { equipCode, deleted: true };
   }
 
   // =============================================
@@ -218,15 +203,15 @@ export class EquipMasterService {
   /**
    * 설비 상태 변경
    */
-  async changeStatus(id: string, dto: ChangeEquipStatusDto) {
-    const equip = await this.findById(id);
+  async changeStatus(equipCode: string, dto: ChangeEquipStatusDto) {
+    const equip = await this.findById(equipCode);
 
     this.logger.log(
       `설비 상태 변경: ${equip.equipCode} (${equip.status} -> ${dto.status}), 사유: ${dto.reason ?? '없음'}`
     );
 
-    await this.equipMasterRepository.update(id, { status: dto.status });
-    return this.findById(id);
+    await this.equipMasterRepository.update(equipCode, { status: dto.status });
+    return this.findById(equipCode);
   }
 
   /**
@@ -353,10 +338,10 @@ export class EquipMasterService {
   /**
    * 설비에 작업지시 할당/해제
    */
-  async assignJobOrder(id: string, dto: AssignJobOrderDto) {
-    const equip = await this.findById(id);
+  async assignJobOrder(equipCode: string, dto: AssignJobOrderDto) {
+    const equip = await this.findById(equipCode);
 
-    await this.equipMasterRepository.update(id, {
+    await this.equipMasterRepository.update(equipCode, {
       currentJobOrderId: dto.orderNo ?? null,
     });
 
@@ -366,6 +351,6 @@ export class EquipMasterService {
         : `설비 작업지시 해제: ${equip.equipCode}`,
     );
 
-    return this.findById(id);
+    return this.findById(equipCode);
   }
 }

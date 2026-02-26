@@ -71,7 +71,7 @@ export class InterfaceService {
     return { data, total, page, limit };
   }
 
-  async findLogById(id: string) {
+  async findLogById(id: number) {
     const log = await this.interLogRepository.findOne({
       where: { id },
     });
@@ -95,7 +95,7 @@ export class InterfaceService {
     return this.interLogRepository.save(log);
   }
 
-  async updateLogStatus(id: string, status: string, errorMsg?: string) {
+  async updateLogStatus(id: number, status: string, errorMsg?: string) {
     await this.findLogById(id);
 
     const updateData: Partial<InterLog> = { status };
@@ -106,7 +106,7 @@ export class InterfaceService {
     return this.findLogById(id);
   }
 
-  async retryLog(id: string) {
+  async retryLog(id: number) {
     const log = await this.findLogById(id);
 
     if (log.status !== 'FAIL') {
@@ -140,7 +140,7 @@ export class InterfaceService {
     }
   }
 
-  async bulkRetry(logIds: string[]) {
+  async bulkRetry(logIds: number[]) {
     const results = await Promise.all(
       logIds.map(async (id) => {
         try {
@@ -235,10 +235,10 @@ export class InterfaceService {
 
           if (existingBom) {
             // 업데이트
-            await this.bomMasterRepository.update(existingBom.id, {
-              qtyPer: dto.qtyPer,
-              ecoNo: dto.ecoNo,
-            });
+            await this.bomMasterRepository.update(
+              { parentItemCode: existingBom.parentItemCode, childItemCode: existingBom.childItemCode, revision: existingBom.revision },
+              { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo },
+            );
           } else {
             // 생성
             const newBom = this.bomMasterRepository.create({
@@ -285,7 +285,7 @@ export class InterfaceService {
 
           if (existingPart) {
             // 업데이트
-            await this.partMasterRepository.update(existingPart.id, {
+            await this.partMasterRepository.update(existingPart.itemCode, {
               itemName: dto.itemName,
               itemType: dto.itemType,
               spec: dto.spec,
@@ -346,7 +346,7 @@ export class InterfaceService {
       });
 
       if (jobOrder) {
-        await this.jobOrderRepository.update(jobOrder.id, { erpSyncYn: 'Y' });
+        await this.jobOrderRepository.update(jobOrder.orderNo, { erpSyncYn: 'Y' });
       }
 
       await this.updateLogStatus(log.id, 'SUCCESS');

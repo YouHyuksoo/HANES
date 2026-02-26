@@ -85,7 +85,7 @@ export class ProdResultService {
       ...(plant && { plant }),
       ...(orderNo && { orderNo }),
       ...(equipCode && { equipCode }),
-      ...(workerId && { workerId }),
+      ...(workerId && { workerCode: workerId }),
       ...(lotNo && { lotNo: ILike(`%${lotNo}%`) }),
       ...(processCode && { processCode }),
       ...(status && { status }),
@@ -110,7 +110,7 @@ export class ProdResultService {
           id: true,
           orderNo: true,
           equipCode: true,
-          workerId: true,
+          workerCode: true,
           lotNo: true,
           processCode: true,
           goodQty: true,
@@ -135,7 +135,7 @@ export class ProdResultService {
    */
   async findById(id: string) {
     const prodResult = await this.prodResultRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['jobOrder', 'jobOrder.part', 'equip', 'worker', 'inspectResults', 'defectLogs'],
     });
 
@@ -167,25 +167,25 @@ export class ProdResultService {
    */
   async findMatIssues(prodResultId: string) {
     const issues = await this.matIssueRepository.find({
-      where: { prodResultId, status: 'DONE' },
+      where: { prodResultId: +prodResultId, status: 'DONE' },
       order: { issueDate: 'DESC' },
     });
 
     // LOT 및 품목 정보 추가
-    const lotNos = issues.map(i => i.lotNo).filter(Boolean);
-    const lots = lotNos.length > 0 
-      ? await this.dataSource.getRepository('MatLot').findByIds(lotNos)
+    const lotIds = issues.map(i => i.lotId).filter(Boolean);
+    const lots = lotIds.length > 0
+      ? await this.dataSource.getRepository('MatLot').find({ where: { lotNo: In(lotIds) } })
       : [];
-    const lotMap = new Map(lots.map(l => [l.id, l]));
+    const lotMap = new Map(lots.map((l: any) => [l.lotNo, l]));
 
-    const itemCodes = lots.map(l => l.itemCode).filter(Boolean);
+    const itemCodes = lots.map((l: any) => l.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
       ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map(p => [p.id, p]));
+    const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
     return issues.map(issue => {
-      const lot = lotMap.get(issue.lotNo);
+      const lot = lotMap.get(issue.lotId);
       const part = lot ? partMap.get(lot.itemCode) : null;
       return {
         ...issue,
@@ -209,7 +209,7 @@ export class ProdResultService {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerId: true,
+        workerCode: true,
         lotNo: true,
         processCode: true,
         goodQty: true,
@@ -346,10 +346,10 @@ export class ProdResultService {
       }
     }
 
-    // 작업자 존재 확인 (옵션)
+    // 작업자 존재 확인 (옵션) — workerCode로 User 테이블 조회
     if (dto.workerId) {
       const worker = await this.userRepository.findOne({
-        where: { id: dto.workerId },
+        where: { email: dto.workerId },
       });
       if (!worker) {
         throw new NotFoundException(`작업자를 찾을 수 없습니다: ${dto.workerId}`);
@@ -359,7 +359,7 @@ export class ProdResultService {
     const prodResult = this.prodResultRepository.create({
       orderNo: dto.orderNo,
       equipCode: dto.equipCode,
-      workerId: dto.workerId,
+      workerCode: dto.workerId,
       lotNo: dto.lotNo,
       processCode: dto.processCode,
       goodQty: dto.goodQty ?? 0,
@@ -374,13 +374,13 @@ export class ProdResultService {
     const saved = await this.prodResultRepository.save(prodResult);
 
     return this.prodResultRepository.findOne({
-      where: { id: saved.id },
+      where: { id: saved.id },  // saved.id is already number
       relations: ['jobOrder', 'equip', 'worker'],
       select: {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerId: true,
+        workerCode: true,
         lotNo: true,
         processCode: true,
         goodQty: true,
@@ -411,7 +411,7 @@ export class ProdResultService {
 
     const updateData: any = {};
     if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
-    if (dto.workerId !== undefined) updateData.workerId = dto.workerId;
+    if (dto.workerId !== undefined) updateData.workerCode = dto.workerId;
     if (dto.lotNo !== undefined) updateData.lotNo = dto.lotNo;
     if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
     if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
@@ -422,16 +422,16 @@ export class ProdResultService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.prodResultRepository.update(id, updateData);
+    await this.prodResultRepository.update(+id, updateData);
 
     return this.prodResultRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['jobOrder', 'equip', 'worker'],
       select: {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerId: true,
+        workerCode: true,
         lotNo: true,
         processCode: true,
         goodQty: true,
@@ -453,7 +453,7 @@ export class ProdResultService {
   async delete(id: string) {
     await this.findById(id); // 존재 확인
 
-    await this.prodResultRepository.delete(id);
+    await this.prodResultRepository.delete(+id);
 
     return { id };
   }
@@ -484,7 +484,7 @@ export class ProdResultService {
       if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
       if (dto.remark) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ProdResult, id, updateData);
+      await queryRunner.manager.update(ProdResult, +id, updateData);
 
       // 2. 금형 타수 자동 증가 (트랜잭션 내 — 실패 시 전체 롤백)
       if (prodResult.equipCode) {
@@ -492,7 +492,7 @@ export class ProdResultService {
         if (totalQty > 0) {
           const mountedMolds = await queryRunner.manager.find(ConsumableMaster, {
             where: {
-              mountedEquipId: prodResult.equipCode,
+              mountedEquipCode: prodResult.equipCode,
               category: 'MOLD',
               operStatus: 'MOUNTED',
             },
@@ -508,7 +508,7 @@ export class ProdResultService {
               newStatus = 'WARNING';
             }
 
-            await queryRunner.manager.update(ConsumableMaster, mold.id, {
+            await queryRunner.manager.update(ConsumableMaster, { consumableCode: mold.consumableCode }, {
               currentCount: newCount,
               status: newStatus,
             });
@@ -520,7 +520,7 @@ export class ProdResultService {
         }
 
         // 3. 설비의 현재 작업지시번호 해제
-        await queryRunner.manager.update(EquipMaster, prodResult.equipCode, {
+        await queryRunner.manager.update(EquipMaster, { equipCode: prodResult.equipCode }, {
           currentJobOrderId: null,
         });
         this.logger.log(`설비 작업지시 해제: ${prodResult.equipCode}`);
@@ -535,13 +535,13 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { id },
+      where: { id: +id },
       relations: ['jobOrder'],
       select: {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerId: true,
+        workerCode: true,
         lotNo: true,
         processCode: true,
         goodQty: true,
@@ -575,11 +575,11 @@ export class ProdResultService {
       const updateData: any = { status: 'CANCELED' };
       if (remark) updateData.remark = remark;
 
-      await queryRunner.manager.update(ProdResult, id, updateData);
+      await queryRunner.manager.update(ProdResult, +id, updateData);
 
       // 설비의 현재 작업지시번호 해제
       if (prodResult.equipCode) {
-        await queryRunner.manager.update(EquipMaster, prodResult.equipCode, {
+        await queryRunner.manager.update(EquipMaster, { equipCode: prodResult.equipCode }, {
           currentJobOrderId: null,
         });
         this.logger.log(`설비 작업지시 해제 (취소): ${prodResult.equipCode}`);
@@ -594,7 +594,7 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
   }
 
@@ -676,7 +676,7 @@ export class ProdResultService {
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
-      .where('pr.workerId = :workerId', { workerId })
+      .where('pr.workerCode = :workerId', { workerId })
       .andWhere('pr.status != :status', { status: 'CANCELED' });
 
     if (dateFrom || dateTo) {
@@ -758,19 +758,17 @@ export class ProdResultService {
       .leftJoin('pr.jobOrder', 'jo')
       .leftJoin('jo.part', 'p')
       .select([
-        'p.id AS "itemCode"',
         'p.itemCode AS "itemCode"',
         'p.itemName AS "itemName"',
         'p.itemType AS "itemType"',
         'SUM(jo.planQty) AS "totalPlanQty"',
         'SUM(pr.goodQty) AS "totalGoodQty"',
         'SUM(pr.defectQty) AS "totalDefectQty"',
-        'COUNT(DISTINCT jo.id) AS "orderCount"',
+        'COUNT(DISTINCT jo.orderNo) AS "orderCount"',
         'COUNT(pr.id) AS "resultCount"',
       ])
       .where('pr.status != :status', { status: 'CANCELED' })
-      .groupBy('p.id')
-      .addGroupBy('p.itemCode')
+      .groupBy('p.itemCode')
       .addGroupBy('p.itemName')
       .addGroupBy('p.itemType')
       .orderBy('"totalGoodQty"', 'DESC');
@@ -796,7 +794,6 @@ export class ProdResultService {
       const totalQty = totalGoodQty + totalDefectQty;
       const totalPlanQty = parseInt(r.totalPlanQty) || 0;
       return {
-        itemCode: r.itemCode,
         itemCode: r.itemCode,
         itemName: r.itemName,
         itemType: r.itemType,

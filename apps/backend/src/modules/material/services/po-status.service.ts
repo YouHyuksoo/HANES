@@ -56,9 +56,9 @@ export class PoStatusService {
     ]);
 
     // PO 품목 정보 조회 및 입고율 계산
-    const orderIds = orders.map((o) => o.id);
+    const poNos = orders.map((o) => o.poNo);
     const items = await this.purchaseOrderItemRepository.find({
-      where: orderIds.length > 0 ? { poId: In(orderIds) } : {},
+      where: poNos.length > 0 ? { poNo: In(poNos) } : {},
     });
 
     // part 정보 조회
@@ -69,16 +69,16 @@ export class PoStatusService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // PO별로 품목 그룹화
-    const itemsByPoId = new Map<string, typeof items>();
+    const itemsByPoNo = new Map<string, typeof items>();
     for (const item of items) {
-      if (!itemsByPoId.has(item.poId)) {
-        itemsByPoId.set(item.poId, []);
+      if (!itemsByPoNo.has(item.poNo)) {
+        itemsByPoNo.set(item.poNo, []);
       }
-      itemsByPoId.get(item.poId)!.push(item);
+      itemsByPoNo.get(item.poNo)!.push(item);
     }
 
     const data = orders.map((po) => {
-      const poItems = itemsByPoId.get(po.id) || [];
+      const poItems = itemsByPoNo.get(po.poNo) || [];
       const totalOrderQty = poItems.reduce((sum, item) => sum + item.orderQty, 0);
       const totalReceivedQty = poItems.reduce((sum, item) => sum + item.receivedQty, 0);
       const receiveRate = totalOrderQty > 0 ? Math.round((totalReceivedQty / totalOrderQty) * 100) : 0;

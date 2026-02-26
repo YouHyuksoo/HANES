@@ -64,7 +64,7 @@ export class ShipHistoryService {
     const resultData = await Promise.all(
       data.map(async (order) => {
         const items = await this.shipmentOrderItemRepository.find({
-          where: { shipOrderId: order.id },
+          where: { shipOrderNo: order.shipOrderNo },
         });
 
         const itemsWithPart = await Promise.all(

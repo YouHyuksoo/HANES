@@ -64,7 +64,7 @@ export class ReceiptCancelService {
     try {
       // 원본 트랜잭션 조회
       const originalTransaction = await queryRunner.manager.findOne(StockTransaction, {
-        where: { id: transactionId },
+        where: { id: Number(transactionId) },
       });
 
       if (!originalTransaction) {
@@ -95,10 +95,10 @@ export class ReceiptCancelService {
       }
 
       // 재고 차감
-      await queryRunner.manager.update(MatStock, stock.id, {
-        qty: stock.qty - qty,
-        availableQty: stock.availableQty - qty,
-      });
+      await queryRunner.manager.update(MatStock,
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+        { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
+      );
 
       // LOT 수량 복원
       if (lotNo) {
@@ -116,7 +116,7 @@ export class ReceiptCancelService {
       // PO 품목 입고량 감소
       if (originalTransaction.refId && originalTransaction.refType === 'PO') {
         const poItem = await queryRunner.manager.findOne(PurchaseOrderItem, {
-          where: { id: originalTransaction.refId },
+          where: { id: Number(originalTransaction.refId) },
         });
 
         if (poItem) {
@@ -137,7 +137,7 @@ export class ReceiptCancelService {
         lotNo,
         qty: -qty,
         refType: 'TRANSACTION',
-        refId: originalTransaction.id,
+        refId: String(originalTransaction.id),
         workerId,
         remark: reason,
       });
@@ -146,7 +146,7 @@ export class ReceiptCancelService {
 
       // 원본 트랜잭션에 취소 참조 설정
       await queryRunner.manager.update(StockTransaction, originalTransaction.id, {
-        cancelRefId: savedCancelTrans.id,
+        cancelRefId: String(savedCancelTrans.id),
       });
 
       await queryRunner.commitTransaction();

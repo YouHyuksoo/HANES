@@ -77,7 +77,7 @@ export class AdjustmentService {
   }
 
   async create(dto: CreateAdjustmentDto) {
-    const { warehouseCode, itemCode, lotNo, afterQty, reason, createdBy } = dto;
+    const { warehouseCode, itemCode, lotId: lotNo, afterQty, reason, createdBy } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -112,10 +112,10 @@ export class AdjustmentService {
 
       // 재고 업데이트 또는 생성
       if (stock) {
-        await queryRunner.manager.update(MatStock, stock.id, {
-          qty: afterQty,
-          availableQty: afterQty - stock.reservedQty,
-        });
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+          { qty: afterQty, availableQty: afterQty - stock.reservedQty },
+        );
       } else {
         if (afterQty < 0) {
           throw new BadRequestException('재고가 없는 상태에서 음수 조정을 할 수 없습니다.');
@@ -169,7 +169,7 @@ export class AdjustmentService {
         lotNo: lotNo || null,
         qty: Math.abs(diffQty),
         refType: 'ADJUSTMENT',
-        refId: invAdjLog.id,
+        refId: String(invAdjLog.id),
         remark: reason,
         status: 'DONE',
         createdBy,
@@ -181,13 +181,12 @@ export class AdjustmentService {
       return {
         id: invAdjLog.id,
         warehouseCode,
-        itemCode,
+        itemCode: part.itemCode,
         lotNo,
         beforeQty,
         afterQty,
         diffQty,
         reason,
-        itemCode: part.itemCode,
         itemName: part.itemName,
         unit: part.unit,
       };

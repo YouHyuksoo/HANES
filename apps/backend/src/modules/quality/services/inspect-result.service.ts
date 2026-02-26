@@ -66,7 +66,7 @@ export class InspectResultService {
     const where: any = {
       ...(company && { company }),
       ...(plant && { plant }),
-      ...(prodResultId && { prodResultId }),
+      ...(prodResultId && { prodResultId: +prodResultId }),
       ...(serialNo && { serialNo: ILike(`%${serialNo}%`) }),
       ...(inspectType && { inspectType }),
       ...(inspectScope && { inspectScope }),
@@ -99,7 +99,7 @@ export class InspectResultService {
    */
   async findById(id: string) {
     const result = await this.inspectResultRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!result) {
@@ -126,7 +126,7 @@ export class InspectResultService {
    */
   async findByProdResultId(prodResultId: string) {
     const results = await this.inspectResultRepository.find({
-      where: { prodResultId },
+      where: { prodResultId: +prodResultId },
       order: { inspectAt: 'ASC' },
     });
 
@@ -139,7 +139,7 @@ export class InspectResultService {
   async create(dto: CreateInspectResultDto) {
     // 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { id: dto.prodResultId },
+      where: { id: +dto.prodResultId },
     });
 
     if (!prodResult) {
@@ -147,7 +147,7 @@ export class InspectResultService {
     }
 
     const inspectResult = this.inspectResultRepository.create({
-      prodResultId: dto.prodResultId,
+      prodResultId: +dto.prodResultId,
       serialNo: dto.serialNo,
       inspectType: dto.inspectType,
       passYn: dto.passYn ?? 'Y',
@@ -179,21 +179,22 @@ export class InspectResultService {
     }
 
     // 2. TraceLog의 eventData에서 prodResultId 추출 (JSON 파싱)
-    let prodResultId: string | null = null;
+    let prodResultId: number | null = null;
     if (traceLog.eventData) {
       try {
         const eventData = JSON.parse(traceLog.eventData);
-        prodResultId = eventData.prodResultId || eventData.productionResultId || null;
+        const rawId = eventData.prodResultId || eventData.productionResultId || null;
+        prodResultId = rawId ? Number(rawId) : null;
       } catch {
         // JSON 파싱 실패 시 무시
       }
     }
 
     // 3. prodResultId가 없으면 TraceLog의 lotId나 다른 정보로 추적
-    if (!prodResultId && traceLog.lotNo) {
+    if (!prodResultId && traceLog.lotId) {
       // lotId로 생산실적 검색
       const prodResult = await this.prodResultRepository.findOne({
-        where: { lotNo: traceLog.lotNo },
+        where: { lotNo: traceLog.lotId },
         order: { createdAt: 'DESC' },
       });
       if (prodResult) {
@@ -259,15 +260,15 @@ export class InspectResultService {
 
     // TraceLog에서 생산실적 추적
     let prodResult: ProdResult | null = null;
-    
+
     // eventData에서 prodResultId 추출 시도
     if (traceLog.eventData) {
       try {
         const eventData = JSON.parse(traceLog.eventData);
-        const prodResultId = eventData.prodResultId || eventData.productionResultId;
-        if (prodResultId) {
+        const rawProdResultId = eventData.prodResultId || eventData.productionResultId;
+        if (rawProdResultId) {
           prodResult = await this.prodResultRepository.findOne({
-            where: { id: prodResultId },
+            where: { id: Number(rawProdResultId) },
             relations: ['jobOrder', 'jobOrder.part'],
           });
         }
@@ -277,9 +278,9 @@ export class InspectResultService {
     }
 
     // lotId로 생산실적 검색
-    if (!prodResult && traceLog.lotNo) {
+    if (!prodResult && traceLog.lotId) {
       prodResult = await this.prodResultRepository.findOne({
-        where: { lotNo: traceLog.lotNo },
+        where: { lotNo: traceLog.lotId },
         order: { createdAt: 'DESC' },
         relations: ['jobOrder', 'jobOrder.part'],
       });
@@ -341,7 +342,7 @@ export class InspectResultService {
     if (dto.inspectAt !== undefined) updateData.inspectAt = new Date(dto.inspectAt);
     if (dto.inspectorId !== undefined) updateData.inspectorId = dto.inspectorId;
 
-    await this.inspectResultRepository.update({ id }, updateData);
+    await this.inspectResultRepository.update({ id: +id }, updateData);
 
     return this.findById(id);
   }
@@ -352,7 +353,7 @@ export class InspectResultService {
   async delete(id: string) {
     await this.findById(id); // 존재 확인
 
-    await this.inspectResultRepository.delete({ id });
+    await this.inspectResultRepository.delete({ id: +id });
 
     return { id, deleted: true };
   }

@@ -17,7 +17,7 @@ export class TransferRuleService {
   ) {}
 
   async findAll(query: TransferRuleQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, search, fromWarehouseId, toWarehouseId, allowYn } = query;
+    const { page = 1, limit = 10, search, fromWarehouseId: fromWarehouseCode, toWarehouseId: toWarehouseCode, allowYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.transferRuleRepository.createQueryBuilder('rule')
@@ -29,12 +29,12 @@ export class TransferRuleService {
       queryBuilder.andWhere('rule.plant = :plant', { plant });
     }
 
-    if (fromWarehouseId) {
-      queryBuilder.andWhere('rule.fromWarehouseId = :fromWarehouseId', { fromWarehouseId });
+    if (fromWarehouseCode) {
+      queryBuilder.andWhere('rule.fromWarehouseCode = :fromWarehouseCode', { fromWarehouseCode });
     }
 
-    if (toWarehouseId) {
-      queryBuilder.andWhere('rule.toWarehouseId = :toWarehouseId', { toWarehouseId });
+    if (toWarehouseCode) {
+      queryBuilder.andWhere('rule.toWarehouseCode = :toWarehouseCode', { toWarehouseCode });
     }
 
     if (allowYn) {
@@ -43,15 +43,15 @@ export class TransferRuleService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(UPPER(rule.fromWarehouseId) LIKE UPPER(:search) OR UPPER(rule.toWarehouseId) LIKE UPPER(:search) OR UPPER(rule.remark) LIKE UPPER(:search))',
+        '(UPPER(rule.fromWarehouseCode) LIKE UPPER(:search) OR UPPER(rule.toWarehouseCode) LIKE UPPER(:search) OR UPPER(rule.remark) LIKE UPPER(:search))',
         { search: `%${search}%` }
       );
     }
 
     const [data, total] = await Promise.all([
       queryBuilder
-        .orderBy('rule.fromWarehouseId', 'ASC')
-        .addOrderBy('rule.toWarehouseId', 'ASC')
+        .orderBy('rule.fromWarehouseCode', 'ASC')
+        .addOrderBy('rule.toWarehouseCode', 'ASC')
         .skip(skip)
         .take(limit)
         .getMany(),
@@ -61,7 +61,7 @@ export class TransferRuleService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(id: number) {
     const rule = await this.transferRuleRepository.findOne({
       where: { id },
     });
@@ -72,15 +72,15 @@ export class TransferRuleService {
   async create(dto: CreateTransferRuleDto) {
     const existing = await this.transferRuleRepository.findOne({
       where: {
-        fromWarehouseId: dto.fromWarehouseId,
-        toWarehouseId: dto.toWarehouseId,
+        fromWarehouseCode: dto.fromWarehouseId,
+        toWarehouseCode: dto.toWarehouseId,
       },
     });
     if (existing) throw new ConflictException(`이미 존재하는 창고이동규칙입니다: ${dto.fromWarehouseId} -> ${dto.toWarehouseId}`);
 
     const rule = this.transferRuleRepository.create({
-      fromWarehouseId: dto.fromWarehouseId,
-      toWarehouseId: dto.toWarehouseId,
+      fromWarehouseCode: dto.fromWarehouseId,
+      toWarehouseCode: dto.toWarehouseId,
       allowYn: dto.allowYn ?? 'Y',
       remark: dto.remark,
     });
@@ -88,15 +88,15 @@ export class TransferRuleService {
     return this.transferRuleRepository.save(rule);
   }
 
-  async update(id: string, dto: UpdateTransferRuleDto) {
+  async update(id: number, dto: UpdateTransferRuleDto) {
     await this.findById(id);
-    await this.transferRuleRepository.update(id, dto);
+    await this.transferRuleRepository.update({ id }, dto);
     return this.findById(id);
   }
 
-  async delete(id: string) {
+  async delete(id: number) {
     await this.findById(id);
-    await this.transferRuleRepository.delete(id);
+    await this.transferRuleRepository.delete({ id });
     return { id };
   }
 }

@@ -52,11 +52,11 @@ export class ProdLineService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(lineCode: string) {
     const prodLine = await this.prodLineRepository.findOne({
-      where: { id },
+      where: { lineCode },
     });
-    if (!prodLine) throw new NotFoundException(`생산라인을 찾을 수 없습니다: ${id}`);
+    if (!prodLine) throw new NotFoundException(`생산라인을 찾을 수 없습니다: ${lineCode}`);
     return prodLine;
   }
 
@@ -80,15 +80,15 @@ export class ProdLineService {
     return this.prodLineRepository.save(prodLine);
   }
 
-  async update(id: string, dto: UpdateProdLineDto) {
-    await this.findById(id);
-    await this.prodLineRepository.update(id, dto);
-    return this.findById(id);
+  async update(lineCode: string, dto: UpdateProdLineDto) {
+    await this.findById(lineCode);
+    await this.prodLineRepository.update({ lineCode }, dto);
+    return this.findById(lineCode);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.prodLineRepository.delete(id);
-    return { id };
+  async delete(lineCode: string) {
+    await this.findById(lineCode);
+    await this.prodLineRepository.delete({ lineCode });
+    return { lineCode };
   }
 }

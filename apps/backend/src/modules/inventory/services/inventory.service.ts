@@ -88,7 +88,7 @@ export class InventoryService {
    */
   async createLot(dto: CreateLotDto) {
     const lot = this.lotRepository.create({
-      lotNo: dto.lotNo,
+      lotNo: dto.lotId,
       itemCode: dto.itemCode,
       initQty: dto.initQty,
       currentQty: dto.initQty,
@@ -124,10 +124,10 @@ export class InventoryService {
         throw new BadRequestException(`재고 부족: 현재 ${existingStock.qty}, 요청 ${Math.abs(qtyDelta)}`);
       }
 
-      return this.stockRepository.update(existingStock.id, {
-        qty: newQty,
-        availableQty: newQty - existingStock.reservedQty,
-      });
+      return this.stockRepository.update(
+        { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, lotNo: existingStock.lotNo },
+        { qty: newQty, availableQty: newQty - existingStock.reservedQty },
+      );
     } else {
       // 신규 재고 생성 (입고 시에만)
       if (qtyDelta < 0) {
@@ -179,7 +179,7 @@ export class InventoryService {
         transDate: new Date(),
         toWarehouseId: dto.warehouseId,
         itemCode: dto.itemCode,
-        lotNo: dto.lotNo,
+        lotNo: dto.lotId,
         qty: dto.qty, // 양수
         unitPrice: dto.unitPrice,
         totalAmount: dto.unitPrice ? dto.unitPrice * dto.qty : null,
@@ -194,19 +194,19 @@ export class InventoryService {
 
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
       });
 
       if (existingStock) {
-        await queryRunner.manager.update(MatStock, existingStock.id, {
-          qty: existingStock.qty + dto.qty,
-          availableQty: existingStock.qty + dto.qty - existingStock.reservedQty,
-        });
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, lotNo: existingStock.lotNo },
+          { qty: existingStock.qty + dto.qty, availableQty: existingStock.qty + dto.qty - existingStock.reservedQty },
+        );
       } else {
         await queryRunner.manager.save(MatStock, {
           warehouseCode: dto.warehouseId,
           itemCode: dto.itemCode,
-          lotNo: dto.lotNo || null,
+          lotNo: dto.lotId || null,
           qty: dto.qty,
           reservedQty: 0,
           availableQty: dto.qty,
@@ -214,10 +214,10 @@ export class InventoryService {
       }
 
       // 3. LOT 수량 업데이트
-      if (dto.lotNo) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotNo } });
+      if (dto.lotId) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotId } });
         if (lot) {
-          await queryRunner.manager.update(MatLot, dto.lotNo, {
+          await queryRunner.manager.update(MatLot, dto.lotId, {
             currentQty: lot.currentQty + dto.qty,
           });
         }
@@ -246,7 +246,7 @@ export class InventoryService {
     try {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
+        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -261,7 +261,7 @@ export class InventoryService {
         fromWarehouseId: dto.warehouseId,
         toWarehouseId: dto.toWarehouseId,
         itemCode: dto.itemCode,
-        lotNo: dto.lotNo,
+        lotNo: dto.lotId,
         qty: -dto.qty, // 음수 (출고)
         refType: dto.refType,
         refId: dto.refId,
@@ -273,27 +273,27 @@ export class InventoryService {
       const savedTransaction = await queryRunner.manager.save(StockTransaction, transaction);
 
       // 3. 출고 창고 재고 감소
-      await queryRunner.manager.update(MatStock, stock.id, {
-        qty: stock.qty - dto.qty,
-        availableQty: stock.availableQty - dto.qty,
-      });
+      await queryRunner.manager.update(MatStock,
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+        { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
+      );
 
       // 4. 이동 대상 창고가 있으면 입고 처리
       if (dto.toWarehouseId) {
         const targetStock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
+          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
         });
 
         if (targetStock) {
-          await queryRunner.manager.update(MatStock, targetStock.id, {
-            qty: targetStock.qty + dto.qty,
-            availableQty: targetStock.qty + dto.qty - targetStock.reservedQty,
-          });
+          await queryRunner.manager.update(MatStock,
+            { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, lotNo: targetStock.lotNo },
+            { qty: targetStock.qty + dto.qty, availableQty: targetStock.qty + dto.qty - targetStock.reservedQty },
+          );
         } else {
           await queryRunner.manager.save(MatStock, {
             warehouseCode: dto.toWarehouseId,
             itemCode: dto.itemCode,
-            lotNo: dto.lotNo || null,
+            lotNo: dto.lotId || null,
             qty: dto.qty,
             reservedQty: 0,
             availableQty: dto.qty,
@@ -302,11 +302,11 @@ export class InventoryService {
       }
 
       // 5. LOT 수량 업데이트 (이동이 아닌 순수 출고 시)
-      if (dto.lotNo && !dto.toWarehouseId) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotNo } });
+      if (dto.lotId && !dto.toWarehouseId) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotId } });
         if (lot) {
           const newQty = lot.currentQty - dto.qty;
-          await queryRunner.manager.update(MatLot, dto.lotNo, {
+          await queryRunner.manager.update(MatLot, dto.lotId, {
             currentQty: Math.max(0, newQty),
             status: newQty <= 0 ? 'DEPLETED' : lot.status,
           });
@@ -331,7 +331,7 @@ export class InventoryService {
       warehouseId: dto.fromWarehouseId,
       toWarehouseId: dto.toWarehouseId,
       itemCode: dto.itemCode,
-      lotNo: dto.lotNo,
+      lotId: dto.lotId,
       qty: dto.qty,
       transType: 'TRANSFER',
       refType: dto.refType,
@@ -347,7 +347,7 @@ export class InventoryService {
    */
   async cancelTransaction(dto: CancelTransactionDto) {
     const originalTrans = await this.stockTransactionRepository.findOne({
-      where: { id: dto.transactionId },
+      where: { id: +dto.transactionId },
     });
 
     if (!originalTrans) {
@@ -368,7 +368,7 @@ export class InventoryService {
 
     try {
       // 1. 원본 트랜잭션 상태 변경
-      await queryRunner.manager.update(StockTransaction, dto.transactionId, { status: 'CANCELED' });
+      await queryRunner.manager.update(StockTransaction, +dto.transactionId, { status: 'CANCELED' });
 
       // 2. 취소 트랜잭션 생성 (반대 수량)
       const cancelTrans = this.stockTransactionRepository.create({
@@ -384,7 +384,7 @@ export class InventoryService {
         totalAmount: originalTrans.totalAmount ? -Number(originalTrans.totalAmount) : null,
         refType: originalTrans.refType,
         refId: originalTrans.refId,
-        cancelRefId: originalTrans.id,
+        cancelRefId: String(originalTrans.id),
         workerId: dto.workerId,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,
         status: 'DONE',
@@ -408,10 +408,10 @@ export class InventoryService {
           if (newQty < 0) {
             throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
           }
-          await queryRunner.manager.update(MatStock, stock.id, {
-            qty: newQty,
-            availableQty: newQty - stock.reservedQty,
-          });
+          await queryRunner.manager.update(MatStock,
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+            { qty: newQty, availableQty: newQty - stock.reservedQty },
+          );
         }
       }
 
@@ -426,10 +426,10 @@ export class InventoryService {
         });
 
         if (stock) {
-          await queryRunner.manager.update(MatStock, stock.id, {
-            qty: stock.qty + Math.abs(originalTrans.qty),
-            availableQty: stock.availableQty + Math.abs(originalTrans.qty),
-          });
+          await queryRunner.manager.update(MatStock,
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+            { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
+          );
         } else {
           await queryRunner.manager.save(MatStock, {
             warehouseCode: originalTrans.fromWarehouseId,
@@ -491,11 +491,11 @@ export class InventoryService {
     if (plant) where.plant = plant;
     if (query.warehouseId) where.warehouseCode = query.warehouseId;
     if (query.itemCode) where.itemCode = query.itemCode;
-    if (query.lotNo) where.lotNo = query.lotNo;
+    if (query.lotId) where.lotNo = query.lotId;
 
     const stocks = await this.stockRepository.find({
       where,
-      select: ['id', 'warehouseCode', 'itemCode', 'lotNo', 'qty', 'reservedQty', 'availableQty'],
+      select: ['warehouseCode', 'itemCode', 'lotNo', 'qty', 'reservedQty', 'availableQty'],
       order: { warehouseCode: 'ASC', itemCode: 'ASC' },
     });
 
@@ -511,7 +511,7 @@ export class InventoryService {
 
     const warehouses = whCodes.length > 0 ? await this.warehouseRepository.find({
       where: { warehouseCode: In(whCodes) },
-      select: ['id', 'warehouseCode', 'warehouseName', 'warehouseType'],
+      select: ['warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
     const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
       where: { itemCode: In(itemCodes) },
@@ -539,7 +539,6 @@ export class InventoryService {
       const part = partMap.get(s.itemCode);
       const lot = s.lotNo ? lotMap.get(s.lotNo) : null;
       return {
-        id: s.id,
         warehouseId: s.warehouseCode,
         itemCode: s.itemCode,
         lotNo: s.lotNo,
@@ -565,7 +564,7 @@ export class InventoryService {
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (query.itemCode) where.itemCode = query.itemCode;
-    if (query.lotNo) where.lotNo = query.lotNo;
+    if (query.lotId) where.lotNo = query.lotId;
     if (query.transType) where.transType = query.transType;
     if (query.refType) where.refType = query.refType;
     if (query.refId) where.refId = query.refId;
@@ -651,7 +650,7 @@ export class InventoryService {
    */
   async getLotById(id: string) {
     const lot = await this.lotRepository.findOne({
-      where: { id },
+      where: { lotNo: id },
     });
 
     if (!lot) {
@@ -688,7 +687,7 @@ export class InventoryService {
    */
   async getTransactionById(id: string) {
     const transaction = await this.stockTransactionRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
 
     if (!transaction) {
@@ -701,7 +700,7 @@ export class InventoryService {
       transaction.toWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.toWarehouseId } }) : null,
       this.partMasterRepository.findOne({ where: { itemCode: transaction.itemCode } }),
       transaction.lotNo ? this.lotRepository.findOne({ where: { lotNo: transaction.lotNo } }) : null,
-      transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { id: transaction.cancelRefId } }) : null,
+      transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { id: +transaction.cancelRefId } }) : null,
       this.stockTransactionRepository.findOne({ where: { cancelRefId: id } }),
     ]);
 
@@ -722,7 +721,7 @@ export class InventoryService {
   async getStockSummary(query: { warehouseType?: string; itemType?: string }) {
     let stocks = await this.stockRepository.find({
       where: { qty: MoreThan(0) },
-      select: ['id', 'warehouseCode', 'itemCode', 'qty'],
+      select: ['warehouseCode', 'itemCode', 'qty'],
     });
 
     if (stocks.length === 0) return [];
@@ -732,7 +731,7 @@ export class InventoryService {
 
     const warehouses = whCodes.length > 0 ? await this.warehouseRepository.find({
       where: { warehouseCode: In(whCodes) },
-      select: ['id', 'warehouseCode', 'warehouseName', 'warehouseType'],
+      select: ['warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
     const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
       where: { itemCode: In(itemCodes) },

@@ -168,17 +168,17 @@ export class LotSplitService {
       if (sourceStock) {
         // 원본 재고 차감
         const newSourceStockQty = sourceStock.qty - splitQty;
-        await queryRunner.manager.update(MatStock, sourceStock.id, {
-          qty: newSourceStockQty,
-          availableQty: newSourceStockQty - sourceStock.reservedQty,
-        });
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, lotNo: sourceStock.lotNo },
+          { qty: newSourceStockQty, availableQty: newSourceStockQty - sourceStock.reservedQty },
+        );
 
         // 새 재고 생성
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode: sourceStock.warehouseCode,
           locationCode: sourceStock.locationCode,
           itemCode: sourceStock.itemCode,
-          lotNo: newLot.id,
+          lotNo: newLot.lotNo,
           qty: splitQty,
           availableQty: splitQty,
           reservedQty: 0,
@@ -196,7 +196,7 @@ export class LotSplitService {
         lotNo: sourceLotId,
         qty: splitQty,
         refType: 'LOT_SPLIT',
-        refId: newLot.id,
+        refId: newLot.lotNo,
         remark: remark || `LOT 분할: ${sourceLot.lotNo} → ${generatedLotNo}`,
         status: 'DONE',
       });
@@ -204,12 +204,11 @@ export class LotSplitService {
       await queryRunner.commitTransaction();
 
       return {
-        id: newLot.id,
-        parentLotId: sourceLotId,
+        lotNo: newLot.lotNo,
+        parentLotNo: sourceLotId,
         sourceLotNo: sourceLot.lotNo,
         newLotNo: generatedLotNo,
         splitQty,
-        itemCode: sourceLot.itemCode,
         itemCode: part.itemCode,
         itemName: part.itemName,
         sourceRemainingQty: newSourceQty,

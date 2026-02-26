@@ -71,11 +71,10 @@ export class RoutingService {
         })
       : [];
 
-    const partMap = new Map(parts.map(p => [p.id, p]));
+    const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
     const data = items.map(item => ({
       ...item,
-      itemCode: partMap.get(item.itemCode)?.itemCode || null,
       itemName: partMap.get(item.itemCode)?.itemName || null,
     }));
 
@@ -84,7 +83,7 @@ export class RoutingService {
 
   async findById(id: string) {
     const item = await this.routingRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
     if (!item) throw new NotFoundException(`라우팅을 찾을 수 없습니다: ${id}`);
 
@@ -124,13 +123,13 @@ export class RoutingService {
 
   async update(id: string, dto: UpdateRoutingDto) {
     await this.findById(id);
-    await this.routingRepository.update(id, dto);
+    await this.routingRepository.update(+id, dto);
     return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    await this.routingRepository.delete(id);
+    await this.routingRepository.delete(+id);
     return { id };
   }
 }

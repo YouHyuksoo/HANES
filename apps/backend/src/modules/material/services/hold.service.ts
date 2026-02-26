@@ -92,7 +92,7 @@ export class HoldService {
   }
 
   async hold(dto: HoldActionDto) {
-    const { lotNo, reason } = dto;
+    const { lotId: lotNo, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
       where: { lotNo: lotNo },
@@ -129,7 +129,7 @@ export class HoldService {
   }
 
   async release(dto: ReleaseHoldDto) {
-    const { lotNo, reason } = dto;
+    const { lotId: lotNo, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
       where: { lotNo: lotNo },

@@ -34,7 +34,7 @@ export class IqcHistoryController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'IQC 판정 취소 (LOT iqcStatus → PENDING 복원)' })
   async cancel(@Param('id') id: string, @Body() dto: CancelIqcResultDto) {
-    const data = await this.iqcHistoryService.cancel(id, dto);
+    const data = await this.iqcHistoryService.cancel(Number(id), dto);
     return ResponseUtil.success(data, 'IQC 판정이 취소되었습니다.');
   }
 }

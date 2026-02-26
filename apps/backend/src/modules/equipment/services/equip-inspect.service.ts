@@ -95,7 +95,7 @@ export class EquipInspectService {
   }
 
   /** 점검 단건 조회 */
-  async findById(id: string) {
+  async findById(id: number) {
     const log = await this.equipInspectLogRepository.findOne({
       where: { id },
     });
@@ -150,7 +150,7 @@ export class EquipInspectService {
   }
 
   /** 점검 결과 수정 */
-  async update(id: string, dto: UpdateEquipInspectDto) {
+  async update(id: number, dto: UpdateEquipInspectDto) {
     const log = await this.findById(id);
 
     const updateData: Partial<EquipInspectLog> = {};
@@ -171,7 +171,7 @@ export class EquipInspectService {
       select: ['equipCode', 'equipName', 'lineCode'],
     });
 
-    const updated = await this.equipInspectLogRepository.findOne({ where: { id } });
+    const updated = await this.equipInspectLogRepository.findOne({ where: { id: id } });
 
     return {
       ...updated,
@@ -180,7 +180,7 @@ export class EquipInspectService {
   }
 
   /** 점검 결과 삭제 */
-  async delete(id: string) {
+  async delete(id: number) {
     await this.findById(id);
     await this.equipInspectLogRepository.delete(id);
     return { id, deleted: true };
@@ -221,7 +221,7 @@ export class EquipInspectService {
       .createQueryBuilder('item')
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
-      .andWhere('item.equipCode IN (:...equipCodes)', { equipIds })
+      .andWhere('item.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
       .getMany();
 
     // 설비별 점검항목 그룹핑
@@ -239,7 +239,7 @@ export class EquipInspectService {
       .andWhere('log.inspectDate BETWEEN :start AND :end', {
         start: startDate, end: endDate,
       })
-      .andWhere('log.equipCode IN (:...equipCodes)', { equipIds })
+      .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
       .getMany();
 
     // 날짜별 로그 인덱싱
@@ -314,7 +314,7 @@ export class EquipInspectService {
       .createQueryBuilder('item')
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
-      .andWhere('item.equipCode IN (:...equipCodes)', { equipIds })
+      .andWhere('item.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
       .orderBy('item.seq', 'ASC')
       .getMany();
 
@@ -335,7 +335,7 @@ export class EquipInspectService {
       .createQueryBuilder('log')
       .where('log.inspectType = :type', { type: inspectType })
       .andWhere('log.inspectDate BETWEEN :start AND :end', { start: dayStart, end: dayEnd })
-      .andWhere('log.equipCode IN (:...equipCodes)', { equipIds })
+      .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
       .getMany();
 
     const logByEquip = new Map<string, EquipInspectLog>();
@@ -351,7 +351,7 @@ export class EquipInspectService {
       if (dueItems.length === 0) continue;
 
       const log = logByEquip.get(equip.equipCode);
-      let details: { items?: Array<{ itemId: string; seq: number; itemName: string; result: string; remark: string }> } | null = null;
+      let details: { items?: Array<{ itemId: number; seq: number; itemName: string; result: string; remark: string }> } | null = null;
       if (log?.details) {
         try { details = JSON.parse(log.details); } catch { details = null; }
       }

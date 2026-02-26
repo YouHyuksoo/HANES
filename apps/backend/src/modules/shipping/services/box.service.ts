@@ -12,7 +12,7 @@
  * - boxNo가 유니크 키
  * - status: OPEN, CLOSED, SHIPPED
  * - itemCode로 PartMaster와 연결
- * - palletId로 PalletMaster와 연결 (nullable)
+ * - palletNo로 PalletMaster와 연결 (nullable)
  */
 
 import {
@@ -62,7 +62,7 @@ export class BoxService {
       limit = 10,
       boxNo,
       itemCode,
-      palletId,
+      palletId: palletNo,
       status,
       unassigned,
     } = query;
@@ -73,9 +73,9 @@ export class BoxService {
       ...(plant && { plant }),
       ...(boxNo && { boxNo: ILike(`%${boxNo}%`) }),
       ...(itemCode && { itemCode }),
-      ...(palletId && { palletId }),
+      ...(palletNo && { palletNo }),
       ...(status && { status }),
-      ...(unassigned && { palletId: IsNull() }),
+      ...(unassigned && { palletNo: IsNull() }),
     };
 
     const [data, total] = await Promise.all([
@@ -94,13 +94,13 @@ export class BoxService {
   /**
    * 박스 단건 조회 (ID)
    */
-  async findById(id: string) {
+  async findById(boxNo: string) {
     const box = await this.boxRepository.findOne({
-      where: { id },
+      where: { boxNo },
     });
 
     if (!box) {
-      throw new NotFoundException(`박스를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`박스를 찾을 수 없습니다: ${boxNo}`);
     }
 
     return box;
@@ -183,10 +183,10 @@ export class BoxService {
     const updateData: any = {};
     if (dto.qty !== undefined) updateData.qty = dto.qty;
     if (dto.serialList !== undefined) updateData.serialList = JSON.stringify(dto.serialList);
-    if (dto.palletId !== undefined) updateData.palletId = dto.palletId;
+    if (dto.palletId !== undefined) updateData.palletNo = dto.palletId;
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.boxRepository.update({ id }, updateData);
+    await this.boxRepository.update({ boxNo: id }, updateData);
 
     return this.findById(id);
   }
@@ -203,11 +203,11 @@ export class BoxService {
     }
 
     // 팔레트에 할당되어 있으면 삭제 불가
-    if (box.palletId) {
+    if (box.palletNo) {
       throw new BadRequestException('팔레트에 할당된 박스는 삭제할 수 없습니다. 먼저 팔레트에서 제거해주세요.');
     }
 
-    await this.boxRepository.delete(id);
+    await this.boxRepository.delete({ boxNo: id });
 
     return { id, deleted: true };
   }
@@ -258,7 +258,7 @@ export class BoxService {
     const newQty = newSerialList.length;
 
     await this.boxRepository.update(
-      { id },
+      { boxNo: id },
       {
         serialList: JSON.stringify(newSerialList),
         qty: newQty,
@@ -293,7 +293,7 @@ export class BoxService {
     const newQty = newSerialList.length;
 
     await this.boxRepository.update(
-      { id },
+      { boxNo: id },
       {
         serialList: JSON.stringify(newSerialList),
         qty: newQty,
@@ -321,7 +321,7 @@ export class BoxService {
     }
 
     await this.boxRepository.update(
-      { id },
+      { boxNo: id },
       {
         status: 'CLOSED',
         closeAt: new Date(),
@@ -342,12 +342,12 @@ export class BoxService {
     }
 
     // 팔레트에 할당되어 있으면 다시 열 수 없음
-    if (box.palletId) {
+    if (box.palletNo) {
       throw new BadRequestException('팔레트에 할당된 박스는 다시 열 수 없습니다.');
     }
 
     await this.boxRepository.update(
-      { id },
+      { boxNo: id },
       {
         status: 'OPEN',
         closeAt: null,
@@ -371,7 +371,7 @@ export class BoxService {
     }
 
     // 이미 다른 팔레트에 할당되어 있는 경우
-    if (box.palletId && box.palletId !== dto.palletId) {
+    if (box.palletNo && box.palletNo !== dto.palletId) {
       throw new BadRequestException('이미 다른 팔레트에 할당된 박스입니다.');
     }
 
@@ -395,12 +395,12 @@ export class BoxService {
 
     try {
       // 박스 업데이트
-      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletId: dto.palletId });
+      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletNo: dto.palletId });
 
       // 팔레트 집계 업데이트
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
-        .where('box.palletId = :palletId', { palletId: dto.palletId })
+        .where('box.palletNo = :palletNo', { palletNo: dto.palletId })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
@@ -427,13 +427,13 @@ export class BoxService {
   async removeFromPallet(id: string) {
     const box = await this.findById(id);
 
-    if (!box.palletId) {
+    if (!box.palletNo) {
       throw new BadRequestException('팔레트에 할당되지 않은 박스입니다.');
     }
 
     // 팔레트가 OPEN 상태일 때만 제거 가능
     const pallet = await this.palletRepository.findOne({
-      where: { palletNo: box.palletId },
+      where: { palletNo: box.palletNo },
     });
 
     if (!pallet) {
@@ -444,7 +444,7 @@ export class BoxService {
       throw new BadRequestException(`팔레트 상태(${pallet.status})가 OPEN이 아닙니다. OPEN 상태 팔레트에서만 박스를 제거할 수 있습니다.`);
     }
 
-    const palletId = box.palletId;
+    const palletNo = box.palletNo;
 
     // 트랜잭션으로 박스 제거 및 팔레트 집계 업데이트
     const queryRunner = this.dataSource.createQueryRunner();
@@ -453,17 +453,17 @@ export class BoxService {
 
     try {
       // 박스 업데이트
-      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletId: null });
+      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletNo: null });
 
       // 팔레트 집계 업데이트
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
-        .where('box.palletId = :palletId', { palletId })
+        .where('box.palletNo = :palletNo', { palletNo })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
 
-      await queryRunner.manager.update(PalletMaster, { palletNo: palletId }, {
+      await queryRunner.manager.update(PalletMaster, { palletNo: palletNo }, {
         boxCount: parseInt(palletSummary?.count) || 0,
         totalQty: parseInt(palletSummary?.totalQty) || 0,
       });
@@ -484,9 +484,9 @@ export class BoxService {
   /**
    * 팔레트별 박스 목록 조회
    */
-  async findByPalletId(palletId: string) {
+  async findByPalletId(palletNo: string) {
     return this.boxRepository.find({
-      where: { palletId },
+      where: { palletNo },
       order: { createdAt: 'ASC' },
     });
   }
@@ -512,7 +512,7 @@ export class BoxService {
   async findUnassignedBoxes() {
     return this.boxRepository.find({
       where: {
-        palletId: IsNull(),
+        palletNo: IsNull(),
         status: 'CLOSED',
       },
       order: { createdAt: 'ASC' },

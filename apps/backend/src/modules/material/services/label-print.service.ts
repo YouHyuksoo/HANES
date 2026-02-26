@@ -59,7 +59,7 @@ export class LabelPrintService {
    */
   async generateZpl(dto: GenerateZplDto) {
     const template = await this.templateRepo.findOne({
-      where: { id: dto.templateId },
+      where: { id: Number(dto.templateId) },
     });
     if (!template) {
       throw new NotFoundException(
@@ -75,7 +75,7 @@ export class LabelPrintService {
     const zplDataList: string[] = [];
     const lotDetails: any[] = [];
 
-    for (const lotNo of dto.lotNos) {
+    for (const lotNo of dto.lotIds) {
       const lot = await this.matLotRepo.findOne({ where: { lotNo: lotNo } });
       if (!lot) {
         throw new NotFoundException(`LOT을 찾을 수 없습니다: ${lotNo}`);
@@ -109,7 +109,6 @@ export class LabelPrintService {
 
       zplDataList.push(zpl);
       lotDetails.push({
-        lotNo: lot.lotNo,
         lotNo: lot.lotNo,
         itemCode: part?.itemCode ?? '',
         itemName: part?.itemName ?? '',
@@ -177,11 +176,11 @@ export class LabelPrintService {
     plant?: string,
   ): Promise<LabelPrintLog> {
     const log = this.printLogRepo.create({
-      templateId: dto.templateId ?? null,
+      templateId: dto.templateId ? Number(dto.templateId) : null,
       category: dto.category,
       printMode: dto.printMode,
       printerName: dto.printerName ?? null,
-      lotNos: JSON.stringify(dto.lotNos),
+      lotIds: JSON.stringify(dto.lotIds),
       labelCount: dto.labelCount,
       status: dto.status ?? 'SUCCESS',
       errorMsg: dto.errorMsg ?? null,

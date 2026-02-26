@@ -53,11 +53,11 @@ export class DepartmentService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(deptCode: string) {
     const dept = await this.departmentRepository.findOne({
-      where: { id },
+      where: { deptCode },
     });
-    if (!dept) throw new NotFoundException(`부서를 찾을 수 없습니다: ${id}`);
+    if (!dept) throw new NotFoundException(`부서를 찾을 수 없습니다: ${deptCode}`);
     return dept;
   }
 

@@ -45,20 +45,18 @@ export class ProductPhysicalInvService {
 
     const qb = this.stockRepository
       .createQueryBuilder('s')
-      .leftJoin(PartMaster, 'p', 'p.id = s.itemCode')
-      .leftJoin(MatLot, 'l', 'l.id = s.lotNo')
+      .leftJoin(PartMaster, 'p', 'p.itemCode = s.itemCode')
+      .leftJoin(MatLot, 'l', 'l.lotNo = s.lotNo')
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode')
       .select([
-        's.id AS "id"',
+        's.warehouseCode || \'::\'  || s.itemCode || \'::\'  || s.lotNo AS "id"',
         's.warehouseCode AS "warehouseId"',
         'w.warehouseName AS "warehouseName"',
         's.itemCode AS "itemCode"',
-        'p.itemCode AS "itemCode"',
         'p.itemName AS "itemName"',
         'p.unit AS "unit"',
         'p.itemType AS "itemType"',
         's.lotNo AS "lotNo"',
-        'l.lotNo AS "lotNo"',
         's.qty AS "qty"',
         's.reservedQty AS "reservedQty"',
         's.availableQty AS "availableQty"',
@@ -99,17 +97,15 @@ export class ProductPhysicalInvService {
       .createQueryBuilder('log')
       .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
       .leftJoin(MatLot, 'lot', 'lot.lotNo = log.lotNo')
-      .leftJoin(Warehouse, 'wh', 'wh.id = log.warehouseCode')
+      .leftJoin(Warehouse, 'wh', 'wh.warehouseCode = log.warehouseCode')
       .select([
         'log.id AS "id"',
         'log.warehouseCode AS "warehouseId"',
         'wh.warehouseName AS "warehouseName"',
         'log.itemCode AS "itemCode"',
-        'part.itemCode AS "itemCode"',
         'part.itemName AS "itemName"',
         'part.unit AS "unit"',
         'log.lotNo AS "lotNo"',
-        'lot.lotNo AS "lotNo"',
         'log.beforeQty AS "beforeQty"',
         'log.afterQty AS "afterQty"',
         'log.diffQty AS "diffQty"',
@@ -162,8 +158,15 @@ export class ProductPhysicalInvService {
       const results = [];
 
       for (const item of items) {
+        // stockId는 복합키 "warehouseCode::itemCode::lotNo" 형식
+        const [warehouseCode, itemCode, lotNo] = item.stockId.split('::');
+        if (!warehouseCode || !itemCode || !lotNo) {
+          throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${item.stockId}`);
+        }
+
+        const compositeKey = { warehouseCode, itemCode, lotNo };
         const stock = await queryRunner.manager.findOne(ProductStock, {
-          where: { id: item.stockId },
+          where: compositeKey,
         });
 
         if (!stock) {
@@ -175,7 +178,7 @@ export class ProductPhysicalInvService {
         const diffQty = afterQty - beforeQty;
 
         // Stock 수량 업데이트
-        await queryRunner.manager.update(ProductStock, stock.id, {
+        await queryRunner.manager.update(ProductStock, compositeKey, {
           qty: afterQty,
           availableQty: afterQty - stock.reservedQty,
           lastCountAt: new Date(),

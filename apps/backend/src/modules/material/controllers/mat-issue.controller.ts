@@ -34,7 +34,7 @@ export class MatIssueController {
   @Get(':id')
   @ApiOperation({ summary: '출고 상세 조회' })
   async findById(@Param('id') id: string) {
-    const data = await this.matIssueService.findById(id);
+    const data = await this.matIssueService.findById(Number(id));
     return ResponseUtil.success(data);
   }
 
@@ -49,7 +49,7 @@ export class MatIssueController {
   @Post(':id/cancel')
   @ApiOperation({ summary: '출고 취소' })
   async cancel(@Param('id') id: string, @Body('reason') reason?: string) {
-    const data = await this.matIssueService.cancel(id, reason);
+    const data = await this.matIssueService.cancel(Number(id), reason);
     return ResponseUtil.success(data, '출고가 취소되었습니다.');
   }
 }

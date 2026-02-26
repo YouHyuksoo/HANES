@@ -151,14 +151,14 @@ export class IqcHistoryService {
 
   async createResult(dto: CreateIqcResultDto) {
     const lot = await this.matLotRepository.findOne({
-      where: { lotNo: dto.lotNo },
+      where: { lotNo: dto.lotId },
     });
     if (!lot) {
-      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotNo}`);
+      throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.lotId}`);
     }
 
     // LOT iqcStatus 업데이트
-    await this.matLotRepository.update(dto.lotNo, {
+    await this.matLotRepository.update(dto.lotId, {
       iqcStatus: dto.result,
     });
 
@@ -189,7 +189,7 @@ export class IqcHistoryService {
   }
 
   /** IQC 판정 취소 - LOT iqcStatus를 PENDING으로 복원 */
-  async cancel(id: string, dto: CancelIqcResultDto) {
+  async cancel(id: number, dto: CancelIqcResultDto) {
     const log = await this.iqcLogRepository.findOne({ where: { id } });
     if (!log) {
       throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${id}`);

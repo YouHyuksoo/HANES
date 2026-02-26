@@ -226,8 +226,9 @@ export class CreatePmWorkOrderDto {
 export class WoItemResultDto {
   @ApiPropertyOptional({ description: '항목 ID (PM Plan Item ID)' })
   @IsOptional()
-  @IsString()
-  itemId?: string;
+  @Type(() => Number)
+  @IsNumber()
+  itemId?: number;
 
   @ApiProperty({ description: '순서' })
   @IsInt()

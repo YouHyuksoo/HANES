@@ -132,40 +132,26 @@ export class ConsumableService {
   /**
    * 소모품 단건 조회 (ID)
    */
-  async findById(id: string) {
+  async findById(consumableCode: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id },
+      where: { consumableCode },
     });
 
     if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
     }
 
     // Get recent logs with worker info
     const logs = await this.consumableLogRepository
       .createQueryBuilder('log')
-      .leftJoinAndSelect(User, 'worker', 'log.workerId = worker.id')
-      .where('log.consumableId = :consumableId', { consumableId: id })
+      .where('log.consumableCode = :consumableCode', { consumableCode })
       .orderBy('log.createdAt', 'DESC')
       .take(10)
-      .select([
-        'log',
-        'worker.id AS worker_id',
-        'worker.name AS worker_name',
-        'worker.empNo AS worker_empNo',
-      ])
-      .getRawMany();
+      .getMany();
 
     return {
       ...consumable,
-      consumableLogs: logs.map((log) => ({
-        ...log.log,
-        worker: log.worker_id ? {
-          id: log.worker_id,
-          name: log.worker_name,
-          empNo: log.worker_empNo,
-        } : null,
-      })),
+      consumableLogs: logs,
     };
   }
 
@@ -219,25 +205,11 @@ export class ConsumableService {
   /**
    * 소모품 수정
    */
-  async update(id: string, dto: EquipUpdateConsumableDto) {
-    await this.findById(id);
-
-    // 코드 변경 시 중복 확인
-    if (dto.consumableCode) {
-      const existing = await this.consumableMasterRepository.findOne({
-        where: {
-          consumableCode: dto.consumableCode,
-        },
-      });
-
-      if (existing && existing.id !== id) {
-        throw new ConflictException(`이미 존재하는 소모품 코드입니다: ${dto.consumableCode}`);
-      }
-    }
+  async update(consumableCode: string, dto: EquipUpdateConsumableDto) {
+    await this.findById(consumableCode);
 
     const updateData: Partial<ConsumableMaster> = {};
 
-    if (dto.consumableCode !== undefined) updateData.consumableCode = dto.consumableCode;
     if (dto.name !== undefined) updateData.consumableName = dto.name;
     if (dto.category !== undefined) updateData.category = dto.category;
     if (dto.expectedLife !== undefined) updateData.expectedLife = dto.expectedLife;
@@ -251,22 +223,22 @@ export class ConsumableService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.consumableMasterRepository.update(id, updateData);
+    await this.consumableMasterRepository.update(consumableCode, updateData);
 
     // 상태 자동 업데이트
-    await this.updateWarningStatus(id);
+    await this.updateWarningStatus(consumableCode);
 
-    return this.findById(id);
+    return this.findById(consumableCode);
   }
 
   /**
    * 소모품 삭제 (소프트 삭제)
    */
-  async delete(id: string) {
-    await this.findById(id);
+  async delete(consumableCode: string) {
+    await this.findById(consumableCode);
 
-    await this.consumableMasterRepository.delete(id);
-    return { id, deleted: true };
+    await this.consumableMasterRepository.delete(consumableCode);
+    return { consumableCode, deleted: true };
   }
 
   // =============================================
@@ -276,27 +248,27 @@ export class ConsumableService {
   /**
    * 사용 횟수 증가
    */
-  async increaseCount(id: string, dto: IncreaseCountDto) {
-    const consumable = await this.findById(id);
+  async increaseCount(consumableCode: string, dto: IncreaseCountDto) {
+    const consumable = await this.findById(consumableCode);
     const newCount = consumable.currentCount + dto.count;
 
-    await this.consumableMasterRepository.update(id, { currentCount: newCount });
+    await this.consumableMasterRepository.update(consumableCode, { currentCount: newCount });
 
     // 상태 자동 업데이트
-    await this.updateWarningStatus(id);
+    await this.updateWarningStatus(consumableCode);
 
     this.logger.log(
       `소모품 사용 횟수 증가: ${consumable.consumableCode} (${consumable.currentCount} -> ${newCount})`
     );
 
-    return this.findById(id);
+    return this.findById(consumableCode);
   }
 
   /**
    * 교체 등록
    */
-  async registerReplacement(id: string, dto: RegisterReplacementDto) {
-    const consumable = await this.findById(id);
+  async registerReplacement(consumableCode: string, dto: RegisterReplacementDto) {
+    const consumable = await this.findById(consumableCode);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -304,7 +276,7 @@ export class ConsumableService {
 
     try {
       // 소모품 정보 업데이트
-      await queryRunner.manager.update(ConsumableMaster, id, {
+      await queryRunner.manager.update(ConsumableMaster, consumableCode, {
         currentCount: 0,
         lastReplaceAt: new Date(),
         nextReplaceAt: dto.nextReplaceAt ? new Date(dto.nextReplaceAt) : null,
@@ -313,10 +285,10 @@ export class ConsumableService {
 
       // 입고 로그 생성
       await queryRunner.manager.save(ConsumableLog, {
-        consumableId: id,
+        consumableCode: consumableCode,
         logType: 'IN',
         qty: 1,
-        workerId: dto.workerId,
+        workerCode: dto.workerId,
         remark: dto.remark ?? '교체 입고',
       });
 
@@ -326,7 +298,7 @@ export class ConsumableService {
         `소모품 교체 등록: ${consumable.consumableCode}, 이전 사용 횟수: ${consumable.currentCount}`
       );
 
-      return this.findById(id);
+      return this.findById(consumableCode);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -338,9 +310,9 @@ export class ConsumableService {
   /**
    * 경고 상태 자동 업데이트
    */
-  async updateWarningStatus(id: string) {
+  async updateWarningStatus(consumableCode: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id },
+      where: { consumableCode },
     });
 
     if (!consumable) return;
@@ -354,7 +326,7 @@ export class ConsumableService {
     }
 
     if (consumable.status !== newStatus) {
-      await this.consumableMasterRepository.update(id, { status: newStatus });
+      await this.consumableMasterRepository.update(consumableCode, { status: newStatus });
 
       this.logger.log(
         `소모품 상태 자동 변경: ${consumable.consumableCode} (${consumable.status} -> ${newStatus})`
@@ -374,10 +346,10 @@ export class ConsumableService {
     const consumable = await this.findById(dto.consumableId);
 
     const log = this.consumableLogRepository.create({
-      consumableId: dto.consumableId,
+      consumableCode: dto.consumableId,
       logType: dto.logType,
       qty: dto.qty ?? 1,
-      workerId: dto.workerId,
+      workerCode: dto.workerId,
       remark: dto.remark,
     });
 
@@ -387,8 +359,8 @@ export class ConsumableService {
     let workerInfo = null;
     if (dto.workerId) {
       const worker = await this.userRepository.findOne({
-        where: { id: dto.workerId },
-        select: ['id', 'name', 'empNo'],
+        where: { email: dto.workerId },
+        select: ['email', 'name', 'empNo'],
       });
       workerInfo = worker || null;
     }
@@ -425,20 +397,16 @@ export class ConsumableService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.consumableLogRepository.createQueryBuilder('log')
-      .leftJoinAndSelect(User, 'worker', 'log.workerId = worker.id')
-      .leftJoinAndSelect(ConsumableMaster, 'consumable', 'log.consumableId = consumable.id')
+      .leftJoinAndSelect(ConsumableMaster, 'consumable', 'log.consumableCode = consumable.consumableCode')
       .select([
         'log',
-        'worker.id AS worker_id',
-        'worker.name AS worker_name',
-        'worker.empNo AS worker_empNo',
         'consumable.consumableCode AS consumable_code',
         'consumable.consumableName AS consumable_name',
         'consumable.category AS consumable_category',
       ]);
 
     if (consumableId) {
-      queryBuilder.andWhere('log.consumableId = :consumableId', { consumableId });
+      queryBuilder.andWhere('log.consumableCode = :consumableId', { consumableId });
     }
     if (logType) {
       queryBuilder.andWhere('log.logType = :logType', { logType });
@@ -461,11 +429,6 @@ export class ConsumableService {
 
     const data = logs.map((log) => ({
       ...log.log,
-      worker: log.worker_id ? {
-        id: log.worker_id,
-        name: log.worker_name,
-        empNo: log.worker_empNo,
-      } : null,
       consumable: {
         consumableCode: log.consumable_code,
         consumableName: log.consumable_name,
@@ -479,30 +442,13 @@ export class ConsumableService {
   /**
    * 특정 소모품의 로그 조회
    */
-  async findLogsByConsumableId(consumableId: string) {
-    await this.findById(consumableId); // 존재 확인
+  async findLogsByConsumableId(consumableCode: string) {
+    await this.findById(consumableCode); // 존재 확인
 
-    const logs = await this.consumableLogRepository
-      .createQueryBuilder('log')
-      .leftJoinAndSelect(User, 'worker', 'log.workerId = worker.id')
-      .where('log.consumableId = :consumableId', { consumableId })
-      .orderBy('log.createdAt', 'DESC')
-      .select([
-        'log',
-        'worker.id AS worker_id',
-        'worker.name AS worker_name',
-        'worker.empNo AS worker_empNo',
-      ])
-      .getRawMany();
-
-    return logs.map((log) => ({
-      ...log.log,
-      worker: log.worker_id ? {
-        id: log.worker_id,
-        name: log.worker_name,
-        empNo: log.worker_empNo,
-      } : null,
-    }));
+    return this.consumableLogRepository.find({
+      where: { consumableCode },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   // =============================================
@@ -562,18 +508,18 @@ export class ConsumableService {
   /**
    * 금형을 설비에 장착
    */
-  async mountToEquip(id: string, dto: MountToEquipDto) {
+  async mountToEquip(consumableCode: string, dto: MountToEquipDto) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id },
+      where: { consumableCode },
     });
 
     if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
     }
 
     if (consumable.operStatus === 'MOUNTED') {
       throw new ConflictException(
-        `이미 설비에 장착된 금형입니다. 현재 장착 설비: ${consumable.mountedEquipId}`,
+        `이미 설비에 장착된 금형입니다. 현재 장착 설비: ${consumable.mountedEquipCode}`,
       );
     }
 
@@ -582,16 +528,16 @@ export class ConsumableService {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.manager.update(ConsumableMaster, id, {
+      await queryRunner.manager.update(ConsumableMaster, consumableCode, {
         operStatus: 'MOUNTED',
-        mountedEquipId: dto.equipCode,
+        mountedEquipCode: dto.equipCode,
       });
 
       await queryRunner.manager.save(ConsumableMountLog, {
-        consumableId: id,
+        consumableCode: consumableCode,
         equipCode: dto.equipCode,
         action: 'MOUNT',
-        workerId: dto.workerId ?? null,
+        workerCode: dto.workerId ?? null,
         remark: dto.remark ?? null,
         company: consumable.company,
         plant: consumable.plant,
@@ -603,7 +549,7 @@ export class ConsumableService {
         `금형 장착: ${consumable.consumableCode} → 설비 ${dto.equipCode}`,
       );
 
-      return this.findById(id);
+      return this.findById(consumableCode);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -615,13 +561,13 @@ export class ConsumableService {
   /**
    * 금형을 설비에서 해제
    */
-  async unmountFromEquip(id: string, dto: UnmountFromEquipDto) {
+  async unmountFromEquip(consumableCode: string, dto: UnmountFromEquipDto) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id },
+      where: { consumableCode },
     });
 
     if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
     }
 
     if (consumable.operStatus !== 'MOUNTED') {
@@ -630,23 +576,23 @@ export class ConsumableService {
       );
     }
 
-    const previousEquipId = consumable.mountedEquipId;
+    const previousEquipCode = consumable.mountedEquipCode;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.manager.update(ConsumableMaster, id, {
+      await queryRunner.manager.update(ConsumableMaster, consumableCode, {
         operStatus: 'WAREHOUSE',
-        mountedEquipId: null,
+        mountedEquipCode: null,
       });
 
       await queryRunner.manager.save(ConsumableMountLog, {
-        consumableId: id,
-        equipCode: previousEquipId,
+        consumableCode: consumableCode,
+        equipCode: previousEquipCode,
         action: 'UNMOUNT',
-        workerId: dto.workerId ?? null,
+        workerCode: dto.workerId ?? null,
         remark: dto.remark ?? null,
         company: consumable.company,
         plant: consumable.plant,
@@ -655,10 +601,10 @@ export class ConsumableService {
       await queryRunner.commitTransaction();
 
       this.logger.log(
-        `금형 해제: ${consumable.consumableCode} ← 설비 ${previousEquipId}`,
+        `금형 해제: ${consumable.consumableCode} ← 설비 ${previousEquipCode}`,
       );
 
-      return this.findById(id);
+      return this.findById(consumableCode);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -670,13 +616,13 @@ export class ConsumableService {
   /**
    * 금형을 수리 상태로 전환 (장착 상태면 자동 해제)
    */
-  async setRepairStatus(id: string, dto: SetRepairDto) {
+  async setRepairStatus(consumableCode: string, dto: SetRepairDto) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { id },
+      where: { consumableCode },
     });
 
     if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -685,21 +631,21 @@ export class ConsumableService {
 
     try {
       // 장착 상태면 먼저 해제 로그 기록
-      if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipId) {
+      if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipCode) {
         await queryRunner.manager.save(ConsumableMountLog, {
-          consumableId: id,
-          equipCode: consumable.mountedEquipId,
+          consumableCode: consumableCode,
+          equipCode: consumable.mountedEquipCode,
           action: 'UNMOUNT',
-          workerId: dto.workerId ?? null,
+          workerCode: dto.workerId ?? null,
           remark: '수리 전환으로 인한 자동 해제',
           company: consumable.company,
           plant: consumable.plant,
         });
       }
 
-      await queryRunner.manager.update(ConsumableMaster, id, {
+      await queryRunner.manager.update(ConsumableMaster, consumableCode, {
         operStatus: 'REPAIR',
-        mountedEquipId: null,
+        mountedEquipCode: null,
       });
 
       await queryRunner.commitTransaction();
@@ -708,7 +654,7 @@ export class ConsumableService {
         `금형 수리 전환: ${consumable.consumableCode} (이전 상태: ${consumable.operStatus})`,
       );
 
-      return this.findById(id);
+      return this.findById(consumableCode);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -720,11 +666,11 @@ export class ConsumableService {
   /**
    * 금형 장착/해제 이력 조회
    */
-  async getMountHistory(consumableId: string) {
-    await this.findById(consumableId);
+  async getMountHistory(consumableCode: string) {
+    await this.findById(consumableCode);
 
     return this.mountLogRepository.find({
-      where: { consumableId },
+      where: { consumableCode },
       order: { createdAt: 'DESC' },
     });
   }
@@ -735,7 +681,7 @@ export class ConsumableService {
   async findMountedByEquip(equipCode: string) {
     return this.consumableMasterRepository.find({
       where: {
-        mountedEquipId: equipCode,
+        mountedEquipCode: equipCode,
         operStatus: 'MOUNTED',
       },
       order: { consumableCode: 'ASC' },

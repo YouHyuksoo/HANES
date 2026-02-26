@@ -249,10 +249,10 @@ export class BarcodeInspectDto {
  */
 export class BarcodeInspectResponseDto {
   @ApiProperty({ description: '검사실적 ID' })
-  inspectResultId: string;
+  inspectResultId: number;
 
   @ApiProperty({ description: '생산실적 ID' })
-  prodResultId: string;
+  prodResultId: number;
 
   @ApiProperty({ description: '제품 바코드' })
   barcode: string;

@@ -32,7 +32,7 @@ export class IqcGroupController {
   @Get(':id')
   @ApiOperation({ summary: 'IQC 검사그룹 상세 조회 (항목 포함)' })
   async findById(@Param('id') id: string) {
-    const data = await this.iqcGroupService.findById(id);
+    const data = await this.iqcGroupService.findById(+id);
     return ResponseUtil.success(data);
   }
 
@@ -47,14 +47,14 @@ export class IqcGroupController {
   @Put(':id')
   @ApiOperation({ summary: 'IQC 검사그룹 수정' })
   async update(@Param('id') id: string, @Body() dto: UpdateIqcGroupDto) {
-    const data = await this.iqcGroupService.update(id, dto);
+    const data = await this.iqcGroupService.update(+id, dto);
     return ResponseUtil.success(data, 'IQC 검사그룹이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'IQC 검사그룹 삭제' })
   async delete(@Param('id') id: string) {
-    await this.iqcGroupService.delete(id);
+    await this.iqcGroupService.delete(+id);
     return ResponseUtil.success(null, 'IQC 검사그룹이 삭제되었습니다.');
   }
 }

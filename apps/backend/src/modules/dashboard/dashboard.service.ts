@@ -63,7 +63,6 @@ export class DashboardService {
       .getMany();
 
     return orders.map((o) => ({
-      id: o.id,
       orderNo: o.orderNo,
       itemName: o.part?.itemName ?? '-',
       line: o.lineCode ?? '-',

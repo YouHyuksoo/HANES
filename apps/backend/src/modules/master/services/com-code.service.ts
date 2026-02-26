@@ -154,8 +154,10 @@ export class ComCodeService {
    * 공통코드 단건 조회 (ID)
    */
   async findById(id: string) {
+    // id is composite key encoded as "groupCode::detailCode"
+    const [groupCode, detailCode] = id.split('::');
     const code = await this.comCodeRepository.findOne({
-      where: { id },
+      where: { groupCode, detailCode },
     });
 
     if (!code) {

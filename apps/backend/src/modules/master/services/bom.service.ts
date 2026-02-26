@@ -50,7 +50,7 @@ export class BomService {
       queryBuilder = queryBuilder
         .innerJoin(PartMaster, 'parent', 'parent.itemCode = bom.parentItemCode')
         .andWhere(
-          '(UPPER(parent.itemCode) LIKE UPPER(:search) OR UPPER(parent.itemName) LIKE UPPER(:search) OR UPPER(parent.partNo) LIKE UPPER(:search))',
+          '(UPPER(parent.itemCode) LIKE UPPER(:search) OR UPPER(parent.itemName) LIKE UPPER(:search) OR UPPER(parent.itemNo) LIKE UPPER(:search))',
           { search: `%${search}%` }
         );
     }
@@ -62,7 +62,7 @@ export class BomService {
     const parentIds = grouped.map((g) => g.parentItemCode);
     const parents = await this.partRepository.find({
       where: { itemCode: In(parentIds) },
-      select: ['itemCode', 'itemName', 'partNo', 'itemType', 'spec', 'unit', 'customer', 'remark'],
+      select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit', 'customer', 'remark'],
       order: { itemCode: 'asc' },
     });
 
@@ -118,10 +118,14 @@ export class BomService {
   }
 
   async findById(id: string) {
+    // id is composite key encoded as "parentItemCode::childItemCode::revision"
+    const [parentItemCode, childItemCode, revision] = id.split('::');
     const bom = await this.bomRepository.createQueryBuilder('bom')
       .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.itemCode = bom.parentItemCode')
       .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.itemCode = bom.childItemCode')
-      .where('bom.id = :id', { id })
+      .where('bom.parentItemCode = :parentItemCode', { parentItemCode })
+      .andWhere('bom.childItemCode = :childItemCode', { childItemCode })
+      .andWhere('bom.revision = :revision', { revision: revision || 'A' })
       .getOne();
 
     if (!bom) throw new NotFoundException(`BOM을 찾을 수 없습니다: ${id}`);
@@ -289,8 +293,8 @@ export class BomService {
   }
 
   async update(id: string, dto: UpdateBomDto) {
-    await this.findById(id);
-    
+    const bom = await this.findById(id);
+
     const updateData: any = {};
     if (dto.qtyPer !== undefined) updateData.qtyPer = dto.qtyPer;
     if (dto.seq !== undefined) updateData.seq = dto.seq;
@@ -303,13 +307,16 @@ export class BomService {
     if (dto.remark !== undefined) updateData.remark = dto.remark;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.bomRepository.update(id, updateData);
+    await this.bomRepository.update(
+      { parentItemCode: bom.parentItemCode, childItemCode: bom.childItemCode, revision: bom.revision },
+      updateData,
+    );
     return this.findById(id);
   }
 
   async delete(id: string) {
-    await this.findById(id);
-    await this.bomRepository.delete(id);
+    const bom = await this.findById(id);
+    await this.bomRepository.delete({ parentItemCode: bom.parentItemCode, childItemCode: bom.childItemCode, revision: bom.revision });
     return { id };
   }
 }

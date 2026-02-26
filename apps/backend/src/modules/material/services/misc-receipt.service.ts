@@ -133,7 +133,7 @@ export class MiscReceiptService {
   }
 
   async create(dto: CreateMiscReceiptDto) {
-    const { warehouseId, itemCode, lotNo, qty, remark, workerId } = dto;
+    const { warehouseId, itemCode, lotId: lotNo, qty, remark, workerId } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -175,10 +175,10 @@ export class MiscReceiptService {
       });
 
       if (existingStock) {
-        await queryRunner.manager.update(MatStock, existingStock.id, {
-          qty: existingStock.qty + qty,
-          availableQty: existingStock.availableQty + qty,
-        });
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, lotNo: existingStock.lotNo },
+          { qty: existingStock.qty + qty, availableQty: existingStock.availableQty + qty },
+        );
       } else {
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode: warehouse.warehouseCode,
@@ -226,7 +226,6 @@ export class MiscReceiptService {
         warehouseId,
         warehouseCode: warehouse.warehouseCode,
         warehouseName: warehouse.warehouseName,
-        itemCode,
         itemCode: part.itemCode,
         itemName: part.itemName,
         lotNo,

@@ -116,7 +116,7 @@ export class ShipReturnService {
   }
 
   /** 반품 단건 조회 */
-  async findById(id: string) {
+  async findById(id: number) {
     const ret = await this.shipReturnRepository.findOne({
       where: { id },
     });
@@ -186,7 +186,7 @@ export class ShipReturnService {
   }
 
   /** 반품 수정 */
-  async update(id: string, dto: UpdateShipReturnDto) {
+  async update(id: number, dto: UpdateShipReturnDto) {
     const ret = await this.findById(id);
     if (ret.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 수정할 수 있습니다.');
@@ -234,13 +234,13 @@ export class ShipReturnService {
   }
 
   /** 반품 삭제 */
-  async delete(id: string) {
+  async delete(id: number) {
     const ret = await this.findById(id);
     if (ret.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipReturnRepository.delete(id);
+    await this.shipReturnRepository.delete({ id });
 
     return { id, deleted: true };
   }

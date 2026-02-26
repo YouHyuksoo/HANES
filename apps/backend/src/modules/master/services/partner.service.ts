@@ -56,11 +56,11 @@ export class PartnerService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(partnerCode: string) {
     const partner = await this.partnerRepository.findOne({
-      where: { id },
+      where: { partnerCode },
     });
-    if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${id}`);
+    if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${partnerCode}`);
     return partner;
   }
 
@@ -97,16 +97,16 @@ export class PartnerService {
     return this.partnerRepository.save(partner);
   }
 
-  async update(id: string, dto: UpdatePartnerDto) {
-    await this.findById(id);
-    await this.partnerRepository.update(id, dto);
-    return this.findById(id);
+  async update(partnerCode: string, dto: UpdatePartnerDto) {
+    await this.findById(partnerCode);
+    await this.partnerRepository.update({ partnerCode }, dto);
+    return this.findById(partnerCode);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.partnerRepository.delete(id);
-    return { id };
+  async delete(partnerCode: string) {
+    await this.findById(partnerCode);
+    await this.partnerRepository.delete({ partnerCode });
+    return { partnerCode };
   }
 
   async findByType(partnerType: string) {

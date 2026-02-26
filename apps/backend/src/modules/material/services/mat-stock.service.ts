@@ -157,7 +157,7 @@ export class MatStockService {
     return { data: result, total: result.length, page, limit };
   }
 
-  async findByPartAndWarehouse(itemCode: string, warehouseCode: string, lotId?: string) {
+  async findByPartAndWarehouse(itemCode: string, warehouseCode: string, lotNo?: string) {
     const stock = await this.matStockRepository.findOne({
       where: { itemCode, warehouseCode, ...(lotNo && { lotNo }) },
     });
@@ -204,7 +204,7 @@ export class MatStockService {
   }
 
   async adjustStock(dto: StockAdjustDto) {
-    const { itemCode, warehouseCode, locationCode, adjustQty, reason, lotNo } = dto;
+    const { itemCode, warehouseCode, locationCode, adjustQty, reason, lotId: lotNo } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -224,11 +224,13 @@ export class MatStockService {
       }
 
       if (stock) {
-        await queryRunner.manager.update(MatStock, stock.id, {
-          qty: afterQty,
-          availableQty: afterQty - stock.reservedQty,
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
+          { qty: afterQty, availableQty: afterQty - stock.reservedQty },
+        );
+        stock = await queryRunner.manager.findOne(MatStock, {
+          where: { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, lotNo: stock.lotNo },
         });
-        stock = await queryRunner.manager.findOne(MatStock, { where: { id: stock.id } });
       } else {
         if (adjustQty < 0) {
           throw new BadRequestException('재고가 없는 상태에서 감소 조정을 할 수 없습니다.');
@@ -268,7 +270,7 @@ export class MatStockService {
   }
 
   async transferStock(dto: StockTransferDto) {
-    const { itemCode, fromWarehouseCode, toWarehouseCode, qty, lotNo } = dto;
+    const { itemCode, fromWarehouseCode, toWarehouseCode, qty, lotId: lotNo } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -285,10 +287,10 @@ export class MatStockService {
       }
 
       // 출고 창고 차감
-      await queryRunner.manager.update(MatStock, fromStock.id, {
-        qty: fromStock.qty - qty,
-        availableQty: fromStock.availableQty - qty,
-      });
+      await queryRunner.manager.update(MatStock,
+        { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, lotNo: fromStock.lotNo },
+        { qty: fromStock.qty - qty, availableQty: fromStock.availableQty - qty },
+      );
 
       // 입고 창고 재고 확인 또는 생성
       let toStock = await queryRunner.manager.findOne(MatStock, {
@@ -296,11 +298,13 @@ export class MatStockService {
       });
 
       if (toStock) {
-        await queryRunner.manager.update(MatStock, toStock.id, {
-          qty: toStock.qty + qty,
-          availableQty: toStock.availableQty + qty,
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, lotNo: toStock.lotNo },
+          { qty: toStock.qty + qty, availableQty: toStock.availableQty + qty },
+        );
+        toStock = await queryRunner.manager.findOne(MatStock, {
+          where: { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, lotNo: toStock.lotNo },
         });
-        toStock = await queryRunner.manager.findOne(MatStock, { where: { id: toStock.id } });
       } else {
         const newStock = queryRunner.manager.create(MatStock, {
           itemCode,

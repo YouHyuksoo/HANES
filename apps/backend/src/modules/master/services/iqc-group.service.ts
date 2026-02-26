@@ -61,7 +61,7 @@ export class IqcGroupService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(id: number) {
     const group = await this.groupRepo.findOne({
       where: { id },
       relations: ['items'],
@@ -96,7 +96,7 @@ export class IqcGroupService {
       const items = dto.items.map(i =>
         this.groupItemRepo.create({
           groupId: saved.id,
-          itemId: i.itemId,
+          inspItemId: i.itemId,
           seq: i.seq,
         }),
       );
@@ -106,7 +106,7 @@ export class IqcGroupService {
     return this.findById(saved.id);
   }
 
-  async update(id: string, dto: UpdateIqcGroupDto) {
+  async update(id: number, dto: UpdateIqcGroupDto) {
     const group = await this.findById(id);
 
     if (dto.groupCode && dto.groupCode !== group.groupCode) {
@@ -136,7 +136,7 @@ export class IqcGroupService {
         const items = dto.items.map(i =>
           this.groupItemRepo.create({
             groupId: id,
-            itemId: i.itemId,
+            inspItemId: i.itemId,
             seq: i.seq,
           }),
         );
@@ -147,7 +147,7 @@ export class IqcGroupService {
     return this.findById(id);
   }
 
-  async delete(id: string) {
+  async delete(id: number) {
     const group = await this.findById(id);
     await this.groupRepo.remove(group);
     return { id, deleted: true };

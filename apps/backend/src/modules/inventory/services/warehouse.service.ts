@@ -46,9 +46,9 @@ export class WarehouseService {
   /**
    * 창고 상세 조회
    */
-  async findOne(id: string) {
+  async findOne(warehouseCode: string) {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id },
+      where: { warehouseCode },
     });
 
     if (!warehouse) {
@@ -98,16 +98,16 @@ export class WarehouseService {
   /**
    * 창고 수정
    */
-  async update(id: string, dto: UpdateWarehouseDto) {
+  async update(warehouseCode: string, dto: UpdateWarehouseDto) {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id },
+      where: { warehouseCode },
     });
 
     if (!warehouse) {
       throw new NotFoundException('창고를 찾을 수 없습니다.');
     }
 
-    await this.warehouseRepository.update(id, {
+    await this.warehouseRepository.update(warehouseCode, {
       ...(dto.warehouseName && { warehouseName: dto.warehouseName }),
       ...(dto.warehouseType && { warehouseType: dto.warehouseType }),
       ...(dto.plantCode !== undefined && { plantCode: dto.plantCode || null }),
@@ -117,15 +117,15 @@ export class WarehouseService {
       ...(dto.useYn && { useYn: dto.useYn }),
     });
 
-    return this.warehouseRepository.findOne({ where: { id } });
+    return this.warehouseRepository.findOne({ where: { warehouseCode } });
   }
 
   /**
    * 창고 삭제 (소프트 삭제)
    */
-  async remove(id: string) {
+  async remove(warehouseCode: string) {
     const warehouse = await this.warehouseRepository.findOne({
-      where: { id },
+      where: { warehouseCode },
     });
 
     if (!warehouse) {
@@ -141,9 +141,9 @@ export class WarehouseService {
       throw new ConflictException('해당 창고에 재고가 존재하여 삭제할 수 없습니다.');
     }
 
-    await this.warehouseRepository.delete(id);
+    await this.warehouseRepository.delete(warehouseCode);
 
-    return { id, deleted: true };
+    return { warehouseCode, deleted: true };
   }
 
   /**
@@ -252,9 +252,9 @@ export class WarehouseService {
         });
 
         const saved = await this.warehouseRepository.save(warehouse) as Warehouse;
-        results.push({ code: wh.code, status: 'created', id: saved.id });
+        results.push({ code: wh.code, status: 'created', id: saved.warehouseCode });
       } else {
-        results.push({ code: wh.code, status: 'exists', id: existing.id });
+        results.push({ code: wh.code, status: 'exists', id: existing.warehouseCode });
       }
     }
 

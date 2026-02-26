@@ -64,7 +64,7 @@ export class WorkInstructionService {
 
   async findById(id: string) {
     const workInstruction = await this.workInstructionRepository.findOne({
-      where: { id },
+      where: { id: +id },
     });
     if (!workInstruction) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
     return workInstruction;
@@ -86,13 +86,13 @@ export class WorkInstructionService {
 
   async update(id: string, dto: UpdateWorkInstructionDto) {
     await this.findById(id);
-    await this.workInstructionRepository.update(id, dto);
+    await this.workInstructionRepository.update(+id, dto);
     return this.findById(id);
   }
 
   async delete(id: string) {
     await this.findById(id);
-    await this.workInstructionRepository.delete(id);
+    await this.workInstructionRepository.delete(+id);
     return { id };
   }
 }

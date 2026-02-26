@@ -78,8 +78,10 @@ export class CompanyService {
 
   /** 상세 조회 */
   async findById(id: string) {
+    // id is composite key encoded as "companyCode::plant"
+    const [companyCode, plant] = id.split('::');
     const company = await this.companyRepository.findOne({
-      where: { id },
+      where: { companyCode, plant: plant || '-' },
     });
     if (!company) throw new NotFoundException(`회사를 찾을 수 없습니다: ${id}`);
     return company;

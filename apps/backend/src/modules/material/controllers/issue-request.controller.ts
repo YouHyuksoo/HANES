@@ -64,7 +64,7 @@ export class IssueRequestController {
   @ApiOperation({ summary: '출고요청 상세 조회' })
   @ApiParam({ name: 'id', description: '출고요청 ID' })
   async findById(@Param('id') id: string) {
-    const data = await this.issueRequestService.findById(id);
+    const data = await this.issueRequestService.findById(Number(id));
     return ResponseUtil.success(data);
   }
 
@@ -72,7 +72,7 @@ export class IssueRequestController {
   @ApiOperation({ summary: '출고요청 승인' })
   @ApiParam({ name: 'id', description: '출고요청 ID' })
   async approve(@Param('id') id: string) {
-    const data = await this.issueRequestService.approve(id);
+    const data = await this.issueRequestService.approve(Number(id));
     return ResponseUtil.success(data, '출고요청이 승인되었습니다.');
   }
 
@@ -83,7 +83,7 @@ export class IssueRequestController {
     @Param('id') id: string,
     @Body() dto: RejectIssueRequestDto,
   ) {
-    const data = await this.issueRequestService.reject(id, dto);
+    const data = await this.issueRequestService.reject(Number(id), dto);
     return ResponseUtil.success(data, '출고요청이 반려되었습니다.');
   }
 
@@ -95,7 +95,7 @@ export class IssueRequestController {
     @Param('id') id: string,
     @Body() dto: RequestIssueDto,
   ) {
-    const data = await this.issueRequestService.issueFromRequest(id, dto);
+    const data = await this.issueRequestService.issueFromRequest(Number(id), dto);
     return ResponseUtil.success(data, '출고가 완료되었습니다.');
   }
 }

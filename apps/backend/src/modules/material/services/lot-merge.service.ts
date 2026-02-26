@@ -64,7 +64,7 @@ export class LotMergeService {
     const parts = itemCodes.length > 0
       ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName', 'unit'] })
       : [];
-    const partMap = new Map(parts.map(p => [p.id, p]));
+    const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
     const data = lots.map(lot => {
       const part = partMap.get(lot.itemCode);
@@ -109,13 +109,13 @@ export class LotMergeService {
 
       // 대상 LOT 결정 (지정되지 않으면 첫 번째)
       const target = targetLotId
-        ? lots.find(l => l.id === targetLotId)
+        ? lots.find(l => l.lotNo === targetLotId)
         : lots[0];
       if (!target) {
         throw new NotFoundException('대상 LOT을 찾을 수 없습니다.');
       }
 
-      const sources = lots.filter(l => l.id !== target.id);
+      const sources = lots.filter(l => l.lotNo !== target.lotNo);
       const totalMergeQty = sources.reduce((sum, l) => sum + l.currentQty, 0);
 
       // 품목 정보
@@ -123,14 +123,14 @@ export class LotMergeService {
 
       // 대상 LOT에 수량 합산
       const newTargetQty = target.currentQty + totalMergeQty;
-      await queryRunner.manager.update(MatLot, target.id, {
+      await queryRunner.manager.update(MatLot, target.lotNo, {
         currentQty: newTargetQty,
         initQty: target.initQty + totalMergeQty,
       });
 
       // 원본 LOT들 소진 처리
       for (const src of sources) {
-        await queryRunner.manager.update(MatLot, src.id, {
+        await queryRunner.manager.update(MatLot, src.lotNo, {
           currentQty: 0,
           status: 'DEPLETED',
         });
@@ -138,25 +138,25 @@ export class LotMergeService {
 
       // MatStock 동기화 — 대상 재고에 합산, 원본 재고 0으로
       const targetStock = await queryRunner.manager.findOne(MatStock, {
-        where: { lotNo: target.id },
+        where: { lotNo: target.lotNo },
       });
 
       if (targetStock) {
-        await queryRunner.manager.update(MatStock, targetStock.id, {
-          qty: targetStock.qty + totalMergeQty,
-          availableQty: targetStock.availableQty + totalMergeQty,
-        });
+        await queryRunner.manager.update(MatStock,
+          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, lotNo: targetStock.lotNo },
+          { qty: targetStock.qty + totalMergeQty, availableQty: targetStock.availableQty + totalMergeQty },
+        );
       }
 
       for (const src of sources) {
         const srcStock = await queryRunner.manager.findOne(MatStock, {
-          where: { lotNo: src.id },
+          where: { lotNo: src.lotNo },
         });
         if (srcStock) {
-          await queryRunner.manager.update(MatStock, srcStock.id, {
-            qty: 0,
-            availableQty: 0,
-          });
+          await queryRunner.manager.update(MatStock,
+            { warehouseCode: srcStock.warehouseCode, itemCode: srcStock.itemCode, lotNo: srcStock.lotNo },
+            { qty: 0, availableQty: 0 },
+          );
         }
       }
 
@@ -168,10 +168,10 @@ export class LotMergeService {
         transType: 'LOT_MERGE',
         transDate: new Date(),
         itemCode: target.itemCode,
-        lotNo: target.id,
+        lotNo: target.lotNo,
         qty: totalMergeQty,
         refType: 'LOT_MERGE',
-        refId: target.id,
+        refId: target.lotNo,
         remark: remark || `LOT 병합: [${sourceNos}] → ${target.lotNo}`,
         status: 'DONE',
       });
@@ -179,7 +179,6 @@ export class LotMergeService {
       await queryRunner.commitTransaction();
 
       return {
-        targetLotId: target.id,
         targetLotNo: target.lotNo,
         mergedLotNos: sources.map(s => s.lotNo),
         totalMergedQty: totalMergeQty,

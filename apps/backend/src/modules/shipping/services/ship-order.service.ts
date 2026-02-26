@@ -69,7 +69,7 @@ export class ShipOrderService {
     const resultData = await Promise.all(
       data.map(async (order) => {
         const items = await this.shipOrderItemRepository.find({
-          where: { shipOrderId: order.id },
+          where: { shipOrderNo: order.shipOrderNo },
         });
 
         const itemsWithPart = await Promise.all(
@@ -97,15 +97,15 @@ export class ShipOrderService {
   }
 
   /** 출하지시 단건 조회 */
-  async findById(id: string) {
+  async findById(shipOrderNo: string) {
     const order = await this.shipOrderRepository.findOne({
-      where: { id },
+      where: { shipOrderNo },
     });
 
-    if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${id}`);
+    if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
 
     const items = await this.shipOrderItemRepository.find({
-      where: { shipOrderId: order.id },
+      where: { shipOrderNo: order.shipOrderNo },
     });
 
     const itemsWithPart = await Promise.all(
@@ -156,7 +156,7 @@ export class ShipOrderService {
       if (dto.items && dto.items.length > 0) {
         const items = dto.items.map((item) =>
           this.shipOrderItemRepository.create({
-            shipOrderId: savedOrder.id,
+            shipOrderNo: savedOrder.shipOrderNo,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
@@ -168,7 +168,7 @@ export class ShipOrderService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(savedOrder.id);
+      return this.findById(savedOrder.shipOrderNo);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -178,8 +178,8 @@ export class ShipOrderService {
   }
 
   /** 출하지시 수정 */
-  async update(id: string, dto: UpdateShipOrderDto) {
-    const order = await this.findById(id);
+  async update(shipOrderNo: string, dto: UpdateShipOrderDto) {
+    const order = await this.findById(shipOrderNo);
     if (order.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 수정할 수 있습니다.');
     }
@@ -190,11 +190,11 @@ export class ShipOrderService {
 
     try {
       if (dto.items) {
-        await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderId: id });
+        await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderNo });
 
         const items = dto.items.map((item) =>
           this.shipOrderItemRepository.create({
-            shipOrderId: id,
+            shipOrderNo,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
@@ -213,11 +213,11 @@ export class ShipOrderService {
       if (dto.status !== undefined) updateData.status = dto.status;
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ShipmentOrder, { id }, updateData);
+      await queryRunner.manager.update(ShipmentOrder, { shipOrderNo }, updateData);
 
       await queryRunner.commitTransaction();
 
-      return this.findById(id);
+      return this.findById(dto.shipOrderNo ?? shipOrderNo);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -227,14 +227,14 @@ export class ShipOrderService {
   }
 
   /** 출하지시 삭제 */
-  async delete(id: string) {
-    const order = await this.findById(id);
+  async delete(shipOrderNo: string) {
+    const order = await this.findById(shipOrderNo);
     if (order.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipOrderRepository.delete(id);
+    await this.shipOrderRepository.delete({ shipOrderNo });
 
-    return { id, deleted: true };
+    return { shipOrderNo, deleted: true };
   }
 }

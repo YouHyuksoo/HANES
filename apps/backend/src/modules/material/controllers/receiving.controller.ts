@@ -46,7 +46,7 @@ export class ReceivingController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '자동입고 처리 (라벨 발행 시)' })
   async autoReceive(@Body() dto: AutoReceiveDto) {
-    const data = await this.receivingService.autoReceive(dto.lotNos, dto.workerId);
+    const data = await this.receivingService.autoReceive(dto.lotIds, dto.workerId);
     return ResponseUtil.success(data);
   }
 

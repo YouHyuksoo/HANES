@@ -80,7 +80,7 @@ export class OqcService {
   /** 상세 조회 (의뢰 + 연결 박스 목록) */
   async findById(id: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { id },
+      where: { requestNo: id },
       relations: ['boxes'],
     });
 
@@ -157,8 +157,7 @@ export class OqcService {
       // OqcRequestBox 레코드 생성
       const requestBoxes = boxes.map(box =>
         queryRunner.manager.create(OqcRequestBox, {
-          oqcRequestId: saved.id,
-          boxId: box.id,
+          requestNo: saved.requestNo,
           boxNo: box.boxNo,
           qty: box.qty,
           isSample: 'N',
@@ -169,12 +168,12 @@ export class OqcService {
       // 박스 oqcStatus 업데이트
       await queryRunner.manager.update(
         BoxMaster,
-        { id: In(boxIds) },
+        { boxNo: In(boxIds) },
         { oqcStatus: 'PENDING' },
       );
 
       await queryRunner.commitTransaction();
-      return this.findById(saved.id);
+      return this.findById(saved.requestNo);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -186,7 +185,7 @@ export class OqcService {
   /** 검사 실행 — 판정(PASS/FAIL), 샘플 표시, oqcStatus 일괄 업데이트 */
   async executeInspection(id: string, dto: ExecuteOqcInspectionDto, updatedBy?: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { id },
+      where: { requestNo: id },
       relations: ['boxes'],
     });
 
@@ -207,13 +206,13 @@ export class OqcService {
       if (dto.sampleBoxIds && dto.sampleBoxIds.length > 0) {
         await queryRunner.manager.update(
           OqcRequestBox,
-          { oqcRequestId: id, boxId: In(dto.sampleBoxIds) },
+          { requestNo: id, boxNo: In(dto.sampleBoxIds) },
           { isSample: 'Y' },
         );
       }
 
       // 2. 의뢰 결과 업데이트
-      await queryRunner.manager.update(OqcRequest, { id }, {
+      await queryRunner.manager.update(OqcRequest, { requestNo: id }, {
         status: dto.result,
         result: dto.result,
         details: dto.details || null,
@@ -223,11 +222,11 @@ export class OqcService {
       });
 
       // 3. 연결된 박스 oqcStatus 일괄 업데이트
-      const boxIds = oqcRequest.boxes.map(b => b.boxId);
-      if (boxIds.length > 0) {
+      const boxNos = oqcRequest.boxes.map(b => b.boxNo);
+      if (boxNos.length > 0) {
         await queryRunner.manager.update(
           BoxMaster,
-          { id: In(boxIds) },
+          { boxNo: In(boxNos) },
           { oqcStatus: dto.result },
         );
       }
@@ -245,7 +244,7 @@ export class OqcService {
   /** 결과 수정 (판정 후 보정) */
   async updateResult(id: string, dto: UpdateOqcResultDto, updatedBy?: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { id },
+      where: { requestNo: id },
       relations: ['boxes'],
     });
 
@@ -265,15 +264,15 @@ export class OqcService {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.manager.update(OqcRequest, { id }, updateData);
+      await queryRunner.manager.update(OqcRequest, { requestNo: id }, updateData);
 
       // 결과 변경 시 박스 oqcStatus도 동기화
       if (dto.result) {
-        const boxIds = oqcRequest.boxes.map(b => b.boxId);
-        if (boxIds.length > 0) {
+        const boxNos = oqcRequest.boxes.map(b => b.boxNo);
+        if (boxNos.length > 0) {
           await queryRunner.manager.update(
             BoxMaster,
-            { id: In(boxIds) },
+            { boxNo: In(boxNos) },
             { oqcStatus: dto.result },
           );
         }

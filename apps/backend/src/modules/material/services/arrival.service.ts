@@ -66,9 +66,9 @@ export class ArrivalService {
     });
 
     // PO 아이템 조회
-    const poIds = pos.map((po) => po.id);
+    const poNos = pos.map((po) => po.poNo);
     const items = await this.purchaseOrderItemRepository.find({
-      where: { poId: In(poIds) },
+      where: { poNo: In(poNos) },
     });
 
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
@@ -78,16 +78,16 @@ export class ArrivalService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // PO별 아이템 그룹화
-    const itemsByPoId = new Map<string, typeof items>();
+    const itemsByPoNo = new Map<string, typeof items>();
     for (const item of items) {
-      if (!itemsByPoId.has(item.poId)) {
-        itemsByPoId.set(item.poId, []);
+      if (!itemsByPoNo.has(item.poNo)) {
+        itemsByPoNo.set(item.poNo, []);
       }
-      itemsByPoId.get(item.poId)!.push(item);
+      itemsByPoNo.get(item.poNo)!.push(item);
     }
 
     return pos.map((po) => {
-      const poItems = itemsByPoId.get(po.id) || [];
+      const poItems = itemsByPoNo.get(po.poNo) || [];
       const enrichedItems = poItems.map((item) => ({
         ...item,
         remainingQty: item.orderQty - item.receivedQty,
@@ -107,22 +107,22 @@ export class ArrivalService {
   }
 
   /** 특정 PO의 입하 가능 품목 조회 */
-  async getPoItems(poId: string) {
+  async getPoItems(poNo: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id: poId },
+      where: { poNo },
     });
 
-    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poId}`);
+    if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
 
     const items = await this.purchaseOrderItemRepository.find({
-      where: { poId },
+      where: { poNo },
     });
 
     const itemCodes = items.map((item: PurchaseOrderItem) => item.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
       ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
       : [];
-    const partMap = new Map(parts.map((p: PartMaster) => [p.id, p]));
+    const partMap = new Map(parts.map((p: PartMaster) => [p.itemCode, p]));
 
     return {
       ...po,
@@ -141,7 +141,7 @@ export class ArrivalService {
   /** PO 기반 입하 등록 (핵심 트랜잭션) */
   async createPoArrival(dto: CreatePoArrivalDto) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { id: dto.poId },
+      where: { poNo: dto.poId },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${dto.poId}`);
     if (!['CONFIRMED', 'PARTIAL'].includes(po.status)) {
@@ -149,12 +149,12 @@ export class ArrivalService {
     }
 
     const poItems = await this.purchaseOrderItemRepository.find({
-      where: { poId: dto.poId },
+      where: { poNo: dto.poId },
     });
 
     // 잔량 검증
     for (const item of dto.items) {
-      const poItem = poItems.find((pi) => pi.id === item.poItemId);
+      const poItem = poItems.find((pi) => pi.id === Number(item.poItemId));
       if (!poItem) throw new BadRequestException(`PO 품목을 찾을 수 없습니다: ${item.poItemId}`);
       const remaining = poItem.orderQty - poItem.receivedQty;
       if (item.receivedQty > remaining) {
@@ -237,7 +237,7 @@ export class ArrivalService {
         await this.upsertStock(queryRunner.manager, item.warehouseId, item.itemCode, savedLot.lotNo, item.receivedQty);
 
         // 5. PurchaseOrderItem.receivedQty 증가
-        const poItem = poItems.find((pi) => pi.id === item.poItemId);
+        const poItem = poItems.find((pi) => pi.id === Number(item.poItemId));
         if (poItem) {
           await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
             receivedQty: poItem.receivedQty + item.receivedQty,
@@ -261,7 +261,7 @@ export class ArrivalService {
       }
 
       // 5. PO 상태 재계산
-      await this.updatePOStatus(queryRunner.manager, dto.poId);
+      await this.updatePOStatus(queryRunner.manager, po.poNo);
 
       await queryRunner.commitTransaction();
       return results;
@@ -454,7 +454,7 @@ export class ArrivalService {
   /** 입하 취소 (역분개 트랜잭션) */
   async cancel(dto: CancelArrivalDto) {
     const original = await this.stockTransactionRepository.findOne({
-      where: { id: dto.transactionId },
+      where: { id: Number(dto.transactionId) },
     });
 
     if (!original) throw new NotFoundException(`트랜잭션을 찾을 수 없습니다: ${dto.transactionId}`);
@@ -469,7 +469,7 @@ export class ArrivalService {
 
     try {
       // 1. 원본 CANCELED 처리
-      await queryRunner.manager.update(StockTransaction, dto.transactionId, { status: 'CANCELED' });
+      await queryRunner.manager.update(StockTransaction, Number(dto.transactionId), { status: 'CANCELED' });
 
       // 1-1. MatArrival도 CANCELED 처리 (LOT 기준으로 찾기)
       if (original.lotNo) {
@@ -491,7 +491,7 @@ export class ArrivalService {
         qty: -original.qty,
         remark: dto.reason,
         workerId: dto.workerId,
-        cancelRefId: original.id,
+        cancelRefId: String(original.id),
         refType: 'CANCEL',
       });
       const savedCancelTx = await queryRunner.manager.save(cancelTx);
@@ -517,12 +517,12 @@ export class ArrivalService {
 
       // 5. PO receivedQty 감소 + PO status 재계산
       if (original.refType === 'PO' && original.refId) {
-        const poItem = await queryRunner.manager.findOne(PurchaseOrderItem, { where: { id: original.refId } });
+        const poItem = await queryRunner.manager.findOne(PurchaseOrderItem, { where: { id: Number(original.refId) } });
         if (poItem) {
           await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
             receivedQty: Math.max(0, poItem.receivedQty - original.qty),
           });
-          await this.updatePOStatus(queryRunner.manager, poItem.poId);
+          await this.updatePOStatus(queryRunner.manager, poItem.poNo);
         }
       }
 
@@ -616,7 +616,7 @@ export class ArrivalService {
 
     // 관련 ID 수집
     const itemCodes = [...new Set(arrivals.map((a) => a.itemCode))];
-    const lotNos = [...new Set(arrivals.map((a) => a.lotNo))];
+    const lotNos = [...new Set(arrivals.map((a) => a.lotId))];
     const warehouseCodes = [...new Set(arrivals.map((a) => a.warehouseCode))];
 
     // 병렬 조회
@@ -642,9 +642,9 @@ export class ArrivalService {
 
     let data = arrivals.map((a) => {
       const part = partMap.get(a.itemCode);
-      const lot = lotMap.get(a.lotNo);
+      const lot = lotMap.get(a.lotId);
       const warehouse = warehouseMap.get(a.warehouseCode);
-      const stockKey = `${a.warehouseCode}_${a.itemCode}_${a.lotNo || ''}`;
+      const stockKey = `${a.warehouseCode}_${a.itemCode}_${a.lotId || ''}`;
       const currentStock = stockMap.get(stockKey) ?? 0;
 
       return {
@@ -692,9 +692,9 @@ export class ArrivalService {
   }
 
   /** PO 상태 재계산 */
-  private async updatePOStatus(manager: any, poId: string) {
+  private async updatePOStatus(manager: any, poNo: string) {
     const poItems = await manager.find(PurchaseOrderItem, {
-      where: { poId },
+      where: { poNo },
     });
 
     const allReceived = poItems.every(
@@ -713,7 +713,7 @@ export class ArrivalService {
       newStatus = 'CONFIRMED';
     }
 
-    await manager.update(PurchaseOrder, poId, { status: newStatus });
+    await manager.update(PurchaseOrder, poNo, { status: newStatus });
   }
 
   /** MatStock upsert (현재고 증감) */
@@ -724,10 +724,10 @@ export class ArrivalService {
 
     if (existing) {
       const newQty = Math.max(0, existing.qty + qtyDelta);
-      await manager.update(MatStock, existing.id, {
-        qty: newQty,
-        availableQty: Math.max(0, newQty - existing.reservedQty),
-      });
+      await manager.update(MatStock,
+        { warehouseCode: existing.warehouseCode, itemCode: existing.itemCode, lotNo: existing.lotNo },
+        { qty: newQty, availableQty: Math.max(0, newQty - existing.reservedQty) },
+      );
     } else if (qtyDelta > 0) {
       const newStock = manager.create(MatStock, {
         warehouseCode,
