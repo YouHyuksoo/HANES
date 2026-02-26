@@ -21,9 +21,8 @@ import api from "@/services/api";
 interface MergeableLot {
   id: string;
   lotNo: string;
-  partId: string;
-  partCode?: string;
-  partName?: string;
+  itemCode: string;
+  itemName?: string;
   unit?: string;
   currentQty: number;
   status: string;
@@ -72,7 +71,7 @@ export default function LotMergePage() {
 
   const canMerge = useMemo(() => {
     if (selectedLots.length < 2) return false;
-    const partIds = new Set(selectedLots.map(l => l.partId));
+    const partIds = new Set(selectedLots.map(l => l.itemCode));
     return partIds.size === 1;
   }, [selectedLots]);
 
@@ -100,7 +99,7 @@ export default function LotMergePage() {
 
   const partMismatch = useMemo(() => {
     if (selectedLots.length < 2) return false;
-    const partIds = new Set(selectedLots.map(l => l.partId));
+    const partIds = new Set(selectedLots.map(l => l.itemCode));
     return partIds.size > 1;
   }, [selectedLots]);
 
@@ -117,10 +116,10 @@ export default function LotMergePage() {
     { accessorKey: "lotNo", header: t("material.lotMerge.lotNo"), size: 160,
       meta: { filterType: "text" as const },
     },
-    { accessorKey: "partCode", header: t("common.partCode"), size: 110,
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
     },
-    { accessorKey: "partName", header: t("common.partName"), size: 140,
+    { accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     { accessorKey: "currentQty", header: t("common.quantity"), size: 90,

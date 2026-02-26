@@ -25,10 +25,10 @@ interface ReceiveModalProps {
 import api from "@/services/api";
 
 const INITIAL_FORM = {
-  partId: "",
-  warehouseId: "",
+  itemCode: "",
+  warehouseCode: "",
   qty: 1,
-  jobOrderId: "",
+  orderNo: "",
   processCode: "",
   remark: "",
 };
@@ -56,23 +56,23 @@ export default function ReceiveModal({
   /** 품목유형 전환 — partId 리셋 */
   const handlePartTypeChange = useCallback((type: "WIP" | "FG") => {
     setModalPartType(type);
-    setForm((prev) => ({ ...prev, partId: "" }));
+    setForm((prev) => ({ ...prev, itemCode: "" }));
   }, []);
 
   /** 입고 처리 */
   const handleSubmit = useCallback(async () => {
-    if (!form.partId || !form.warehouseId || form.qty < 1) return;
+    if (!form.itemCode || !form.warehouseCode || form.qty < 1) return;
     setSaving(true);
     try {
       const endpoint =
         modalPartType === "WIP" ? "/inventory/wip/receive" : "/inventory/fg/receive";
       await api.post(endpoint, {
-        partId: form.partId,
-        warehouseId: form.warehouseId,
+        itemCode: form.itemCode,
+        warehouseCode: form.warehouseCode,
         qty: form.qty,
-        partType: modalPartType,
+        itemType: modalPartType,
         transType: modalPartType === "WIP" ? "WIP_IN" : "FG_IN",
-        jobOrderId: form.jobOrderId || undefined,
+        orderNo: form.orderNo || undefined,
         processCode: form.processCode || undefined,
         remark: form.remark || undefined,
       });
@@ -118,16 +118,16 @@ export default function ReceiveModal({
           <Select
             label={t("productMgmt.receive.modal.partId")}
             options={partOptions}
-            value={form.partId}
-            onChange={(v) => setForm({ ...form, partId: v })}
+            value={form.itemCode}
+            onChange={(v) => setForm({ ...form, itemCode: v })}
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Select
             label={t("productMgmt.receive.modal.warehouseId")}
             options={warehouseOptions}
-            value={form.warehouseId}
-            onChange={(v) => setForm({ ...form, warehouseId: v })}
+            value={form.warehouseCode}
+            onChange={(v) => setForm({ ...form, warehouseCode: v })}
           />
           <Input
             label={t("productMgmt.receive.modal.qty")}
@@ -141,8 +141,8 @@ export default function ReceiveModal({
         <div className="grid grid-cols-2 gap-4">
           <Input
             label={t("productMgmt.receive.modal.jobOrderId")}
-            value={form.jobOrderId}
-            onChange={(e) => setForm({ ...form, jobOrderId: e.target.value })}
+            value={form.orderNo}
+            onChange={(e) => setForm({ ...form, orderNo: e.target.value })}
             fullWidth
           />
           <Input
@@ -164,7 +164,7 @@ export default function ReceiveModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={saving || !form.partId || !form.warehouseId}
+            disabled={saving || !form.itemCode || !form.warehouseCode}
           >
             {saving ? t("common.saving") : t("productMgmt.receive.modal.confirm")}
           </Button>

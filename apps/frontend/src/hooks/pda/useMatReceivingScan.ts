@@ -15,8 +15,8 @@ import { api } from "@/services/api";
 export interface MatArrivalData {
   id: number;
   poNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   orderQty: number;
   unit: string;
   supplier: string;
@@ -25,8 +25,8 @@ export interface MatArrivalData {
 /** 입고 완료 이력 항목 */
 export interface ReceivingHistoryItem {
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   receivedQty: number;
   warehouseCode: string;
   timestamp: string;
@@ -95,8 +95,8 @@ export function useMatReceivingScan(): UseMatReceivingScanReturn {
         setHistory((prev) => [
           {
             lotNo: `LOT-${Date.now()}`,
-            partCode: scannedData.partCode,
-            partName: scannedData.partName,
+            itemCode: scannedData.itemCode,
+            itemName: scannedData.itemName,
             receivedQty,
             warehouseCode,
             timestamp: new Date().toLocaleTimeString(),

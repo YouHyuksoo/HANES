@@ -30,8 +30,8 @@ interface IssueRecord {
   status: string;
   remark: string | null;
   lotNo: string | null;
-  partCode: string | null;
-  partName: string | null;
+  itemCode: string | null;
+  itemName: string | null;
   unit: string | null;
   jobOrderNo: string | null;
 }
@@ -76,8 +76,8 @@ export default function IssueHistoryTab() {
         const keyword = searchText.toLowerCase();
         data = data.filter((r) =>
           r.issueNo?.toLowerCase().includes(keyword) ||
-          r.partCode?.toLowerCase().includes(keyword) ||
-          r.partName?.toLowerCase().includes(keyword) ||
+          r.itemCode?.toLowerCase().includes(keyword) ||
+          r.itemName?.toLowerCase().includes(keyword) ||
           r.lotNo?.toLowerCase().includes(keyword)
         );
       }
@@ -124,8 +124,8 @@ export default function IssueHistoryTab() {
       meta: { filterType: 'date' as const },
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
     },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 120, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('common.partName'), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemCode', header: t('common.partCode'), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemName', header: t('common.partName'), size: 150, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'issueQty',
@@ -273,7 +273,7 @@ export default function IssueHistoryTab() {
               </p>
               <p>
                 <span className="text-text-muted">{t('common.partName')}:</span>{' '}
-                {cancelTarget.partName}
+                {cancelTarget.itemName}
               </p>
               <p>
                 <span className="text-text-muted">{t('common.quantity')}:</span>{' '}

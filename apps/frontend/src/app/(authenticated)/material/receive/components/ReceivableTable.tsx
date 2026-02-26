@@ -59,8 +59,8 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
     },
     { id: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lotNo },
     { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.poNo || '-' },
-    { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.partCode },
-    { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.partName },
+    { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.itemCode },
+    { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part.itemName },
     { id: 'vendor', header: t('material.arrival.col.vendor'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendor || '-' },
     {
       id: 'initQty',
@@ -125,8 +125,8 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       cell: ({ row }) => (
         <Select
           options={warehouses}
-          value={inputs[row.original.id]?.warehouseId || ''}
-          onChange={(v) => onInputChange(row.original.id, 'warehouseId', v)}
+          value={inputs[row.original.id]?.warehouseCode || ''}
+          onChange={(v) => onInputChange(row.original.id, 'warehouseCode', v)}
           placeholder={t('material.arrival.selectWarehouse')}
         />
       ),

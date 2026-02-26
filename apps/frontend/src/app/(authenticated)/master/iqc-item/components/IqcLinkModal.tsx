@@ -18,7 +18,7 @@ import { Button, Input, Modal, Select } from "@/components/ui";
 import { INSPECT_METHOD_COLORS } from "../types";
 import api from "@/services/api";
 
-interface PartOption { id: string; partCode: string; partName: string; }
+interface PartOption { id: string; itemCode: string; itemName: string; }
 interface PartnerOption { id: string; partnerCode: string; partnerName: string; }
 interface GroupOption {
   id: string; groupCode: string; groupName: string;
@@ -27,7 +27,7 @@ interface GroupOption {
 }
 
 interface LinkFormData {
-  partId: string;
+  itemCode: string;
   partnerId: string;
   groupId: string;
   remark: string;
@@ -38,13 +38,13 @@ interface Props {
   onClose: () => void;
   onSave: (data: LinkFormData) => void;
   editing?: {
-    id: string; partId: string; partnerId?: string | null;
+    id: string; itemCode: string; partnerId?: string | null;
     groupId: string; remark?: string | null;
-    part?: { partCode: string; partName: string };
+    part?: { itemCode: string; itemName: string };
   } | null;
 }
 
-const EMPTY_FORM: LinkFormData = { partId: "", partnerId: "", groupId: "", remark: "" };
+const EMPTY_FORM: LinkFormData = { itemCode: "", partnerId: "", groupId: "", remark: "" };
 
 export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props) {
   const { t } = useTranslation();
@@ -94,13 +94,13 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
       setPartSearch("");
       if (editing) {
         setForm({
-          partId: editing.partId,
+          itemCode: editing.itemCode,
           partnerId: editing.partnerId ?? "",
           groupId: editing.groupId,
           remark: editing.remark ?? "",
         });
         if (editing.part) {
-          setParts([{ id: editing.partId, partCode: editing.part.partCode, partName: editing.part.partName }]);
+          setParts([{ id: editing.itemCode, itemCode: editing.part.itemCode, itemName: editing.part.itemName }]);
         }
       } else {
         setForm(EMPTY_FORM);
@@ -109,7 +109,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
   }, [isOpen, editing, fetchDropdowns]);
 
   const partOptions = useMemo(() =>
-    parts.map(p => ({ value: p.id, label: `${p.partCode} - ${p.partName}` })),
+    parts.map(p => ({ value: p.id, label: `${p.itemCode} - ${p.itemName}` })),
   [parts]);
 
   const partnerOptions = useMemo(() => [
@@ -131,7 +131,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
     groups.find(g => g.id === form.groupId), [groups, form.groupId]);
 
   const handleSubmit = () => {
-    if (!form.partId || !form.groupId) return;
+    if (!form.itemCode || !form.groupId) return;
     onSave(form);
   };
 
@@ -148,7 +148,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
           </label>
           {editing ? (
             <div className="h-10 px-3 bg-surface border border-border rounded-lg flex items-center text-sm text-text opacity-60">
-              {parts[0] ? `${parts[0].partCode} - ${parts[0].partName}` : form.partId}
+              {parts[0] ? `${parts[0].itemCode} - ${parts[0].itemName}` : form.itemCode}
             </div>
           ) : (
             <>
@@ -167,8 +167,8 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
                 </Button>
               </div>
               {parts.length > 0 && (
-                <Select options={partOptions} value={form.partId}
-                  onChange={v => setForm(p => ({ ...p, partId: v }))}
+                <Select options={partOptions} value={form.itemCode}
+                  onChange={v => setForm(p => ({ ...p, itemCode: v }))}
                   placeholder={t("master.iqcLink.selectPartPlaceholder", "검색 결과에서 선택하세요")}
                   fullWidth />
               )}
@@ -215,7 +215,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
 
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={!form.partId || !form.groupId}>
+        <Button onClick={handleSubmit} disabled={!form.itemCode || !form.groupId}>
           {editing ? t("common.edit") : t("common.add")}
         </Button>
       </div>

@@ -92,6 +92,8 @@ export const menuConfig: MenuConfigItem[] = [
     children: [
       { code: "PROD_RECEIVE", labelKey: "menu.productMgmt.receive", path: "/product/receive" },
       { code: "PROD_RECEIPT_CANCEL", labelKey: "menu.productMgmt.receiptCancel", path: "/product/receipt-cancel" },
+      { code: "PROD_ISSUE", labelKey: "menu.productMgmt.issue", path: "/product/issue" },
+      { code: "PROD_ISSUE_CANCEL", labelKey: "menu.productMgmt.issueCancel", path: "/product/issue-cancel" },
     ],
   },
   {

@@ -21,8 +21,8 @@ interface PackResult {
   id: string;
   boxNo: string;
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   packQty: number;
   boxType: string;
   packDate: string;
@@ -67,8 +67,8 @@ export default function PackResultPage() {
     { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 100, meta: { filterType: 'date' as const } },
     { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('production.packResult.lotNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
+    { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'boxType', header: t('production.packResult.boxType'), size: 80, meta: { filterType: 'text' as const } },
     { accessorKey: 'packer', header: t('production.packResult.packer'), size: 80, meta: { filterType: 'text' as const } },

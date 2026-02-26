@@ -28,7 +28,7 @@ import { useInputEquipStore } from '@/stores/inputEquipStore';
 interface EquipInspect {
   id: string;
   orderNo: string;
-  partName: string;
+  itemName: string;
   equipName: string;
   lotNo: string;
   measuredValue: number;
@@ -107,8 +107,8 @@ export default function InputEquipPage() {
     try {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
-      if (selectedJobOrder) params.jobOrderId = selectedJobOrder.id;
-      if (selectedEquip) params.equipId = selectedEquip.id;
+      if (selectedJobOrder) params.orderNo = selectedJobOrder.orderNo;
+      if (selectedEquip) params.equipCode = selectedEquip.equipCode;
       const res = await api.get('/production/prod-results', { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -166,7 +166,7 @@ export default function InputEquipPage() {
     if (selectedEquip) {
       try {
         await api.patch(`/equipment/equips/${selectedEquip.id}/job-order`, {
-          jobOrderId: jobOrder.id,
+          orderNo: jobOrder.orderNo,
         });
       } catch (e) {
         console.error('Failed to assign job order to equipment:', e);
@@ -186,9 +186,9 @@ export default function InputEquipPage() {
     setSaving(true);
     try {
       await api.post('/production/prod-results', {
-        jobOrderId: selectedJobOrder.id,
+        orderNo: selectedJobOrder.orderNo,
         workerId: selectedWorker.id,
-        equipId: selectedEquip.id,
+        equipCode: selectedEquip.equipCode,
         processCode: selectedProcess?.processCode,
         lotNo: form.lotNo || undefined,
         measuredValue: Number(form.measuredValue) || undefined,
@@ -217,7 +217,7 @@ export default function InputEquipPage() {
 
   const columns = useMemo<ColumnDef<EquipInspect>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputEquip.orderNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('production.inputEquip.partName'), size: 140, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemName', header: t('production.inputEquip.partName'), size: 140, meta: { filterType: 'text' as const } },
     { accessorKey: 'equipName', header: t('production.inputEquip.inspectEquip'), size: 110, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('production.inputEquip.lotNo'), size: 150, meta: { filterType: 'text' as const } },
     {
@@ -332,7 +332,7 @@ export default function InputEquipPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-bold text-text">{selectedJobOrder.orderNo}</p>
-                    <p className="text-xs text-text-muted">{selectedJobOrder.partName} ({selectedJobOrder.partCode})</p>
+                    <p className="text-xs text-text-muted">{selectedJobOrder.itemName} ({selectedJobOrder.itemCode})</p>
                   </div>
                   <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
                     {selectedJobOrder.processType}
@@ -449,7 +449,7 @@ export default function InputEquipPage() {
             <div><span className="text-text-muted">{t('production.inputEquip.equip')}:</span> <span className="font-medium">{selectedEquip?.equipName}</span></div>
             <div><span className="text-text-muted">{t('production.inputEquip.workOrder')}:</span> <span className="font-mono font-medium text-primary">{selectedJobOrder?.orderNo}</span></div>
             <div><span className="text-text-muted">{t('production.inputEquip.inspector')}:</span> <span className="font-medium">{selectedWorker?.workerName}</span></div>
-            <div><span className="text-text-muted">{t('production.inputEquip.partName')}:</span> <span className="font-medium">{selectedJobOrder?.partName}</span></div>
+            <div><span className="text-text-muted">{t('production.inputEquip.partName')}:</span> <span className="font-medium">{selectedJobOrder?.itemName}</span></div>
           </div>
 
           <Input label={t('production.inputEquip.lotNo')} value={form.lotNo} onChange={e => setForm(p => ({ ...p, lotNo: e.target.value }))} fullWidth />

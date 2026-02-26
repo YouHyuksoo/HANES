@@ -22,9 +22,8 @@ import api from "@/services/api";
 interface InvHistoryItem {
   id: string;
   warehouseCode: string;
-  partId: string;
-  partCode?: string;
-  partName?: string;
+  itemCode: string;
+  itemName?: string;
   unit?: string;
   lotId?: string;
   lotNo?: string;
@@ -43,8 +42,8 @@ export default function MaterialPhysicalInvHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -90,14 +89,14 @@ export default function MaterialPhysicalInvHistoryPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (
         <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>
       ),
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {

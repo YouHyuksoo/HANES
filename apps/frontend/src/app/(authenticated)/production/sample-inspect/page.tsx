@@ -22,10 +22,9 @@ import SampleInspectInputModal from "./components/SampleInspectInputModal";
 
 interface SampleInspectRow {
   id: string;
-  jobOrderId: string;
   orderNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   inspectDate: string;
   inspectorName: string;
   inspectType: string;
@@ -45,8 +44,8 @@ export default function SampleInspectPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [passFilter, setPassFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showInput, setShowInput] = useState(false);
 
   const passOptions = useMemo(() => [
@@ -92,12 +91,12 @@ export default function SampleInspectPage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {

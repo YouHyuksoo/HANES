@@ -63,7 +63,9 @@
     "selected": "已选择",
     "won": "韩元",
     "useYn": "使用与否",
-    "clear": "清除"
+    "clear": "清除",
+    "select": "请选择",
+    "available": "可用"
   },
   "menu": {
     "dashboard": "仪表盘",
@@ -167,6 +169,8 @@
     "productMgmt": "产品收发管理",
     "productMgmt.receive": "产品入库管理",
     "productMgmt.receiptCancel": "产品入库取消",
+    "productMgmt.issue": "产品出库管理",
+    "productMgmt.issueCancel": "产品出库取消",
     "material.arrival": "到货管理",
     "material.iqc": "来料检验(IQC)",
     "material.receive": "物料入库管理",
@@ -1766,7 +1770,8 @@
       "endDate": "结束日期",
       "stockSelect": "选择库存 (品目-LOT)",
       "availableQty": "可用数量",
-      "max": "最大"
+      "max": "最大",
+      "noStock": "所选仓库中没有可报废的库存。"
     },
     "adjustment": {
       "title": "库存调整",
@@ -1946,6 +1951,54 @@
       "searchPlaceholder": "搜索交易编号、品目名...",
       "stats": {
         "total": "总入库数",
+        "cancellable": "可取消",
+        "canceled": "已取消"
+      }
+    },
+    "issue": {
+      "title": "产品出库管理",
+      "subtitle": "处理半成品/成品出库。",
+      "registerIssue": "出库登记",
+      "stats": {
+        "todayCount": "今日出库数",
+        "todayQty": "今日出库量",
+        "wipCount": "WIP出库",
+        "fgCount": "FG出库"
+      },
+      "col": {
+        "transNo": "出库编号",
+        "transDate": "出库日期",
+        "warehouse": "出库仓库",
+        "issueType": "出库账户"
+      },
+      "modal": {
+        "title": "产品出库登记",
+        "partType": "品目类型",
+        "partId": "品目",
+        "warehouseId": "出库仓库",
+        "qty": "数量",
+        "issueType": "出库账户",
+        "remark": "备注",
+        "confirm": "确认出库"
+      }
+    },
+    "issueCancel": {
+      "title": "产品出库取消",
+      "subtitle": "取消产品出库交易。",
+      "transNo": "交易编号",
+      "transType": "类型",
+      "warehouse": "出库仓库",
+      "issueType": "出库账户",
+      "qty": "数量",
+      "transDate": "日期",
+      "cancel": "取消",
+      "cancelTitle": "确认出库取消",
+      "reason": "取消原因",
+      "reasonPlaceholder": "请输入取消原因",
+      "confirm": "确认取消",
+      "searchPlaceholder": "搜索交易编号、品目名...",
+      "stats": {
+        "total": "总出库数",
         "cancellable": "可取消",
         "canceled": "已取消"
       }

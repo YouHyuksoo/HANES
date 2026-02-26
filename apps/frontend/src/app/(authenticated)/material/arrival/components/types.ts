@@ -11,8 +11,8 @@
 /** 품목 정보 (API 응답 공통) */
 export interface PartInfo {
   id: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
 }
 
@@ -36,7 +36,7 @@ export interface ArrivalRecord {
   transNo: string;
   transType: 'MAT_IN' | 'MAT_IN_CANCEL';
   transDate: string;
-  partId: string;
+  itemCode: string;
   qty: number;
   status: 'DONE' | 'CANCELED';
   remark?: string | null;
@@ -51,7 +51,7 @@ export interface ArrivalRecord {
 export interface PoItemForArrival {
   id: string;
   poId: string;
-  partId: string;
+  itemCode: string;
   orderQty: number;
   receivedQty: number;
   remainingQty: number;
@@ -77,9 +77,9 @@ export interface ReceivablePO {
 /** PO 입하 시 품목별 입력 데이터 */
 export interface ArrivalItemInput {
   poItemId: string;
-  partId: string;
+  itemCode: string;
   receivedQty: number;
-  warehouseId: string;
+  warehouseCode: string;
   lotNo?: string;
   manufactureDate?: string;
   remark?: string;

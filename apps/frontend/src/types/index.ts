@@ -57,8 +57,8 @@ export type UserRole = "admin" | "manager" | "operator" | "viewer";
 export interface JobOrder {
   id: string;
   orderNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   orderQty: number;
   completedQty: number;
   lineCode: string;
@@ -78,8 +78,8 @@ export type JobOrderStatus =
 
 export interface ProductionResult {
   id: string;
-  jobOrderId: string;
-  equipId: string;
+  orderNo: string;
+  equipCode: string;
   workerId: string;
   goodQty: number;
   defectQty: number;
@@ -95,8 +95,8 @@ export interface ProductionResult {
 export interface MaterialLot {
   id: string;
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   qty: number;
   remainQty: number;
   receivedAt: string;

@@ -44,7 +44,7 @@ interface Props {
   part: Part;
   currentLink: PartIqcLink | undefined;
   onSave: (link: PartIqcLink) => void;
-  onUnlink: (partCode: string) => void;
+  onUnlink: (itemCode: string) => void;
 }
 
 export default function IqcSettingModal({ isOpen, onClose, part, currentLink, onSave, onUnlink }: Props) {
@@ -98,18 +98,18 @@ export default function IqcSettingModal({ isOpen, onClose, part, currentLink, on
 
   const handleSave = () => {
     if (!selected) return;
-    onSave({ partCode: part.partCode, groupCode: selected });
+    onSave({ itemCode: part.itemCode, groupCode: selected });
     onClose();
   };
 
   const handleUnlink = () => {
-    onUnlink(part.partCode);
+    onUnlink(part.itemCode);
     onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}
-      title={`${part.partCode} ${part.partName} - ${t("master.part.iqc.selectGroup", "검사그룹 선택")}`} size="lg">
+      title={`${part.itemCode} ${part.itemName} - ${t("master.part.iqc.selectGroup", "검사그룹 선택")}`} size="lg">
 
       <div className="space-y-2 max-h-[280px] overflow-y-auto">
         {groups.map(group => (

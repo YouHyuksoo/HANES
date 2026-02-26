@@ -70,8 +70,8 @@ export default function MaterialAdjustmentPage() {
         value: scannedLot.lotNo,
         highlight: true,
       },
-      { label: t("pda.receiving.partCode"), value: scannedLot.partCode },
-      { label: t("pda.receiving.partName"), value: scannedLot.partName },
+      { label: t("pda.receiving.partCode"), value: scannedLot.itemCode },
+      { label: t("pda.receiving.partName"), value: scannedLot.itemName },
       {
         label: t("pda.adjustment.currentQty"),
         value: `${scannedLot.currentQty} ${scannedLot.unit}`,
@@ -110,7 +110,7 @@ export default function MaterialAdjustmentPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            {item.partCode}
+            {item.itemCode}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {item.lotNo}

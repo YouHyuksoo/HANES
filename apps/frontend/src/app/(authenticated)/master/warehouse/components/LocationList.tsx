@@ -19,7 +19,6 @@ import api from "@/services/api";
 
 interface WarehouseLocation {
   id: string;
-  warehouseId: string;
   warehouseCode: string;
   warehouseName: string;
   locationCode: string;
@@ -38,7 +37,7 @@ interface WhOption {
 }
 
 interface FormState {
-  warehouseId: string;
+  warehouseCode: string;
   locationCode: string;
   locationName: string;
   zone: string;
@@ -49,7 +48,7 @@ interface FormState {
 }
 
 const INITIAL_FORM: FormState = {
-  warehouseId: "", locationCode: "", locationName: "",
+  warehouseCode: "", locationCode: "", locationName: "",
   zone: "", rowNo: "", colNo: "", levelNo: "", remark: "",
 };
 
@@ -78,7 +77,7 @@ export default function LocationList() {
     setLoading(true);
     try {
       const params: Record<string, string> = {};
-      if (whFilter) params.warehouseId = whFilter;
+      if (whFilter) params.warehouseCode = whFilter;
       const res = await api.get("/inventory/warehouse-locations", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -108,14 +107,14 @@ export default function LocationList() {
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
-    setForm({ ...INITIAL_FORM, warehouseId: whFilter || "" });
+    setForm({ ...INITIAL_FORM, warehouseCode: whFilter || "" });
     setIsModalOpen(true);
   }, [whFilter]);
 
   const openEdit = useCallback((item: WarehouseLocation) => {
     setEditingItem(item);
     setForm({
-      warehouseId: item.warehouseId,
+      warehouseCode: item.warehouseCode,
       locationCode: item.locationCode,
       locationName: item.locationName,
       zone: item.zone || "",
@@ -128,7 +127,7 @@ export default function LocationList() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!form.warehouseId || !form.locationCode || !form.locationName) return;
+    if (!form.warehouseCode || !form.locationCode || !form.locationName) return;
     setSaving(true);
     try {
       if (editingItem) {
@@ -214,7 +213,7 @@ export default function LocationList() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("inventory.location.editLocation") : t("inventory.location.addLocation")} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Select label={t("inventory.warehouse.warehouseName")} options={whOptions} value={form.warehouseId} onChange={(v) => setForm((p) => ({ ...p, warehouseId: v }))} disabled={!!editingItem} fullWidth />
+          <Select label={t("inventory.warehouse.warehouseName")} options={whOptions} value={form.warehouseCode} onChange={(v) => setForm((p) => ({ ...p, warehouseCode: v }))} disabled={!!editingItem} fullWidth />
           <Input label={t("inventory.location.locationCode")} placeholder="A-01-01" value={form.locationCode} onChange={(e) => setForm((p) => ({ ...p, locationCode: e.target.value }))} disabled={!!editingItem} fullWidth />
           <div className="col-span-2">
             <Input label={t("inventory.location.locationName")} placeholder={t("inventory.location.locationName")} value={form.locationName} onChange={(e) => setForm((p) => ({ ...p, locationName: e.target.value }))} fullWidth />

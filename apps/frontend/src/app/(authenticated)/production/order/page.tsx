@@ -24,8 +24,8 @@ interface JobOrderItem {
   id: string;
   orderNo: string;
   parentId?: string | null;
-  partId: string;
-  part?: { partCode?: string; partName?: string; partType?: string };
+  itemCode: string;
+  part?: { itemCode?: string; itemName?: string; itemType?: string };
   lineCode?: string;
   planQty: number;
   goodQty: number;
@@ -63,8 +63,8 @@ export default function JobOrderPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showCreate, setShowCreate] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
 
@@ -127,18 +127,18 @@ export default function JobOrderPage() {
     {
       id: "partCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
-      accessorFn: (row) => row.part?.partCode || "",
+      accessorFn: (row) => row.part?.itemCode || "",
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
       id: "partName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
-      accessorFn: (row) => row.part?.partName || "",
+      accessorFn: (row) => row.part?.itemName || "",
     },
     {
       id: "partType", header: t("production.order.partType"), size: 70,
       meta: { filterType: "multi" as const },
-      accessorFn: (row) => row.part?.partType || "",
+      accessorFn: (row) => row.part?.itemType || "",
       cell: ({ getValue }) => {
         const v = getValue() as string;
         if (!v) return "-";

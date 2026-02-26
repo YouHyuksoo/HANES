@@ -22,8 +22,8 @@ import api from "@/services/api";
 interface MiscReceiptRecord {
   id: string;
   transNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   warehouseName: string;
   qty: number;
   unit: string;
@@ -39,19 +39,19 @@ export default function MiscReceiptPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showRegister, setShowRegister] = useState(false);
 
   // 등록 폼
   const [form, setForm] = useState({
-    warehouseId: "",
-    partId: "",
+    warehouseCode: "",
+    itemCode: "",
     qty: "",
     remark: "",
   });
   const [partSearch, setPartSearch] = useState("");
-  const [partResults, setPartResults] = useState<{ id: string; partCode: string; partName: string }[]>([]);
+  const [partResults, setPartResults] = useState<{ id: string; itemCode: string; itemName: string }[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -76,7 +76,7 @@ export default function MiscReceiptPage() {
     try {
       const res = await api.get("/master/parts", { params: { search: keyword, limit: 20 } });
       setPartResults((res.data?.data ?? []).map((p: any) => ({
-        id: p.id, partCode: p.partCode, partName: p.partName,
+        id: p.id, itemCode: p.itemCode, itemName: p.itemName,
       })));
     } catch { setPartResults([]); }
   }, []);
@@ -91,17 +91,17 @@ export default function MiscReceiptPage() {
   ], [t, warehouseOpts]);
 
   const handleRegister = useCallback(async () => {
-    if (!form.warehouseId || !form.partId || !form.qty) return;
+    if (!form.warehouseCode || !form.itemCode || !form.qty) return;
     setSaving(true);
     try {
       await api.post("/material/misc-receipt", {
-        warehouseId: form.warehouseId,
-        partId: form.partId,
+        warehouseCode: form.warehouseCode,
+        itemCode: form.itemCode,
         qty: Number(form.qty),
         remark: form.remark,
       });
       setShowRegister(false);
-      setForm({ warehouseId: "", partId: "", qty: "", remark: "" });
+      setForm({ warehouseCode: "", itemCode: "", qty: "", remark: "" });
       setPartSearch("");
       setPartResults([]);
       fetchData();
@@ -113,7 +113,7 @@ export default function MiscReceiptPage() {
   }, [form, fetchData]);
 
   const selectedPart = useMemo(() =>
-    partResults.find(p => p.id === form.partId), [partResults, form.partId]);
+    partResults.find(p => p.id === form.itemCode), [partResults, form.itemCode]);
 
   const columns = useMemo<ColumnDef<MiscReceiptRecord>[]>(() => [
     {
@@ -127,12 +127,12 @@ export default function MiscReceiptPage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {
@@ -202,7 +202,7 @@ export default function MiscReceiptPage() {
         title={t("material.miscReceipt.register")} size="lg">
         <div className="space-y-4">
           <Select label={t("material.miscReceipt.warehouse")} options={warehouseOptions}
-            value={form.warehouseId} onChange={v => setForm(p => ({ ...p, warehouseId: v }))} fullWidth />
+            value={form.warehouseCode} onChange={v => setForm(p => ({ ...p, warehouseCode: v }))} fullWidth />
 
           <div>
             <Input label={t("material.miscReceipt.partSearch")}
@@ -210,20 +210,20 @@ export default function MiscReceiptPage() {
               value={partSearch}
               onChange={e => { setPartSearch(e.target.value); searchParts(e.target.value); }}
               fullWidth />
-            {partResults.length > 0 && !form.partId && (
+            {partResults.length > 0 && !form.itemCode && (
               <div className="mt-1 border border-border rounded-lg max-h-40 overflow-y-auto bg-surface">
                 {partResults.map(p => (
                   <button key={p.id} type="button"
                     className="w-full text-left px-3 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors border-b border-border last:border-b-0"
-                    onClick={() => { setForm(prev => ({ ...prev, partId: p.id })); setPartSearch(`${p.partCode} - ${p.partName}`); }}>
-                    <span className="font-mono text-primary">{p.partCode}</span> — {p.partName}
+                    onClick={() => { setForm(prev => ({ ...prev, itemCode: p.id })); setPartSearch(`${p.itemCode} - ${p.itemName}`); }}>
+                    <span className="font-mono text-primary">{p.itemCode}</span> — {p.itemName}
                   </button>
                 ))}
               </div>
             )}
             {selectedPart && (
               <p className="mt-1 text-xs text-text-muted">
-                {t("common.select")}: <span className="font-mono">{selectedPart.partCode}</span> — {selectedPart.partName}
+                {t("common.select")}: <span className="font-mono">{selectedPart.itemCode}</span> — {selectedPart.itemName}
               </p>
             )}
           </div>
@@ -238,7 +238,7 @@ export default function MiscReceiptPage() {
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setShowRegister(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleRegister}
-            disabled={saving || !form.warehouseId || !form.partId || !form.qty || Number(form.qty) <= 0}>
+            disabled={saving || !form.warehouseCode || !form.itemCode || !form.qty || Number(form.qty) <= 0}>
             {saving ? t("common.saving") : t("material.miscReceipt.register")}
           </Button>
         </div>

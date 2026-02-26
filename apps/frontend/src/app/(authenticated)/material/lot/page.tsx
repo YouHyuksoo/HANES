@@ -21,8 +21,8 @@ import api from "@/services/api";
 interface MatLotItem {
   id: string;
   lotNo: string;
-  partCode?: string;
-  partName?: string;
+  itemCode?: string;
+  itemName?: string;
   initQty: number;
   currentQty: number;
   unit?: string;
@@ -108,12 +108,12 @@ export default function MatLotPage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {
@@ -223,11 +223,11 @@ export default function MatLotPage() {
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">{t("common.partCode")}</span>
-                  <span className="font-mono">{selectedLot.partCode}</span>
+                  <span className="font-mono">{selectedLot.itemCode}</span>
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">{t("common.partName")}</span>
-                  <span>{selectedLot.partName}</span>
+                  <span>{selectedLot.itemName}</span>
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">{t("material.lot.columns.vendor")}</span>

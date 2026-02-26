@@ -14,8 +14,8 @@ import { api } from "@/services/api";
 /** LOT 재고 정보 */
 export interface MatLotData {
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   remainQty: number;
   unit: string;
   warehouse: string;
@@ -24,8 +24,8 @@ export interface MatLotData {
 /** 출고 이력 항목 */
 export interface IssuingHistoryItem {
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   issuedQty: number;
   timestamp: string;
 }
@@ -88,8 +88,8 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
       setHistory((prev) => [
         {
           lotNo: scannedLot.lotNo,
-          partCode: scannedLot.partCode,
-          partName: scannedLot.partName,
+          itemCode: scannedLot.itemCode,
+          itemName: scannedLot.itemName,
           issuedQty: scannedLot.remainQty,
           timestamp: new Date().toLocaleTimeString(),
         },

@@ -34,8 +34,8 @@ export type { EquipType };
 /** 소모품 인터페이스 */
 export interface ConsumablePart {
   id: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   category: PartCategory;
   currentShots: number;
   expectedLife: number;

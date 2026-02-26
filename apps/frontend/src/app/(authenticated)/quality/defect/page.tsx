@@ -30,7 +30,7 @@ interface Defect {
   defectName: string;
   quantity: number;
   status: DefectStatus;
-  partNo: string;
+  itemNo: string;
   equipmentNo: string;
   operator: string;
   remark?: string;
@@ -61,7 +61,7 @@ export default function DefectPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDefect, setSelectedDefect] = useState<Defect | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [form, setForm] = useState({ workOrderNo: "", defectCode: "", quantity: "", partNo: "", equipmentNo: "", operator: "", remark: "" });
+  const [form, setForm] = useState({ workOrderNo: "", defectCode: "", quantity: "", itemNo: "", equipmentNo: "", operator: "", remark: "" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -88,7 +88,7 @@ export default function DefectPage() {
     try {
       await api.post("/quality/defects", form);
       setIsModalOpen(false);
-      setForm({ workOrderNo: "", defectCode: "", quantity: "", partNo: "", equipmentNo: "", operator: "", remark: "" });
+      setForm({ workOrderNo: "", defectCode: "", quantity: "", itemNo: "", equipmentNo: "", operator: "", remark: "" });
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
@@ -194,7 +194,7 @@ export default function DefectPage() {
             <Select label={t("quality.defect.defectType")} options={defectTypes.filter((d) => d.value !== "")} value={form.defectCode} onChange={(v) => setForm((p) => ({ ...p, defectCode: v }))} fullWidth />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label={t("quality.defect.partNo")} placeholder={t("quality.defect.partNoPlaceholder")} value={form.partNo} onChange={(e) => setForm((p) => ({ ...p, partNo: e.target.value }))} fullWidth />
+            <Input label={t("quality.defect.partNo")} placeholder={t("quality.defect.partNoPlaceholder")} value={form.itemNo} onChange={(e) => setForm((p) => ({ ...p, itemNo: e.target.value }))} fullWidth />
             <Input label={t("quality.defect.quantity")} type="number" placeholder="0" value={form.quantity} onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))} fullWidth />
           </div>
           <div className="grid grid-cols-2 gap-4">

@@ -18,8 +18,8 @@ import api from "@/services/api";
 
 interface WorkInstruction {
   id: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   processCode?: string;
   title: string;
   revision: string;
@@ -46,7 +46,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
-    partCode: editingItem?.partCode || "",
+    itemCode: editingItem?.itemCode || "",
     processCode: editingItem?.processCode || "",
     title: editingItem?.title || "",
     revision: editingItem?.revision || "",
@@ -59,7 +59,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
 
   useEffect(() => {
     setForm({
-      partCode: editingItem?.partCode || "",
+      itemCode: editingItem?.itemCode || "",
       processCode: editingItem?.processCode || "",
       title: editingItem?.title || "",
       revision: editingItem?.revision || "",
@@ -107,7 +107,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
   }, [handleFileUpload]);
 
   const handleSubmit = async () => {
-    if (!form.partCode.trim() || !form.title.trim()) return;
+    if (!form.itemCode.trim() || !form.title.trim()) return;
     setSaving(true);
     try {
       if (isEdit && editingItem?.id) {
@@ -141,7 +141,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.workInstruction.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("common.partCode")} placeholder="H-001"
-              value={form.partCode} onChange={e => setField("partCode", e.target.value)} fullWidth />
+              value={form.itemCode} onChange={e => setField("itemCode", e.target.value)} fullWidth />
             <Input label={t("master.workInstruction.processCode")} placeholder="CUT-01"
               value={form.processCode} onChange={e => setField("processCode", e.target.value)} fullWidth />
             <div className="col-span-2">
@@ -243,7 +243,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
 
       <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.partCode.trim() || !form.title.trim()}>
+        <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.title.trim()}>
           {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
         </Button>
       </div>

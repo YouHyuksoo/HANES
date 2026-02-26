@@ -14,8 +14,8 @@ import { api } from "@/services/api";
 /** LOT 재고 정보 (실사용) */
 export interface MatLotCountData {
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   systemQty: number;
   unit: string;
   warehouse: string;
@@ -24,8 +24,8 @@ export interface MatLotCountData {
 /** 실사 이력 항목 */
 export interface CountHistoryItem {
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   systemQty: number;
   actualQty: number;
   difference: number;
@@ -94,8 +94,8 @@ export function useMatInventoryCount(): UseMatInventoryCountReturn {
         setHistory((prev) => [
           {
             lotNo: scannedLot.lotNo,
-            partCode: scannedLot.partCode,
-            partName: scannedLot.partName,
+            itemCode: scannedLot.itemCode,
+            itemName: scannedLot.itemName,
             systemQty: scannedLot.systemQty,
             actualQty,
             difference,

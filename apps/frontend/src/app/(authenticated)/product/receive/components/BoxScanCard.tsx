@@ -21,13 +21,13 @@ import api from "@/services/api";
 interface BoxData {
   id: string;
   boxNo: string;
-  partId: string;
+  itemCode: string;
   qty: number;
   status: string;
   part?: {
-    partCode: string;
-    partName: string;
-    partType: string;
+    itemCode: string;
+    itemName: string;
+    itemType: string;
     unit: string;
   } | null;
 }
@@ -46,7 +46,7 @@ export default function BoxScanCard({ onSuccess }: BoxScanCardProps) {
   const [boxWarehouseId, setBoxWarehouseId] = useState("");
   const [boxSaving, setBoxSaving] = useState(false);
 
-  const partType = scannedBox?.part?.partType ?? "WIP";
+  const partType = scannedBox?.part?.itemType ?? "WIP";
   const { options: boxWhOptions } = useWarehouseOptions(partType);
 
   /** 박스번호로 조회 */
@@ -77,13 +77,13 @@ export default function BoxScanCard({ onSuccess }: BoxScanCardProps) {
     if (!scannedBox || !boxWarehouseId) return;
     setBoxSaving(true);
     try {
-      const pt = scannedBox.part?.partType ?? "WIP";
+      const pt = scannedBox.part?.itemType ?? "WIP";
       const endpoint = pt === "FG" ? "/inventory/fg/receive" : "/inventory/wip/receive";
       await api.post(endpoint, {
-        partId: scannedBox.partId,
-        warehouseId: boxWarehouseId,
+        itemCode: scannedBox.itemCode,
+        warehouseCode: boxWarehouseId,
         qty: scannedBox.qty,
-        partType: pt,
+        itemType: pt,
         transType: pt === "FG" ? "FG_IN" : "WIP_IN",
         refType: "BOX",
         refId: scannedBox.id,
@@ -147,15 +147,15 @@ export default function BoxScanCard({ onSuccess }: BoxScanCardProps) {
             <div className="grid grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="text-text-muted">{t("common.partCode")}</span>
-                <p className="font-mono font-medium text-text">{scannedBox.part?.partCode ?? "-"}</p>
+                <p className="font-mono font-medium text-text">{scannedBox.part?.itemCode ?? "-"}</p>
               </div>
               <div>
                 <span className="text-text-muted">{t("common.partName")}</span>
-                <p className="font-medium text-text">{scannedBox.part?.partName ?? "-"}</p>
+                <p className="font-medium text-text">{scannedBox.part?.itemName ?? "-"}</p>
               </div>
               <div>
                 <span className="text-text-muted">{t("common.type")}</span>
-                <p className="font-medium text-text">{scannedBox.part?.partType ?? "-"}</p>
+                <p className="font-medium text-text">{scannedBox.part?.itemType ?? "-"}</p>
               </div>
               <div>
                 <span className="text-text-muted">{t("productMgmt.receive.boxScan.boxQty")}</span>

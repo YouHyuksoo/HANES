@@ -44,7 +44,7 @@ export default function ReceivingPage() {
         init[lot.id] = {
           lotId: lot.id,
           qty: lot.remainingQty,
-          warehouseId: lot.arrivalWarehouse?.id || '',
+          warehouseCode: lot.arrivalWarehouse?.id || '',
           manufactureDate: lot.manufactureDate ? String(lot.manufactureDate).slice(0, 10) : '',
           selected: false,
         };
@@ -101,8 +101,8 @@ export default function ReceivingPage() {
     setSubmitting(true);
     try {
       await api.post('/material/receiving', {
-        items: selectedItems.map(({ lotId, qty, warehouseId, manufactureDate }) => ({
-          lotId, qty, warehouseId,
+        items: selectedItems.map(({ lotId, qty, warehouseCode, manufactureDate }) => ({
+          lotId, qty, warehouseCode,
           ...(manufactureDate && { manufactureDate }),
         })),
       });

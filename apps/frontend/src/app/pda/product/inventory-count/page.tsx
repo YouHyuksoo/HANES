@@ -43,7 +43,7 @@ export default function ProductInventoryCountPage() {
 
   /* ─── 옵션 상태 ─── */
   const [countMonth, setCountMonth] = useState(getCurrentMonth);
-  const [warehouseId, setWarehouseId] = useState("");
+  const [warehouseCode, setWarehouseId] = useState("");
   const [defaultQty1, setDefaultQty1] = useState(true);
   const [countType, setCountType] = useState<CountType>("NORMAL");
   const [actualQty, setActualQty] = useState("");
@@ -58,7 +58,7 @@ export default function ProductInventoryCountPage() {
     handleScan,
     handleCount,
     handleReset,
-  } = useProductInvCount({ countMonth, warehouseId, countType });
+  } = useProductInvCount({ countMonth, warehouseCode, countType });
 
   /** 바코드 스캔 (자동 모드 시 즉시 카운트 → 포커스 복원) */
   const onScan = useCallback(
@@ -118,8 +118,8 @@ export default function ProductInventoryCountPage() {
   const resultFields: ScanResultField[] = useMemo(() => {
     if (!scannedProduct) return [];
     return [
-      { label: t("pda.shipping.partCode"), value: scannedProduct.partCode, highlight: true },
-      { label: t("pda.shipping.partName"), value: scannedProduct.partName },
+      { label: t("pda.shipping.partCode"), value: scannedProduct.itemCode, highlight: true },
+      { label: t("pda.shipping.partName"), value: scannedProduct.itemName },
       { label: t("pda.productInvCount.systemQty"), value: scannedProduct.systemQty },
       { label: t("pda.productInvCount.warehouse"), value: scannedProduct.warehouseName },
     ];
@@ -146,14 +146,14 @@ export default function ProductInventoryCountPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{item.partCode}</p>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{item.itemCode}</p>
               {item.countType === "CANCEL" && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
                   {t("pda.productInvCount.countTypeCancel")}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{item.partName}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{item.itemName}</p>
           </div>
           <div className="text-right">
             <p className={`text-sm font-bold ${diffColor}`}>
@@ -179,7 +179,7 @@ export default function ProductInventoryCountPage() {
       <ProductInvCountOptions
         countMonth={countMonth}
         onCountMonthChange={setCountMonth}
-        warehouseId={warehouseId}
+        warehouseCode={warehouseCode}
         onWarehouseIdChange={setWarehouseId}
         defaultQty1={defaultQty1}
         onDefaultQty1Change={setDefaultQty1}

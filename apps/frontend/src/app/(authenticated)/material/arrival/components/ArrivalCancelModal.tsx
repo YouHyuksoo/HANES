@@ -56,7 +56,7 @@ export default function ArrivalCancelModal({ isOpen, record, onClose, onSuccess 
         {record && (
           <div className="p-3 bg-surface-secondary rounded-lg space-y-1 text-sm">
             <p><span className="text-text-muted">{t('material.arrival.col.transNo')}:</span> {record.transNo}</p>
-            <p><span className="text-text-muted">{t('common.partName')}:</span> {record.part?.partName}</p>
+            <p><span className="text-text-muted">{t('common.partName')}:</span> {record.part?.itemName}</p>
             <p><span className="text-text-muted">{t('common.quantity')}:</span> {record.qty.toLocaleString()} {record.part?.unit}</p>
           </div>
         )}

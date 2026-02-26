@@ -17,8 +17,8 @@ import { LabelDesign } from '../../../master/label/types';
 export interface LabelItem {
   key: string;
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   sub: string;
 }
 
@@ -80,7 +80,7 @@ const LabelPreviewRenderer = forwardRef<HTMLDivElement, LabelPreviewRendererProp
                     left: 0, right: 0, padding: '0 4px',
                   }}
                 >
-                  {item.partCode}
+                  {item.itemCode}
                 </div>
               )}
 
@@ -97,7 +97,7 @@ const LabelPreviewRenderer = forwardRef<HTMLDivElement, LabelPreviewRendererProp
                     left: 0, right: 0, padding: '0 4px',
                   }}
                 >
-                  {item.partName}
+                  {item.itemName}
                 </div>
               )}
 

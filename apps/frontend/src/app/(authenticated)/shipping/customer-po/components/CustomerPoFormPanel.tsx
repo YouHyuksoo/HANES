@@ -20,14 +20,14 @@ import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 interface PartItem {
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
 }
 
 export interface OrderItem {
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
   orderQty: number;
   unitPrice: number;
@@ -101,20 +101,20 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
   };
 
   const addItem = (item: PartItem) => {
-    if (orderItems.some((r) => r.partCode === item.partCode)) return;
+    if (orderItems.some((r) => r.itemCode === item.itemCode)) return;
     setOrderItems((prev) => [
       ...prev,
-      { partCode: item.partCode, partName: item.partName, unit: item.unit, orderQty: 0, unitPrice: 0 },
+      { itemCode: item.itemCode, itemName: item.itemName, unit: item.unit, orderQty: 0, unitPrice: 0 },
     ]);
   };
 
-  const removeItem = (partCode: string) => {
-    setOrderItems((prev) => prev.filter((r) => r.partCode !== partCode));
+  const removeItem = (itemCode: string) => {
+    setOrderItems((prev) => prev.filter((r) => r.itemCode !== itemCode));
   };
 
-  const updateItem = (partCode: string, field: "orderQty" | "unitPrice", value: number) => {
+  const updateItem = (itemCode: string, field: "orderQty" | "unitPrice", value: number) => {
     setOrderItems((prev) =>
-      prev.map((r) => (r.partCode === partCode ? { ...r, [field]: value } : r)),
+      prev.map((r) => (r.itemCode === itemCode ? { ...r, [field]: value } : r)),
     );
   };
 
@@ -204,11 +204,11 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
                   </thead>
                   <tbody>
                     {searchResults.map((item) => {
-                      const alreadyAdded = orderItems.some((r) => r.partCode === item.partCode);
+                      const alreadyAdded = orderItems.some((r) => r.itemCode === item.itemCode);
                       return (
-                        <tr key={item.partCode} className="border-t border-border hover:bg-background/30">
-                          <td className="px-2 py-1 font-mono">{item.partCode}</td>
-                          <td className="px-2 py-1">{item.partName}</td>
+                        <tr key={item.itemCode} className="border-t border-border hover:bg-background/30">
+                          <td className="px-2 py-1 font-mono">{item.itemCode}</td>
+                          <td className="px-2 py-1">{item.itemName}</td>
                           <td className="px-2 py-1 text-center text-text-muted">{item.unit}</td>
                           <td className="px-2 py-1 text-center">
                             <button
@@ -250,18 +250,18 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
                 </thead>
                 <tbody>
                   {orderItems.map((item, idx) => (
-                    <tr key={item.partCode} className="border-t border-border">
+                    <tr key={item.itemCode} className="border-t border-border">
                       <td className="px-2 py-1 text-text-muted">{idx + 1}</td>
                       <td className="px-2 py-1">
-                        <span className="font-medium">{item.partName}</span>
-                        <span className="ml-1 text-[10px] text-text-muted">({item.partCode})</span>
+                        <span className="font-medium">{item.itemName}</span>
+                        <span className="ml-1 text-[10px] text-text-muted">({item.itemCode})</span>
                       </td>
                       <td className="px-2 py-1">
                         <input
                           type="number"
                           min={0}
                           value={item.orderQty || ""}
-                          onChange={(e) => updateItem(item.partCode, "orderQty", Number(e.target.value))}
+                          onChange={(e) => updateItem(item.itemCode, "orderQty", Number(e.target.value))}
                           className="w-full px-1.5 py-0.5 text-xs border border-gray-400 dark:border-gray-500 rounded text-right bg-background text-text"
                           placeholder="0"
                         />
@@ -271,14 +271,14 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
                           type="number"
                           min={0}
                           value={item.unitPrice || ""}
-                          onChange={(e) => updateItem(item.partCode, "unitPrice", Number(e.target.value))}
+                          onChange={(e) => updateItem(item.itemCode, "unitPrice", Number(e.target.value))}
                           className="w-full px-1.5 py-0.5 text-xs border border-gray-400 dark:border-gray-500 rounded text-right bg-background text-text"
                           placeholder="0"
                         />
                       </td>
                       <td className="px-2 py-1 text-right font-medium">{(item.orderQty * item.unitPrice).toLocaleString()}</td>
                       <td className="px-2 py-1 text-center">
-                        <button onClick={() => removeItem(item.partCode)} className="p-0.5 text-red-400 hover:text-red-600 rounded">
+                        <button onClick={() => removeItem(item.itemCode)} className="p-0.5 text-red-400 hover:text-red-600 rounded">
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </td>

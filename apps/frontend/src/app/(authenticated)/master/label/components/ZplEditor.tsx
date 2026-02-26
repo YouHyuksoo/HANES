@@ -25,8 +25,8 @@ interface ZplEditorProps {
 /** 미리보기용 샘플 값 */
 const SAMPLE_VALUES: Record<string, string> = {
   '{{lotNo}}': 'L20260222-1HMX',
-  '{{partCode}}': '1020',
-  '{{partName}}': 'SAMPLE PART',
+  '{{itemCode}}': '1020',
+  '{{itemName}}': 'SAMPLE PART',
   '{{qty}}': '300',
   '{{unit}}': 'EA',
   '{{vendor}}': 'ABC Corp',
@@ -38,7 +38,7 @@ const SAMPLE_VALUES: Record<string, string> = {
 
 /** 삽입 가능한 변수 목록 */
 const VARIABLES = [
-  '{{lotNo}}', '{{partCode}}', '{{partName}}', '{{qty}}',
+  '{{lotNo}}', '{{itemCode}}', '{{itemName}}', '{{qty}}',
   '{{unit}}', '{{vendor}}', '{{recvDate}}', '{{barcode}}',
   '{{custom1}}', '{{custom2}}', '{{custom3}}', '{{custom4}}', '{{custom5}}',
 ];

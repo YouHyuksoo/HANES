@@ -45,18 +45,18 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
       cell: ({ row }) => row.original.lot?.poNo || '-',
     },
     {
-      accessorKey: 'part.partCode',
+      accessorKey: 'part.itemCode',
       header: t('common.partCode'),
       size: 110,
       meta: { filterType: "text" as const },
-      cell: ({ row }) => row.original.part?.partCode,
+      cell: ({ row }) => row.original.part?.itemCode,
     },
     {
-      accessorKey: 'part.partName',
+      accessorKey: 'part.itemName',
       header: t('common.partName'),
       size: 130,
       meta: { filterType: "text" as const },
-      cell: ({ row }) => row.original.part?.partName,
+      cell: ({ row }) => row.original.part?.itemName,
     },
     {
       id: 'lotNo',

@@ -13,12 +13,11 @@ import api from '@/services/api';
 /** IQC 검사 항목 인터페이스 */
 export interface IqcItem {
   id: string;
-  partId: string;
+  itemCode: string;
   receiveNo: string;
   arrivalDate: string;
   supplierName: string;
-  partCode: string;
-  partName: string;
+  itemName: string;
   lotNo: string;
   quantity: number;
   unit: string;
@@ -60,12 +59,11 @@ export function useIqcData() {
       const lots = res.data?.data ?? [];
       const mapped: IqcItem[] = lots.map((lot: any) => ({
         id: lot.id,
-        partId: lot.partId || '',
+        itemCode: lot.itemCode || '',
         receiveNo: lot.lotNo || '-',
         arrivalDate: lot.createdAt || '',
         supplierName: lot.vendor || '-',
-        partCode: lot.partCode || '',
-        partName: lot.partName || '',
+        itemName: lot.itemName || '',
         lotNo: lot.lotNo || '',
         quantity: lot.currentQty ?? 0,
         unit: lot.unit || 'EA',
@@ -90,7 +88,7 @@ export function useIqcData() {
       const matchSearch =
         !searchText ||
         item.receiveNo.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.partName.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.itemName.toLowerCase().includes(searchText.toLowerCase()) ||
         item.lotNo.toLowerCase().includes(searchText.toLowerCase());
       return matchStatus && matchSearch;
     });

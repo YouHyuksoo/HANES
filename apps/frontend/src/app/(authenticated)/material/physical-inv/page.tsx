@@ -24,9 +24,8 @@ import api from "@/services/api";
 interface StockForCount {
   id: string;
   warehouseCode: string;
-  partId: string;
-  partCode?: string;
-  partName?: string;
+  itemCode: string;
+  itemName?: string;
   lotId?: string;
   lotNo?: string;
   qty: number;
@@ -52,7 +51,7 @@ export default function PhysicalInvPage() {
     try {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
-      if (warehouseFilter) params.warehouseId = warehouseFilter;
+      if (warehouseFilter) params.warehouseCode = warehouseFilter;
       const res = await api.get("/material/physical-inv", { params });
       const rows = (res.data?.data ?? []).map((s: any) => ({
         ...s,
@@ -116,12 +115,12 @@ export default function PhysicalInvPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {
@@ -225,7 +224,7 @@ export default function PhysicalInvPage() {
             <div className="bg-surface-alt dark:bg-surface rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
               {mismatchItems.map(item => (
                 <div key={item.id} className="flex justify-between text-sm border-b border-border pb-1">
-                  <span className="text-text">{item.partCode} — {item.partName}</span>
+                  <span className="text-text">{item.itemCode} — {item.itemName}</span>
                   <span className={
                     (item.countedQty! - item.qty) > 0
                       ? "text-blue-600 font-medium"

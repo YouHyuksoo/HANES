@@ -7,7 +7,7 @@
  * 2. **usePartOptions(type?)**: 품목 목록 → SelectOption[] (label: "코드 - 이름")
  * 3. **useWorkerOptions()**: 작업자 목록 → SelectOption[]
  * 4. **usePartnerOptions(type?)**: 거래처 목록 → SelectOption[] (label: "코드 - 이름")
- * 5. **useEquipBomOptions(equipId)**: 설비 BOM 부품 → SelectOption[] (설비 선택 시 연동)
+ * 5. **useEquipBomOptions(equipCode)**: 설비 BOM 부품 → SelectOption[] (설비 선택 시 연동)
  * 6. useComCode.ts 패턴을 따름 (useApiQuery + useMemo)
  */
 
@@ -23,8 +23,8 @@ interface WarehouseItem {
 
 interface PartItem {
   id: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
 }
 
 interface WorkerItem {
@@ -82,14 +82,14 @@ export function useWarehouseOptions(warehouseType?: string) {
 
 /**
  * 품목 목록을 SelectOption[]으로 반환
- * @param partType - 'RAW' | 'PRODUCT' 등 (미지정 시 전체)
+ * @param itemType - 'RAW' | 'PRODUCT' 등 (미지정 시 전체)
  */
-export function usePartOptions(partType?: string) {
+export function usePartOptions(itemType?: string) {
   const params = new URLSearchParams({ limit: "100" });
-  if (partType) params.set("partType", partType);
+  if (itemType) params.set("itemType", itemType);
 
   const { data, isLoading } = useApiQuery<PaginatedResponse<PartItem>>(
-    ["parts", "options", partType ?? "all"],
+    ["parts", "options", itemType ?? "all"],
     `/master/parts?${params.toString()}`,
     { staleTime: 5 * 60 * 1000 },
   );
@@ -99,7 +99,7 @@ export function usePartOptions(partType?: string) {
     const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((p) => ({
       value: p.id,
-      label: `${p.partCode} - ${p.partName}`,
+      label: `${p.itemCode} - ${p.itemName}`,
     }));
   }, [data]);
 
@@ -191,13 +191,13 @@ interface EquipBomRelItem {
 
 /**
  * 설비에 연결된 BOM 부품 목록을 SelectOption[]으로 반환
- * @param equipId - 설비 ID (null이면 빈 목록)
+ * @param equipCode - 설비 코드 (null이면 빈 목록)
  */
-export function useEquipBomOptions(equipId: string | null) {
+export function useEquipBomOptions(equipCode: string | null) {
   const { data, isLoading } = useApiQuery<{ data: EquipBomRelItem[] }>(
-    ["equip-bom", equipId ?? "none"],
-    equipId ? `/master/equip-bom/equip/${equipId}` : null,
-    { staleTime: 3 * 60 * 1000, enabled: !!equipId },
+    ["equip-bom", equipCode ?? "none"],
+    equipCode ? `/master/equip-bom/equip/${equipCode}` : null,
+    { staleTime: 3 * 60 * 1000, enabled: !!equipCode },
   );
 
   const options = useMemo<SelectOption[]>(() => {

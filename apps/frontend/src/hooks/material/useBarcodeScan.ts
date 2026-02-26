@@ -16,8 +16,8 @@ import { api } from '@/services/api';
 export interface ScannedLot {
   id: string;
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   qty: number;
   remainQty: number;
   unit: string;
@@ -30,8 +30,8 @@ export interface ScannedLot {
 /** 스캔 출고 이력 */
 export interface ScanHistoryItem {
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   issueQty: number;
   unit: string;
   issuedAt: string;
@@ -83,8 +83,8 @@ export function useBarcodeScan() {
       setScanHistory((prev) => [
         {
           lotNo: scannedLot.lotNo,
-          partCode: scannedLot.partCode,
-          partName: scannedLot.partName,
+          itemCode: scannedLot.itemCode,
+          itemName: scannedLot.itemName,
           issueQty: issueData?.issueQty ?? scannedLot.remainQty ?? scannedLot.qty,
           unit: scannedLot.unit ?? 'EA',
           issuedAt: new Date().toISOString(),

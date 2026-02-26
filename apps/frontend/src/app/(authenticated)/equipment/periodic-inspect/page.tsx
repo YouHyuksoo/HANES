@@ -49,7 +49,7 @@ export default function PeriodicInspectPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PeriodicInspect | null>(null);
   const [form, setForm] = useState({
-    equipId: "", inspectDate: "", inspectorName: "", overallResult: "PASS", remark: "",
+    equipCode: "", inspectDate: "", inspectorName: "", overallResult: "PASS", remark: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<PeriodicInspect | null>(null);
 
@@ -87,18 +87,18 @@ export default function PeriodicInspectPage() {
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
-    setForm({ equipId: "", inspectDate: new Date().toISOString().split("T")[0], inspectorName: "", overallResult: "PASS", remark: "" });
+    setForm({ equipCode: "", inspectDate: new Date().toISOString().split("T")[0], inspectorName: "", overallResult: "PASS", remark: "" });
     setIsModalOpen(true);
   }, []);
 
   const openEdit = useCallback((item: PeriodicInspect) => {
     setEditingItem(item);
-    setForm({ equipId: item.id, inspectDate: item.inspectDate, inspectorName: item.inspectorName, overallResult: item.overallResult, remark: item.remark });
+    setForm({ equipCode: item.equipCode, inspectDate: item.inspectDate, inspectorName: item.inspectorName, overallResult: item.overallResult, remark: item.remark });
     setIsModalOpen(true);
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!form.equipId || !form.inspectDate) return;
+    if (!form.equipCode || !form.inspectDate) return;
     setSaving(true);
     try {
       if (editingItem) {
@@ -225,7 +225,7 @@ export default function PeriodicInspectPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label={t("equipment.periodicInspect.equipCode")} placeholder="CUT-001"
-              value={form.equipId} onChange={e => setForm(p => ({ ...p, equipId: e.target.value }))} fullWidth />
+              value={form.equipCode} onChange={e => setForm(p => ({ ...p, equipCode: e.target.value }))} fullWidth />
             <Input label={t("equipment.periodicInspect.inspectDate")} type="date"
               value={form.inspectDate} onChange={e => setForm(p => ({ ...p, inspectDate: e.target.value }))} fullWidth />
             <Input label={t("equipment.periodicInspect.inspector")} placeholder={t("equipment.periodicInspect.inspectorPlaceholder")}
@@ -237,7 +237,7 @@ export default function PeriodicInspectPage() {
             value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving || !form.equipId || !form.inspectDate}>
+            <Button onClick={handleSave} disabled={saving || !form.equipCode || !form.inspectDate}>
               {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
             </Button>
           </div>

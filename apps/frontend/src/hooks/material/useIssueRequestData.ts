@@ -15,9 +15,8 @@ import type { IssueRequestStatus } from '@/components/material';
 
 /** 요청 품목 아이템 */
 export interface RequestItem {
-  partId?: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
   currentStock: number;
   requestQty: number;
@@ -39,8 +38,8 @@ export interface IssueRequest {
 /** 검색 가능한 품목 (재고 정보 포함) */
 export interface StockItem {
   id?: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   category: string;
   currentStock: number;
   unit: string;
@@ -73,9 +72,9 @@ interface JobOrderListResponse {
 interface PartSearchResponse {
   data: Array<{
     id: string;
-    partCode: string;
-    partName: string;
-    partType?: string;
+    itemCode: string;
+    itemName: string;
+    itemType?: string;
     unit?: string;
     currentStock?: number;
   }>;
@@ -138,9 +137,9 @@ export function useIssueRequestData() {
       const list = Array.isArray(raw) ? raw : raw?.data ?? [];
       return list.map((p) => ({
         id: p.id,
-        partCode: p.partCode,
-        partName: p.partName,
-        category: p.partType ?? '',
+        itemCode: p.itemCode,
+        itemName: p.itemName,
+        category: p.itemType ?? '',
         currentStock: p.currentStock ?? 0,
         unit: p.unit ?? 'EA',
       }));

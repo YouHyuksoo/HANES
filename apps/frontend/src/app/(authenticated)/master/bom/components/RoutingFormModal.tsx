@@ -20,10 +20,10 @@ interface RoutingFormModalProps {
   onClose: () => void;
   onSave: () => void;
   editingItem: RoutingItem | null;
-  partId: string;
+  itemCode: string;
 }
 
-export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem, partId }: RoutingFormModalProps) {
+export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem, itemCode }: RoutingFormModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [seq, setSeq] = useState("1");
@@ -68,7 +68,7 @@ export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem,
     setSaving(true);
     try {
       const body = {
-        partId, seq: Number(seq), processCode, processName,
+        itemCode, seq: Number(seq), processCode, processName,
         processType: processType || undefined, equipType: equipType || undefined,
         stdTime: toNum(stdTime), setupTime: toNum(setupTime),
         wireLength: toNum(wireLength), stripLength: toNum(stripLength),

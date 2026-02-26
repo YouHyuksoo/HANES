@@ -72,10 +72,10 @@ export default function MaterialReceivingPage() {
       { label: t("pda.receiving.poNo"), value: scannedData.poNo },
       {
         label: t("pda.receiving.partCode"),
-        value: scannedData.partCode,
+        value: scannedData.itemCode,
         highlight: true,
       },
-      { label: t("pda.receiving.partName"), value: scannedData.partName },
+      { label: t("pda.receiving.partName"), value: scannedData.itemName },
       {
         label: t("pda.receiving.orderQty"),
         value: `${scannedData.orderQty} ${scannedData.unit}`,
@@ -109,10 +109,10 @@ export default function MaterialReceivingPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            {item.partCode}
+            {item.itemCode}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {item.partName}
+            {item.itemName}
           </p>
         </div>
         <div className="text-right">

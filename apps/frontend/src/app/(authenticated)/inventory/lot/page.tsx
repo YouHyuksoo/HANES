@@ -15,8 +15,8 @@ import { api } from '@/services/api';
 interface LotData {
   id: string;
   lotNo: string;
-  partId: string;
-  partType: string;
+  itemCode: string;
+  itemType: string;
   initQty: number;
   currentQty: number;
   recvDate?: string;
@@ -28,8 +28,8 @@ interface LotData {
   status: string;
   createdAt: string;
   part: {
-    partCode: string;
-    partName: string;
+    itemCode: string;
+    itemName: string;
     unit: string;
   };
   parentLot?: {
@@ -38,7 +38,7 @@ interface LotData {
 }
 
 interface LotDetail extends LotData {
-  childLots: Array<{ id: string; lotNo: string; partType: string }>;
+  childLots: Array<{ id: string; lotNo: string; itemType: string }>;
   stocks: Array<{
     id: string;
     qty: number;
@@ -106,7 +106,7 @@ export default function LotPage() {
 
   // 필터
   const [filters, setFilters] = useState({
-    partType: '',
+    itemType: '',
     status: '',
     lotNo: '',
   });
@@ -115,7 +115,7 @@ export default function LotPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filters.partType) params.append('partType', filters.partType);
+      if (filters.itemType) params.append('itemType', filters.itemType);
       if (filters.status) params.append('status', filters.status);
 
       const res = await api.get(`/inventory/lots?${params.toString()}`);
@@ -154,29 +154,29 @@ export default function LotPage() {
       meta: { filterType: 'text' as const },
     },
     {
-      accessorKey: 'partType',
+      accessorKey: 'itemType',
       header: t('inventory.lot.partType'),
       size: 100,
       meta: { filterType: 'multi' as const },
       cell: ({ row }) => (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${getPartTypeColor(row.original.partType)}`}>
-          {getPartTypeLabel(row.original.partType)}
+        <span className={`px-2 py-1 rounded text-xs font-medium ${getPartTypeColor(row.original.itemType)}`}>
+          {getPartTypeLabel(row.original.itemType)}
         </span>
       ),
     },
     {
-      accessorKey: 'partCode',
+      accessorKey: 'itemCode',
       header: t('inventory.lot.partCode'),
       size: 120,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => row.original.part.partCode,
+      cell: ({ row }) => row.original.part.itemCode,
     },
     {
-      accessorKey: 'partName',
+      accessorKey: 'itemName',
       header: t('inventory.lot.partName'),
       size: 180,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => row.original.part.partName,
+      cell: ({ row }) => row.original.part.itemName,
     },
     {
       accessorKey: 'initQty',
@@ -317,7 +317,7 @@ export default function LotPage() {
                   <Input placeholder={t('inventory.lot.searchLotNo')} value={filters.lotNo} onChange={(e) => setFilters({ ...filters, lotNo: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-32 flex-shrink-0">
-                  <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} fullWidth />
+                  <Select options={PART_TYPES} value={filters.itemType} onChange={(v) => setFilters({ ...filters, itemType: v })} fullWidth />
                 </div>
                 <div className="w-32 flex-shrink-0">
                   <Select options={LOT_STATUS} value={filters.status} onChange={(v) => setFilters({ ...filters, status: v })} fullWidth />
@@ -380,17 +380,17 @@ export default function LotPage() {
                   </div>
                   <div className="flex justify-between border-b pb-2">
                     <span className="text-gray-500">{t('inventory.lot.partType')}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs ${getPartTypeColor(selectedLot.partType)}`}>
-                      {getPartTypeLabel(selectedLot.partType)}
+                    <span className={`px-2 py-0.5 rounded text-xs ${getPartTypeColor(selectedLot.itemType)}`}>
+                      {getPartTypeLabel(selectedLot.itemType)}
                     </span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
                     <span className="text-gray-500">{t('inventory.lot.partCode')}</span>
-                    <span>{selectedLot.part.partCode}</span>
+                    <span>{selectedLot.part.itemCode}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
                     <span className="text-gray-500">{t('inventory.lot.partName')}</span>
-                    <span>{selectedLot.part.partName}</span>
+                    <span>{selectedLot.part.itemName}</span>
                   </div>
                   <div className="flex justify-between border-b pb-2">
                     <span className="text-gray-500">{t('inventory.lot.status')}</span>

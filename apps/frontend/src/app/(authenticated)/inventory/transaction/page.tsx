@@ -17,9 +17,9 @@ interface TransactionData {
   transNo: string;
   transType: string;
   transDate: string;
-  fromWarehouseId?: string;
-  toWarehouseId?: string;
-  partId: string;
+  fromWarehouseCode?: string;
+  toWarehouseCode?: string;
+  itemCode: string;
   lotId?: string;
   qty: number;
   unitPrice?: number;
@@ -32,7 +32,7 @@ interface TransactionData {
   remark?: string;
   fromWarehouse?: { warehouseCode: string; warehouseName: string };
   toWarehouse?: { warehouseCode: string; warehouseName: string };
-  part: { partCode: string; partName: string };
+  part: { itemCode: string; itemName: string };
   lot?: { lotNo: string };
   cancelRef?: { transNo: string };
 }
@@ -187,18 +187,18 @@ export default function TransactionPage() {
       cell: ({ row }) => row.original.toWarehouse?.warehouseCode || '-',
     },
     {
-      accessorKey: 'partCode',
+      accessorKey: 'itemCode',
       header: t('inventory.transaction.partCode'),
       size: 120,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => row.original.part.partCode,
+      cell: ({ row }) => row.original.part.itemCode,
     },
     {
-      accessorKey: 'partName',
+      accessorKey: 'itemName',
       header: t('inventory.transaction.partName'),
       size: 150,
       meta: { filterType: 'text' as const },
-      cell: ({ row }) => row.original.part.partName,
+      cell: ({ row }) => row.original.part.itemName,
     },
     {
       accessorKey: 'lotNo',
@@ -347,7 +347,7 @@ export default function TransactionPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">{t('inventory.transaction.part')}:</span>
-                <span>{selectedTrans.part.partName}</span>
+                <span>{selectedTrans.part.itemName}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">{t('inventory.transaction.qty')}:</span>

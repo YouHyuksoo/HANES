@@ -64,8 +64,8 @@ export default function MaterialIssuingPage() {
         value: scannedLot.lotNo,
         highlight: true,
       },
-      { label: t("pda.issuing.partCode"), value: scannedLot.partCode },
-      { label: t("pda.issuing.partName"), value: scannedLot.partName },
+      { label: t("pda.issuing.partCode"), value: scannedLot.itemCode },
+      { label: t("pda.issuing.partName"), value: scannedLot.itemName },
       {
         label: t("pda.issuing.remainQty"),
         value: `${scannedLot.remainQty} ${scannedLot.unit}`,
@@ -95,7 +95,7 @@ export default function MaterialIssuingPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            {item.partCode}
+            {item.itemCode}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {item.lotNo}

@@ -44,11 +44,11 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   ];
 
   const [form, setForm] = useState(() => ({
-    partCode: editingPart?.partCode || "",
-    partName: editingPart?.partName || "",
-    partNo: editingPart?.partNo || "",
+    itemCode: editingPart?.itemCode || "",
+    itemName: editingPart?.itemName || "",
+    itemNo: editingPart?.itemNo || "",
     custPartNo: editingPart?.custPartNo || "",
-    partType: (editingPart?.partType || "RAW") as "RAW" | "WIP" | "FG",
+    itemType: (editingPart?.itemType || "RAW") as "RAW" | "WIP" | "FG",
     productType: editingPart?.productType || "",
     spec: editingPart?.spec || "",
     rev: editingPart?.rev || "",
@@ -70,11 +70,11 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   // editingPart 변경 시 폼 리셋
   useEffect(() => {
     setForm({
-      partCode: editingPart?.partCode || "",
-      partName: editingPart?.partName || "",
-      partNo: editingPart?.partNo || "",
+      itemCode: editingPart?.itemCode || "",
+      itemName: editingPart?.itemName || "",
+      itemNo: editingPart?.itemNo || "",
       custPartNo: editingPart?.custPartNo || "",
-      partType: (editingPart?.partType || "RAW") as "RAW" | "WIP" | "FG",
+      itemType: (editingPart?.itemType || "RAW") as "RAW" | "WIP" | "FG",
       productType: editingPart?.productType || "",
       spec: editingPart?.spec || "",
       rev: editingPart?.rev || "",
@@ -100,12 +100,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   };
 
   const handleSubmit = async () => {
-    if (!form.partCode.trim() || !form.partName.trim()) return;
+    if (!form.itemCode.trim() || !form.itemName.trim()) return;
     setSaving(true);
     try {
       const payload = {
         ...form,
-        partNo: form.partNo || undefined,
+        itemNo: form.itemNo || undefined,
         custPartNo: form.custPartNo || undefined,
         productType: form.productType || undefined,
         spec: form.spec || undefined,
@@ -154,20 +154,20 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("master.part.partCode")} placeholder="1111"
-              value={form.partCode} onChange={e => setField("partCode", e.target.value)}
+              value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
               disabled={isEdit} fullWidth />
             <Input label={t("master.part.partNo", "품번")} placeholder="ECW01331AA"
-              value={form.partNo} onChange={e => setField("partNo", e.target.value)} fullWidth />
+              value={form.itemNo} onChange={e => setField("itemNo", e.target.value)} fullWidth />
             <div className="col-span-2">
               <Input label={t("master.part.partName")} placeholder="HNS ASSY"
-                value={form.partName} onChange={e => setField("partName", e.target.value)} fullWidth />
+                value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
             </div>
             <Input label={t("master.part.custPartNo", "고객품번")} placeholder="HMC-001"
               value={form.custPartNo} onChange={e => setField("custPartNo", e.target.value)} fullWidth />
             <Input label={t("master.part.rev", "리비전")} placeholder="A"
               value={form.rev} onChange={e => setField("rev", e.target.value)} fullWidth />
             <Select label={t("master.part.type")} options={partTypeOptions}
-              value={form.partType} onChange={v => setField("partType", v)} fullWidth />
+              value={form.itemType} onChange={v => setField("itemType", v)} fullWidth />
             <Select label={t("master.part.productType", "제품유형")}
               options={PRODUCT_TYPE_OPTIONS.filter(o => o.value)}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
@@ -221,7 +221,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       {/* 푸터 (저장/취소) */}
       <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.partCode.trim() || !form.partName.trim()}>
+        <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
           {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
         </Button>
       </div>

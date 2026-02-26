@@ -63,7 +63,9 @@
     "selected": "Đã chọn",
     "won": "KRW",
     "useYn": "Sử dụng",
-    "clear": "Xóa"
+    "clear": "Xóa",
+    "select": "Vui lòng chọn",
+    "available": "Khả dụng"
   },
   "menu": {
     "dashboard": "Bảng điều khiển",
@@ -167,6 +169,8 @@
     "productMgmt": "Quản lý xuất nhập sản phẩm",
     "productMgmt.receive": "Nhập kho sản phẩm",
     "productMgmt.receiptCancel": "Hủy nhập kho sản phẩm",
+    "productMgmt.issue": "Xuất kho sản phẩm",
+    "productMgmt.issueCancel": "Hủy xuất kho sản phẩm",
     "material.arrival": "Quản lý nhập hàng",
     "material.iqc": "Kiểm tra đầu vào (IQC)",
     "material.receive": "Nhập kho vật tư",
@@ -1767,7 +1771,8 @@
       "endDate": "Ngày kết thúc",
       "stockSelect": "Chọn tồn kho (SP-LOT)",
       "availableQty": "SL khả dụng",
-      "max": "Tối đa"
+      "max": "Tối đa",
+      "noStock": "Không có tồn kho có thể hủy trong kho đã chọn."
     },
     "adjustment": {
       "title": "Điều chỉnh tồn kho",
@@ -1947,6 +1952,54 @@
       "searchPlaceholder": "Tìm mã giao dịch, tên sản phẩm...",
       "stats": {
         "total": "Tổng nhập kho",
+        "cancellable": "Có thể hủy",
+        "canceled": "Đã hủy"
+      }
+    },
+    "issue": {
+      "title": "Xuất kho sản phẩm",
+      "subtitle": "Xử lý xuất kho bán thành phẩm/thành phẩm.",
+      "registerIssue": "Đăng ký xuất kho",
+      "stats": {
+        "todayCount": "Xuất kho hôm nay",
+        "todayQty": "SL xuất hôm nay",
+        "wipCount": "Xuất WIP",
+        "fgCount": "Xuất FG"
+      },
+      "col": {
+        "transNo": "Mã xuất kho",
+        "transDate": "Ngày xuất",
+        "warehouse": "Kho xuất",
+        "issueType": "Tài khoản xuất"
+      },
+      "modal": {
+        "title": "Đăng ký xuất kho sản phẩm",
+        "partType": "Loại sản phẩm",
+        "partId": "Sản phẩm",
+        "warehouseId": "Kho xuất",
+        "qty": "Số lượng",
+        "issueType": "Tài khoản xuất",
+        "remark": "Ghi chú",
+        "confirm": "Xác nhận xuất kho"
+      }
+    },
+    "issueCancel": {
+      "title": "Hủy xuất kho sản phẩm",
+      "subtitle": "Hủy giao dịch xuất kho sản phẩm.",
+      "transNo": "Mã giao dịch",
+      "transType": "Loại",
+      "warehouse": "Kho xuất",
+      "issueType": "Tài khoản xuất",
+      "qty": "Số lượng",
+      "transDate": "Ngày",
+      "cancel": "Hủy",
+      "cancelTitle": "Xác nhận hủy xuất kho",
+      "reason": "Lý do hủy",
+      "reasonPlaceholder": "Nhập lý do hủy",
+      "confirm": "Xác nhận hủy",
+      "searchPlaceholder": "Tìm mã giao dịch, tên sản phẩm...",
+      "stats": {
+        "total": "Tổng xuất kho",
         "cancellable": "Có thể hủy",
         "canceled": "Đã hủy"
       }

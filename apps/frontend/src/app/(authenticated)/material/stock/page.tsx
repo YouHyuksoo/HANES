@@ -32,13 +32,12 @@ interface StockItem {
   id: string;
   warehouseCode: string;
   locationCode?: string | null;
-  partId: string;
+  itemCode: string;
   lotId?: string | null;
   qty: number;
   reservedQty: number;
   availableQty: number;
-  partCode?: string;
-  partName?: string;
+  itemName?: string;
   unit?: string;
   safetyStock?: number;
   expiryDays?: number;
@@ -194,7 +193,7 @@ function StockPage() {
   const columns: ColumnDef<StockItem>[] = useMemo(
     () => [
       {
-        accessorKey: "partCode",
+        accessorKey: "itemCode",
         header: t("material.stock.columns.partCode"),
         size: 110,
         meta: { filterType: "text" as const },
@@ -203,7 +202,7 @@ function StockPage() {
         ),
       },
       {
-        accessorKey: "partName",
+        accessorKey: "itemName",
         header: t("material.stock.columns.partName"),
         size: 140,
         meta: { filterType: "text" as const },

@@ -63,8 +63,8 @@ export default function VendorBarcodeMappingPage() {
     const s = searchText.toLowerCase();
     return (
       item.vendorBarcode.toLowerCase().includes(s) ||
-      (item.partCode ?? "").toLowerCase().includes(s) ||
-      (item.partName ?? "").toLowerCase().includes(s) ||
+      (item.itemCode ?? "").toLowerCase().includes(s) ||
+      (item.itemName ?? "").toLowerCase().includes(s) ||
       (item.vendorName ?? "").toLowerCase().includes(s)
     );
   }), [data, searchText, matchTypeFilter]);
@@ -120,8 +120,8 @@ export default function VendorBarcodeMappingPage() {
         <span className="font-mono text-xs bg-surface px-2 py-0.5 rounded">{getValue() as string}</span>
       ),
     },
-    { accessorKey: "partCode", header: t("master.vendorBarcode.partCode", "품번"), size: 120 },
-    { accessorKey: "partName", header: t("master.vendorBarcode.partName", "품명"), size: 150 },
+    { accessorKey: "itemCode", header: t("master.vendorBarcode.partCode", "품번"), size: 120 },
+    { accessorKey: "itemName", header: t("master.vendorBarcode.partName", "품명"), size: 150 },
     { accessorKey: "vendorCode", header: t("master.vendorBarcode.vendorCode", "제조사코드"), size: 100 },
     { accessorKey: "vendorName", header: t("master.vendorBarcode.vendorName", "제조사명"), size: 120 },
     {

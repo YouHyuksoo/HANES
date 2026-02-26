@@ -29,8 +29,8 @@ interface IssueFromRequestModalProps {
 /** 요청 상세의 품목 */
 interface RequestDetailItem {
   id: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
   requestQty: number;
   issuedQty: number;
@@ -132,8 +132,8 @@ export default function IssueFromRequestModal({
 
   // 컬럼 정의
   const columns = useMemo<ColumnDef<IssueRow>[]>(() => [
-    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemName', header: t('common.partName', { defaultValue: '품목명' }), size: 150, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'requestQty',
       header: t('material.col.requestQty'),

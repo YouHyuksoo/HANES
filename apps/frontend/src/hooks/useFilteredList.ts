@@ -5,7 +5,7 @@
  * 사용법:
  * ```tsx
  * const { filteredData, filters, stats, refresh } = useFilteredList(data, {
- *   searchFields: ['partCode', 'partName'],
+ *   searchFields: ['itemCode', 'itemName'],
  *   statusField: 'status',
  *   statusValues: ['PENDING', 'COMPLETED'],
  * });

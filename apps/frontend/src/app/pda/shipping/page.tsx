@@ -70,8 +70,8 @@ export default function ShippingPage() {
         highlight: true,
       },
       { label: t("pda.shipping.customer"), value: scannedOrder.customerName },
-      { label: t("pda.shipping.partCode"), value: scannedOrder.partCode },
-      { label: t("pda.shipping.partName"), value: scannedOrder.partName },
+      { label: t("pda.shipping.partCode"), value: scannedOrder.itemCode },
+      { label: t("pda.shipping.partName"), value: scannedOrder.itemName },
       { label: t("pda.shipping.orderQty"), value: scannedOrder.orderQty },
     ];
   }, [scannedOrder, t]);
@@ -105,7 +105,7 @@ export default function ShippingPage() {
             {item.shipOrderNo}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {item.customerName} / {item.partCode}
+            {item.customerName} / {item.itemCode}
           </p>
         </div>
         <div className="text-right">

@@ -39,7 +39,7 @@ function BomPage() {
 
   const filteredParents = useMemo(() => {
     if (!typeFilter) return parents;
-    return parents.filter((p) => p.partType === typeFilter);
+    return parents.filter((p) => p.itemType === typeFilter);
   }, [parents, typeFilter]);
 
   /** DB에서 모품목(부모품목) 목록 조회 */
@@ -162,18 +162,18 @@ function BomPage() {
                               : "hover:bg-surface text-text"
                           }`}>
                           <td className="py-1.5 px-2 font-medium whitespace-nowrap">
-                            {parent.partNo || parent.partCode}
+                            {parent.itemNo || parent.itemCode}
                           </td>
                           <td className={`py-1.5 px-2 truncate max-w-[120px] relative group/tip ${
                             selectedParent?.id === parent.id ? "text-white/80" : "text-text-muted"
                           }`}>
-                            {parent.partName}
+                            {parent.itemName}
                             {(parent.spec || parent.customer || parent.remark) && (
                               <div className="hidden group-hover/tip:block absolute left-0 top-full z-50 mt-1
                                 bg-gray-900 dark:bg-gray-800 text-white text-[11px] rounded-lg shadow-xl
                                 p-2.5 min-w-[200px] max-w-[280px] whitespace-normal pointer-events-none">
                                 <p className="font-semibold text-xs mb-1.5 border-b border-gray-700 pb-1">
-                                  {parent.partNo || parent.partCode} - {parent.partName}
+                                  {parent.itemNo || parent.itemCode} - {parent.itemName}
                                 </p>
                                 {parent.spec && (
                                   <p><span className="text-gray-400">{t("master.part.spec")}:</span> {parent.spec}</p>
@@ -197,7 +197,7 @@ function BomPage() {
                               selectedParent?.id === parent.id
                                 ? "bg-white/20 text-white"
                                 : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            }`}>{parent.partType}</span>
+                            }`}>{parent.itemType}</span>
                           </td>
                           <td className="py-1.5 px-1 text-center">
                             <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
@@ -230,7 +230,7 @@ function BomPage() {
                     {tab.label}
                     {tab.key === "routing" && routingTarget && (
                       <span className="ml-1.5 px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary">
-                        {routingTarget.partCode}
+                        {routingTarget.itemCode}
                       </span>
                     )}
                   </button>

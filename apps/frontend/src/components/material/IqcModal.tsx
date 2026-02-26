@@ -77,7 +77,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     const fetchItems = async () => {
       setLoadingItems(true);
       try {
-        const res = await api.get("/master/iqc-items", { params: { partId: selectedItem.partId } });
+        const res = await api.get("/master/iqc-items", { params: { itemCode: selectedItem.itemCode } });
         const items: IqcInspectItem[] = res.data?.data ?? [];
         setInspectItems(items);
         setMeasurements(items.map((item) => ({
@@ -139,7 +139,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
         <div className="p-3 bg-background rounded-lg grid grid-cols-2 gap-x-6 gap-y-1">
           <p className="text-sm text-text-muted">{t("material.iqc.arrivalNoLabel")}: <span className="font-medium text-text">{selectedItem.receiveNo}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.supplierLabel")}: <span className="font-medium text-text">{selectedItem.supplierName}</span></p>
-          <p className="text-sm text-text-muted">{t("material.iqc.partLabel")}: <span className="font-medium text-text">{selectedItem.partName} ({selectedItem.partCode})</span></p>
+          <p className="text-sm text-text-muted">{t("material.iqc.partLabel")}: <span className="font-medium text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.lotLabel")}: <span className="font-medium text-text">{selectedItem.lotNo}</span></p>
           <p className="text-sm text-text-muted">{t("material.iqc.quantityLabel")}: <span className="font-medium text-text">{selectedItem.quantity.toLocaleString()} {selectedItem.unit}</span></p>
         </div>

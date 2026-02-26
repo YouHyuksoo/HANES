@@ -22,7 +22,7 @@ import api from "@/services/api";
 interface OqcHistoryItem {
   id: string;
   requestNo: string;
-  partId: string;
+  itemCode: string;
   customer: string | null;
   requestDate: string;
   totalBoxCount: number;
@@ -31,7 +31,7 @@ interface OqcHistoryItem {
   result: string | null;
   inspectorName: string | null;
   inspectDate: string | null;
-  part?: { partCode?: string; partName?: string };
+  part?: { itemCode?: string; itemName?: string };
 }
 
 export default function OqcHistoryPage() {
@@ -40,8 +40,8 @@ export default function OqcHistoryPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -95,13 +95,13 @@ export default function OqcHistoryPage() {
       },
     },
     {
-      accessorFn: (row) => row.part?.partCode, id: "partCode",
+      accessorFn: (row) => row.part?.itemCode, id: "partCode",
       header: t("common.partCode"), size: 120,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorFn: (row) => row.part?.partName, id: "partName",
+      accessorFn: (row) => row.part?.itemName, id: "partName",
       header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },

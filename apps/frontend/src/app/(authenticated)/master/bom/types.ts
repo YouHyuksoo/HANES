@@ -11,10 +11,10 @@
 
 export interface ParentPart {
   id: string;
-  partCode: string;
-  partName: string;
-  partNo?: string;
-  partType: string;
+  itemCode: string;
+  itemName: string;
+  itemNo?: string;
+  itemType: string;
   spec?: string;
   unit?: string;
   customer?: string;
@@ -24,9 +24,9 @@ export interface ParentPart {
 
 export interface BomItem {
   id: string;
-  childPartCode: string;
-  childPartName: string;
-  childPartType: string;
+  childItemCode: string;
+  childItemName: string;
+  childItemType: string;
   qtyPer: number;
   unit: string;
   revision: string;
@@ -40,10 +40,10 @@ export interface BomItem {
 export interface BomTreeItem {
   id: string;
   level: number;
-  partCode: string;
-  partNo?: string | null;
-  partName: string;
-  partType: "FG" | "WIP" | "RAW";
+  itemCode: string;
+  itemNo?: string | null;
+  itemName: string;
+  itemType: "FG" | "WIP" | "RAW";
   qtyPer: number;
   unit: string;
   revision: string;
@@ -53,7 +53,7 @@ export interface BomTreeItem {
   validFrom?: string;
   validTo?: string;
   useYn: string;
-  childPartId?: string;
+  childItemCode?: string;
   children?: BomTreeItem[];
 }
 
@@ -78,17 +78,16 @@ export interface RoutingItem {
 
 /** BOM에서 라우팅 탭으로 연결할 때 사용하는 타겟 정보 */
 export interface RoutingTarget {
-  partId: string;
-  partCode: string;
-  partName: string;
-  partType: string;
+  itemCode: string;
+  itemName: string;
+  itemType: string;
   breadcrumb?: string;
 }
 
 /** BOM CRUD 폼 데이터 */
 export interface BomFormData {
-  parentPartId: string;
-  childPartId: string;
+  parentItemCode: string;
+  childItemCode: string;
   qtyPer: number;
   seq?: number;
   revision?: string;

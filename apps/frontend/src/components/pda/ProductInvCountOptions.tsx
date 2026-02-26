@@ -30,7 +30,7 @@ function shiftMonth(yearMonth: string, delta: number): string {
 interface ProductInvCountOptionsProps {
   countMonth: string;
   onCountMonthChange: (month: string) => void;
-  warehouseId: string;
+  warehouseCode: string;
   onWarehouseIdChange: (id: string) => void;
   defaultQty1: boolean;
   onDefaultQty1Change: (checked: boolean) => void;
@@ -42,7 +42,7 @@ interface ProductInvCountOptionsProps {
 export default function ProductInvCountOptions({
   countMonth,
   onCountMonthChange,
-  warehouseId,
+  warehouseCode,
   onWarehouseIdChange,
   defaultQty1,
   onDefaultQty1Change,
@@ -95,7 +95,7 @@ export default function ProductInvCountOptions({
           {t("pda.productInvCount.warehouse")}
         </label>
         <select
-          value={warehouseId}
+          value={warehouseCode}
           onChange={(e) => onWarehouseIdChange(e.target.value)}
           disabled={disabled}
           className="w-full h-10 px-3 text-sm bg-white dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-600 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-slate-900 dark:text-white disabled:opacity-40"

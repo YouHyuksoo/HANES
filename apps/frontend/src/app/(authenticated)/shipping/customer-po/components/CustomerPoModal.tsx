@@ -19,14 +19,14 @@ import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 interface PartItem {
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
 }
 
 export interface OrderItem {
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
   orderQty: number;
   unitPrice: number;
@@ -73,20 +73,20 @@ export default function CustomerPoModal({ isOpen, onClose, editingItem }: Custom
   };
 
   const addItem = (item: PartItem) => {
-    if (orderItems.some((r) => r.partCode === item.partCode)) return;
+    if (orderItems.some((r) => r.itemCode === item.itemCode)) return;
     setOrderItems((prev) => [
       ...prev,
-      { partCode: item.partCode, partName: item.partName, unit: item.unit, orderQty: 0, unitPrice: 0 },
+      { itemCode: item.itemCode, itemName: item.itemName, unit: item.unit, orderQty: 0, unitPrice: 0 },
     ]);
   };
 
-  const removeItem = (partCode: string) => {
-    setOrderItems((prev) => prev.filter((r) => r.partCode !== partCode));
+  const removeItem = (itemCode: string) => {
+    setOrderItems((prev) => prev.filter((r) => r.itemCode !== itemCode));
   };
 
-  const updateItem = (partCode: string, field: "orderQty" | "unitPrice", value: number) => {
+  const updateItem = (itemCode: string, field: "orderQty" | "unitPrice", value: number) => {
     setOrderItems((prev) =>
-      prev.map((r) => (r.partCode === partCode ? { ...r, [field]: value } : r)),
+      prev.map((r) => (r.itemCode === itemCode ? { ...r, [field]: value } : r)),
     );
   };
 
@@ -159,11 +159,11 @@ export default function CustomerPoModal({ isOpen, onClose, editingItem }: Custom
                 </thead>
                 <tbody>
                   {searchResults.map((item) => {
-                    const alreadyAdded = orderItems.some((r) => r.partCode === item.partCode);
+                    const alreadyAdded = orderItems.some((r) => r.itemCode === item.itemCode);
                     return (
-                      <tr key={item.partCode} className="border-t border-border hover:bg-background/30">
-                        <td className="px-3 py-1.5 font-mono text-xs">{item.partCode}</td>
-                        <td className="px-3 py-1.5">{item.partName}</td>
+                      <tr key={item.itemCode} className="border-t border-border hover:bg-background/30">
+                        <td className="px-3 py-1.5 font-mono text-xs">{item.itemCode}</td>
+                        <td className="px-3 py-1.5">{item.itemName}</td>
                         <td className="px-3 py-1.5 text-center text-text-muted">{item.unit}</td>
                         <td className="px-3 py-1.5 text-center">
                           <button
@@ -202,18 +202,18 @@ export default function CustomerPoModal({ isOpen, onClose, editingItem }: Custom
               </thead>
               <tbody>
                 {orderItems.map((item, idx) => (
-                  <tr key={item.partCode} className="border-t border-border">
+                  <tr key={item.itemCode} className="border-t border-border">
                     <td className="px-3 py-1.5 text-text-muted">{idx + 1}</td>
                     <td className="px-3 py-1.5">
-                      <span>{item.partName}</span>
-                      <span className="ml-1 text-xs text-text-muted">({item.partCode})</span>
+                      <span>{item.itemName}</span>
+                      <span className="ml-1 text-xs text-text-muted">({item.itemCode})</span>
                     </td>
                     <td className="px-3 py-1.5">
                       <input
                         type="number"
                         min={0}
                         value={item.orderQty || ""}
-                        onChange={(e) => updateItem(item.partCode, "orderQty", Number(e.target.value))}
+                        onChange={(e) => updateItem(item.itemCode, "orderQty", Number(e.target.value))}
                         className="w-full px-2 py-1 text-sm border border-border rounded text-right bg-surface text-text"
                         placeholder="0"
                       />
@@ -223,14 +223,14 @@ export default function CustomerPoModal({ isOpen, onClose, editingItem }: Custom
                         type="number"
                         min={0}
                         value={item.unitPrice || ""}
-                        onChange={(e) => updateItem(item.partCode, "unitPrice", Number(e.target.value))}
+                        onChange={(e) => updateItem(item.itemCode, "unitPrice", Number(e.target.value))}
                         className="w-full px-2 py-1 text-sm border border-border rounded text-right bg-surface text-text"
                         placeholder="0"
                       />
                     </td>
                     <td className="px-3 py-1.5 text-right font-medium">{(item.orderQty * item.unitPrice).toLocaleString()}</td>
                     <td className="px-3 py-1.5 text-center">
-                      <button onClick={() => removeItem(item.partCode)} className="p-1 text-red-400 hover:text-red-600 rounded">
+                      <button onClick={() => removeItem(item.itemCode)} className="p-1 text-red-400 hover:text-red-600 rounded">
                         <X className="w-4 h-4" />
                       </button>
                     </td>

@@ -37,8 +37,8 @@ export default function IssueTable({ data, onApprove, onReject, onProcess }: Iss
         <span className="text-primary font-medium">{getValue() as string}</span>
       ),
     },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('common.partName'), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemName', header: t('common.partName'), size: 120, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'requestQty', header: t('material.col.requestQty'), size: 90, meta: { filterType: 'number' as const },
       cell: ({ getValue }) => <span>{(getValue() as number).toLocaleString()}</span>,

@@ -16,8 +16,8 @@ import { Select } from "@/components/ui";
 /** 작업지시 데이터 인터페이스 */
 export interface WorkOrderSummary {
   orderNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   processType: string;
   planQty: number;
   prodQty: number;
@@ -27,13 +27,13 @@ export interface WorkOrderSummary {
 
 /** Mock 작업지시 (모든 실적입력 페이지에서 공유) */
 export const mockWorkOrders: WorkOrderSummary[] = [
-  { orderNo: "JO-20250126-001", partCode: "H-001", partName: "메인 하네스 A", processType: "ASSY", planQty: 200, prodQty: 145, lineName: "L3-조립", status: "RUNNING" },
-  { orderNo: "JO-20250126-002", partCode: "T-001", partName: "110형 단자 압착", processType: "CRIMP", planQty: 1500, prodQty: 1480, lineName: "L2-압착", status: "RUNNING" },
-  { orderNo: "JO-20250126-003", partCode: "H-003", partName: "도어 하네스 C", processType: "ASSY", planQty: 300, prodQty: 0, lineName: "L3-조립", status: "WAITING" },
-  { orderNo: "JO-20250126-004", partCode: "W-002", partName: "AVSS 0.3sq 흰색", processType: "CUT", planQty: 6000, prodQty: 5900, lineName: "L1-절단", status: "RUNNING" },
-  { orderNo: "JO-20250126-005", partCode: "H-001", partName: "메인 하네스 A", processType: "INSP", planQty: 150, prodQty: 148, lineName: "L4-검사", status: "RUNNING" },
-  { orderNo: "JO-20250126-006", partCode: "T-002", partName: "250형 단자 압착", processType: "CRIMP", planQty: 4000, prodQty: 3960, lineName: "L2-압착", status: "RUNNING" },
-  { orderNo: "JO-20250126-007", partCode: "H-003", partName: "도어 하네스 C", processType: "PACK", planQty: 100, prodQty: 100, lineName: "L5-포장", status: "DONE" },
+  { orderNo: "JO-20250126-001", itemCode: "H-001", itemName: "메인 하네스 A", processType: "ASSY", planQty: 200, prodQty: 145, lineName: "L3-조립", status: "RUNNING" },
+  { orderNo: "JO-20250126-002", itemCode: "T-001", itemName: "110형 단자 압착", processType: "CRIMP", planQty: 1500, prodQty: 1480, lineName: "L2-압착", status: "RUNNING" },
+  { orderNo: "JO-20250126-003", itemCode: "H-003", itemName: "도어 하네스 C", processType: "ASSY", planQty: 300, prodQty: 0, lineName: "L3-조립", status: "WAITING" },
+  { orderNo: "JO-20250126-004", itemCode: "W-002", itemName: "AVSS 0.3sq 흰색", processType: "CUT", planQty: 6000, prodQty: 5900, lineName: "L1-절단", status: "RUNNING" },
+  { orderNo: "JO-20250126-005", itemCode: "H-001", itemName: "메인 하네스 A", processType: "INSP", planQty: 150, prodQty: 148, lineName: "L4-검사", status: "RUNNING" },
+  { orderNo: "JO-20250126-006", itemCode: "T-002", itemName: "250형 단자 압착", processType: "CRIMP", planQty: 4000, prodQty: 3960, lineName: "L2-압착", status: "RUNNING" },
+  { orderNo: "JO-20250126-007", itemCode: "H-003", itemName: "도어 하네스 C", processType: "PACK", planQty: 100, prodQty: 100, lineName: "L5-포장", status: "DONE" },
 ];
 
 const processColors: Record<string, string> = {
@@ -64,7 +64,7 @@ function WorkOrderContext({ selectedOrderNo, onSelect, processFilter }: WorkOrde
     { value: "", label: t("production.workOrderCtx.selectOrder") },
     ...availableOrders.map((o) => ({
       value: o.orderNo,
-      label: `${o.orderNo} (${o.partName})`,
+      label: `${o.orderNo} (${o.itemName})`,
     })),
   ];
 
@@ -98,9 +98,9 @@ function WorkOrderContext({ selectedOrderNo, onSelect, processFilter }: WorkOrde
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
             <div className="text-text-muted">{t("production.workOrderCtx.partName")}</div>
-            <div className="text-text font-medium">{selected.partName}</div>
+            <div className="text-text font-medium">{selected.itemName}</div>
             <div className="text-text-muted">{t("production.workOrderCtx.partCode")}</div>
-            <div className="text-text font-mono">{selected.partCode}</div>
+            <div className="text-text font-mono">{selected.itemCode}</div>
             <div className="text-text-muted">{t("production.workOrderCtx.line")}</div>
             <div className="text-text">{selected.lineName}</div>
           </div>

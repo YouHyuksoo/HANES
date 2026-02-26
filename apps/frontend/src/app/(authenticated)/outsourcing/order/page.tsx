@@ -21,8 +21,8 @@ interface SubconOrder {
   id: string;
   orderNo: string;
   vendorName: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   orderQty: number;
   deliveredQty: number;
   receivedQty: number;
@@ -69,7 +69,7 @@ export default function SubconOrderPage() {
   const [selectedOrder, setSelectedOrder] = useState<SubconOrder | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [form, setForm] = useState({ vendorId: "", partCode: "", partName: "", orderQty: "", dueDate: "", remark: "" });
+  const [form, setForm] = useState({ vendorId: "", itemCode: "", itemName: "", orderQty: "", dueDate: "", remark: "" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -93,7 +93,7 @@ export default function SubconOrderPage() {
     try {
       await api.post("/outsourcing/orders", form);
       setIsModalOpen(false);
-      setForm({ vendorId: "", partCode: "", partName: "", orderQty: "", dueDate: "", remark: "" });
+      setForm({ vendorId: "", itemCode: "", itemName: "", orderQty: "", dueDate: "", remark: "" });
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
@@ -105,8 +105,8 @@ export default function SubconOrderPage() {
   const columns = useMemo<ColumnDef<SubconOrder>[]>(() => [
     { accessorKey: "orderNo", header: t("outsourcing.order.orderNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "vendorName", header: t("outsourcing.order.vendor"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "partCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "partName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "orderQty", header: t("outsourcing.order.orderQty"), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: "deliveredQty", header: t("outsourcing.order.deliveredQty"), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: "receivedQty", header: t("outsourcing.order.receivedQty"), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
@@ -181,8 +181,8 @@ export default function SubconOrderPage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("outsourcing.order.register")} size="lg">
         <div className="space-y-4">
-          <Input label={t("common.partCode")} placeholder="WH-001" value={form.partCode} onChange={(e) => setForm((p) => ({ ...p, partCode: e.target.value }))} fullWidth />
-          <Input label={t("common.partName")} placeholder="" value={form.partName} onChange={(e) => setForm((p) => ({ ...p, partName: e.target.value }))} fullWidth />
+          <Input label={t("common.partCode")} placeholder="WH-001" value={form.itemCode} onChange={(e) => setForm((p) => ({ ...p, itemCode: e.target.value }))} fullWidth />
+          <Input label={t("common.partName")} placeholder="" value={form.itemName} onChange={(e) => setForm((p) => ({ ...p, itemName: e.target.value }))} fullWidth />
           <Input label={t("outsourcing.order.orderQty")} type="number" placeholder="1000" value={form.orderQty} onChange={(e) => setForm((p) => ({ ...p, orderQty: e.target.value }))} fullWidth />
           <Input label={t("outsourcing.order.dueDate")} type="date" value={form.dueDate} onChange={(e) => setForm((p) => ({ ...p, dueDate: e.target.value }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />
@@ -198,7 +198,7 @@ export default function SubconOrderPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div><p className="text-sm text-text-muted">{t("outsourcing.order.vendor")}</p><p className="font-medium text-text">{selectedOrder.vendorName}</p></div>
-              <div><p className="text-sm text-text-muted">{t("common.part")}</p><p className="font-medium text-text">{selectedOrder.partCode} - {selectedOrder.partName}</p></div>
+              <div><p className="text-sm text-text-muted">{t("common.part")}</p><p className="font-medium text-text">{selectedOrder.itemCode} - {selectedOrder.itemName}</p></div>
               <div><p className="text-sm text-text-muted">{t("outsourcing.order.orderDate")}</p><p className="font-medium text-text">{selectedOrder.orderDate}</p></div>
               <div><p className="text-sm text-text-muted">{t("outsourcing.order.dueDate")}</p><p className="font-medium text-text">{selectedOrder.dueDate}</p></div>
             </div>

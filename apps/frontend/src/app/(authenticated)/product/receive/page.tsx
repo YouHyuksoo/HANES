@@ -26,15 +26,15 @@ interface ProductTransaction {
   transNo: string;
   transType: string;
   transDate: string;
-  partId: string;
-  partType: string;
+  itemCode: string;
+  itemType: string;
   lotId: string | null;
-  jobOrderId: string | null;
+  orderNo: string | null;
   processCode: string | null;
   qty: number;
   status: string;
   remark: string | null;
-  part?: { partCode: string; partName: string; unit: string } | null;
+  part?: { itemCode: string; itemName: string; unit: string } | null;
   toWarehouse?: { warehouseName: string } | null;
 }
 
@@ -115,12 +115,12 @@ export default function ProductReceivePage() {
       {
         id: "partCode", header: t("common.partCode"), size: 120,
         meta: { filterType: "text" as const },
-        cell: ({ row }) => <span className="font-mono text-sm">{row.original.part?.partCode || "-"}</span>,
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.part?.itemCode || "-"}</span>,
       },
       {
         id: "partName", header: t("common.partName"), size: 150,
         meta: { filterType: "text" as const },
-        cell: ({ row }) => row.original.part?.partName || "-",
+        cell: ({ row }) => row.original.part?.itemName || "-",
       },
       {
         id: "warehouse", header: t("productMgmt.receive.col.warehouse"), size: 110,
@@ -140,7 +140,7 @@ export default function ProductReceivePage() {
         },
       },
       {
-        accessorKey: "jobOrderId", header: t("productMgmt.receive.col.jobOrderId"), size: 130,
+        accessorKey: "orderNo", header: t("productMgmt.receive.col.jobOrderId"), size: 130,
         meta: { filterType: "text" as const },
         cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
       },

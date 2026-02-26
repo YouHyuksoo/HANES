@@ -21,10 +21,10 @@ import api from "@/services/api";
 interface AvailableBox {
   id: string;
   boxNo: string;
-  partId: string;
+  itemCode: string;
   qty: number;
   status: string;
-  part?: { partCode?: string; partName?: string };
+  part?: { itemCode?: string; itemName?: string };
 }
 
 interface Props {
@@ -39,7 +39,7 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedBoxIds, setSelectedBoxIds] = useState<Set<string>>(new Set());
-  const [partId, setPartId] = useState("");
+  const [itemCode, setItemCode] = useState("");
   const [customer, setCustomer] = useState("");
   const [sampleSize, setSampleSize] = useState("");
   const [parts, setParts] = useState<{ value: string; label: string }[]>([]);
@@ -47,22 +47,22 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
   /** 품목 목록 조회 */
   const fetchParts = useCallback(async () => {
     try {
-      const res = await api.get("/master/parts", { params: { limit: "5000", partType: "FG" } });
+      const res = await api.get("/master/parts", { params: { limit: "5000", itemType: "FG" } });
       const items = res.data?.data ?? [];
-      setParts(items.map((p: any) => ({ value: p.id, label: `${p.partCode} - ${p.partName}` })));
+      setParts(items.map((p: any) => ({ value: p.id, label: `${p.itemCode} - ${p.itemName}` })));
     } catch { setParts([]); }
   }, []);
 
   /** 검사 가능 박스 조회 */
   const fetchBoxes = useCallback(async () => {
-    if (!partId) { setBoxes([]); return; }
+    if (!itemCode) { setBoxes([]); return; }
     setLoading(true);
     try {
-      const res = await api.get("/quality/oqc/available-boxes", { params: { partId } });
+      const res = await api.get("/quality/oqc/available-boxes", { params: { itemCode } });
       setBoxes(res.data?.data ?? []);
     } catch { setBoxes([]); }
     finally { setLoading(false); }
-  }, [partId]);
+  }, [itemCode]);
 
   useEffect(() => { if (isOpen) fetchParts(); }, [isOpen, fetchParts]);
   useEffect(() => { fetchBoxes(); }, [fetchBoxes]);
@@ -95,7 +95,7 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
     setSaving(true);
     try {
       await api.post("/quality/oqc", {
-        partId,
+        itemCode,
         boxIds: Array.from(selectedBoxIds),
         customer: customer || undefined,
         sampleSize: sampleSize ? parseInt(sampleSize, 10) : undefined,
@@ -105,10 +105,10 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
     } catch (e) {
       console.error("OQC request creation failed:", e);
     } finally { setSaving(false); }
-  }, [partId, selectedBoxIds, customer, sampleSize, onSuccess]);
+  }, [itemCode, selectedBoxIds, customer, sampleSize, onSuccess]);
 
   const handleClose = useCallback(() => {
-    setPartId("");
+    setItemCode("");
     setCustomer("");
     setSampleSize("");
     setSelectedBoxIds(new Set());
@@ -144,8 +144,8 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
           <Select
             label={t("quality.oqc.selectPart")}
             options={[{ value: "", label: t("quality.oqc.selectPartPlaceholder") }, ...parts]}
-            value={partId}
-            onChange={setPartId}
+            value={itemCode}
+            onChange={setItemCode}
             fullWidth
           />
           <Input

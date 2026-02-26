@@ -15,8 +15,8 @@ export interface ArrivalItem {
   arrivalNo: string;
   arrivalDate: string;
   supplierName: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   lotNo: string;
   quantity: number;
   unit: string;
@@ -27,7 +27,7 @@ export interface ArrivalItem {
 /** 입하 등록 폼 */
 export interface ArrivalCreateForm {
   supplier: string;
-  partCode: string;
+  itemCode: string;
   lotNo: string;
   quantity: string;
   remark: string;
@@ -35,7 +35,7 @@ export interface ArrivalCreateForm {
 
 const INITIAL_FORM: ArrivalCreateForm = {
   supplier: '',
-  partCode: '',
+  itemCode: '',
   lotNo: '',
   quantity: '',
   remark: '',
@@ -43,11 +43,11 @@ const INITIAL_FORM: ArrivalCreateForm = {
 
 /** Mock 데이터 */
 const mockArrivals: ArrivalItem[] = [
-  { id: '1', arrivalNo: 'ARR-20250126-001', arrivalDate: '2025-01-26', supplierName: '대한전선', partCode: 'WIRE-001', partName: 'AWG18 적색', lotNo: 'L20250126-A01', quantity: 5000, unit: 'M', status: 'ARRIVED', remark: null },
-  { id: '2', arrivalNo: 'ARR-20250126-002', arrivalDate: '2025-01-26', supplierName: '한국단자', partCode: 'TERM-001', partName: '단자 110형', lotNo: 'L20250126-B01', quantity: 10000, unit: 'EA', status: 'IQC_READY', remark: null },
-  { id: '3', arrivalNo: 'ARR-20250125-001', arrivalDate: '2025-01-25', supplierName: '삼성커넥터', partCode: 'CONN-001', partName: '커넥터 6핀', lotNo: 'L20250125-C01', quantity: 2000, unit: 'EA', status: 'IQC_READY', remark: '긴급 입하' },
-  { id: '4', arrivalNo: 'ARR-20250125-002', arrivalDate: '2025-01-25', supplierName: '대한전선', partCode: 'WIRE-002', partName: 'AWG20 흑색', lotNo: 'L20250125-A02', quantity: 3000, unit: 'M', status: 'ARRIVED', remark: null },
-  { id: '5', arrivalNo: 'ARR-20250124-001', arrivalDate: '2025-01-24', supplierName: '한국단자', partCode: 'TERM-002', partName: '단자 250형', lotNo: 'L20250124-B02', quantity: 8000, unit: 'EA', status: 'IQC_READY', remark: null },
+  { id: '1', arrivalNo: 'ARR-20250126-001', arrivalDate: '2025-01-26', supplierName: '대한전선', itemCode: 'WIRE-001', itemName: 'AWG18 적색', lotNo: 'L20250126-A01', quantity: 5000, unit: 'M', status: 'ARRIVED', remark: null },
+  { id: '2', arrivalNo: 'ARR-20250126-002', arrivalDate: '2025-01-26', supplierName: '한국단자', itemCode: 'TERM-001', itemName: '단자 110형', lotNo: 'L20250126-B01', quantity: 10000, unit: 'EA', status: 'IQC_READY', remark: null },
+  { id: '3', arrivalNo: 'ARR-20250125-001', arrivalDate: '2025-01-25', supplierName: '삼성커넥터', itemCode: 'CONN-001', itemName: '커넥터 6핀', lotNo: 'L20250125-C01', quantity: 2000, unit: 'EA', status: 'IQC_READY', remark: '긴급 입하' },
+  { id: '4', arrivalNo: 'ARR-20250125-002', arrivalDate: '2025-01-25', supplierName: '대한전선', itemCode: 'WIRE-002', itemName: 'AWG20 흑색', lotNo: 'L20250125-A02', quantity: 3000, unit: 'M', status: 'ARRIVED', remark: null },
+  { id: '5', arrivalNo: 'ARR-20250124-001', arrivalDate: '2025-01-24', supplierName: '한국단자', itemCode: 'TERM-002', itemName: '단자 250형', lotNo: 'L20250124-B02', quantity: 8000, unit: 'EA', status: 'IQC_READY', remark: null },
 ];
 
 export const supplierOptions = [
@@ -71,7 +71,7 @@ export function useArrivalData() {
       const matchSearch =
         !searchText ||
         r.arrivalNo.toLowerCase().includes(searchText.toLowerCase()) ||
-        r.partName.toLowerCase().includes(searchText.toLowerCase());
+        r.itemName.toLowerCase().includes(searchText.toLowerCase());
       return matchStatus && matchSupplier && matchSearch;
     });
   }, [statusFilter, supplierFilter, searchText]);

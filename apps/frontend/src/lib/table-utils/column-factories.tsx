@@ -103,13 +103,13 @@ export function createPartColumns<T>(
 ): ColumnDef<T, unknown>[] {
   return [
     {
-      accessorKey: "partCode",
+      accessorKey: "itemCode",
       header: t("part.code", "품목코드"),
       size: options.size ?? 120,
       minSize: options.minSize ?? 80,
     },
     {
-      accessorKey: "partName",
+      accessorKey: "itemName",
       header: t("part.name", "품목명"),
       size: options.size ?? 200,
       minSize: options.minSize ?? 100,

@@ -104,8 +104,8 @@ export default function WorkInstructionPage() {
         </button>
       ),
     },
-    { accessorKey: "partCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "partName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "processCode", header: t("master.workInstruction.processCode"), size: 90, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "title", header: t("master.workInstruction.docTitle"), size: 220, meta: { filterType: "text" as const } },
     {

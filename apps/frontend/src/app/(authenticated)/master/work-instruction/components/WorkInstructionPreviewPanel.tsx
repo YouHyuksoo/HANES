@@ -102,8 +102,8 @@ export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, ani
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
-                <InfoRow label={t("common.partCode")} value={detail.partCode} />
-                <InfoRow label={t("common.partName")} value={detail.partName || "-"} />
+                <InfoRow label={t("common.partCode")} value={detail.itemCode} />
+                <InfoRow label={t("common.partName")} value={detail.itemName || "-"} />
                 <InfoRow label={t("master.workInstruction.processCode")} value={detail.processCode || "-"} />
                 <InfoRow label={t("master.workInstruction.updatedAt")} value={detail.updatedAt} />
               </div>

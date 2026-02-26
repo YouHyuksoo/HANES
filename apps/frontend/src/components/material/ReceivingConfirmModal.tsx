@@ -39,7 +39,7 @@ export default function ReceivingConfirmModal({
             {t('material.receive.arrivalNoLabel')}: <span className="font-medium text-text">{selectedItem.receiveNo}</span>
           </p>
           <p className="text-sm text-text-muted">
-            {t('material.receive.partLabel')}: <span className="font-medium text-text">{selectedItem.partName} ({selectedItem.partCode})</span>
+            {t('material.receive.partLabel')}: <span className="font-medium text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span>
           </p>
           <p className="text-sm text-text-muted">
             {t('material.receive.lotLabel')}: <span className="font-medium text-text">{selectedItem.lotNo}</span>

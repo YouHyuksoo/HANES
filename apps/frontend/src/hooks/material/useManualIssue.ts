@@ -18,8 +18,8 @@ export interface AvailableStock {
   id: string;
   lotId: string;
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
   warehouseCode: string;
   warehouseName: string;

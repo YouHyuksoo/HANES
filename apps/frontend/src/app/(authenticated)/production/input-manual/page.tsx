@@ -25,7 +25,7 @@ import { useInputManualStore } from '@/stores/inputManualStore';
 interface ManualResult {
   id: string;
   orderNo: string;
-  partName: string;
+  itemName: string;
   workerName: string;
   lotNo: string;
   goodQty: number;
@@ -109,8 +109,8 @@ export default function InputManualPage() {
     try {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.lotNo = searchText;
-      if (selectedJobOrder) params.jobOrderId = selectedJobOrder.id;
-      if (selectedEquip) params.equipId = selectedEquip.id;
+      if (selectedJobOrder) params.orderNo = selectedJobOrder.orderNo;
+      if (selectedEquip) params.equipCode = selectedEquip.equipCode;
       const res = await api.get('/production/prod-results', { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -170,7 +170,7 @@ export default function InputManualPage() {
     if (selectedEquip) {
       try {
         await api.patch(`/equipment/equips/${selectedEquip.id}/job-order`, {
-          jobOrderId: jobOrder.id,
+          orderNo: jobOrder.orderNo,
         });
       } catch (e) {
         console.error('Failed to assign job order to equipment:', e);
@@ -190,8 +190,8 @@ export default function InputManualPage() {
     setSaving(true);
     try {
       await api.post('/production/prod-results', {
-        jobOrderId: selectedJobOrder.id,
-        equipId: selectedEquip.id,
+        orderNo: selectedJobOrder.orderNo,
+        equipCode: selectedEquip.equipCode,
         workerId: selectedWorker.id,
         processCode: selectedProcess?.processCode,
         lotNo: form.lotNo || undefined,
@@ -225,7 +225,7 @@ export default function InputManualPage() {
 
   const columns = useMemo<ColumnDef<ManualResult>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputManual.orderNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('production.inputManual.partName'), size: 150, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemName', header: t('production.inputManual.partName'), size: 150, meta: { filterType: 'text' as const } },
     { accessorKey: 'workerName', header: t('production.inputManual.worker'), size: 80, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('production.inputManual.lotNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'goodQty', header: t('production.inputManual.good'), size: 80, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{(getValue() as number).toLocaleString()}</span> },
@@ -321,7 +321,7 @@ export default function InputManualPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-bold text-text">{selectedJobOrder.orderNo}</p>
-                    <p className="text-xs text-text-muted">{selectedJobOrder.partName} ({selectedJobOrder.partCode})</p>
+                    <p className="text-xs text-text-muted">{selectedJobOrder.itemName} ({selectedJobOrder.itemCode})</p>
                   </div>
                   <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
                     {selectedJobOrder.processType}
@@ -440,7 +440,7 @@ export default function InputManualPage() {
             <div><span className="text-text-muted">{t('production.inputManual.selectedEquip')}:</span> <span className="font-medium">{selectedEquip?.equipName}</span></div>
             <div><span className="text-text-muted">{t('production.inputManual.workOrder')}:</span> <span className="font-mono font-medium text-primary">{selectedJobOrder?.orderNo}</span></div>
             <div><span className="text-text-muted">{t('production.inputManual.worker')}:</span> <span className="font-medium">{selectedWorker?.workerName}</span></div>
-            <div><span className="text-text-muted">{t('production.inputManual.partName')}:</span> <span className="font-medium">{selectedJobOrder?.partName}</span></div>
+            <div><span className="text-text-muted">{t('production.inputManual.partName')}:</span> <span className="font-medium">{selectedJobOrder?.itemName}</span></div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

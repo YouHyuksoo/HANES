@@ -15,9 +15,9 @@ import { ComCodeBadge } from '@/components/ui';
 export interface JobOrder {
   id: string;
   orderNo: string;
-  partCode: string;
-  partName: string;
-  partType?: string;
+  itemCode: string;
+  itemName: string;
+  itemType?: string;
   processType?: string;
   processCode?: string;
   planQty: number;
@@ -39,11 +39,11 @@ interface JobOrderSelectModalProps {
 
 // Mock data - 실제로는 API에서 조회
 const mockJobOrders: JobOrder[] = [
-  { id: '1', orderNo: 'JO-20250217-001', partCode: 'HNS-001', partName: '메인 하네스 A', partType: 'FG', processType: 'CUT', processCode: 'CUT-01', planQty: 1000, completedQty: 500, status: 'IN_PROGRESS', planStartDate: '2025-02-17', planEndDate: '2025-02-18', workDate: '2025-02-17', equipCode: 'EQ-001', equipName: '절단기 1호' },
-  { id: '2', orderNo: 'JO-20250217-002', partCode: 'HNS-002', partName: '서브 하네스 B', partType: 'WIP', processType: 'CRM', processCode: 'CRM-01', planQty: 800, completedQty: 0, status: 'READY', planStartDate: '2025-02-17', planEndDate: '2025-02-17', workDate: '2025-02-17', equipCode: 'EQ-002', equipName: '압착기 1호' },
-  { id: '3', orderNo: 'JO-20250216-001', partCode: 'HNS-001', partName: '메인 하네스 A', partType: 'FG', processType: 'ASM', processCode: 'ASM-01', planQty: 500, completedQty: 500, status: 'COMPLETED', planStartDate: '2025-02-16', planEndDate: '2025-02-16', workDate: '2025-02-16', equipCode: 'EQ-003', equipName: '조립라인 A' },
-  { id: '4', orderNo: 'JO-20250217-003', partCode: 'HNS-003', partName: '도어 하네스 C', partType: 'FG', processType: 'CUT', processCode: 'CUT-02', planQty: 600, completedQty: 200, status: 'IN_PROGRESS', planStartDate: '2025-02-17', planEndDate: '2025-02-19', workDate: '2025-02-17', equipCode: 'EQ-001', equipName: '절단기 1호' },
-  { id: '5', orderNo: 'JO-20250215-001', partCode: 'HNS-004', partName: '트렁크 하네스', partType: 'FG', processType: 'INS', processCode: 'INS-01', planQty: 300, completedQty: 300, status: 'COMPLETED', planStartDate: '2025-02-15', planEndDate: '2025-02-15', workDate: '2025-02-15', equipCode: 'EQ-004', equipName: '검사라인' },
+  { id: '1', orderNo: 'JO-20250217-001', itemCode: 'HNS-001', itemName: '메인 하네스 A', itemType: 'FG', processType: 'CUT', processCode: 'CUT-01', planQty: 1000, completedQty: 500, status: 'IN_PROGRESS', planStartDate: '2025-02-17', planEndDate: '2025-02-18', workDate: '2025-02-17', equipCode: 'EQ-001', equipName: '절단기 1호' },
+  { id: '2', orderNo: 'JO-20250217-002', itemCode: 'HNS-002', itemName: '서브 하네스 B', itemType: 'WIP', processType: 'CRM', processCode: 'CRM-01', planQty: 800, completedQty: 0, status: 'READY', planStartDate: '2025-02-17', planEndDate: '2025-02-17', workDate: '2025-02-17', equipCode: 'EQ-002', equipName: '압착기 1호' },
+  { id: '3', orderNo: 'JO-20250216-001', itemCode: 'HNS-001', itemName: '메인 하네스 A', itemType: 'FG', processType: 'ASM', processCode: 'ASM-01', planQty: 500, completedQty: 500, status: 'COMPLETED', planStartDate: '2025-02-16', planEndDate: '2025-02-16', workDate: '2025-02-16', equipCode: 'EQ-003', equipName: '조립라인 A' },
+  { id: '4', orderNo: 'JO-20250217-003', itemCode: 'HNS-003', itemName: '도어 하네스 C', itemType: 'FG', processType: 'CUT', processCode: 'CUT-02', planQty: 600, completedQty: 200, status: 'IN_PROGRESS', planStartDate: '2025-02-17', planEndDate: '2025-02-19', workDate: '2025-02-17', equipCode: 'EQ-001', equipName: '절단기 1호' },
+  { id: '5', orderNo: 'JO-20250215-001', itemCode: 'HNS-004', itemName: '트렁크 하네스', itemType: 'FG', processType: 'INS', processCode: 'INS-01', planQty: 300, completedQty: 300, status: 'COMPLETED', planStartDate: '2025-02-15', planEndDate: '2025-02-15', workDate: '2025-02-15', equipCode: 'EQ-004', equipName: '검사라인' },
 ];
 
 export default function JobOrderSelectModal({
@@ -64,8 +64,8 @@ export default function JobOrderSelectModal({
         const search = searchText.toLowerCase();
         return (
           item.orderNo.toLowerCase().includes(search) ||
-          item.partCode.toLowerCase().includes(search) ||
-          item.partName.toLowerCase().includes(search) ||
+          item.itemCode.toLowerCase().includes(search) ||
+          item.itemName.toLowerCase().includes(search) ||
           (item.processCode?.toLowerCase().includes(search) ?? false)
         );
       });
@@ -115,13 +115,13 @@ export default function JobOrderSelectModal({
         ),
       },
       {
-        accessorKey: 'partName',
+        accessorKey: 'itemName',
         header: t('common.partName'),
         size: 180,
         cell: ({ row }) => (
           <div>
-            <div className="font-medium">{row.original.partName}</div>
-            <div className="text-xs text-text-muted">{row.original.partCode}</div>
+            <div className="font-medium">{row.original.itemName}</div>
+            <div className="text-xs text-text-muted">{row.original.itemCode}</div>
           </div>
         ),
       },
@@ -219,7 +219,7 @@ export default function JobOrderSelectModal({
               </div>
               <div>
                 <span className="text-text-muted">{t('common.partName')}:</span>
-                <span className="ml-2 font-medium">{selectedJobOrder.partName}</span>
+                <span className="ml-2 font-medium">{selectedJobOrder.itemName}</span>
               </div>
               <div>
                 <span className="text-text-muted">{t('production.order.process')}:</span>

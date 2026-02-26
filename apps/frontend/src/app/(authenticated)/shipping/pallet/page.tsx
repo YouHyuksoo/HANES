@@ -26,7 +26,7 @@ import api from "@/services/api";
 
 interface PalletBox {
   boxNo: string;
-  partName: string;
+  itemName: string;
   quantity: number;
 }
 
@@ -211,7 +211,7 @@ export default function PalletPage() {
                   <div key={idx} className="flex items-center justify-between p-3 bg-background rounded-lg">
                     <div>
                       <p className="font-mono text-sm text-text">{box.boxNo}</p>
-                      <p className="text-xs text-text-muted">{box.partName}</p>
+                      <p className="text-xs text-text-muted">{box.itemName}</p>
                     </div>
                     <span className="text-sm font-medium text-text">{box.quantity}{t("common.count")}</span>
                   </div>
@@ -253,7 +253,7 @@ export default function PalletPage() {
               <div key={box.boxNo} onClick={() => toggleBoxSelection(box.boxNo)} className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${selectedBoxes.includes(box.boxNo) ? "bg-primary/10 border-2 border-primary" : "bg-background hover:bg-surface border-2 border-transparent"}`}>
                 <div>
                   <p className="font-mono text-sm text-text">{box.boxNo}</p>
-                  <p className="text-xs text-text-muted">{box.partName}</p>
+                  <p className="text-xs text-text-muted">{box.itemName}</p>
                 </div>
                 <span className="text-sm font-medium text-text">{box.quantity}{t("common.count")}</span>
               </div>

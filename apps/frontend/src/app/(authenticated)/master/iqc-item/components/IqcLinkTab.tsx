@@ -23,12 +23,12 @@ import api from "@/services/api";
 
 interface IqcPartLinkRow {
   id: string;
-  partId: string;
+  itemCode: string;
   partnerId?: string | null;
   groupId: string;
   remark?: string | null;
   useYn: string;
-  part?: { partCode: string; partName: string };
+  part?: { itemCode: string; itemName: string };
   partner?: { partnerCode: string; partnerName: string } | null;
   group?: { groupCode: string; groupName: string; inspectMethod: string; sampleQty?: number | null };
 }
@@ -75,11 +75,11 @@ export default function IqcLinkTab() {
   }, []);
 
   const handleSave = useCallback(async (formData: {
-    partId: string; partnerId: string; groupId: string; remark: string;
+    itemCode: string; partnerId: string; groupId: string; remark: string;
   }) => {
     try {
       const body = {
-        partId: formData.partId,
+        itemCode: formData.itemCode,
         partnerId: formData.partnerId || undefined,
         groupId: formData.groupId,
         remark: formData.remark || undefined,
@@ -126,16 +126,16 @@ export default function IqcLinkTab() {
       ),
     },
     {
-      id: "partCode", header: t("master.iqcLink.partCode", "품목코드"), size: 110,
+      id: "itemCode", header: t("master.iqcLink.partCode", "품목코드"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.part?.partCode ?? "-"}</span>
+        <span className="font-mono text-xs">{row.original.part?.itemCode ?? "-"}</span>
       ),
     },
     {
-      id: "partName", header: t("master.iqcLink.partName", "품목명"), size: 160,
+      id: "itemName", header: t("master.iqcLink.partName", "품목명"), size: 160,
       meta: { filterType: "text" as const },
-      cell: ({ row }) => row.original.part?.partName ?? "-",
+      cell: ({ row }) => row.original.part?.itemName ?? "-",
     },
     {
       id: "partnerName", header: t("master.iqcLink.partner", "거래처(공급상)"), size: 150,
@@ -218,7 +218,7 @@ export default function IqcLinkTab() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.part?.partCode || ""}'을(를) 삭제하시겠습니까?`}
+        message={`'${deleteTarget?.part?.itemCode || ""}'을(를) 삭제하시겠습니까?`}
       />
     </>
   );

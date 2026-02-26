@@ -6,7 +6,7 @@
  * 1. handleScan(barcode): 바코드 스캔 → 시스템 재고 조회 (ScannedProduct | null 반환)
  * 2. handleCount(actualQty): 실사 결과 전송 → 성공 시 자동 리셋 (다음 스캔 순환)
  * 3. handleReset(): 수동 리셋 (건너뛰기)
- * 4. options: { countMonth, warehouseId, countType } 으로 실사 조건 설정
+ * 4. options: { countMonth, warehouseCode, countType } 으로 실사 조건 설정
  */
 import { useState, useCallback } from "react";
 import { api } from "@/services/api";
@@ -16,8 +16,8 @@ import type { CountType } from "@/components/pda/ProductInvCountOptions";
 export interface ScannedProduct {
   id: string;
   barcode: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   systemQty: number;
   warehouseName: string;
 }
@@ -25,8 +25,8 @@ export interface ScannedProduct {
 /** 실사 이력 항목 */
 export interface ProductCountHistoryItem {
   barcode: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   systemQty: number;
   actualQty: number;
   difference: number;
@@ -36,7 +36,7 @@ export interface ProductCountHistoryItem {
 
 interface UseProductInvCountOptions {
   countMonth?: string;
-  warehouseId?: string;
+  warehouseCode?: string;
   countType?: CountType;
 }
 
@@ -55,7 +55,7 @@ interface UseProductInvCountReturn {
  * 제품 재고실사 훅
  *
  * 플로우:
- * 1. 옵션 설정 (countMonth, warehouseId, countType)
+ * 1. 옵션 설정 (countMonth, warehouseCode, countType)
  * 2. handleScan → 서버에서 시스템 수량 조회 (ScannedProduct 반환)
  * 3. handleCount → 서버에 전송 (countMonth, countType 포함) → 성공 시 자동 리셋
  * 4. handleReset → 수동 리셋 (건너뛰기)
@@ -63,7 +63,7 @@ interface UseProductInvCountReturn {
 export function useProductInvCount(
   options?: UseProductInvCountOptions,
 ): UseProductInvCountReturn {
-  const { countMonth, warehouseId, countType = "NORMAL" } = options || {};
+  const { countMonth, warehouseCode, countType = "NORMAL" } = options || {};
 
   const [scannedProduct, setScannedProduct] = useState<ScannedProduct | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -78,7 +78,7 @@ export function useProductInvCount(
       setError(null);
       setScannedProduct(null);
       try {
-        const params = warehouseId ? `?warehouseId=${warehouseId}` : "";
+        const params = warehouseCode ? `?warehouseCode=${warehouseCode}` : "";
         const { data } = await api.get<ScannedProduct>(
           `/inventory/products/by-barcode/${encodeURIComponent(barcode)}${params}`,
         );
@@ -94,7 +94,7 @@ export function useProductInvCount(
         setIsScanning(false);
       }
     },
-    [warehouseId],
+    [warehouseCode],
   );
 
   /** 실사 수량 확인 처리 → 성공 시 자동 리셋 */
@@ -116,8 +116,8 @@ export function useProductInvCount(
         setHistory((prev) => [
           {
             barcode: scannedProduct.barcode,
-            partCode: scannedProduct.partCode,
-            partName: scannedProduct.partName,
+            itemCode: scannedProduct.itemCode,
+            itemName: scannedProduct.itemName,
             systemQty: scannedProduct.systemQty,
             actualQty,
             difference,

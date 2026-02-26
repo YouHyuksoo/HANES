@@ -63,7 +63,9 @@
     "selected": "Selected",
     "won": "KRW",
     "useYn": "Use Y/N",
-    "clear": "Clear"
+    "clear": "Clear",
+    "select": "Please select",
+    "available": "Available"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -167,6 +169,8 @@
     "productMgmt": "Product Mgmt",
     "productMgmt.receive": "Product Receive",
     "productMgmt.receiptCancel": "Product Receipt Cancel",
+    "productMgmt.issue": "Product Issue",
+    "productMgmt.issueCancel": "Product Issue Cancel",
     "material.arrival": "Arrival",
     "material.iqc": "IQC Inspection",
     "material.receive": "Material Receiving",
@@ -1766,7 +1770,8 @@
       "endDate": "End Date",
       "stockSelect": "Select Stock (Part-LOT)",
       "availableQty": "Available Qty",
-      "max": "Max"
+      "max": "Max",
+      "noStock": "No scrapable stock available in the selected warehouse."
     },
     "adjustment": {
       "title": "Stock Adjustment",
@@ -1946,6 +1951,54 @@
       "searchPlaceholder": "Search transaction no., part name...",
       "stats": {
         "total": "Total Receipts",
+        "cancellable": "Cancellable",
+        "canceled": "Canceled"
+      }
+    },
+    "issue": {
+      "title": "Product Issue",
+      "subtitle": "Process WIP/FG product issue.",
+      "registerIssue": "Register Issue",
+      "stats": {
+        "todayCount": "Today Issues",
+        "todayQty": "Today Issue Qty",
+        "wipCount": "WIP Issues",
+        "fgCount": "FG Issues"
+      },
+      "col": {
+        "transNo": "Issue No.",
+        "transDate": "Issue Date",
+        "warehouse": "Issue Warehouse",
+        "issueType": "Issue Account"
+      },
+      "modal": {
+        "title": "Register Product Issue",
+        "partType": "Part Type",
+        "partId": "Part",
+        "warehouseId": "Issue Warehouse",
+        "qty": "Quantity",
+        "issueType": "Issue Account",
+        "remark": "Remark",
+        "confirm": "Confirm Issue"
+      }
+    },
+    "issueCancel": {
+      "title": "Product Issue Cancel",
+      "subtitle": "Cancel product issue transactions.",
+      "transNo": "Transaction No.",
+      "transType": "Type",
+      "warehouse": "Issue Warehouse",
+      "issueType": "Issue Account",
+      "qty": "Quantity",
+      "transDate": "Date",
+      "cancel": "Cancel",
+      "cancelTitle": "Confirm Issue Cancel",
+      "reason": "Cancel Reason",
+      "reasonPlaceholder": "Enter cancel reason",
+      "confirm": "Confirm Cancel",
+      "searchPlaceholder": "Search transaction no., part name...",
+      "stats": {
+        "total": "Total Issues",
         "cancellable": "Cancellable",
         "canceled": "Canceled"
       }

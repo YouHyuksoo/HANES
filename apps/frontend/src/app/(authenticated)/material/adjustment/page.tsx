@@ -24,8 +24,8 @@ import api from "@/services/api";
 interface AdjustmentRecord {
   id: string;
   warehouseCode: string;
-  partCode?: string;
-  partName?: string;
+  itemCode?: string;
+  itemName?: string;
   unit?: string;
   beforeQty: number;
   afterQty: number;
@@ -43,13 +43,13 @@ export default function AdjustmentPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showRegister, setShowRegister] = useState(false);
 
-  const [form, setForm] = useState({ warehouseCode: "", partId: "", afterQty: "", reason: "" });
+  const [form, setForm] = useState({ warehouseCode: "", itemCode: "", afterQty: "", reason: "" });
   const [partSearch, setPartSearch] = useState("");
-  const [partResults, setPartResults] = useState<{ id: string; partCode: string; partName: string }[]>([]);
+  const [partResults, setPartResults] = useState<{ id: string; itemCode: string; itemName: string }[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -74,7 +74,7 @@ export default function AdjustmentPage() {
     try {
       const res = await api.get("/master/parts", { params: { search: keyword, limit: 20 } });
       setPartResults((res.data?.data ?? []).map((p: any) => ({
-        id: p.id, partCode: p.partCode, partName: p.partName,
+        id: p.id, itemCode: p.itemCode, itemName: p.itemName,
       })));
     } catch { setPartResults([]); }
   }, []);
@@ -90,20 +90,20 @@ export default function AdjustmentPage() {
   }), [data]);
 
   const selectedPart = useMemo(() =>
-    partResults.find(p => p.id === form.partId), [partResults, form.partId]);
+    partResults.find(p => p.id === form.itemCode), [partResults, form.itemCode]);
 
   const handleRegister = useCallback(async () => {
-    if (!form.warehouseCode || !form.partId || !form.afterQty || !form.reason) return;
+    if (!form.warehouseCode || !form.itemCode || !form.afterQty || !form.reason) return;
     setSaving(true);
     try {
       await api.post("/material/adjustment", {
         warehouseCode: form.warehouseCode,
-        partId: form.partId,
+        itemCode: form.itemCode,
         afterQty: Number(form.afterQty),
         reason: form.reason,
       });
       setShowRegister(false);
-      setForm({ warehouseCode: "", partId: "", afterQty: "", reason: "" });
+      setForm({ warehouseCode: "", itemCode: "", afterQty: "", reason: "" });
       setPartSearch("");
       setPartResults([]);
       fetchData();
@@ -125,12 +125,12 @@ export default function AdjustmentPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {
@@ -221,20 +221,20 @@ export default function AdjustmentPage() {
               value={partSearch}
               onChange={e => { setPartSearch(e.target.value); searchParts(e.target.value); }}
               fullWidth />
-            {partResults.length > 0 && !form.partId && (
+            {partResults.length > 0 && !form.itemCode && (
               <div className="mt-1 border border-border rounded-lg max-h-40 overflow-y-auto bg-surface">
                 {partResults.map(p => (
                   <button key={p.id} type="button"
                     className="w-full text-left px-3 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors border-b border-border last:border-b-0"
-                    onClick={() => { setForm(prev => ({ ...prev, partId: p.id })); setPartSearch(`${p.partCode} - ${p.partName}`); }}>
-                    <span className="font-mono text-primary">{p.partCode}</span> — {p.partName}
+                    onClick={() => { setForm(prev => ({ ...prev, itemCode: p.id })); setPartSearch(`${p.itemCode} - ${p.itemName}`); }}>
+                    <span className="font-mono text-primary">{p.itemCode}</span> — {p.itemName}
                   </button>
                 ))}
               </div>
             )}
             {selectedPart && (
               <p className="mt-1 text-xs text-text-muted">
-                {t("common.select")}: <span className="font-mono">{selectedPart.partCode}</span> — {selectedPart.partName}
+                {t("common.select")}: <span className="font-mono">{selectedPart.itemCode}</span> — {selectedPart.itemName}
               </p>
             )}
           </div>
@@ -248,7 +248,7 @@ export default function AdjustmentPage() {
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setShowRegister(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleRegister}
-            disabled={saving || !form.warehouseCode || !form.partId || !form.afterQty || !form.reason}>
+            disabled={saving || !form.warehouseCode || !form.itemCode || !form.afterQty || !form.reason}>
             {saving ? t("common.saving") : t("material.adjustment.register")}
           </Button>
         </div>

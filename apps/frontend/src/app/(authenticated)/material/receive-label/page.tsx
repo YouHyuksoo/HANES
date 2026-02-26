@@ -76,8 +76,8 @@ function ReceiveLabelPage() {
     if (!searchText.trim()) return lots;
     const q = searchText.toLowerCase();
     return lots.filter((lot) =>
-      lot.lotNo.toLowerCase().includes(q) || lot.part.partCode.toLowerCase().includes(q) ||
-      lot.part.partName.toLowerCase().includes(q) || (lot.vendor ?? "").toLowerCase().includes(q));
+      lot.lotNo.toLowerCase().includes(q) || lot.part.itemCode.toLowerCase().includes(q) ||
+      lot.part.itemName.toLowerCase().includes(q) || (lot.vendor ?? "").toLowerCase().includes(q));
   }, [lots, searchText]);
 
   /** 통계 */
@@ -147,8 +147,8 @@ function ReceiveLabelPage() {
     const result: LabelItem[] = [];
     for (const lot of selected) {
       for (let i = 0; i < lot.initQty; i++) {
-        result.push({ key: `${lot.id}-${i}`, lotNo: lot.lotNo, partCode: lot.part.partCode,
-          partName: lot.part.partName, sub: `${lot.vendor ?? ""} | ${lot.recvDate?.slice(0, 10) ?? ""}` });
+        result.push({ key: `${lot.id}-${i}`, lotNo: lot.lotNo, itemCode: lot.part.itemCode,
+          itemName: lot.part.itemName, sub: `${lot.vendor ?? ""} | ${lot.recvDate?.slice(0, 10) ?? ""}` });
       }
     }
     return result;

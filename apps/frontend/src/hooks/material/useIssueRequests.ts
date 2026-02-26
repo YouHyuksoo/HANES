@@ -16,8 +16,8 @@ import { api } from '@/services/api';
 /** 출고요청 품목 아이템 */
 export interface IssueRequestItem {
   id: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
   requestQty: number;
   issuedQty: number;

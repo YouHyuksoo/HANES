@@ -24,9 +24,8 @@ interface ScrapRecord {
   id: string;
   transNo: string;
   transDate: string;
-  partId: string;
-  partCode?: string;
-  partName?: string;
+  itemCode: string;
+  itemName?: string;
   lotNo?: string;
   qty: number;
   warehouseName?: string;
@@ -40,8 +39,8 @@ export default function ScrapPage() {
   const [data, setData] = useState<ScrapRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showRegister, setShowRegister] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -57,9 +56,8 @@ export default function ScrapPage() {
         id: r.id,
         transNo: r.transNo,
         transDate: r.transDate,
-        partId: r.partId,
-        partCode: r.part?.partCode || "",
-        partName: r.part?.partName || "",
+        itemCode: r.part?.itemCode || "",
+        itemName: r.part?.itemName || "",
         lotNo: r.lot?.lotNo || r.lotId || "",
         qty: Math.abs(r.qty),
         warehouseName: r.fromWarehouse?.warehouseName || "",
@@ -93,12 +91,12 @@ export default function ScrapPage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 150,
+      accessorKey: "itemName", header: t("common.partName"), size: 150,
       meta: { filterType: "text" as const },
     },
     {

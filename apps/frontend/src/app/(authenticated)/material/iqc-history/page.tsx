@@ -23,8 +23,8 @@ interface IqcHistoryItem {
   id: string;
   lotId?: string;
   lotNo?: string;
-  partCode?: string;
-  partName?: string;
+  itemCode?: string;
+  itemName?: string;
   unit?: string;
   inspectType: string;
   result: string;
@@ -53,8 +53,8 @@ export default function IqcHistoryPage() {
   const [searchText, setSearchText] = useState("");
   const [resultFilter, setResultFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   /** 취소 모달 상태 */
   const [cancelTarget, setCancelTarget] = useState<IqcHistoryItem | null>(null);
@@ -159,12 +159,12 @@ export default function IqcHistoryPage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {
@@ -275,7 +275,7 @@ export default function IqcHistoryPage() {
               </p>
               <p>
                 <span className="text-text-muted">{t("common.partName")}:</span>{" "}
-                {cancelTarget.partName}
+                {cancelTarget.itemName}
               </p>
               <p>
                 <span className="text-text-muted">{t("material.iqcHistory.result")}:</span>{" "}

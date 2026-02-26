@@ -33,8 +33,8 @@ export default function ArrivalModal({ isOpen, onClose, form, setForm, onSubmit 
         <Input
           label={t('common.partCode')}
           placeholder={t('material.arrival.partCodePlaceholder')}
-          value={form.partCode}
-          onChange={(e) => setForm((prev) => ({ ...prev, partCode: e.target.value }))}
+          value={form.itemCode}
+          onChange={(e) => setForm((prev) => ({ ...prev, itemCode: e.target.value }))}
           fullWidth
         />
         <Input

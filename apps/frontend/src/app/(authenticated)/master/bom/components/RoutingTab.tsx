@@ -33,20 +33,20 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
   const [editingItem, setEditingItem] = useState<RoutingItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<RoutingItem | null>(null);
 
-  const partId = routingTarget?.partId || selectedParent?.id || "";
-  const targetCode = routingTarget?.partCode || selectedParent?.partCode || "";
-  const targetName = routingTarget?.partName || selectedParent?.partName || "";
+  const itemCode = routingTarget?.itemCode || selectedParent?.id || "";
+  const targetCode = routingTarget?.itemCode || selectedParent?.itemCode || "";
+  const targetName = routingTarget?.itemName || selectedParent?.itemName || "";
 
   /** API에서 라우팅 데이터 조회 */
   const fetchRoutings = useCallback(async () => {
-    if (!partId) { setData([]); return; }
+    if (!itemCode) { setData([]); return; }
     setLoading(true);
     try {
-      const res = await api.get("/master/routings", { params: { partId, limit: 5000 } });
+      const res = await api.get("/master/routings", { params: { itemCode: itemCode, limit: 5000 } });
       setData(res.data?.data || []);
     } catch { setData([]); }
     finally { setLoading(false); }
-  }, [partId]);
+  }, [itemCode]);
 
   useEffect(() => { fetchRoutings(); }, [fetchRoutings]);
 
@@ -140,7 +140,7 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
       )}
 
       <RoutingFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchRoutings}
-        editingItem={editingItem} partId={partId} />
+        editingItem={editingItem} itemCode={itemCode} />
 
       <ConfirmModal isOpen={!!deletingItem} onClose={() => setDeletingItem(null)} onConfirm={handleDelete}
         title={t("common.delete")} message={t("master.routing.deleteConfirm")} variant="danger" />

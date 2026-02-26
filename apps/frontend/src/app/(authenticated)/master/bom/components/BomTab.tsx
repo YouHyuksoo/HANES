@@ -83,7 +83,7 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
   }, [deletingBom, fetchBomTree]);
 
   const handleViewRouting = useCallback((item: BomTreeItem, breadcrumb: string) => {
-    onViewRouting?.({ partId: item.childPartId || "", partCode: item.partCode, partName: item.partName, partType: item.partType, breadcrumb });
+    onViewRouting?.({ itemCode: item.childItemCode || item.itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb });
   }, [onViewRouting]);
 
   if (!selectedParent) {
@@ -94,7 +94,7 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
     <>
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
-          <p className="text-sm text-text-muted">{selectedParent.partName} ({countItems(bomTree)}{t("master.bom.materialsCount")})</p>
+          <p className="text-sm text-text-muted">{selectedParent.itemName} ({countItems(bomTree)}{t("master.bom.materialsCount")})</p>
           <div className="flex gap-1">
             <button onClick={expandAll} className="px-2 py-1 text-xs rounded bg-surface hover:bg-border text-text-muted transition-colors">
               {t("master.bom.expandAll", "전체 펼치기")}
@@ -134,7 +134,7 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
             ) : (
               <BomTreeRows items={bomTree} expanded={expanded} onToggle={toggleExpand}
                 onEdit={handleEdit} onDelete={setDeletingBom} onViewRouting={handleViewRouting}
-                parentCode={selectedParent.partCode} t={t} />
+                parentCode={selectedParent.itemCode} t={t} />
             )}
           </tbody>
         </table>
@@ -150,7 +150,7 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
       </div>
 
       <BomFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchBomTree}
-        editingItem={editingBom} parentPartId={selectedParent.id} parentPartCode={selectedParent.partCode} />
+        editingItem={editingBom} parentItemCode={selectedParent.id} parentItemCodeDisplay={selectedParent.itemCode} />
 
       <ConfirmModal isOpen={!!deletingBom} onClose={() => setDeletingBom(null)} onConfirm={handleDelete}
         title={t("common.delete")} message={t("master.bom.deleteConfirm")} variant="danger" />
@@ -171,10 +171,10 @@ function BomTreeRows({
       {items.map((item, idx) => {
         const hasChildren = item.children && item.children.length > 0;
         const isExpanded = expanded.has(item.id);
-        const cfg = partTypeConfig[item.partType] || partTypeConfig.RAW;
+        const cfg = partTypeConfig[item.itemType] || partTypeConfig.RAW;
         const Icon = cfg.icon;
         const levelColor = levelColors[item.level % levelColors.length];
-        const itemBreadcrumb = breadcrumb ? `${breadcrumb} > ${item.partCode}` : `${parentCode} > ${item.partCode}`;
+        const itemBreadcrumb = breadcrumb ? `${breadcrumb} > ${item.itemCode}` : `${parentCode} > ${item.itemCode}`;
         const validFrom = item.validFrom ? new Date(item.validFrom).toISOString().split("T")[0] : "-";
         const validTo = item.validTo ? new Date(item.validTo).toISOString().split("T")[0] : "-";
 
@@ -194,15 +194,15 @@ function BomTreeRows({
                     <span className="w-5 mr-2 flex justify-center"><span className="w-1.5 h-1.5 rounded-full bg-border" /></span>
                   )}
                   <Icon className={`w-4 h-4 mr-1.5 flex-shrink-0 ${cfg.color}`} />
-                  <span className="font-mono text-text font-medium">{item.partNo || item.partCode}</span>
+                  <span className="font-mono text-text font-medium">{item.itemNo || item.itemCode}</span>
                 </div>
               </td>
               <td className="px-4 py-2.5 border-r border-border text-text">
-                {item.partName}
+                {item.itemName}
                 {hasChildren && <span className="ml-1 text-[10px] text-text-muted">({item.children!.length})</span>}
               </td>
               <td className="px-4 py-2.5 border-r border-border text-center">
-                <span className={`inline-flex px-2 py-0.5 text-xs rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.partType}</span>
+                <span className={`inline-flex px-2 py-0.5 text-xs rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.itemType}</span>
               </td>
               <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text-muted font-mono">{item.processCode || "-"}</td>
               <td className="px-4 py-2.5 border-r border-border text-right font-mono text-text">{item.qtyPer} {item.unit}</td>

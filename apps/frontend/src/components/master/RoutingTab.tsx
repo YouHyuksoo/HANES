@@ -20,9 +20,8 @@ import api from "@/services/api";
 
 interface Routing {
   id: string;
-  partId: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   seq: number;
   processCode: string;
   processName: string;
@@ -45,7 +44,7 @@ interface PartOption {
 }
 
 const EMPTY_FORM = {
-  partId: "", seq: 1, processCode: "", processName: "", processType: "",
+  itemCode: "", seq: 1, processCode: "", processName: "", processType: "",
   equipType: "", stdTime: "", setupTime: "", wireLength: "", stripLength: "",
   crimpHeight: "", crimpWidth: "", weldCondition: "", processParams: "", useYn: "Y",
 };
@@ -69,9 +68,9 @@ export default function RoutingTab() {
     try {
       const res = await api.get("/master/parts", { params: { limit: 5000 } });
       const parts = res.data?.data ?? [];
-      setPartOptions(parts.map((p: { id: string; partCode: string; partName: string }) => ({
+      setPartOptions(parts.map((p: { id: string; itemCode: string; itemName: string }) => ({
         value: p.id,
-        label: `${p.partCode} ${p.partName}`,
+        label: `${p.itemCode} ${p.itemName}`,
       })));
     } catch { /* ignore */ }
   }, []);
@@ -80,7 +79,7 @@ export default function RoutingTab() {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: "5000" };
-      if (partFilter) params.partId = partFilter;
+      if (partFilter) params.itemCode = partFilter;
       if (searchText) params.search = searchText;
       const res = await api.get("/master/routings", { params });
       setData(res.data?.data ?? []);
@@ -101,14 +100,14 @@ export default function RoutingTab() {
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
-    setForm({ ...EMPTY_FORM, partId: partFilter || "" });
+    setForm({ ...EMPTY_FORM, itemCode: partFilter || "" });
     setIsModalOpen(true);
   }, [partFilter]);
 
   const openEdit = useCallback((item: Routing) => {
     setEditingItem(item);
     setForm({
-      partId: item.partId, seq: item.seq,
+      itemCode: item.itemCode, seq: item.seq,
       processCode: item.processCode, processName: item.processName,
       processType: item.processType || "", equipType: item.equipType || "",
       stdTime: item.stdTime?.toString() || "", setupTime: item.setupTime?.toString() || "",
@@ -121,11 +120,11 @@ export default function RoutingTab() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!form.partId || !form.processCode || !form.processName) return;
+    if (!form.itemCode || !form.processCode || !form.processName) return;
     setSaving(true);
     try {
       const payload = {
-        partId: form.partId,
+        itemCode: form.itemCode,
         seq: Number(form.seq),
         processCode: form.processCode,
         processName: form.processName,
@@ -165,10 +164,10 @@ export default function RoutingTab() {
   }, [fetchData]);
 
   const columns = useMemo<ColumnDef<Routing>[]>(() => [
-    { accessorKey: "partCode", header: t("common.partCode"), size: 100,
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 100,
       meta: { filterType: "text" as const },
     },
-    { accessorKey: "partName", header: t("common.partName"), size: 120,
+    { accessorKey: "itemName", header: t("common.partName"), size: 120,
       meta: { filterType: "text" as const },
     },
     { accessorKey: "seq", header: t("master.routing.seq"), size: 60, meta: { filterType: "number" as const } },
@@ -252,7 +251,7 @@ export default function RoutingTab() {
           {/* 기본 정보 */}
           <div className="col-span-2">
             <Select label={t("master.routing.partSelect")} options={partOptions}
-              value={form.partId} onChange={(v) => setField("partId", v)}
+              value={form.itemCode} onChange={(v) => setField("itemCode", v)}
               disabled={!!editingItem} fullWidth />
           </div>
           <Input label={t("master.routing.seq")} type="number" placeholder="1"

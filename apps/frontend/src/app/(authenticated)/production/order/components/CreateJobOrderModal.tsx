@@ -32,7 +32,7 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
 
   const [form, setForm] = useState({
     orderNo: "",
-    partId: "",
+    itemCode: "",
     planQty: "",
     planDate: "",
     lineCode: "",
@@ -45,8 +45,8 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
     if (!isOpen) return;
     api.get("/master/parts", { params: { limit: 5000 } }).then(res => {
       const list = (res.data?.data ?? []).map((p: any) => ({
-        value: p.id,
-        label: `${p.partCode} - ${p.partName}`,
+        value: p.itemCode,
+        label: `${p.itemCode} - ${p.itemName}`,
       }));
       setParts(list);
     }).catch(() => setParts([]));
@@ -66,12 +66,12 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
   }, [isOpen, form.orderNo, generateOrderNo]);
 
   const handleSubmit = useCallback(async () => {
-    if (!form.partId || !form.planQty) return;
+    if (!form.itemCode || !form.planQty) return;
     setSaving(true);
     try {
       await api.post("/production/job-orders", {
         orderNo: form.orderNo,
-        partId: form.partId,
+        itemCode: form.itemCode,
         planQty: Number(form.planQty),
         planDate: form.planDate || undefined,
         lineCode: form.lineCode || undefined,
@@ -79,7 +79,7 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
         remark: form.remark || undefined,
         autoCreateChildren: form.autoCreateChildren,
       });
-      setForm({ orderNo: "", partId: "", planQty: "", planDate: "", lineCode: "", priority: "5", remark: "", autoCreateChildren: false });
+      setForm({ orderNo: "", itemCode: "", planQty: "", planDate: "", lineCode: "", priority: "5", remark: "", autoCreateChildren: false });
       onCreated();
       onClose();
     } catch (e) {
@@ -97,8 +97,8 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
         <div className="grid grid-cols-2 gap-4">
           <Input label={t("production.order.orderNo")} value={form.orderNo}
             onChange={e => setForm(p => ({ ...p, orderNo: e.target.value }))} fullWidth />
-          <Select label={t("common.partName")} options={partOptions} value={form.partId}
-            onChange={v => setForm(p => ({ ...p, partId: v }))} fullWidth />
+          <Select label={t("common.partName")} options={partOptions} value={form.itemCode}
+            onChange={v => setForm(p => ({ ...p, itemCode: v }))} fullWidth />
         </div>
         <div className="grid grid-cols-3 gap-4">
           <Input label={t("production.order.planQty")} type="number" value={form.planQty}
@@ -123,7 +123,7 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
       </div>
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.partId || !form.planQty}>
+        <Button onClick={handleSubmit} disabled={saving || !form.itemCode || !form.planQty}>
           {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>

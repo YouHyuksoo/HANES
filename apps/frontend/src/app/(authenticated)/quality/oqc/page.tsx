@@ -28,7 +28,7 @@ import OqcInspectModal from "./components/OqcInspectModal";
 interface OqcRequest {
   id: string;
   requestNo: string;
-  partId: string;
+  itemCode: string;
   customer: string | null;
   requestDate: string;
   totalBoxCount: number;
@@ -39,7 +39,7 @@ interface OqcRequest {
   inspectorName: string | null;
   inspectDate: string | null;
   remark: string | null;
-  part?: { partCode?: string; partName?: string };
+  part?: { itemCode?: string; itemName?: string };
 }
 
 export default function OqcPage() {
@@ -107,13 +107,13 @@ export default function OqcPage() {
       },
     },
     {
-      accessorFn: (row) => row.part?.partCode, id: "partCode",
+      accessorFn: (row) => row.part?.itemCode, id: "partCode",
       header: t("common.partCode"), size: 120,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorFn: (row) => row.part?.partName, id: "partName",
+      accessorFn: (row) => row.part?.itemName, id: "partName",
       header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },

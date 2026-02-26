@@ -22,8 +22,8 @@ interface ReceiptTransaction {
   id: string;
   transNo: string;
   transType: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   lotNo: string;
   warehouseName: string;
   qty: number;
@@ -45,8 +45,8 @@ export default function ReceiptCancelPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<ReceiptTransaction | null>(null);
   const [reason, setReason] = useState("");
@@ -114,12 +114,12 @@ export default function ReceiptCancelPage() {
       ),
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {
@@ -213,8 +213,8 @@ export default function ReceiptCancelPage() {
             <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-text-muted">{t("material.receiptCancel.transNo")}:</span> <span className="font-mono font-medium">{selectedTx.transNo}</span></div>
-                <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedTx.partCode}</span></div>
-                <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedTx.partName}</div>
+                <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedTx.itemCode}</span></div>
+                <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedTx.itemName}</div>
                 <div><span className="text-text-muted">{t("material.receiptCancel.qty")}:</span> <span className="font-medium text-red-600 dark:text-red-400">{selectedTx.qty.toLocaleString()} {selectedTx.unit || ""}</span></div>
               </div>
             </div>

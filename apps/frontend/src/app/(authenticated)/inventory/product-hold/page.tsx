@@ -24,10 +24,9 @@ import api from "@/services/api";
 interface ProductHoldStock {
   id: string;
   warehouseCode: string;
-  partId: string;
-  partCode: string;
-  partName: string;
-  partType: string;
+  itemCode: string;
+  itemName: string;
+  itemType: string;
   lotId: string | null;
   qty: number;
   unit: string;
@@ -61,7 +60,7 @@ export default function ProductHoldPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
-      if (typeFilter) params.partType = typeFilter;
+      if (typeFilter) params.itemType = typeFilter;
       const res = await api.get("/inventory/product-hold", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -112,16 +111,16 @@ export default function ProductHoldPage() {
 
   const columns = useMemo<ColumnDef<ProductHoldStock>[]>(() => [
     {
-      accessorKey: "partCode", header: t("productHold.partCode"), size: 120,
+      accessorKey: "itemCode", header: t("productHold.partCode"), size: 120,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("productHold.partName"), size: 160,
+      accessorKey: "itemName", header: t("productHold.partName"), size: 160,
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "partType", header: t("productHold.partType"), size: 80,
+      accessorKey: "itemType", header: t("productHold.partType"), size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="PART_TYPE" code={getValue() as string} />
@@ -254,15 +253,15 @@ export default function ProductHoldPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <span className="text-text-muted">{t("productHold.partCode")}:</span>{" "}
-                  <span className="font-mono font-medium">{selectedStock.partCode}</span>
+                  <span className="font-mono font-medium">{selectedStock.itemCode}</span>
                 </div>
                 <div>
                   <span className="text-text-muted">{t("productHold.partName")}:</span>{" "}
-                  {selectedStock.partName}
+                  {selectedStock.itemName}
                 </div>
                 <div>
                   <span className="text-text-muted">{t("productHold.partType")}:</span>{" "}
-                  <ComCodeBadge groupCode="PART_TYPE" code={selectedStock.partType} />
+                  <ComCodeBadge groupCode="PART_TYPE" code={selectedStock.itemType} />
                 </div>
                 <div>
                   <span className="text-text-muted">{t("productHold.qty")}:</span>{" "}

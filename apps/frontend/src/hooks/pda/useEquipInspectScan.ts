@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. handleScan(equipCode): 설비 바코드 스캔 → 설비 정보 + 점검항목 2단계 조회
  *    - GET /equipment/equips/code/{code} → 설비 정보
- *    - GET /master/equip-inspect-items?equipId={id}&inspectType=DAILY&useYn=Y → 점검항목
+ *    - GET /master/equip-inspect-items?equipCode={code}&inspectType=DAILY&useYn=Y → 점검항목
  * 2. handleSetResult(itemId, result): 각 점검항목에 합격/불합격/조건부 결과 설정
  * 3. handleSetMeasuredValue(itemId, value): 각 점검항목에 측정값 입력
  * 4. handleSetRemark(itemId, remark): 각 점검항목에 비고 입력
@@ -138,7 +138,7 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
       // 2) 해당 설비의 DAILY 점검항목 조회 — 응답: { success, data: [...], meta }
       const { data: itemsRes } = await api.get("/master/equip-inspect-items", {
         params: {
-          equipId: equip.id,
+          equipCode: equip.equipCode,
           inspectType: "DAILY",
           useYn: "Y",
           limit: 100,
@@ -231,7 +231,7 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
       const resultArray = Array.from(results.values());
 
       await api.post("/equipment/daily-inspect", {
-        equipId: scannedEquip.id,
+        equipCode: scannedEquip.equipCode,
         inspectType: "DAILY",
         inspectDate: new Date().toISOString().slice(0, 10),
         overallResult,

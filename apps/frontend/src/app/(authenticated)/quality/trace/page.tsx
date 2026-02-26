@@ -19,8 +19,8 @@ import api from "@/services/api";
 interface TraceRecord {
   serialNo: string;
   lotNo: string;
-  partNo: string;
-  partName: string;
+  itemNo: string;
+  itemName: string;
   workOrderNo: string;
   productionDate: string;
   timeline: TimelineItem[];
@@ -253,8 +253,8 @@ export default function TracePage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.serialNo")}</div><div className="font-mono font-semibold text-primary">{traceData.serialNo}</div></div>
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.lotNo")}</div><div className="font-mono text-text">{traceData.lotNo}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partNo")}</div><div className="text-text">{traceData.partNo}</div></div>
-                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partName")}</div><div className="text-text">{traceData.partName}</div></div>
+                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partNo")}</div><div className="text-text">{traceData.itemNo}</div></div>
+                <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.partName")}</div><div className="text-text">{traceData.itemName}</div></div>
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.workOrderNo")}</div><div className="text-text">{traceData.workOrderNo}</div></div>
                 <div><div className="text-sm text-text-muted mb-1">{t("quality.trace.productionDate")}</div><div className="text-text">{traceData.productionDate}</div></div>
               </div>

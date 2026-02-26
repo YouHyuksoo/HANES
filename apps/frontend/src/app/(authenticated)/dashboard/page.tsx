@@ -77,7 +77,7 @@ interface KpiData {
 interface RecentProduction {
   id: string;
   orderNo: string;
-  partName: string;
+  itemName: string;
   line: string;
   planQty: number;
   actualQty: number;
@@ -143,7 +143,7 @@ export default function DashboardPage() {
   /** PM WO day 응답 → InspectSummary 변환 */
   const parsePmDay = useCallback((data: any[]): InspectSummary => {
     const items: InspectItem[] = data.map((d: any) => ({
-      equipCode: d.equip?.equipCode || d.equipId || "",
+      equipCode: d.equip?.equipCode || d.equipCode || "",
       equipName: d.equip?.equipName || "",
       result: d.status === "COMPLETED" ? (d.overallResult || "COMPLETED") : null,
       inspectorName: null,
@@ -184,7 +184,7 @@ export default function DashboardPage() {
 
   const columns = useMemo<ColumnDef<RecentProduction>[]>(() => [
     { accessorKey: "orderNo", header: t("dashboard.orderNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "partName", header: t("dashboard.partName"), size: 180, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("dashboard.partName"), size: 180, meta: { filterType: "text" as const } },
     { accessorKey: "line", header: t("dashboard.line"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "planQty", header: t("dashboard.planQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: "actualQty", header: t("dashboard.actualQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },

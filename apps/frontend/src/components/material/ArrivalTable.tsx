@@ -23,8 +23,8 @@ export default function ArrivalTable({ data }: ArrivalTableProps) {
       { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
       { accessorKey: 'arrivalDate', header: t('material.col.arrivalDate'), size: 100, meta: { filterType: 'date' as const } },
       { accessorKey: 'supplierName', header: t('material.col.supplier'), size: 100, meta: { filterType: 'text' as const } },
-      { accessorKey: 'partCode', header: t('common.partCode'), size: 110, meta: { filterType: 'text' as const } },
-      { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
+      { accessorKey: 'itemCode', header: t('common.partCode'), size: 110, meta: { filterType: 'text' as const } },
+      { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
       { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 150, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'quantity',

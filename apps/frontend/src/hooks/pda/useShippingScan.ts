@@ -17,8 +17,8 @@ export interface ShipOrderData {
   id: string;
   shipOrderNo: string;
   customerName: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   orderQty: number;
 }
 
@@ -32,7 +32,7 @@ export interface ScannedShipItem {
 export interface ShipHistoryItem {
   shipOrderNo: string;
   customerName: string;
-  partCode: string;
+  itemCode: string;
   scannedQty: number;
   timestamp: string;
 }
@@ -122,7 +122,7 @@ export function useShippingScan(): UseShippingScanReturn {
         {
           shipOrderNo: scannedOrder.shipOrderNo,
           customerName: scannedOrder.customerName,
-          partCode: scannedOrder.partCode,
+          itemCode: scannedOrder.itemCode,
           scannedQty: scannedItems.length,
           timestamp: new Date().toLocaleTimeString(),
         },

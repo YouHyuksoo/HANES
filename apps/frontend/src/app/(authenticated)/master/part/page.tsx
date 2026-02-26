@@ -24,7 +24,7 @@ import PartFormPanel from "./components/PartFormPanel";
 
 /** IQC 연결 정보 (API 응답) */
 interface IqcLinkInfo {
-  partId: string;
+  itemCode: string;
   group?: { groupCode: string; groupName: string; inspectMethod: string; sampleQty?: number | null };
   partner?: { partnerCode: string; partnerName: string } | null;
 }
@@ -48,7 +48,7 @@ export default function PartPage() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { limit: 5000 };
-      if (partTypeFilter) params.partType = partTypeFilter;
+      if (partTypeFilter) params.itemType = partTypeFilter;
       if (searchText) params.search = searchText;
 
       const [partsRes, linksRes] = await Promise.all([
@@ -66,7 +66,7 @@ export default function PartPage() {
       if (linksBody.success) {
         const map: Record<string, IqcLinkInfo[]> = {};
         (linksBody.data || []).forEach((link: IqcLinkInfo & { part?: { id: string } }) => {
-          const pid = link.partId || link.part?.id;
+          const pid = link.itemCode || link.part?.id;
           if (pid) {
             if (!map[pid]) map[pid] = [];
             map[pid].push(link);
@@ -139,13 +139,13 @@ export default function PartPage() {
         </div>
       ),
     },
-    { accessorKey: "partNo", header: t("master.part.partNo", "품번"), size: 120, meta: { filterType: "text" as const } },
+    { accessorKey: "itemNo", header: t("master.part.partNo", "품번"), size: 120, meta: { filterType: "text" as const } },
     ...createPartColumns<Part>(t).map(col => ({ ...col, size: 140 })),
     {
-      accessorKey: "partType", header: t("master.part.type"), size: 70,
+      accessorKey: "itemType", header: t("master.part.type"), size: 70,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
-        const v = getValue() as Part["partType"];
+        const v = getValue() as Part["itemType"];
         const cfg = PART_TYPE_COLORS[v];
         return <span className={`px-2 py-0.5 text-xs rounded-full ${cfg?.color || ""}`}>{typeLabels[v] || v}</span>;
       },
@@ -270,7 +270,7 @@ export default function PartPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.partCode || ""} (${deleteTarget?.partName || ""})'을(를) 삭제하시겠습니까?`}
+        message={`'${deleteTarget?.itemCode || ""} (${deleteTarget?.itemName || ""})'을(를) 삭제하시겠습니까?`}
       />
     </div>
   );

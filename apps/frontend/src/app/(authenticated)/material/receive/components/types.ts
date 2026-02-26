@@ -5,8 +5,8 @@
 
 export interface PartInfo {
   id: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
 }
 
@@ -27,8 +27,8 @@ export interface WarehouseInfo {
 export interface ReceivableLot {
   id: string;
   lotNo: string;
-  partId: string;
-  partType: string;
+  itemCode: string;
+  itemType: string;
   initQty: number;
   currentQty: number;
   recvDate?: string | null;
@@ -70,7 +70,7 @@ export interface ReceivingStats {
 export interface ReceiveInput {
   lotId: string;
   qty: number;
-  warehouseId: string;
+  warehouseCode: string;
   manufactureDate: string;
   selected: boolean;
 }

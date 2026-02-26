@@ -29,8 +29,8 @@ interface ProdResult {
   resultNo: string;
   orderNo: string;
   processType: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   lineName: string;
   processName: string;
   equipName: string;
@@ -109,7 +109,7 @@ export default function ProdResultPage() {
         cell: ({ getValue }) => <ComCodeBadge groupCode="PROCESS_TYPE" code={getValue() as string} />
       },
       { accessorKey: 'orderNo', header: t('production.result.orderNo'), size: 150, meta: { filterType: 'text' as const } },
-      { accessorKey: 'partName', header: t('production.result.partName'), size: 130, meta: { filterType: 'text' as const } },
+      { accessorKey: 'itemName', header: t('production.result.partName'), size: 130, meta: { filterType: 'text' as const } },
       { accessorKey: 'equipName', header: t('production.result.equipment'), size: 90, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'workerName', header: t('production.result.worker'), size: 110,

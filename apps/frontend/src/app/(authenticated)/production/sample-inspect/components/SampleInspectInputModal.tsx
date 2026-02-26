@@ -42,7 +42,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
   const [jobOrders, setJobOrders] = useState<JobOrderOption[]>([]);
 
   const [form, setForm] = useState({
-    jobOrderId: "",
+    orderNo: "",
     inspectDate: new Date().toISOString().slice(0, 10),
     inspectorName: "",
     inspectType: "",
@@ -57,7 +57,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
     api.get("/production/job-orders", { params: { limit: 5000 } }).then(res => {
       const list = (res.data?.data ?? []).map((jo: any) => ({
         value: jo.id,
-        label: `${jo.orderNo} - ${jo.part?.partName || ""}`,
+        label: `${jo.orderNo} - ${jo.part?.itemName || ""}`,
       }));
       setJobOrders(list);
     }).catch(() => setJobOrders([]));
@@ -100,11 +100,11 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!form.jobOrderId || !form.inspectorName) return;
+    if (!form.orderNo || !form.inspectorName) return;
     setSaving(true);
     try {
       await api.post("/production/sample-inspect-input", {
-        jobOrderId: form.jobOrderId,
+        orderNo: form.orderNo,
         inspectDate: form.inspectDate,
         inspectorName: form.inspectorName,
         inspectType: form.inspectType || undefined,
@@ -117,7 +117,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
           remark: s.remark || undefined,
         })),
       });
-      setForm({ jobOrderId: "", inspectDate: new Date().toISOString().slice(0, 10), inspectorName: "", inspectType: "" });
+      setForm({ orderNo: "", inspectDate: new Date().toISOString().slice(0, 10), inspectorName: "", inspectType: "" });
       setSamples([{ sampleNo: 1, measuredValue: "", specUpper: "", specLower: "", passYn: "Y", remark: "" }]);
       onCreated();
       onClose();
@@ -135,7 +135,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
       <div className="space-y-4">
         <div className="grid grid-cols-4 gap-4">
           <Select label={t("production.sampleInspect.orderNo")} options={joOptions}
-            value={form.jobOrderId} onChange={v => setForm(p => ({ ...p, jobOrderId: v }))} fullWidth />
+            value={form.orderNo} onChange={v => setForm(p => ({ ...p, orderNo: v }))} fullWidth />
           <Input label={t("production.sampleInspect.inspectDate")} type="date"
             value={form.inspectDate} onChange={e => setForm(p => ({ ...p, inspectDate: e.target.value }))} fullWidth />
           <Input label={t("production.sampleInspect.inspector")}
@@ -203,7 +203,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
 
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.jobOrderId || !form.inspectorName}>
+        <Button onClick={handleSubmit} disabled={saving || !form.orderNo || !form.inspectorName}>
           {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>

@@ -21,18 +21,18 @@ interface BomFormModalProps {
   onClose: () => void;
   onSave: () => void;
   editingItem: BomTreeItem | null;
-  parentPartId: string;
-  parentPartCode: string;
+  parentItemCode: string;
+  parentItemCodeDisplay: string;
 }
 
 interface PartOption {
   id: string;
-  partCode: string;
-  partName: string;
-  partType: string;
+  itemCode: string;
+  itemName: string;
+  itemType: string;
 }
 
-export default function BomFormModal({ isOpen, onClose, onSave, editingItem, parentPartId, parentPartCode }: BomFormModalProps) {
+export default function BomFormModal({ isOpen, onClose, onSave, editingItem, parentItemCode, parentItemCodeDisplay }: BomFormModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [childSearch, setChildSearch] = useState("");
@@ -51,8 +51,8 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
   useEffect(() => {
     if (!isOpen) return;
     if (editingItem) {
-      setSelectedChild({ id: editingItem.childPartId || "", partCode: editingItem.partCode, partName: editingItem.partName, partType: editingItem.partType });
-      setChildSearch(editingItem.partCode);
+      setSelectedChild({ id: editingItem.childItemCode || "", itemCode: editingItem.itemCode, itemName: editingItem.itemName, itemType: editingItem.itemType });
+      setChildSearch(editingItem.itemCode);
       setQtyPer(String(editingItem.qtyPer));
       setSeq(String(editingItem.seq));
       setRevision(editingItem.revision || "A");
@@ -83,7 +83,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
 
   const handleSelectChild = (opt: PartOption) => {
     setSelectedChild(opt);
-    setChildSearch(opt.partCode);
+    setChildSearch(opt.itemCode);
     setShowDropdown(false);
   };
 
@@ -92,7 +92,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
     setSaving(true);
     try {
       const body = {
-        parentPartId, childPartId: selectedChild.id,
+        parentItemCode, childItemCode: selectedChild.id,
         qtyPer: Number(qtyPer), seq: Number(seq), revision,
         processCode: processCode || undefined, side: side || undefined,
         validFrom: validFrom || undefined, validTo: validTo || undefined,
@@ -112,7 +112,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingItem ? t("master.bom.editBom") : t("master.bom.addBom")} size="lg">
       <div className="space-y-4">
-        <Input label={t("master.bom.parentPart")} value={parentPartCode} disabled fullWidth />
+        <Input label={t("master.bom.parentPart")} value={parentItemCodeDisplay} disabled fullWidth />
         <div className="relative">
           <Input label={t("master.bom.childPartCode")} value={childSearch}
             onChange={(e) => { setChildSearch(e.target.value); setSelectedChild(null); }}
@@ -123,14 +123,14 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
               {childOptions.map((opt) => (
                 <button key={opt.id} onClick={() => handleSelectChild(opt)}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-primary/5 flex justify-between">
-                  <span className="font-mono">{opt.partCode}</span>
-                  <span className="text-text-muted">{opt.partName}</span>
+                  <span className="font-mono">{opt.itemCode}</span>
+                  <span className="text-text-muted">{opt.itemName}</span>
                 </button>
               ))}
             </div>
           )}
           {selectedChild && (
-            <p className="text-xs text-text-muted mt-1">{selectedChild.partName} ({selectedChild.partType})</p>
+            <p className="text-xs text-text-muted mt-1">{selectedChild.itemName} ({selectedChild.itemType})</p>
           )}
         </div>
         <div className="grid grid-cols-3 gap-4">

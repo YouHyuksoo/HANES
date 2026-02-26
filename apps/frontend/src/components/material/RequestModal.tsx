@@ -68,13 +68,12 @@ export default function RequestModal({
   };
 
   const addItem = (item: StockItem) => {
-    if (requestItems.some((r) => r.partCode === item.partCode)) return;
+    if (requestItems.some((r) => r.itemCode === item.itemCode)) return;
     setRequestItems((prev) => [
       ...prev,
       {
-        partId: item.id,
-        partCode: item.partCode,
-        partName: item.partName,
+        itemCode: item.itemCode,
+        itemName: item.itemName,
         unit: item.unit,
         currentStock: item.currentStock,
         requestQty: 0,
@@ -82,13 +81,13 @@ export default function RequestModal({
     ]);
   };
 
-  const removeItem = (partCode: string) => {
-    setRequestItems((prev) => prev.filter((r) => r.partCode !== partCode));
+  const removeItem = (itemCode: string) => {
+    setRequestItems((prev) => prev.filter((r) => r.itemCode !== itemCode));
   };
 
-  const updateQty = (partCode: string, qty: number) => {
+  const updateQty = (itemCode: string, qty: number) => {
     setRequestItems((prev) =>
-      prev.map((r) => (r.partCode === partCode ? { ...r, requestQty: qty } : r)),
+      prev.map((r) => (r.itemCode === itemCode ? { ...r, requestQty: qty } : r)),
     );
   };
 
@@ -98,9 +97,9 @@ export default function RequestModal({
     setIsSubmitting(true);
     try {
       const body = {
-        jobOrderId: workOrderNo || undefined,
+        orderNo: workOrderNo || undefined,
         items: requestItems.map((item) => ({
-          partId: item.partId ?? item.partCode,
+          itemCode: item.itemCode,
           requestQty: item.requestQty,
           unit: item.unit,
         })),
@@ -210,15 +209,15 @@ export default function RequestModal({
                 <tbody>
                   {searchResults.map((item) => {
                     const alreadyAdded = requestItems.some(
-                      (r) => r.partCode === item.partCode,
+                      (r) => r.itemCode === item.itemCode,
                     );
                     return (
                       <tr
-                        key={item.partCode}
+                        key={item.itemCode}
                         className="border-t border-border hover:bg-background/30"
                       >
-                        <td className="px-3 py-1.5 font-mono text-xs">{item.partCode}</td>
-                        <td className="px-3 py-1.5">{item.partName}</td>
+                        <td className="px-3 py-1.5 font-mono text-xs">{item.itemCode}</td>
+                        <td className="px-3 py-1.5">{item.itemName}</td>
                         <td className="px-3 py-1.5 text-right font-medium">
                           {item.currentStock.toLocaleString()}
                         </td>
@@ -276,10 +275,10 @@ export default function RequestModal({
                 {requestItems.map((item, idx) => {
                   const overStock = item.requestQty > item.currentStock;
                   return (
-                    <tr key={item.partCode} className="border-t border-border">
+                    <tr key={item.itemCode} className="border-t border-border">
                       <td className="px-3 py-1.5 text-text-muted">{idx + 1}</td>
                       <td className="px-3 py-1.5">
-                        <span>{item.partName}</span>
+                        <span>{item.itemName}</span>
                         <span className="ml-2 text-xs text-text-muted">({item.unit})</span>
                       </td>
                       <td className="px-3 py-1.5 text-right font-medium">
@@ -291,7 +290,7 @@ export default function RequestModal({
                             type="number"
                             min={0}
                             value={item.requestQty || ''}
-                            onChange={(e) => updateQty(item.partCode, Number(e.target.value))}
+                            onChange={(e) => updateQty(item.itemCode, Number(e.target.value))}
                             className={`w-full px-2 py-1 text-sm border rounded text-right bg-surface text-text
                               ${overStock ? 'border-red-400' : 'border-border'}`}
                             placeholder="0"
@@ -303,7 +302,7 @@ export default function RequestModal({
                       </td>
                       <td className="px-3 py-1.5 text-center">
                         <button
-                          onClick={() => removeItem(item.partCode)}
+                          onClick={() => removeItem(item.itemCode)}
                           className="p-1 text-red-400 hover:text-red-600 rounded"
                         >
                           <X className="w-4 h-4" />

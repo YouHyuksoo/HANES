@@ -69,7 +69,7 @@ function generateFile(
  *
  * @example
  * // 방법 1: 수동 컬럼 지정
- * exportToExcel({ data, columns: [{ key: 'partNo', header: '품번' }], fileName: '품목' });
+ * exportToExcel({ data, columns: [{ key: 'itemNo', header: '품번' }], fileName: '품목' });
  *
  * // 방법 2: TanStack Table 컬럼에서 자동 추출
  * exportGridToExcel({ data, columns: gridColumns, fileName: '품목', excludeColumns: ['actions'] });

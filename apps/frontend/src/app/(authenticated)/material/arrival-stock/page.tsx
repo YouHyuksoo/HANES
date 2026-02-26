@@ -32,8 +32,8 @@ interface ArrivalStockItem {
   invoiceNo: string | null;
   poNo: string | null;
   vendorName: string | null;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   unit: string;
   lotNo: string;
   arrivalQty: number;
@@ -132,7 +132,7 @@ export default function ArrivalStockPage() {
         cell: ({ getValue }) => (getValue() as string) || "-",
       },
       {
-        accessorKey: "partCode",
+        accessorKey: "itemCode",
         header: t("material.arrivalStock.partCode"),
         size: 130,
         meta: { filterType: "text" as const },
@@ -141,7 +141,7 @@ export default function ArrivalStockPage() {
         ),
       },
       {
-        accessorKey: "partName",
+        accessorKey: "itemName",
         header: t("material.arrivalStock.partName"),
         size: 150,
         meta: { filterType: "text" as const },

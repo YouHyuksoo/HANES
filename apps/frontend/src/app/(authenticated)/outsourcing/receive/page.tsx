@@ -22,8 +22,8 @@ interface SubconReceive {
   receiveNo: string;
   orderNo: string;
   vendorName: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   qty: number;
   goodQty: number;
   defectQty: number;
@@ -88,8 +88,8 @@ export default function SubconReceivePage() {
     { accessorKey: "receiveNo", header: t("outsourcing.receive.receiveNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "orderNo", header: t("outsourcing.order.orderNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "vendorName", header: t("outsourcing.order.vendor"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "partCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "partName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "qty", header: t("outsourcing.receive.receiveQty"), size: 80, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: "goodQty", header: t("outsourcing.receive.goodQty"), size: 80, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{(getValue() as number).toLocaleString()}</span> },
     {

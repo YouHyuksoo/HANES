@@ -18,9 +18,8 @@ import api from "@/services/api";
 interface VendorBarcodeMapping {
   id: string;
   vendorBarcode: string;
-  partId: string | null;
-  partCode: string | null;
-  partName: string | null;
+  itemCode: string | null;
+  itemName: string | null;
   vendorCode: string | null;
   vendorName: string | null;
   mappingRule: string | null;
@@ -50,8 +49,8 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
 
   const [form, setForm] = useState({
     vendorBarcode: editingItem?.vendorBarcode || "",
-    partCode: editingItem?.partCode || "",
-    partName: editingItem?.partName || "",
+    itemCode: editingItem?.itemCode || "",
+    itemName: editingItem?.itemName || "",
     vendorCode: editingItem?.vendorCode || "",
     vendorName: editingItem?.vendorName || "",
     matchType: editingItem?.matchType || "EXACT",
@@ -64,8 +63,8 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
   useEffect(() => {
     setForm({
       vendorBarcode: editingItem?.vendorBarcode || "",
-      partCode: editingItem?.partCode || "",
-      partName: editingItem?.partName || "",
+      itemCode: editingItem?.itemCode || "",
+      itemName: editingItem?.itemName || "",
       vendorCode: editingItem?.vendorCode || "",
       vendorName: editingItem?.vendorName || "",
       matchType: editingItem?.matchType || "EXACT",
@@ -128,9 +127,9 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.vendorBarcode.sectionPart", "품목 매핑")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("master.vendorBarcode.partCode", "품번")}
-              value={form.partCode} onChange={e => setField("partCode", e.target.value)} fullWidth />
+              value={form.itemCode} onChange={e => setField("itemCode", e.target.value)} fullWidth />
             <Input label={t("master.vendorBarcode.partName", "품명")}
-              value={form.partName} onChange={e => setField("partName", e.target.value)} fullWidth />
+              value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
             <Input label={t("master.vendorBarcode.vendorCode", "제조사 코드")}
               value={form.vendorCode} onChange={e => setField("vendorCode", e.target.value)} fullWidth />
             <Input label={t("master.vendorBarcode.vendorName", "제조사명")}

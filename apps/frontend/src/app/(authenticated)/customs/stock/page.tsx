@@ -21,8 +21,8 @@ interface CustomsLot {
   id: string;
   entryNo: string;
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   origin: string;
   qty: number;
   usedQty: number;
@@ -71,8 +71,8 @@ export default function CustomsStockPage() {
   const columns = useMemo<ColumnDef<CustomsLot>[]>(() => [
     { accessorKey: "entryNo", header: t("customs.entry.entryNo"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "lotNo", header: t("customs.stock.lotNo"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "partCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "partName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "origin", header: t("customs.entry.origin"), size: 70, meta: { filterType: "text" as const } },
     { accessorKey: "qty", header: t("customs.stock.receivedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: "usedQty", header: t("customs.stock.usedQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },

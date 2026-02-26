@@ -23,8 +23,8 @@ interface ManualArrivalModalProps {
 }
 
 interface FormState {
-  partId: string;
-  warehouseId: string;
+  itemCode: string;
+  warehouseCode: string;
   qty: string;
   lotNo: string;
   manufactureDate: string;
@@ -33,8 +33,8 @@ interface FormState {
 }
 
 const INITIAL_FORM: FormState = {
-  partId: '',
-  warehouseId: '',
+  itemCode: '',
+  warehouseCode: '',
   qty: '',
   lotNo: '',
   manufactureDate: '',
@@ -56,12 +56,12 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
   };
 
   const handleSubmit = async () => {
-    if (!form.partId || !form.warehouseId || !form.qty) return;
+    if (!form.itemCode || !form.warehouseCode || !form.qty) return;
     setSubmitting(true);
     try {
       await api.post('/material/arrivals/manual', {
-        partId: form.partId,
-        warehouseId: form.warehouseId,
+        itemCode: form.itemCode,
+        warehouseCode: form.warehouseCode,
         qty: Number(form.qty),
         lotNo: form.lotNo || undefined,
         manufactureDate: form.manufactureDate || undefined,
@@ -76,22 +76,22 @@ export default function ManualArrivalModal({ isOpen, onClose, onSuccess }: Manua
     setSubmitting(false);
   };
 
-  const isValid = form.partId && form.warehouseId && Number(form.qty) > 0;
+  const isValid = form.itemCode && form.warehouseCode && Number(form.qty) > 0;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('material.arrival.manualArrival')} size="xl">
       <div className="space-y-4">
         <PartSelect
           label={t('common.partName')}
-          value={form.partId}
-          onChange={(v) => handleChange('partId', v)}
+          value={form.itemCode}
+          onChange={(v) => handleChange('itemCode', v)}
           placeholder={t('material.arrival.selectPart')}
           fullWidth
         />
         <WarehouseSelect
           label={t('material.arrival.col.warehouse')}
-          value={form.warehouseId}
-          onChange={(v) => handleChange('warehouseId', v)}
+          value={form.warehouseCode}
+          onChange={(v) => handleChange('warehouseCode', v)}
           placeholder={t('material.arrival.selectWarehouse')}
           fullWidth
         />

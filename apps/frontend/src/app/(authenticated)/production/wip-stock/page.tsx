@@ -19,9 +19,9 @@ import api from '@/services/api';
 
 interface WipStock {
   id: string;
-  partCode: string;
-  partName: string;
-  partType: string;
+  itemCode: string;
+  itemName: string;
+  itemType: string;
   whCode: string;
   whName: string;
   qty: number;
@@ -48,7 +48,7 @@ export default function WipStockPage() {
     try {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
-      if (typeFilter) params.partType = typeFilter;
+      if (typeFilter) params.itemType = typeFilter;
       const res = await api.get('/production/wip-stock', { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -62,16 +62,16 @@ export default function WipStockPage() {
 
   const stats = useMemo(() => ({
     totalItems: data.length,
-    wipQty: data.filter(d => d.partType === 'WIP').reduce((s, r) => s + r.qty, 0),
-    fgQty: data.filter(d => d.partType === 'FG').reduce((s, r) => s + r.qty, 0),
+    wipQty: data.filter(d => d.itemType === 'WIP').reduce((s, r) => s + r.qty, 0),
+    fgQty: data.filter(d => d.itemType === 'FG').reduce((s, r) => s + r.qty, 0),
     totalQty: data.reduce((s, r) => s + r.qty, 0),
   }), [data]);
 
   const columns = useMemo<ColumnDef<WipStock>[]>(() => [
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
+    { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     {
-      accessorKey: 'partType', header: t('production.wipStock.type'), size: 90,
+      accessorKey: 'itemType', header: t('production.wipStock.type'), size: 90,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;

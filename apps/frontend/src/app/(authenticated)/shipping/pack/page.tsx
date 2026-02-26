@@ -28,8 +28,8 @@ import api from "@/services/api";
 interface Box {
   id: string;
   boxNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   quantity: number;
   status: BoxStatus;
   closedAt: string | null;
@@ -52,7 +52,7 @@ export default function PackPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSerialModalOpen, setIsSerialModalOpen] = useState(false);
   const [selectedBox, setSelectedBox] = useState<Box | null>(null);
-  const [createForm, setCreateForm] = useState({ partCode: "", quantity: "" });
+  const [createForm, setCreateForm] = useState({ itemCode: "", quantity: "" });
   const [serialInput, setSerialInput] = useState("");
 
   const fetchData = useCallback(async () => {
@@ -84,7 +84,7 @@ export default function PackPage() {
     try {
       await api.post("/shipping/boxes", createForm);
       setIsCreateModalOpen(false);
-      setCreateForm({ partCode: "", quantity: "" });
+      setCreateForm({ itemCode: "", quantity: "" });
       fetchData();
     } catch (e) {
       console.error("Create failed:", e);
@@ -115,8 +115,8 @@ export default function PackPage() {
 
   const columns = useMemo<ColumnDef<Box>[]>(() => [
     { accessorKey: "boxNo", header: t("shipping.pack.boxNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "partCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "partName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "quantity", header: t("common.quantity"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
     { accessorKey: "closedAt", header: t("shipping.pack.closedAt"), size: 140, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
@@ -181,7 +181,7 @@ export default function PackPage() {
 
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title={t("shipping.pack.createBox")} size="lg">
         <div className="space-y-4">
-          <Input label={t("common.partCode")} placeholder="H-001" value={createForm.partCode} onChange={(e) => setCreateForm((prev) => ({ ...prev, partCode: e.target.value }))} fullWidth />
+          <Input label={t("common.partCode")} placeholder="H-001" value={createForm.itemCode} onChange={(e) => setCreateForm((prev) => ({ ...prev, itemCode: e.target.value }))} fullWidth />
           <Input label={t("common.quantity")} type="number" placeholder="0" value={createForm.quantity} onChange={(e) => setCreateForm((prev) => ({ ...prev, quantity: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t("common.cancel")}</Button>

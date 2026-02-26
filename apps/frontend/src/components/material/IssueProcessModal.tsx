@@ -27,7 +27,7 @@ export default function IssueProcessModal({ isOpen, onClose, record }: IssueProc
 
   const handleSubmit = () => {
     if (!record) return;
-    console.log(`출고처리: ${record.requestNo} / ${record.partCode}, 수량: ${issueQty}`);
+    console.log(`출고처리: ${record.requestNo} / ${record.itemCode}, 수량: ${issueQty}`);
     handleClose();
   };
 
@@ -51,7 +51,7 @@ export default function IssueProcessModal({ isOpen, onClose, record }: IssueProc
             {t('material.issue.workOrderLabel')}: <span className="font-medium text-primary">{record.workOrderNo}</span>
           </p>
           <p className="text-sm text-text-muted">
-            {t('material.issue.partLabel')}: <span className="font-medium text-text">{record.partName} ({record.partCode})</span>
+            {t('material.issue.partLabel')}: <span className="font-medium text-text">{record.itemName} ({record.itemCode})</span>
           </p>
           <p className="text-sm text-text-muted">
             {t('material.issue.requestQtyLabel')}: <span className="font-medium text-text">{record.requestQty.toLocaleString()} {record.unit}</span>

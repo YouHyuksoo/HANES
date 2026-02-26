@@ -23,8 +23,8 @@ import api from "@/services/api";
 interface HoldLot {
   id: string;
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   currentQty: number;
   unit: string;
   status: string;
@@ -103,12 +103,12 @@ export default function HoldPage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {
@@ -198,8 +198,8 @@ export default function HoldPage() {
             }`}>
               <div className="grid grid-cols-2 gap-3">
                 <div><span className="text-text-muted">LOT:</span> <span className="font-mono font-medium">{selectedLot.lotNo}</span></div>
-                <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.partCode}</span></div>
-                <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.partName}</div>
+                <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
+                <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
                 <div><span className="text-text-muted">{t("material.hold.currentQty")}:</span> <span className="font-medium">{selectedLot.currentQty.toLocaleString()}</span></div>
               </div>
             </div>

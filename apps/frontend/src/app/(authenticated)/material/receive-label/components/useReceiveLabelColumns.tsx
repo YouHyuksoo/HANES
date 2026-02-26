@@ -17,8 +17,8 @@ import { ColumnDef } from '@tanstack/react-table';
 export interface PassedLot {
   id: string;
   lotNo: string;
-  partId: string;
-  partType: string;
+  itemCode: string;
+  itemType: string;
   initQty: number;
   currentQty: number;
   recvDate?: string | null;
@@ -27,7 +27,7 @@ export interface PassedLot {
   iqcStatus: string;
   receivedQty: number;
   remainingQty: number;
-  part: { id: string; partCode: string; partName: string; unit: string };
+  part: { id: string; itemCode: string; itemName: string; unit: string };
 }
 
 interface UseReceiveLabelColumnsParams {
@@ -65,10 +65,10 @@ export function useReceiveLabelColumns({
         cell: ({ row }) => <span className="font-mono text-xs">{row.original.lotNo}</span> },
       { id: 'partCode', header: t('common.partCode'), size: 120,
         meta: { filterType: 'text' as const },
-        cell: ({ row }) => row.original.part.partCode },
+        cell: ({ row }) => row.original.part.itemCode },
       { id: 'partName', header: t('common.partName'), size: 150,
         meta: { filterType: 'text' as const },
-        cell: ({ row }) => row.original.part.partName },
+        cell: ({ row }) => row.original.part.itemName },
       { id: 'initQty', header: t('material.receiveLabel.qty'), size: 80,
         meta: { filterType: 'number' as const },
         cell: ({ row }) => (

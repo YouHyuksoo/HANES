@@ -21,8 +21,8 @@ import api from "@/services/api";
 interface ShelfLifeItem {
   id: string;
   lotNo: string;
-  partCode?: string;
-  partName?: string;
+  itemCode?: string;
+  itemName?: string;
   currentQty: number;
   unit?: string;
   expireDate?: string;
@@ -89,12 +89,12 @@ export default function ShelfLifePage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 110,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 140,
+      accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
     {

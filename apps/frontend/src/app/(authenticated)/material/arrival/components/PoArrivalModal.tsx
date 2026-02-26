@@ -67,9 +67,9 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       items.forEach((item) => {
         init[item.id] = {
           poItemId: item.id,
-          partId: item.partId,
+          itemCode: item.itemCode,
           receivedQty: 0,
-          warehouseId: warehouses[0]?.value || '',
+          warehouseCode: warehouses[0]?.value || '',
         };
       });
       setInputs(init);
@@ -146,8 +146,8 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
 
   /** Step 2: PO 품목 컬럼 */
   const itemColumns = useMemo<ColumnDef<PoItemForArrival>[]>(() => [
-    { id: 'partCode', header: t('common.partCode'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.partCode },
-    { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.partName },
+    { id: 'partCode', header: t('common.partCode'), size: 110, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemCode },
+    { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemName },
     { accessorKey: 'orderQty', header: t('material.arrival.col.orderQty'), size: 80, meta: { filterType: "number" as const } },
     { accessorKey: 'receivedQty', header: t('material.arrival.col.receivedQty'), size: 80, meta: { filterType: "number" as const } },
     {
@@ -198,8 +198,8 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
       cell: ({ row }) => (
         <Select
           options={warehouses}
-          value={inputs[row.original.id]?.warehouseId || ''}
-          onChange={(v) => updateInput(row.original.id, 'warehouseId', v)}
+          value={inputs[row.original.id]?.warehouseCode || ''}
+          onChange={(v) => updateInput(row.original.id, 'warehouseCode', v)}
           placeholder={t('material.arrival.selectWarehouse')}
         />
       ),

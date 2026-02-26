@@ -19,10 +19,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface ProductSummary {
-  partId: string;
-  partCode: string;
-  partName: string;
-  partType: string;
+  itemCode: string;
+  itemName: string;
+  itemType: string;
   totalPlanQty: number;
   totalGoodQty: number;
   totalDefectQty: number;
@@ -39,8 +38,8 @@ export default function ResultSummaryPage() {
   const [data, setData] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -82,16 +81,16 @@ export default function ResultSummaryPage() {
 
   const columns = useMemo<ColumnDef<ProductSummary>[]>(() => [
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 120,
+      accessorKey: "itemCode", header: t("common.partCode"), size: 120,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 160,
+      accessorKey: "itemName", header: t("common.partName"), size: 160,
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "partType", header: t("production.resultSummary.partType"), size: 70,
+      accessorKey: "itemType", header: t("production.resultSummary.partType"), size: 70,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;

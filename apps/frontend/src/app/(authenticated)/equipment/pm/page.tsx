@@ -20,8 +20,8 @@ import api from "@/services/api";
 
 interface ConsumablePart {
   id: string;
-  partCode: string;
-  partName: string;
+  consumableCode: string;
+  consumableName: string;
   category: string;
   currentShots: number;
   expectedLife: number;
@@ -79,12 +79,12 @@ export default function PmPage() {
 
   const columns = useMemo<ColumnDef<ConsumablePart>[]>(() => [
     {
-      accessorKey: "partCode", header: t("common.partCode"), size: 120,
+      accessorKey: "consumableCode", header: t("common.partCode"), size: 120,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "partName", header: t("common.partName"), size: 150,
+      accessorKey: "consumableName", header: t("common.partName"), size: 150,
       meta: { filterType: "text" as const },
     },
     {

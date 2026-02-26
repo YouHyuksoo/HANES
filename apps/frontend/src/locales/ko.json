@@ -63,7 +63,9 @@
     "selected": "선택됨",
     "won": "원",
     "useYn": "사용여부",
-    "clear": "초기화"
+    "clear": "초기화",
+    "select": "선택하세요",
+    "available": "가용"
   },
   "menu": {
     "dashboard": "대시보드",
@@ -167,6 +169,8 @@
     "productMgmt": "제품수불관리",
     "productMgmt.receive": "제품입고관리",
     "productMgmt.receiptCancel": "제품입고취소",
+    "productMgmt.issue": "제품출고관리",
+    "productMgmt.issueCancel": "제품출고취소",
     "material.arrival": "입하관리",
     "material.iqc": "수입검사(IQC)",
     "material.receiveLabel": "입고라벨발행",
@@ -1828,7 +1832,8 @@
       "endDate": "종료일",
       "stockSelect": "재고 선택 (품목-LOT)",
       "availableQty": "가용수량",
-      "max": "최대"
+      "max": "최대",
+      "noStock": "선택한 창고에 폐기 가능한 재고가 없습니다."
     },
     "adjustment": {
       "title": "재고보정",
@@ -2008,6 +2013,54 @@
       "searchPlaceholder": "트랜잭션번호, 품목명 검색...",
       "stats": {
         "total": "전체 입고",
+        "cancellable": "취소가능",
+        "canceled": "취소완료"
+      }
+    },
+    "issue": {
+      "title": "제품출고관리",
+      "subtitle": "반제품/완제품 출고를 처리합니다.",
+      "registerIssue": "출고등록",
+      "stats": {
+        "todayCount": "금일 출고건수",
+        "todayQty": "금일 출고수량",
+        "wipCount": "WIP 출고",
+        "fgCount": "FG 출고"
+      },
+      "col": {
+        "transNo": "출고번호",
+        "transDate": "출고일",
+        "warehouse": "출고창고",
+        "issueType": "출고계정"
+      },
+      "modal": {
+        "title": "제품출고 등록",
+        "partType": "품목유형",
+        "partId": "품목",
+        "warehouseId": "출고 창고",
+        "qty": "수량",
+        "issueType": "출고계정",
+        "remark": "비고",
+        "confirm": "출고확정"
+      }
+    },
+    "issueCancel": {
+      "title": "제품출고취소",
+      "subtitle": "제품 출고 트랜잭션을 취소 처리합니다.",
+      "transNo": "트랜잭션번호",
+      "transType": "유형",
+      "warehouse": "출고창고",
+      "issueType": "출고계정",
+      "qty": "수량",
+      "transDate": "처리일",
+      "cancel": "취소",
+      "cancelTitle": "제품출고취소 확인",
+      "reason": "취소사유",
+      "reasonPlaceholder": "취소 사유를 입력하세요",
+      "confirm": "취소확정",
+      "searchPlaceholder": "트랜잭션번호, 품목명 검색...",
+      "stats": {
+        "total": "전체 출고",
         "cancellable": "취소가능",
         "canceled": "취소완료"
       }

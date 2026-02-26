@@ -25,8 +25,8 @@ import {
 
 interface StockData {
   id: string;
-  warehouseId: string;
-  partId: string;
+  warehouseCode: string;
+  itemCode: string;
   lotId?: string;
   qty: number;
   reservedQty: number;
@@ -38,9 +38,9 @@ interface StockData {
     warehouseType: string;
   };
   part: {
-    partCode: string;
-    partName: string;
-    partType: string;
+    itemCode: string;
+    itemName: string;
+    itemType: string;
     unit: string;
   };
   lot?: {
@@ -83,8 +83,8 @@ export default function InventoryStockPage() {
   // 필터
   const [filters, setFilters] = useState({
     warehouseType: '',
-    partType: '',
-    partCode: '',
+    itemType: '',
+    itemCode: '',
     includeZero: false,
   });
 
@@ -93,7 +93,7 @@ export default function InventoryStockPage() {
     try {
       const params = new URLSearchParams();
       if (filters.warehouseType) params.append('warehouseType', filters.warehouseType);
-      if (filters.partType) params.append('partType', filters.partType);
+      if (filters.itemType) params.append('itemType', filters.itemType);
       if (filters.includeZero) params.append('includeZero', 'true');
 
       const res = await api.get(`/inventory/stocks?${params.toString()}`);
@@ -113,12 +113,12 @@ export default function InventoryStockPage() {
   // 필터링된 데이터 (제품재고만: RAW 제외)
   const filteredStocks = useMemo(() => {
     return stocks.filter(stock => {
-      if (stock.part?.partType === 'RAW') return false;
+      if (stock.part?.itemType === 'RAW') return false;
       if (stock.warehouse?.warehouseType === 'RAW') return false;
-      if (filters.partCode && !stock.part.partCode.includes(filters.partCode)) return false;
+      if (filters.itemCode && !stock.part.itemCode.includes(filters.itemCode)) return false;
       return true;
     });
-  }, [stocks, filters.partCode]);
+  }, [stocks, filters.itemCode]);
 
   const columns: ColumnDef<StockData>[] = [
     // 창고 유형 배지
@@ -185,7 +185,7 @@ export default function InventoryStockPage() {
   // 통계 계산 (필터링된 제품재고 기준)
   const totalStock = filteredStocks.reduce((sum, s) => sum + s.qty, 0);
   const totalAvailable = filteredStocks.reduce((sum, s) => sum + s.availableQty, 0);
-  const partCount = new Set(filteredStocks.map(s => s.partId)).size;
+  const partCount = new Set(filteredStocks.map(s => s.itemCode)).size;
   const lotCount = filteredStocks.filter(s => s.lotId).length;
 
   return (
@@ -222,10 +222,10 @@ export default function InventoryStockPage() {
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
-                  <Input placeholder={t('inventory.stock.searchPartCode')} value={filters.partCode} onChange={(e) => setFilters({ ...filters, partCode: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                  <Input placeholder={t('inventory.stock.searchPartCode')} value={filters.itemCode} onChange={(e) => setFilters({ ...filters, itemCode: e.target.value })} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <Select options={WAREHOUSE_TYPES} value={filters.warehouseType} onChange={(v) => setFilters({ ...filters, warehouseType: v })} placeholder={t('inventory.stock.warehouseType')} />
-                <Select options={PART_TYPES} value={filters.partType} onChange={(v) => setFilters({ ...filters, partType: v })} placeholder={t('inventory.stock.partType')} />
+                <Select options={PART_TYPES} value={filters.itemType} onChange={(v) => setFilters({ ...filters, itemType: v })} placeholder={t('inventory.stock.partType')} />
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <input type="checkbox" id="includeZero" checked={filters.includeZero} onChange={(e) => setFilters({ ...filters, includeZero: e.target.checked })} />
                   <label htmlFor="includeZero" className="text-sm text-text-muted">{t('common.includeZero')}</label>

@@ -25,7 +25,7 @@ import { useInputMachineStore } from '@/stores/inputMachineStore';
 interface MachineResult {
   id: string;
   orderNo: string;
-  partName: string;
+  itemName: string;
   equipName: string;
   workerName: string;
   lotNo: string;
@@ -110,7 +110,7 @@ export default function InputMachinePage() {
     try {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.lotNo = searchText;
-      if (selectedJobOrder) params.jobOrderId = selectedJobOrder.id;
+      if (selectedJobOrder) params.orderNo = selectedJobOrder.orderNo;
       const res = await api.get('/production/prod-results', { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -173,7 +173,7 @@ export default function InputMachinePage() {
     if (selectedEquip) {
       try {
         await api.patch(`/equipment/equips/${selectedEquip.id}/job-order`, {
-          jobOrderId: jobOrder.id,
+          orderNo: jobOrder.orderNo,
         });
       } catch (e) {
         console.error('Failed to assign job order to equipment:', e);
@@ -205,9 +205,9 @@ export default function InputMachinePage() {
     setSaving(true);
     try {
       await api.post('/production/prod-results', {
-        jobOrderId: selectedJobOrder.id,
+        orderNo: selectedJobOrder.orderNo,
         workerId: selectedWorker.id,
-        equipId: selectedEquip.id,
+        equipCode: selectedEquip.equipCode,
         processCode: selectedProcess?.processCode,
         lotNo: form.lotNo || undefined,
         goodQty: Number(form.goodQty) || 0,
@@ -229,7 +229,7 @@ export default function InputMachinePage() {
 
   const columns = useMemo<ColumnDef<MachineResult>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.inputMachine.orderNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('production.inputMachine.partName'), size: 140, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemName', header: t('production.inputMachine.partName'), size: 140, meta: { filterType: 'text' as const } },
     { accessorKey: 'equipName', header: t('production.inputMachine.equip'), size: 100, meta: { filterType: 'text' as const } },
     { accessorKey: 'workerName', header: t('production.inputMachine.worker'), size: 80, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('production.inputMachine.lotNo'), size: 130, meta: { filterType: 'text' as const } },
@@ -325,7 +325,7 @@ export default function InputMachinePage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-bold text-text">{selectedJobOrder.orderNo}</p>
-                    <p className="text-xs text-text-muted">{selectedJobOrder.partName} ({selectedJobOrder.partCode})</p>
+                    <p className="text-xs text-text-muted">{selectedJobOrder.itemName} ({selectedJobOrder.itemCode})</p>
                   </div>
                   <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
                     {selectedJobOrder.processType}
@@ -443,7 +443,7 @@ export default function InputMachinePage() {
             <div><span className="text-text-muted">{t('production.inputMachine.equip')}:</span> <span className="font-medium">{selectedEquip?.equipName}</span></div>
             <div><span className="text-text-muted">{t('production.inputMachine.workOrder')}:</span> <span className="font-mono font-medium text-primary">{selectedJobOrder?.orderNo}</span></div>
             <div><span className="text-text-muted">{t('production.inputMachine.worker')}:</span> <span className="font-medium">{selectedWorker?.workerName}</span></div>
-            <div><span className="text-text-muted">{t('production.inputMachine.partName')}:</span> <span className="font-medium">{selectedJobOrder?.partName}</span></div>
+            <div><span className="text-text-muted">{t('production.inputMachine.partName')}:</span> <span className="font-medium">{selectedJobOrder?.itemName}</span></div>
           </div>
 
           <div className="p-3 bg-background rounded-lg">

@@ -16,11 +16,11 @@ export type PartType = "RAW" | "WIP" | "FG";
 /** 품목 인터페이스 */
 export interface Part {
   id: string;
-  partCode: string;
-  partName: string;
-  partNo?: string; // 품번 (Oracle PARTNO)
+  itemCode: string;
+  itemName: string;
+  itemNo?: string; // 품번 (Oracle PARTNO)
   custPartNo?: string; // 고객사 품번 (Oracle CUSTPARTNO)
-  partType: PartType;
+  itemType: PartType;
   productType?: string; // 제품유형 코드 (Oracle PRODUCTTYPE)
   spec?: string;
   rev?: string; // 리비전 (Oracle REV)
@@ -41,7 +41,7 @@ export interface Part {
 
 /** 품목-검사그룹 연결 (추후 DB 테이블로 이관 예정) */
 export interface PartIqcLink {
-  partCode: string;
+  itemCode: string;
   groupCode: string;
   shelfLifeDays?: number;
 }

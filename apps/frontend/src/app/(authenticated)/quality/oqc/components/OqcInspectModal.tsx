@@ -30,7 +30,7 @@ interface OqcBox {
 interface OqcDetail {
   id: string;
   requestNo: string;
-  partId: string;
+  itemCode: string;
   customer: string | null;
   requestDate: string;
   totalBoxCount: number;
@@ -41,7 +41,7 @@ interface OqcDetail {
   inspectorName: string | null;
   remark: string | null;
   boxes: OqcBox[];
-  part?: { partCode?: string; partName?: string };
+  part?: { itemCode?: string; itemName?: string };
 }
 
 interface Props {
@@ -159,11 +159,11 @@ export default function OqcInspectModal({ isOpen, onClose, requestId, onSuccess 
           </div>
           <div>
             <div className="text-xs text-text-muted">{t("common.partCode")}</div>
-            <div className="font-medium text-text">{detail.part?.partCode || "-"}</div>
+            <div className="font-medium text-text">{detail.part?.itemCode || "-"}</div>
           </div>
           <div>
             <div className="text-xs text-text-muted">{t("common.partName")}</div>
-            <div className="font-medium text-text">{detail.part?.partName || "-"}</div>
+            <div className="font-medium text-text">{detail.part?.itemName || "-"}</div>
           </div>
           <div>
             <div className="text-xs text-text-muted">{t("common.status")}</div>

@@ -21,8 +21,8 @@ import api from '@/services/api';
 interface ProgressItem {
   id: string;
   orderNo: string;
-  partCode: string;
-  partName: string;
+  part?: { itemCode?: string; itemName?: string };
+  itemCode?: string;
   lineCode: string;
   planQty: number;
   goodQty: number;
@@ -78,8 +78,8 @@ export default function ProgressPage() {
 
   const columns = useMemo<ColumnDef<ProgressItem>[]>(() => [
     { accessorKey: 'orderNo', header: t('production.progress.orderNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
+    { accessorFn: (row) => row.part?.itemCode, id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const } },
+    { accessorFn: (row) => row.part?.itemName, id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
     { accessorKey: 'lineCode', header: t('production.progress.line'), size: 70, meta: { filterType: 'text' as const } },
     { accessorKey: 'planQty', header: t('production.progress.planQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
     { accessorKey: 'goodQty', header: t('production.progress.goodQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{(getValue() as number).toLocaleString()}</span> },

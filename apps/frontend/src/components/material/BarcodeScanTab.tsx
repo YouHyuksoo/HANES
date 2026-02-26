@@ -73,8 +73,8 @@ export default function BarcodeScanTab() {
         return <span>{d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>;
       },
     },
-    { accessorKey: 'partCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
-    { accessorKey: 'partName', header: t('common.partName', { defaultValue: '품목명' }), size: 160, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
+    { accessorKey: 'itemName', header: t('common.partName', { defaultValue: '품목명' }), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'lotNo', header: t('material.col.lotNo'), size: 160, meta: { filterType: 'text' as const } },
     {
       accessorKey: 'issueQty',
@@ -170,11 +170,11 @@ export default function BarcodeScanTab() {
                 <div className="grid grid-cols-3 gap-4 p-4 bg-background dark:bg-slate-800 rounded-lg">
                   <InfoItem
                     label={t('common.partCode', { defaultValue: '품목코드' })}
-                    value={scannedLot.partCode}
+                    value={scannedLot.itemCode}
                   />
                   <InfoItem
                     label={t('common.partName', { defaultValue: '품목명' })}
-                    value={scannedLot.partName}
+                    value={scannedLot.itemName}
                   />
                   <InfoItem
                     label={t('material.col.lotNo')}

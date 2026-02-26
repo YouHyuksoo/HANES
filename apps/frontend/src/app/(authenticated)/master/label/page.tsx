@@ -67,9 +67,9 @@ const categoryApiMap: Record<LabelCategory, {
     url: "/master/parts",
     mapFn: (item) => ({
       id: item.id as string,
-      code: item.partCode as string,
-      name: item.partName as string,
-      sub: (item.partType as string) || "",
+      code: item.itemCode as string,
+      name: item.itemName as string,
+      sub: (item.itemType as string) || "",
     }),
   },
   mat_lot: {

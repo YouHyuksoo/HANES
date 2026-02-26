@@ -14,8 +14,8 @@ import { api } from "@/services/api";
 /** LOT 재고 정보 (조정용) */
 export interface MatLotAdjustData {
   lotNo: string;
-  partCode: string;
-  partName: string;
+  itemCode: string;
+  itemName: string;
   currentQty: number;
   unit: string;
   warehouse: string;
@@ -24,7 +24,7 @@ export interface MatLotAdjustData {
 /** 조정 이력 항목 */
 export interface AdjustmentHistoryItem {
   lotNo: string;
-  partCode: string;
+  itemCode: string;
   adjustQty: number;
   reason: string;
   timestamp: string;
@@ -91,7 +91,7 @@ export function useMatAdjustment(): UseMatAdjustmentReturn {
         setHistory((prev) => [
           {
             lotNo: scannedLot.lotNo,
-            partCode: scannedLot.partCode,
+            itemCode: scannedLot.itemCode,
             adjustQty,
             reason,
             timestamp: new Date().toLocaleTimeString(),
