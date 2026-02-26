@@ -96,7 +96,7 @@ export class IqcGroupService {
       const items = dto.items.map(i =>
         this.groupItemRepo.create({
           groupId: saved.id,
-          inspItemId: i.itemId,
+          inspItemId: Number(i.itemId),
           seq: i.seq,
         }),
       );
@@ -136,7 +136,7 @@ export class IqcGroupService {
         const items = dto.items.map(i =>
           this.groupItemRepo.create({
             groupId: id,
-            inspItemId: i.itemId,
+            inspItemId: Number(i.itemId),
             seq: i.seq,
           }),
         );

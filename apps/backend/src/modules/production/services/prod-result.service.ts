@@ -248,9 +248,9 @@ export class ProdResultService {
     });
     if (equipBomRels.length === 0) return; // 설비 BOM 미설정 시 체크 불필요
 
-    const bomItemIds = equipBomRels.map(rel => rel.bomItemId);
+    const bomItemCodes = equipBomRels.map(rel => rel.bomItemCode);
     const bomItems = await this.equipBomItemRepository.find({
-      where: { bomItemCode: In(bomItemIds), useYn: 'Y' },
+      where: { bomItemCode: In(bomItemCodes), useYn: 'Y' },
     });
 
     // 설비 BOM 품목 코드 목록

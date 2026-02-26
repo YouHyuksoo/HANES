@@ -28,7 +28,6 @@ import {
   Param,
   Req,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { RoleService } from './role.service';
@@ -54,8 +53,8 @@ export class RoleController {
 
   @Get(':id')
   @ApiOperation({ summary: '역할 상세 조회' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.roleService.findOne(id);
+  findOne(@Param('id') code: string) {
+    return this.roleService.findOne(code);
   }
 
   @Post()
@@ -71,31 +70,31 @@ export class RoleController {
   @Patch(':id')
   @ApiOperation({ summary: '역할 수정' })
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') code: string,
     @Body() dto: UpdateRoleDto,
     @Req() req?: AuthenticatedRequest,
   ) {
-    return this.roleService.update(id, dto, req?.user?.id);
+    return this.roleService.update(code, dto, req?.user?.id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '역할 삭제' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.roleService.remove(id);
+  remove(@Param('id') code: string) {
+    return this.roleService.remove(code);
   }
 
   @Get(':id/permissions')
   @ApiOperation({ summary: '역할 메뉴 권한 조회' })
-  getPermissions(@Param('id', ParseIntPipe) id: number) {
-    return this.roleService.getPermissions(id);
+  getPermissions(@Param('id') code: string) {
+    return this.roleService.getPermissions(code);
   }
 
   @Put(':id/permissions')
   @ApiOperation({ summary: '역할 메뉴 권한 수정' })
   updatePermissions(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') code: string,
     @Body() dto: UpdatePermissionsDto,
   ) {
-    return this.roleService.updatePermissions(id, dto);
+    return this.roleService.updatePermissions(code, dto);
   }
 }

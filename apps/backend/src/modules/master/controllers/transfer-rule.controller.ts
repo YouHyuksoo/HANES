@@ -31,7 +31,7 @@ export class TransferRuleController {
   @Get(':id')
   @ApiOperation({ summary: '창고이동규칙 상세 조회' })
   async findById(@Param('id') id: string) {
-    const data = await this.transferRuleService.findById(id);
+    const data = await this.transferRuleService.findById(Number(id));
     return ResponseUtil.success(data);
   }
 
@@ -46,14 +46,14 @@ export class TransferRuleController {
   @Put(':id')
   @ApiOperation({ summary: '창고이동규칙 수정' })
   async update(@Param('id') id: string, @Body() dto: UpdateTransferRuleDto) {
-    const data = await this.transferRuleService.update(id, dto);
+    const data = await this.transferRuleService.update(Number(id), dto);
     return ResponseUtil.success(data, '창고이동규칙이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '창고이동규칙 삭제' })
   async delete(@Param('id') id: string) {
-    await this.transferRuleService.delete(id);
+    await this.transferRuleService.delete(Number(id));
     return ResponseUtil.success(null, '창고이동규칙이 삭제되었습니다.');
   }
 }

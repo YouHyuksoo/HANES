@@ -6,9 +6,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
 
 export class CreateWarehouseLocationDto {
-  @ApiProperty({ description: '창고 ID' })
+  @ApiProperty({ description: '창고코드' })
   @IsString()
-  warehouseId: string;
+  warehouseCode: string;
 
   @ApiProperty({ description: '로케이션 코드' })
   @IsString()

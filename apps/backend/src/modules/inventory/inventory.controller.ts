@@ -169,7 +169,7 @@ export class InventoryController {
     @Query('includeZero') includeZero?: string,
   ) {
     return this.inventoryService.getStock({
-      warehouseId,
+      warehouseCode: warehouseId,
       includeZero: includeZero === 'true',
     });
   }

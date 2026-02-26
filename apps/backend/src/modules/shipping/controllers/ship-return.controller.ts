@@ -49,7 +49,7 @@ export class ShipReturnController {
   @ApiOperation({ summary: '반품 상세 조회' })
   @ApiParam({ name: 'id', description: '반품 ID' })
   async findById(@Param('id') id: string) {
-    const data = await this.shipReturnService.findById(id);
+    const data = await this.shipReturnService.findById(Number(id));
     return ResponseUtil.success(data);
   }
 
@@ -66,7 +66,7 @@ export class ShipReturnController {
   @ApiOperation({ summary: '반품 수정' })
   @ApiParam({ name: 'id', description: '반품 ID' })
   async update(@Param('id') id: string, @Body() dto: UpdateShipReturnDto) {
-    const data = await this.shipReturnService.update(id, dto);
+    const data = await this.shipReturnService.update(Number(id), dto);
     return ResponseUtil.success(data, '반품이 수정되었습니다.');
   }
 
@@ -74,7 +74,7 @@ export class ShipReturnController {
   @ApiOperation({ summary: '반품 삭제' })
   @ApiParam({ name: 'id', description: '반품 ID' })
   async delete(@Param('id') id: string) {
-    await this.shipReturnService.delete(id);
+    await this.shipReturnService.delete(Number(id));
     return ResponseUtil.success(null, '반품이 삭제되었습니다.');
   }
 }

@@ -88,7 +88,7 @@ export class InventoryService {
    */
   async createLot(dto: CreateLotDto) {
     const lot = this.lotRepository.create({
-      lotNo: dto.lotId,
+      lotNo: dto.lotNo,
       itemCode: dto.itemCode,
       initQty: dto.initQty,
       currentQty: dto.initQty,
@@ -177,9 +177,9 @@ export class InventoryService {
         transNo,
         transType: dto.transType,
         transDate: new Date(),
-        toWarehouseId: dto.warehouseId,
+        toWarehouseId: dto.warehouseCode,
         itemCode: dto.itemCode,
-        lotNo: dto.lotId,
+        lotNo: dto.lotNo,
         qty: dto.qty, // 양수
         unitPrice: dto.unitPrice,
         totalAmount: dto.unitPrice ? dto.unitPrice * dto.qty : null,
@@ -194,7 +194,7 @@ export class InventoryService {
 
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
+        where: { warehouseCode: dto.warehouseCode, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
       });
 
       if (existingStock) {
@@ -204,9 +204,9 @@ export class InventoryService {
         );
       } else {
         await queryRunner.manager.save(MatStock, {
-          warehouseCode: dto.warehouseId,
+          warehouseCode: dto.warehouseCode,
           itemCode: dto.itemCode,
-          lotNo: dto.lotId || null,
+          lotNo: dto.lotNo || null,
           qty: dto.qty,
           reservedQty: 0,
           availableQty: dto.qty,
@@ -214,10 +214,10 @@ export class InventoryService {
       }
 
       // 3. LOT 수량 업데이트
-      if (dto.lotId) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotId } });
+      if (dto.lotNo) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotNo } });
         if (lot) {
-          await queryRunner.manager.update(MatLot, dto.lotId, {
+          await queryRunner.manager.update(MatLot, dto.lotNo, {
             currentQty: lot.currentQty + dto.qty,
           });
         }
@@ -246,7 +246,7 @@ export class InventoryService {
     try {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
+        where: { warehouseCode: dto.warehouseCode, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -258,10 +258,10 @@ export class InventoryService {
         transNo,
         transType: dto.transType,
         transDate: new Date(),
-        fromWarehouseId: dto.warehouseId,
-        toWarehouseId: dto.toWarehouseId,
+        fromWarehouseId: dto.warehouseCode,
+        toWarehouseId: dto.toWarehouseCode,
         itemCode: dto.itemCode,
-        lotNo: dto.lotId,
+        lotNo: dto.lotNo,
         qty: -dto.qty, // 음수 (출고)
         refType: dto.refType,
         refId: dto.refId,
@@ -279,9 +279,9 @@ export class InventoryService {
       );
 
       // 4. 이동 대상 창고가 있으면 입고 처리
-      if (dto.toWarehouseId) {
+      if (dto.toWarehouseCode) {
         const targetStock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, lotNo: dto.lotId || IsNull() },
+          where: { warehouseCode: dto.toWarehouseCode, itemCode: dto.itemCode, lotNo: dto.lotNo || IsNull() },
         });
 
         if (targetStock) {
@@ -291,9 +291,9 @@ export class InventoryService {
           );
         } else {
           await queryRunner.manager.save(MatStock, {
-            warehouseCode: dto.toWarehouseId,
+            warehouseCode: dto.toWarehouseCode,
             itemCode: dto.itemCode,
-            lotNo: dto.lotId || null,
+            lotNo: dto.lotNo || null,
             qty: dto.qty,
             reservedQty: 0,
             availableQty: dto.qty,
@@ -302,11 +302,11 @@ export class InventoryService {
       }
 
       // 5. LOT 수량 업데이트 (이동이 아닌 순수 출고 시)
-      if (dto.lotId && !dto.toWarehouseId) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotId } });
+      if (dto.lotNo && !dto.toWarehouseCode) {
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { lotNo: dto.lotNo } });
         if (lot) {
           const newQty = lot.currentQty - dto.qty;
-          await queryRunner.manager.update(MatLot, dto.lotId, {
+          await queryRunner.manager.update(MatLot, dto.lotNo, {
             currentQty: Math.max(0, newQty),
             status: newQty <= 0 ? 'DEPLETED' : lot.status,
           });
@@ -328,10 +328,10 @@ export class InventoryService {
    */
   async transferStock(dto: TransferStockDto) {
     return this.issueStock({
-      warehouseId: dto.fromWarehouseId,
-      toWarehouseId: dto.toWarehouseId,
+      warehouseCode: dto.fromWarehouseCode,
+      toWarehouseCode: dto.toWarehouseCode,
       itemCode: dto.itemCode,
-      lotId: dto.lotId,
+      lotNo: dto.lotNo,
       qty: dto.qty,
       transType: 'TRANSFER',
       refType: dto.refType,
@@ -489,9 +489,9 @@ export class InventoryService {
     const where: any = {};
     if (company) where.company = company;
     if (plant) where.plant = plant;
-    if (query.warehouseId) where.warehouseCode = query.warehouseId;
+    if (query.warehouseCode) where.warehouseCode = query.warehouseCode;
     if (query.itemCode) where.itemCode = query.itemCode;
-    if (query.lotId) where.lotNo = query.lotId;
+    if (query.lotNo) where.lotNo = query.lotNo;
 
     const stocks = await this.stockRepository.find({
       where,
@@ -564,7 +564,7 @@ export class InventoryService {
     if (company) where.company = company;
     if (plant) where.plant = plant;
     if (query.itemCode) where.itemCode = query.itemCode;
-    if (query.lotId) where.lotNo = query.lotId;
+    if (query.lotNo) where.lotNo = query.lotNo;
     if (query.transType) where.transType = query.transType;
     if (query.refType) where.refType = query.refType;
     if (query.refId) where.refId = query.refId;
@@ -572,10 +572,10 @@ export class InventoryService {
     const qb = this.stockTransactionRepository.createQueryBuilder('trans')
       .where(where);
 
-    if (query.warehouseId) {
+    if (query.warehouseCode) {
       qb.andWhere(
         '(trans.fromWarehouseId = :warehouseId OR trans.toWarehouseId = :warehouseId)',
-        { warehouseId: query.warehouseId },
+        { warehouseId: query.warehouseCode },
       );
     }
     if (query.dateFrom) {

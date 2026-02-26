@@ -129,18 +129,18 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsString()
-  fromWarehouseId?: string;
+  fromWarehouseCode?: string;
 
   @IsOptional()
   @IsString()
-  toWarehouseId?: string;
+  toWarehouseCode?: string;
 
   @IsString()
   itemCode: string;
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  lotNo?: string;
 
   @IsNumber()
   qty: number;
@@ -169,14 +169,14 @@ export class CreateTransactionDto {
 // 입고 DTO
 export class ReceiveStockDto {
   @IsString()
-  warehouseId: string;
+  warehouseCode: string;
 
   @IsString()
   itemCode: string;
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  lotNo?: string;
 
   @IsNumber()
   @Min(1)
@@ -209,14 +209,14 @@ export class ReceiveStockDto {
 // 출고 DTO
 export class IssueStockDto {
   @IsString()
-  warehouseId: string;
+  warehouseCode: string;
 
   @IsString()
   itemCode: string;
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  lotNo?: string;
 
   @IsNumber()
   @Min(1)
@@ -227,7 +227,7 @@ export class IssueStockDto {
 
   @IsOptional()
   @IsString()
-  toWarehouseId?: string; // 이동 대상 창고
+  toWarehouseCode?: string; // 이동 대상 창고
 
   @IsOptional()
   @IsString()
@@ -249,17 +249,17 @@ export class IssueStockDto {
 // 이동 DTO
 export class TransferStockDto {
   @IsString()
-  fromWarehouseId: string;
+  fromWarehouseCode: string;
 
   @IsString()
-  toWarehouseId: string;
+  toWarehouseCode: string;
 
   @IsString()
   itemCode: string;
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  lotNo?: string;
 
   @IsNumber()
   @Min(1)
@@ -302,7 +302,7 @@ export class CancelTransactionDto {
 export class StockQueryDto {
   @IsOptional()
   @IsString()
-  warehouseId?: string;
+  warehouseCode?: string;
 
   @IsOptional()
   @IsString()
@@ -318,7 +318,7 @@ export class StockQueryDto {
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  lotNo?: string;
 
   @IsOptional()
   includeZero?: boolean;
@@ -327,7 +327,7 @@ export class StockQueryDto {
 export class TransactionQueryDto {
   @IsOptional()
   @IsString()
-  warehouseId?: string;
+  warehouseCode?: string;
 
   @IsOptional()
   @IsString()
@@ -335,7 +335,7 @@ export class TransactionQueryDto {
 
   @IsOptional()
   @IsString()
-  lotId?: string;
+  lotNo?: string;
 
   @IsOptional()
   @IsString()

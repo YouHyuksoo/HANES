@@ -407,7 +407,7 @@ export class PalletService {
 
     // 출하 존재 및 상태 확인
     const shipment = await this.shipmentRepository.findOne({
-      where: { id: dto.shipmentId },
+      where: { id: Number(dto.shipmentId) },
     });
 
     if (!shipment) {
@@ -476,7 +476,7 @@ export class PalletService {
 
     // 출하가 PREPARING 상태일 때만 제거 가능
     const shipment = await this.shipmentRepository.findOne({
-      where: { id: pallet.shipmentId },
+      where: { id: Number(pallet.shipmentId) },
     });
 
     if (!shipment) {

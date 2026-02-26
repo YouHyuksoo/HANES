@@ -214,10 +214,10 @@ export class InterfaceService {
       const results = await Promise.all(
         dtos.map(async (dto) => {
           const parentPart = await this.partMasterRepository.findOne({
-            where: { itemCode: dto.parentPartCode },
+            where: { itemCode: dto.parentItemCode },
           });
           const childPart = await this.partMasterRepository.findOne({
-            where: { itemCode: dto.childPartCode },
+            where: { itemCode: dto.childItemCode },
           });
 
           if (!parentPart || !childPart) {
