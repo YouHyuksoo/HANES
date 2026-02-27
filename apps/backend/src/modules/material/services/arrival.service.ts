@@ -397,11 +397,11 @@ export class ArrivalService {
 
       return {
         ...item,
-        itemCode: part?.itemCode,
+        // flat 필드 (하위 호환)
+        itemCode: part?.itemCode ?? item.itemCode,
         itemName: part?.itemName,
         itemType: part?.itemType,
         unit: part?.unit,
-        matUid: lot?.matUid,
         warehouseCode: warehouse?.warehouseCode,
         warehouseName: warehouse?.warehouseName,
         arrivalNo: arrival?.arrivalNo,
@@ -409,6 +409,10 @@ export class ArrivalService {
         vendorId: arrival?.vendorId,
         vendorName: arrival?.vendorName,
         arrivalType: arrival?.arrivalType,
+        // 중첩 객체 (프론트엔드 타입 호환)
+        part: part ? { itemCode: part.itemCode, itemName: part.itemName, unit: part.unit } : null,
+        lot: lot ? { matUid: lot.matUid, poNo: lot.poNo, vendor: lot.vendor } : null,
+        toWarehouse: warehouse ? { warehouseCode: warehouse.warehouseCode, warehouseName: warehouse.warehouseName } : null,
       };
     });
 

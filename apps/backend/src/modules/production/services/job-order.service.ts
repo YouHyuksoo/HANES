@@ -35,7 +35,7 @@ const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
   orderNo: true, itemCode: true, lineCode: true,
   planQty: true, planDate: true, priority: true, status: true,
   erpSyncYn: true, goodQty: true, defectQty: true,
-  startAt: true, endAt: true, remark: true,
+  startAt: true, endAt: true, custPoNo: true, remark: true,
   createdAt: true, updatedAt: true,
 };
 
@@ -156,6 +156,7 @@ export class JobOrderService {
         planQty: dto.planQty,
         planDate: dto.planDate ? new Date(dto.planDate) : null,
         priority: dto.priority ?? 5,
+        custPoNo: dto.custPoNo || null,
         remark: dto.remark,
         status: 'WAITING',
         erpSyncYn: 'N',
@@ -247,6 +248,7 @@ export class JobOrderService {
     if (dto.planQty !== undefined) updateData.planQty = dto.planQty;
     if (dto.planDate !== undefined) updateData.planDate = dto.planDate ? new Date(dto.planDate) : null;
     if (dto.priority !== undefined) updateData.priority = dto.priority;
+    if (dto.custPoNo !== undefined) updateData.custPoNo = dto.custPoNo;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
     if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
     if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;

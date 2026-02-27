@@ -1,0 +1,3 @@
+-- Task 18: PRODUCT_TRANSACTIONS 테이블에 출고계정(ISSUE_TYPE) 컬럼 추가
+-- 용도: 폐기, 창고이동, 기타 등 판매 외 출고 사유 구분 (ComCode: ISSUE_TYPE)
+ALTER TABLE PRODUCT_TRANSACTIONS ADD ISSUE_TYPE VARCHAR2(20);

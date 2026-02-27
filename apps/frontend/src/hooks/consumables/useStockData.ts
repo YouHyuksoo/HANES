@@ -1,71 +1,80 @@
 /**
- * @file src/pages/consumables/stock/hooks/useStockData.ts
- * @description 소모품 재고현황 데이터 훅
+ * @file src/hooks/consumables/useStockData.ts
+ * @description 소모품 재고현황 데이터 훅 — 개별 인스턴스(conUid) 기반 API 연동
+ *
+ * 초보자 가이드:
+ * 1. GET /consumables/stocks 로 conUid별 개별 인스턴스 조회
+ * 2. 카테고리/인스턴스상태/검색어 필터링
+ * 3. 통계(전체 인스턴스, ACTIVE, MOUNTED, PENDING) 산출
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { api } from '@/services/api';
 
 export interface ConsumableStock {
-  id: string;
+  conUid: string;
   consumableCode: string;
-  name: string;
+  consumableName: string;
   category: string | null;
-  stockQty: number;
-  safetyStock: number;
-  unitPrice: number | null;
-  location: string | null;
-  vendor: string | null;
   status: string;
+  currentCount: number;
+  expectedLife: number | null;
+  location: string | null;
+  mountedEquipCode: string | null;
+  recvDate: string | null;
+  vendorCode: string | null;
+  vendorName: string | null;
+  unitPrice: number | null;
+  remark: string | null;
+  createdAt: string;
 }
 
-/** mock 데이터 (API 연결 전) */
-const mockData: ConsumableStock[] = [
-  {
-    id: 'c1', consumableCode: 'MOLD-001', name: '압착금형 A타입', category: 'MOLD',
-    stockQty: 12, safetyStock: 5, unitPrice: 150000, location: 'A-01', vendor: '한국금형', status: 'NORMAL',
-  },
-  {
-    id: 'c2', consumableCode: 'TOOL-001', name: '절단날 표준형', category: 'TOOL',
-    stockQty: 3, safetyStock: 10, unitPrice: 25000, location: 'B-03', vendor: '대성공구', status: 'NORMAL',
-  },
-  {
-    id: 'c3', consumableCode: 'JIG-001', name: '조립지그 001', category: 'JIG',
-    stockQty: 8, safetyStock: 3, unitPrice: 80000, location: 'C-02', vendor: '정밀지그', status: 'NORMAL',
-  },
-  {
-    id: 'c4', consumableCode: 'MOLD-002', name: '압착금형 B타입', category: 'MOLD',
-    stockQty: 0, safetyStock: 2, unitPrice: 200000, location: 'A-02', vendor: '한국금형', status: 'WARNING',
-  },
-];
-
 export function useStockData() {
+  const [rawData, setRawData] = useState<ConsumableStock[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [stockStatusFilter, setStockStatusFilter] = useState('');
 
-  const data = mockData;
-  const isLoading = false;
+  /** API에서 개별 인스턴스 목록 조회 */
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.get('/consumables/stocks');
+      const items = res.data?.data ?? res.data ?? [];
+      setRawData(Array.isArray(items) ? items : []);
+    } catch {
+      setRawData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const filteredData = useMemo(() => {
-    return data.filter((item) => {
+    return rawData.filter((item) => {
       const matchSearch = !searchTerm ||
+        item.conUid.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.consumableCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.name.toLowerCase().includes(searchTerm.toLowerCase());
+        (item.consumableName ?? '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = !categoryFilter || item.category === categoryFilter;
-      return matchSearch && matchCategory;
+      const matchStatus = !stockStatusFilter || item.status === stockStatusFilter;
+      return matchSearch && matchCategory && matchStatus;
     });
-  }, [data, searchTerm, categoryFilter]);
+  }, [rawData, searchTerm, categoryFilter, stockStatusFilter]);
 
   const summary = useMemo(() => {
     return {
-      totalItems: data.length,
-      belowSafety: data.filter((d) => d.stockQty < d.safetyStock).length,
-      outOfStock: data.filter((d) => d.stockQty === 0).length,
-      totalValue: data.reduce((sum, d) => sum + (d.unitPrice ?? 0) * d.stockQty, 0),
+      totalItems: rawData.length,
+      activeCount: rawData.filter((d) => d.status === 'ACTIVE').length,
+      mountedCount: rawData.filter((d) => d.status === 'MOUNTED').length,
+      pendingCount: rawData.filter((d) => d.status === 'PENDING').length,
     };
-  }, [data]);
+  }, [rawData]);
 
   const refresh = useCallback(() => {
-    // TODO: invalidate query
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   return {
     data: filteredData,
@@ -74,6 +83,8 @@ export function useStockData() {
     setSearchTerm,
     categoryFilter,
     setCategoryFilter,
+    stockStatusFilter,
+    setStockStatusFilter,
     summary,
     refresh,
   };

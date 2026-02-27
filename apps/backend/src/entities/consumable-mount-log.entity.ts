@@ -45,6 +45,9 @@ export class ConsumableMountLog {
   @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
+  @Column({ name: 'CON_UID', length: 50, nullable: true })
+  conUid: string | null;
+
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 }

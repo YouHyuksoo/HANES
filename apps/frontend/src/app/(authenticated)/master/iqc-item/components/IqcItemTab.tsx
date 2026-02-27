@@ -82,7 +82,7 @@ export default function IqcItemTab() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const methodOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("master.iqcItem.judgeMethod", "판정방법") },
     { value: "VISUAL", label: t("master.iqcItem.visual", "육안") },
     { value: "MEASURE", label: t("master.iqcItem.measureMethod", "계측") },
   ], [t]);

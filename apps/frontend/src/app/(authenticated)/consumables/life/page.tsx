@@ -12,7 +12,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity, Search } from "lucide-react";
-import { Card, Button, ComCodeBadge, Input, Select } from "@/components/ui";
+import { Card, Button, ComCodeBadge, Input } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -164,10 +165,10 @@ export default function ConsumableLifePage() {
                 <Input placeholder={t("consumables.life.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-3.5 h-3.5" />} fullWidth />
               </div>
               <div className="w-28 flex-shrink-0">
-                <Select options={[{ value: "", label: t("common.allStatus") }, { value: "NORMAL", label: t("consumables.life.normal") }, { value: "WARNING", label: t("consumables.life.warning") }, { value: "REPLACE", label: t("consumables.life.replace") }]} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                <ComCodeSelect groupCode="CONSUMABLE_LIFE_STATUS" value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
               <div className="w-28 flex-shrink-0">
-                <Select options={[{ value: "", label: t("common.all") }, { value: "MOLD", label: t("comCode.CONSUMABLE_CATEGORY.MOLD") }, { value: "JIG", label: t("comCode.CONSUMABLE_CATEGORY.JIG") }, { value: "TOOL", label: t("comCode.CONSUMABLE_CATEGORY.TOOL") }]} value={categoryFilter} onChange={setCategoryFilter} fullWidth />
+                <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} fullWidth />
               </div>
               <Button variant="secondary" onClick={fetchData}>
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />

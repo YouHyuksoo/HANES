@@ -17,10 +17,11 @@ import {
   Plus, Edit2, Trash2, Search, RefreshCw, Settings,
   Wifi, Monitor,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { EquipMaster, EquipType, CommType, COMM_TYPE_COLORS, COMM_TYPE_LABELS } from "../types";
 import api from "@/services/api";
+import { ComCodeSelect, LineSelect, ProcessSelect } from '@/components/shared';
 
 interface FormState {
   id?: string;
@@ -57,9 +58,6 @@ const EMPTY_FORM: FormState = {
   useYn: "Y",
 };
 
-interface LineOption { value: string; label: string; }
-interface ProcessOption { value: string; label: string; }
-
 export default function EquipMasterTab() {
   const { t } = useTranslation();
   const [equipments, setEquipments] = useState<EquipMaster[]>([]);
@@ -71,49 +69,8 @@ export default function EquipMasterTab() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<EquipMaster | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [lineOptions, setLineOptions] = useState<LineOption[]>([{ value: "", label: t("common.all") }]);
-  const [processOptions, setProcessOptions] = useState<ProcessOption[]>([{ value: "", label: t("common.all") }]);
   const [deleteTarget, setDeleteTarget] = useState<EquipMaster | null>(null);
   const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
-
-  // API에서 생산라인 목록 조회
-  const fetchLines = useCallback(async () => {
-    try {
-      const res = await api.get("/equipment/equips/metadata/lines");
-      if (res.data.success) {
-        const opts: LineOption[] = [
-          { value: "", label: t("common.all") },
-          ...((res.data.data || []) as { lineCode: string; lineName: string }[]).map(
-            (l) => ({ value: l.lineCode, label: `${l.lineCode} ${l.lineName}` })
-          ),
-        ];
-        setLineOptions(opts);
-      }
-    } catch (e) {
-      console.error("Failed to fetch lines:", e);
-    }
-  }, [t]);
-
-  // API에서 공정 목록 조회
-  const fetchProcesses = useCallback(async () => {
-    try {
-      const res = await api.get("/equipment/equips/metadata/processes");
-      if (res.data.success) {
-        const opts: ProcessOption[] = [
-          { value: "", label: t("common.all") },
-          ...((res.data.data || []) as { processCode: string; processName: string }[]).map(
-            (p) => ({ value: p.processCode, label: `${p.processCode} ${p.processName}` })
-          ),
-        ];
-        setProcessOptions(opts);
-      }
-    } catch (e) {
-      console.error("Failed to fetch processes:", e);
-    }
-  }, [t]);
-
-  useEffect(() => { fetchLines(); }, [fetchLines]);
-  useEffect(() => { fetchProcesses(); }, [fetchProcesses]);
 
   // API에서 설비 목록 조회
   const fetchEquipments = useCallback(async () => {
@@ -140,30 +97,6 @@ export default function EquipMasterTab() {
   useEffect(() => {
     fetchEquipments();
   }, [fetchEquipments]);
-
-  const equipTypeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
-    { value: "SINGLE_CUT", label: t("master.equip.singleCut", "단선절단") },
-    { value: "MULTI_CUT", label: t("master.equip.multiCut", "다선절단") },
-    { value: "AUTO_CRIMP", label: t("master.equip.autoCrimp", "압착") },
-    { value: "TWIST", label: t("master.equip.twist", "비틀기") },
-    { value: "SOLDER", label: t("master.equip.solder", "납땜") },
-    { value: "HOUSING", label: t("master.equip.housing", "하우징") },
-    { value: "TESTER", label: t("master.equip.tester", "검사기") },
-    { value: "LABEL_PRINTER", label: t("master.equip.labelPrinter", "라벨") },
-    { value: "INSPECTION", label: t("master.equip.inspection", "검사") },
-    { value: "PACKING", label: t("master.equip.packing", "포장") },
-    { value: "OTHER", label: t("master.equip.other", "기타") },
-  ], [t]);
-
-  const commTypeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
-    { value: "NONE", label: "None" },
-    { value: "TCP", label: "TCP/IP" },
-    { value: "SERIAL", label: "Serial" },
-    { value: "MQTT", label: "MQTT" },
-  ], [t]);
-
 
   const openCreate = () => {
     setEditing(null);
@@ -319,9 +252,9 @@ export default function EquipMasterTab() {
                     fullWidth
                   />
                 </div>
-                <Select options={equipTypeOptions} value={typeFilter} onChange={setTypeFilter} placeholder={t("master.equip.type", "유형")} />
-                <Select options={lineOptions} value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
-                <Select options={commTypeOptions} value={commFilter} onChange={setCommFilter} placeholder={t("master.equip.commType", "통신")} />
+                <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} placeholder={t("master.equip.type", "유형")} />
+                <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
+                <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} placeholder={t("master.equip.commType", "통신")} />
               </div>
             } />
         </CardContent>
@@ -352,32 +285,32 @@ export default function EquipMasterTab() {
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select
+            <ComCodeSelect
+              groupCode="EQUIP_TYPE"
+              includeAll={false}
               label={t("master.equip.type", "유형")}
-              options={equipTypeOptions.filter(o => o.value)}
               value={form.equipType}
               onChange={(v) => setForm({ ...form, equipType: v as EquipType })}
               fullWidth
             />
-            <Select
+            <ComCodeSelect
+              groupCode="COMM_TYPE"
+              includeAll={false}
               label={t("master.equip.commType", "통신방식")}
-              options={commTypeOptions.filter(o => o.value)}
               value={form.commType}
               onChange={(v) => setForm({ ...form, commType: v as CommType })}
               fullWidth
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select
+            <LineSelect
               label={t("master.equip.line", "라인")}
-              options={lineOptions}
               value={form.lineCode}
               onChange={(v) => setForm({ ...form, lineCode: v })}
               fullWidth
             />
-            <Select
+            <ProcessSelect
               label={t("master.equip.process", "공정")}
-              options={processOptions}
               value={form.processCode}
               onChange={(v) => setForm({ ...form, processCode: v })}
               fullWidth

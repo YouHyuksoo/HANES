@@ -13,12 +13,12 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Plus, Edit2, RefreshCw, Search, Wrench, AlertTriangle, XCircle, Trash2,
+  Plus, Edit2, RefreshCw, Search, Wrench, Package, Trash2,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
-import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import ConsumableFormPanel, {
   type ConsumableItem,
@@ -27,24 +27,15 @@ import ConsumableFormPanel, {
 
 function ConsumableMasterPage() {
   const { t } = useTranslation();
-  const categoryOptions = useComCodeOptions("CONSUMABLE_CATEGORY");
-
   const [data, setData] = useState<ConsumableItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [stats, setStats] = useState({ total: 0, warning: 0, replace: 0 });
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editing, setEditing] = useState<ConsumableItem | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const panelAnimateRef = useRef(true);
-
-  /* 카테고리 필터 옵션 (전체 + 공통코드) */
-  const filterOptions = useMemo(
-    () => [{ value: "", label: t("consumables.master.allCategories") }, ...categoryOptions],
-    [t, categoryOptions],
-  );
 
   /* 목록 조회 */
   const fetchData = useCallback(async () => {
@@ -63,20 +54,17 @@ function ConsumableMasterPage() {
     }
   }, [categoryFilter, searchTerm]);
 
-  /* 통계 조회 */
-  const fetchSummary = useCallback(async () => {
-    try {
-      const res = await api.get("/consumables/summary");
-      if (res.data.success) setStats(res.data.data);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+  /* 통계: 데이터에서 카테고리별 집계 */
+  const computedStats = useMemo(() => ({
+    total: data.length,
+    mold: data.filter(d => d.category === "MOLD").length,
+    jig: data.filter(d => d.category === "JIG").length,
+    tool: data.filter(d => d.category === "TOOL").length,
+  }), [data]);
 
   useEffect(() => {
     fetchData();
-    fetchSummary();
-  }, [fetchData, fetchSummary]);
+  }, [fetchData]);
 
   /* 등록/수정 */
   const handleSubmit = async (form: ConsumableFormValues) => {
@@ -90,7 +78,6 @@ function ConsumableMasterPage() {
       setIsPanelOpen(false);
       setEditing(null);
       fetchData();
-      fetchSummary();
     } catch {
       /* 에러는 인터셉터 처리 */
     } finally {
@@ -108,7 +95,6 @@ function ConsumableMasterPage() {
     try {
       await api.delete(`/consumables/${deleteTarget}`);
       fetchData();
-      fetchSummary();
     } catch {
       /* ignore */
     } finally {
@@ -145,6 +131,17 @@ function ConsumableMasterPage() {
           </div>
         ),
       },
+      {
+        id: "image",
+        header: t("consumables.master.sectionImage", "이미지"),
+        size: 60,
+        meta: { filterType: "none" as const, align: "center" as const },
+        cell: ({ row }) => row.original.imageUrl ? (
+          <img src={row.original.imageUrl} alt="" className="w-8 h-8 object-cover rounded border border-border" />
+        ) : (
+          <span className="text-text-muted text-xs">-</span>
+        ),
+      },
       { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 120, meta: { filterType: "text" as const } },
       { accessorKey: "consumableName", header: t("consumables.master.name"), size: 170, meta: { filterType: "text" as const } },
       {
@@ -155,47 +152,33 @@ function ConsumableMasterPage() {
         cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />,
       },
       {
-        accessorKey: "currentCount",
-        header: t("consumables.master.currentCount"),
-        size: 100,
-        meta: { filterType: "number" as const },
-        cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
-      },
-      {
         accessorKey: "expectedLife",
         header: t("consumables.master.expectedLife"),
         size: 100,
         meta: { filterType: "number" as const },
-        cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
+        cell: ({ getValue }) => {
+          const v = getValue() as number;
+          return v ? v.toLocaleString() : "-";
+        },
       },
       {
-        id: "lifePercentage",
-        header: t("consumables.master.life"),
-        size: 130,
-        meta: { filterType: "none" as const },
-        cell: ({ row }) => {
-          const { currentCount, expectedLife } = row.original;
-          if (!expectedLife) return "-";
-          const pct = Math.round((currentCount / expectedLife) * 100);
-          const color = pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-yellow-500" : "bg-green-500";
-          return (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
-                <div className={`h-full ${color}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-              </div>
-              <span className="text-xs text-text-muted w-10">{pct}%</span>
-            </div>
-          );
-        },
+        accessorKey: "safetyStock",
+        header: t("consumables.master.safetyStock", "안전재고"),
+        size: 80,
+        meta: { filterType: "number" as const },
+        cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
       },
       { accessorKey: "location", header: t("consumables.master.location"), size: 110, meta: { filterType: "text" as const } },
       { accessorKey: "vendor", header: t("consumables.master.vendor"), size: 100, meta: { filterType: "text" as const } },
       {
-        accessorKey: "status",
-        header: t("common.status"),
-        size: 90,
-        meta: { filterType: "multi" as const },
-        cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} />,
+        accessorKey: "unitPrice",
+        header: t("consumables.master.unitPrice", "단가"),
+        size: 100,
+        meta: { filterType: "number" as const, align: "right" as const },
+        cell: ({ getValue }) => {
+          const v = getValue() as number;
+          return v ? `${v.toLocaleString()}` : "-";
+        },
       },
     ],
     [t, isPanelOpen],
@@ -214,7 +197,7 @@ function ConsumableMasterPage() {
             <p className="text-text-muted mt-1">{t("consumables.master.description")}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={() => { fetchData(); fetchSummary(); }}>
+            <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
             </Button>
             <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditing(null); setIsPanelOpen(true); }}>
@@ -223,10 +206,11 @@ function ConsumableMasterPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <StatCard label={t("consumables.master.totalConsumables")} value={stats.total} icon={Wrench} color="blue" />
-          <StatCard label={t("consumables.master.statusWarning")} value={stats.warning} icon={AlertTriangle} color="yellow" />
-          <StatCard label={t("consumables.master.statusReplace")} value={stats.replace} icon={XCircle} color="red" />
+        <div className="grid grid-cols-4 gap-3">
+          <StatCard label={t("consumables.master.totalConsumables")} value={computedStats.total} icon={Wrench} color="blue" />
+          <StatCard label={t("consumables.master.mold")} value={computedStats.mold} icon={Package} color="purple" />
+          <StatCard label={t("consumables.master.jig")} value={computedStats.jig} icon={Package} color="green" />
+          <StatCard label={t("consumables.master.tool")} value={computedStats.tool} icon={Package} color="yellow" />
         </div>
 
         <Card>
@@ -244,7 +228,7 @@ function ConsumableMasterPage() {
                   <Input placeholder={t("consumables.master.searchPlaceholder")}
                     value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />} />
-                  <Select options={filterOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder={t("consumables.master.category")} />
+                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} placeholder={t("consumables.master.category")} />
                 </div>
               }
             />

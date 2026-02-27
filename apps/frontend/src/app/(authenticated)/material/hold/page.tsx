@@ -2,10 +2,10 @@
 
 /**
  * @file src/app/(authenticated)/material/hold/page.tsx
- * @description 재고홀드 페이지 - LOT 홀드/해제 관리
+ * @description 재고홀드 페이지 - 자재시리얼 홀드/해제 관리
  *
  * 초보자 가이드:
- * 1. **홀드**: 품질 이슈 등으로 LOT 사용 일시 중지
+ * 1. **홀드**: 품질 이슈 등으로 자재시리얼 사용 일시 중지
  * 2. **해제**: 이슈 해결 후 다시 사용 가능 상태로 변경
  * 3. API: GET /material/hold, POST /material/hold/hold, POST /material/hold/release
  */
@@ -68,7 +68,7 @@ export default function HoldPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const statusOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("common.status") },
     { value: "HOLD", label: "HOLD" },
     { value: "NORMAL", label: "NORMAL" },
   ], [t]);
@@ -98,7 +98,7 @@ export default function HoldPage() {
 
   const columns = useMemo<ColumnDef<HoldLot>[]>(() => [
     {
-      accessorKey: "matUid", header: "LOT No.", size: 160,
+      accessorKey: "matUid", header: t("common.matUid"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
@@ -197,7 +197,7 @@ export default function HoldPage() {
                 : "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
             }`}>
               <div className="grid grid-cols-2 gap-3">
-                <div><span className="text-text-muted">LOT:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
+                <div><span className="text-text-muted">{t("common.matUid")}:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
                 <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
                 <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
                 <div><span className="text-text-muted">{t("material.hold.currentQty")}:</span> <span className="font-medium">{selectedLot.currentQty.toLocaleString()}</span></div>

@@ -1,24 +1,26 @@
 "use client";
 
 /**
- * @file src/pages/consumables/stock/StockPage.tsx
- * @description 소모품 재고현황 메인 페이지
+ * @file src/app/(authenticated)/consumables/stock/page.tsx
+ * @description 소모품 재고현황 메인 페이지 — conUid별 개별 인스턴스 조회
  *
  * 초보자 가이드:
- * 1. **현재고**: 입고 - 출고 누적 결과
- * 2. **안전재고**: 이 수량 이하면 '부족' 경고
- * 3. **재고금액**: 단가 × 현재고
+ * 1. **conUid**: 소모품 개별 식별번호 (라벨 바코드)
+ * 2. **인스턴스 상태**: PENDING(미입고), ACTIVE(사용가능), MOUNTED(장착중) 등
+ * 3. **사용횟수**: currentCount / expectedLife 비율로 수명 표시
  */
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, Search, Boxes, AlertTriangle, XCircle, DollarSign } from 'lucide-react';
-import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import { RefreshCw, Search, Boxes, CheckCircle, Wrench, Clock } from 'lucide-react';
+import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
+import { ComCodeSelect } from '@/components/shared';
 import StockTable from '@/components/consumables/StockTable';
 import { useStockData } from '@/hooks/consumables/useStockData';
 
 function ConsumableStockPage() {
   const { t } = useTranslation();
   const {
-    data, searchTerm, setSearchTerm, categoryFilter, setCategoryFilter, summary, refresh,
+    data, isLoading, searchTerm, setSearchTerm, categoryFilter, setCategoryFilter,
+    stockStatusFilter, setStockStatusFilter, summary, refresh,
   } = useStockData();
 
   return (
@@ -38,10 +40,10 @@ function ConsumableStockPage() {
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t('consumables.stock.totalItems')} value={summary.totalItems} icon={Boxes} color="blue" />
-        <StatCard label={t('consumables.stock.belowSafety')} value={summary.belowSafety} icon={AlertTriangle} color="orange" />
-        <StatCard label={t('consumables.stock.outOfStock')} value={summary.outOfStock} icon={XCircle} color="red" />
-        <StatCard label={t('consumables.stock.totalValue')} value={summary.totalValue.toLocaleString() + t('common.won')} icon={DollarSign} color="green" />
+        <StatCard label={t('consumables.stock.totalInstances')} value={summary.totalItems} icon={Boxes} color="blue" />
+        <StatCard label={t('consumables.stock.activeInstances')} value={summary.activeCount} icon={CheckCircle} color="green" />
+        <StatCard label={t('consumables.stock.mountedInstances')} value={summary.mountedCount} icon={Wrench} color="purple" />
+        <StatCard label={t('consumables.stock.pendingInstances')} value={summary.pendingCount} icon={Clock} color="orange" />
       </div>
 
       {/* 필터 + 테이블 */}
@@ -49,6 +51,7 @@ function ConsumableStockPage() {
         <CardContent>
           <StockTable
             data={data}
+            isLoading={isLoading}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
@@ -61,17 +64,10 @@ function ConsumableStockPage() {
                   />
                 </div>
                 <div className="w-36 flex-shrink-0">
-                  <Select
-                    options={[
-                      { value: '', label: t('consumables.stock.allCategories') },
-                      { value: 'MOLD', label: t('consumables.master.mold') },
-                      { value: 'JIG', label: t('consumables.master.jig') },
-                      { value: 'TOOL', label: t('consumables.master.tool') },
-                    ]}
-                    value={categoryFilter}
-                    onChange={setCategoryFilter}
-                    fullWidth
-                  />
+                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <ComCodeSelect groupCode="CON_STOCK_STATUS" value={stockStatusFilter} onChange={setStockStatusFilter} fullWidth />
                 </div>
               </div>
             }

@@ -92,7 +92,7 @@ export default function VendorBarcodeMappingPage() {
   }, [fetchData]);
 
   const matchTypeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("master.vendorBarcode.matchType", "매칭유형") },
     ...MATCH_TYPE_OPTIONS.map(o => ({
       value: o.value,
       label: t(`master.vendorBarcode.match${o.value.charAt(0) + o.value.slice(1).toLowerCase()}`, o.label),

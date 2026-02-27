@@ -104,13 +104,13 @@ export default function IqcHistoryPage() {
   };
 
   const resultOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("material.iqcHistory.result") },
     { value: "PASS", label: t("material.iqcHistory.pass") },
     { value: "FAIL", label: t("material.iqcHistory.fail") },
   ], [t]);
 
   const typeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("material.iqcHistory.inspectType") },
     { value: "INITIAL", label: t("material.iqcHistory.initial") },
     { value: "RETEST", label: t("material.iqcHistory.retest") },
   ], [t]);

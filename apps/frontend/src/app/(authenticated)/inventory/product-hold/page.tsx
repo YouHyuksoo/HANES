@@ -73,13 +73,13 @@ export default function ProductHoldPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const statusOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("common.status") },
     { value: "HOLD", label: "HOLD" },
     { value: "NORMAL", label: "NORMAL" },
   ], [t]);
 
   const typeOptions = useMemo(() => [
-    { value: "", label: t("productHold.allType") },
+    { value: "", label: t("productHold.partType") },
     { value: "WIP", label: "WIP" },
     { value: "FG", label: "FG" },
   ], [t]);

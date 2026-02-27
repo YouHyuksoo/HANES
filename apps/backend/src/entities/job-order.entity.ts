@@ -74,6 +74,9 @@ export class JobOrder {
   @Column({ name: 'STATUS', length: 50, default: 'WAITING' })
   status: string;
 
+  @Column({ name: 'CUST_PO_NO', length: 50, nullable: true })
+  custPoNo: string | null;
+
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 

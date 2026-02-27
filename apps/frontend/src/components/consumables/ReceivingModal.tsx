@@ -6,7 +6,9 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Search } from 'lucide-react';
 import { Button, Input, Modal, Select } from '@/components/ui';
+import { ConsumableSearchModal } from '@/components/shared';
 
 interface ReceivingModalProps {
   isOpen: boolean;
@@ -34,16 +36,11 @@ const defaultValues: ReceivingFormValues = {
   remark: '',
 };
 
-/** 소모품 목록 (TODO: API에서 로드) */
-const consumableOptions = [
-  { value: 'c1', label: 'MOLD-001 - 압착금형 A타입' },
-  { value: 'c2', label: 'TOOL-001 - 절단날 표준형' },
-  { value: 'c3', label: 'JIG-001 - 조립지그 001' },
-];
-
 function ReceivingModal({ isOpen, onClose, onSubmit }: ReceivingModalProps) {
   const { t } = useTranslation();
   const [form, setForm] = useState<ReceivingFormValues>(defaultValues);
+  const [consumableSearchOpen, setConsumableSearchOpen] = useState(false);
+  const [consumableLabel, setConsumableLabel] = useState('');
 
   const handleChange = (field: keyof ReceivingFormValues, value: string | number | null) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -57,19 +54,35 @@ function ReceivingModal({ isOpen, onClose, onSubmit }: ReceivingModalProps) {
 
   const handleClose = () => {
     setForm(defaultValues);
+    setConsumableLabel('');
     onClose();
   };
 
   return (
+    <>
     <Modal isOpen={isOpen} onClose={handleClose} title={t('consumables.receiving.modalTitle')} size="md">
       <div className="space-y-4">
-        <Select
-          label={t('consumables.receiving.consumable')}
-          options={consumableOptions}
-          value={form.consumableId}
-          onChange={(val) => handleChange('consumableId', val)}
-          fullWidth
-        />
+        <div>
+          <label className="block text-sm font-medium text-text mb-1.5">
+            {t('consumables.receiving.consumable')}
+          </label>
+          <div className="flex gap-1.5">
+            <Input
+              value={consumableLabel}
+              readOnly
+              placeholder={t('consumables.search.placeholder')}
+              fullWidth
+            />
+            <button
+              type="button"
+              onClick={() => setConsumableSearchOpen(true)}
+              className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-[var(--radius)] border border-gray-400 dark:border-gray-500 bg-surface hover:bg-primary/10 text-text-muted hover:text-primary transition-colors"
+              title={t('consumables.search.title')}
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
         <Input
           label={t('common.quantity')}
           type="number"
@@ -122,6 +135,16 @@ function ReceivingModal({ isOpen, onClose, onSubmit }: ReceivingModalProps) {
         <Button onClick={handleSubmit}>{t('common.register')}</Button>
       </div>
     </Modal>
+
+    <ConsumableSearchModal
+      isOpen={consumableSearchOpen}
+      onClose={() => setConsumableSearchOpen(false)}
+      onSelect={(item) => {
+        handleChange('consumableId', item.id);
+        setConsumableLabel(`${item.consumableCode} - ${item.consumableName}`);
+      }}
+    />
+    </>
   );
 }
 

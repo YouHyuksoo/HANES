@@ -440,6 +440,20 @@ export class ConsumablesService {
   // =============================================
 
   /**
+   * 소모품 이미지 URL 업데이트
+   */
+  async updateImage(consumableCode: string, imageUrl: string | null) {
+    const consumable = await this.consumableMasterRepository.findOne({
+      where: { consumableCode },
+    });
+    if (!consumable) {
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
+    }
+    await this.consumableMasterRepository.update(consumableCode, { imageUrl });
+    return this.findById(consumableCode);
+  }
+
+  /**
    * 타수 업데이트 (사용 횟수 증가)
    */
   async updateShotCount(dto: UpdateShotCountDto) {

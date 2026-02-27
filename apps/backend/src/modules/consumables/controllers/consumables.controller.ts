@@ -28,12 +28,19 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiConsumes,
   ApiParam,
 } from '@nestjs/swagger';
 import { ConsumablesService } from '../services/consumables.service';
@@ -101,6 +108,58 @@ export class ConsumablesController {
   async findAllLogs(@Query() query: ConsumableLogQueryDto) {
     const result = await this.consumablesService.findAllLogs(query);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  // ===== 이미지 관리 =====
+
+  @Post(':id/image')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: (req: any, file: Express.Multer.File, callback: (error: Error | null, destination: string) => void) => {
+          const uploadPath = './uploads/consumables';
+          if (!existsSync(uploadPath)) {
+            mkdirSync(uploadPath, { recursive: true });
+          }
+          callback(null, uploadPath);
+        },
+        filename: (req: any, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, `consumable-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req: any, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
+        if (!file.mimetype.match(/\/jpg|jpeg|png|gif|webp$/)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @ApiOperation({ summary: '소모품 이미지 업로드' })
+  @ApiConsumes('multipart/form-data')
+  @ApiParam({ name: 'id', description: '소모품 코드' })
+  async uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const imageUrl = `/uploads/consumables/${file.filename}`;
+    const data = await this.consumablesService.updateImage(id, imageUrl);
+    return ResponseUtil.success(data, '이미지가 업로드되었습니다.');
+  }
+
+  @Delete(':id/image')
+  @ApiOperation({ summary: '소모품 이미지 삭제' })
+  @ApiParam({ name: 'id', description: '소모품 코드' })
+  async removeImage(@Param('id') id: string) {
+    const existing = await this.consumablesService.findById(id);
+    if (existing.imageUrl) {
+      const filePath = join('.', existing.imageUrl);
+      try { if (existsSync(filePath)) unlinkSync(filePath); } catch { /* ignore */ }
+    }
+    const data = await this.consumablesService.updateImage(id, null);
+    return ResponseUtil.success(data, '이미지가 삭제되었습니다.');
   }
 
   @Get(':id')

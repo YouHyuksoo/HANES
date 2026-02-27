@@ -43,7 +43,7 @@ export default function IqcGroupTab() {
   const [deleteTarget, setDeleteTarget] = useState<IqcGroupRow | null>(null);
 
   const methodOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("master.iqcGroup.inspectMethod", "검사형태") },
     { value: "FULL", label: t("master.iqcGroup.methodFull", "전수검사") },
     { value: "SAMPLE", label: t("master.iqcGroup.methodSample", "샘플검사") },
     { value: "SKIP", label: t("master.iqcGroup.methodSkip", "무검사") },

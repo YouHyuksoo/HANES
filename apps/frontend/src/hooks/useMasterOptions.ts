@@ -33,6 +33,16 @@ interface WorkerItem {
   workerCode?: string;
 }
 
+interface LineItem {
+  lineCode: string;
+  lineName: string;
+}
+
+interface ProcessItem {
+  processCode: string;
+  processName: string;
+}
+
 interface EquipItem {
   id: string;
   equipCode: string;
@@ -126,6 +136,56 @@ export function useWorkerOptions() {
   }, [data]);
 
   return { options, isLoading };
+}
+
+/**
+ * 라인 목록을 SelectOption[]으로 반환
+ */
+export function useLineOptions() {
+  const { data, isLoading } = useApiQuery<{ data: LineItem[] }>(
+    ["lines", "options"],
+    "/equipment/equips/metadata/lines",
+    { staleTime: 5 * 60 * 1000 },
+  );
+
+  const rawData = useMemo<LineItem[]>(() => {
+    const list = (data?.data as any)?.data ?? data?.data ?? [];
+    return list as LineItem[];
+  }, [data]);
+
+  const options = useMemo<SelectOption[]>(() =>
+    rawData.map((l) => ({
+      value: l.lineCode,
+      label: `${l.lineCode} - ${l.lineName}`,
+    })),
+  [rawData]);
+
+  return { options, isLoading, rawData };
+}
+
+/**
+ * 공정 목록을 SelectOption[]으로 반환
+ */
+export function useProcessOptions() {
+  const { data, isLoading } = useApiQuery<{ data: ProcessItem[] }>(
+    ["processes", "options"],
+    "/equipment/equips/metadata/processes",
+    { staleTime: 5 * 60 * 1000 },
+  );
+
+  const rawData = useMemo<ProcessItem[]>(() => {
+    const list = (data?.data as any)?.data ?? data?.data ?? [];
+    return list as ProcessItem[];
+  }, [data]);
+
+  const options = useMemo<SelectOption[]>(() =>
+    rawData.map((p) => ({
+      value: p.processCode,
+      label: `${p.processCode} - ${p.processName}`,
+    })),
+  [rawData]);
+
+  return { options, isLoading, rawData };
 }
 
 /**

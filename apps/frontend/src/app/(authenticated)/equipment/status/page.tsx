@@ -17,8 +17,8 @@ import {
   Monitor, RefreshCw, Search, CheckCircle, AlertTriangle,
   XCircle, Wifi, Activity,
 } from "lucide-react";
-import { Button, Input, Select, StatCard } from "@/components/ui";
-import { useComCodeOptions } from "@/hooks/useComCode";
+import { Button, Input, StatCard } from "@/components/ui";
+import { ComCodeSelect, LineSelect } from "@/components/shared";
 import { useApiQuery } from "@/hooks/useApi";
 
 interface EquipCard {
@@ -74,25 +74,6 @@ export default function EquipStatusPage() {
     { refetchInterval: 30000 },
   );
   const equipments: EquipCard[] = response?.data ?? [];
-
-  const equipTypeOpts = useComCodeOptions("EQUIP_TYPE");
-  const equipStatusOpts = useComCodeOptions("EQUIP_STATUS");
-
-  const lineOptions = useMemo(() => {
-    const lines = [...new Set(equipments.map((e) => e.lineCode).filter(Boolean))] as string[];
-    lines.sort();
-    return [{ value: "", label: t("equipment.status.allLines") }, ...lines.map((l) => ({ value: l, label: l }))];
-  }, [equipments, t]);
-
-  const typeFilterOpts = useMemo(() => [
-    { value: "", label: t("equipment.status.allTypes") },
-    ...equipTypeOpts,
-  ], [t, equipTypeOpts]);
-
-  const statusFilterOpts = useMemo(() => [
-    { value: "", label: t("common.allStatus") },
-    ...equipStatusOpts,
-  ], [t, equipStatusOpts]);
 
   const filtered = useMemo(() => {
     let list = equipments;
@@ -162,13 +143,13 @@ export default function EquipStatusPage() {
           />
         </div>
         <div className="w-36">
-          <Select options={lineOptions} value={lineFilter} onChange={setLineFilter} fullWidth />
+          <LineSelect value={lineFilter} onChange={setLineFilter} fullWidth />
         </div>
         <div className="w-36">
-          <Select options={typeFilterOpts} value={typeFilter} onChange={setTypeFilter} fullWidth />
+          <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} fullWidth />
         </div>
         <div className="w-36">
-          <Select options={statusFilterOpts} value={statusFilter} onChange={setStatusFilter} fullWidth />
+          <ComCodeSelect groupCode="EQUIP_STATUS" value={statusFilter} onChange={setStatusFilter} fullWidth />
         </div>
         <Button variant="ghost" size="sm" onClick={resetFilters}>{t("common.reset")}</Button>
       </div>

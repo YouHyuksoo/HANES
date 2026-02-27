@@ -27,7 +27,7 @@ export default function LinkItemModal({ isOpen, onClose, equipCode, equipName, a
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const typeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("master.equipInspect.inspectType") },
     { value: "DAILY", label: t("master.equipInspect.typeDaily") },
     { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
   ], [t]);

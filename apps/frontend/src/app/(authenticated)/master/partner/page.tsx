@@ -12,7 +12,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw, Building2 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -29,12 +30,6 @@ function PartnerPage() {
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
   const panelAnimateRef = useRef(true);
-
-  const partnerTypeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
-    { value: "SUPPLIER", label: t("master.partner.supplier") },
-    { value: "CUSTOMER", label: t("master.partner.customer") },
-  ], [t]);
 
   /** API에서 거래처 목록 조회 */
   const fetchPartners = useCallback(async () => {
@@ -144,7 +139,7 @@ function PartnerPage() {
                 <Input placeholder={t("master.partner.searchPlaceholder")} value={searchText}
                   onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
                 <div className="w-40 flex-shrink-0">
-                  <Select options={partnerTypeOptions} value={typeFilter} onChange={setTypeFilter}
+                  <ComCodeSelect groupCode="PARTNER_TYPE" value={typeFilter} onChange={setTypeFilter}
                     placeholder={t("master.partner.partnerType")} fullWidth />
                 </div>
               </div>

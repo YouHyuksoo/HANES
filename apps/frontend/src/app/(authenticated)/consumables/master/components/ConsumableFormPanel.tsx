@@ -11,11 +11,12 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { X, Upload, Trash2, ImageIcon, RefreshCw } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
+import api from "@/services/api";
 
 export interface ConsumableItem {
   id: string;
@@ -32,6 +33,7 @@ export interface ConsumableItem {
   unitPrice: number | null;
   status: string;
   useYn: string;
+  imageUrl: string | null;
 }
 
 export interface ConsumableFormValues {
@@ -72,6 +74,9 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
   const isEdit = !!item;
   const categoryOptions = useComCodeOptions("CONSUMABLE_CATEGORY");
   const [form, setForm] = useState<ConsumableFormValues>(EMPTY);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setForm(
@@ -89,7 +94,34 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
           }
         : EMPTY,
     );
+    setImageUrl(item?.imageUrl ?? null);
   }, [item]);
+
+  /** 이미지 업로드 */
+  const handleImageUpload = async (file: File) => {
+    if (!item) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await api.post(`/consumables/${item.consumableCode}/image`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImageUrl(res.data?.data?.imageUrl ?? null);
+    } catch { /* api interceptor */ }
+    finally { setUploading(false); }
+  };
+
+  /** 이미지 삭제 */
+  const handleImageRemove = async () => {
+    if (!item) return;
+    setUploading(true);
+    try {
+      await api.delete(`/consumables/${item.consumableCode}/image`);
+      setImageUrl(null);
+    } catch { /* api interceptor */ }
+    finally { setUploading(false); }
+  };
 
   const set = (k: keyof ConsumableFormValues, v: string | number | null) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -212,6 +244,76 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
               />
             </div>
           </div>
+        </div>
+
+        {/* 이미지 섹션 */}
+        <div>
+          <h3 className="text-xs font-semibold text-text-muted mb-2">
+            {t("consumables.master.sectionImage", "이미지")}
+          </h3>
+          {!isEdit ? (
+            <div className="w-full h-24 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-1 opacity-50">
+              <ImageIcon className="w-6 h-6 text-text-muted" />
+              <span className="text-xs text-text-muted">{t("consumables.master.imageSaveFirst", "저장 후 이미지를 등록할 수 있습니다")}</span>
+            </div>
+          ) : (
+            <>
+              {imageUrl ? (
+                <div className="relative group">
+                  <img
+                    src={imageUrl}
+                    alt={item?.consumableName || ""}
+                    className="w-full h-48 object-contain rounded-lg border border-border bg-surface"
+                  />
+                  <button
+                    onClick={handleImageRemove}
+                    disabled={uploading}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full h-32 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <RefreshCw className="w-6 h-6 text-text-muted animate-spin" />
+                  ) : (
+                    <ImageIcon className="w-8 h-8 text-text-muted" />
+                  )}
+                  <span className="text-xs text-text-muted">
+                    {uploading ? t("common.uploading", "업로드 중...") : t("consumables.master.imageUploadHint", "클릭하여 이미지 업로드")}
+                  </span>
+                </button>
+              )}
+              {imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="mt-2 w-full text-xs text-primary hover:text-primary/80 flex items-center justify-center gap-1"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {t("consumables.master.imageChange", "이미지 변경")}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file);
+                  e.target.value = "";
+                }}
+              />
+            </>
+          )}
         </div>
       </div>
 

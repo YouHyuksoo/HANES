@@ -209,7 +209,7 @@ export default function EquipBomTab() {
   }, [bomRels, selectedEquipId]);
 
   const itemTypeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("master.equip.itemType", "품목유형") },
     { value: "PART", label: BOM_ITEM_TYPE_LABELS.PART },
     { value: "CONSUMABLE", label: BOM_ITEM_TYPE_LABELS.CONSUMABLE },
   ], [t]);

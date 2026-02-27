@@ -28,7 +28,7 @@ export default function WarehouseList() {
   const [searchText, setSearchText] = useState("");
 
   const WAREHOUSE_TYPES = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("inventory.warehouse.warehouseType") },
     { value: "RAW", label: t("inventory.warehouse.rawWarehouse") },
     { value: "WIP", label: t("inventory.warehouse.wipWarehouse") },
     { value: "FG", label: t("inventory.warehouse.fgWarehouse") },

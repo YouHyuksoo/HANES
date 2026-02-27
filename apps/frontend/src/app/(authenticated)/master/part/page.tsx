@@ -13,7 +13,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, Package, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -97,13 +98,6 @@ export default function PartPage() {
       setDeleteTarget(null);
     }
   }, [deleteTarget, fetchParts]);
-
-  const partTypeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
-    { value: "RAW", label: t("inventory.stock.raw", "원자재") },
-    { value: "WIP", label: t("inventory.stock.wip", "반제품") },
-    { value: "FG", label: t("inventory.stock.fg", "완제품") },
-  ], [t]);
 
   const typeLabels = useMemo<Record<string, string>>(() => ({
     RAW: t("inventory.stock.raw", "원자재"),
@@ -247,7 +241,7 @@ export default function PartPage() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <Select options={partTypeOptions} value={partTypeFilter} onChange={handleTypeFilter} fullWidth />
+                  <ComCodeSelect groupCode="ITEM_TYPE" value={partTypeFilter} onChange={handleTypeFilter} fullWidth />
                 </div>
               </div>
             }

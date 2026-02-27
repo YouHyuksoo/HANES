@@ -70,6 +70,9 @@ export class ConsumableMaster {
   @Column({ name: 'MOUNTED_EQUIP_ID', length: 50, nullable: true })
   mountedEquipCode: string | null;
 
+  @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
+  imageUrl: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

@@ -83,4 +83,7 @@ export class ConsumableLog {
 
   @Column({ name: 'RETURN_REASON', length: 200, nullable: true })
   returnReason: string | null;
+
+  @Column({ name: 'CON_UID', length: 50, nullable: true })
+  conUid: string | null;
 }

@@ -63,7 +63,7 @@ export default function ShelfLifePage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const expiryOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("common.status") },
     { value: "EXPIRED", label: t("material.shelfLife.expired") },
     { value: "NEAR_EXPIRY", label: t("material.shelfLife.nearExpiry") },
     { value: "VALID", label: t("material.shelfLife.valid") },

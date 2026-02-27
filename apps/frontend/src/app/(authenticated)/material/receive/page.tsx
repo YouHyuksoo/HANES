@@ -2,13 +2,13 @@
 
 /**
  * @file src/app/(authenticated)/material/receive/page.tsx
- * @description 입고관리 페이지 - IQC 합격건 일괄/분할 입고 등록
+ * @description 자재입고관리 페이지 - IQC 합격건 일괄/분할 입고 등록
  *
  * 초보자 가이드:
- * 1. **입고대기 탭**: IQC 합격 LOT 중 미입고 건을 체크박스로 선택 → 수량/창고 입력 → 일괄 입고
- * 2. **입고이력 탭**: RECEIVE 타입 StockTransaction 이력 표시
- * 3. **분할 입고**: 잔량 범위 내에서 일부 수량만 입고 가능
- * 4. **통계 카드**: 입고대기 건수/수량, 금일 입고건수/수량
+ * 1. IQC 합격 LOT 중 미입고 건을 체크박스로 선택 -> 수량/창고 입력 -> 일괄 입고
+ * 2. 분할 입고: 잔량 범위 내에서 일부 수량만 입고 가능
+ * 3. 통계 카드: 입고대기 건수/수량, 금일 입고건수/수량
+ * 4. 입고이력은 별도 페이지(/material/receive-history)에서 조회
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -17,17 +17,14 @@ import { PackagePlus, Clock, Package, CheckCircle, Hash, RefreshCw } from 'lucid
 import { Card, CardContent, Button, StatCard } from '@/components/ui';
 import api from '@/services/api';
 import ReceivableTable from './components/ReceivableTable';
-import ReceivingHistoryTable from './components/ReceivingHistoryTable';
-import type { ReceivableLot, ReceivingRecord, ReceivingStats, ReceiveInput } from './components/types';
+import type { ReceivableLot, ReceivingStats, ReceiveInput } from './components/types';
 
 const INITIAL_STATS: ReceivingStats = { pendingCount: 0, pendingQty: 0, todayReceivedCount: 0, todayReceivedQty: 0 };
 
 export default function ReceivingPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'pending' | 'history'>('pending');
 
   const [receivable, setReceivable] = useState<ReceivableLot[]>([]);
-  const [history, setHistory] = useState<ReceivingRecord[]>([]);
   const [stats, setStats] = useState<ReceivingStats>(INITIAL_STATS);
   const [inputs, setInputs] = useState<Record<string, ReceiveInput>>({});
   const [loading, setLoading] = useState(false);
@@ -53,14 +50,6 @@ export default function ReceivingPage() {
     } catch { setReceivable([]); }
   }, []);
 
-  /** 입고 이력 조회 */
-  const fetchHistory = useCallback(async () => {
-    try {
-      const res = await api.get('/material/receiving', { params: { page: 1, limit: 50 } });
-      setHistory(res.data.data || []);
-    } catch { setHistory([]); }
-  }, []);
-
   /** 통계 조회 */
   const fetchStats = useCallback(async () => {
     try {
@@ -72,9 +61,9 @@ export default function ReceivingPage() {
   /** 전체 새로고침 */
   const refresh = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchReceivable(), fetchHistory(), fetchStats()]);
+    await Promise.all([fetchReceivable(), fetchStats()]);
     setLoading(false);
-  }, [fetchReceivable, fetchHistory, fetchStats]);
+  }, [fetchReceivable, fetchStats]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -111,11 +100,6 @@ export default function ReceivingPage() {
     setSubmitting(false);
   };
 
-  const tabClass = (key: string) =>
-    `px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
-      tab === key ? 'border-primary text-primary bg-surface' : 'border-transparent text-text-muted hover:text-text'
-    }`;
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* 헤더 */}
@@ -127,9 +111,17 @@ export default function ReceivingPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('material.receive.description')}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={refresh}>
-          <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectedItems.length > 0 && (
+            <Button size="sm" onClick={handleBulkReceive} disabled={submitting}>
+              <PackagePlus className="w-4 h-4 mr-1" />
+              {t('material.receive.bulkReceive')} ({selectedItems.length})
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={refresh}>
+            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
+          </Button>
+        </div>
       </div>
 
       {/* 통계 카드 */}
@@ -140,29 +132,12 @@ export default function ReceivingPage() {
         <StatCard label={t('material.receive.stats.todayReceivedQty')} value={stats.todayReceivedQty} icon={Hash} color="purple" />
       </div>
 
-      {/* 탭 + 콘텐츠 */}
+      {/* 입고대기 테이블 */}
       <Card>
         <CardContent>
-          <div className="flex items-center gap-1 mb-4 border-b border-border">
-            <button className={tabClass('pending')} onClick={() => setTab('pending')}>
-              {t('material.receive.tabPending')} ({receivable.length})
-            </button>
-            <button className={tabClass('history')} onClick={() => setTab('history')}>
-              {t('material.receive.tabHistory')} ({history.length})
-            </button>
-            {tab === 'pending' && selectedItems.length > 0 && (
-              <div className="ml-auto mb-1">
-                <Button size="sm" onClick={handleBulkReceive} disabled={submitting}>
-                  <PackagePlus className="w-4 h-4 mr-1" />
-                  {t('material.receive.bulkReceive')} ({selectedItems.length})
-                </Button>
-              </div>
-            )}
-          </div>
-
           {loading ? (
             <div className="py-10 text-center text-text-muted">{t('common.loading')}</div>
-          ) : tab === 'pending' ? (
+          ) : (
             <ReceivableTable
               data={receivable}
               inputs={inputs}
@@ -170,8 +145,6 @@ export default function ReceivingPage() {
               onSelectAll={handleSelectAll}
               allSelected={allSelected}
             />
-          ) : (
-            <ReceivingHistoryTable data={history} />
           )}
         </CardContent>
       </Card>

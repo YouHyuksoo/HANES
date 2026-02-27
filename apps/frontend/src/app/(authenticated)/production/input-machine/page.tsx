@@ -21,6 +21,8 @@ import type { Worker } from '@/components/worker/WorkerSelector';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { useInputMachineStore } from '@/stores/inputMachineStore';
+import { LineSelect, ProcessSelect } from '@/components/shared';
+import { useLineOptions, useProcessOptions } from '@/hooks/useMasterOptions';
 
 interface MachineResult {
   id: string;
@@ -36,8 +38,6 @@ interface MachineResult {
   inspectChecked: boolean;
 }
 
-interface LineOption { lineCode: string; lineName: string; }
-interface ProcessOption { processCode: string; processName: string; }
 interface EquipOption { id: string; equipCode: string; equipName: string; }
 
 const consumableParts = ['커팅블레이드 #A1', '프레스금형 #B2', '용접팁 #C3', '윤활유 (500ml)'];
@@ -52,9 +52,6 @@ export default function InputMachinePage() {
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
   const [isJobOrderModalOpen, setIsJobOrderModalOpen] = useState(false);
   
-  // 라인/공정/설비 옵션 목록
-  const [lines, setLines] = useState<LineOption[]>([]);
-  const [processes, setProcesses] = useState<ProcessOption[]>([]);
   const [equips, setEquips] = useState<EquipOption[]>([]);
 
   const {
@@ -70,19 +67,8 @@ export default function InputMachinePage() {
   const [checkedParts, setCheckedParts] = useState<string[]>([]);
   const [form, setForm] = useState({ orderNo: '', equipId: '', workerName: '', matUid: '', goodQty: '', defectQty: '', cycleTime: '', remark: '' });
 
-  // 라인 목록 로드
-  useEffect(() => {
-    api.get('/equipment/equips/metadata/lines')
-      .then(res => setLines(res.data?.data ?? []))
-      .catch(() => setLines([]));
-  }, []);
-
-  // 공정 목록 로드
-  useEffect(() => {
-    api.get('/equipment/equips/metadata/processes')
-      .then(res => setProcesses(res.data?.data ?? []))
-      .catch(() => setProcesses([]));
-  }, []);
+  const { rawData: linesData } = useLineOptions();
+  const { rawData: processesData } = useProcessOptions();
 
   // 설비 목록 로드 (라인 + 공정 필터)
   useEffect(() => {
@@ -131,15 +117,6 @@ export default function InputMachinePage() {
 
   const togglePart = (p: string) => setCheckedParts(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
 
-  // 라인/공정/설비 Select 옵션 변환
-  const lineOptions = useMemo(() =>
-    lines.map(l => ({ value: l.lineCode, label: `${l.lineName} (${l.lineCode})` })),
-  [lines]);
-
-  const processOptions = useMemo(() =>
-    processes.map(p => ({ value: p.processCode, label: `${p.processName} (${p.processCode})` })),
-  [processes]);
-
   const equipOptions = useMemo(() =>
     equips.map(e => ({ value: e.id, label: `${e.equipName} (${e.equipCode})` })),
   [equips]);
@@ -147,14 +124,14 @@ export default function InputMachinePage() {
   /** 라인 선택 */
   const handleLineChange = (value: string) => {
     if (!value) { setSelectedLine(null); return; }
-    const line = lines.find(l => l.lineCode === value);
+    const line = linesData.find(l => l.lineCode === value);
     if (line) setSelectedLine({ lineCode: line.lineCode, lineName: line.lineName });
   };
 
   /** 공정 선택 */
   const handleProcessChange = (value: string) => {
     if (!value) { setSelectedProcess(null); return; }
-    const proc = processes.find(p => p.processCode === value);
+    const proc = processesData.find(p => p.processCode === value);
     if (proc) setSelectedProcess({ processCode: proc.processCode, processName: proc.processName });
   };
 
@@ -273,8 +250,7 @@ export default function InputMachinePage() {
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                <Select
-                  options={lineOptions}
+                <LineSelect
                   value={selectedLine?.lineCode ?? ''}
                   onChange={handleLineChange}
                   placeholder={t('production.inputMachine.clickToSelectLine')}
@@ -283,8 +259,7 @@ export default function InputMachinePage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                <Select
-                  options={processOptions}
+                <ProcessSelect
                   value={selectedProcess?.processCode ?? ''}
                   onChange={handleProcessChange}
                   placeholder={t('production.inputMachine.clickToSelectProcess')}

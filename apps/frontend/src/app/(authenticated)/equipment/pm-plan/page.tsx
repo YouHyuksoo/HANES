@@ -17,12 +17,12 @@ import {
   Wrench, Plus, RefreshCw, Search, Calendar, Edit2, Trash2,
 } from "lucide-react";
 import {
-  Button, Input, Select, StatCard,
+  Button, Input, StatCard,
   ConfirmModal, ComCodeBadge,
 } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { useComCodeOptions } from "@/hooks/useComCode";
+import { ComCodeSelect } from "@/components/shared";
 import PmPlanPanel from "./components/PmPlanPanel";
 import api from "@/services/api";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -65,12 +65,6 @@ export default function PmPlanPage() {
   const panelAnimateRef = useRef(true);
 
   const [deleteTarget, setDeleteTarget] = useState<PmPlanRow | null>(null);
-
-  const pmTypeOptions = useComCodeOptions("PM_TYPE");
-  const pmTypeFilterOpts = useMemo(() => [
-    { value: "", label: t("common.all") },
-    ...pmTypeOptions,
-  ], [t, pmTypeOptions]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -282,7 +276,7 @@ export default function PmPlanPage() {
                   />
                 </div>
                 <div className="w-32">
-                  <Select options={pmTypeFilterOpts} value={pmTypeFilter} onChange={setPmTypeFilter} fullWidth />
+                  <ComCodeSelect groupCode="PM_TYPE" value={pmTypeFilter} onChange={setPmTypeFilter} fullWidth />
                 </div>
                 <div className="flex items-center gap-1">
                   <input

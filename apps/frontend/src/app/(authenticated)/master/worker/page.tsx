@@ -13,7 +13,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, RefreshCw, Users, Search } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
@@ -32,12 +33,6 @@ export default function WorkerPage() {
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Worker | null>(null);
   const panelAnimateRef = useRef(true);
-
-  const useYnOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
-    { value: "Y", label: t("common.yes", "사용") },
-    { value: "N", label: t("common.no", "미사용") },
-  ], [t]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -162,7 +157,7 @@ export default function WorkerPage() {
                     leftIcon={<Search className="w-4 h-4" />}
                   />
                   <div className="w-28 flex-shrink-0">
-                    <Select options={useYnOptions} value={useYnFilter} onChange={setUseYnFilter} fullWidth />
+                    <ComCodeSelect groupCode="USE_YN" value={useYnFilter} onChange={setUseYnFilter} fullWidth />
                   </div>
                 </div>
               }

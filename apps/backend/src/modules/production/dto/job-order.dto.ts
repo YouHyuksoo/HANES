@@ -70,6 +70,12 @@ export class CreateJobOrderDto {
   @IsString()
   parentId?: string;
 
+  @ApiPropertyOptional({ description: '고객 PO 번호', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  custPoNo?: string;
+
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()

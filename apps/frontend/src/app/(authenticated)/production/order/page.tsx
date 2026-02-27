@@ -13,10 +13,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ComCodeBadge, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
-import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import CreateJobOrderModal from "./components/CreateJobOrderModal";
 
@@ -27,6 +27,7 @@ interface JobOrderItem {
   itemCode: string;
   part?: { itemCode?: string; itemName?: string; itemType?: string };
   lineCode?: string;
+  custPoNo?: string | null;
   planQty: number;
   goodQty: number;
   defectQty: number;
@@ -53,17 +54,15 @@ function flattenTree(items: JobOrderItem[], depth = 0): (JobOrderItem & { _depth
 
 export default function JobOrderPage() {
   const { t } = useTranslation();
-  const comCodeStatusOptions = useComCodeOptions("JOB_ORDER_STATUS");
-
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.allStatus") }, ...comCodeStatusOptions,
-  ], [t, comCodeStatusOptions]);
-
   const [data, setData] = useState<JobOrderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 3);
+    return d.toISOString().slice(0, 10);
+  });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showCreate, setShowCreate] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
@@ -149,6 +148,16 @@ export default function JobOrderPage() {
       },
     },
     {
+      accessorKey: "lineCode", header: t("monthlyPlan.lineCode"), size: 90,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => (getValue() as string) || "-",
+    },
+    {
+      accessorKey: "custPoNo", header: t("production.order.custPoNo"), size: 130,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
+    },
+    {
       accessorKey: "planQty", header: t("production.order.planQty"), size: 80,
       cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span>,
       meta: { filterType: "number" as const, align: "right" as const },
@@ -226,7 +235,7 @@ export default function JobOrderPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter}
+                <ComCodeSelect groupCode="JOB_ORDER_STATUS" value={statusFilter}
                   onChange={setStatusFilter} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">

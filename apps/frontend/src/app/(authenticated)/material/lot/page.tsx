@@ -81,14 +81,14 @@ export default function MatLotPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const LOT_STATUS = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("common.status") },
     { value: "NORMAL", label: t("material.lot.status.normal") },
     { value: "HOLD", label: t("material.lot.status.hold") },
     { value: "DEPLETED", label: t("material.lot.status.depleted") },
   ], [t]);
 
   const IQC_STATUS = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: "IQC" },
     { value: "PASS", label: "PASS" },
     { value: "FAIL", label: "FAIL" },
     { value: "PENDING", label: "PENDING" },

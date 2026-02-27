@@ -56,6 +56,9 @@
     "remarkPlaceholder": "Nhập ghi chú",
     "partCode": "Mã linh kiện",
     "partName": "Tên linh kiện",
+    "partSearch": "Tìm kiếm linh kiện",
+    "partSearchPlaceholder": "Nhập mã hoặc tên linh kiện...",
+    "itemType": "Loại linh kiện",
     "matUid": "Số Serial Vật Liệu",
     "prdUid": "Số Serial Sản Phẩm",
     "supUid": "Số Serial Nhà Cung Cấp",
@@ -177,6 +180,7 @@
     "material.arrival": "Quản lý nhập hàng",
     "material.iqc": "Kiểm tra đầu vào (IQC)",
     "material.receive": "Nhập kho vật tư",
+    "material.receiveHistory": "Tra cứu lịch sử nhập kho",
     "material.request": "Quản lý yêu cầu xuất kho",
     "material.issue": "Xuất kho vật tư",
     "material.issueAccount": "Tài khoản xuất kho",
@@ -203,6 +207,7 @@
     "purchasing.po": "Quản lý PO",
     "purchasing.poStatus": "Tra cứu tình trạng PO",
     "production": "Quản lý sản xuất",
+    "production.monthlyPlan": "Kế hoạch sản xuất hàng tháng",
     "production.order": "Quản lý lệnh sản xuất",
     "production.result": "Tra cứu kết quả sản xuất",
     "production.progress": "Tra cứu tình trạng lệnh SX",
@@ -250,6 +255,7 @@
     "customs.usage": "Quản lý khai báo sử dụng",
     "consumables": "Quản lý vật tư tiêu hao",
     "consumables.master": "Quản lý vật tư tiêu hao",
+    "consumables.label": "Phát hành nhãn",
     "consumables.receiving": "Nhập kho",
     "consumables.issuing": "Xuất kho",
     "consumables.stock": "Tra cứu tồn kho",
@@ -1364,6 +1370,10 @@
       "confirmReceiving": "Xác nhận nhập kho",
       "confirmTitle": "Xác nhận nhập kho"
     },
+    "receiveHistory": {
+      "title": "Tra cứu lịch sử nhập kho",
+      "description": "Xem lịch sử nhập kho vật tư."
+    },
     "receiveLabel": {
       "title": "Phát hành nhãn nhập kho",
       "subtitle": "Chọn LOT đạt IQC và phát hành nhãn lô vật tư.",
@@ -1611,17 +1621,34 @@
       "partnerName": "Đối tác",
       "orderDate": "Ngày đặt hàng",
       "dueDate": "Ngày giao hàng",
-      "itemCount": "Số mục",
+      "itemCode": "Mã mục",
+      "itemName": "Tên mục",
+      "spec": "Quy cách",
+      "unit": "Đơn vị",
+      "orderQty": "SL đặt hàng",
+      "receivedQty": "SL nhập kho",
+      "unitPrice": "Đơn giá",
+      "amount": "Thành tiền",
       "totalAmount": "Tổng tiền",
-      "searchPlaceholder": "Tìm mã PO, đối tác..."
+      "searchPlaceholder": "Tìm mã PO, đối tác, mục...",
+      "stats": {
+        "total": "Tổng PO",
+        "confirmed": "Đã xác nhận",
+        "partial": "Nhập một phần",
+        "received": "Nhập hoàn tất"
+      }
     },
     "poStatus": {
       "title": "Tình trạng PO",
       "subtitle": "Xem tình trạng đơn đặt hàng.",
+      "itemCode": "Mã mục",
+      "itemName": "Tên mục",
+      "spec": "Quy cách",
+      "unit": "Đơn vị",
       "orderQty": "SL đặt hàng",
       "receivedQty": "SL đã nhận",
       "receiveRate": "Tỷ lệ nhận",
-      "searchPlaceholder": "Tìm mã PO, đối tác...",
+      "searchPlaceholder": "Tìm mã PO, đối tác, mục...",
       "stats": {
         "total": "Tổng PO",
         "confirmed": "Đã xác nhận",
@@ -2210,6 +2237,7 @@
       "partType": "Loại SP",
       "planDate": "Ngày KH",
       "priority": "Ưu tiên",
+      "custPoNo": "Số PO khách hàng",
       "autoCreateChildren": "Tự động tạo lệnh SX bán thành phẩm từ BOM",
       "treeView": "Dạng cây",
       "listView": "Dạng danh sách",
@@ -3331,7 +3359,11 @@
       "jig": "Jig",
       "tool": "Dụng cụ",
       "expectedLifeCount": "Tuổi thọ (số lần)",
-      "warningThreshold": "Ngưỡng cảnh báo"
+      "warningThreshold": "Ngưỡng cảnh báo",
+      "sectionImage": "Hình ảnh",
+      "imageUploadHint": "Nhấp để tải lên hình ảnh",
+      "imageChange": "Thay đổi hình ảnh",
+      "imageSaveFirst": "Lưu trước để tải lên hình ảnh"
     },
     "receiving": {
       "title": "Nhập kho vật tư tiêu hao",
@@ -3358,7 +3390,17 @@
       "typeReplacement": "Thay thế",
       "returnReasonLabel": "Lý do trả hàng",
       "returnReasonPlaceholder": "Nhập lý do trả hàng",
-      "remarkPlaceholder": "Nhập ghi chú"
+      "remarkPlaceholder": "Nhập ghi chú",
+      "scanTitle": "Nhập kho bằng quét mã vạch",
+      "scanPlaceholder": "Quét mã vạch UID vật tư...",
+      "locationPlaceholder": "Vị trí lưu trữ (tùy chọn)",
+      "confirmBtn": "Xác nhận nhập",
+      "scanResult": "Kết quả",
+      "scanSuccess": "Đã nhập",
+      "scanFail": "Thất bại",
+      "scanConfirmedCount": "{{count}} đã xác nhận",
+      "pendingTitle": "Danh sách chờ nhập",
+      "labelPrintedAt": "Ngày in nhãn"
     },
     "issuing": {
       "title": "Xuất kho vật tư tiêu hao",
@@ -3398,24 +3440,67 @@
       "belowSafety": "Dưới mức an toàn",
       "outOfStock": "Hết hàng",
       "totalValue": "Tổng giá trị",
-      "searchPlaceholder": "Tìm mã, tên vật tư...",
+      "searchPlaceholder": "Tìm UID, mã, tên vật tư...",
       "allCategories": "Tất cả danh mục",
       "categoryMold": "Khuôn",
       "categoryJig": "Đồ gá",
       "categoryTool": "Dụng cụ",
       "statusOutOfStock": "Hết hàng",
       "statusShortage": "Thiếu",
-      "statusNormal": "Bình thường"
+      "statusNormal": "Bình thường",
+      "conUid": "UID vật tư",
+      "instanceStatus": "Trạng thái",
+      "shotCount": "Số lần sử dụng",
+      "recvDate": "Ngày nhập",
+      "mountedEquip": "Thiết bị gắn",
+      "totalInstances": "Tổng thể hiện",
+      "activeInstances": "Sẵn sàng",
+      "mountedInstances": "Đang gắn",
+      "pendingInstances": "Chờ nhập",
+      "statusPending": "Chờ nhập",
+      "statusActive": "Sẵn sàng",
+      "statusMounted": "Đang gắn",
+      "statusRepair": "Đang sửa",
+      "statusScrapped": "Hủy bỏ"
     },
     "life": {
       "title": "Tình trạng tuổi thọ",
       "subtitle": "Xem tình trạng tuổi thọ vật tư tiêu hao.",
       "description": "Xem tình trạng tuổi thọ vật tư tiêu hao.",
       "sortedByUsage": "Sắp xếp theo sử dụng",
-      "remaining": "Tuổi thọ còn lại",
+      "remaining": "Còn lại",
       "exceeded": "Vượt tuổi thọ",
       "reset": "Reset",
-      "lastReplaced": "Thay thế lần cuối"
+      "lastReplaced": "Thay thế lần cuối",
+      "normal": "Bình thường",
+      "warning": "Cảnh báo",
+      "replace": "Cần thay thế",
+      "categoryLabel": "Phân loại",
+      "location": "Vị trí",
+      "lifeLabel": "Tuổi thọ",
+      "currentExpected": "Đã dùng / Dự kiến",
+      "replaceAction": "Thay thế",
+      "searchPlaceholder": "Tìm mã, tên..."
+    },
+    "label": {
+      "title": "Phát hành nhãn vật tư tiêu hao",
+      "subtitle": "Phát hành UID vật tư tiêu hao và in nhãn.",
+      "issueBtn": "Phát hành UID",
+      "issuing": "Đang phát hành...",
+      "printTitle": "Nhãn vật tư tiêu hao",
+      "totalMasters": "Tổng danh mục",
+      "pendingCount": "UID chờ nhập",
+      "selectedCount": "Đã chọn",
+      "selectedQty": "Số lượng phát hành",
+      "instanceCount": "Thể hiện",
+      "pending": "Chờ nhập",
+      "qtyInput": "Số lượng",
+      "searchPlaceholder": "Tìm mã, tên vật tư...",
+      "issueSuccess": "Đã tạo {{count}} UID vật tư tiêu hao."
+    },
+    "search": {
+      "title": "Tìm vật tư tiêu hao",
+      "placeholder": "Nhập mã hoặc tên vật tư..."
     }
   },
   "outsourcing": {
@@ -3596,7 +3681,7 @@
     "INTERFACE_STATUS": { "PENDING": "Chờ gửi", "SENT": "Đã gửi", "FAILED": "Gửi thất bại", "CONFIRMED": "Đã xác nhận" },
     "CONNECTION_STATUS": { "CONNECTED": "Đã kết nối", "DISCONNECTED": "Ngắt kết nối", "ERROR": "Lỗi" },
     "PROCESS_TYPE": { "CUTTING": "Cắt", "CRIMPING": "Ép", "ASSEMBLY": "Lắp ráp", "INSPECTION": "Kiểm tra", "PACKING": "Đóng gói", "CUT": "Cắt", "CRIMP": "Ép đầu", "ASSY": "Lắp ráp", "INSP": "Kiểm tra", "PACK": "Đóng gói" },
-    "ITEM_TYPE": { "RAW_MATERIAL": "Nguyên liệu", "SEMI_PRODUCT": "Bán thành phẩm", "FINISHED": "Thành phẩm", "CONSUMABLE": "Vật tư tiêu hao" },
+    "ITEM_TYPE": { "RAW_MATERIAL": "Nguyên liệu", "SEMI_PRODUCT": "Bán thành phẩm", "FINISHED": "Thành phẩm", "CONSUMABLE": "Vật tư tiêu hao", "RAW": "Nguyên liệu", "WIP": "Bán thành phẩm", "FG": "Thành phẩm" },
     "BOM_TYPE": { "PRODUCTION": "Sản xuất", "STANDARD": "Tiêu chuẩn", "ENGINEERING": "Thiết kế" },
     "WAREHOUSE_TYPE": { "RAW_MATERIAL": "Nguyên liệu", "WIP": "Bán thành phẩm", "FINISHED": "Thành phẩm", "MRB": "Cách ly lỗi", "HOLD": "Giữ lại" },
     "INVENTORY_MOVE_TYPE": { "RECEIPT": "Nhập kho", "ISSUE": "Xuất kho", "TRANSFER": "Di chuyển", "ADJUSTMENT": "Điều chỉnh", "SCRAP": "Loại bỏ" },
@@ -3629,7 +3714,7 @@
     "USAGE_REPORT_STATUS": { "DRAFT": "Bản nháp", "REPORTED": "Đã báo cáo", "CONFIRMED": "Đã xác nhận" },
     "SUBCON_ORDER_STATUS": { "ORDERED": "Đã đặt hàng", "DELIVERED": "Đã giao hàng", "PARTIAL_RECV": "Nhập một phần", "RECEIVED": "Nhập hoàn tất", "CLOSED": "Đã đóng", "CANCELED": "Đã hủy" },
     "SUBCON_INSPECT_RESULT": { "PASS": "Đạt", "FAIL": "Không đạt", "PARTIAL": "Đạt một phần" },
-    "COMM_TYPE": { "MQTT": "MQTT", "SERIAL": "Serial", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
+    "COMM_TYPE": { "NONE": "Không", "MQTT": "MQTT", "SERIAL": "Serial", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
     "BAUD_RATE": { "9600": "9600", "19200": "19200", "38400": "38400", "57600": "57600", "115200": "115200" },
     "DATA_BITS": { "7": "7 bit", "8": "8 bit" },
     "STOP_BITS": { "1": "1", "1.5": "1.5", "2": "2" },
@@ -3647,7 +3732,10 @@
     "PM_ITEM_TYPE": { "CHECK": "Kiểm tra", "REPLACE": "Thay thế", "CLEAN": "Vệ sinh", "ADJUST": "Điều chỉnh", "LUBRICATE": "Bôi trơn" },
     "PM_WO_TYPE": { "PLANNED": "Kế hoạch", "EMERGENCY": "Khẩn cấp", "BREAKDOWN": "Hỏng hóc" },
     "PM_WO_STATUS": { "PLANNED": "Kế hoạch", "IN_PROGRESS": "Đang thực hiện", "COMPLETED": "Hoàn thành", "OVERDUE": "Quá hạn", "CANCELLED": "Đã hủy" },
-    "PM_PRIORITY": { "LOW": "Thấp", "MEDIUM": "Trung bình", "HIGH": "Cao", "URGENT": "Khẩn cấp" }
+    "PM_PRIORITY": { "LOW": "Thấp", "MEDIUM": "Trung bình", "HIGH": "Cao", "URGENT": "Khẩn cấp" },
+    "PO_STATUS": { "DRAFT": "Bản nháp", "CONFIRMED": "Đã xác nhận", "PARTIAL": "Nhập một phần", "RECEIVED": "Nhập hoàn tất", "CLOSED": "Đã đóng" },
+    "CONSUMABLE_LIFE_STATUS": { "NORMAL": "Bình thường", "WARNING": "Cảnh báo", "REPLACE": "Cần thay thế" },
+    "CON_STOCK_STATUS": { "PENDING": "Chờ nhập", "ACTIVE": "Khả dụng", "MOUNTED": "Đang lắp", "REPAIR": "Đang sửa", "SCRAPPED": "Đã hủy" }
   },
   "comCodeGroup": {
     "JOB_ORDER_STATUS": "Trạng thái lệnh sản xuất",
@@ -3720,7 +3808,10 @@
     "PM_ITEM_TYPE": "Loại hạng mục PM",
     "PM_WO_TYPE": "Loại WO",
     "PM_WO_STATUS": "Trạng thái WO",
-    "PM_PRIORITY": "Mức ưu tiên"
+    "PM_PRIORITY": "Mức ưu tiên",
+    "PO_STATUS": "Trạng thái đơn hàng",
+    "CONSUMABLE_LIFE_STATUS": "Trạng thái tuổi thọ vật tư",
+    "CON_STOCK_STATUS": "Trạng thái tồn kho vật tư"
   },
   "export": {
     "title": "Xuất dữ liệu",
@@ -3959,5 +4050,55 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "Bật ghi nhật ký hoạt động",
     "ENABLE_ACTIVITY_LOG_DESC": "Ghi lại lịch sử đăng nhập và truy cập trang của người dùng."
+  },
+  "monthlyPlan": {
+    "title": "Kế hoạch sản xuất hàng tháng",
+    "description": "Đăng ký và quản lý kế hoạch sản xuất hàng tháng.",
+    "planNo": "Mã KH",
+    "planMonth": "Tháng KH",
+    "itemType": "Loại SP",
+    "planQty": "SL kế hoạch",
+    "orderQty": "SL chỉ thị",
+    "issueRate": "Tỷ lệ phát hành",
+    "customer": "Khách hàng",
+    "lineCode": "Dây chuyền",
+    "priority": "Ưu tiên",
+    "confirm": "Xác nhận",
+    "unconfirm": "Hủy xác nhận",
+    "close": "Đóng",
+    "addPlan": "Thêm KH",
+    "editPlan": "Sửa KH",
+    "excelUpload": "Tải lên Excel",
+    "searchPlaceholder": "Tìm mã KH / mã SP / tên SP",
+    "sectionBasic": "Thông tin cơ bản",
+    "sectionDetail": "Chi tiết",
+    "stats": {
+      "total": "Tổng",
+      "draft": "Nháp",
+      "confirmed": "Đã xác nhận",
+      "closed": "Đã đóng"
+    },
+    "excel": {
+      "title": "Tải lên Excel",
+      "downloadTemplate": "Tải mẫu",
+      "selectFile": "Chọn tệp",
+      "planMonthLabel": "Tháng KH",
+      "itemCode": "Mã SP",
+      "itemType": "Loại SP",
+      "planQty": "SL kế hoạch",
+      "customer": "Khách hàng",
+      "lineCode": "Dây chuyền",
+      "priority": "Ưu tiên",
+      "remark": "Ghi chú",
+      "validRows": "hàng hợp lệ",
+      "upload": "Tải lên",
+      "uploadSuccess": "Đã đăng ký {{count}} kế hoạch sản xuất.",
+      "uploadFailed": "Tải lên thất bại."
+    },
+    "validation": {
+      "itemCodeRequired": "Mã SP bắt buộc",
+      "itemTypeInvalid": "Chỉ FG/WIP",
+      "planQtyRequired": "SL phải ≥ 1"
+    }
   }
 }

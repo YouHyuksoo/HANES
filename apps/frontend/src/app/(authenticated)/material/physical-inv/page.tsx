@@ -67,7 +67,7 @@ export default function PhysicalInvPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const warehouseOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("common.warehouse") },
     ...warehouseOpts,
   ], [t, warehouseOpts]);
 

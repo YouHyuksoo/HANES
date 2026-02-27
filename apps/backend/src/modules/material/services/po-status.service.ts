@@ -89,6 +89,7 @@ export class PoStatusService {
           ...item,
           itemCode: part?.itemCode,
           itemName: part?.itemName,
+          spec: part?.spec,
           unit: part?.unit,
           receiveRate: item.orderQty > 0 ? Math.round((item.receivedQty / item.orderQty) * 100) : 0,
         };

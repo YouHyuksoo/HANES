@@ -22,6 +22,7 @@ interface ProductSummary {
   itemCode: string;
   itemName: string;
   itemType: string;
+  lineCode: string;
   totalPlanQty: number;
   totalGoodQty: number;
   totalDefectQty: number;
@@ -99,6 +100,11 @@ export default function ResultSummaryPage() {
           : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
         return <span className={`px-2 py-0.5 text-xs rounded-full ${cls}`}>{v || "-"}</span>;
       },
+    },
+    {
+      accessorKey: "lineCode", header: t("production.progress.line"), size: 90,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => (getValue() as string) || "-",
     },
     {
       accessorKey: "totalPlanQty", header: t("production.resultSummary.planQty"), size: 90,

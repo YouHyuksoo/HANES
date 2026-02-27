@@ -41,7 +41,7 @@ export default function ItemMasterTab() {
   const [form, setForm] = useState<FormState>(emptyForm);
 
   const typeOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("master.equipInspect.inspectType") },
     { value: "DAILY", label: t("master.equipInspect.typeDaily") },
     { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
   ], [t]);

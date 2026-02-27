@@ -110,6 +110,7 @@ export default function ProdResultPage() {
       },
       { accessorKey: 'orderNo', header: t('production.result.orderNo'), size: 150, meta: { filterType: 'text' as const } },
       { accessorKey: 'itemName', header: t('production.result.partName'), size: 130, meta: { filterType: 'text' as const } },
+      { accessorKey: 'lineName', header: t('production.progress.line'), size: 90, meta: { filterType: 'text' as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
       { accessorKey: 'equipName', header: t('production.result.equipment'), size: 90, meta: { filterType: 'text' as const } },
       {
         accessorKey: 'workerName', header: t('production.result.worker'), size: 110,

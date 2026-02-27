@@ -56,6 +56,9 @@
     "remarkPlaceholder": "请输入备注",
     "partCode": "零件代码",
     "partName": "零件名称",
+    "partSearch": "品目搜索",
+    "partSearchPlaceholder": "输入品目代码或名称...",
+    "itemType": "品目类型",
     "matUid": "材料序列号",
     "prdUid": "产品序列号",
     "supUid": "供应商序列号",
@@ -177,6 +180,7 @@
     "material.arrival": "到货管理",
     "material.iqc": "来料检验(IQC)",
     "material.receive": "物料入库管理",
+    "material.receiveHistory": "入库历史查询",
     "material.request": "出库申请管理",
     "material.issue": "物料出库管理",
     "material.issueAccount": "出库账户",
@@ -203,6 +207,7 @@
     "purchasing.po": "PO管理",
     "purchasing.poStatus": "PO现况查询",
     "production": "生产管理",
+    "production.monthlyPlan": "月度生产计划",
     "production.order": "作业指示管理",
     "production.result": "生产实绩查询",
     "production.progress": "作业指示现况查询",
@@ -250,6 +255,7 @@
     "customs.usage": "使用申报管理",
     "consumables": "耗材管理",
     "consumables.master": "耗材管理",
+    "consumables.label": "标签发行",
     "consumables.receiving": "入库管理",
     "consumables.issuing": "出库管理",
     "consumables.stock": "库存状况查询",
@@ -1363,6 +1369,10 @@
       "confirmReceiving": "确认入库",
       "confirmTitle": "入库确认"
     },
+    "receiveHistory": {
+      "title": "入库历史查询",
+      "description": "查询物料入库历史记录。"
+    },
     "receiveLabel": {
       "title": "入库标签发行",
       "subtitle": "选择IQC合格LOT并发行物料批次标签。",
@@ -1610,17 +1620,34 @@
       "partnerName": "合作伙伴",
       "orderDate": "订单日期",
       "dueDate": "交货日期",
-      "itemCount": "品目数",
+      "itemCode": "品目编号",
+      "itemName": "品目名称",
+      "spec": "规格",
+      "unit": "单位",
+      "orderQty": "订单数量",
+      "receivedQty": "入库数量",
+      "unitPrice": "单价",
+      "amount": "金额",
       "totalAmount": "总金额",
-      "searchPlaceholder": "搜索PO编号、合作伙伴..."
+      "searchPlaceholder": "搜索PO编号、合作伙伴、品目...",
+      "stats": {
+        "total": "总PO",
+        "confirmed": "已确认",
+        "partial": "部分入库",
+        "received": "入库完成"
+      }
     },
     "poStatus": {
       "title": "PO现况",
       "subtitle": "查看采购订单现况。",
+      "itemCode": "品目编号",
+      "itemName": "品目名称",
+      "spec": "规格",
+      "unit": "单位",
       "orderQty": "订单数量",
       "receivedQty": "入库数量",
       "receiveRate": "入库率",
-      "searchPlaceholder": "搜索PO编号、合作伙伴...",
+      "searchPlaceholder": "搜索PO编号、合作伙伴、品目...",
       "stats": {
         "total": "全部PO",
         "confirmed": "已确认",
@@ -2209,6 +2236,7 @@
       "partType": "品目类型",
       "planDate": "计划日期",
       "priority": "优先级",
+      "custPoNo": "客户PO编号",
       "autoCreateChildren": "基于BOM自动创建半成品工单",
       "treeView": "树状图",
       "listView": "列表视图",
@@ -3330,7 +3358,11 @@
       "jig": "夹具",
       "tool": "工具",
       "expectedLifeCount": "预期寿命（次数）",
-      "warningThreshold": "警告阈值"
+      "warningThreshold": "警告阈值",
+      "sectionImage": "图片",
+      "imageUploadHint": "点击上传图片",
+      "imageChange": "更换图片",
+      "imageSaveFirst": "保存后可上传图片"
     },
     "receiving": {
       "title": "耗材入库",
@@ -3357,7 +3389,17 @@
       "typeReplacement": "更换",
       "returnReasonLabel": "退货原因",
       "returnReasonPlaceholder": "请输入退货原因",
-      "remarkPlaceholder": "请输入备注"
+      "remarkPlaceholder": "请输入备注",
+      "scanTitle": "条码扫描入库",
+      "scanPlaceholder": "请扫描耗材UID条码...",
+      "locationPlaceholder": "存放位置（选填）",
+      "confirmBtn": "确认入库",
+      "scanResult": "结果",
+      "scanSuccess": "入库完成",
+      "scanFail": "入库失败",
+      "scanConfirmedCount": "{{count}}件已确认",
+      "pendingTitle": "待入库列表",
+      "labelPrintedAt": "标签打印日"
     },
     "issuing": {
       "title": "耗材出库",
@@ -3397,14 +3439,28 @@
       "belowSafety": "低于安全库存",
       "outOfStock": "缺货",
       "totalValue": "总金额",
-      "searchPlaceholder": "搜索耗材代码、名称...",
+      "searchPlaceholder": "搜索UID、代码、名称...",
       "allCategories": "全部类别",
       "categoryMold": "模具",
       "categoryJig": "治具",
       "categoryTool": "工具",
       "statusOutOfStock": "无库存",
       "statusShortage": "不足",
-      "statusNormal": "正常"
+      "statusNormal": "正常",
+      "conUid": "耗材UID",
+      "instanceStatus": "实例状态",
+      "shotCount": "使用次数",
+      "recvDate": "入库日期",
+      "mountedEquip": "安装设备",
+      "totalInstances": "全部实例",
+      "activeInstances": "可用",
+      "mountedInstances": "安装中",
+      "pendingInstances": "待入库",
+      "statusPending": "待入库",
+      "statusActive": "可用",
+      "statusMounted": "安装中",
+      "statusRepair": "维修中",
+      "statusScrapped": "报废"
     },
     "life": {
       "title": "寿命状况",
@@ -3414,7 +3470,36 @@
       "remaining": "剩余寿命",
       "exceeded": "寿命超过",
       "reset": "重置",
-      "lastReplaced": "最后更换日期"
+      "lastReplaced": "最后更换日期",
+      "normal": "正常",
+      "warning": "警告",
+      "replace": "需更换",
+      "categoryLabel": "分类",
+      "location": "位置",
+      "lifeLabel": "寿命",
+      "currentExpected": "使用量/预期寿命",
+      "replaceAction": "更换",
+      "searchPlaceholder": "搜索代码、名称..."
+    },
+    "label": {
+      "title": "耗材标签发行",
+      "subtitle": "发行耗材UID并打印标签。",
+      "issueBtn": "发行UID",
+      "issuing": "发行中...",
+      "printTitle": "耗材标签",
+      "totalMasters": "全部主数据",
+      "pendingCount": "待入库UID",
+      "selectedCount": "已选",
+      "selectedQty": "发行数量",
+      "instanceCount": "实例",
+      "pending": "待入库",
+      "qtyInput": "发行数量",
+      "searchPlaceholder": "搜索耗材代码、名称...",
+      "issueSuccess": "已创建{{count}}个耗材UID。"
+    },
+    "search": {
+      "title": "耗材搜索",
+      "placeholder": "输入耗材代码或名称..."
     }
   },
   "outsourcing": {
@@ -3595,7 +3680,7 @@
     "INTERFACE_STATUS": { "PENDING": "待传送", "SENT": "传送完成", "FAILED": "传送失败", "CONFIRMED": "确认完成" },
     "CONNECTION_STATUS": { "CONNECTED": "已连接", "DISCONNECTED": "连接断开", "ERROR": "错误" },
     "PROCESS_TYPE": { "CUTTING": "切断", "CRIMPING": "压接", "ASSEMBLY": "组装", "INSPECTION": "检查", "PACKING": "包装", "CUT": "切割", "CRIMP": "压接", "ASSY": "组装", "INSP": "检查", "PACK": "包装" },
-    "ITEM_TYPE": { "RAW_MATERIAL": "原材料", "SEMI_PRODUCT": "半成品", "FINISHED": "成品", "CONSUMABLE": "消耗品" },
+    "ITEM_TYPE": { "RAW_MATERIAL": "原材料", "SEMI_PRODUCT": "半成品", "FINISHED": "成品", "CONSUMABLE": "消耗品", "RAW": "原材料", "WIP": "半成品", "FG": "成品" },
     "BOM_TYPE": { "PRODUCTION": "生产用", "STANDARD": "标准", "ENGINEERING": "设计用" },
     "WAREHOUSE_TYPE": { "RAW_MATERIAL": "原材料", "WIP": "在制品", "FINISHED": "成品", "MRB": "不良品隔离", "HOLD": "保留" },
     "INVENTORY_MOVE_TYPE": { "RECEIPT": "入库", "ISSUE": "出库", "TRANSFER": "移动", "ADJUSTMENT": "调整", "SCRAP": "废弃" },
@@ -3628,7 +3713,7 @@
     "USAGE_REPORT_STATUS": { "DRAFT": "草稿", "REPORTED": "报告", "CONFIRMED": "确认" },
     "SUBCON_ORDER_STATUS": { "ORDERED": "订购", "DELIVERED": "交付", "PARTIAL_RECV": "部分入库", "RECEIVED": "入库完成", "CLOSED": "截止", "CANCELED": "取消" },
     "SUBCON_INSPECT_RESULT": { "PASS": "合格", "FAIL": "不合格", "PARTIAL": "部分合格" },
-    "COMM_TYPE": { "MQTT": "MQTT", "SERIAL": "串口", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
+    "COMM_TYPE": { "NONE": "无", "MQTT": "MQTT", "SERIAL": "串口", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
     "BAUD_RATE": { "9600": "9600", "19200": "19200", "38400": "38400", "57600": "57600", "115200": "115200" },
     "DATA_BITS": { "7": "7位", "8": "8位" },
     "STOP_BITS": { "1": "1", "1.5": "1.5", "2": "2" },
@@ -3646,7 +3731,10 @@
     "PM_ITEM_TYPE": { "CHECK": "检查", "REPLACE": "更换", "CLEAN": "清洁", "ADJUST": "调整", "LUBRICATE": "润滑" },
     "PM_WO_TYPE": { "PLANNED": "计划", "EMERGENCY": "紧急", "BREAKDOWN": "故障" },
     "PM_WO_STATUS": { "PLANNED": "计划", "IN_PROGRESS": "进行中", "COMPLETED": "完成", "OVERDUE": "逾期", "CANCELLED": "取消" },
-    "PM_PRIORITY": { "LOW": "低", "MEDIUM": "中", "HIGH": "高", "URGENT": "紧急" }
+    "PM_PRIORITY": { "LOW": "低", "MEDIUM": "中", "HIGH": "高", "URGENT": "紧急" },
+    "PO_STATUS": { "DRAFT": "草稿", "CONFIRMED": "已确认", "PARTIAL": "部分入库", "RECEIVED": "入库完成", "CLOSED": "截止" },
+    "CONSUMABLE_LIFE_STATUS": { "NORMAL": "正常", "WARNING": "注意", "REPLACE": "需要更换" },
+    "CON_STOCK_STATUS": { "PENDING": "待入库", "ACTIVE": "可用", "MOUNTED": "安装中", "REPAIR": "维修中", "SCRAPPED": "报废" }
   },
   "comCodeGroup": {
     "JOB_ORDER_STATUS": "作业指示状态",
@@ -3719,7 +3807,10 @@
     "PM_ITEM_TYPE": "PM项目类型",
     "PM_WO_TYPE": "工单类型",
     "PM_WO_STATUS": "工单状态",
-    "PM_PRIORITY": "优先级"
+    "PM_PRIORITY": "优先级",
+    "PO_STATUS": "采购订单状态",
+    "CONSUMABLE_LIFE_STATUS": "消耗品寿命状态",
+    "CON_STOCK_STATUS": "消耗品库存状态"
   },
   "export": {
     "title": "导出",
@@ -3958,5 +4049,55 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "启用活动日志",
     "ENABLE_ACTIVITY_LOG_DESC": "记录用户登录和页面访问历史。"
+  },
+  "monthlyPlan": {
+    "title": "月度生产计划",
+    "description": "登录并管理每月生产计划。",
+    "planNo": "计划编号",
+    "planMonth": "计划月份",
+    "itemType": "品目类型",
+    "planQty": "计划数量",
+    "orderQty": "指示数量",
+    "issueRate": "发行率",
+    "customer": "客户",
+    "lineCode": "产线",
+    "priority": "优先级",
+    "confirm": "确认",
+    "unconfirm": "取消确认",
+    "close": "关闭",
+    "addPlan": "添加计划",
+    "editPlan": "编辑计划",
+    "excelUpload": "Excel上传",
+    "searchPlaceholder": "搜索计划编号/品目代码/品目名称",
+    "sectionBasic": "基本信息",
+    "sectionDetail": "详细信息",
+    "stats": {
+      "total": "全部",
+      "draft": "草稿",
+      "confirmed": "已确认",
+      "closed": "已关闭"
+    },
+    "excel": {
+      "title": "Excel上传",
+      "downloadTemplate": "下载模板",
+      "selectFile": "选择文件",
+      "planMonthLabel": "计划月份",
+      "itemCode": "品目代码",
+      "itemType": "品目类型",
+      "planQty": "计划数量",
+      "customer": "客户",
+      "lineCode": "产线",
+      "priority": "优先级",
+      "remark": "备注",
+      "validRows": "条有效",
+      "upload": "上传",
+      "uploadSuccess": "已成功登录{{count}}条生产计划。",
+      "uploadFailed": "上传失败。"
+    },
+    "validation": {
+      "itemCodeRequired": "品目代码必填",
+      "itemTypeInvalid": "仅限FG/WIP",
+      "planQtyRequired": "数量需≥1"
+    }
   }
 }

@@ -56,6 +56,9 @@
     "remarkPlaceholder": "비고 입력",
     "partCode": "품목코드",
     "partName": "품목명",
+    "partSearch": "품목 검색",
+    "partSearchPlaceholder": "품목코드 또는 품목명 입력...",
+    "itemType": "품목유형",
     "matUid": "자재시리얼",
     "prdUid": "제품시리얼",
     "supUid": "공급상시리얼",
@@ -178,6 +181,7 @@
     "material.iqc": "수입검사(IQC)",
     "material.receiveLabel": "입고라벨발행",
     "material.receive": "자재입고관리",
+    "material.receiveHistory": "입고이력조회",
     "material.request": "출고요청관리",
     "material.issue": "자재출고관리",
     "material.issueAccount": "출고계정",
@@ -204,6 +208,7 @@
     "purchasing.po": "PO관리",
     "purchasing.poStatus": "PO현황조회",
     "production": "생산관리",
+    "production.monthlyPlan": "월간생산계획",
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
     "production.progress": "작업지시현황조회",
@@ -251,6 +256,7 @@
     "customs.usage": "사용신고관리",
     "consumables": "소모품관리",
     "consumables.master": "소모품관리",
+    "consumables.label": "라벨발행",
     "consumables.receiving": "입고관리",
     "consumables.issuing": "출고관리",
     "consumables.stock": "재고현황조회",
@@ -1425,6 +1431,10 @@
       "confirmReceiving": "입고확정",
       "confirmTitle": "입고확정"
     },
+    "receiveHistory": {
+      "title": "입고이력조회",
+      "description": "자재 입고 이력을 조회합니다."
+    },
     "receiveLabel": {
       "title": "입고라벨 발행",
       "subtitle": "IQC 합격 LOT를 선택하여 자재롯트 라벨을 발행합니다.",
@@ -1672,17 +1682,34 @@
       "partnerName": "거래처",
       "orderDate": "발주일",
       "dueDate": "납기일",
-      "itemCount": "품목수",
+      "itemCode": "품목코드",
+      "itemName": "품목명",
+      "spec": "규격",
+      "unit": "단위",
+      "orderQty": "발주수량",
+      "receivedQty": "입고수량",
+      "unitPrice": "단가",
+      "amount": "금액",
       "totalAmount": "총금액",
-      "searchPlaceholder": "PO번호, 거래처 검색..."
+      "searchPlaceholder": "PO번호, 거래처, 품목 검색...",
+      "stats": {
+        "total": "전체PO",
+        "confirmed": "확정",
+        "partial": "부분입고",
+        "received": "입고완료"
+      }
     },
     "poStatus": {
       "title": "PO현황",
       "subtitle": "구매발주 현황을 조회합니다.",
+      "itemCode": "품목코드",
+      "itemName": "품목명",
+      "spec": "규격",
+      "unit": "단위",
       "orderQty": "발주수량",
       "receivedQty": "입고수량",
       "receiveRate": "입고율",
-      "searchPlaceholder": "PO번호, 거래처 검색...",
+      "searchPlaceholder": "PO번호, 거래처, 품목 검색...",
       "stats": {
         "total": "전체PO",
         "confirmed": "확정",
@@ -2271,6 +2298,7 @@
       "partType": "품목유형",
       "planDate": "계획일",
       "priority": "우선순위",
+      "custPoNo": "고객PO번호",
       "autoCreateChildren": "BOM 기반 반제품 작업지시 자동생성",
       "treeView": "트리뷰",
       "listView": "목록뷰",
@@ -3375,7 +3403,11 @@
       "jig": "지그",
       "tool": "공구",
       "expectedLifeCount": "기대수명(횟수)",
-      "warningThreshold": "경고 임계값"
+      "warningThreshold": "경고 임계값",
+      "sectionImage": "이미지",
+      "imageUploadHint": "클릭하여 이미지 업로드",
+      "imageChange": "이미지 변경",
+      "imageSaveFirst": "저장 후 이미지를 등록할 수 있습니다"
     },
     "receiving": {
       "title": "소모품입고",
@@ -3402,7 +3434,17 @@
       "returnReasonPlaceholder": "반품사유 입력",
       "remarkPlaceholder": "비고 입력",
       "typeIn": "입고",
-      "typeInReturn": "입고반품"
+      "typeInReturn": "입고반품",
+      "scanTitle": "바코드 스캔 입고",
+      "scanPlaceholder": "소모품 UID 바코드를 스캔하세요...",
+      "locationPlaceholder": "보관위치 (선택)",
+      "confirmBtn": "입고확정",
+      "scanResult": "결과",
+      "scanSuccess": "입고완료",
+      "scanFail": "입고실패",
+      "scanConfirmedCount": "{{count}}건 입고확정",
+      "pendingTitle": "미입고 대기목록",
+      "labelPrintedAt": "라벨인쇄일"
     },
     "issuing": {
       "title": "소모품출고",
@@ -3442,14 +3484,28 @@
       "belowSafety": "안전재고 미달",
       "outOfStock": "재고없음",
       "totalValue": "총 가액",
-      "searchPlaceholder": "소모품코드, 소모품명 검색...",
+      "searchPlaceholder": "UID, 소모품코드, 소모품명 검색...",
       "allCategories": "전체 카테고리",
       "categoryMold": "금형",
       "categoryJig": "지그",
       "categoryTool": "공구",
       "statusOutOfStock": "재고없음",
       "statusShortage": "부족",
-      "statusNormal": "정상"
+      "statusNormal": "정상",
+      "conUid": "소모품 UID",
+      "instanceStatus": "인스턴스 상태",
+      "shotCount": "사용횟수",
+      "recvDate": "입고일",
+      "mountedEquip": "장착설비",
+      "totalInstances": "전체 인스턴스",
+      "activeInstances": "사용가능",
+      "mountedInstances": "장착중",
+      "pendingInstances": "미입고",
+      "statusPending": "미입고",
+      "statusActive": "사용가능",
+      "statusMounted": "장착중",
+      "statusRepair": "수리중",
+      "statusScrapped": "폐기"
     },
     "life": {
       "title": "수명현황",
@@ -3459,7 +3515,36 @@
       "remaining": "잔여수명",
       "exceeded": "수명초과",
       "reset": "리셋",
-      "lastReplaced": "마지막 교체일"
+      "lastReplaced": "마지막 교체일",
+      "normal": "정상",
+      "warning": "주의",
+      "replace": "교체필요",
+      "categoryLabel": "분류",
+      "location": "위치",
+      "lifeLabel": "수명",
+      "currentExpected": "사용량/기대수명",
+      "replaceAction": "교체",
+      "searchPlaceholder": "코드, 소모품명 검색..."
+    },
+    "label": {
+      "title": "소모품 라벨발행",
+      "subtitle": "소모품 UID를 발행하고 라벨을 인쇄합니다.",
+      "issueBtn": "UID 발행",
+      "issuing": "발행 중...",
+      "printTitle": "소모품 라벨",
+      "totalMasters": "전체 마스터",
+      "pendingCount": "미입고 UID",
+      "selectedCount": "선택 건수",
+      "selectedQty": "발행 수량",
+      "instanceCount": "인스턴스",
+      "pending": "미입고",
+      "qtyInput": "발행수량",
+      "searchPlaceholder": "소모품코드, 소모품명 검색...",
+      "issueSuccess": "{{count}}건의 소모품 UID가 생성되었습니다."
+    },
+    "search": {
+      "title": "소모품 검색",
+      "placeholder": "소모품코드 또는 소모품명 입력..."
     }
   },
   "outsourcing": {
@@ -3640,7 +3725,7 @@
     "INTERFACE_STATUS": { "PENDING": "전송대기", "SENT": "전송완료", "FAILED": "전송실패", "CONFIRMED": "확인완료" },
     "CONNECTION_STATUS": { "CONNECTED": "연결됨", "DISCONNECTED": "연결끊김", "ERROR": "오류" },
     "PROCESS_TYPE": { "CUTTING": "절단", "CRIMPING": "압착", "ASSEMBLY": "조립", "INSPECTION": "검사", "PACKING": "포장", "CUT": "절단", "CRIMP": "압착", "ASSY": "조립", "INSP": "검사", "PACK": "포장" },
-    "ITEM_TYPE": { "RAW_MATERIAL": "원자재", "SEMI_PRODUCT": "반제품", "FINISHED": "완제품", "CONSUMABLE": "소모품" },
+    "ITEM_TYPE": { "RAW_MATERIAL": "원자재", "SEMI_PRODUCT": "반제품", "FINISHED": "완제품", "CONSUMABLE": "소모품", "RAW": "원자재", "WIP": "반제품", "FG": "완제품" },
     "BOM_TYPE": { "PRODUCTION": "생산용", "STANDARD": "표준", "ENGINEERING": "설계용" },
     "WAREHOUSE_TYPE": { "RAW_MATERIAL": "원자재", "WIP": "재공품", "FINISHED": "완제품", "MRB": "불량품 격리", "HOLD": "보류" },
     "INVENTORY_MOVE_TYPE": { "RECEIPT": "입고", "ISSUE": "출고", "TRANSFER": "이동", "ADJUSTMENT": "조정", "SCRAP": "폐기" },
@@ -3673,7 +3758,7 @@
     "USAGE_REPORT_STATUS": { "DRAFT": "초안", "REPORTED": "보고", "CONFIRMED": "확인" },
     "SUBCON_ORDER_STATUS": { "ORDERED": "발주", "DELIVERED": "납품", "PARTIAL_RECV": "부분입고", "RECEIVED": "입고완료", "CLOSED": "마감", "CANCELED": "취소" },
     "SUBCON_INSPECT_RESULT": { "PASS": "합격", "FAIL": "불합격", "PARTIAL": "부분합격" },
-    "COMM_TYPE": { "MQTT": "MQTT", "SERIAL": "시리얼", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
+    "COMM_TYPE": { "NONE": "없음", "MQTT": "MQTT", "SERIAL": "시리얼", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
     "BAUD_RATE": { "9600": "9600", "19200": "19200", "38400": "38400", "57600": "57600", "115200": "115200" },
     "DATA_BITS": { "7": "7비트", "8": "8비트" },
     "STOP_BITS": { "1": "1", "1.5": "1.5", "2": "2" },
@@ -3691,7 +3776,10 @@
     "PM_ITEM_TYPE": { "CHECK": "점검", "REPLACE": "교체", "CLEAN": "청소", "ADJUST": "조정", "LUBRICATE": "윤활" },
     "PM_WO_TYPE": { "PLANNED": "계획", "EMERGENCY": "긴급", "BREAKDOWN": "고장" },
     "PM_WO_STATUS": { "PLANNED": "예정", "IN_PROGRESS": "진행중", "COMPLETED": "완료", "OVERDUE": "연체", "CANCELLED": "취소" },
-    "PM_PRIORITY": { "LOW": "낮음", "MEDIUM": "보통", "HIGH": "높음", "URGENT": "긴급" }
+    "PM_PRIORITY": { "LOW": "낮음", "MEDIUM": "보통", "HIGH": "높음", "URGENT": "긴급" },
+    "PO_STATUS": { "DRAFT": "임시저장", "CONFIRMED": "확정", "PARTIAL": "부분입고", "RECEIVED": "입고완료", "CLOSED": "마감" },
+    "CONSUMABLE_LIFE_STATUS": { "NORMAL": "정상", "WARNING": "주의", "REPLACE": "교체필요" },
+    "CON_STOCK_STATUS": { "PENDING": "미입고", "ACTIVE": "사용가능", "MOUNTED": "장착중", "REPAIR": "수리중", "SCRAPPED": "폐기" }
   },
   "comCodeGroup": {
     "JOB_ORDER_STATUS": "작업지시 상태",
@@ -3764,7 +3852,10 @@
     "PM_ITEM_TYPE": "PM 항목유형",
     "PM_WO_TYPE": "WO 유형",
     "PM_WO_STATUS": "WO 상태",
-    "PM_PRIORITY": "우선순위"
+    "PM_PRIORITY": "우선순위",
+    "PO_STATUS": "발주 상태",
+    "CONSUMABLE_LIFE_STATUS": "소모품 수명 상태",
+    "CON_STOCK_STATUS": "소모품 재고 상태"
   },
   "export": {
     "title": "내보내기",
@@ -4003,5 +4094,55 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "활동 로깅 활성화",
     "ENABLE_ACTIVITY_LOG_DESC": "사용자 로그인 및 페이지 접속 기록을 저장합니다."
+  },
+  "monthlyPlan": {
+    "title": "월간생산계획",
+    "description": "월별 생산 계획을 등록하고 관리합니다.",
+    "planNo": "계획번호",
+    "planMonth": "계획월",
+    "itemType": "품목유형",
+    "planQty": "계획수량",
+    "orderQty": "지시수량",
+    "issueRate": "발행률",
+    "customer": "고객사",
+    "lineCode": "라인",
+    "priority": "우선순위",
+    "confirm": "확정",
+    "unconfirm": "확정취소",
+    "close": "마감",
+    "addPlan": "계획 추가",
+    "editPlan": "계획 수정",
+    "excelUpload": "엑셀 업로드",
+    "searchPlaceholder": "계획번호/품목코드/품목명 검색",
+    "sectionBasic": "기본정보",
+    "sectionDetail": "상세정보",
+    "stats": {
+      "total": "전체",
+      "draft": "초안",
+      "confirmed": "확정",
+      "closed": "마감"
+    },
+    "excel": {
+      "title": "엑셀 업로드",
+      "downloadTemplate": "템플릿 다운로드",
+      "selectFile": "파일 선택",
+      "planMonthLabel": "계획월",
+      "itemCode": "품목코드",
+      "itemType": "품목유형",
+      "planQty": "계획수량",
+      "customer": "고객사",
+      "lineCode": "라인",
+      "priority": "우선순위",
+      "remark": "비고",
+      "validRows": "건 유효",
+      "upload": "업로드",
+      "uploadSuccess": "{{count}}건의 생산계획이 등록되었습니다.",
+      "uploadFailed": "업로드에 실패했습니다."
+    },
+    "validation": {
+      "itemCodeRequired": "품목코드 필수",
+      "itemTypeInvalid": "FG/WIP만 가능",
+      "planQtyRequired": "수량 1 이상"
+    }
   }
 }

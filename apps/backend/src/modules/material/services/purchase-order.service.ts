@@ -84,6 +84,7 @@ export class PurchaseOrderService {
           ...item,
           itemCode: part?.itemCode,
           itemName: part?.itemName,
+          spec: part?.spec,
           unit: part?.unit,
         };
       });
@@ -119,6 +120,7 @@ export class PurchaseOrderService {
           ...item,
           itemCode: part?.itemCode,
           itemName: part?.itemName,
+          spec: part?.spec,
           unit: part?.unit,
         };
       }),
@@ -179,6 +181,7 @@ export class PurchaseOrderService {
             ...item,
             itemCode: part?.itemCode,
             itemName: part?.itemName,
+            spec: part?.spec,
             unit: part?.unit,
           };
         }),

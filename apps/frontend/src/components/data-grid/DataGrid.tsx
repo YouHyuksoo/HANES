@@ -90,6 +90,10 @@ export interface DataGridProps<T> {
   enableColumnPinning?: boolean;
   /** 초기 고정 컬럼 설정 (예: { left: ['col1', 'col2'] }) */
   defaultPinnedColumns?: { left?: string[]; right?: string[] };
+  /** 선택된 행의 ID (하이라이트 표시) */
+  selectedRowId?: string;
+  /** 행에서 고유 ID를 추출하는 함수 */
+  getRowId?: (row: T) => string;
 }
 
 function DataGrid<T>({
@@ -111,6 +115,8 @@ function DataGrid<T>({
   toolbarLeft,
   enableColumnPinning = false,
   defaultPinnedColumns,
+  selectedRowId,
+  getRowId,
 }: DataGridProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -364,14 +370,14 @@ function DataGrid<T>({
                     <th
                       key={header.id}
                       className={`
-                        group/resize relative px-3 py-1.5 font-semibold text-text
+                        group/resize relative px-3 py-2 font-semibold text-text
                         border-b border-r border-border last:border-r-0
                         whitespace-nowrap
                         transition-all duration-150
                         ${getAlignmentClass(headerAlign)}
                         ${isDragging ? 'opacity-50 bg-primary/10' : ''}
                         ${isDropTarget ? 'bg-primary/20 border-l-2 border-l-primary' : ''}
-                        ${pinned ? 'bg-background dark:bg-background' : ''}
+                        ${pinned ? 'bg-slate-200 dark:bg-slate-800' : 'bg-slate-200 dark:bg-slate-800'}
                       `}
                       style={{
                         width: columnSizing[header.id] ? header.getSize() : 'auto',
@@ -451,14 +457,20 @@ function DataGrid<T>({
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row, index) => (
+              table.getRowModel().rows.map((row, index) => {
+                const isSelected = selectedRowId != null && getRowId
+                  ? getRowId(row.original) === selectedRowId
+                  : false;
+                return (
                 <tr
                   key={row.id}
                   onClick={() => onRowClick?.(row.original)}
                   className={`
                     border-b border-border last:border-b-0
                     transition-colors duration-150
-                    ${index % 2 === 0 ? 'bg-surface' : 'bg-background/50'}
+                    ${isSelected
+                      ? 'bg-primary/10 dark:bg-primary/20 ring-1 ring-inset ring-primary/30'
+                      : index % 2 === 0 ? 'bg-surface' : 'bg-background/50'}
                     ${onRowClick ? 'cursor-pointer' : ''}
                     hover:bg-primary/5
                     ${rowClassName?.(row.original, index) ?? ''}
@@ -470,13 +482,13 @@ function DataGrid<T>({
                     const isLastLeftPinned = pinned === 'left' && cell.column.getIsLastColumn('left');
                     const isFirstRightPinned = pinned === 'right' && cell.column.getIsFirstColumn('right');
                     const pinnedBg = pinned
-                      ? (index % 2 === 0 ? 'bg-surface dark:bg-surface' : 'bg-background dark:bg-background')
+                      ? (isSelected ? 'bg-primary/10 dark:bg-primary/20' : index % 2 === 0 ? 'bg-surface dark:bg-surface' : 'bg-background dark:bg-background')
                       : '';
 
                     return (
                       <td
                         key={cell.id}
-                        className={`px-3 py-1 text-text whitespace-nowrap ${getAlignmentClass(cellAlign)} ${pinnedBg}`}
+                        className={`px-3 py-2 text-text whitespace-nowrap ${getAlignmentClass(cellAlign)} ${pinnedBg}`}
                         style={{
                           width: columnSizing[cell.column.id] ? cell.column.getSize() : 'auto',
                           minWidth: cell.column.columnDef.minSize ?? 50,
@@ -488,7 +500,8 @@ function DataGrid<T>({
                     );
                   })}
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

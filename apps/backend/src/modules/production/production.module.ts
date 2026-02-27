@@ -38,6 +38,8 @@ import { SampleInspectController } from './controllers/sample-inspect.controller
 import { SampleInspectService } from './services/sample-inspect.service';
 import { ProductLabelController } from './controllers/product-label.controller';
 import { ProductLabelService } from './services/product-label.service';
+import { ProdPlanController } from './controllers/prod-plan.controller';
+import { ProdPlanService } from './services/prod-plan.service';
 import { InventoryModule } from '../inventory/inventory.module';
 
 // Entities
@@ -56,10 +58,11 @@ import { MatStock } from '../../entities/mat-stock.entity';
 import { BomMaster } from '../../entities/bom-master.entity';
 import { SampleInspectResult } from '../../entities/sample-inspect-result.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
+import { ProdPlan } from '../../entities/prod-plan.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan]),
     InventoryModule,
   ],
   controllers: [
@@ -68,6 +71,7 @@ import { LabelPrintLog } from '../../entities/label-print-log.entity';
     ProductionViewsController,
     SampleInspectController,
     ProductLabelController,
+    ProdPlanController,
   ],
   providers: [
     JobOrderService,
@@ -75,12 +79,14 @@ import { LabelPrintLog } from '../../entities/label-print-log.entity';
     ProductionViewsService,
     SampleInspectService,
     ProductLabelService,
+    ProdPlanService,
   ],
   exports: [
     JobOrderService,
     ProdResultService,
     ProductionViewsService,
     SampleInspectService,
+    ProdPlanService,
   ],
 })
 export class ProductionModule {}

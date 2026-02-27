@@ -101,7 +101,7 @@ export default function LocationList() {
   }, [data, searchText]);
 
   const filterOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("common.warehouse") },
     ...whOptions,
   ], [t, whOptions]);
 

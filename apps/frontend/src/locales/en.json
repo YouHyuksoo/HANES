@@ -56,6 +56,9 @@
     "remarkPlaceholder": "Enter remark",
     "partCode": "Part Code",
     "partName": "Part Name",
+    "partSearch": "Part Search",
+    "partSearchPlaceholder": "Enter part code or name...",
+    "itemType": "Item Type",
     "matUid": "Material Serial",
     "prdUid": "Product Serial",
     "supUid": "Supplier Serial",
@@ -177,6 +180,7 @@
     "material.arrival": "Arrival",
     "material.iqc": "IQC Inspection",
     "material.receive": "Material Receiving",
+    "material.receiveHistory": "Receiving History",
     "material.request": "Issue Request Mgmt",
     "material.issue": "Material Issuing",
     "material.issueAccount": "Issue Account",
@@ -203,6 +207,7 @@
     "purchasing.po": "Purchase Order",
     "purchasing.poStatus": "PO Status Inquiry",
     "production": "Production",
+    "production.monthlyPlan": "Monthly Plan",
     "production.order": "Work Order Mgmt",
     "production.result": "Production Result Inquiry",
     "production.progress": "Order Progress Inquiry",
@@ -250,6 +255,7 @@
     "customs.usage": "Usage Report Mgmt",
     "consumables": "Consumables",
     "consumables.master": "Consumable Mgmt",
+    "consumables.label": "Label Issuance",
     "consumables.receiving": "Receiving",
     "consumables.issuing": "Issuing",
     "consumables.stock": "Stock Status Inquiry",
@@ -1363,6 +1369,10 @@
       "confirmReceiving": "Confirm Receiving",
       "confirmTitle": "Confirm Receiving"
     },
+    "receiveHistory": {
+      "title": "Receiving History",
+      "description": "View material receiving history."
+    },
     "receiveLabel": {
       "title": "Receive Label",
       "subtitle": "Select IQC passed LOTs and issue material lot labels.",
@@ -1610,17 +1620,34 @@
       "partnerName": "Partner",
       "orderDate": "Order Date",
       "dueDate": "Due Date",
-      "itemCount": "Items",
+      "itemCode": "Item Code",
+      "itemName": "Item Name",
+      "spec": "Spec",
+      "unit": "Unit",
+      "orderQty": "Order Qty",
+      "receivedQty": "Received Qty",
+      "unitPrice": "Unit Price",
+      "amount": "Amount",
       "totalAmount": "Total Amount",
-      "searchPlaceholder": "Search PO number, partner..."
+      "searchPlaceholder": "Search PO number, partner, item...",
+      "stats": {
+        "total": "Total PO",
+        "confirmed": "Confirmed",
+        "partial": "Partial",
+        "received": "Received"
+      }
     },
     "poStatus": {
       "title": "PO Status",
       "subtitle": "View purchase order status.",
+      "itemCode": "Item Code",
+      "itemName": "Item Name",
+      "spec": "Spec",
+      "unit": "Unit",
       "orderQty": "Order Qty",
       "receivedQty": "Received Qty",
       "receiveRate": "Receive Rate",
-      "searchPlaceholder": "Search PO number, partner...",
+      "searchPlaceholder": "Search PO number, partner, item...",
       "stats": {
         "total": "Total PO",
         "confirmed": "Confirmed",
@@ -2209,6 +2236,7 @@
       "partType": "Part Type",
       "planDate": "Plan Date",
       "priority": "Priority",
+      "custPoNo": "Customer PO No.",
       "autoCreateChildren": "Auto-create sub-assembly job orders from BOM",
       "treeView": "Tree View",
       "listView": "List View",
@@ -3330,7 +3358,11 @@
       "jig": "Jig",
       "tool": "Tool",
       "expectedLifeCount": "Expected Life (Count)",
-      "warningThreshold": "Warning Threshold"
+      "warningThreshold": "Warning Threshold",
+      "sectionImage": "Image",
+      "imageUploadHint": "Click to upload image",
+      "imageChange": "Change Image",
+      "imageSaveFirst": "Save first to upload image"
     },
     "receiving": {
       "title": "Consumable Receiving",
@@ -3357,7 +3389,17 @@
       "typeReplacement": "Replacement",
       "returnReasonLabel": "Return Reason",
       "returnReasonPlaceholder": "Enter return reason",
-      "remarkPlaceholder": "Enter remark"
+      "remarkPlaceholder": "Enter remark",
+      "scanTitle": "Barcode Scan Receiving",
+      "scanPlaceholder": "Scan consumable UID barcode...",
+      "locationPlaceholder": "Location (optional)",
+      "confirmBtn": "Confirm",
+      "scanResult": "Result",
+      "scanSuccess": "Confirmed",
+      "scanFail": "Failed",
+      "scanConfirmedCount": "{{count}} confirmed",
+      "pendingTitle": "Pending List",
+      "labelPrintedAt": "Label Printed"
     },
     "issuing": {
       "title": "Consumable Issuing",
@@ -3397,24 +3439,67 @@
       "belowSafety": "Below Safety Stock",
       "outOfStock": "Out of Stock",
       "totalValue": "Total Value",
-      "searchPlaceholder": "Search consumable code, name...",
+      "searchPlaceholder": "Search UID, code, name...",
       "allCategories": "All Categories",
       "categoryMold": "Mold",
       "categoryJig": "Jig",
       "categoryTool": "Tool",
       "statusOutOfStock": "Out of Stock",
       "statusShortage": "Shortage",
-      "statusNormal": "Normal"
+      "statusNormal": "Normal",
+      "conUid": "Consumable UID",
+      "instanceStatus": "Instance Status",
+      "shotCount": "Shot Count",
+      "recvDate": "Received Date",
+      "mountedEquip": "Mounted Equip",
+      "totalInstances": "Total Instances",
+      "activeInstances": "Active",
+      "mountedInstances": "Mounted",
+      "pendingInstances": "Pending",
+      "statusPending": "Pending",
+      "statusActive": "Active",
+      "statusMounted": "Mounted",
+      "statusRepair": "Repairing",
+      "statusScrapped": "Scrapped"
     },
     "life": {
       "title": "Life Status",
       "subtitle": "View consumable life status.",
       "description": "View consumable life status.",
       "sortedByUsage": "Sort by Usage",
-      "remaining": "Remaining Life",
+      "remaining": "Remaining",
       "exceeded": "Life Exceeded",
       "reset": "Reset",
-      "lastReplaced": "Last Replaced"
+      "lastReplaced": "Last Replaced",
+      "normal": "Normal",
+      "warning": "Warning",
+      "replace": "Replace",
+      "categoryLabel": "Category",
+      "location": "Location",
+      "lifeLabel": "Life",
+      "currentExpected": "Used / Expected",
+      "replaceAction": "Replace",
+      "searchPlaceholder": "Search code, name..."
+    },
+    "label": {
+      "title": "Consumable Label Issuance",
+      "subtitle": "Issue consumable UIDs and print labels.",
+      "issueBtn": "Issue UID",
+      "issuing": "Issuing...",
+      "printTitle": "Consumable Label",
+      "totalMasters": "Total Masters",
+      "pendingCount": "Pending UIDs",
+      "selectedCount": "Selected",
+      "selectedQty": "Issue Qty",
+      "instanceCount": "Instances",
+      "pending": "Pending",
+      "qtyInput": "Issue Qty",
+      "searchPlaceholder": "Search consumable code, name...",
+      "issueSuccess": "{{count}} consumable UIDs have been created."
+    },
+    "search": {
+      "title": "Consumable Search",
+      "placeholder": "Enter consumable code or name..."
     }
   },
   "outsourcing": {
@@ -3595,7 +3680,7 @@
     "INTERFACE_STATUS": { "PENDING": "Pending", "SENT": "Sent", "FAILED": "Failed", "CONFIRMED": "Confirmed" },
     "CONNECTION_STATUS": { "CONNECTED": "Connected", "DISCONNECTED": "Disconnected", "ERROR": "Error" },
     "PROCESS_TYPE": { "CUTTING": "Cutting", "CRIMPING": "Crimping", "ASSEMBLY": "Assembly", "INSPECTION": "Inspection", "PACKING": "Packing", "CUT": "Cutting", "CRIMP": "Crimping", "ASSY": "Assembly", "INSP": "Inspection", "PACK": "Packing" },
-    "ITEM_TYPE": { "RAW_MATERIAL": "Raw Material", "SEMI_PRODUCT": "Semi Product", "FINISHED": "Finished", "CONSUMABLE": "Consumable" },
+    "ITEM_TYPE": { "RAW_MATERIAL": "Raw Material", "SEMI_PRODUCT": "Semi Product", "FINISHED": "Finished", "CONSUMABLE": "Consumable", "RAW": "Raw Material", "WIP": "WIP", "FG": "Finished Goods" },
     "BOM_TYPE": { "PRODUCTION": "Production", "STANDARD": "Standard", "ENGINEERING": "Engineering" },
     "WAREHOUSE_TYPE": { "RAW_MATERIAL": "Raw Material", "WIP": "WIP", "FINISHED": "Finished", "MRB": "MRB", "HOLD": "Hold" },
     "INVENTORY_MOVE_TYPE": { "RECEIPT": "Receipt", "ISSUE": "Issue", "TRANSFER": "Transfer", "ADJUSTMENT": "Adjustment", "SCRAP": "Scrap" },
@@ -3628,7 +3713,7 @@
     "USAGE_REPORT_STATUS": { "DRAFT": "Draft", "REPORTED": "Reported", "CONFIRMED": "Confirmed" },
     "SUBCON_ORDER_STATUS": { "ORDERED": "Ordered", "DELIVERED": "Delivered", "PARTIAL_RECV": "Partial Received", "RECEIVED": "Received", "CLOSED": "Closed", "CANCELED": "Canceled" },
     "SUBCON_INSPECT_RESULT": { "PASS": "Pass", "FAIL": "Fail", "PARTIAL": "Partial" },
-    "COMM_TYPE": { "MQTT": "MQTT", "SERIAL": "Serial", "TCP": "TCP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
+    "COMM_TYPE": { "NONE": "None", "MQTT": "MQTT", "SERIAL": "Serial", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
     "BAUD_RATE": { "9600": "9600", "19200": "19200", "38400": "38400", "57600": "57600", "115200": "115200" },
     "DATA_BITS": { "7": "7 bits", "8": "8 bits" },
     "STOP_BITS": { "1": "1", "1.5": "1.5", "2": "2" },
@@ -3646,7 +3731,10 @@
     "PM_ITEM_TYPE": { "CHECK": "Check", "REPLACE": "Replace", "CLEAN": "Clean", "ADJUST": "Adjust", "LUBRICATE": "Lubricate" },
     "PM_WO_TYPE": { "PLANNED": "Planned", "EMERGENCY": "Emergency", "BREAKDOWN": "Breakdown" },
     "PM_WO_STATUS": { "PLANNED": "Planned", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "OVERDUE": "Overdue", "CANCELLED": "Cancelled" },
-    "PM_PRIORITY": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High", "URGENT": "Urgent" }
+    "PM_PRIORITY": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High", "URGENT": "Urgent" },
+    "PO_STATUS": { "DRAFT": "Draft", "CONFIRMED": "Confirmed", "PARTIAL": "Partial", "RECEIVED": "Received", "CLOSED": "Closed" },
+    "CONSUMABLE_LIFE_STATUS": { "NORMAL": "Normal", "WARNING": "Warning", "REPLACE": "Replace Required" },
+    "CON_STOCK_STATUS": { "PENDING": "Pending", "ACTIVE": "Active", "MOUNTED": "Mounted", "REPAIR": "Under Repair", "SCRAPPED": "Scrapped" }
   },
   "comCodeGroup": {
     "JOB_ORDER_STATUS": "Job Order Status",
@@ -3719,7 +3807,10 @@
     "PM_ITEM_TYPE": "PM Item Type",
     "PM_WO_TYPE": "WO Type",
     "PM_WO_STATUS": "WO Status",
-    "PM_PRIORITY": "Priority"
+    "PM_PRIORITY": "Priority",
+    "PO_STATUS": "PO Status",
+    "CONSUMABLE_LIFE_STATUS": "Consumable Life Status",
+    "CON_STOCK_STATUS": "Consumable Stock Status"
   },
   "export": {
     "title": "Export",
@@ -3958,5 +4049,55 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "Enable Activity Logging",
     "ENABLE_ACTIVITY_LOG_DESC": "Record user login and page access history."
+  },
+  "monthlyPlan": {
+    "title": "Monthly Production Plan",
+    "description": "Register and manage monthly production plans.",
+    "planNo": "Plan No",
+    "planMonth": "Plan Month",
+    "itemType": "Item Type",
+    "planQty": "Plan Qty",
+    "orderQty": "Order Qty",
+    "issueRate": "Issue Rate",
+    "customer": "Customer",
+    "lineCode": "Line",
+    "priority": "Priority",
+    "confirm": "Confirm",
+    "unconfirm": "Cancel Confirm",
+    "close": "Close",
+    "addPlan": "Add Plan",
+    "editPlan": "Edit Plan",
+    "excelUpload": "Excel Upload",
+    "searchPlaceholder": "Search plan no / item code / item name",
+    "sectionBasic": "Basic Info",
+    "sectionDetail": "Details",
+    "stats": {
+      "total": "Total",
+      "draft": "Draft",
+      "confirmed": "Confirmed",
+      "closed": "Closed"
+    },
+    "excel": {
+      "title": "Excel Upload",
+      "downloadTemplate": "Download Template",
+      "selectFile": "Select File",
+      "planMonthLabel": "Plan Month",
+      "itemCode": "Item Code",
+      "itemType": "Item Type",
+      "planQty": "Plan Qty",
+      "customer": "Customer",
+      "lineCode": "Line",
+      "priority": "Priority",
+      "remark": "Remark",
+      "validRows": "rows valid",
+      "upload": "Upload",
+      "uploadSuccess": "{{count}} plans registered successfully.",
+      "uploadFailed": "Upload failed."
+    },
+    "validation": {
+      "itemCodeRequired": "Item code required",
+      "itemTypeInvalid": "FG/WIP only",
+      "planQtyRequired": "Qty must be ≥ 1"
+    }
   }
 }

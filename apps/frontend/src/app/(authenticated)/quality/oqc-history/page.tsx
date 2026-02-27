@@ -68,7 +68,7 @@ export default function OqcHistoryPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const resultOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
+    { value: "", label: t("quality.oqc.result") },
     { value: "PASS", label: t("quality.oqc.pass") },
     { value: "FAIL", label: t("quality.oqc.fail") },
   ], [t]);

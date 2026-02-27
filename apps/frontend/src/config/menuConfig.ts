@@ -104,6 +104,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MAT_ARRIVAL", labelKey: "menu.material.arrival", path: "/material/arrival" },
       { code: "MAT_RECEIVE_LABEL", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
       { code: "MAT_RECEIVE", labelKey: "menu.material.receive", path: "/material/receive" },
+      { code: "MAT_RECEIVE_HISTORY", labelKey: "menu.material.receiveHistory", path: "/material/receive-history" },
       { code: "MAT_REQUEST", labelKey: "menu.material.request", path: "/material/request" },
       { code: "MAT_ISSUE", labelKey: "menu.material.issue", path: "/material/issue" },
       { code: "MAT_LOT", labelKey: "menu.material.lot", path: "/material/lot" },
@@ -130,6 +131,7 @@ export const menuConfig: MenuConfigItem[] = [
     labelKey: "menu.production",
     icon: Factory,
     children: [
+      { code: "PROD_MONTHLY_PLAN", labelKey: "menu.production.monthlyPlan", path: "/production/monthly-plan" },
       { code: "PROD_ORDER", labelKey: "menu.production.order", path: "/production/order" },
       { code: "PROD_RESULT", labelKey: "menu.production.result", path: "/production/result" },
       { code: "PROD_PROGRESS", labelKey: "menu.production.progress", path: "/production/progress" },
@@ -216,6 +218,7 @@ export const menuConfig: MenuConfigItem[] = [
     icon: Cog,
     children: [
       { code: "CONS_MASTER", labelKey: "menu.consumables.master", path: "/consumables/master" },
+      { code: "CONS_LABEL", labelKey: "menu.consumables.label", path: "/consumables/label" },
       { code: "CONS_RECEIVING", labelKey: "menu.consumables.receiving", path: "/consumables/receiving" },
       { code: "CONS_ISSUING", labelKey: "menu.consumables.issuing", path: "/consumables/issuing" },
       { code: "CONS_STOCK", labelKey: "menu.consumables.stock", path: "/consumables/stock" },

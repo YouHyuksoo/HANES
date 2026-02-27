@@ -18,8 +18,8 @@ import {
   CalendarDays, CheckCircle, XCircle, RefreshCw,
   AlertTriangle, Clock, Play, Wrench,
 } from "lucide-react";
-import { Button, Select, StatCard } from "@/components/ui";
-import { useComCodeOptions } from "@/hooks/useComCode";
+import { Button, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import InspectCalendar from "../inspect-calendar/components/InspectCalendar";
 import type { CalendarDaySummary } from "../inspect-calendar/components/InspectCalendar";
 import PmWorkOrderPanel from "./components/PmWorkOrderPanel";
@@ -45,12 +45,6 @@ export default function PmCalendarPage() {
   const [executeModalOpen, setExecuteModalOpen] = useState(false);
   const [executeTarget, setExecuteTarget] = useState<WoScheduleItem | null>(null);
   const [executeMode, setExecuteMode] = useState<"execute" | "view">("execute");
-
-  const equipTypeOptions = useComCodeOptions("EQUIP_TYPE");
-  const equipTypeFilterOpts = useMemo(() => [
-    { value: "", label: t("common.all") },
-    ...equipTypeOptions,
-  ], [t, equipTypeOptions]);
 
   const fetchCalendar = useCallback(async (y: number, m: number) => {
     setCalendarLoading(true);
@@ -172,8 +166,8 @@ export default function PmCalendarPage() {
         </div>
         <div className="flex gap-2 items-center">
           <div className="w-28">
-            <Select
-              options={equipTypeFilterOpts}
+            <ComCodeSelect
+              groupCode="EQUIP_TYPE"
               value={equipType}
               onChange={setEquipType}
               fullWidth

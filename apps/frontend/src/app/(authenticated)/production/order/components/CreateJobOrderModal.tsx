@@ -9,15 +9,12 @@
  * 2. autoCreateChildren 옵션 시 WIP 반제품 작업지시 동시 생성
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, Button, Input, Select } from "@/components/ui";
+import { Search } from "lucide-react";
+import { Modal, Button, Input } from "@/components/ui";
+import { PartSearchModal } from "@/components/shared";
 import api from "@/services/api";
-
-interface PartOption {
-  value: string;
-  label: string;
-}
 
 interface CreateJobOrderModalProps {
   isOpen: boolean;
@@ -28,7 +25,7 @@ interface CreateJobOrderModalProps {
 export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: CreateJobOrderModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
-  const [parts, setParts] = useState<PartOption[]>([]);
+  const [partSearchOpen, setPartSearchOpen] = useState(false);
 
   const [form, setForm] = useState({
     orderNo: "",
@@ -36,21 +33,11 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
     planQty: "",
     planDate: "",
     lineCode: "",
+    custPoNo: "",
     priority: "5",
     remark: "",
     autoCreateChildren: false,
   });
-
-  useEffect(() => {
-    if (!isOpen) return;
-    api.get("/master/parts", { params: { limit: 5000 } }).then(res => {
-      const list = (res.data?.data ?? []).map((p: any) => ({
-        value: p.itemCode,
-        label: `${p.itemCode} - ${p.itemName}`,
-      }));
-      setParts(list);
-    }).catch(() => setParts([]));
-  }, [isOpen]);
 
   const generateOrderNo = useCallback(() => {
     const d = new Date();
@@ -75,11 +62,12 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
         planQty: Number(form.planQty),
         planDate: form.planDate || undefined,
         lineCode: form.lineCode || undefined,
+        custPoNo: form.custPoNo || undefined,
         priority: Number(form.priority),
         remark: form.remark || undefined,
         autoCreateChildren: form.autoCreateChildren,
       });
-      setForm({ orderNo: "", itemCode: "", planQty: "", planDate: "", lineCode: "", priority: "5", remark: "", autoCreateChildren: false });
+      setForm({ orderNo: "", itemCode: "", planQty: "", planDate: "", lineCode: "", custPoNo: "", priority: "5", remark: "", autoCreateChildren: false });
       onCreated();
       onClose();
     } catch (e) {
@@ -89,16 +77,34 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
     }
   }, [form, onCreated, onClose]);
 
-  const partOptions = useMemo(() => [{ value: "", label: t("common.select") }, ...parts], [t, parts]);
-
   return (
+    <>
     <Modal isOpen={isOpen} onClose={onClose} title={t("production.order.createTitle")} size="lg">
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Input label={t("production.order.orderNo")} value={form.orderNo}
             onChange={e => setForm(p => ({ ...p, orderNo: e.target.value }))} fullWidth />
-          <Select label={t("common.partName")} options={partOptions} value={form.itemCode}
-            onChange={v => setForm(p => ({ ...p, itemCode: v }))} fullWidth />
+          <div>
+            <label className="block text-sm font-medium text-text mb-1.5">
+              {t("common.partName")}
+            </label>
+            <div className="flex gap-1.5">
+              <Input
+                value={form.itemCode}
+                readOnly
+                placeholder={t("common.partSearchPlaceholder")}
+                fullWidth
+              />
+              <button
+                type="button"
+                onClick={() => setPartSearchOpen(true)}
+                className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-[var(--radius)] border border-gray-400 dark:border-gray-500 bg-surface hover:bg-primary/10 text-text-muted hover:text-primary transition-colors"
+                title={t("common.partSearch")}
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <Input label={t("production.order.planQty")} type="number" value={form.planQty}
@@ -108,9 +114,12 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
           <Input label={t("production.order.priority")} type="number" value={form.priority}
             onChange={e => setForm(p => ({ ...p, priority: e.target.value }))} fullWidth />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Input label={t("production.order.line")} value={form.lineCode}
             onChange={e => setForm(p => ({ ...p, lineCode: e.target.value }))} fullWidth />
+          <Input label={t("production.order.custPoNo")} value={form.custPoNo}
+            onChange={e => setForm(p => ({ ...p, custPoNo: e.target.value }))}
+            placeholder="PO-2026-0001" fullWidth />
           <Input label={t("common.remark")} value={form.remark}
             onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
         </div>
@@ -128,5 +137,12 @@ export default function CreateJobOrderModal({ isOpen, onClose, onCreated }: Crea
         </Button>
       </div>
     </Modal>
+
+    <PartSearchModal
+      isOpen={partSearchOpen}
+      onClose={() => setPartSearchOpen(false)}
+      onSelect={(part) => setForm(p => ({ ...p, itemCode: part.itemCode }))}
+    />
+    </>
   );
 }

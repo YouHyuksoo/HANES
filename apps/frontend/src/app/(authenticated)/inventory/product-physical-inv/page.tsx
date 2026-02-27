@@ -65,7 +65,7 @@ export default function ProductPhysicalInvPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const warehouseOptions = useMemo(() => [
-    { value: "", label: t("common.all") }, ...warehouseOpts,
+    { value: "", label: t("common.warehouse") }, ...warehouseOpts,
   ], [t, warehouseOpts]);
 
   const updateCountedQty = useCallback((id: string, value: number | null) => {

@@ -78,7 +78,12 @@
       "mcp__playwright__browser_snapshot",
       "mcp__chrome-devtools__evaluate_script",
       "mcp__chrome-devtools__press_key",
-      "Bash(done)"
+      "Bash(done)",
+      "mcp__chrome-devtools__fill_form",
+      "mcp__chrome-devtools__get_console_message",
+      "mcp__chrome-devtools__new_page",
+      "Bash(cd:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }
