@@ -57,6 +57,8 @@ export * from './sample-inspect-result.entity';
 export * from './inspect-result.entity';
 export * from './defect-log.entity';
 export * from './repair-log.entity';
+export * from './rework-order.entity';
+export * from './rework-inspect.entity';
 export * from './iqc-log.entity';
 export * from './iqc-item-master.entity';
 export * from './iqc-item-pool.entity';

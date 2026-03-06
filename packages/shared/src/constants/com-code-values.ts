@@ -232,6 +232,19 @@ export type DefectLogStatusValue = typeof DEFECT_LOG_STATUS_VALUES[number];
 export const REPAIR_RESULT_VALUES = ['PASS', 'FAIL', 'SCRAP'] as const;
 export type RepairResultValue = typeof REPAIR_RESULT_VALUES[number];
 
+// ===== 재작업 상태 =====
+export const REWORK_STATUS_VALUES = [
+  'REGISTERED', 'QC_PENDING', 'QC_APPROVED', 'QC_REJECTED',
+  'PROD_PENDING', 'APPROVED', 'PROD_REJECTED',
+  'IN_PROGRESS', 'REWORK_DONE', 'INSPECT_PENDING',
+  'PASS', 'FAIL', 'SCRAP',
+] as const;
+export type ReworkStatusValue = typeof REWORK_STATUS_VALUES[number];
+
+// ===== 재작업 검사 결과 =====
+export const REWORK_INSPECT_RESULT_VALUES = ['PASS', 'FAIL', 'SCRAP'] as const;
+export type ReworkInspectResultValue = typeof REWORK_INSPECT_RESULT_VALUES[number];
+
 // ===== 창고 유형 (DTO) =====
 export const WAREHOUSE_TYPE_DTO_VALUES = ['RAW', 'WIP', 'FG', 'FLOOR', 'DEFECT', 'SCRAP', 'SUBCON'] as const;
 export type WarehouseTypeDtoValue = typeof WAREHOUSE_TYPE_DTO_VALUES[number];
