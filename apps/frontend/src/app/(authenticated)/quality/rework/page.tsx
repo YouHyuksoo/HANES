@@ -2,16 +2,14 @@
 
 /**
  * @file src/app/(authenticated)/quality/rework/page.tsx
- * @description 재작업 실적 입력 페이지 — IATF 16949 8.7.1 부적합 출력물 재작업 관리
+ * @description 재작업 지시 페이지 — IATF 16949 8.7.1 부적합 출력물 재작업 관리
  *
  * 초보자 가이드:
  * 1. **StatCard 5개**: 전체, 승인대기, 진행중, 완료, 재검사대기 통계 표시
- * 2. **DataGrid**: 재작업 지시 목록 — 번호, 품목, 수량, 불량유형, 상태, 작업자 등
- * 3. **필터**: 기간(DateRange), 상태(ComCodeSelect), 라인(LineSelect), 검색어
- * 4. **등록/수정**: ReworkFormModal로 재작업 등록/수정
- * 5. **승인**: ReworkApproveModal로 품질/생산 승인·반려 처리
- * 6. **상태 전환 액션**: 승인요청, 품질승인, 생산승인, 작업시작, 작업완료
- * 7. API: GET/POST /quality/reworks, PATCH /quality/reworks/:id/...
+ * 2. **DataGrid**: 재작업 지시 목록
+ * 3. **우측 패널**: 등록/수정(ReworkFormPanel), 승인(ReworkApprovePanel) 슬라이드 패널
+ * 4. **상태 전환 액션**: 승인요청, 품질승인, 생산승인, 작업시작, 작업완료
+ * 5. API: GET/POST /quality/reworks, PATCH /quality/reworks/:id/...
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -20,12 +18,13 @@ import {
   Plus, RefreshCw, ClipboardList, Clock, Play, CheckCircle, Search as SearchIcon,
   Calendar, Send, ShieldCheck, Factory, Eye,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { LineSelect, ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
-import ReworkFormModal from "./components/ReworkFormModal";
-import ReworkApproveModal from "./components/ReworkApproveModal";
+import ReworkFormPanel from "./components/ReworkFormPanel";
+import type { ReworkEditData } from "./components/ReworkFormPanel";
+import ReworkApprovePanel from "./components/ReworkApprovePanel";
 
 /** 재작업 지시 데이터 타입 */
 interface ReworkOrder {
@@ -62,10 +61,10 @@ export default function ReworkPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [lineFilter, setLineFilter] = useState("");
 
-  /* ── 모달 상태 ── */
-  const [formOpen, setFormOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<ReworkOrder | null>(null);
-  const [approveOpen, setApproveOpen] = useState(false);
+  /* ── 패널 상태 ── */
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ReworkEditData | null>(null);
+  const [isApproveOpen, setIsApproveOpen] = useState(false);
   const [approveType, setApproveType] = useState<ApproveType>("qc");
   const [confirmAction, setConfirmAction] = useState<{ label: string; action: () => Promise<void> } | null>(null);
 
@@ -93,50 +92,40 @@ export default function ReworkPage() {
   /* ── 통계 ── */
   const stats = useMemo(() => {
     const total = data.length;
-    const pending = data.filter((d) => ["QC_PENDING", "PROD_PENDING"].includes(d.status)).length;
-    const inProgress = data.filter((d) => d.status === "IN_PROGRESS").length;
-    const done = data.filter((d) => ["PASS", "FAIL", "SCRAP"].includes(d.status)).length;
-    const inspectPending = data.filter((d) => d.status === "INSPECT_PENDING").length;
+    const pending = data.filter(d => ["QC_PENDING", "PROD_PENDING"].includes(d.status)).length;
+    const inProgress = data.filter(d => d.status === "IN_PROGRESS").length;
+    const done = data.filter(d => ["PASS", "FAIL", "SCRAP"].includes(d.status)).length;
+    const inspectPending = data.filter(d => d.status === "INSPECT_PENDING").length;
     return { total, pending, inProgress, done, inspectPending };
   }, [data]);
 
-  /* ── 상태 전환 API 호출 ── */
+  /* ── 상태 전환 API ── */
   const patchAction = useCallback(async (id: number, endpoint: string, body?: object) => {
     await api.patch(`/quality/reworks/${id}/${endpoint}`, body ?? {});
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
 
-  /* ── 액션 버튼 핸들러 ── */
+  /* ── 액션 핸들러 ── */
   const handleRequestApproval = () => {
     if (!selectedRow) return;
-    setConfirmAction({
-      label: t("quality.rework.requestApproval"),
-      action: () => patchAction(selectedRow.id, "request-approval"),
-    });
+    setConfirmAction({ label: t("quality.rework.requestApproval"), action: () => patchAction(selectedRow.id, "request-approval") });
   };
-  const handleQcApprove = () => { setApproveType("qc"); setApproveOpen(true); };
-  const handleProdApprove = () => { setApproveType("prod"); setApproveOpen(true); };
+  const handleQcApprove = () => { setApproveType("qc"); setIsApproveOpen(true); };
+  const handleProdApprove = () => { setApproveType("prod"); setIsApproveOpen(true); };
   const handleStart = () => {
     if (!selectedRow) return;
-    setConfirmAction({
-      label: t("quality.rework.start"),
-      action: () => patchAction(selectedRow.id, "start"),
-    });
+    setConfirmAction({ label: t("quality.rework.start"), action: () => patchAction(selectedRow.id, "start") });
   };
   const handleComplete = () => {
     if (!selectedRow) return;
-    setConfirmAction({
-      label: t("quality.rework.complete"),
-      action: () => patchAction(selectedRow.id, "complete", { resultQty: selectedRow.reworkQty }),
-    });
+    setConfirmAction({ label: t("quality.rework.complete"), action: () => patchAction(selectedRow.id, "complete", { resultQty: selectedRow.reworkQty }) });
   };
 
   const handleApproveSubmit = async (action: "APPROVE" | "REJECT", reason?: string) => {
     if (!selectedRow) return;
     const endpoint = approveType === "qc" ? "qc-approve" : "prod-approve";
     await api.patch(`/quality/reworks/${selectedRow.id}/${endpoint}`, { action, reason });
-    setApproveOpen(false);
     fetchData();
     setSelectedRow(null);
   };
@@ -158,7 +147,7 @@ export default function ReworkPage() {
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
   ], [t]);
 
-  /* ── 행 선택 시 보여줄 액션 버튼 목록 ── */
+  /* ── 행 선택 시 액션 버튼 ── */
   const actionButtons = useMemo(() => {
     if (!selectedRow) return null;
     const s = selectedRow.status;
@@ -166,7 +155,7 @@ export default function ReworkPage() {
       <div className="flex gap-2 flex-wrap">
         {s === "REGISTERED" && (
           <>
-            <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow); setFormOpen(true); }}>
+            <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow as unknown as ReworkEditData); setIsPanelOpen(true); }}>
               <Eye className="w-4 h-4 mr-1" />{t("common.edit")}
             </Button>
             <Button size="sm" onClick={handleRequestApproval}>
@@ -174,125 +163,100 @@ export default function ReworkPage() {
             </Button>
           </>
         )}
-        {s === "QC_PENDING" && (
-          <Button size="sm" onClick={handleQcApprove}>
-            <ShieldCheck className="w-4 h-4 mr-1" />{t("quality.rework.qcApprove")}
-          </Button>
-        )}
-        {s === "PROD_PENDING" && (
-          <Button size="sm" onClick={handleProdApprove}>
-            <Factory className="w-4 h-4 mr-1" />{t("quality.rework.prodApprove")}
-          </Button>
-        )}
-        {s === "APPROVED" && (
-          <Button size="sm" onClick={handleStart}>
-            <Play className="w-4 h-4 mr-1" />{t("quality.rework.start")}
-          </Button>
-        )}
-        {s === "IN_PROGRESS" && (
-          <Button size="sm" onClick={handleComplete}>
-            <CheckCircle className="w-4 h-4 mr-1" />{t("quality.rework.complete")}
-          </Button>
-        )}
+        {s === "QC_PENDING" && <Button size="sm" onClick={handleQcApprove}><ShieldCheck className="w-4 h-4 mr-1" />{t("quality.rework.qcApprove")}</Button>}
+        {s === "PROD_PENDING" && <Button size="sm" onClick={handleProdApprove}><Factory className="w-4 h-4 mr-1" />{t("quality.rework.prodApprove")}</Button>}
+        {s === "APPROVED" && <Button size="sm" onClick={handleStart}><Play className="w-4 h-4 mr-1" />{t("quality.rework.start")}</Button>}
+        {s === "IN_PROGRESS" && <Button size="sm" onClick={handleComplete}><CheckCircle className="w-4 h-4 mr-1" />{t("quality.rework.complete")}</Button>}
       </div>
     );
   }, [selectedRow, t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* ── 헤더 ── */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <ClipboardList className="w-7 h-7 text-primary" />{t("quality.rework.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("quality.rework.subtitle")}</p>
+    <div className="flex h-full">
+      {/* 메인 영역 */}
+      <div className="flex-1 space-y-6 animate-fade-in overflow-auto p-0">
+        {/* 헤더 */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <ClipboardList className="w-7 h-7 text-primary" />{t("quality.rework.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("quality.rework.subtitle")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={() => { setEditTarget(null); setIsPanelOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" />{t("quality.rework.create")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={() => { setEditTarget(null); setFormOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" />{t("quality.rework.create")}
-          </Button>
+
+        {/* 통계 카드 */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <StatCard label={t("quality.rework.statsTotal")} value={stats.total} icon={ClipboardList} color="blue" />
+          <StatCard label={t("quality.rework.statsPending")} value={stats.pending} icon={Clock} color="yellow" />
+          <StatCard label={t("quality.rework.statsInProgress")} value={stats.inProgress} icon={Play} color="orange" />
+          <StatCard label={t("quality.rework.statsDone")} value={stats.done} icon={CheckCircle} color="green" />
+          <StatCard label={t("quality.rework.statsInspectPending")} value={stats.inspectPending} icon={SearchIcon} color="purple" />
         </div>
+
+        {/* 액션 버튼 */}
+        {actionButtons && (
+          <Card><CardContent><div className="flex items-center gap-3">
+            <span className="text-sm text-text-muted font-medium">{selectedRow?.reworkNo}</span>
+            {actionButtons}
+          </div></CardContent></Card>
+        )}
+
+        {/* DataGrid */}
+        <Card><CardContent>
+          <DataGrid data={data} columns={columns} isLoading={loading}
+            enableColumnFilter enableExport exportFileName={t("quality.rework.title")}
+            onRowClick={row => setSelectedRow(row as ReworkOrder)}
+            getRowId={row => String((row as ReworkOrder).id)}
+            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            toolbarLeft={
+              <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
+                <div className="flex-1 min-w-[180px]">
+                  <Input placeholder={t("common.search")} value={searchText}
+                    onChange={e => setSearchText(e.target.value)}
+                    leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-text-muted" />
+                  <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" />
+                  <span className="text-text-muted">~</span>
+                  <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" />
+                </div>
+                <ComCodeSelect groupCode="REWORK_STATUS" value={statusFilter}
+                  onChange={setStatusFilter} placeholder={t("common.status")} />
+                <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("quality.rework.line")} />
+              </div>
+            }
+          />
+        </CardContent></Card>
+
+        {/* 확인 모달 */}
+        <ConfirmModal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)}
+          onConfirm={async () => { await confirmAction?.action(); setConfirmAction(null); }}
+          title={confirmAction?.label ?? ""} message={`${confirmAction?.label ?? ""} ${t("common.confirm")}?`} />
       </div>
 
-      {/* ── 통계 카드 ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <StatCard label={t("quality.rework.statsTotal")} value={stats.total} icon={ClipboardList} color="blue" />
-        <StatCard label={t("quality.rework.statsPending")} value={stats.pending} icon={Clock} color="yellow" />
-        <StatCard label={t("quality.rework.statsInProgress")} value={stats.inProgress} icon={Play} color="orange" />
-        <StatCard label={t("quality.rework.statsDone")} value={stats.done} icon={CheckCircle} color="green" />
-        <StatCard label={t("quality.rework.statsInspectPending")} value={stats.inspectPending} icon={SearchIcon} color="purple" />
-      </div>
-
-      {/* ── 액션 버튼 (행 선택 시) ── */}
-      {actionButtons && (
-        <Card><CardContent><div className="flex items-center gap-3">
-          <span className="text-sm text-text-muted font-medium">{selectedRow?.reworkNo}</span>
-          {actionButtons}
-        </div></CardContent></Card>
+      {/* 우측 패널: 등록/수정 */}
+      {isPanelOpen && (
+        <ReworkFormPanel editData={editTarget}
+          onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
+          onSave={fetchData} />
       )}
 
-      {/* ── DataGrid ── */}
-      <Card><CardContent>
-        <DataGrid
-          data={data}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("quality.rework.title")}
-          onRowClick={(row) => setSelectedRow(row as ReworkOrder)}
-          getRowId={(row) => String((row as ReworkOrder).id)}
-          selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
-          toolbarLeft={
-            <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
-              <div className="flex-1 min-w-[180px]">
-                <Input placeholder={t("common.search")} value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  leftIcon={<SearchIcon className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-text-muted" />
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
-                <span className="text-text-muted">~</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
-              </div>
-              <ComCodeSelect groupCode="REWORK_STATUS" value={statusFilter}
-                onChange={setStatusFilter} placeholder={t("common.status")} />
-              <LineSelect value={lineFilter} onChange={setLineFilter}
-                placeholder={t("quality.rework.line")} />
-            </div>
-          }
-        />
-      </CardContent></Card>
-
-      {/* ── 등록/수정 모달 ── */}
-      <ReworkFormModal
-        isOpen={formOpen}
-        onClose={() => { setFormOpen(false); setEditTarget(null); }}
-        onSuccess={() => { setFormOpen(false); setEditTarget(null); fetchData(); }}
-        editData={editTarget}
-      />
-
-      {/* ── 승인/반려 모달 ── */}
-      <ReworkApproveModal
-        isOpen={approveOpen}
-        onClose={() => setApproveOpen(false)}
-        type={approveType}
-        onSubmit={handleApproveSubmit}
-      />
-
-      {/* ── 확인 모달 (승인요청, 작업시작, 작업완료) ── */}
-      <ConfirmModal
-        isOpen={!!confirmAction}
-        onClose={() => setConfirmAction(null)}
-        onConfirm={async () => { await confirmAction?.action(); setConfirmAction(null); }}
-        title={confirmAction?.label ?? ""}
-        message={`${confirmAction?.label ?? ""}${t("common.confirm")}?`}
-      />
+      {/* 우측 패널: 승인/반려 */}
+      {isApproveOpen && (
+        <ReworkApprovePanel type={approveType}
+          onClose={() => setIsApproveOpen(false)}
+          onSubmit={handleApproveSubmit} />
+      )}
     </div>
   );
 }

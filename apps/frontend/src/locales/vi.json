@@ -228,7 +228,7 @@
     "quality.trace": "Truy vết",
     "quality.oqc": "Kiểm tra xuất hàng (OQC)",
     "quality.oqcHistory": "Tra cứu lịch sử kiểm tra xuất hàng",
-    "quality.rework": "Thực hiện làm lại",
+    "quality.rework": "Lệnh làm lại",
     "quality.reworkInspect": "Kiểm tra sau làm lại",
     "quality.reworkHistory": "Tình trạng làm lại",
     "equipment": "Quản lý thiết bị",
@@ -2785,7 +2785,7 @@
       "remarkPlaceholder": "Nhập ghi chú"
     },
     "rework": {
-      "title": "Nhập thực hiện làm lại",
+      "title": "Lệnh làm lại",
       "subtitle": "Đăng ký lệnh làm lại sản phẩm lỗi và quản lý phê duyệt hai giai đoạn.",
       "inspectTitle": "Kiểm tra sau làm lại",
       "inspectSubtitle": "Nhập kết quả kiểm tra xác minh lại cho các mục đã hoàn thành làm lại.",

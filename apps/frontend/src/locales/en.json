@@ -228,7 +228,7 @@
     "quality.trace": "Traceability",
     "quality.oqc": "OQC Inspection",
     "quality.oqcHistory": "OQC History Inquiry",
-    "quality.rework": "Rework Entry",
+    "quality.rework": "Rework Order",
     "quality.reworkInspect": "Rework Inspection",
     "quality.reworkHistory": "Rework History",
     "equipment": "Equipment",
@@ -2784,7 +2784,7 @@
       "remarkPlaceholder": "Enter remark"
     },
     "rework": {
-      "title": "Rework Entry",
+      "title": "Rework Order",
       "subtitle": "Register rework orders for defective items and manage two-stage approval.",
       "inspectTitle": "Rework Inspection",
       "inspectSubtitle": "Enter re-verification inspection results for completed rework items.",

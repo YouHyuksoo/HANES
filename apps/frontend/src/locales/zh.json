@@ -228,7 +228,7 @@
     "quality.trace": "追溯查询",
     "quality.oqc": "出货检查(OQC)",
     "quality.oqcHistory": "出货检查历史查询",
-    "quality.rework": "返工实绩",
+    "quality.rework": "返工指示",
     "quality.reworkInspect": "返工后检查",
     "quality.reworkHistory": "返工现况",
     "equipment": "设备管理",
@@ -2784,7 +2784,7 @@
       "remarkPlaceholder": "输入备注"
     },
     "rework": {
-      "title": "返工实绩录入",
+      "title": "返工指示",
       "subtitle": "登记不良品返工指示并管理两阶段审批。",
       "inspectTitle": "返工后检查",
       "inspectSubtitle": "输入已完成返工项目的再验证检查结果。",

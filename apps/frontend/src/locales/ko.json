@@ -229,7 +229,7 @@
     "quality.trace": "추적성조회",
     "quality.oqc": "출하검사(OQC)",
     "quality.oqcHistory": "출하검사이력조회",
-    "quality.rework": "재작업 실적",
+    "quality.rework": "재작업 지시",
     "quality.reworkInspect": "재작업 후 검사",
     "quality.reworkHistory": "재작업 현황",
     "equipment": "설비관리",
@@ -2846,7 +2846,7 @@
       "remarkPlaceholder": "비고 입력"
     },
     "rework": {
-      "title": "재작업 실적 입력",
+      "title": "재작업 지시",
       "subtitle": "불량품 재작업 지시를 등록하고 2단계 승인을 관리합니다.",
       "inspectTitle": "재작업 후 검사",
       "inspectSubtitle": "재작업 완료 건에 대한 재검증 검사 실적을 입력합니다.",
