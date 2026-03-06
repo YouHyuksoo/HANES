@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardList, Clock, Play, CheckCircle, Search as SearchIcon,
-  Calendar, Send, ShieldCheck, Factory, Eye,
+  Calendar, Send, ShieldCheck, Factory, Eye, Layers,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -46,6 +46,20 @@ interface ReworkOrder {
   createdAt: string;
 }
 
+/** 재작업 공정 데이터 타입 */
+interface ReworkProcess {
+  id: number;
+  processCode: string;
+  processName: string;
+  seq: number;
+  status: string;
+  planQty: number;
+  resultQty: number;
+  workerCode: string;
+  startAt: string;
+  endAt: string;
+}
+
 type ApproveType = "qc" | "prod";
 
 export default function ReworkPage() {
@@ -53,6 +67,7 @@ export default function ReworkPage() {
   const [data, setData] = useState<ReworkOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedRow, setSelectedRow] = useState<ReworkOrder | null>(null);
+  const [processes, setProcesses] = useState<ReworkProcess[]>([]);
 
   /* ── 필터 상태 ── */
   const [searchText, setSearchText] = useState("");
@@ -88,6 +103,17 @@ export default function ReworkPage() {
   }, [searchText, statusFilter, lineFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* ── 행 선택 시 공정 목록 조회 ── */
+  useEffect(() => {
+    if (selectedRow) {
+      api.get(`/quality/reworks/${selectedRow.id}/processes`)
+        .then(res => setProcesses(res.data?.data ?? []))
+        .catch(() => setProcesses([]));
+    } else {
+      setProcesses([]);
+    }
+  }, [selectedRow]);
 
   /* ── 통계 ── */
   const stats = useMemo(() => {
@@ -167,6 +193,16 @@ export default function ReworkPage() {
         {s === "PROD_PENDING" && <Button size="sm" onClick={handleProdApprove}><Factory className="w-4 h-4 mr-1" />{t("quality.rework.prodApprove")}</Button>}
         {s === "APPROVED" && <Button size="sm" onClick={handleStart}><Play className="w-4 h-4 mr-1" />{t("quality.rework.start")}</Button>}
         {s === "IN_PROGRESS" && <Button size="sm" onClick={handleComplete}><CheckCircle className="w-4 h-4 mr-1" />{t("quality.rework.complete")}</Button>}
+        {(s === "QC_REJECTED" || s === "PROD_REJECTED") && (
+          <>
+            <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow as unknown as ReworkEditData); setIsPanelOpen(true); }}>
+              <Eye className="w-4 h-4 mr-1" />{t("common.edit")}
+            </Button>
+            <Button size="sm" onClick={handleRequestApproval}>
+              <Send className="w-4 h-4 mr-1" />{t("quality.rework.reRequest")}
+            </Button>
+          </>
+        )}
       </div>
     );
   }, [selectedRow, t]);
@@ -208,6 +244,44 @@ export default function ReworkPage() {
             <span className="text-sm text-text-muted font-medium">{selectedRow?.reworkNo}</span>
             {actionButtons}
           </div></CardContent></Card>
+        )}
+
+        {/* 공정 현황 */}
+        {selectedRow && processes.length > 0 && (
+          <Card><CardContent>
+            <h3 className="text-sm font-bold text-text mb-3 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              {t("quality.rework.processStatus")} - {selectedRow.reworkNo}
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-surface dark:bg-slate-800">
+                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("quality.rework.processSeq")}</th>
+                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("quality.rework.processCode")}</th>
+                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("quality.rework.processName")}</th>
+                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("common.status")}</th>
+                    <th className="px-3 py-2 text-right font-medium text-text-muted">{t("quality.rework.reworkQty")}</th>
+                    <th className="px-3 py-2 text-right font-medium text-text-muted">{t("quality.rework.resultQty")}</th>
+                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("quality.rework.worker")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {processes.map(proc => (
+                    <tr key={proc.id} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
+                      <td className="px-3 py-2 text-text-muted">{proc.seq}</td>
+                      <td className="px-3 py-2 font-medium text-text">{proc.processCode}</td>
+                      <td className="px-3 py-2 text-text">{proc.processName}</td>
+                      <td className="px-3 py-2"><ComCodeBadge groupCode="REWORK_PROCESS_STATUS" code={proc.status} /></td>
+                      <td className="px-3 py-2 text-right font-mono text-text">{proc.planQty}</td>
+                      <td className="px-3 py-2 text-right font-mono text-text">{proc.resultQty}</td>
+                      <td className="px-3 py-2 text-text-muted">{proc.workerCode || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent></Card>
         )}
 
         {/* DataGrid */}

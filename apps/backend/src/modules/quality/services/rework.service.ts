@@ -29,7 +29,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReworkOrder } from '../../../entities/rework-order.entity';
 import { ReworkInspect } from '../../../entities/rework-inspect.entity';
+import { ReworkProcess } from '../../../entities/rework-process.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
+// 공정/실적 관리는 ReworkProcessService에서 처리
 import {
   CreateReworkOrderDto,
   UpdateReworkOrderDto,
@@ -48,6 +50,8 @@ export class ReworkService {
     private readonly reworkRepo: Repository<ReworkOrder>,
     @InjectRepository(ReworkInspect)
     private readonly inspectRepo: Repository<ReworkInspect>,
+    @InjectRepository(ReworkProcess)
+    private readonly processRepo: Repository<ReworkProcess>,
     @InjectRepository(DefectLog)
     private readonly defectLogRepo: Repository<DefectLog>,
   ) {}
@@ -138,7 +142,11 @@ export class ReworkService {
     if (!item) {
       throw new NotFoundException('재작업 지시를 찾을 수 없습니다.');
     }
-    return item;
+    const processes = await this.processRepo.find({
+      where: { reworkOrderId: id },
+      order: { seq: 'ASC' },
+    });
+    return { ...item, processes };
   }
 
   /**
@@ -162,6 +170,28 @@ export class ReworkService {
       updatedBy: userId,
     });
     const saved = await this.reworkRepo.save(entity);
+
+    // 공정 목록 생성
+    if (dto.processItems && dto.processItems.length > 0) {
+      const processEntities = dto.processItems.map((pi) =>
+        this.processRepo.create({
+          reworkOrderId: saved.id,
+          processCode: pi.processCode,
+          processName: pi.processName,
+          seq: pi.seq,
+          workerCode: pi.workerCode ?? null,
+          lineCode: pi.lineCode ?? null,
+          equipCode: pi.equipCode ?? null,
+          planQty: dto.reworkQty,
+          status: 'WAITING',
+          company: +company,
+          plant,
+          createdBy: userId,
+          updatedBy: userId,
+        }),
+      );
+      await this.processRepo.save(processEntities);
+    }
 
     // 불량 이력 상태 연동
     if (dto.defectLogId) {
@@ -208,9 +238,9 @@ export class ReworkService {
    */
   async requestQcApproval(id: number, userId: string) {
     const item = await this.findById(id);
-    if (item.status !== 'REGISTERED') {
+    if (!['REGISTERED', 'QC_REJECTED', 'PROD_REJECTED'].includes(item.status)) {
       throw new BadRequestException(
-        '등록 상태에서만 승인 요청할 수 있습니다.',
+        '등록 또는 반려 상태에서만 승인 요청할 수 있습니다.',
       );
     }
     item.status = 'QC_PENDING';
@@ -265,35 +295,53 @@ export class ReworkService {
   // =============================================
 
   /**
-   * 작업 시작 (APPROVED → IN_PROGRESS)
+   * 작업 시작 (APPROVED / IN_PROGRESS → IN_PROGRESS)
+   * 공정이 있는 경우 공정별 메서드(startProcess)로 세부 관리
    */
   async start(id: number, userId: string) {
     const item = await this.findById(id);
-    if (item.status !== 'APPROVED') {
+    if (!['APPROVED', 'IN_PROGRESS'].includes(item.status)) {
       throw new BadRequestException(
-        '승인 완료 상태에서만 시작할 수 있습니다.',
+        '승인 완료 또는 진행중 상태에서만 시작할 수 있습니다.',
       );
     }
-    item.status = 'IN_PROGRESS';
-    item.startAt = new Date();
-    item.updatedBy = userId;
-    return this.reworkRepo.save(item);
+    // If has processes, auto-transition is handled by process-level methods
+    if (item.status === 'APPROVED') {
+      await this.reworkRepo.update(id, {
+        status: 'IN_PROGRESS',
+        startAt: new Date(),
+        updatedBy: userId,
+      });
+    }
+    return this.findById(id);
   }
 
   /**
    * 작업 완료 (IN_PROGRESS → INSPECT_PENDING)
+   * 공정이 있는 경우 공정별 resultQty 합산
    */
   async complete(id: number, dto: CompleteReworkDto, userId: string) {
-    const item = await this.findById(id);
-    if (item.status !== 'IN_PROGRESS') {
+    const order = await this.reworkRepo.findOne({ where: { id } });
+    if (!order) throw new NotFoundException('재작업 지시를 찾을 수 없습니다.');
+    if (order.status !== 'IN_PROGRESS') {
       throw new BadRequestException('진행중 상태에서만 완료할 수 있습니다.');
     }
-    item.status = 'INSPECT_PENDING';
-    item.endAt = new Date();
-    item.resultQty = dto.resultQty;
-    item.remarks = dto.remarks ?? item.remarks;
-    item.updatedBy = userId;
-    return this.reworkRepo.save(item);
+
+    // 공정 실적 합산
+    const processes = await this.processRepo.find({ where: { reworkOrderId: id } });
+    let totalResultQty = dto.resultQty;
+    if (processes.length > 0) {
+      totalResultQty = processes
+        .filter((p) => p.status === 'COMPLETED')
+        .reduce((sum, p) => sum + p.resultQty, 0);
+    }
+
+    order.status = 'INSPECT_PENDING';
+    order.endAt = new Date();
+    order.resultQty = totalResultQty;
+    order.remarks = dto.remarks ?? order.remarks;
+    order.updatedBy = userId;
+    return this.reworkRepo.save(order);
   }
 
   // =============================================

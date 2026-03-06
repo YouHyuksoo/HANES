@@ -241,6 +241,10 @@ export const REWORK_STATUS_VALUES = [
 ] as const;
 export type ReworkStatusValue = typeof REWORK_STATUS_VALUES[number];
 
+// ===== 재작업 공정 상태 =====
+export const REWORK_PROCESS_STATUS_VALUES = ['WAITING', 'IN_PROGRESS', 'COMPLETED', 'SKIPPED'] as const;
+export type ReworkProcessStatusValue = typeof REWORK_PROCESS_STATUS_VALUES[number];
+
 // ===== 재작업 검사 결과 =====
 export const REWORK_INSPECT_RESULT_VALUES = ['PASS', 'FAIL', 'SCRAP'] as const;
 export type ReworkInspectResultValue = typeof REWORK_INSPECT_RESULT_VALUES[number];

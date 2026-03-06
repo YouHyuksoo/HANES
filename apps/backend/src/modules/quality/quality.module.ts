@@ -35,6 +35,7 @@ import { OqcController } from './controllers/oqc.controller';
 import { OqcService } from './services/oqc.service';
 import { ReworkController } from './controllers/rework.controller';
 import { ReworkService } from './services/rework.service';
+import { ReworkProcessService } from './services/rework-process.service';
 import { DefectLog } from '../../entities/defect-log.entity';
 import { RepairLog } from '../../entities/repair-log.entity';
 import { InspectResult } from '../../entities/inspect-result.entity';
@@ -46,6 +47,9 @@ import { PartMaster } from '../../entities/part-master.entity';
 import { TraceLog } from '../../entities/trace-log.entity';
 import { ReworkOrder } from '../../entities/rework-order.entity';
 import { ReworkInspect } from '../../entities/rework-inspect.entity';
+import { ReworkProcess } from '../../entities/rework-process.entity';
+import { ReworkResult } from '../../entities/rework-result.entity';
+import { ProcessMap } from '../../entities/process-map.entity';
 
 @Module({
   imports: [
@@ -61,6 +65,9 @@ import { ReworkInspect } from '../../entities/rework-inspect.entity';
       TraceLog,
       ReworkOrder,
       ReworkInspect,
+      ReworkProcess,
+      ReworkResult,
+      ProcessMap,
     ]),
   ],
   controllers: [
@@ -74,12 +81,14 @@ import { ReworkInspect } from '../../entities/rework-inspect.entity';
     DefectLogService,
     OqcService,
     ReworkService,
+    ReworkProcessService,
   ],
   exports: [
     InspectResultService,
     DefectLogService,
     OqcService,
     ReworkService,
+    ReworkProcessService,
   ],
 })
 export class QualityModule {}

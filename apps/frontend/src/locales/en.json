@@ -2806,6 +2806,7 @@
       "create": "Register Rework",
       "edit": "Edit Rework",
       "requestApproval": "Request Approval",
+      "reRequest": "Re-request",
       "qcApprove": "QC Approval",
       "prodApprove": "Production Approval",
       "approve": "Approve",
@@ -2835,7 +2836,17 @@
       "statsPending": "Pending",
       "statsInProgress": "In Progress",
       "statsDone": "Done",
-      "statsInspectPending": "Inspect Pending"
+      "statsInspectPending": "Inspect Pending",
+      "selectProcesses": "Select Rework Processes",
+      "processCode": "Process Code",
+      "processName": "Process Name",
+      "processSeq": "Seq",
+      "processStatus": "Process Status",
+      "resultEntry": "Result Entry",
+      "goodQty": "Good Qty",
+      "defectQtyShort": "Defect Qty",
+      "workDetail": "Work Detail",
+      "workTimeMin": "Work Time (min)"
     }
   },
   "equipment": {

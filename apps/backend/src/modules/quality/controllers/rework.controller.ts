@@ -44,6 +44,7 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { ReworkService } from '../services/rework.service';
+import { ReworkProcessService } from '../services/rework-process.service';
 import {
   CreateReworkOrderDto,
   UpdateReworkOrderDto,
@@ -51,12 +52,16 @@ import {
   ApproveReworkDto,
   CompleteReworkDto,
   CreateReworkInspectDto,
+  CreateReworkResultDto,
 } from '../dto/rework.dto';
 
 @ApiTags('품질관리 - 재작업')
 @Controller('quality')
 export class ReworkController {
-  constructor(private readonly reworkService: ReworkService) {}
+  constructor(
+    private readonly reworkService: ReworkService,
+    private readonly reworkProcessService: ReworkProcessService,
+  ) {}
 
   // ===== 통계 API (목록 조회보다 먼저 정의) =====
 
@@ -219,6 +224,71 @@ export class ReworkController {
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '작업이 완료되었습니다.');
+  }
+
+  // ===== 공정별 작업 관리 =====
+
+  @Get('reworks/:id/processes')
+  @ApiOperation({ summary: '공정 목록 조회', description: '재작업 지시의 공정별 작업 목록' })
+  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  async findProcesses(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.reworkProcessService.findProcesses(id);
+    return ResponseUtil.success(data);
+  }
+
+  @Patch('rework-processes/:id/start')
+  @ApiOperation({ summary: '공정 작업시작', description: 'WAITING → IN_PROGRESS' })
+  @ApiParam({ name: 'id', description: '공정 ID' })
+  async startProcess(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.reworkProcessService.startProcess(id, req.user?.id ?? 'system');
+    return ResponseUtil.success(data, '공정 작업이 시작되었습니다.');
+  }
+
+  @Patch('rework-processes/:id/complete')
+  @ApiOperation({ summary: '공정 작업완료', description: 'IN_PROGRESS → COMPLETED' })
+  @ApiParam({ name: 'id', description: '공정 ID' })
+  async completeProcess(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { resultQty: number },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.reworkProcessService.completeProcess(id, body.resultQty ?? 0, req.user?.id ?? 'system');
+    return ResponseUtil.success(data, '공정 작업이 완료되었습니다.');
+  }
+
+  @Patch('rework-processes/:id/skip')
+  @ApiOperation({ summary: '공정 건너뛰기', description: 'WAITING → SKIPPED' })
+  @ApiParam({ name: 'id', description: '공정 ID' })
+  async skipProcess(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.reworkProcessService.skipProcess(id, req.user?.id ?? 'system');
+    return ResponseUtil.success(data, '공정을 건너뛰었습니다.');
+  }
+
+  @Get('rework-processes/:id/results')
+  @ApiOperation({ summary: '공정별 실적 조회' })
+  @ApiParam({ name: 'id', description: '공정 ID' })
+  async findResults(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.reworkProcessService.findResults(id);
+    return ResponseUtil.success(data);
+  }
+
+  @Post('rework-results')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '재작업 실적 등록', description: '공정별 실적 기록' })
+  async createResult(
+    @Body() dto: CreateReworkResultDto,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.reworkProcessService.createResult(dto, company, plant, req.user?.id ?? 'system');
+    return ResponseUtil.success(data, '실적이 등록되었습니다.');
   }
 
   // ===== 재작업 후 검사 =====

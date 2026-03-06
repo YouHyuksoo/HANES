@@ -29,8 +29,97 @@ import {
   Min,
   Max,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+/**
+ * 공정 아이템 (재작업 지시 등록 시 선택한 공정)
+ */
+export class ReworkProcessItemDto {
+  @ApiProperty({ description: '공정 코드', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  processCode: string;
+
+  @ApiProperty({ description: '공정명', maxLength: 200 })
+  @IsString()
+  @MaxLength(200)
+  processName: string;
+
+  @ApiProperty({ description: '공정 순서' })
+  @Type(() => Number)
+  @IsInt()
+  seq: number;
+
+  @ApiPropertyOptional({ description: '작업자 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  workerCode?: string;
+
+  @ApiPropertyOptional({ description: '라인 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  lineCode?: string;
+
+  @ApiPropertyOptional({ description: '설비 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipCode?: string;
+}
+
+/**
+ * 재작업 실적 등록 DTO
+ */
+export class CreateReworkResultDto {
+  @ApiProperty({ description: '재작업 공정 ID' })
+  @Type(() => Number)
+  @IsNumber()
+  reworkProcessId: number;
+
+  @ApiProperty({ description: '작업자 코드', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  workerCode: string;
+
+  @ApiProperty({ description: '작업 수량', minimum: 0 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  resultQty: number;
+
+  @ApiProperty({ description: '양품 수량', minimum: 0 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  goodQty: number;
+
+  @ApiProperty({ description: '불량 수량', minimum: 0 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  defectQty: number;
+
+  @ApiProperty({ description: '작업내역 (IATF: 처리 결과 기록)', maxLength: 2000 })
+  @IsString()
+  @MaxLength(2000)
+  workDetail: string;
+
+  @ApiPropertyOptional({ description: '작업시간 (분)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  workTimeMin?: number;
+
+  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  remarks?: string;
+}
 
 /**
  * 재작업 지시 생성 DTO
@@ -103,6 +192,12 @@ export class CreateReworkOrderDto {
   @IsString()
   @MaxLength(1000)
   remarks?: string;
+
+  @ApiPropertyOptional({ description: '재작업 공정 목록', type: [ReworkProcessItemDto] })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ReworkProcessItemDto)
+  processItems?: ReworkProcessItemDto[];
 }
 
 /**

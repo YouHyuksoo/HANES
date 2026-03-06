@@ -2806,6 +2806,7 @@
       "create": "登记返工",
       "edit": "修改返工",
       "requestApproval": "申请审批",
+      "reRequest": "重新申请",
       "qcApprove": "品质审批",
       "prodApprove": "生产审批",
       "approve": "批准",
@@ -2835,7 +2836,17 @@
       "statsPending": "待审批",
       "statsInProgress": "进行中",
       "statsDone": "完成",
-      "statsInspectPending": "待再检查"
+      "statsInspectPending": "待再检查",
+      "selectProcesses": "选择返工工序",
+      "processCode": "工序代码",
+      "processName": "工序名称",
+      "processSeq": "顺序",
+      "processStatus": "工序状态",
+      "resultEntry": "实绩录入",
+      "goodQty": "良品数量",
+      "defectQtyShort": "不良数量",
+      "workDetail": "作业内容",
+      "workTimeMin": "作业时间(分)"
     }
   },
   "equipment": {

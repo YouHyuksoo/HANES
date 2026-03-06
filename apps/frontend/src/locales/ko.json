@@ -2868,6 +2868,7 @@
       "create": "재작업 등록",
       "edit": "재작업 수정",
       "requestApproval": "승인요청",
+      "reRequest": "재승인요청",
       "qcApprove": "품질승인",
       "prodApprove": "생산승인",
       "approve": "승인",
@@ -2897,7 +2898,17 @@
       "statsPending": "승인대기",
       "statsInProgress": "진행중",
       "statsDone": "완료",
-      "statsInspectPending": "재검사대기"
+      "statsInspectPending": "재검사대기",
+      "selectProcesses": "재작업 공정 선택",
+      "processCode": "공정코드",
+      "processName": "공정명",
+      "processSeq": "순서",
+      "processStatus": "공정상태",
+      "resultEntry": "실적입력",
+      "goodQty": "양품수량",
+      "defectQtyShort": "불량수량",
+      "workDetail": "작업내역",
+      "workTimeMin": "작업시간(분)"
     }
   },
   "equipment": {
