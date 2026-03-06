@@ -25,6 +25,8 @@ import api from "@/services/api";
 import ReworkFormPanel from "./components/ReworkFormPanel";
 import type { ReworkEditData } from "./components/ReworkFormPanel";
 import ReworkApprovePanel from "./components/ReworkApprovePanel";
+import ReworkResultPanel from "./components/ReworkResultPanel";
+import type { ResultTarget } from "./components/ReworkResultPanel";
 
 /** 재작업 지시 데이터 타입 */
 interface ReworkOrder {
@@ -82,6 +84,7 @@ export default function ReworkPage() {
   const [isApproveOpen, setIsApproveOpen] = useState(false);
   const [approveType, setApproveType] = useState<ApproveType>("qc");
   const [confirmAction, setConfirmAction] = useState<{ label: string; action: () => Promise<void> } | null>(null);
+  const [resultTarget, setResultTarget] = useState<ResultTarget | null>(null);
 
   /* ── 데이터 조회 ── */
   const fetchData = useCallback(async () => {
@@ -155,6 +158,50 @@ export default function ReworkPage() {
     fetchData();
     setSelectedRow(null);
   };
+
+  /* ── 공정별 액션 ── */
+  const fetchProcesses = useCallback(async (orderId: number) => {
+    try {
+      const res = await api.get(`/quality/reworks/${orderId}/processes`);
+      setProcesses(res.data?.data ?? []);
+    } catch { setProcesses([]); }
+  }, []);
+
+  const handleProcessStart = useCallback(async (proc: ReworkProcess) => {
+    await api.patch(`/quality/rework-processes/${proc.id}/start`);
+    if (selectedRow) fetchProcesses(selectedRow.id);
+    fetchData();
+  }, [selectedRow, fetchProcesses, fetchData]);
+
+  const handleProcessComplete = useCallback(async (proc: ReworkProcess) => {
+    await api.patch(`/quality/rework-processes/${proc.id}/complete`, { resultQty: proc.resultQty || proc.planQty });
+    if (selectedRow) fetchProcesses(selectedRow.id);
+    fetchData();
+  }, [selectedRow, fetchProcesses, fetchData]);
+
+  const handleProcessSkip = useCallback(async (proc: ReworkProcess) => {
+    await api.patch(`/quality/rework-processes/${proc.id}/skip`);
+    if (selectedRow) fetchProcesses(selectedRow.id);
+    fetchData();
+  }, [selectedRow, fetchProcesses, fetchData]);
+
+  const handleOpenResult = useCallback((proc: ReworkProcess) => {
+    if (!selectedRow) return;
+    setResultTarget({
+      processId: proc.id,
+      processCode: proc.processCode,
+      processName: proc.processName,
+      seq: proc.seq,
+      planQty: proc.planQty,
+      reworkNo: selectedRow.reworkNo,
+    });
+  }, [selectedRow]);
+
+  const handleResultSave = useCallback(() => {
+    setResultTarget(null);
+    if (selectedRow) fetchProcesses(selectedRow.id);
+    fetchData();
+  }, [selectedRow, fetchProcesses, fetchData]);
 
   /* ── 컬럼 정의 ── */
   const columns = useMemo<ColumnDef<ReworkOrder>[]>(() => [
@@ -264,6 +311,7 @@ export default function ReworkPage() {
                     <th className="px-3 py-2 text-right font-medium text-text-muted">{t("quality.rework.reworkQty")}</th>
                     <th className="px-3 py-2 text-right font-medium text-text-muted">{t("quality.rework.resultQty")}</th>
                     <th className="px-3 py-2 text-left font-medium text-text-muted">{t("quality.rework.worker")}</th>
+                    <th className="px-3 py-2 text-center font-medium text-text-muted">{t("common.manage")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -276,6 +324,36 @@ export default function ReworkPage() {
                       <td className="px-3 py-2 text-right font-mono text-text">{proc.planQty}</td>
                       <td className="px-3 py-2 text-right font-mono text-text">{proc.resultQty}</td>
                       <td className="px-3 py-2 text-text-muted">{proc.workerCode || '-'}</td>
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex gap-1 justify-center">
+                          {proc.status === "WAITING" && (
+                            <>
+                              <Button size="sm" variant="secondary" onClick={() => handleProcessStart(proc)} className="text-[10px] px-1.5 py-0.5 h-6">
+                                <Play className="w-3 h-3 mr-0.5" />{t("quality.rework.start")}
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleProcessSkip(proc)} className="text-[10px] px-1.5 py-0.5 h-6 text-text-muted">
+                                {t("quality.rework.skip")}
+                              </Button>
+                            </>
+                          )}
+                          {proc.status === "IN_PROGRESS" && (
+                            <>
+                              <Button size="sm" variant="primary" onClick={() => handleOpenResult(proc)} className="text-[10px] px-1.5 py-0.5 h-6">
+                                <ClipboardList className="w-3 h-3 mr-0.5" />{t("quality.rework.resultEntry")}
+                              </Button>
+                              <Button size="sm" variant="secondary" onClick={() => handleProcessComplete(proc)} className="text-[10px] px-1.5 py-0.5 h-6">
+                                <CheckCircle className="w-3 h-3 mr-0.5" />{t("quality.rework.complete")}
+                              </Button>
+                            </>
+                          )}
+                          {proc.status === "COMPLETED" && (
+                            <span className="text-green-600 dark:text-green-400 text-[10px]">{t("quality.rework.complete")}</span>
+                          )}
+                          {proc.status === "SKIPPED" && (
+                            <span className="text-text-muted text-[10px]">{t("quality.rework.skip")}</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -330,6 +408,13 @@ export default function ReworkPage() {
         <ReworkApprovePanel type={approveType}
           onClose={() => setIsApproveOpen(false)}
           onSubmit={handleApproveSubmit} />
+      )}
+
+      {/* 우측 패널: 실적 입력 */}
+      {resultTarget && (
+        <ReworkResultPanel target={resultTarget}
+          onClose={() => setResultTarget(null)}
+          onSave={handleResultSave} />
       )}
     </div>
   );

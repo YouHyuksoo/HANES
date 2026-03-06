@@ -2814,6 +2814,7 @@
       "rejectReason": "Rejection Reason",
       "start": "Start Work",
       "complete": "Complete Work",
+      "skip": "Skip",
       "inspect": "Re-inspection",
       "inspectorCode": "Inspector",
       "inspectMethod": "Inspection Method",

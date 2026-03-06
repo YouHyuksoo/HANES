@@ -2814,6 +2814,7 @@
       "rejectReason": "驳回原因",
       "start": "开始作业",
       "complete": "完成作业",
+      "skip": "跳过",
       "inspect": "再检查",
       "inspectorCode": "检查员",
       "inspectMethod": "检查方法",

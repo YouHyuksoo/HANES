@@ -2876,6 +2876,7 @@
       "rejectReason": "반려사유",
       "start": "작업시작",
       "complete": "작업완료",
+      "skip": "건너뛰기",
       "inspect": "재검사",
       "inspectorCode": "검사자",
       "inspectMethod": "검사방법",

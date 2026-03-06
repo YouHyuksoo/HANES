@@ -2815,6 +2815,7 @@
       "rejectReason": "Lý do từ chối",
       "start": "Bắt đầu",
       "complete": "Hoàn thành",
+      "skip": "Bỏ qua",
       "inspect": "Kiểm tra lại",
       "inspectorCode": "Người kiểm tra",
       "inspectMethod": "Phương pháp kiểm tra",
