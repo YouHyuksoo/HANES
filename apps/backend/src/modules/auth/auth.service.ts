@@ -6,6 +6,7 @@
  * 1. **login**: email/password DB 체크 → userId를 토큰으로 반환
  * 2. **register**: 신규 사용자 등록
  * 3. **me**: userId(토큰)로 현재 사용자 조회
+ * 4. **pdaAllowedMenus**: 사용자에게 PDA 역할이 있으면 허용 메뉴 목록 반환 (PDA_ROLE_MENU 테이블 조회)
  */
 import {
   Injectable,
@@ -16,6 +17,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
+import { PdaRoleMenu } from '../../entities/pda-role-menu.entity';
 import { LoginDto, RegisterDto } from './auth.dto';
 import { RoleService } from '../role/role.service';
 import { ActivityLogService } from '../system/services/activity-log.service';
@@ -27,6 +29,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(PdaRoleMenu)
+    private readonly pdaRoleMenuRepository: Repository<PdaRoleMenu>,
     private readonly roleService: RoleService,
     private readonly activityLogService: ActivityLogService,
   ) {}
@@ -85,6 +89,9 @@ export class AuthService {
     // RBAC: 역할별 허용 메뉴 조회 (ADMIN이면 빈 배열 → 프론트에서 전체 허용)
     const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(user.role);
 
+    // PDA 허용 메뉴 조회 — pdaRoleCode가 있는 경우에만 조회, 없으면 빈 배열
+    const pdaAllowedMenus = await this.getPdaAllowedMenus(user.pdaRoleCode);
+
     return {
       token: user.email, // email을 토큰으로 사용
       user: {
@@ -98,6 +105,7 @@ export class AuthService {
         company: selectedCompany,
       },
       allowedMenus,
+      pdaAllowedMenus,
     };
   }
 
@@ -155,6 +163,7 @@ export class AuthService {
         'status',
         'company',
         'lastLoginAt',
+        'pdaRoleCode',
       ],
     });
 
@@ -169,9 +178,29 @@ export class AuthService {
     // RBAC: 역할별 허용 메뉴 조회
     const allowedMenus = await this.roleService.getAllowedMenusByRoleCode(user.role);
 
+    // PDA 허용 메뉴 조회 — pdaRoleCode가 있는 경우에만 조회, 없으면 빈 배열
+    const pdaAllowedMenus = await this.getPdaAllowedMenus(user.pdaRoleCode);
+
     return {
       ...user,
       allowedMenus,
+      pdaAllowedMenus,
     };
+  }
+
+  /**
+   * PDA 허용 메뉴 목록 조회 (내부 헬퍼)
+   * - pdaRoleCode가 null/undefined이면 빈 배열 반환
+   * - PDA_ROLE_MENU 테이블에서 IS_ACTIVE = 'Y' 인 MENU_CODE 목록만 추출
+   */
+  private async getPdaAllowedMenus(pdaRoleCode: string | null): Promise<string[]> {
+    if (!pdaRoleCode) return [];
+
+    const rows = await this.pdaRoleMenuRepository.find({
+      where: { pdaRoleCode, isActive: true },
+      select: ['menuCode'],
+    });
+
+    return rows.map((r) => r.menuCode);
   }
 }
