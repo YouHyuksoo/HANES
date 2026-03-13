@@ -6,6 +6,7 @@
  * import { PdaHeader, PdaMenuGrid, ScanInput } from '@/components/pda';
  */
 
+export { default as NetworkStatusBanner } from "./NetworkStatusBanner";
 export { default as PdaAuthGuard } from "./PdaAuthGuard";
 export { default as PdaHeader } from "./PdaHeader";
 export { default as PdaLayout } from "./PdaLayout";
