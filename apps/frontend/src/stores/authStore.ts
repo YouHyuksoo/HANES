@@ -7,6 +7,10 @@
  * 2. **login**: POST /auth/login → 토큰+사용자 저장
  * 3. **logout**: 토큰+사용자 제거 → 로그인 페이지 이동
  * 4. **fetchMe**: GET /auth/me → 토큰 유효성 검증 및 사용자 갱신
+ * 5. **currentWorker**: PDA 작업자 로그인 상태 (persist 포함, 앱 재시작 후에도 유지)
+ * 6. **pdaAllowedMenus**: PDA 작업자에게 허용된 메뉴 코드 목록
+ * 7. **setCurrentWorker**: PDA 작업자 설정
+ * 8. **clearCurrentWorker**: PDA 작업자 해제
  */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -23,6 +27,13 @@ export interface AuthUser {
   company?: string;
 }
 
+/** PDA 작업자 정보 */
+export interface CurrentWorker {
+  id: number;
+  name: string;
+  workerCode: string;
+}
+
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
@@ -32,6 +43,10 @@ interface AuthState {
   isLoading: boolean;
   /** RBAC: 접근 허용된 메뉴 코드 목록 (빈 배열이면 ADMIN = 전체 허용) */
   allowedMenus: string[];
+  /** PDA: 현재 로그인된 작업자 정보 (앱 재시작 후에도 유지) */
+  currentWorker: CurrentWorker | null;
+  /** PDA: 작업자에게 허용된 메뉴 코드 목록 */
+  pdaAllowedMenus: string[];
 
   login: (email: string, password: string, company?: string, plant?: string) => Promise<void>;
   register: (data: {
@@ -45,6 +60,10 @@ interface AuthState {
   fetchMe: () => Promise<void>;
   setCompany: (company: string) => void;
   setPlant: (plant: string) => void;
+  /** PDA 작업자 설정 */
+  setCurrentWorker: (worker: CurrentWorker) => void;
+  /** PDA 작업자 해제 */
+  clearCurrentWorker: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -57,13 +76,15 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       allowedMenus: [],
+      currentWorker: null,
+      pdaAllowedMenus: [],
 
       login: async (email: string, password: string, company?: string, plant?: string) => {
         set({ isLoading: true });
         try {
           const res = await api.post("/auth/login", { email, password, company });
           const responseData = res.data?.data ?? res.data;
-          const { token, user, allowedMenus } = responseData;
+          const { token, user, allowedMenus, pdaAllowedMenus } = responseData;
 
           localStorage.setItem("harness-token", token);
 
@@ -75,6 +96,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             isLoading: false,
             allowedMenus: allowedMenus || [],
+            pdaAllowedMenus: pdaAllowedMenus || [],
           });
         } catch (error) {
           set({ isLoading: false });
@@ -112,6 +134,8 @@ export const useAuthStore = create<AuthState>()(
           selectedPlant: "",
           isAuthenticated: false,
           allowedMenus: [],
+          currentWorker: null,
+          pdaAllowedMenus: [],
         });
       },
 
@@ -121,6 +145,14 @@ export const useAuthStore = create<AuthState>()(
 
       setPlant: (plant: string) => {
         set({ selectedPlant: plant });
+      },
+
+      setCurrentWorker: (worker: CurrentWorker) => {
+        set({ currentWorker: worker });
+      },
+
+      clearCurrentWorker: () => {
+        set({ currentWorker: null, pdaAllowedMenus: [] });
       },
 
       fetchMe: async () => {
@@ -133,10 +165,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           const res = await api.get("/auth/me");
           const responseData = res.data?.data ?? res.data;
-          const { allowedMenus, ...userData } = responseData;
+          const { allowedMenus, pdaAllowedMenus, ...userData } = responseData;
           set({
             user: userData,
             allowedMenus: allowedMenus || [],
+            pdaAllowedMenus: pdaAllowedMenus || [],
             isAuthenticated: true,
           });
         } catch {
@@ -158,6 +191,8 @@ export const useAuthStore = create<AuthState>()(
         selectedPlant: state.selectedPlant,
         isAuthenticated: state.isAuthenticated,
         allowedMenus: state.allowedMenus,
+        currentWorker: state.currentWorker,
+        pdaAllowedMenus: state.pdaAllowedMenus,
       }),
     },
   ),
