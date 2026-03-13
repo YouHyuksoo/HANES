@@ -6,6 +6,7 @@
  * 1. **CRUD**: 점검 결과 생성/조회/수정/삭제
  * 2. **inspectType**: 'DAILY'(일상), 'PERIODIC'(정기)로 구분
  * 3. EquipInspectLog 테이블 사용
+ * 4. **인터락**: 점검 결과가 FAIL이면 해당 설비의 STATUS를 'INTERLOCK'으로 자동 변경
  */
 
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -139,6 +140,14 @@ export class EquipInspectService {
 
     const saved = await this.equipInspectLogRepository.save(log);
 
+    // 인터락: overallResult가 FAIL이면 설비 상태를 INTERLOCK으로 변경
+    if (saved.overallResult && saved.overallResult.toUpperCase().includes('FAIL')) {
+      await this.equipMasterRepository.update(
+        { equipCode: equip.equipCode },
+        { status: 'INTERLOCK' },
+      );
+    }
+
     return {
       ...saved,
       equip: {
@@ -165,13 +174,24 @@ export class EquipInspectService {
 
     await this.equipInspectLogRepository.update(id, updateData);
 
+    const targetEquipCode = updateData.equipCode || log.equipCode;
+
     // Get equip info for response
     const equip = await this.equipMasterRepository.findOne({
-      where: { equipCode: updateData.equipCode || log.equipCode },
+      where: { equipCode: targetEquipCode },
       select: ['equipCode', 'equipName', 'lineCode'],
     });
 
     const updated = await this.equipInspectLogRepository.findOne({ where: { id: id } });
+
+    // 인터락: 수정 후 overallResult가 FAIL이면 설비 상태를 INTERLOCK으로 변경
+    const finalResult = updated?.overallResult ?? '';
+    if (finalResult.toUpperCase().includes('FAIL')) {
+      await this.equipMasterRepository.update(
+        { equipCode: targetEquipCode },
+        { status: 'INTERLOCK' },
+      );
+    }
 
     return {
       ...updated,
