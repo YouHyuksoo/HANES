@@ -1,23 +1,32 @@
 "use client";
 
 /**
- * @file src/app/(pda)/material/menu/page.tsx
- * @description 자재관리 서브메뉴 페이지 - 입고/출고/재고조정/재고실사 진입
+ * @file src/app/pda/material/menu/page.tsx
+ * @description 자재관리 서브메뉴 — SMMEX 스타일 2열 그리드 레이아웃
  *
  * 초보자 가이드:
  * 1. PdaHeader: 뒤로가기 → /pda/menu (메인 메뉴)
- * 2. PdaMenuGrid: 자재관리 4개 하위 메뉴를 2열 그리드로 표시
- * 3. materialSubMenuItems: pdaMenuConfig에서 가져온 서브메뉴 항목
+ * 2. PdaMenuGrid layout="grid": 2열 그리드, h-20 버튼
+ * 3. pdaMaterialSubMenuItems: pdaMenuConfig에서 가져온 4개 서브메뉴 항목
+ * 4. pdaAllowedMenus로 menuCode 필터링 (없으면 항상 표시)
  */
+import { useAuthStore } from "@/stores/authStore";
 import PdaHeader from "@/components/pda/PdaHeader";
 import PdaMenuGrid from "@/components/pda/PdaMenuGrid";
-import { materialSubMenuItems } from "@/components/pda/pdaMenuConfig";
+import { pdaMaterialSubMenuItems } from "@/components/pda/pdaMenuConfig";
 
 export default function MaterialMenuPage() {
+  const { pdaAllowedMenus } = useAuthStore();
+
+  // menuCode 없는 항목은 항상 표시, menuCode 있는 항목은 pdaAllowedMenus에 있을 때만 표시
+  const visibleItems = pdaMaterialSubMenuItems.filter(
+    (item) => !item.menuCode || pdaAllowedMenus.includes(item.menuCode)
+  );
+
   return (
     <>
       <PdaHeader titleKey="pda.menu.material" backPath="/pda/menu" />
-      <PdaMenuGrid items={materialSubMenuItems} />
+      <PdaMenuGrid items={visibleItems} layout="grid" />
     </>
   );
 }

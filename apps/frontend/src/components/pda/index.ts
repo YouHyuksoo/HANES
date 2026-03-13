@@ -16,5 +16,12 @@ export { default as ScanResultCard } from "./ScanResultCard";
 export { default as ScanHistoryList } from "./ScanHistoryList";
 export { default as PdaActionButton } from "./PdaActionButton";
 export { useSoundFeedback } from "./SoundFeedback";
-export { mainMenuItems, materialSubMenuItems } from "./pdaMenuConfig";
+export {
+  pdaMainMenuItems,
+  pdaMaterialSubMenuItems,
+  pdaLogoutItem,
+  // deprecated aliases — 하위 호환성 유지
+  mainMenuItems,
+  materialSubMenuItems,
+} from "./pdaMenuConfig";
 export type { PdaMenuItem } from "./pdaMenuConfig";
