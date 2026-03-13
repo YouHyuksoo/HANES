@@ -4729,7 +4729,15 @@
       "warehouse": "入库仓库",
       "confirmReceive": "确认入库",
       "receiveSuccess": "入库处理完成",
-      "receiveFailed": "入库处理失败"
+      "receiveFailed": "入库处理失败",
+      "location": "库位",
+      "scanLocation": "请扫描库位条码",
+      "iqcPass": "合格",
+      "iqcFail": "不合格",
+      "iqcInProgress": "检查中",
+      "iqcNone": "免检",
+      "iqcFailMsg": "IQC未合格，无法入库",
+      "iqcInProgressMsg": "IQC检查进行中，无法入库"
     },
     "issuing": {
       "title": "物料出库",

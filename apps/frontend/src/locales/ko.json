@@ -4748,7 +4748,15 @@
       "warehouse": "입고창고",
       "confirmReceive": "입고확인",
       "receiveSuccess": "입고 처리가 완료되었습니다",
-      "receiveFailed": "입고 처리에 실패했습니다"
+      "receiveFailed": "입고 처리에 실패했습니다",
+      "location": "로케이션",
+      "scanLocation": "로케이션 바코드를 스캔하세요",
+      "iqcPass": "합격",
+      "iqcFail": "미합격",
+      "iqcInProgress": "검사중",
+      "iqcNone": "무검사",
+      "iqcFailMsg": "IQC 미합격 자재입니다. 입고 불가",
+      "iqcInProgressMsg": "IQC 검사 진행 중입니다. 입고 불가"
     },
     "issuing": {
       "title": "자재출고",

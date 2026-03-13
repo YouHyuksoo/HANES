@@ -4729,7 +4729,15 @@
       "warehouse": "Warehouse",
       "confirmReceive": "Confirm Receive",
       "receiveSuccess": "Receiving completed",
-      "receiveFailed": "Receiving failed"
+      "receiveFailed": "Receiving failed",
+      "location": "Location",
+      "scanLocation": "Scan location barcode",
+      "iqcPass": "Pass",
+      "iqcFail": "Fail",
+      "iqcInProgress": "In Progress",
+      "iqcNone": "No Inspection",
+      "iqcFailMsg": "IQC failed. Cannot receive",
+      "iqcInProgressMsg": "IQC inspection in progress. Cannot receive"
     },
     "issuing": {
       "title": "Issuing",

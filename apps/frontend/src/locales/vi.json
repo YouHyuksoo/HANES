@@ -4729,7 +4729,15 @@
       "warehouse": "Kho nhập",
       "confirmReceive": "Xác nhận nhập",
       "receiveSuccess": "Nhập kho thành công",
-      "receiveFailed": "Nhập kho thất bại"
+      "receiveFailed": "Nhập kho thất bại",
+      "location": "Vị trí",
+      "scanLocation": "Quét mã vạch vị trí",
+      "iqcPass": "Đạt",
+      "iqcFail": "Không đạt",
+      "iqcInProgress": "Đang kiểm tra",
+      "iqcNone": "Miễn kiểm",
+      "iqcFailMsg": "IQC không đạt. Không thể nhập kho",
+      "iqcInProgressMsg": "Đang kiểm tra IQC. Không thể nhập kho"
     },
     "issuing": {
       "title": "Xuất kho",
