@@ -6,11 +6,12 @@
  * 1. **GET /material/arrivals**: 입하 이력 조회 (페이지네이션)
  * 2. **GET /material/arrivals/stock-status**: 입하재고현황 조회
  * 3. **GET /material/arrivals/stats**: 입하 통계
- * 3. **GET /material/arrivals/receivable-pos**: 입하 가능 PO 목록
- * 4. **GET /material/arrivals/po/:poId/items**: PO 품목 상세
- * 5. **POST /material/arrivals/po**: PO 기반 입하 등록
- * 6. **POST /material/arrivals/manual**: 수동 입하 등록
- * 7. **POST /material/arrivals/cancel**: 입하 취소 (역분개)
+ * 4. **GET /material/arrivals/receivable-pos**: 입하 가능 PO 목록
+ * 5. **GET /material/arrivals/by-barcode/:barcode**: 바코드로 입하 정보 조회
+ * 6. **GET /material/arrivals/po/:poId/items**: PO 품목 상세
+ * 7. **POST /material/arrivals/po**: PO 기반 입하 등록
+ * 8. **POST /material/arrivals/manual**: 수동 입하 등록
+ * 9. **POST /material/arrivals/cancel**: 입하 취소 (역분개)
  */
 
 import { Controller, Get, Post, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
@@ -56,6 +57,13 @@ export class ArrivalController {
   @ApiOperation({ summary: '입하 가능 PO 목록 조회' })
   async findReceivablePOs(@Company() company: string, @Plant() plant: string) {
     const data = await this.arrivalService.findReceivablePOs(company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Get('by-barcode/:barcode')
+  @ApiOperation({ summary: '바코드로 입하 정보 조회 (PDA 스캔용)' })
+  async findByBarcode(@Param('barcode') barcode: string) {
+    const data = await this.arrivalService.findByBarcode(barcode);
     return ResponseUtil.success(data);
   }
 

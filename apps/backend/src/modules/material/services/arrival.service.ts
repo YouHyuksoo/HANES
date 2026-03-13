@@ -23,6 +23,8 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
+import { IqcLog } from '../../../entities/iqc-log.entity';
 import {
   CreatePoArrivalDto,
   CreateManualArrivalDto,
@@ -51,6 +53,10 @@ export class ArrivalService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(VendorBarcodeMapping)
+    private readonly vendorBarcodeMappingRepository: Repository<VendorBarcodeMapping>,
+    @InjectRepository(IqcLog)
+    private readonly iqcLogRepository: Repository<IqcLog>,
     private readonly dataSource: DataSource,
     private readonly numRuleService: NumRuleService,
   ) {}
@@ -656,6 +662,98 @@ export class ArrivalService {
     return { data, stats };
   }
 
+  /**
+   * 바코드로 입하 정보 조회
+   *
+   * 1차: MAT_ARRIVALS 테이블에서 ARRIVAL_NO 또는 PO_NO로 바코드 직접 조회
+   * 2차 (1차 실패): VENDOR_BARCODE_MAPPINGS에서 ITEM_CODE 매핑 후 최신 입하 조회
+   * IQC 상태는 iqcYn='N'이면 NONE, 'Y'이면 IQC_LOGS 최신 결과로 결정
+   */
+  async findByBarcode(barcode: string) {
+    // 1차 시도: arrivalNo 또는 poNo로 직접 조회
+    let arrival: MatArrival | null = await this.matArrivalRepository.findOne({
+      where: { arrivalNo: barcode, status: 'DONE' },
+      order: { arrivalDate: 'DESC' },
+    });
+
+    if (!arrival) {
+      arrival = await this.matArrivalRepository.findOne({
+        where: { poNo: barcode, status: 'DONE' },
+        order: { arrivalDate: 'DESC' },
+      });
+    }
+
+    // 2차 시도: VendorBarcodeMapping에서 itemCode 매핑
+    if (!arrival) {
+      const mapping = await this.vendorBarcodeMappingRepository.findOne({
+        where: { vendorBarcode: barcode, useYn: 'Y' },
+      });
+
+      if (mapping) {
+        arrival = await this.matArrivalRepository.findOne({
+          where: { itemCode: mapping.itemCode, status: 'DONE' },
+          order: { arrivalDate: 'DESC' },
+        });
+      }
+    }
+
+    if (!arrival) {
+      throw new NotFoundException(`바코드에 해당하는 입하 정보를 찾을 수 없습니다: ${barcode}`);
+    }
+
+    // 품목 정보 조회
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: arrival.itemCode },
+    });
+
+    const iqcYn = part?.iqcYn ?? 'Y';
+
+    // IQC 상태 결정
+    let iqcStatus: 'PASS' | 'FAIL' | 'IN_PROGRESS' | 'NONE' = 'NONE';
+
+    if (iqcYn === 'Y') {
+      // IQC_LOGS에서 해당 입하번호의 최신 검사 결과 조회
+      const latestIqcLog = await this.iqcLogRepository.findOne({
+        where: { arrivalNo: arrival.arrivalNo },
+        order: { inspectDate: 'DESC' },
+      });
+
+      if (!latestIqcLog) {
+        iqcStatus = 'IN_PROGRESS'; // IQC 대상이지만 아직 검사 미완
+      } else if (latestIqcLog.result === 'PASS') {
+        iqcStatus = 'PASS';
+      } else if (latestIqcLog.result === 'FAIL') {
+        iqcStatus = 'FAIL';
+      } else {
+        iqcStatus = 'IN_PROGRESS';
+      }
+    }
+
+    // PO 기반 입하의 경우 발주수량 조회
+    let orderQty = 0;
+    if (arrival.poId && arrival.poItemId) {
+      const poItem = await this.purchaseOrderItemRepository.findOne({
+        where: { id: Number(arrival.poItemId) },
+      });
+      if (poItem) {
+        orderQty = poItem.orderQty;
+      }
+    }
+
+    return {
+      arrivalId: arrival.id,
+      poNo: arrival.poNo ?? '',
+      itemCode: arrival.itemCode,
+      itemName: part?.itemName ?? '',
+      orderQty,
+      receivedQty: arrival.qty,
+      unit: part?.unit ?? '',
+      supplier: arrival.vendorName,
+      iqcYn,
+      iqcStatus,
+    };
+  }
+
   /** PO 상태 재계산 */
   private async updatePOStatus(manager: any, poNo: string) {
     const poItems = await manager.find(PurchaseOrderItem, {
@@ -685,6 +783,7 @@ export class ArrivalService {
   private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number) {
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: matUid || null },
+      lock: { mode: 'pessimistic_write' },
     });
 
     if (existing) {

@@ -43,6 +43,7 @@ import { MatIssueRequest } from '../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../entities/mat-issue-request-item.entity';
 import { LabelTemplate } from '../../entities/label-template.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
+import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.entity';
 
 // 기존 컨트롤러/서비스
 import { MatLotController } from './controllers/mat-lot.controller';
@@ -111,6 +112,7 @@ import { ReceiveLabelService } from './services/receive-label.service';
       MatIssueRequestItem,
       LabelTemplate,
       LabelPrintLog,
+      VendorBarcodeMapping,
     ]),
   ],
   controllers: [
