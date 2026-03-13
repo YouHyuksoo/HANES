@@ -54,6 +54,10 @@ export class User {
   @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
+  /** PDA 역할 코드 (FK → PDA_ROLE.CODE, nullable) */
+  @Column({ name: 'PDA_ROLE_CODE', length: 50, nullable: true })
+  pdaRoleCode: string | null;
+
   @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
