@@ -712,7 +712,13 @@
     "config": {
       "title": "环境设置",
       "description": "设置系统运行所需的各种选项。",
-      "group": { "all": "全部", "MATERIAL": "材料管理", "PRODUCTION": "生产管理", "QUALITY": "质量管理", "SYSTEM": "系统" },
+      "group": {
+        "all": "全部",
+        "MATERIAL": "材料管理",
+        "PRODUCTION": "生产管理",
+        "QUALITY": "质量管理",
+        "SYSTEM": "系统"
+      },
       "save": "保存设置",
       "saveSuccess": "设置已保存。",
       "addNew": "添加设置",
@@ -3196,16 +3202,33 @@
   },
   "equipment": {
     "status": {
-      "title": "设备运行状态",
+      "title": "设备运行状况",
+      "description": "监控和管理设备状态。",
+      "equipCode": "设备代码",
+      "equipName": "设备名称",
+      "equipNamePlaceholder": "裁切机1号",
+      "type": "类型",
+      "line": "产线",
+      "ipAddress": "IP地址",
+      "register": "注册设备",
+      "editEquip": "编辑设备",
+      "changeStatus": "状态变更",
+      "selectedEquip": "已选设备",
+      "selectStatus": "选择变更状态",
+      "totalEquipment": "全部设备",
+      "normalOp": "正常运行",
+      "maintenance": "检修中",
+      "stopped": "停止",
+      "normal": "正常",
+      "maint": "检修",
+      "stop": "停止",
       "allTypes": "全部类型",
-      "cutting": "切断",
+      "allLines": "全部产线",
+      "cutting": "裁切",
       "crimping": "压接",
       "assembly": "组装",
       "inspection": "检查",
-      "allLines": "全部产线",
-      "subtitle": "查看全部设备的实时运行状态。",
-      "noEquip": "没有可显示的设备。",
-      "working": "作业中"
+      "searchPlaceholder": "搜索设备代码、名称..."
     },
     "code": "设备代码",
     "name": "设备名称",
@@ -3216,21 +3239,39 @@
     "maint": "维护中",
     "stop": "停止",
     "pm": {
-      "title": "预防维护管理",
+      "title": "预防维护",
+      "description": "管理消耗品寿命，支持及时更换。",
+      "code": "代码",
+      "name": "名称",
+      "namePlaceholder": "端子模具A",
       "category": "类别",
-      "lifeProgress": "寿命进度",
-      "equipmentCode": "设备代码",
+      "currentExpectedLife": "当前/预期寿命",
+      "lastReplaced": "最后更换",
+      "registerReplace": "登记更换",
+      "registerPart": "登记消耗品",
+      "editPart": "编辑消耗品",
+      "total": "全部",
+      "totalParts": "全部消耗品",
+      "ok": "正常",
+      "warning": "警告",
+      "replace": "需更换",
       "allCategories": "全部类别",
-      "allStatus": "全部状态",
       "mold": "模具",
       "jig": "夹具",
       "tool": "工具",
-      "total": "全部",
-      "ok": "正常",
-      "warning": "注意",
-      "replace": "需要更换",
-      "edit": "修改维护",
-      "add": "登记维护"
+      "replacePlan": "更换预定",
+      "replacePlanSubtitle": "警告/需更换项目",
+      "noReplacePlan": "暂无需更换项目",
+      "equipmentCode": "设备代码",
+      "currentShots": "当前次数",
+      "expectedLife": "预期寿命",
+      "selectedPart": "已选消耗品",
+      "currentLifeProgress": "当前寿命进度",
+      "afterReplaceSettings": "更换后设置",
+      "newPartCode": "新消耗品代码（可选）",
+      "newPartCodePlaceholder": "保持原代码请留空",
+      "replaceNote": "更换后当前次数将归零",
+      "searchPlaceholder": "搜索代码、名称..."
     },
     "edit": "编辑设备",
     "pmPlan": {
@@ -3414,70 +3455,6 @@
       "statTotal": "总点检数",
       "excelDownload": "Excel下载",
       "searchPlaceholder": "搜索设备代码、名称..."
-    },
-    "status": {
-      "title": "设备运行状况",
-      "description": "监控和管理设备状态。",
-      "equipCode": "设备代码",
-      "equipName": "设备名称",
-      "equipNamePlaceholder": "裁切机1号",
-      "type": "类型",
-      "line": "产线",
-      "ipAddress": "IP地址",
-      "register": "注册设备",
-      "editEquip": "编辑设备",
-      "changeStatus": "状态变更",
-      "selectedEquip": "已选设备",
-      "selectStatus": "选择变更状态",
-      "totalEquipment": "全部设备",
-      "normalOp": "正常运行",
-      "maintenance": "检修中",
-      "stopped": "停止",
-      "normal": "正常",
-      "maint": "检修",
-      "stop": "停止",
-      "allTypes": "全部类型",
-      "allLines": "全部产线",
-      "cutting": "裁切",
-      "crimping": "压接",
-      "assembly": "组装",
-      "inspection": "检查",
-      "searchPlaceholder": "搜索设备代码、名称..."
-    },
-    "pm": {
-      "title": "预防维护",
-      "description": "管理消耗品寿命，支持及时更换。",
-      "code": "代码",
-      "name": "名称",
-      "namePlaceholder": "端子模具A",
-      "category": "类别",
-      "currentExpectedLife": "当前/预期寿命",
-      "lastReplaced": "最后更换",
-      "registerReplace": "登记更换",
-      "registerPart": "登记消耗品",
-      "editPart": "编辑消耗品",
-      "total": "全部",
-      "totalParts": "全部消耗品",
-      "ok": "正常",
-      "warning": "警告",
-      "replace": "需更换",
-      "allCategories": "全部类别",
-      "mold": "模具",
-      "jig": "夹具",
-      "tool": "工具",
-      "replacePlan": "更换预定",
-      "replacePlanSubtitle": "警告/需更换项目",
-      "noReplacePlan": "暂无需更换项目",
-      "equipmentCode": "设备代码",
-      "currentShots": "当前次数",
-      "expectedLife": "预期寿命",
-      "selectedPart": "已选消耗品",
-      "currentLifeProgress": "当前寿命进度",
-      "afterReplaceSettings": "更换后设置",
-      "newPartCode": "新消耗品代码（可选）",
-      "newPartCodePlaceholder": "保持原代码请留空",
-      "replaceNote": "更换后当前次数将归零",
-      "searchPlaceholder": "搜索代码、名称..."
     },
     "mold": {
       "title": "模具管理",
@@ -4111,81 +4088,475 @@
     "dashboard": "仪表盘"
   },
   "comCode": {
-    "JOB_ORDER_STATUS": { "WAITING": "等待", "RUNNING": "进行中", "PAUSED": "暂停", "DONE": "完成", "CANCELED": "取消" },
-    "JOB_ORDER_TYPE": { "NORMAL": "普通", "REWORK": "返工", "SAMPLE": "样品", "TRIAL": "试验" },
-    "SEMI_PRODUCT_STATUS": { "WAITING": "等待", "IN_PROGRESS": "进行中", "COMPLETED": "完成", "MOVED": "移动完成" },
-    "BOX_STATUS": { "OPEN": "进行中", "CLOSED": "截止", "SHIPPED": "出货" },
-    "PALLET_STATUS": { "OPEN": "进行中", "CLOSED": "截止", "LOADED": "装载", "SHIPPED": "出货" },
-    "SHIPMENT_STATUS": { "PREPARING": "准备中", "LOADED": "装车", "SHIPPED": "出货", "DELIVERED": "配送完成", "CANCELED": "取消" },
-    "RECEIVE_STATUS": { "PENDING": "待收货", "IQC_IN_PROGRESS": "IQC进行中", "PASSED": "合格", "FAILED": "不合格" },
-    "ISSUE_STATUS": { "PENDING": "等待", "IN_PROGRESS": "进行中", "COMPLETED": "完成" },
-    "EQUIP_STATUS": { "NORMAL": "正常", "MAINT": "检查", "STOP": "停止" },
-    "PM_STATUS": { "SCHEDULED": "预定", "IN_PROGRESS": "进行中", "COMPLETED": "完成", "OVERDUE": "延迟" },
-    "DEFECT_STATUS": { "PENDING": "待维修", "REPAIRING": "维修中", "COMPLETED": "完成", "SCRAPPED": "废弃" },
-    "DEFECT_DISPOSITION": { "REPAIR": "维修", "REWORK": "返工", "SCRAP": "废弃", "CONCESSION": "特许" },
-    "INSPECT_RESULT": { "PASS": "合格", "FAIL": "不合格" },
-    "INSPECT_TYPE": { "CONTINUITY": "导通", "INSULATION": "绝缘", "HI_POT": "耐压", "VISUAL": "外观" },
-    "IQC_TYPE": { "IQC": "进货检验", "PQC": "过程检验", "FQC": "最终检验", "OQC": "出货检验" },
-    "QUALITY_JUDGMENT": { "PASS": "合格", "FAIL": "不合格", "PENDING": "判定待定", "CONDITIONAL": "条件合格" },
-    "APPROVAL_STATUS": { "PENDING": "待批准", "APPROVED": "批准", "REJECTED": "退回" },
-    "INTERFACE_STATUS": { "PENDING": "待传送", "SENT": "传送完成", "FAILED": "传送失败", "CONFIRMED": "确认完成" },
-    "CONNECTION_STATUS": { "CONNECTED": "已连接", "DISCONNECTED": "连接断开", "ERROR": "错误" },
-    "PROCESS_TYPE": { "CUTTING": "切断", "CRIMPING": "压接", "ASSEMBLY": "组装", "INSPECTION": "检查", "PACKING": "包装", "CUT": "切割", "CRIMP": "压接", "ASSY": "组装", "INSP": "检查", "PACK": "包装" },
-    "ITEM_TYPE": { "RAW_MATERIAL": "原材料", "SEMI_PRODUCT": "半成品", "FINISHED": "成品", "CONSUMABLE": "消耗品", "RAW": "原材料", "WIP": "半成品", "FG": "成品" },
-    "BOM_TYPE": { "PRODUCTION": "生产用", "STANDARD": "标准", "ENGINEERING": "设计用" },
-    "WAREHOUSE_TYPE": { "RAW_MATERIAL": "原材料", "WIP": "在制品", "FINISHED": "成品", "MRB": "不良品隔离", "HOLD": "保留" },
-    "INVENTORY_MOVE_TYPE": { "RECEIPT": "入库", "ISSUE": "出库", "TRANSFER": "移动", "ADJUSTMENT": "调整", "SCRAP": "废弃" },
-    "MOLD_STATUS": { "ACTIVE": "使用中", "INACTIVE": "未使用", "REPAIR": "维修中", "SCRAPPED": "废弃" },
-    "GENERAL_STATUS": { "ACTIVE": "活动", "INACTIVE": "非活动" },
-    "USE_YN": { "Y": "使用", "N": "未使用" },
-    "PLANT_TYPE": { "PLANT": "工厂", "SHOP": "车间", "LINE": "生产线", "CELL": "单元" },
-    "PART_TYPE": { "RAW": "原材料", "WIP": "半成品", "FG": "成品" },
-    "PARTNER_TYPE": { "SUPPLIER": "供应商", "CUSTOMER": "客户" },
-    "VENDOR_TYPE": { "SUBCON": "外包商", "SUPPLIER": "供应商" },
-    "WAREHOUSE_TYPE_DTO": { "RAW": "原材料", "WIP": "半成品", "FG": "成品", "FLOOR": "现场", "DEFECT": "不良", "SCRAP": "废弃", "SUBCON": "外包" },
-    "IQC_STATUS": { "PENDING": "等待", "PASS": "合格", "FAIL": "不合格", "HOLD": "保留" },
-    "OQC_STATUS": { "PENDING": "等待", "IN_PROGRESS": "检查中", "PASS": "合格", "FAIL": "不合格" },
-    "MAT_LOT_STATUS": { "NORMAL": "正常", "HOLD": "保留", "DEPLETED": "耗尽" },
-    "ISSUE_TYPE": { "PRODUCTION": "量产", "DEFECT": "不良", "SAMPLE": "样品", "DESIGN_START": "设计开始", "ADJUSTMENT": "库存调整", "LOSS": "损耗", "SUBCONTRACT": "外包", "SCRAP": "报废", "RETURN": "退货", "ETC": "其他" },
-    "TRANSACTION_TYPE": { "MAT_IN": "材料入库", "MAT_IN_CANCEL": "材料入库取消", "MAT_OUT": "材料出库", "MAT_OUT_CANCEL": "材料出库取消", "WIP_IN": "半成品入库", "WIP_IN_CANCEL": "半成品入库取消", "WIP_OUT": "半成品出库", "WIP_OUT_CANCEL": "半成品出库取消", "FG_IN": "成品入库", "FG_IN_CANCEL": "成品入库取消", "FG_OUT": "成品出库", "FG_OUT_CANCEL": "成品出库取消", "SUBCON_OUT": "外包出库", "SUBCON_OUT_CANCEL": "外包出库取消", "SUBCON_IN": "外包入库", "SUBCON_IN_CANCEL": "外包入库取消", "PROD_CONSUME": "生产消耗", "PROD_CONSUME_CANCEL": "生产消耗取消", "TRANSFER": "移动", "TRANSFER_CANCEL": "移动取消", "ADJ_PLUS": "调整(+)", "ADJ_MINUS": "调整(-)", "SCRAP": "废弃" },
-    "REF_TYPE": { "JOB_ORDER": "作业指示", "SUBCON_ORDER": "外包订单", "SHIPMENT": "出货", "CUSTOMS": "通关", "ADJUST": "调整", "PROD_RESULT": "生产实绩" },
-    "PROD_RESULT_STATUS": { "RUNNING": "进行中", "DONE": "完成", "CANCELED": "取消" },
-    "DEFECT_LOG_STATUS": { "WAIT": "等待", "REPAIR": "维修", "REWORK": "返工", "SCRAP": "废弃", "DONE": "完成" },
-    "REPAIR_RESULT": { "PASS": "合格", "FAIL": "不合格", "SCRAP": "废弃" },
-    "EQUIP_TYPE": { "CUTTING": "切断设备", "CRIMPING": "压接设备", "ASSEMBLY": "组装设备", "AUTO_CRIMP": "自动压接机", "SINGLE_CUT": "单线切断机", "MULTI_CUT": "多线切断机", "TWIST": "绞线机", "SOLDER": "焊接机", "HOUSING": "插壳机", "TESTER": "检查机", "LABEL_PRINTER": "标签打印机", "INSPECTION": "检查设备", "PACKING": "包装机", "OTHER": "其他" },
-    "CONSUMABLE_STATUS": { "NORMAL": "正常", "WARNING": "警告", "REPLACE": "需要更换" },
-    "CONSUMABLE_CATEGORY": { "MOLD": "模具", "JIG": "夹具", "TOOL": "工具" },
-    "CONSUMABLE_LOG_TYPE": { "IN": "入库", "IN_RETURN": "入库退货", "OUT": "出库", "OUT_RETURN": "出库退货" },
-    "CONSUMABLE_LOG_TYPE_GROUP": { "RECEIVING": "入库", "ISSUING": "出库" },
-    "INCOMING_TYPE": { "NEW": "新建", "REPLACEMENT": "更换" },
-    "ISSUE_REASON": { "PRODUCTION": "生产", "REPAIR": "维修", "OTHER": "其他" },
-    "CUSTOMS_ENTRY_STATUS": { "PENDING": "等待", "CLEARED": "通关", "RELEASED": "放行" },
-    "CUSTOMS_LOT_STATUS": { "BONDED": "保税", "PARTIAL": "部分放行", "RELEASED": "放行" },
-    "USAGE_REPORT_STATUS": { "DRAFT": "草稿", "REPORTED": "报告", "CONFIRMED": "确认" },
-    "SUBCON_ORDER_STATUS": { "ORDERED": "订购", "DELIVERED": "交付", "PARTIAL_RECV": "部分入库", "RECEIVED": "入库完成", "CLOSED": "截止", "CANCELED": "取消" },
-    "SUBCON_INSPECT_RESULT": { "PASS": "合格", "FAIL": "不合格", "PARTIAL": "部分合格" },
-    "COMM_TYPE": { "NONE": "无", "MQTT": "MQTT", "SERIAL": "串口", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
-    "BAUD_RATE": { "9600": "9600", "19200": "19200", "38400": "38400", "57600": "57600", "115200": "115200" },
-    "DATA_BITS": { "7": "7位", "8": "8位" },
-    "STOP_BITS": { "1": "1", "1.5": "1.5", "2": "2" },
-    "PARITY": { "NONE": "无", "EVEN": "偶数", "ODD": "奇数" },
-    "FLOW_CONTROL": { "NONE": "无", "XONXOFF": "XON/XOFF", "RTSCTS": "RTS/CTS" },
-    "INTERFACE_DIRECTION": { "IN": "接收", "OUT": "发送" },
-    "IF_LOG_STATUS": { "PENDING": "等待", "SUCCESS": "成功", "FAIL": "失败", "RETRY": "重试" },
-    "WORKER_TYPE": { "CUTTING": "切割工", "CRIMPING": "压接工", "ASSEMBLY": "组装工", "INSPECTOR": "检查员", "PACKING": "包装工", "LEADER": "班长" },
-    "SHIP_ORDER_STATUS": { "DRAFT": "草稿", "CONFIRMED": "已确认", "SHIPPING": "出货中", "SHIPPED": "已出货" },
-    "INSPECT_CHECK_TYPE": { "DAILY": "日常点检", "PERIODIC": "定期点检" },
-    "INSPECT_JUDGE": { "PASS": "合格", "FAIL": "不合格", "CONDITIONAL": "条件合格" },
-    "JUDGE_YN": { "Y": "合格", "N": "不合格" },
-    "PM_TYPE": { "TIME_BASED": "时间基准", "USAGE_BASED": "使用量基准" },
-    "PM_CYCLE_TYPE": { "MONTHLY": "每月", "QUARTERLY": "每季度", "SEMI_ANNUAL": "每半年", "ANNUAL": "每年", "CUSTOM": "自定义" },
-    "PM_ITEM_TYPE": { "CHECK": "检查", "REPLACE": "更换", "CLEAN": "清洁", "ADJUST": "调整", "LUBRICATE": "润滑" },
-    "PM_WO_TYPE": { "PLANNED": "计划", "EMERGENCY": "紧急", "BREAKDOWN": "故障" },
-    "PM_WO_STATUS": { "PLANNED": "计划", "IN_PROGRESS": "进行中", "COMPLETED": "完成", "OVERDUE": "逾期", "CANCELLED": "取消" },
-    "PM_PRIORITY": { "LOW": "低", "MEDIUM": "中", "HIGH": "高", "URGENT": "紧急" },
-    "PO_STATUS": { "DRAFT": "草稿", "CONFIRMED": "已确认", "PARTIAL": "部分入库", "RECEIVED": "入库完成", "CLOSED": "截止" },
-    "CONSUMABLE_LIFE_STATUS": { "NORMAL": "正常", "WARNING": "注意", "REPLACE": "需要更换" },
-    "CON_STOCK_STATUS": { "PENDING": "待入库", "ACTIVE": "可用", "MOUNTED": "安装中", "REPAIR": "维修中", "SCRAPPED": "报废" }
+    "JOB_ORDER_STATUS": {
+      "WAITING": "等待",
+      "RUNNING": "进行中",
+      "PAUSED": "暂停",
+      "DONE": "完成",
+      "CANCELED": "取消"
+    },
+    "JOB_ORDER_TYPE": {
+      "NORMAL": "普通",
+      "REWORK": "返工",
+      "SAMPLE": "样品",
+      "TRIAL": "试验"
+    },
+    "SEMI_PRODUCT_STATUS": {
+      "WAITING": "等待",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "完成",
+      "MOVED": "移动完成"
+    },
+    "BOX_STATUS": {
+      "OPEN": "进行中",
+      "CLOSED": "截止",
+      "SHIPPED": "出货"
+    },
+    "PALLET_STATUS": {
+      "OPEN": "进行中",
+      "CLOSED": "截止",
+      "LOADED": "装载",
+      "SHIPPED": "出货"
+    },
+    "SHIPMENT_STATUS": {
+      "PREPARING": "准备中",
+      "LOADED": "装车",
+      "SHIPPED": "出货",
+      "DELIVERED": "配送完成",
+      "CANCELED": "取消"
+    },
+    "RECEIVE_STATUS": {
+      "PENDING": "待收货",
+      "IQC_IN_PROGRESS": "IQC进行中",
+      "PASSED": "合格",
+      "FAILED": "不合格"
+    },
+    "ISSUE_STATUS": {
+      "PENDING": "等待",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "完成"
+    },
+    "EQUIP_STATUS": {
+      "NORMAL": "正常",
+      "MAINT": "检查",
+      "STOP": "停止"
+    },
+    "PM_STATUS": {
+      "SCHEDULED": "预定",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "完成",
+      "OVERDUE": "延迟"
+    },
+    "DEFECT_STATUS": {
+      "PENDING": "待维修",
+      "REPAIRING": "维修中",
+      "COMPLETED": "完成",
+      "SCRAPPED": "废弃"
+    },
+    "DEFECT_DISPOSITION": {
+      "REPAIR": "维修",
+      "REWORK": "返工",
+      "SCRAP": "废弃",
+      "CONCESSION": "特许"
+    },
+    "INSPECT_RESULT": {
+      "PASS": "合格",
+      "FAIL": "不合格"
+    },
+    "INSPECT_TYPE": {
+      "CONTINUITY": "导通",
+      "INSULATION": "绝缘",
+      "HI_POT": "耐压",
+      "VISUAL": "外观"
+    },
+    "IQC_TYPE": {
+      "IQC": "进货检验",
+      "PQC": "过程检验",
+      "FQC": "最终检验",
+      "OQC": "出货检验"
+    },
+    "QUALITY_JUDGMENT": {
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "PENDING": "判定待定",
+      "CONDITIONAL": "条件合格"
+    },
+    "APPROVAL_STATUS": {
+      "PENDING": "待批准",
+      "APPROVED": "批准",
+      "REJECTED": "退回"
+    },
+    "INTERFACE_STATUS": {
+      "PENDING": "待传送",
+      "SENT": "传送完成",
+      "FAILED": "传送失败",
+      "CONFIRMED": "确认完成"
+    },
+    "CONNECTION_STATUS": {
+      "CONNECTED": "已连接",
+      "DISCONNECTED": "连接断开",
+      "ERROR": "错误"
+    },
+    "PROCESS_TYPE": {
+      "CUTTING": "切断",
+      "CRIMPING": "压接",
+      "ASSEMBLY": "组装",
+      "INSPECTION": "检查",
+      "PACKING": "包装",
+      "CUT": "切割",
+      "CRIMP": "压接",
+      "ASSY": "组装",
+      "INSP": "检查",
+      "PACK": "包装"
+    },
+    "ITEM_TYPE": {
+      "RAW_MATERIAL": "原材料",
+      "SEMI_PRODUCT": "半成品",
+      "FINISHED": "成品",
+      "CONSUMABLE": "消耗品",
+      "RAW": "原材料",
+      "WIP": "半成品",
+      "FG": "成品"
+    },
+    "BOM_TYPE": {
+      "PRODUCTION": "生产用",
+      "STANDARD": "标准",
+      "ENGINEERING": "设计用"
+    },
+    "WAREHOUSE_TYPE": {
+      "RAW_MATERIAL": "原材料",
+      "WIP": "在制品",
+      "FINISHED": "成品",
+      "MRB": "不良品隔离",
+      "HOLD": "保留"
+    },
+    "INVENTORY_MOVE_TYPE": {
+      "RECEIPT": "入库",
+      "ISSUE": "出库",
+      "TRANSFER": "移动",
+      "ADJUSTMENT": "调整",
+      "SCRAP": "废弃"
+    },
+    "MOLD_STATUS": {
+      "ACTIVE": "使用中",
+      "INACTIVE": "未使用",
+      "REPAIR": "维修中",
+      "SCRAPPED": "废弃"
+    },
+    "GENERAL_STATUS": {
+      "ACTIVE": "活动",
+      "INACTIVE": "非活动"
+    },
+    "USE_YN": {
+      "Y": "使用",
+      "N": "未使用"
+    },
+    "PLANT_TYPE": {
+      "PLANT": "工厂",
+      "SHOP": "车间",
+      "LINE": "生产线",
+      "CELL": "单元"
+    },
+    "PART_TYPE": {
+      "RAW": "原材料",
+      "WIP": "半成品",
+      "FG": "成品"
+    },
+    "PARTNER_TYPE": {
+      "SUPPLIER": "供应商",
+      "CUSTOMER": "客户"
+    },
+    "VENDOR_TYPE": {
+      "SUBCON": "外包商",
+      "SUPPLIER": "供应商"
+    },
+    "WAREHOUSE_TYPE_DTO": {
+      "RAW": "原材料",
+      "WIP": "半成品",
+      "FG": "成品",
+      "FLOOR": "现场",
+      "DEFECT": "不良",
+      "SCRAP": "废弃",
+      "SUBCON": "外包"
+    },
+    "IQC_STATUS": {
+      "PENDING": "等待",
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "HOLD": "保留"
+    },
+    "OQC_STATUS": {
+      "PENDING": "等待",
+      "IN_PROGRESS": "检查中",
+      "PASS": "合格",
+      "FAIL": "不合格"
+    },
+    "MAT_LOT_STATUS": {
+      "NORMAL": "正常",
+      "HOLD": "保留",
+      "DEPLETED": "耗尽"
+    },
+    "ISSUE_TYPE": {
+      "PRODUCTION": "量产",
+      "DEFECT": "不良",
+      "SAMPLE": "样品",
+      "DESIGN_START": "设计开始",
+      "ADJUSTMENT": "库存调整",
+      "LOSS": "损耗",
+      "SUBCONTRACT": "外包",
+      "SCRAP": "报废",
+      "RETURN": "退货",
+      "ETC": "其他"
+    },
+    "TRANSACTION_TYPE": {
+      "MAT_IN": "材料入库",
+      "MAT_IN_CANCEL": "材料入库取消",
+      "MAT_OUT": "材料出库",
+      "MAT_OUT_CANCEL": "材料出库取消",
+      "WIP_IN": "半成品入库",
+      "WIP_IN_CANCEL": "半成品入库取消",
+      "WIP_OUT": "半成品出库",
+      "WIP_OUT_CANCEL": "半成品出库取消",
+      "FG_IN": "成品入库",
+      "FG_IN_CANCEL": "成品入库取消",
+      "FG_OUT": "成品出库",
+      "FG_OUT_CANCEL": "成品出库取消",
+      "SUBCON_OUT": "外包出库",
+      "SUBCON_OUT_CANCEL": "外包出库取消",
+      "SUBCON_IN": "外包入库",
+      "SUBCON_IN_CANCEL": "外包入库取消",
+      "PROD_CONSUME": "生产消耗",
+      "PROD_CONSUME_CANCEL": "生产消耗取消",
+      "TRANSFER": "移动",
+      "TRANSFER_CANCEL": "移动取消",
+      "ADJ_PLUS": "调整(+)",
+      "ADJ_MINUS": "调整(-)",
+      "SCRAP": "废弃"
+    },
+    "REF_TYPE": {
+      "JOB_ORDER": "作业指示",
+      "SUBCON_ORDER": "外包订单",
+      "SHIPMENT": "出货",
+      "CUSTOMS": "通关",
+      "ADJUST": "调整",
+      "PROD_RESULT": "生产实绩"
+    },
+    "PROD_RESULT_STATUS": {
+      "RUNNING": "进行中",
+      "DONE": "完成",
+      "CANCELED": "取消"
+    },
+    "DEFECT_LOG_STATUS": {
+      "WAIT": "等待",
+      "REPAIR": "维修",
+      "REWORK": "返工",
+      "SCRAP": "废弃",
+      "DONE": "完成"
+    },
+    "REPAIR_RESULT": {
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "SCRAP": "废弃"
+    },
+    "EQUIP_TYPE": {
+      "CUTTING": "切断设备",
+      "CRIMPING": "压接设备",
+      "ASSEMBLY": "组装设备",
+      "AUTO_CRIMP": "自动压接机",
+      "SINGLE_CUT": "单线切断机",
+      "MULTI_CUT": "多线切断机",
+      "TWIST": "绞线机",
+      "SOLDER": "焊接机",
+      "HOUSING": "插壳机",
+      "TESTER": "检查机",
+      "LABEL_PRINTER": "标签打印机",
+      "INSPECTION": "检查设备",
+      "PACKING": "包装机",
+      "OTHER": "其他"
+    },
+    "CONSUMABLE_STATUS": {
+      "NORMAL": "正常",
+      "WARNING": "警告",
+      "REPLACE": "需要更换"
+    },
+    "CONSUMABLE_CATEGORY": {
+      "MOLD": "模具",
+      "JIG": "夹具",
+      "TOOL": "工具"
+    },
+    "CONSUMABLE_LOG_TYPE": {
+      "IN": "入库",
+      "IN_RETURN": "入库退货",
+      "OUT": "出库",
+      "OUT_RETURN": "出库退货"
+    },
+    "CONSUMABLE_LOG_TYPE_GROUP": {
+      "RECEIVING": "入库",
+      "ISSUING": "出库"
+    },
+    "INCOMING_TYPE": {
+      "NEW": "新建",
+      "REPLACEMENT": "更换"
+    },
+    "ISSUE_REASON": {
+      "PRODUCTION": "生产",
+      "REPAIR": "维修",
+      "OTHER": "其他"
+    },
+    "CUSTOMS_ENTRY_STATUS": {
+      "PENDING": "等待",
+      "CLEARED": "通关",
+      "RELEASED": "放行"
+    },
+    "CUSTOMS_LOT_STATUS": {
+      "BONDED": "保税",
+      "PARTIAL": "部分放行",
+      "RELEASED": "放行"
+    },
+    "USAGE_REPORT_STATUS": {
+      "DRAFT": "草稿",
+      "REPORTED": "报告",
+      "CONFIRMED": "确认"
+    },
+    "SUBCON_ORDER_STATUS": {
+      "ORDERED": "订购",
+      "DELIVERED": "交付",
+      "PARTIAL_RECV": "部分入库",
+      "RECEIVED": "入库完成",
+      "CLOSED": "截止",
+      "CANCELED": "取消"
+    },
+    "SUBCON_INSPECT_RESULT": {
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "PARTIAL": "部分合格"
+    },
+    "COMM_TYPE": {
+      "NONE": "无",
+      "MQTT": "MQTT",
+      "SERIAL": "串口",
+      "TCP": "TCP/IP",
+      "OPC_UA": "OPC-UA",
+      "MODBUS": "Modbus"
+    },
+    "BAUD_RATE": {
+      "9600": "9600",
+      "19200": "19200",
+      "38400": "38400",
+      "57600": "57600",
+      "115200": "115200"
+    },
+    "DATA_BITS": {
+      "7": "7位",
+      "8": "8位"
+    },
+    "STOP_BITS": {
+      "1": "1",
+      "2": "2",
+      "1.5": "1.5"
+    },
+    "PARITY": {
+      "NONE": "无",
+      "EVEN": "偶数",
+      "ODD": "奇数"
+    },
+    "FLOW_CONTROL": {
+      "NONE": "无",
+      "XONXOFF": "XON/XOFF",
+      "RTSCTS": "RTS/CTS"
+    },
+    "INTERFACE_DIRECTION": {
+      "IN": "接收",
+      "OUT": "发送"
+    },
+    "IF_LOG_STATUS": {
+      "PENDING": "等待",
+      "SUCCESS": "成功",
+      "FAIL": "失败",
+      "RETRY": "重试"
+    },
+    "WORKER_TYPE": {
+      "CUTTING": "切割工",
+      "CRIMPING": "压接工",
+      "ASSEMBLY": "组装工",
+      "INSPECTOR": "检查员",
+      "PACKING": "包装工",
+      "LEADER": "班长"
+    },
+    "SHIP_ORDER_STATUS": {
+      "DRAFT": "草稿",
+      "CONFIRMED": "已确认",
+      "SHIPPING": "出货中",
+      "SHIPPED": "已出货"
+    },
+    "INSPECT_CHECK_TYPE": {
+      "DAILY": "日常点检",
+      "PERIODIC": "定期点检"
+    },
+    "INSPECT_JUDGE": {
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "CONDITIONAL": "条件合格"
+    },
+    "JUDGE_YN": {
+      "Y": "合格",
+      "N": "不合格"
+    },
+    "PM_TYPE": {
+      "TIME_BASED": "时间基准",
+      "USAGE_BASED": "使用量基准"
+    },
+    "PM_CYCLE_TYPE": {
+      "MONTHLY": "每月",
+      "QUARTERLY": "每季度",
+      "SEMI_ANNUAL": "每半年",
+      "ANNUAL": "每年",
+      "CUSTOM": "自定义"
+    },
+    "PM_ITEM_TYPE": {
+      "CHECK": "检查",
+      "REPLACE": "更换",
+      "CLEAN": "清洁",
+      "ADJUST": "调整",
+      "LUBRICATE": "润滑"
+    },
+    "PM_WO_TYPE": {
+      "PLANNED": "计划",
+      "EMERGENCY": "紧急",
+      "BREAKDOWN": "故障"
+    },
+    "PM_WO_STATUS": {
+      "PLANNED": "计划",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "完成",
+      "OVERDUE": "逾期",
+      "CANCELLED": "取消"
+    },
+    "PM_PRIORITY": {
+      "LOW": "低",
+      "MEDIUM": "中",
+      "HIGH": "高",
+      "URGENT": "紧急"
+    },
+    "PO_STATUS": {
+      "DRAFT": "草稿",
+      "CONFIRMED": "已确认",
+      "PARTIAL": "部分入库",
+      "RECEIVED": "入库完成",
+      "CLOSED": "截止"
+    },
+    "CONSUMABLE_LIFE_STATUS": {
+      "NORMAL": "正常",
+      "WARNING": "注意",
+      "REPLACE": "需要更换"
+    },
+    "CON_STOCK_STATUS": {
+      "PENDING": "待入库",
+      "ACTIVE": "可用",
+      "MOUNTED": "安装中",
+      "REPAIR": "维修中",
+      "SCRAPPED": "报废"
+    }
   },
   "comCodeGroup": {
     "JOB_ORDER_STATUS": "作业指示状态",
@@ -4324,7 +4695,13 @@
       "matReceiving": "物料入库",
       "matIssuing": "物料出库",
       "matAdjustment": "库存调整",
-      "matInventoryCount": "物料库存盘点"
+      "matInventoryCount": "物料库存盘点",
+      "receiving": "物料入库",
+      "issuing": "物料出库",
+      "adjustment": "库存调整",
+      "invCount": "物料盘点",
+      "productInv": "产品库存盘点",
+      "logout": "登出"
     },
     "scan": {
       "placeholder": "请扫描条码",
@@ -4480,6 +4857,11 @@
       "installTitle": "安装为应用",
       "installDesc": "添加到主屏幕以便更快访问",
       "install": "安装"
+    },
+    "worker": {
+      "switch": "切换操作员",
+      "scanQr": "请扫描操作员二维码",
+      "switched": "操作员已切换"
     },
     "network": {
       "offline": "请检查网络连接",

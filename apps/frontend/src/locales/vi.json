@@ -315,7 +315,6 @@
     "passwordPlaceholder": "Ít nhất 4 ký tự",
     "name": "Tên",
     "empNo": "Mã nhân viên",
-    "dept": "Bộ phận",
     "dept": "Phòng ban",
     "loginFailed": "Đăng nhập thất bại.",
     "registerFailed": "Đăng ký thất bại.",
@@ -713,7 +712,13 @@
     "config": {
       "title": "Cấu hình hệ thống",
       "description": "Thiết lập các tùy chọn cần thiết cho hoạt động hệ thống.",
-      "group": { "all": "Tất cả", "MATERIAL": "Vật tư", "PRODUCTION": "Sản xuất", "QUALITY": "Chất lượng", "SYSTEM": "Hệ thống" },
+      "group": {
+        "all": "Tất cả",
+        "MATERIAL": "Vật tư",
+        "PRODUCTION": "Sản xuất",
+        "QUALITY": "Chất lượng",
+        "SYSTEM": "Hệ thống"
+      },
       "save": "Lưu cài đặt",
       "saveSuccess": "Cài đặt đã được lưu.",
       "addNew": "Thêm cài đặt",
@@ -3197,16 +3202,33 @@
   },
   "equipment": {
     "status": {
-      "title": "Trạng thái thiết bị",
+      "title": "Tình trạng vận hành thiết bị",
+      "description": "Giám sát và quản lý trạng thái thiết bị.",
+      "equipCode": "Mã thiết bị",
+      "equipName": "Tên thiết bị",
+      "equipNamePlaceholder": "Máy cắt số 1",
+      "type": "Loại",
+      "line": "Dây chuyền",
+      "ipAddress": "Địa chỉ IP",
+      "register": "Đăng ký thiết bị",
+      "editEquip": "Sửa thiết bị",
+      "changeStatus": "Đổi trạng thái",
+      "selectedEquip": "Thiết bị đã chọn",
+      "selectStatus": "Chọn trạng thái",
+      "totalEquipment": "Tổng thiết bị",
+      "normalOp": "Vận hành bình thường",
+      "maintenance": "Đang bảo trì",
+      "stopped": "Dừng",
+      "normal": "Bình thường",
+      "maint": "Bảo trì",
+      "stop": "Dừng",
       "allTypes": "Tất cả loại",
+      "allLines": "Tất cả dây chuyền",
       "cutting": "Cắt",
-      "crimping": "Bấm",
+      "crimping": "Ép",
       "assembly": "Lắp ráp",
       "inspection": "Kiểm tra",
-      "allLines": "Tất cả chuyền",
-      "subtitle": "Theo dõi trạng thái vận hành thiết bị theo thời gian thực.",
-      "noEquip": "Không có thiết bị để hiển thị.",
-      "working": "Đang làm việc"
+      "searchPlaceholder": "Tìm mã, tên thiết bị..."
     },
     "code": "Mã thiết bị",
     "name": "Tên thiết bị",
@@ -3217,21 +3239,39 @@
     "maint": "Bảo trì",
     "stop": "Dừng",
     "pm": {
-      "title": "Quản lý bảo trì phòng ngừa",
+      "title": "Bảo trì phòng ngừa",
+      "description": "Quản lý tuổi thọ vật tư tiêu hao và hỗ trợ thay thế kịp thời.",
+      "code": "Mã",
+      "name": "Tên",
+      "namePlaceholder": "Khuôn terminal A",
       "category": "Danh mục",
-      "lifeProgress": "Tiến độ tuổi thọ",
-      "equipmentCode": "Mã thiết bị",
-      "allCategories": "Tất cả danh mục",
-      "allStatus": "Tất cả trạng thái",
-      "mold": "Khuôn",
-      "jig": "Jig",
-      "tool": "Công cụ",
+      "currentExpectedLife": "Hiện tại/Tuổi thọ dự kiến",
+      "lastReplaced": "Thay thế cuối",
+      "registerReplace": "Đăng ký thay thế",
+      "registerPart": "Đăng ký vật tư",
+      "editPart": "Sửa vật tư",
       "total": "Tổng số",
+      "totalParts": "Tổng vật tư",
       "ok": "Bình thường",
       "warning": "Cảnh báo",
       "replace": "Cần thay thế",
-      "edit": "Sửa bảo trì",
-      "add": "Thêm bảo trì"
+      "allCategories": "Tất cả danh mục",
+      "mold": "Khuôn",
+      "jig": "Jig",
+      "tool": "Dụng cụ",
+      "replacePlan": "Kế hoạch thay thế",
+      "replacePlanSubtitle": "Mục cảnh báo/cần thay thế",
+      "noReplacePlan": "Không có mục cần thay thế",
+      "equipmentCode": "Mã thiết bị",
+      "currentShots": "Số lần hiện tại",
+      "expectedLife": "Tuổi thọ dự kiến",
+      "selectedPart": "Vật tư đã chọn",
+      "currentLifeProgress": "Tiến độ tuổi thọ hiện tại",
+      "afterReplaceSettings": "Cài đặt sau thay thế",
+      "newPartCode": "Mã vật tư mới (Tùy chọn)",
+      "newPartCodePlaceholder": "Để trống để giữ mã cũ",
+      "replaceNote": "Số lần sẽ được reset về 0 sau khi thay thế",
+      "searchPlaceholder": "Tìm mã, tên..."
     },
     "edit": "Sửa thiết bị",
     "pmPlan": {
@@ -3415,70 +3455,6 @@
       "statTotal": "Tổng kiểm tra",
       "excelDownload": "Tải Excel",
       "searchPlaceholder": "Tìm mã, tên thiết bị..."
-    },
-    "status": {
-      "title": "Tình trạng vận hành thiết bị",
-      "description": "Giám sát và quản lý trạng thái thiết bị.",
-      "equipCode": "Mã thiết bị",
-      "equipName": "Tên thiết bị",
-      "equipNamePlaceholder": "Máy cắt số 1",
-      "type": "Loại",
-      "line": "Dây chuyền",
-      "ipAddress": "Địa chỉ IP",
-      "register": "Đăng ký thiết bị",
-      "editEquip": "Sửa thiết bị",
-      "changeStatus": "Đổi trạng thái",
-      "selectedEquip": "Thiết bị đã chọn",
-      "selectStatus": "Chọn trạng thái",
-      "totalEquipment": "Tổng thiết bị",
-      "normalOp": "Vận hành bình thường",
-      "maintenance": "Đang bảo trì",
-      "stopped": "Dừng",
-      "normal": "Bình thường",
-      "maint": "Bảo trì",
-      "stop": "Dừng",
-      "allTypes": "Tất cả loại",
-      "allLines": "Tất cả dây chuyền",
-      "cutting": "Cắt",
-      "crimping": "Ép",
-      "assembly": "Lắp ráp",
-      "inspection": "Kiểm tra",
-      "searchPlaceholder": "Tìm mã, tên thiết bị..."
-    },
-    "pm": {
-      "title": "Bảo trì phòng ngừa",
-      "description": "Quản lý tuổi thọ vật tư tiêu hao và hỗ trợ thay thế kịp thời.",
-      "code": "Mã",
-      "name": "Tên",
-      "namePlaceholder": "Khuôn terminal A",
-      "category": "Danh mục",
-      "currentExpectedLife": "Hiện tại/Tuổi thọ dự kiến",
-      "lastReplaced": "Thay thế cuối",
-      "registerReplace": "Đăng ký thay thế",
-      "registerPart": "Đăng ký vật tư",
-      "editPart": "Sửa vật tư",
-      "total": "Tổng số",
-      "totalParts": "Tổng vật tư",
-      "ok": "Bình thường",
-      "warning": "Cảnh báo",
-      "replace": "Cần thay thế",
-      "allCategories": "Tất cả danh mục",
-      "mold": "Khuôn",
-      "jig": "Jig",
-      "tool": "Dụng cụ",
-      "replacePlan": "Kế hoạch thay thế",
-      "replacePlanSubtitle": "Mục cảnh báo/cần thay thế",
-      "noReplacePlan": "Không có mục cần thay thế",
-      "equipmentCode": "Mã thiết bị",
-      "currentShots": "Số lần hiện tại",
-      "expectedLife": "Tuổi thọ dự kiến",
-      "selectedPart": "Vật tư đã chọn",
-      "currentLifeProgress": "Tiến độ tuổi thọ hiện tại",
-      "afterReplaceSettings": "Cài đặt sau thay thế",
-      "newPartCode": "Mã vật tư mới (Tùy chọn)",
-      "newPartCodePlaceholder": "Để trống để giữ mã cũ",
-      "replaceNote": "Số lần sẽ được reset về 0 sau khi thay thế",
-      "searchPlaceholder": "Tìm mã, tên..."
     },
     "mold": {
       "title": "Quản lý khuôn",
@@ -4112,81 +4088,475 @@
     "dashboard": "Bảng điều khiển"
   },
   "comCode": {
-    "JOB_ORDER_STATUS": { "WAITING": "Đang chờ", "RUNNING": "Đang chạy", "PAUSED": "Tạm dừng", "DONE": "Hoàn thành", "CANCELED": "Đã hủy" },
-    "JOB_ORDER_TYPE": { "NORMAL": "Thông thường", "REWORK": "Làm lại", "SAMPLE": "Mẫu", "TRIAL": "Thử nghiệm" },
-    "SEMI_PRODUCT_STATUS": { "WAITING": "Đang chờ", "IN_PROGRESS": "Đang tiến hành", "COMPLETED": "Hoàn thành", "MOVED": "Đã di chuyển" },
-    "BOX_STATUS": { "OPEN": "Đang mở", "CLOSED": "Đã đóng", "SHIPPED": "Đã xuất hàng" },
-    "PALLET_STATUS": { "OPEN": "Đang mở", "CLOSED": "Đã đóng", "LOADED": "Đã xếp hàng", "SHIPPED": "Đã xuất hàng" },
-    "SHIPMENT_STATUS": { "PREPARING": "Đang chuẩn bị", "LOADED": "Đã xếp hàng", "SHIPPED": "Đã xuất hàng", "DELIVERED": "Đã giao hàng", "CANCELED": "Đã hủy" },
-    "RECEIVE_STATUS": { "PENDING": "Chờ nhập kho", "IQC_IN_PROGRESS": "Đang kiểm tra IQC", "PASSED": "Đạt", "FAILED": "Không đạt" },
-    "ISSUE_STATUS": { "PENDING": "Đang chờ", "IN_PROGRESS": "Đang tiến hành", "COMPLETED": "Hoàn thành" },
-    "EQUIP_STATUS": { "NORMAL": "Bình thường", "MAINT": "Bảo trì", "STOP": "Dừng" },
-    "PM_STATUS": { "SCHEDULED": "Đã lên lịch", "IN_PROGRESS": "Đang tiến hành", "COMPLETED": "Hoàn thành", "OVERDUE": "Trễ hạn" },
-    "DEFECT_STATUS": { "PENDING": "Chờ sửa chữa", "REPAIRING": "Đang sửa chữa", "COMPLETED": "Hoàn thành", "SCRAPPED": "Đã loại bỏ" },
-    "DEFECT_DISPOSITION": { "REPAIR": "Sửa chữa", "REWORK": "Làm lại", "SCRAP": "Loại bỏ", "CONCESSION": "Chấp nhận có điều kiện" },
-    "INSPECT_RESULT": { "PASS": "Đạt", "FAIL": "Không đạt" },
-    "INSPECT_TYPE": { "CONTINUITY": "Liên tục", "INSULATION": "Cách điện", "HI_POT": "Chịu áp", "VISUAL": "Ngoại quan" },
-    "IQC_TYPE": { "IQC": "Kiểm tra nhập kho", "PQC": "Kiểm tra quy trình", "FQC": "Kiểm tra cuối cùng", "OQC": "Kiểm tra xuất kho" },
-    "QUALITY_JUDGMENT": { "PASS": "Đạt", "FAIL": "Không đạt", "PENDING": "Chờ đánh giá", "CONDITIONAL": "Đạt có điều kiện" },
-    "APPROVAL_STATUS": { "PENDING": "Chờ phê duyệt", "APPROVED": "Đã phê duyệt", "REJECTED": "Đã từ chối" },
-    "INTERFACE_STATUS": { "PENDING": "Chờ gửi", "SENT": "Đã gửi", "FAILED": "Gửi thất bại", "CONFIRMED": "Đã xác nhận" },
-    "CONNECTION_STATUS": { "CONNECTED": "Đã kết nối", "DISCONNECTED": "Ngắt kết nối", "ERROR": "Lỗi" },
-    "PROCESS_TYPE": { "CUTTING": "Cắt", "CRIMPING": "Ép", "ASSEMBLY": "Lắp ráp", "INSPECTION": "Kiểm tra", "PACKING": "Đóng gói", "CUT": "Cắt", "CRIMP": "Ép đầu", "ASSY": "Lắp ráp", "INSP": "Kiểm tra", "PACK": "Đóng gói" },
-    "ITEM_TYPE": { "RAW_MATERIAL": "Nguyên liệu", "SEMI_PRODUCT": "Bán thành phẩm", "FINISHED": "Thành phẩm", "CONSUMABLE": "Vật tư tiêu hao", "RAW": "Nguyên liệu", "WIP": "Bán thành phẩm", "FG": "Thành phẩm" },
-    "BOM_TYPE": { "PRODUCTION": "Sản xuất", "STANDARD": "Tiêu chuẩn", "ENGINEERING": "Thiết kế" },
-    "WAREHOUSE_TYPE": { "RAW_MATERIAL": "Nguyên liệu", "WIP": "Bán thành phẩm", "FINISHED": "Thành phẩm", "MRB": "Cách ly lỗi", "HOLD": "Giữ lại" },
-    "INVENTORY_MOVE_TYPE": { "RECEIPT": "Nhập kho", "ISSUE": "Xuất kho", "TRANSFER": "Di chuyển", "ADJUSTMENT": "Điều chỉnh", "SCRAP": "Loại bỏ" },
-    "MOLD_STATUS": { "ACTIVE": "Đang sử dụng", "INACTIVE": "Không sử dụng", "REPAIR": "Đang sửa chữa", "SCRAPPED": "Đã loại bỏ" },
-    "GENERAL_STATUS": { "ACTIVE": "Hoạt động", "INACTIVE": "Không hoạt động" },
-    "USE_YN": { "Y": "Sử dụng", "N": "Không sử dụng" },
-    "PLANT_TYPE": { "PLANT": "Nhà máy", "SHOP": "Phân xưởng", "LINE": "Dây chuyền", "CELL": "Tổ" },
-    "PART_TYPE": { "RAW": "Nguyên liệu", "WIP": "Bán thành phẩm", "FG": "Thành phẩm" },
-    "PARTNER_TYPE": { "SUPPLIER": "Nhà cung cấp", "CUSTOMER": "Khách hàng" },
-    "VENDOR_TYPE": { "SUBCON": "Nhà thầu phụ", "SUPPLIER": "Nhà cung cấp" },
-    "WAREHOUSE_TYPE_DTO": { "RAW": "Nguyên liệu", "WIP": "Bán thành phẩm", "FG": "Thành phẩm", "FLOOR": "Hiện trường", "DEFECT": "Lỗi", "SCRAP": "Loại bỏ", "SUBCON": "Gia công" },
-    "IQC_STATUS": { "PENDING": "Đang chờ", "PASS": "Đạt", "FAIL": "Không đạt", "HOLD": "Giữ lại" },
-    "OQC_STATUS": { "PENDING": "Đang chờ", "IN_PROGRESS": "Đang kiểm tra", "PASS": "Đạt", "FAIL": "Không đạt" },
-    "MAT_LOT_STATUS": { "NORMAL": "Bình thường", "HOLD": "Giữ lại", "DEPLETED": "Đã hết" },
-    "ISSUE_TYPE": { "PRODUCTION": "Sản xuất", "DEFECT": "Lỗi", "SAMPLE": "Mẫu", "DESIGN_START": "Bắt đầu thiết kế", "ADJUSTMENT": "Điều chỉnh tồn kho", "LOSS": "Hao hụt", "SUBCONTRACT": "Gia công ngoài", "SCRAP": "Phế liệu", "RETURN": "Trả hàng", "ETC": "Khác" },
-    "TRANSACTION_TYPE": { "MAT_IN": "Nhập nguyên liệu", "MAT_IN_CANCEL": "Hủy nhập nguyên liệu", "MAT_OUT": "Xuất nguyên liệu", "MAT_OUT_CANCEL": "Hủy xuất nguyên liệu", "WIP_IN": "Nhập bán thành phẩm", "WIP_IN_CANCEL": "Hủy nhập bán thành phẩm", "WIP_OUT": "Xuất bán thành phẩm", "WIP_OUT_CANCEL": "Hủy xuất bán thành phẩm", "FG_IN": "Nhập thành phẩm", "FG_IN_CANCEL": "Hủy nhập thành phẩm", "FG_OUT": "Xuất thành phẩm", "FG_OUT_CANCEL": "Hủy xuất thành phẩm", "SUBCON_OUT": "Xuất gia công", "SUBCON_OUT_CANCEL": "Hủy xuất gia công", "SUBCON_IN": "Nhập gia công", "SUBCON_IN_CANCEL": "Hủy nhập gia công", "PROD_CONSUME": "Tiêu thụ sản xuất", "PROD_CONSUME_CANCEL": "Hủy tiêu thụ sản xuất", "TRANSFER": "Di chuyển", "TRANSFER_CANCEL": "Hủy di chuyển", "ADJ_PLUS": "Điều chỉnh(+)", "ADJ_MINUS": "Điều chỉnh(-)", "SCRAP": "Loại bỏ" },
-    "REF_TYPE": { "JOB_ORDER": "Lệnh sản xuất", "SUBCON_ORDER": "Đơn hàng gia công", "SHIPMENT": "Xuất hàng", "CUSTOMS": "Hải quan", "ADJUST": "Điều chỉnh", "PROD_RESULT": "Kết quả sản xuất" },
-    "PROD_RESULT_STATUS": { "RUNNING": "Đang chạy", "DONE": "Hoàn thành", "CANCELED": "Đã hủy" },
-    "DEFECT_LOG_STATUS": { "WAIT": "Đang chờ", "REPAIR": "Sửa chữa", "REWORK": "Làm lại", "SCRAP": "Loại bỏ", "DONE": "Hoàn thành" },
-    "REPAIR_RESULT": { "PASS": "Đạt", "FAIL": "Không đạt", "SCRAP": "Loại bỏ" },
-    "EQUIP_TYPE": { "CUTTING": "Thiết bị cắt", "CRIMPING": "Thiết bị ép", "ASSEMBLY": "Thiết bị lắp ráp", "AUTO_CRIMP": "Máy ép tự động", "SINGLE_CUT": "Máy cắt đơn", "MULTI_CUT": "Máy cắt đa dây", "TWIST": "Máy xoắn", "SOLDER": "Máy hàn", "HOUSING": "Máy lắp vỏ", "TESTER": "Máy kiểm tra", "LABEL_PRINTER": "Máy in nhãn", "INSPECTION": "Thiết bị kiểm tra", "PACKING": "Máy đóng gói", "OTHER": "Khác" },
-    "CONSUMABLE_STATUS": { "NORMAL": "Bình thường", "WARNING": "Cảnh báo", "REPLACE": "Cần thay thế" },
-    "CONSUMABLE_CATEGORY": { "MOLD": "Khuôn", "JIG": "Đồ gá", "TOOL": "Công cụ" },
-    "CONSUMABLE_LOG_TYPE": { "IN": "Nhập", "IN_RETURN": "Trả hàng nhập", "OUT": "Xuất", "OUT_RETURN": "Trả hàng xuất" },
-    "CONSUMABLE_LOG_TYPE_GROUP": { "RECEIVING": "Nhập kho", "ISSUING": "Xuất kho" },
-    "INCOMING_TYPE": { "NEW": "Mới", "REPLACEMENT": "Thay thế" },
-    "ISSUE_REASON": { "PRODUCTION": "Sản xuất", "REPAIR": "Sửa chữa", "OTHER": "Khác" },
-    "CUSTOMS_ENTRY_STATUS": { "PENDING": "Đang chờ", "CLEARED": "Thông quan", "RELEASED": "Đã thả hàng" },
-    "CUSTOMS_LOT_STATUS": { "BONDED": "Bảo thuế", "PARTIAL": "Thả hàng một phần", "RELEASED": "Đã thả hàng" },
-    "USAGE_REPORT_STATUS": { "DRAFT": "Bản nháp", "REPORTED": "Đã báo cáo", "CONFIRMED": "Đã xác nhận" },
-    "SUBCON_ORDER_STATUS": { "ORDERED": "Đã đặt hàng", "DELIVERED": "Đã giao hàng", "PARTIAL_RECV": "Nhập một phần", "RECEIVED": "Nhập hoàn tất", "CLOSED": "Đã đóng", "CANCELED": "Đã hủy" },
-    "SUBCON_INSPECT_RESULT": { "PASS": "Đạt", "FAIL": "Không đạt", "PARTIAL": "Đạt một phần" },
-    "COMM_TYPE": { "NONE": "Không", "MQTT": "MQTT", "SERIAL": "Serial", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
-    "BAUD_RATE": { "9600": "9600", "19200": "19200", "38400": "38400", "57600": "57600", "115200": "115200" },
-    "DATA_BITS": { "7": "7 bit", "8": "8 bit" },
-    "STOP_BITS": { "1": "1", "1.5": "1.5", "2": "2" },
-    "PARITY": { "NONE": "Không có", "EVEN": "Chẵn", "ODD": "Lẻ" },
-    "FLOW_CONTROL": { "NONE": "Không có", "XONXOFF": "XON/XOFF", "RTSCTS": "RTS/CTS" },
-    "INTERFACE_DIRECTION": { "IN": "Nhận", "OUT": "Gửi" },
-    "IF_LOG_STATUS": { "PENDING": "Đang chờ", "SUCCESS": "Thành công", "FAIL": "Thất bại", "RETRY": "Thử lại" },
-    "WORKER_TYPE": { "CUTTING": "Công nhân cắt", "CRIMPING": "Công nhân ép", "ASSEMBLY": "Công nhân lắp ráp", "INSPECTOR": "Kiểm tra viên", "PACKING": "Công nhân đóng gói", "LEADER": "Trưởng nhóm" },
-    "SHIP_ORDER_STATUS": { "DRAFT": "Bản nháp", "CONFIRMED": "Đã xác nhận", "SHIPPING": "Đang xuất hàng", "SHIPPED": "Đã xuất hàng" },
-    "INSPECT_CHECK_TYPE": { "DAILY": "Kiểm tra hàng ngày", "PERIODIC": "Kiểm tra định kỳ" },
-    "INSPECT_JUDGE": { "PASS": "Đạt", "FAIL": "Không đạt", "CONDITIONAL": "Đạt có điều kiện" },
-    "JUDGE_YN": { "Y": "Đạt", "N": "Không đạt" },
-    "PM_TYPE": { "TIME_BASED": "Theo thời gian", "USAGE_BASED": "Theo sử dụng" },
-    "PM_CYCLE_TYPE": { "MONTHLY": "Hàng tháng", "QUARTERLY": "Hàng quý", "SEMI_ANNUAL": "Nửa năm", "ANNUAL": "Hàng năm", "CUSTOM": "Tùy chỉnh" },
-    "PM_ITEM_TYPE": { "CHECK": "Kiểm tra", "REPLACE": "Thay thế", "CLEAN": "Vệ sinh", "ADJUST": "Điều chỉnh", "LUBRICATE": "Bôi trơn" },
-    "PM_WO_TYPE": { "PLANNED": "Kế hoạch", "EMERGENCY": "Khẩn cấp", "BREAKDOWN": "Hỏng hóc" },
-    "PM_WO_STATUS": { "PLANNED": "Kế hoạch", "IN_PROGRESS": "Đang thực hiện", "COMPLETED": "Hoàn thành", "OVERDUE": "Quá hạn", "CANCELLED": "Đã hủy" },
-    "PM_PRIORITY": { "LOW": "Thấp", "MEDIUM": "Trung bình", "HIGH": "Cao", "URGENT": "Khẩn cấp" },
-    "PO_STATUS": { "DRAFT": "Bản nháp", "CONFIRMED": "Đã xác nhận", "PARTIAL": "Nhập một phần", "RECEIVED": "Nhập hoàn tất", "CLOSED": "Đã đóng" },
-    "CONSUMABLE_LIFE_STATUS": { "NORMAL": "Bình thường", "WARNING": "Cảnh báo", "REPLACE": "Cần thay thế" },
-    "CON_STOCK_STATUS": { "PENDING": "Chờ nhập", "ACTIVE": "Khả dụng", "MOUNTED": "Đang lắp", "REPAIR": "Đang sửa", "SCRAPPED": "Đã hủy" }
+    "JOB_ORDER_STATUS": {
+      "WAITING": "Đang chờ",
+      "RUNNING": "Đang chạy",
+      "PAUSED": "Tạm dừng",
+      "DONE": "Hoàn thành",
+      "CANCELED": "Đã hủy"
+    },
+    "JOB_ORDER_TYPE": {
+      "NORMAL": "Thông thường",
+      "REWORK": "Làm lại",
+      "SAMPLE": "Mẫu",
+      "TRIAL": "Thử nghiệm"
+    },
+    "SEMI_PRODUCT_STATUS": {
+      "WAITING": "Đang chờ",
+      "IN_PROGRESS": "Đang tiến hành",
+      "COMPLETED": "Hoàn thành",
+      "MOVED": "Đã di chuyển"
+    },
+    "BOX_STATUS": {
+      "OPEN": "Đang mở",
+      "CLOSED": "Đã đóng",
+      "SHIPPED": "Đã xuất hàng"
+    },
+    "PALLET_STATUS": {
+      "OPEN": "Đang mở",
+      "CLOSED": "Đã đóng",
+      "LOADED": "Đã xếp hàng",
+      "SHIPPED": "Đã xuất hàng"
+    },
+    "SHIPMENT_STATUS": {
+      "PREPARING": "Đang chuẩn bị",
+      "LOADED": "Đã xếp hàng",
+      "SHIPPED": "Đã xuất hàng",
+      "DELIVERED": "Đã giao hàng",
+      "CANCELED": "Đã hủy"
+    },
+    "RECEIVE_STATUS": {
+      "PENDING": "Chờ nhập kho",
+      "IQC_IN_PROGRESS": "Đang kiểm tra IQC",
+      "PASSED": "Đạt",
+      "FAILED": "Không đạt"
+    },
+    "ISSUE_STATUS": {
+      "PENDING": "Đang chờ",
+      "IN_PROGRESS": "Đang tiến hành",
+      "COMPLETED": "Hoàn thành"
+    },
+    "EQUIP_STATUS": {
+      "NORMAL": "Bình thường",
+      "MAINT": "Bảo trì",
+      "STOP": "Dừng"
+    },
+    "PM_STATUS": {
+      "SCHEDULED": "Đã lên lịch",
+      "IN_PROGRESS": "Đang tiến hành",
+      "COMPLETED": "Hoàn thành",
+      "OVERDUE": "Trễ hạn"
+    },
+    "DEFECT_STATUS": {
+      "PENDING": "Chờ sửa chữa",
+      "REPAIRING": "Đang sửa chữa",
+      "COMPLETED": "Hoàn thành",
+      "SCRAPPED": "Đã loại bỏ"
+    },
+    "DEFECT_DISPOSITION": {
+      "REPAIR": "Sửa chữa",
+      "REWORK": "Làm lại",
+      "SCRAP": "Loại bỏ",
+      "CONCESSION": "Chấp nhận có điều kiện"
+    },
+    "INSPECT_RESULT": {
+      "PASS": "Đạt",
+      "FAIL": "Không đạt"
+    },
+    "INSPECT_TYPE": {
+      "CONTINUITY": "Liên tục",
+      "INSULATION": "Cách điện",
+      "HI_POT": "Chịu áp",
+      "VISUAL": "Ngoại quan"
+    },
+    "IQC_TYPE": {
+      "IQC": "Kiểm tra nhập kho",
+      "PQC": "Kiểm tra quy trình",
+      "FQC": "Kiểm tra cuối cùng",
+      "OQC": "Kiểm tra xuất kho"
+    },
+    "QUALITY_JUDGMENT": {
+      "PASS": "Đạt",
+      "FAIL": "Không đạt",
+      "PENDING": "Chờ đánh giá",
+      "CONDITIONAL": "Đạt có điều kiện"
+    },
+    "APPROVAL_STATUS": {
+      "PENDING": "Chờ phê duyệt",
+      "APPROVED": "Đã phê duyệt",
+      "REJECTED": "Đã từ chối"
+    },
+    "INTERFACE_STATUS": {
+      "PENDING": "Chờ gửi",
+      "SENT": "Đã gửi",
+      "FAILED": "Gửi thất bại",
+      "CONFIRMED": "Đã xác nhận"
+    },
+    "CONNECTION_STATUS": {
+      "CONNECTED": "Đã kết nối",
+      "DISCONNECTED": "Ngắt kết nối",
+      "ERROR": "Lỗi"
+    },
+    "PROCESS_TYPE": {
+      "CUTTING": "Cắt",
+      "CRIMPING": "Ép",
+      "ASSEMBLY": "Lắp ráp",
+      "INSPECTION": "Kiểm tra",
+      "PACKING": "Đóng gói",
+      "CUT": "Cắt",
+      "CRIMP": "Ép đầu",
+      "ASSY": "Lắp ráp",
+      "INSP": "Kiểm tra",
+      "PACK": "Đóng gói"
+    },
+    "ITEM_TYPE": {
+      "RAW_MATERIAL": "Nguyên liệu",
+      "SEMI_PRODUCT": "Bán thành phẩm",
+      "FINISHED": "Thành phẩm",
+      "CONSUMABLE": "Vật tư tiêu hao",
+      "RAW": "Nguyên liệu",
+      "WIP": "Bán thành phẩm",
+      "FG": "Thành phẩm"
+    },
+    "BOM_TYPE": {
+      "PRODUCTION": "Sản xuất",
+      "STANDARD": "Tiêu chuẩn",
+      "ENGINEERING": "Thiết kế"
+    },
+    "WAREHOUSE_TYPE": {
+      "RAW_MATERIAL": "Nguyên liệu",
+      "WIP": "Bán thành phẩm",
+      "FINISHED": "Thành phẩm",
+      "MRB": "Cách ly lỗi",
+      "HOLD": "Giữ lại"
+    },
+    "INVENTORY_MOVE_TYPE": {
+      "RECEIPT": "Nhập kho",
+      "ISSUE": "Xuất kho",
+      "TRANSFER": "Di chuyển",
+      "ADJUSTMENT": "Điều chỉnh",
+      "SCRAP": "Loại bỏ"
+    },
+    "MOLD_STATUS": {
+      "ACTIVE": "Đang sử dụng",
+      "INACTIVE": "Không sử dụng",
+      "REPAIR": "Đang sửa chữa",
+      "SCRAPPED": "Đã loại bỏ"
+    },
+    "GENERAL_STATUS": {
+      "ACTIVE": "Hoạt động",
+      "INACTIVE": "Không hoạt động"
+    },
+    "USE_YN": {
+      "Y": "Sử dụng",
+      "N": "Không sử dụng"
+    },
+    "PLANT_TYPE": {
+      "PLANT": "Nhà máy",
+      "SHOP": "Phân xưởng",
+      "LINE": "Dây chuyền",
+      "CELL": "Tổ"
+    },
+    "PART_TYPE": {
+      "RAW": "Nguyên liệu",
+      "WIP": "Bán thành phẩm",
+      "FG": "Thành phẩm"
+    },
+    "PARTNER_TYPE": {
+      "SUPPLIER": "Nhà cung cấp",
+      "CUSTOMER": "Khách hàng"
+    },
+    "VENDOR_TYPE": {
+      "SUBCON": "Nhà thầu phụ",
+      "SUPPLIER": "Nhà cung cấp"
+    },
+    "WAREHOUSE_TYPE_DTO": {
+      "RAW": "Nguyên liệu",
+      "WIP": "Bán thành phẩm",
+      "FG": "Thành phẩm",
+      "FLOOR": "Hiện trường",
+      "DEFECT": "Lỗi",
+      "SCRAP": "Loại bỏ",
+      "SUBCON": "Gia công"
+    },
+    "IQC_STATUS": {
+      "PENDING": "Đang chờ",
+      "PASS": "Đạt",
+      "FAIL": "Không đạt",
+      "HOLD": "Giữ lại"
+    },
+    "OQC_STATUS": {
+      "PENDING": "Đang chờ",
+      "IN_PROGRESS": "Đang kiểm tra",
+      "PASS": "Đạt",
+      "FAIL": "Không đạt"
+    },
+    "MAT_LOT_STATUS": {
+      "NORMAL": "Bình thường",
+      "HOLD": "Giữ lại",
+      "DEPLETED": "Đã hết"
+    },
+    "ISSUE_TYPE": {
+      "PRODUCTION": "Sản xuất",
+      "DEFECT": "Lỗi",
+      "SAMPLE": "Mẫu",
+      "DESIGN_START": "Bắt đầu thiết kế",
+      "ADJUSTMENT": "Điều chỉnh tồn kho",
+      "LOSS": "Hao hụt",
+      "SUBCONTRACT": "Gia công ngoài",
+      "SCRAP": "Phế liệu",
+      "RETURN": "Trả hàng",
+      "ETC": "Khác"
+    },
+    "TRANSACTION_TYPE": {
+      "MAT_IN": "Nhập nguyên liệu",
+      "MAT_IN_CANCEL": "Hủy nhập nguyên liệu",
+      "MAT_OUT": "Xuất nguyên liệu",
+      "MAT_OUT_CANCEL": "Hủy xuất nguyên liệu",
+      "WIP_IN": "Nhập bán thành phẩm",
+      "WIP_IN_CANCEL": "Hủy nhập bán thành phẩm",
+      "WIP_OUT": "Xuất bán thành phẩm",
+      "WIP_OUT_CANCEL": "Hủy xuất bán thành phẩm",
+      "FG_IN": "Nhập thành phẩm",
+      "FG_IN_CANCEL": "Hủy nhập thành phẩm",
+      "FG_OUT": "Xuất thành phẩm",
+      "FG_OUT_CANCEL": "Hủy xuất thành phẩm",
+      "SUBCON_OUT": "Xuất gia công",
+      "SUBCON_OUT_CANCEL": "Hủy xuất gia công",
+      "SUBCON_IN": "Nhập gia công",
+      "SUBCON_IN_CANCEL": "Hủy nhập gia công",
+      "PROD_CONSUME": "Tiêu thụ sản xuất",
+      "PROD_CONSUME_CANCEL": "Hủy tiêu thụ sản xuất",
+      "TRANSFER": "Di chuyển",
+      "TRANSFER_CANCEL": "Hủy di chuyển",
+      "ADJ_PLUS": "Điều chỉnh(+)",
+      "ADJ_MINUS": "Điều chỉnh(-)",
+      "SCRAP": "Loại bỏ"
+    },
+    "REF_TYPE": {
+      "JOB_ORDER": "Lệnh sản xuất",
+      "SUBCON_ORDER": "Đơn hàng gia công",
+      "SHIPMENT": "Xuất hàng",
+      "CUSTOMS": "Hải quan",
+      "ADJUST": "Điều chỉnh",
+      "PROD_RESULT": "Kết quả sản xuất"
+    },
+    "PROD_RESULT_STATUS": {
+      "RUNNING": "Đang chạy",
+      "DONE": "Hoàn thành",
+      "CANCELED": "Đã hủy"
+    },
+    "DEFECT_LOG_STATUS": {
+      "WAIT": "Đang chờ",
+      "REPAIR": "Sửa chữa",
+      "REWORK": "Làm lại",
+      "SCRAP": "Loại bỏ",
+      "DONE": "Hoàn thành"
+    },
+    "REPAIR_RESULT": {
+      "PASS": "Đạt",
+      "FAIL": "Không đạt",
+      "SCRAP": "Loại bỏ"
+    },
+    "EQUIP_TYPE": {
+      "CUTTING": "Thiết bị cắt",
+      "CRIMPING": "Thiết bị ép",
+      "ASSEMBLY": "Thiết bị lắp ráp",
+      "AUTO_CRIMP": "Máy ép tự động",
+      "SINGLE_CUT": "Máy cắt đơn",
+      "MULTI_CUT": "Máy cắt đa dây",
+      "TWIST": "Máy xoắn",
+      "SOLDER": "Máy hàn",
+      "HOUSING": "Máy lắp vỏ",
+      "TESTER": "Máy kiểm tra",
+      "LABEL_PRINTER": "Máy in nhãn",
+      "INSPECTION": "Thiết bị kiểm tra",
+      "PACKING": "Máy đóng gói",
+      "OTHER": "Khác"
+    },
+    "CONSUMABLE_STATUS": {
+      "NORMAL": "Bình thường",
+      "WARNING": "Cảnh báo",
+      "REPLACE": "Cần thay thế"
+    },
+    "CONSUMABLE_CATEGORY": {
+      "MOLD": "Khuôn",
+      "JIG": "Đồ gá",
+      "TOOL": "Công cụ"
+    },
+    "CONSUMABLE_LOG_TYPE": {
+      "IN": "Nhập",
+      "IN_RETURN": "Trả hàng nhập",
+      "OUT": "Xuất",
+      "OUT_RETURN": "Trả hàng xuất"
+    },
+    "CONSUMABLE_LOG_TYPE_GROUP": {
+      "RECEIVING": "Nhập kho",
+      "ISSUING": "Xuất kho"
+    },
+    "INCOMING_TYPE": {
+      "NEW": "Mới",
+      "REPLACEMENT": "Thay thế"
+    },
+    "ISSUE_REASON": {
+      "PRODUCTION": "Sản xuất",
+      "REPAIR": "Sửa chữa",
+      "OTHER": "Khác"
+    },
+    "CUSTOMS_ENTRY_STATUS": {
+      "PENDING": "Đang chờ",
+      "CLEARED": "Thông quan",
+      "RELEASED": "Đã thả hàng"
+    },
+    "CUSTOMS_LOT_STATUS": {
+      "BONDED": "Bảo thuế",
+      "PARTIAL": "Thả hàng một phần",
+      "RELEASED": "Đã thả hàng"
+    },
+    "USAGE_REPORT_STATUS": {
+      "DRAFT": "Bản nháp",
+      "REPORTED": "Đã báo cáo",
+      "CONFIRMED": "Đã xác nhận"
+    },
+    "SUBCON_ORDER_STATUS": {
+      "ORDERED": "Đã đặt hàng",
+      "DELIVERED": "Đã giao hàng",
+      "PARTIAL_RECV": "Nhập một phần",
+      "RECEIVED": "Nhập hoàn tất",
+      "CLOSED": "Đã đóng",
+      "CANCELED": "Đã hủy"
+    },
+    "SUBCON_INSPECT_RESULT": {
+      "PASS": "Đạt",
+      "FAIL": "Không đạt",
+      "PARTIAL": "Đạt một phần"
+    },
+    "COMM_TYPE": {
+      "NONE": "Không",
+      "MQTT": "MQTT",
+      "SERIAL": "Serial",
+      "TCP": "TCP/IP",
+      "OPC_UA": "OPC-UA",
+      "MODBUS": "Modbus"
+    },
+    "BAUD_RATE": {
+      "9600": "9600",
+      "19200": "19200",
+      "38400": "38400",
+      "57600": "57600",
+      "115200": "115200"
+    },
+    "DATA_BITS": {
+      "7": "7 bit",
+      "8": "8 bit"
+    },
+    "STOP_BITS": {
+      "1": "1",
+      "2": "2",
+      "1.5": "1.5"
+    },
+    "PARITY": {
+      "NONE": "Không có",
+      "EVEN": "Chẵn",
+      "ODD": "Lẻ"
+    },
+    "FLOW_CONTROL": {
+      "NONE": "Không có",
+      "XONXOFF": "XON/XOFF",
+      "RTSCTS": "RTS/CTS"
+    },
+    "INTERFACE_DIRECTION": {
+      "IN": "Nhận",
+      "OUT": "Gửi"
+    },
+    "IF_LOG_STATUS": {
+      "PENDING": "Đang chờ",
+      "SUCCESS": "Thành công",
+      "FAIL": "Thất bại",
+      "RETRY": "Thử lại"
+    },
+    "WORKER_TYPE": {
+      "CUTTING": "Công nhân cắt",
+      "CRIMPING": "Công nhân ép",
+      "ASSEMBLY": "Công nhân lắp ráp",
+      "INSPECTOR": "Kiểm tra viên",
+      "PACKING": "Công nhân đóng gói",
+      "LEADER": "Trưởng nhóm"
+    },
+    "SHIP_ORDER_STATUS": {
+      "DRAFT": "Bản nháp",
+      "CONFIRMED": "Đã xác nhận",
+      "SHIPPING": "Đang xuất hàng",
+      "SHIPPED": "Đã xuất hàng"
+    },
+    "INSPECT_CHECK_TYPE": {
+      "DAILY": "Kiểm tra hàng ngày",
+      "PERIODIC": "Kiểm tra định kỳ"
+    },
+    "INSPECT_JUDGE": {
+      "PASS": "Đạt",
+      "FAIL": "Không đạt",
+      "CONDITIONAL": "Đạt có điều kiện"
+    },
+    "JUDGE_YN": {
+      "Y": "Đạt",
+      "N": "Không đạt"
+    },
+    "PM_TYPE": {
+      "TIME_BASED": "Theo thời gian",
+      "USAGE_BASED": "Theo sử dụng"
+    },
+    "PM_CYCLE_TYPE": {
+      "MONTHLY": "Hàng tháng",
+      "QUARTERLY": "Hàng quý",
+      "SEMI_ANNUAL": "Nửa năm",
+      "ANNUAL": "Hàng năm",
+      "CUSTOM": "Tùy chỉnh"
+    },
+    "PM_ITEM_TYPE": {
+      "CHECK": "Kiểm tra",
+      "REPLACE": "Thay thế",
+      "CLEAN": "Vệ sinh",
+      "ADJUST": "Điều chỉnh",
+      "LUBRICATE": "Bôi trơn"
+    },
+    "PM_WO_TYPE": {
+      "PLANNED": "Kế hoạch",
+      "EMERGENCY": "Khẩn cấp",
+      "BREAKDOWN": "Hỏng hóc"
+    },
+    "PM_WO_STATUS": {
+      "PLANNED": "Kế hoạch",
+      "IN_PROGRESS": "Đang thực hiện",
+      "COMPLETED": "Hoàn thành",
+      "OVERDUE": "Quá hạn",
+      "CANCELLED": "Đã hủy"
+    },
+    "PM_PRIORITY": {
+      "LOW": "Thấp",
+      "MEDIUM": "Trung bình",
+      "HIGH": "Cao",
+      "URGENT": "Khẩn cấp"
+    },
+    "PO_STATUS": {
+      "DRAFT": "Bản nháp",
+      "CONFIRMED": "Đã xác nhận",
+      "PARTIAL": "Nhập một phần",
+      "RECEIVED": "Nhập hoàn tất",
+      "CLOSED": "Đã đóng"
+    },
+    "CONSUMABLE_LIFE_STATUS": {
+      "NORMAL": "Bình thường",
+      "WARNING": "Cảnh báo",
+      "REPLACE": "Cần thay thế"
+    },
+    "CON_STOCK_STATUS": {
+      "PENDING": "Chờ nhập",
+      "ACTIVE": "Khả dụng",
+      "MOUNTED": "Đang lắp",
+      "REPAIR": "Đang sửa",
+      "SCRAPPED": "Đã hủy"
+    }
   },
   "comCodeGroup": {
     "JOB_ORDER_STATUS": "Trạng thái lệnh sản xuất",
@@ -4325,7 +4695,13 @@
       "matReceiving": "Nhập kho",
       "matIssuing": "Xuất kho",
       "matAdjustment": "Điều chỉnh tồn kho",
-      "matInventoryCount": "Kiểm kê vật tư"
+      "matInventoryCount": "Kiểm kê vật tư",
+      "receiving": "Nhập kho",
+      "issuing": "Xuất kho",
+      "adjustment": "Điều chỉnh tồn kho",
+      "invCount": "Kiểm kê vật tư",
+      "productInv": "Kiểm kê sản phẩm",
+      "logout": "Đăng xuất"
     },
     "scan": {
       "placeholder": "Quét mã vạch",
@@ -4481,6 +4857,11 @@
       "installTitle": "Cài đặt ứng dụng",
       "installDesc": "Thêm vào màn hình chính để truy cập nhanh hơn",
       "install": "Cài đặt"
+    },
+    "worker": {
+      "switch": "Chuyển công nhân",
+      "scanQr": "Quét mã QR công nhân",
+      "switched": "Đã chuyển công nhân"
     },
     "network": {
       "offline": "Vui lòng kiểm tra kết nối mạng",

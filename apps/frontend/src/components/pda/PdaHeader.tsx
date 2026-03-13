@@ -2,18 +2,20 @@
 
 /**
  * @file src/components/pda/PdaHeader.tsx
- * @description PDA 전용 헤더 - 뒤로가기 + 타이틀 + 사용자명 + 설정
+ * @description PDA 전용 헤더 - 뒤로가기 + 타이틀 + 작업자명/QR전환 + 설정
  *
  * 초보자 가이드:
  * 1. **뒤로가기**: 메뉴 경로로 router.push
  * 2. **타이틀**: 현재 페이지 이름 (i18n)
- * 3. **사용자명**: authStore.user.name
- * 4. **설정**: /pda/settings 이동
+ * 3. **작업자명**: currentWorker?.name 우선, 없으면 user?.name 표시
+ * 4. **QR전환**: WorkerQrPanel 컴포넌트 (QrCode 아이콘 클릭 → 드롭다운 스캔)
+ * 5. **설정/로그아웃**: 메인 메뉴(hideBack=true)에서만 표시
  */
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Settings, LogOut } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import WorkerQrPanel from "@/components/pda/WorkerQrPanel";
 
 interface PdaHeaderProps {
   /** 페이지 타이틀 i18n 키 */
@@ -31,16 +33,17 @@ export default function PdaHeader({
 }: PdaHeaderProps) {
   const router = useRouter();
   const { t } = useTranslation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, currentWorker } = useAuthStore();
 
-  const handleBack = () => {
-    router.push(backPath);
-  };
-
+  const handleBack = () => router.push(backPath);
   const handleLogout = () => {
     logout();
     router.replace("/login");
   };
+
+  /** 표시할 작업자/사용자 이름 (currentWorker 우선) */
+  const displayName =
+    currentWorker?.name ?? user?.name ?? user?.email?.split("@")[0] ?? "";
 
   return (
     <header className="sticky top-0 z-40 flex items-center h-14 px-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
@@ -64,10 +67,11 @@ export default function PdaHeader({
 
       {/* 우측 액션 */}
       <div className="flex items-center gap-1">
-        {/* 사용자명 */}
-        <span className="text-xs text-slate-500 dark:text-slate-400 mr-1 hidden min-[360px]:inline">
-          {user?.name || user?.email?.split("@")[0] || ""}
+        {/* 작업자명 + QR 전환 패널 */}
+        <span className="text-xs text-slate-500 dark:text-slate-400 hidden min-[360px]:inline max-w-[80px] truncate">
+          {displayName}
         </span>
+        <WorkerQrPanel />
 
         {/* 메인 메뉴에서만 설정/로그아웃 표시 */}
         {hideBack && (

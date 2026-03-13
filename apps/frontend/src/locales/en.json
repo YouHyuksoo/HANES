@@ -712,7 +712,13 @@
     "config": {
       "title": "System Settings",
       "description": "Configure system operation options.",
-      "group": { "all": "All", "MATERIAL": "Material", "PRODUCTION": "Production", "QUALITY": "Quality", "SYSTEM": "System" },
+      "group": {
+        "all": "All",
+        "MATERIAL": "Material",
+        "PRODUCTION": "Production",
+        "QUALITY": "Quality",
+        "SYSTEM": "System"
+      },
       "save": "Save Settings",
       "saveSuccess": "Settings saved successfully.",
       "addNew": "Add Setting",
@@ -3196,16 +3202,33 @@
   },
   "equipment": {
     "status": {
-      "title": "Equipment Status",
+      "title": "Equipment Operation Status",
+      "description": "Monitor and manage equipment status.",
+      "equipCode": "Equip Code",
+      "equipName": "Equip Name",
+      "equipNamePlaceholder": "Cutter No.1",
+      "type": "Type",
+      "line": "Line",
+      "ipAddress": "IP Address",
+      "register": "Register Equipment",
+      "editEquip": "Edit Equipment",
+      "changeStatus": "Change Status",
+      "selectedEquip": "Selected Equipment",
+      "selectStatus": "Select Status",
+      "totalEquipment": "Total Equipment",
+      "normalOp": "Normal Operation",
+      "maintenance": "Under Maintenance",
+      "stopped": "Stopped",
+      "normal": "Normal",
+      "maint": "Maintenance",
+      "stop": "Stop",
       "allTypes": "All Types",
+      "allLines": "All Lines",
       "cutting": "Cutting",
       "crimping": "Crimping",
       "assembly": "Assembly",
       "inspection": "Inspection",
-      "allLines": "All Lines",
-      "subtitle": "Monitor real-time operating status of all equipment.",
-      "noEquip": "No equipment to display.",
-      "working": "Working"
+      "searchPlaceholder": "Search equip code, name..."
     },
     "code": "Equip Code",
     "name": "Equip Name",
@@ -3217,20 +3240,38 @@
     "stop": "Stopped",
     "pm": {
       "title": "Preventive Maintenance",
+      "description": "Manage consumable life and support timely replacement.",
+      "code": "Code",
+      "name": "Name",
+      "namePlaceholder": "Terminal Mold A",
       "category": "Category",
-      "lifeProgress": "Life Progress",
-      "equipmentCode": "Equip Code",
+      "currentExpectedLife": "Current/Expected Life",
+      "lastReplaced": "Last Replaced",
+      "registerReplace": "Register Replacement",
+      "registerPart": "Register Part",
+      "editPart": "Edit Part",
+      "total": "Total",
+      "totalParts": "Total Parts",
+      "ok": "OK",
+      "warning": "Warning",
+      "replace": "Replace Needed",
       "allCategories": "All Categories",
-      "allStatus": "All Status",
       "mold": "Mold",
       "jig": "Jig",
       "tool": "Tool",
-      "total": "Total",
-      "ok": "OK",
-      "warning": "Warning",
-      "replace": "Replace Required",
-      "edit": "Edit Maintenance",
-      "add": "Add Maintenance"
+      "replacePlan": "Replacement Plan",
+      "replacePlanSubtitle": "Warning/Replace needed items",
+      "noReplacePlan": "No replacement plan items",
+      "equipmentCode": "Equipment Code",
+      "currentShots": "Current Shots",
+      "expectedLife": "Expected Life",
+      "selectedPart": "Selected Part",
+      "currentLifeProgress": "Current Life Progress",
+      "afterReplaceSettings": "Post-Replacement Settings",
+      "newPartCode": "New Part Code (Optional)",
+      "newPartCodePlaceholder": "Leave blank to keep same code",
+      "replaceNote": "Current shots will be reset to 0 after replacement",
+      "searchPlaceholder": "Search code, name..."
     },
     "edit": "Edit Equipment",
     "pmPlan": {
@@ -3414,70 +3455,6 @@
       "statTotal": "Total Inspections",
       "excelDownload": "Excel Download",
       "searchPlaceholder": "Search equip code, name..."
-    },
-    "status": {
-      "title": "Equipment Operation Status",
-      "description": "Monitor and manage equipment status.",
-      "equipCode": "Equip Code",
-      "equipName": "Equip Name",
-      "equipNamePlaceholder": "Cutter No.1",
-      "type": "Type",
-      "line": "Line",
-      "ipAddress": "IP Address",
-      "register": "Register Equipment",
-      "editEquip": "Edit Equipment",
-      "changeStatus": "Change Status",
-      "selectedEquip": "Selected Equipment",
-      "selectStatus": "Select Status",
-      "totalEquipment": "Total Equipment",
-      "normalOp": "Normal Operation",
-      "maintenance": "Under Maintenance",
-      "stopped": "Stopped",
-      "normal": "Normal",
-      "maint": "Maintenance",
-      "stop": "Stop",
-      "allTypes": "All Types",
-      "allLines": "All Lines",
-      "cutting": "Cutting",
-      "crimping": "Crimping",
-      "assembly": "Assembly",
-      "inspection": "Inspection",
-      "searchPlaceholder": "Search equip code, name..."
-    },
-    "pm": {
-      "title": "Preventive Maintenance",
-      "description": "Manage consumable life and support timely replacement.",
-      "code": "Code",
-      "name": "Name",
-      "namePlaceholder": "Terminal Mold A",
-      "category": "Category",
-      "currentExpectedLife": "Current/Expected Life",
-      "lastReplaced": "Last Replaced",
-      "registerReplace": "Register Replacement",
-      "registerPart": "Register Part",
-      "editPart": "Edit Part",
-      "total": "Total",
-      "totalParts": "Total Parts",
-      "ok": "OK",
-      "warning": "Warning",
-      "replace": "Replace Needed",
-      "allCategories": "All Categories",
-      "mold": "Mold",
-      "jig": "Jig",
-      "tool": "Tool",
-      "replacePlan": "Replacement Plan",
-      "replacePlanSubtitle": "Warning/Replace needed items",
-      "noReplacePlan": "No replacement plan items",
-      "equipmentCode": "Equipment Code",
-      "currentShots": "Current Shots",
-      "expectedLife": "Expected Life",
-      "selectedPart": "Selected Part",
-      "currentLifeProgress": "Current Life Progress",
-      "afterReplaceSettings": "Post-Replacement Settings",
-      "newPartCode": "New Part Code (Optional)",
-      "newPartCodePlaceholder": "Leave blank to keep same code",
-      "replaceNote": "Current shots will be reset to 0 after replacement",
-      "searchPlaceholder": "Search code, name..."
     },
     "mold": {
       "title": "Mold Management",
@@ -4111,81 +4088,475 @@
     "dashboard": "Dashboard"
   },
   "comCode": {
-    "JOB_ORDER_STATUS": { "WAITING": "Waiting", "RUNNING": "Running", "PAUSED": "Paused", "DONE": "Done", "CANCELED": "Canceled" },
-    "JOB_ORDER_TYPE": { "NORMAL": "Normal", "REWORK": "Rework", "SAMPLE": "Sample", "TRIAL": "Trial" },
-    "SEMI_PRODUCT_STATUS": { "WAITING": "Waiting", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "MOVED": "Moved" },
-    "BOX_STATUS": { "OPEN": "Open", "CLOSED": "Closed", "SHIPPED": "Shipped" },
-    "PALLET_STATUS": { "OPEN": "Open", "CLOSED": "Closed", "LOADED": "Loaded", "SHIPPED": "Shipped" },
-    "SHIPMENT_STATUS": { "PREPARING": "Preparing", "LOADED": "Loaded", "SHIPPED": "Shipped", "DELIVERED": "Delivered", "CANCELED": "Canceled" },
-    "RECEIVE_STATUS": { "PENDING": "Pending", "IQC_IN_PROGRESS": "IQC In Progress", "PASSED": "Passed", "FAILED": "Failed" },
-    "ISSUE_STATUS": { "PENDING": "Pending", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed" },
-    "EQUIP_STATUS": { "NORMAL": "Normal", "MAINT": "Maintenance", "STOP": "Stopped" },
-    "PM_STATUS": { "SCHEDULED": "Scheduled", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "OVERDUE": "Overdue" },
-    "DEFECT_STATUS": { "PENDING": "Pending", "REPAIRING": "Repairing", "COMPLETED": "Completed", "SCRAPPED": "Scrapped" },
-    "DEFECT_DISPOSITION": { "REPAIR": "Repair", "REWORK": "Rework", "SCRAP": "Scrap", "CONCESSION": "Concession" },
-    "INSPECT_RESULT": { "PASS": "Pass", "FAIL": "Fail" },
-    "INSPECT_TYPE": { "CONTINUITY": "Continuity", "INSULATION": "Insulation", "HI_POT": "Hi-Pot", "VISUAL": "Visual" },
-    "IQC_TYPE": { "IQC": "IQC", "PQC": "PQC", "FQC": "FQC", "OQC": "OQC" },
-    "QUALITY_JUDGMENT": { "PASS": "Pass", "FAIL": "Fail", "PENDING": "Pending", "CONDITIONAL": "Conditional" },
-    "APPROVAL_STATUS": { "PENDING": "Pending", "APPROVED": "Approved", "REJECTED": "Rejected" },
-    "INTERFACE_STATUS": { "PENDING": "Pending", "SENT": "Sent", "FAILED": "Failed", "CONFIRMED": "Confirmed" },
-    "CONNECTION_STATUS": { "CONNECTED": "Connected", "DISCONNECTED": "Disconnected", "ERROR": "Error" },
-    "PROCESS_TYPE": { "CUTTING": "Cutting", "CRIMPING": "Crimping", "ASSEMBLY": "Assembly", "INSPECTION": "Inspection", "PACKING": "Packing", "CUT": "Cutting", "CRIMP": "Crimping", "ASSY": "Assembly", "INSP": "Inspection", "PACK": "Packing" },
-    "ITEM_TYPE": { "RAW_MATERIAL": "Raw Material", "SEMI_PRODUCT": "Semi Product", "FINISHED": "Finished", "CONSUMABLE": "Consumable", "RAW": "Raw Material", "WIP": "WIP", "FG": "Finished Goods" },
-    "BOM_TYPE": { "PRODUCTION": "Production", "STANDARD": "Standard", "ENGINEERING": "Engineering" },
-    "WAREHOUSE_TYPE": { "RAW_MATERIAL": "Raw Material", "WIP": "WIP", "FINISHED": "Finished", "MRB": "MRB", "HOLD": "Hold" },
-    "INVENTORY_MOVE_TYPE": { "RECEIPT": "Receipt", "ISSUE": "Issue", "TRANSFER": "Transfer", "ADJUSTMENT": "Adjustment", "SCRAP": "Scrap" },
-    "MOLD_STATUS": { "ACTIVE": "Active", "INACTIVE": "Inactive", "REPAIR": "Under Repair", "SCRAPPED": "Scrapped" },
-    "GENERAL_STATUS": { "ACTIVE": "Active", "INACTIVE": "Inactive" },
-    "USE_YN": { "Y": "Yes", "N": "No" },
-    "PLANT_TYPE": { "PLANT": "Plant", "SHOP": "Shop", "LINE": "Line", "CELL": "Cell" },
-    "PART_TYPE": { "RAW": "Raw Material", "WIP": "WIP", "FG": "Finished Goods" },
-    "PARTNER_TYPE": { "SUPPLIER": "Supplier", "CUSTOMER": "Customer" },
-    "VENDOR_TYPE": { "SUBCON": "Subcontractor", "SUPPLIER": "Supplier" },
-    "WAREHOUSE_TYPE_DTO": { "RAW": "Raw Material", "WIP": "WIP", "FG": "Finished Goods", "FLOOR": "Floor", "DEFECT": "Defect", "SCRAP": "Scrap", "SUBCON": "Subcontractor" },
-    "IQC_STATUS": { "PENDING": "Pending", "PASS": "Pass", "FAIL": "Fail", "HOLD": "Hold" },
-    "OQC_STATUS": { "PENDING": "Pending", "IN_PROGRESS": "In Progress", "PASS": "Pass", "FAIL": "Fail" },
-    "MAT_LOT_STATUS": { "NORMAL": "Normal", "HOLD": "Hold", "DEPLETED": "Depleted" },
-    "ISSUE_TYPE": { "PRODUCTION": "Production", "DEFECT": "Defect", "SAMPLE": "Sample", "DESIGN_START": "Design Start", "ADJUSTMENT": "Adjustment", "LOSS": "Loss", "SUBCONTRACT": "Subcontract", "SCRAP": "Scrap", "RETURN": "Return", "ETC": "Etc" },
-    "TRANSACTION_TYPE": { "MAT_IN": "Material In", "MAT_IN_CANCEL": "Material In Cancel", "MAT_OUT": "Material Out", "MAT_OUT_CANCEL": "Material Out Cancel", "WIP_IN": "WIP In", "WIP_IN_CANCEL": "WIP In Cancel", "WIP_OUT": "WIP Out", "WIP_OUT_CANCEL": "WIP Out Cancel", "FG_IN": "FG In", "FG_IN_CANCEL": "FG In Cancel", "FG_OUT": "FG Out", "FG_OUT_CANCEL": "FG Out Cancel", "SUBCON_OUT": "Subcon Out", "SUBCON_OUT_CANCEL": "Subcon Out Cancel", "SUBCON_IN": "Subcon In", "SUBCON_IN_CANCEL": "Subcon In Cancel", "PROD_CONSUME": "Production Consume", "PROD_CONSUME_CANCEL": "Production Consume Cancel", "TRANSFER": "Transfer", "TRANSFER_CANCEL": "Transfer Cancel", "ADJ_PLUS": "Adjustment Plus", "ADJ_MINUS": "Adjustment Minus", "SCRAP": "Scrap" },
-    "REF_TYPE": { "JOB_ORDER": "Job Order", "SUBCON_ORDER": "Subcon Order", "SHIPMENT": "Shipment", "CUSTOMS": "Customs", "ADJUST": "Adjustment", "PROD_RESULT": "Production Result" },
-    "PROD_RESULT_STATUS": { "RUNNING": "Running", "DONE": "Done", "CANCELED": "Canceled" },
-    "DEFECT_LOG_STATUS": { "WAIT": "Wait", "REPAIR": "Repair", "REWORK": "Rework", "SCRAP": "Scrap", "DONE": "Done" },
-    "REPAIR_RESULT": { "PASS": "Pass", "FAIL": "Fail", "SCRAP": "Scrap" },
-    "EQUIP_TYPE": { "CUTTING": "Cutting", "CRIMPING": "Crimping", "ASSEMBLY": "Assembly", "AUTO_CRIMP": "Auto Crimper", "SINGLE_CUT": "Single Cutter", "MULTI_CUT": "Multi Cutter", "TWIST": "Twister", "SOLDER": "Soldering", "HOUSING": "Housing", "TESTER": "Tester", "LABEL_PRINTER": "Label Printer", "INSPECTION": "Inspection", "PACKING": "Packing", "OTHER": "Other" },
-    "CONSUMABLE_STATUS": { "NORMAL": "Normal", "WARNING": "Warning", "REPLACE": "Replace" },
-    "CONSUMABLE_CATEGORY": { "MOLD": "Mold", "JIG": "Jig", "TOOL": "Tool" },
-    "CONSUMABLE_LOG_TYPE": { "IN": "In", "IN_RETURN": "In Return", "OUT": "Out", "OUT_RETURN": "Out Return" },
-    "CONSUMABLE_LOG_TYPE_GROUP": { "RECEIVING": "Receiving", "ISSUING": "Issuing" },
-    "INCOMING_TYPE": { "NEW": "New", "REPLACEMENT": "Replacement" },
-    "ISSUE_REASON": { "PRODUCTION": "Production", "REPAIR": "Repair", "OTHER": "Other" },
-    "CUSTOMS_ENTRY_STATUS": { "PENDING": "Pending", "CLEARED": "Cleared", "RELEASED": "Released" },
-    "CUSTOMS_LOT_STATUS": { "BONDED": "Bonded", "PARTIAL": "Partial", "RELEASED": "Released" },
-    "USAGE_REPORT_STATUS": { "DRAFT": "Draft", "REPORTED": "Reported", "CONFIRMED": "Confirmed" },
-    "SUBCON_ORDER_STATUS": { "ORDERED": "Ordered", "DELIVERED": "Delivered", "PARTIAL_RECV": "Partial Received", "RECEIVED": "Received", "CLOSED": "Closed", "CANCELED": "Canceled" },
-    "SUBCON_INSPECT_RESULT": { "PASS": "Pass", "FAIL": "Fail", "PARTIAL": "Partial" },
-    "COMM_TYPE": { "NONE": "None", "MQTT": "MQTT", "SERIAL": "Serial", "TCP": "TCP/IP", "OPC_UA": "OPC-UA", "MODBUS": "Modbus" },
-    "BAUD_RATE": { "9600": "9600", "19200": "19200", "38400": "38400", "57600": "57600", "115200": "115200" },
-    "DATA_BITS": { "7": "7 bits", "8": "8 bits" },
-    "STOP_BITS": { "1": "1", "1.5": "1.5", "2": "2" },
-    "PARITY": { "NONE": "None", "EVEN": "Even", "ODD": "Odd" },
-    "FLOW_CONTROL": { "NONE": "None", "XONXOFF": "XON/XOFF", "RTSCTS": "RTS/CTS" },
-    "INTERFACE_DIRECTION": { "IN": "In", "OUT": "Out" },
-    "IF_LOG_STATUS": { "PENDING": "Pending", "SUCCESS": "Success", "FAIL": "Fail", "RETRY": "Retry" },
-    "WORKER_TYPE": { "CUTTING": "Cutting Worker", "CRIMPING": "Crimping Worker", "ASSEMBLY": "Assembly Worker", "INSPECTOR": "Inspector", "PACKING": "Packing Worker", "LEADER": "Team Leader" },
-    "SHIP_ORDER_STATUS": { "DRAFT": "Draft", "CONFIRMED": "Confirmed", "SHIPPING": "Shipping", "SHIPPED": "Shipped" },
-    "INSPECT_CHECK_TYPE": { "DAILY": "Daily Inspection", "PERIODIC": "Periodic Inspection" },
-    "INSPECT_JUDGE": { "PASS": "Pass", "FAIL": "Fail", "CONDITIONAL": "Conditional" },
-    "JUDGE_YN": { "Y": "Pass", "N": "Fail" },
-    "PM_TYPE": { "TIME_BASED": "Time-Based", "USAGE_BASED": "Usage-Based" },
-    "PM_CYCLE_TYPE": { "MONTHLY": "Monthly", "QUARTERLY": "Quarterly", "SEMI_ANNUAL": "Semi-Annual", "ANNUAL": "Annual", "CUSTOM": "Custom" },
-    "PM_ITEM_TYPE": { "CHECK": "Check", "REPLACE": "Replace", "CLEAN": "Clean", "ADJUST": "Adjust", "LUBRICATE": "Lubricate" },
-    "PM_WO_TYPE": { "PLANNED": "Planned", "EMERGENCY": "Emergency", "BREAKDOWN": "Breakdown" },
-    "PM_WO_STATUS": { "PLANNED": "Planned", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "OVERDUE": "Overdue", "CANCELLED": "Cancelled" },
-    "PM_PRIORITY": { "LOW": "Low", "MEDIUM": "Medium", "HIGH": "High", "URGENT": "Urgent" },
-    "PO_STATUS": { "DRAFT": "Draft", "CONFIRMED": "Confirmed", "PARTIAL": "Partial", "RECEIVED": "Received", "CLOSED": "Closed" },
-    "CONSUMABLE_LIFE_STATUS": { "NORMAL": "Normal", "WARNING": "Warning", "REPLACE": "Replace Required" },
-    "CON_STOCK_STATUS": { "PENDING": "Pending", "ACTIVE": "Active", "MOUNTED": "Mounted", "REPAIR": "Under Repair", "SCRAPPED": "Scrapped" }
+    "JOB_ORDER_STATUS": {
+      "WAITING": "Waiting",
+      "RUNNING": "Running",
+      "PAUSED": "Paused",
+      "DONE": "Done",
+      "CANCELED": "Canceled"
+    },
+    "JOB_ORDER_TYPE": {
+      "NORMAL": "Normal",
+      "REWORK": "Rework",
+      "SAMPLE": "Sample",
+      "TRIAL": "Trial"
+    },
+    "SEMI_PRODUCT_STATUS": {
+      "WAITING": "Waiting",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "MOVED": "Moved"
+    },
+    "BOX_STATUS": {
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "SHIPPED": "Shipped"
+    },
+    "PALLET_STATUS": {
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "LOADED": "Loaded",
+      "SHIPPED": "Shipped"
+    },
+    "SHIPMENT_STATUS": {
+      "PREPARING": "Preparing",
+      "LOADED": "Loaded",
+      "SHIPPED": "Shipped",
+      "DELIVERED": "Delivered",
+      "CANCELED": "Canceled"
+    },
+    "RECEIVE_STATUS": {
+      "PENDING": "Pending",
+      "IQC_IN_PROGRESS": "IQC In Progress",
+      "PASSED": "Passed",
+      "FAILED": "Failed"
+    },
+    "ISSUE_STATUS": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed"
+    },
+    "EQUIP_STATUS": {
+      "NORMAL": "Normal",
+      "MAINT": "Maintenance",
+      "STOP": "Stopped"
+    },
+    "PM_STATUS": {
+      "SCHEDULED": "Scheduled",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "OVERDUE": "Overdue"
+    },
+    "DEFECT_STATUS": {
+      "PENDING": "Pending",
+      "REPAIRING": "Repairing",
+      "COMPLETED": "Completed",
+      "SCRAPPED": "Scrapped"
+    },
+    "DEFECT_DISPOSITION": {
+      "REPAIR": "Repair",
+      "REWORK": "Rework",
+      "SCRAP": "Scrap",
+      "CONCESSION": "Concession"
+    },
+    "INSPECT_RESULT": {
+      "PASS": "Pass",
+      "FAIL": "Fail"
+    },
+    "INSPECT_TYPE": {
+      "CONTINUITY": "Continuity",
+      "INSULATION": "Insulation",
+      "HI_POT": "Hi-Pot",
+      "VISUAL": "Visual"
+    },
+    "IQC_TYPE": {
+      "IQC": "IQC",
+      "PQC": "PQC",
+      "FQC": "FQC",
+      "OQC": "OQC"
+    },
+    "QUALITY_JUDGMENT": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "PENDING": "Pending",
+      "CONDITIONAL": "Conditional"
+    },
+    "APPROVAL_STATUS": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "INTERFACE_STATUS": {
+      "PENDING": "Pending",
+      "SENT": "Sent",
+      "FAILED": "Failed",
+      "CONFIRMED": "Confirmed"
+    },
+    "CONNECTION_STATUS": {
+      "CONNECTED": "Connected",
+      "DISCONNECTED": "Disconnected",
+      "ERROR": "Error"
+    },
+    "PROCESS_TYPE": {
+      "CUTTING": "Cutting",
+      "CRIMPING": "Crimping",
+      "ASSEMBLY": "Assembly",
+      "INSPECTION": "Inspection",
+      "PACKING": "Packing",
+      "CUT": "Cutting",
+      "CRIMP": "Crimping",
+      "ASSY": "Assembly",
+      "INSP": "Inspection",
+      "PACK": "Packing"
+    },
+    "ITEM_TYPE": {
+      "RAW_MATERIAL": "Raw Material",
+      "SEMI_PRODUCT": "Semi Product",
+      "FINISHED": "Finished",
+      "CONSUMABLE": "Consumable",
+      "RAW": "Raw Material",
+      "WIP": "WIP",
+      "FG": "Finished Goods"
+    },
+    "BOM_TYPE": {
+      "PRODUCTION": "Production",
+      "STANDARD": "Standard",
+      "ENGINEERING": "Engineering"
+    },
+    "WAREHOUSE_TYPE": {
+      "RAW_MATERIAL": "Raw Material",
+      "WIP": "WIP",
+      "FINISHED": "Finished",
+      "MRB": "MRB",
+      "HOLD": "Hold"
+    },
+    "INVENTORY_MOVE_TYPE": {
+      "RECEIPT": "Receipt",
+      "ISSUE": "Issue",
+      "TRANSFER": "Transfer",
+      "ADJUSTMENT": "Adjustment",
+      "SCRAP": "Scrap"
+    },
+    "MOLD_STATUS": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "REPAIR": "Under Repair",
+      "SCRAPPED": "Scrapped"
+    },
+    "GENERAL_STATUS": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "USE_YN": {
+      "Y": "Yes",
+      "N": "No"
+    },
+    "PLANT_TYPE": {
+      "PLANT": "Plant",
+      "SHOP": "Shop",
+      "LINE": "Line",
+      "CELL": "Cell"
+    },
+    "PART_TYPE": {
+      "RAW": "Raw Material",
+      "WIP": "WIP",
+      "FG": "Finished Goods"
+    },
+    "PARTNER_TYPE": {
+      "SUPPLIER": "Supplier",
+      "CUSTOMER": "Customer"
+    },
+    "VENDOR_TYPE": {
+      "SUBCON": "Subcontractor",
+      "SUPPLIER": "Supplier"
+    },
+    "WAREHOUSE_TYPE_DTO": {
+      "RAW": "Raw Material",
+      "WIP": "WIP",
+      "FG": "Finished Goods",
+      "FLOOR": "Floor",
+      "DEFECT": "Defect",
+      "SCRAP": "Scrap",
+      "SUBCON": "Subcontractor"
+    },
+    "IQC_STATUS": {
+      "PENDING": "Pending",
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "HOLD": "Hold"
+    },
+    "OQC_STATUS": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In Progress",
+      "PASS": "Pass",
+      "FAIL": "Fail"
+    },
+    "MAT_LOT_STATUS": {
+      "NORMAL": "Normal",
+      "HOLD": "Hold",
+      "DEPLETED": "Depleted"
+    },
+    "ISSUE_TYPE": {
+      "PRODUCTION": "Production",
+      "DEFECT": "Defect",
+      "SAMPLE": "Sample",
+      "DESIGN_START": "Design Start",
+      "ADJUSTMENT": "Adjustment",
+      "LOSS": "Loss",
+      "SUBCONTRACT": "Subcontract",
+      "SCRAP": "Scrap",
+      "RETURN": "Return",
+      "ETC": "Etc"
+    },
+    "TRANSACTION_TYPE": {
+      "MAT_IN": "Material In",
+      "MAT_IN_CANCEL": "Material In Cancel",
+      "MAT_OUT": "Material Out",
+      "MAT_OUT_CANCEL": "Material Out Cancel",
+      "WIP_IN": "WIP In",
+      "WIP_IN_CANCEL": "WIP In Cancel",
+      "WIP_OUT": "WIP Out",
+      "WIP_OUT_CANCEL": "WIP Out Cancel",
+      "FG_IN": "FG In",
+      "FG_IN_CANCEL": "FG In Cancel",
+      "FG_OUT": "FG Out",
+      "FG_OUT_CANCEL": "FG Out Cancel",
+      "SUBCON_OUT": "Subcon Out",
+      "SUBCON_OUT_CANCEL": "Subcon Out Cancel",
+      "SUBCON_IN": "Subcon In",
+      "SUBCON_IN_CANCEL": "Subcon In Cancel",
+      "PROD_CONSUME": "Production Consume",
+      "PROD_CONSUME_CANCEL": "Production Consume Cancel",
+      "TRANSFER": "Transfer",
+      "TRANSFER_CANCEL": "Transfer Cancel",
+      "ADJ_PLUS": "Adjustment Plus",
+      "ADJ_MINUS": "Adjustment Minus",
+      "SCRAP": "Scrap"
+    },
+    "REF_TYPE": {
+      "JOB_ORDER": "Job Order",
+      "SUBCON_ORDER": "Subcon Order",
+      "SHIPMENT": "Shipment",
+      "CUSTOMS": "Customs",
+      "ADJUST": "Adjustment",
+      "PROD_RESULT": "Production Result"
+    },
+    "PROD_RESULT_STATUS": {
+      "RUNNING": "Running",
+      "DONE": "Done",
+      "CANCELED": "Canceled"
+    },
+    "DEFECT_LOG_STATUS": {
+      "WAIT": "Wait",
+      "REPAIR": "Repair",
+      "REWORK": "Rework",
+      "SCRAP": "Scrap",
+      "DONE": "Done"
+    },
+    "REPAIR_RESULT": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "SCRAP": "Scrap"
+    },
+    "EQUIP_TYPE": {
+      "CUTTING": "Cutting",
+      "CRIMPING": "Crimping",
+      "ASSEMBLY": "Assembly",
+      "AUTO_CRIMP": "Auto Crimper",
+      "SINGLE_CUT": "Single Cutter",
+      "MULTI_CUT": "Multi Cutter",
+      "TWIST": "Twister",
+      "SOLDER": "Soldering",
+      "HOUSING": "Housing",
+      "TESTER": "Tester",
+      "LABEL_PRINTER": "Label Printer",
+      "INSPECTION": "Inspection",
+      "PACKING": "Packing",
+      "OTHER": "Other"
+    },
+    "CONSUMABLE_STATUS": {
+      "NORMAL": "Normal",
+      "WARNING": "Warning",
+      "REPLACE": "Replace"
+    },
+    "CONSUMABLE_CATEGORY": {
+      "MOLD": "Mold",
+      "JIG": "Jig",
+      "TOOL": "Tool"
+    },
+    "CONSUMABLE_LOG_TYPE": {
+      "IN": "In",
+      "IN_RETURN": "In Return",
+      "OUT": "Out",
+      "OUT_RETURN": "Out Return"
+    },
+    "CONSUMABLE_LOG_TYPE_GROUP": {
+      "RECEIVING": "Receiving",
+      "ISSUING": "Issuing"
+    },
+    "INCOMING_TYPE": {
+      "NEW": "New",
+      "REPLACEMENT": "Replacement"
+    },
+    "ISSUE_REASON": {
+      "PRODUCTION": "Production",
+      "REPAIR": "Repair",
+      "OTHER": "Other"
+    },
+    "CUSTOMS_ENTRY_STATUS": {
+      "PENDING": "Pending",
+      "CLEARED": "Cleared",
+      "RELEASED": "Released"
+    },
+    "CUSTOMS_LOT_STATUS": {
+      "BONDED": "Bonded",
+      "PARTIAL": "Partial",
+      "RELEASED": "Released"
+    },
+    "USAGE_REPORT_STATUS": {
+      "DRAFT": "Draft",
+      "REPORTED": "Reported",
+      "CONFIRMED": "Confirmed"
+    },
+    "SUBCON_ORDER_STATUS": {
+      "ORDERED": "Ordered",
+      "DELIVERED": "Delivered",
+      "PARTIAL_RECV": "Partial Received",
+      "RECEIVED": "Received",
+      "CLOSED": "Closed",
+      "CANCELED": "Canceled"
+    },
+    "SUBCON_INSPECT_RESULT": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "PARTIAL": "Partial"
+    },
+    "COMM_TYPE": {
+      "NONE": "None",
+      "MQTT": "MQTT",
+      "SERIAL": "Serial",
+      "TCP": "TCP/IP",
+      "OPC_UA": "OPC-UA",
+      "MODBUS": "Modbus"
+    },
+    "BAUD_RATE": {
+      "9600": "9600",
+      "19200": "19200",
+      "38400": "38400",
+      "57600": "57600",
+      "115200": "115200"
+    },
+    "DATA_BITS": {
+      "7": "7 bits",
+      "8": "8 bits"
+    },
+    "STOP_BITS": {
+      "1": "1",
+      "2": "2",
+      "1.5": "1.5"
+    },
+    "PARITY": {
+      "NONE": "None",
+      "EVEN": "Even",
+      "ODD": "Odd"
+    },
+    "FLOW_CONTROL": {
+      "NONE": "None",
+      "XONXOFF": "XON/XOFF",
+      "RTSCTS": "RTS/CTS"
+    },
+    "INTERFACE_DIRECTION": {
+      "IN": "In",
+      "OUT": "Out"
+    },
+    "IF_LOG_STATUS": {
+      "PENDING": "Pending",
+      "SUCCESS": "Success",
+      "FAIL": "Fail",
+      "RETRY": "Retry"
+    },
+    "WORKER_TYPE": {
+      "CUTTING": "Cutting Worker",
+      "CRIMPING": "Crimping Worker",
+      "ASSEMBLY": "Assembly Worker",
+      "INSPECTOR": "Inspector",
+      "PACKING": "Packing Worker",
+      "LEADER": "Team Leader"
+    },
+    "SHIP_ORDER_STATUS": {
+      "DRAFT": "Draft",
+      "CONFIRMED": "Confirmed",
+      "SHIPPING": "Shipping",
+      "SHIPPED": "Shipped"
+    },
+    "INSPECT_CHECK_TYPE": {
+      "DAILY": "Daily Inspection",
+      "PERIODIC": "Periodic Inspection"
+    },
+    "INSPECT_JUDGE": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "CONDITIONAL": "Conditional"
+    },
+    "JUDGE_YN": {
+      "Y": "Pass",
+      "N": "Fail"
+    },
+    "PM_TYPE": {
+      "TIME_BASED": "Time-Based",
+      "USAGE_BASED": "Usage-Based"
+    },
+    "PM_CYCLE_TYPE": {
+      "MONTHLY": "Monthly",
+      "QUARTERLY": "Quarterly",
+      "SEMI_ANNUAL": "Semi-Annual",
+      "ANNUAL": "Annual",
+      "CUSTOM": "Custom"
+    },
+    "PM_ITEM_TYPE": {
+      "CHECK": "Check",
+      "REPLACE": "Replace",
+      "CLEAN": "Clean",
+      "ADJUST": "Adjust",
+      "LUBRICATE": "Lubricate"
+    },
+    "PM_WO_TYPE": {
+      "PLANNED": "Planned",
+      "EMERGENCY": "Emergency",
+      "BREAKDOWN": "Breakdown"
+    },
+    "PM_WO_STATUS": {
+      "PLANNED": "Planned",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "OVERDUE": "Overdue",
+      "CANCELLED": "Cancelled"
+    },
+    "PM_PRIORITY": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    },
+    "PO_STATUS": {
+      "DRAFT": "Draft",
+      "CONFIRMED": "Confirmed",
+      "PARTIAL": "Partial",
+      "RECEIVED": "Received",
+      "CLOSED": "Closed"
+    },
+    "CONSUMABLE_LIFE_STATUS": {
+      "NORMAL": "Normal",
+      "WARNING": "Warning",
+      "REPLACE": "Replace Required"
+    },
+    "CON_STOCK_STATUS": {
+      "PENDING": "Pending",
+      "ACTIVE": "Active",
+      "MOUNTED": "Mounted",
+      "REPAIR": "Under Repair",
+      "SCRAPPED": "Scrapped"
+    }
   },
   "comCodeGroup": {
     "JOB_ORDER_STATUS": "Job Order Status",
@@ -4324,7 +4695,13 @@
       "matReceiving": "Receiving",
       "matIssuing": "Issuing",
       "matAdjustment": "Adjustment",
-      "matInventoryCount": "Material Inventory"
+      "matInventoryCount": "Material Inventory",
+      "receiving": "Receiving",
+      "issuing": "Issuing",
+      "adjustment": "Adjustment",
+      "invCount": "Inventory Count",
+      "productInv": "Product Inventory",
+      "logout": "Logout"
     },
     "scan": {
       "placeholder": "Scan barcode",
@@ -4480,6 +4857,11 @@
       "installTitle": "Install as App",
       "installDesc": "Add to home screen for faster access",
       "install": "Install"
+    },
+    "worker": {
+      "switch": "Switch Worker",
+      "scanQr": "Scan worker QR code",
+      "switched": "Worker switched"
     },
     "network": {
       "offline": "Please check your network connection",
