@@ -56,9 +56,9 @@ export interface BomTreeItem {
   children?: BomTreeItem[];
 }
 
-/** 품목별 공정순서 아이템 (GET /master/routings 응답) */
+/** 품목별 공정순서 아이템 (GET /master/routings 응답) — 복합 PK: itemCode + seq */
 export interface RoutingItem {
-  id: string;
+  itemCode: string;
   seq: number;
   processCode: string;
   processName: string;

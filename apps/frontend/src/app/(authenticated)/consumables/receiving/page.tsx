@@ -72,7 +72,7 @@ export default function ReceivingPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+    <div className="flex h-full animate-fade-in">
       {/* 좌측: 메인 콘텐츠 */}
       <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
         {/* 헤더 */}

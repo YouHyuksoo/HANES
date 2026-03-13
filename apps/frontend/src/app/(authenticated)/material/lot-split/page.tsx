@@ -83,6 +83,18 @@ export default function LotSplitPage() {
 
   const columns = useMemo<ColumnDef<SplittableLot>[]>(() => [
     {
+      id: "actions", header: "", size: 90, meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <Button size="sm" variant="secondary" onClick={() => {
+          setSelectedLot(row.original);
+          setSplitForm({ splitQty: "", remark: "" });
+          setIsModalOpen(true);
+        }}>
+          <Scissors className="w-4 h-4 mr-1" />{t("material.lotSplit.split")}
+        </Button>
+      ),
+    },
+    {
       accessorKey: "matUid", header: t("material.col.matUid"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
@@ -105,23 +117,11 @@ export default function LotSplitPage() {
       accessorKey: "vendor", header: t("material.lotSplit.vendor"), size: 100,
       meta: { filterType: "text" as const },
     },
-    {
-      id: "actions", header: "", size: 90, meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <Button size="sm" variant="secondary" onClick={() => {
-          setSelectedLot(row.original);
-          setSplitForm({ splitQty: "", remark: "" });
-          setIsModalOpen(true);
-        }}>
-          <Scissors className="w-4 h-4 mr-1" />{t("material.lotSplit.split")}
-        </Button>
-      ),
-    },
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <GitBranch className="w-7 h-7 text-primary" />{t("material.lotSplit.title")}
@@ -133,12 +133,12 @@ export default function LotSplitPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 flex-shrink-0">
         <StatCard label={t("material.lotSplit.stats.total")} value={stats.total} icon={GitBranch} color="blue" />
         <StatCard label={t("material.lotSplit.stats.totalQty")} value={stats.totalQty.toLocaleString()} icon={Scissors} color="green" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("material.lotSplit.title")}
           toolbarLeft={
@@ -148,9 +148,6 @@ export default function LotSplitPage() {
                   value={searchText} onChange={e => setSearchText(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

@@ -9,7 +9,7 @@
  * 2. 창고별 로케이션 목록 표시 + 모달로 등록/수정
  * 3. 창고 필터 드롭다운으로 특정 창고의 로케이션만 조회
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
@@ -18,7 +18,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface WarehouseLocation {
-  id: string;
   warehouseCode: string;
   warehouseName: string;
   locationCode: string;
@@ -31,10 +30,7 @@ interface WarehouseLocation {
   remark: string | null;
 }
 
-interface WhOption {
-  value: string;
-  label: string;
-}
+interface WhOption { value: string; label: string; }
 
 interface FormState {
   warehouseCode: string;
@@ -52,7 +48,11 @@ const INITIAL_FORM: FormState = {
   zone: "", rowNo: "", colNo: "", levelNo: "", remark: "",
 };
 
-export default function LocationList() {
+interface Props {
+  onHeaderActions?: (actions: ReactNode) => void;
+}
+
+export default function LocationList({ onHeaderActions }: Props) {
   const { t } = useTranslation();
   const [data, setData] = useState<WarehouseLocation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,13 +63,13 @@ export default function LocationList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<WarehouseLocation | null>(null);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; id: string }>({ open: false, id: "" });
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; compositeKey: string }>({ open: false, compositeKey: "" });
 
   const fetchWarehouses = useCallback(async () => {
     try {
       const res = await api.get("/inventory/warehouses");
       const list = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
-      setWhOptions(list.map((w: any) => ({ value: w.id, label: `${w.warehouseCode} - ${w.warehouseName}` })));
+      setWhOptions(list.map((w: any) => ({ value: w.warehouseCode, label: `${w.warehouseCode} - ${w.warehouseName}` })));
     } catch { /* ignore */ }
   }, []);
 
@@ -101,8 +101,8 @@ export default function LocationList() {
   }, [data, searchText]);
 
   const filterOptions = useMemo(() => [
-    { value: "", label: t("common.warehouse") },
-    ...whOptions,
+    { value: "", label: t("common.warehouse") + ": " + t("common.all") },
+    ...whOptions.map(o => ({ ...o, label: t("common.warehouse") + ": " + o.label })),
   ], [t, whOptions]);
 
   const openCreate = useCallback(() => {
@@ -131,7 +131,7 @@ export default function LocationList() {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/inventory/warehouse-locations/${editingItem.id}`, {
+        await api.put(`/inventory/warehouse-locations/${editingItem.warehouseCode}::${editingItem.locationCode}`, {
           locationName: form.locationName,
           zone: form.zone || undefined,
           rowNo: form.rowNo || undefined,
@@ -153,19 +153,33 @@ export default function LocationList() {
 
   const handleDelete = useCallback(async () => {
     try {
-      await api.delete(`/inventory/warehouse-locations/${confirmModal.id}`);
-      setConfirmModal({ open: false, id: "" });
+      await api.delete(`/inventory/warehouse-locations/${confirmModal.compositeKey}`);
+      setConfirmModal({ open: false, compositeKey: "" });
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);
     }
-  }, [confirmModal.id, fetchData]);
+  }, [confirmModal.compositeKey, fetchData]);
+
+  // 헤더 버튼을 부모 페이지에 전달
+  useEffect(() => {
+    onHeaderActions?.(
+      <>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-1" />{t("inventory.location.addLocation")}
+        </Button>
+      </>
+    );
+  }, [onHeaderActions, fetchData, openCreate, loading, t]);
 
   const columns = useMemo<ColumnDef<WarehouseLocation>[]>(() => [
     { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setConfirmModal({ open: true, id: row.original.id })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+        <button onClick={() => setConfirmModal({ open: true, compositeKey: `${row.original.warehouseCode}::${row.original.locationCode}` })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
     { accessorKey: "warehouseCode", header: t("inventory.warehouse.warehouseCode"), size: 100, meta: { filterType: "text" as const } },
@@ -183,8 +197,8 @@ export default function LocationList() {
   ], [t, openEdit]);
 
   return (
-    <>
-      <Card><CardContent>
+    <div className="h-full flex flex-col">
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={filtered}
           columns={columns}
@@ -200,12 +214,6 @@ export default function LocationList() {
               <div className="w-56 flex-shrink-0">
                 <Select options={filterOptions} value={whFilter} onChange={setWhFilter} fullWidth />
               </div>
-              <Button variant="secondary" size="sm" onClick={fetchData} className="flex-shrink-0">
-                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-              </Button>
-              <Button size="sm" onClick={openCreate} className="flex-shrink-0">
-                <Plus className="w-4 h-4 mr-1" />{t("inventory.location.addLocation")}
-              </Button>
             </div>
           }
         />
@@ -232,7 +240,7 @@ export default function LocationList() {
         </div>
       </Modal>
 
-      <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, id: "" })} onConfirm={handleDelete} title={t("inventory.location.deleteLocation")} message={t("inventory.location.deleteConfirm")} variant="danger" />
-    </>
+      <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, compositeKey: "" })} onConfirm={handleDelete} title={t("inventory.location.deleteLocation")} message={t("inventory.location.deleteConfirm")} variant="danger" />
+    </div>
   );
 }

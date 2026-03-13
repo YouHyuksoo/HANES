@@ -2,22 +2,23 @@
 
 /**
  * @file src/app/(authenticated)/system/department/page.tsx
- * @description 부서 관리 페이지 - DataGrid 기반 CRUD
+ * @description 부서 관리 페이지 - DataGrid 기반 CRUD + 우측 슬라이드 패널
  *
  * 초보자 가이드:
  * 1. **DataGrid**: 부서 목록 표시/정렬/페이지네이션
- * 2. **Modal**: 부서 추가/수정 폼
+ * 2. **우측 패널**: 추가/수정 폼은 우측 슬라이드 패널에서 처리
  * 3. **ConfirmModal**: 삭제 확인 다이얼로그
  */
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, RefreshCw, Building, Search } from "lucide-react";
 import {
-  Card, CardContent, Button, Input, Modal, ConfirmModal, Select,
+  Card, CardContent, Button, Input, ConfirmModal,
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { api } from "@/services/api";
+import DepartmentFormPanel from "./components/DepartmentFormPanel";
 
 interface Department {
   id: string;
@@ -35,36 +36,12 @@ function DepartmentPage() {
   const { t } = useTranslation();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Department | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
   const [search, setSearch] = useState("");
 
-  // 폼 상태
-  const [formCode, setFormCode] = useState("");
-  const [formName, setFormName] = useState("");
-  const [formParent, setFormParent] = useState("");
-  const [formSort, setFormSort] = useState("0");
-  const [formManager, setFormManager] = useState("");
-  const [formRemark, setFormRemark] = useState("");
-  const [formUseYn, setFormUseYn] = useState("Y");
-  const [formError, setFormError] = useState("");
-
-  const useYnOptions = useMemo(
-    () => [
-      { value: "Y", label: t("common.yes", "사용") },
-      { value: "N", label: t("common.no", "미사용") },
-    ],
-    [t]
-  );
-
-  const parentOptions = useMemo(() => {
-    const opts = [{ value: "", label: t("common.none", "없음") }];
-    departments
-      .filter((d) => d.useYn === "Y")
-      .forEach((d) => opts.push({ value: d.deptCode, label: `${d.deptCode} - ${d.deptName}` }));
-    return opts;
-  }, [departments, t]);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
+  const panelAnimateRef = useRef(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -85,60 +62,15 @@ function DepartmentPage() {
     fetchData();
   }, [fetchData]);
 
-  const openCreateModal = () => {
-    setEditing(null);
-    setFormCode("");
-    setFormName("");
-    setFormParent("");
-    setFormSort("0");
-    setFormManager("");
-    setFormRemark("");
-    setFormUseYn("Y");
-    setFormError("");
-    setIsModalOpen(true);
-  };
+  const handlePanelClose = useCallback(() => {
+    setIsPanelOpen(false);
+    setEditingDept(null);
+    panelAnimateRef.current = true;
+  }, []);
 
-  const openEditModal = (dept: Department) => {
-    setEditing(dept);
-    setFormCode(dept.deptCode);
-    setFormName(dept.deptName);
-    setFormParent(dept.parentDeptCode || "");
-    setFormSort(String(dept.sortOrder));
-    setFormManager(dept.managerName || "");
-    setFormRemark(dept.remark || "");
-    setFormUseYn(dept.useYn);
-    setFormError("");
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    setFormError("");
-    if (!formCode.trim() || !formName.trim()) {
-      setFormError(t("common.requiredField", "필수 항목을 입력하세요."));
-      return;
-    }
-    try {
-      const payload = {
-        deptCode: formCode.trim(),
-        deptName: formName.trim(),
-        parentDeptCode: formParent || undefined,
-        sortOrder: parseInt(formSort) || 0,
-        managerName: formManager || undefined,
-        remark: formRemark || undefined,
-        useYn: formUseYn,
-      };
-      if (editing) {
-        await api.put(`/system/departments/${editing.id}`, payload);
-      } else {
-        await api.post("/system/departments", payload);
-      }
-      setIsModalOpen(false);
-      fetchData();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setFormError(error.response?.data?.message || t("common.saveFailed"));
-    }
-  };
+  const handlePanelSave = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -153,6 +85,36 @@ function DepartmentPage() {
 
   const columns = useMemo<ColumnDef<Department>[]>(
     () => [
+      {
+        id: "actions",
+        header: t("common.actions"),
+        size: 100,
+        meta: { align: "center" as const, filterType: "none" as const },
+        cell: ({ row }) => (
+          <div className="flex gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                panelAnimateRef.current = !isPanelOpen;
+                setEditingDept(row.original);
+                setIsPanelOpen(true);
+              }}
+              className="p-1 hover:bg-surface rounded"
+            >
+              <Edit2 className="w-4 h-4 text-primary" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteTarget(row.original);
+              }}
+              className="p-1 hover:bg-surface rounded"
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+        ),
+      },
       { accessorKey: "deptCode", header: t("system.department.deptCode"), size: 120, meta: { filterType: "text" as const } },
       { accessorKey: "deptName", header: t("system.department.deptName"), size: 180, meta: { filterType: "text" as const } },
       {
@@ -197,147 +159,65 @@ function DepartmentPage() {
         meta: { filterType: "text" as const },
         cell: ({ getValue }) => getValue() || "-",
       },
-      {
-        id: "actions",
-        header: t("common.actions"),
-        size: 100,
-        meta: { filterType: "none" as const },
-        cell: ({ row }) => (
-          <div className="flex gap-1">
-            <button onClick={() => openEditModal(row.original)} className="p-1 hover:bg-surface rounded">
-              <Edit2 className="w-4 h-4 text-primary" />
-            </button>
-            <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </button>
-          </div>
-        ),
-      },
     ],
-    [t]
+    [t, isPanelOpen]
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Building className="w-7 h-7 text-primary" />
-            {t("system.department.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("system.department.subtitle")}</p>
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Building className="w-7 h-7 text-primary" />
+              {t("system.department.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("system.department.subtitle")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingDept(null); setIsPanelOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" /> {t("system.department.addDepartment")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={openCreateModal}>
-            <Plus className="w-4 h-4 mr-1" /> {t("system.department.addDepartment")}
-          </Button>
-        </div>
+
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4">
+            <DataGrid
+              data={departments}
+              columns={columns}
+              isLoading={loading}
+              emptyMessage={t("system.department.emptyMessage")}
+              enableExport
+              enableColumnFilter
+              exportFileName={t("system.department.title")}
+              onRowClick={(row) => { if (isPanelOpen) setEditingDept(row); }}
+              toolbarLeft={
+                <Input
+                  placeholder={t("system.department.searchPlaceholder")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />}
+                />
+              }
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      <Card>
-        <CardContent>
-          <DataGrid
-            data={departments}
-            columns={columns}
-            isLoading={loading}
-            emptyMessage={t("system.department.emptyMessage")}
-            enableExport
-            enableColumnFilter
-            exportFileName={t("system.department.title")}
-            toolbarLeft={
-              <Input
-                placeholder={t("system.department.searchPlaceholder")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-              />
-            }
-          />
-        </CardContent>
-      </Card>
+      {isPanelOpen && (
+        <DepartmentFormPanel
+          editingDept={editingDept}
+          departments={departments}
+          onClose={handlePanelClose}
+          onSave={handlePanelSave}
+          animate={panelAnimateRef.current}
+        />
+      )}
 
-      {/* 추가/수정 모달 */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editing ? t("system.department.editDepartment") : t("system.department.addDepartment")}
-        size="lg"
-      >
-        <div className="space-y-4">
-          {formError && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
-              {formError}
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label={t("system.department.deptCode")}
-              value={formCode}
-              onChange={(e) => setFormCode(e.target.value)}
-              disabled={!!editing}
-              fullWidth
-              required
-            />
-            <Input
-              label={t("system.department.deptName")}
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              fullWidth
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label={t("system.department.parentDeptCode")}
-              value={formParent}
-              onChange={(v) => setFormParent(v)}
-              options={parentOptions}
-              fullWidth
-            />
-            <Input
-              label={t("system.department.sortOrder")}
-              type="number"
-              value={formSort}
-              onChange={(e) => setFormSort(e.target.value)}
-              fullWidth
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label={t("system.department.managerName")}
-              value={formManager}
-              onChange={(e) => setFormManager(e.target.value)}
-              fullWidth
-            />
-            <Select
-              label={t("system.department.useYn")}
-              value={formUseYn}
-              onChange={(v) => setFormUseYn(v)}
-              options={useYnOptions}
-              fullWidth
-            />
-          </div>
-          <Input
-            label={t("system.department.remark")}
-            value={formRemark}
-            onChange={(e) => setFormRemark(e.target.value)}
-            fullWidth
-          />
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={handleSubmit}>
-              {editing ? t("common.edit") : t("common.add")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* 삭제 확인 */}
       <ConfirmModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

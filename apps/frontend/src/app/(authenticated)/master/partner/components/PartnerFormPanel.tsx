@@ -11,12 +11,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+// X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button, Input, Select } from "@/components/ui";
 import api from "@/services/api";
 
 interface Partner {
-  id: string;
   partnerCode: string;
   partnerName: string;
   partnerType: string;
@@ -61,6 +60,7 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
     email: editingPartner?.email || "",
     contactPerson: editingPartner?.contactPerson || "",
     remark: editingPartner?.remark || "",
+    useYn: editingPartner?.useYn || "Y",
   });
   const [saving, setSaving] = useState(false);
 
@@ -77,6 +77,7 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
       email: editingPartner?.email || "",
       contactPerson: editingPartner?.contactPerson || "",
       remark: editingPartner?.remark || "",
+      useYn: editingPartner?.useYn || "Y",
     });
   }, [editingPartner]);
 
@@ -99,8 +100,8 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
         contactPerson: form.contactPerson || undefined,
         remark: form.remark || undefined,
       };
-      if (isEdit && editingPartner?.id) {
-        await api.put(`/master/partners/${editingPartner.id}`, payload);
+      if (isEdit && editingPartner?.partnerCode) {
+        await api.put(`/master/partners/${editingPartner.partnerCode}`, payload);
       } else {
         await api.post("/master/partners", payload);
       }
@@ -119,9 +120,12 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("master.partner.editPartner") : t("master.partner.addPartner")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.partnerCode.trim() || !form.partnerName.trim()}>
+            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
@@ -162,18 +166,27 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
           </div>
         </div>
 
-        <div>
+        <div className="grid grid-cols-2 gap-3">
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
             value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-text-muted">{t("common.useYn", "사용여부")}</label>
+            <div className="flex gap-3 h-[34px] items-center">
+              {[
+                { v: "Y", l: "Y", cls: "text-green-600 dark:text-green-400" },
+                { v: "N", l: "N", cls: "text-red-500 dark:text-red-400" },
+              ].map(opt => (
+                <label key={opt.v} className={`flex items-center gap-1.5 cursor-pointer text-xs ${form.useYn === opt.v ? opt.cls + " font-semibold" : "text-text-muted"}`}>
+                  <input type="radio" checked={form.useYn === opt.v} onChange={() => setField("useYn", opt.v)}
+                    className="w-3.5 h-3.5 accent-primary" />
+                  {opt.l}
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.partnerCode.trim() || !form.partnerName.trim()}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-        </Button>
-      </div>
     </div>
   );
 }

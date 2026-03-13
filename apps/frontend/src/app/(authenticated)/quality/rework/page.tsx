@@ -38,7 +38,7 @@ interface ReworkOrder {
   defectType: string;
   reworkMethod: string;
   status: string;
-  workerCode: string;
+  workerId: string;
   lineCode: string;
   equipCode: string;
   resultQty: number;
@@ -57,7 +57,7 @@ interface ReworkProcess {
   status: string;
   planQty: number;
   resultQty: number;
-  workerCode: string;
+  workerId: string;
   startAt: string;
   endAt: string;
 }
@@ -215,7 +215,7 @@ export default function ReworkPage() {
       cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_TYPE" code={getValue() as string} /> },
     { accessorKey: "status", header: t("common.status"), size: 120, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} /> },
-    { accessorKey: "workerCode", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "workerId", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const },
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
   ], [t]);
@@ -257,9 +257,9 @@ export default function ReworkPage() {
   return (
     <div className="flex h-full">
       {/* 메인 영역 */}
-      <div className="flex-1 space-y-6 animate-fade-in overflow-auto p-0">
+      <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
         {/* 헤더 */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <ClipboardList className="w-7 h-7 text-primary" />{t("quality.rework.title")}
@@ -268,7 +268,7 @@ export default function ReworkPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={fetchData}>
-              <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
             <Button size="sm" onClick={() => { setEditTarget(null); setIsPanelOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" />{t("quality.rework.create")}
@@ -277,7 +277,7 @@ export default function ReworkPage() {
         </div>
 
         {/* 통계 카드 */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 flex-shrink-0">
           <StatCard label={t("quality.rework.statsTotal")} value={stats.total} icon={ClipboardList} color="blue" />
           <StatCard label={t("quality.rework.statsPending")} value={stats.pending} icon={Clock} color="yellow" />
           <StatCard label={t("quality.rework.statsInProgress")} value={stats.inProgress} icon={Play} color="orange" />
@@ -287,7 +287,7 @@ export default function ReworkPage() {
 
         {/* 액션 버튼 */}
         {actionButtons && (
-          <Card><CardContent><div className="flex items-center gap-3">
+          <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
             <span className="text-sm text-text-muted font-medium">{selectedRow?.reworkNo}</span>
             {actionButtons}
           </div></CardContent></Card>
@@ -295,7 +295,7 @@ export default function ReworkPage() {
 
         {/* 공정 현황 */}
         {selectedRow && processes.length > 0 && (
-          <Card><CardContent>
+          <Card className="flex-shrink-0"><CardContent>
             <h3 className="text-sm font-bold text-text mb-3 flex items-center gap-2">
               <Layers className="w-4 h-4 text-primary" />
               {t("quality.rework.processStatus")} - {selectedRow.reworkNo}
@@ -323,7 +323,7 @@ export default function ReworkPage() {
                       <td className="px-3 py-2"><ComCodeBadge groupCode="REWORK_PROCESS_STATUS" code={proc.status} /></td>
                       <td className="px-3 py-2 text-right font-mono text-text">{proc.planQty}</td>
                       <td className="px-3 py-2 text-right font-mono text-text">{proc.resultQty}</td>
-                      <td className="px-3 py-2 text-text-muted">{proc.workerCode || '-'}</td>
+                      <td className="px-3 py-2 text-text-muted">{proc.workerId || '-'}</td>
                       <td className="px-3 py-2 text-center">
                         <div className="flex gap-1 justify-center">
                           {proc.status === "WAITING" && (
@@ -363,7 +363,7 @@ export default function ReworkPage() {
         )}
 
         {/* DataGrid */}
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.rework.title")}
             onRowClick={row => setSelectedRow(row as ReworkOrder)}
@@ -383,7 +383,7 @@ export default function ReworkPage() {
                   <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" />
                 </div>
                 <ComCodeSelect groupCode="REWORK_STATUS" value={statusFilter}
-                  onChange={setStatusFilter} placeholder={t("common.status")} />
+                  onChange={setStatusFilter} labelPrefix="상태" />
                 <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("quality.rework.line")} />
               </div>
             }

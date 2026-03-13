@@ -55,7 +55,7 @@ export class TraceLog {
   equipCode: string | null;
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerCode: string | null;
+  workerId: string | null;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;

@@ -93,6 +93,13 @@ export default function VendorPage() {
   }, [selectedItem, form, fetchData]);
 
   const columns = useMemo<ColumnDef<Vendor>[]>(() => [
+    {
+      id: "actions", header: t("common.manage"), size: 70,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
+      ),
+    },
     { accessorKey: "vendorCode", header: t("outsourcing.vendor.vendorCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "vendorName", header: t("outsourcing.vendor.vendorName"), size: 150, meta: { filterType: "text" as const } },
     {
@@ -111,12 +118,6 @@ export default function VendorPage() {
       accessorKey: "useYn", header: t("outsourcing.vendor.useYn"), size: 60,
       cell: ({ getValue }) => <span className={getValue() === "Y" ? "text-green-600" : "text-gray-400"}>{getValue() === "Y" ? "●" : "○"}</span>,
     },
-    {
-      id: "actions", header: t("common.manage"), size: 70,
-      cell: ({ row }) => (
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-      ),
-    },
   ], [t, vendorTypeLabels, openEdit]);
 
   const stats = useMemo(() => ({
@@ -126,24 +127,29 @@ export default function VendorPage() {
   }), [data]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Building2 className="w-7 h-7 text-primary" />{t("outsourcing.vendor.title")}</h1>
           <p className="text-text-muted mt-1">{t("outsourcing.vendor.description")}</p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" /> {t("outsourcing.vendor.register")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> {t("outsourcing.vendor.register")}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label={t("outsourcing.vendor.totalVendors")} value={stats.total} icon={Building2} color="blue" />
         <StatCard label={t("outsourcing.vendor.typeSubcon")} value={stats.subcon} icon={Building2} color="blue" />
         <StatCard label={t("outsourcing.vendor.typeSupplier")} value={stats.supplier} icon={Building2} color="green" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -156,9 +162,6 @@ export default function VendorPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("outsourcing.vendor.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

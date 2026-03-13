@@ -407,7 +407,7 @@ export class CustomsService {
         reportNo,
         customsLotId: numLotId,
         usageQty: dto.usageQty,
-        workerCode: dto.workerId,
+        workerId: dto.workerId,
         remark: dto.remark,
       });
 

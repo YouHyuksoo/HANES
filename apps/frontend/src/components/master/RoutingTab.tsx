@@ -9,7 +9,7 @@
  * 2. 품목 필터로 특정 품목의 라우팅만 조회
  * 3. 공정 상세정보: 전선길이, 탈피값, 압착높이/폭, 융착조건 입력
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from "@/components/ui";
@@ -48,7 +48,11 @@ const EMPTY_FORM = {
   crimpHeight: "", crimpWidth: "", weldCondition: "", processParams: "", useYn: "Y",
 };
 
-export default function RoutingTab() {
+interface Props {
+  onHeaderActions?: (actions: ReactNode) => void;
+}
+
+export default function RoutingTab({ onHeaderActions }: Props) {
   const { t } = useTranslation();
   const processTypeOptions = useComCodeOptions("PROCESS_TYPE");
 
@@ -102,6 +106,19 @@ export default function RoutingTab() {
     setForm({ ...EMPTY_FORM, itemCode: partFilter || "" });
     setIsModalOpen(true);
   }, [partFilter]);
+
+  useEffect(() => {
+    onHeaderActions?.(
+      <>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-1" />{t("master.routing.addRouting")}
+        </Button>
+      </>
+    );
+  }, [onHeaderActions, fetchData, openCreate, loading, t]);
 
   const openEdit = useCallback((item: Routing) => {
     setEditingItem(item);
@@ -163,6 +180,19 @@ export default function RoutingTab() {
   }, [fetchData]);
 
   const columns = useMemo<ColumnDef<Routing>[]>(() => [
+    { id: "actions", header: t("common.actions"), size: 80,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={() => handleDelete(row.original)} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100,
       meta: { filterType: "text" as const },
     },
@@ -199,19 +229,6 @@ export default function RoutingTab() {
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),
     },
-    { id: "actions", header: t("common.actions"), size: 80,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={() => handleDelete(row.original)} className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
   ], [t, processTypeOptions, openEdit, handleDelete]);
 
   const setField = (key: string, value: string | number) =>
@@ -233,12 +250,6 @@ export default function RoutingTab() {
                   <Select options={partFilterOptions}
                     value={partFilter} onChange={setPartFilter} fullWidth />
                 </div>
-                <Button variant="secondary" onClick={fetchData}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
-                <Button size="sm" onClick={openCreate}>
-                  <Plus className="w-4 h-4 mr-1" />{t("master.routing.addRouting")}
-                </Button>
               </div>
             } />
         </CardContent>

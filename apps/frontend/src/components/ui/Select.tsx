@@ -16,14 +16,15 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
   label?: string;
   error?: string;
   options: SelectOption[];
-  value?: string;
+  value?: string | number;
   onChange?: (value: string) => void;
   fullWidth?: boolean;
   placeholder?: string;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className = '', label, error, options, value, onChange, fullWidth = false, placeholder = '선택하세요', disabled, id, ...props }, ref) => {
+  ({ className = '', label, error, options, value, onChange, fullWidth = false, placeholder, disabled, id, ...props }, ref) => {
+    const effectivePlaceholder = placeholder || label || '전체';
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -55,7 +56,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             {...props}
           >
             {!options.some(o => o.value === "") && (
-              <option value="" disabled>{placeholder}</option>
+              <option value="" disabled>{effectivePlaceholder}</option>
             )}
             {options.map((option, idx) => (
               <option key={`${option.value}-${idx}`} value={option.value}>{option.label}</option>

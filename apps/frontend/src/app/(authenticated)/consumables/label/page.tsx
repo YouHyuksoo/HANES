@@ -130,9 +130,9 @@ function ConsumableLabelPage() {
   }, [selectedCodes, createConUids, t, logBrowserPrint, fetchData, clearCreatedUids]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Tag className="w-7 h-7 text-primary" />{t("consumables.label.title")}
@@ -141,7 +141,7 @@ function ConsumableLabelPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
           <Button size="sm" onClick={handleBrowserPrint}
             disabled={selectedCodes.size === 0 || issuing || printing}>
@@ -152,7 +152,7 @@ function ConsumableLabelPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("consumables.label.totalMasters")} value={stats.totalCount}
           icon={Package} color="blue" />
         <StatCard label={t("consumables.label.pendingCount")} value={stats.pendingCount}
@@ -165,7 +165,7 @@ function ConsumableLabelPage() {
 
       {/* 생성된 conUid 결과 배너 */}
       {createdUids.length > 0 && (
-        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg flex-shrink-0">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-4 h-4 text-indigo-500 shrink-0" />
             <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
@@ -193,7 +193,7 @@ function ConsumableLabelPage() {
       )}
 
       {/* DataGrid */}
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={filteredMasters} columns={columns} isLoading={loading || issuing}
           enableColumnFilter enableExport exportFileName={t("consumables.label.title")}
           toolbarLeft={

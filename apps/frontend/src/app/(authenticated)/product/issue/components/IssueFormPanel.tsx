@@ -12,7 +12,6 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -140,9 +139,13 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">{t("productMgmt.issue.modal.title")}</h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit}
+            disabled={loading || !form.itemCode || !form.warehouseCode || !form.issueType}>
+            {loading ? t("common.saving") : t("productMgmt.issue.modal.confirm")}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 */}
@@ -197,14 +200,6 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
           onChange={(e) => setForm({ ...form, remark: e.target.value })} fullWidth />
       </div>
 
-      {/* 푸터 */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit}
-          disabled={loading || !form.itemCode || !form.warehouseCode || !form.issueType}>
-          {loading ? t("common.saving") : t("productMgmt.issue.modal.confirm")}
-        </Button>
-      </div>
     </div>
   );
 }

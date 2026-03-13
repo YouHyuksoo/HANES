@@ -23,9 +23,8 @@ import JobOrderFormPanel from "./components/JobOrderFormPanel";
 import type { JobOrderFormData } from "./components/JobOrderFormPanel";
 
 interface JobOrderItem {
-  id: string;
   orderNo: string;
-  parentId?: string | null;
+  parentOrderNo?: string | null;
   itemCode: string;
   part?: { itemCode?: string; itemName?: string; itemType?: string };
   lineCode?: string;
@@ -130,7 +129,6 @@ export default function JobOrderPage() {
   const handleEdit = (row: JobOrderItem) => {
     panelAnimateRef.current = !isPanelOpen;
     setEditingOrder({
-      id: row.id,
       orderNo: row.orderNo,
       itemCode: row.itemCode,
       lineCode: row.lineCode,
@@ -155,7 +153,7 @@ export default function JobOrderPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/production/job-orders/${deleteTarget.id}`);
+      await api.delete(`/production/job-orders/${deleteTarget.orderNo}`);
       fetchData();
     } catch {
       // 에러는 api 인터셉터에서 처리
@@ -167,7 +165,7 @@ export default function JobOrderPage() {
   const columns = useMemo<ColumnDef<JobOrderItem & { _depth: number }>[]>(() => [
     {
       id: "actions", header: "", size: 60,
-      meta: { filterType: "none" as const },
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex items-center gap-1">
           <button onClick={(e) => { e.stopPropagation(); handleEdit(row.original); }}
@@ -272,10 +270,10 @@ export default function JobOrderPage() {
   ], [t, isPanelOpen]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+    <div className="flex h-full animate-fade-in">
       {/* 좌측: 메인 콘텐츠 */}
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <ClipboardList className="w-7 h-7 text-primary" />
@@ -284,6 +282,9 @@ export default function JobOrderPage() {
             <p className="text-text-muted mt-1">{t("production.order.description")}</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
             <Button variant="secondary" size="sm"
               onClick={() => setViewMode(v => v === "list" ? "tree" : "list")}>
               {viewMode === "list" ? t("production.order.treeView") : t("production.order.listView")}
@@ -294,14 +295,14 @@ export default function JobOrderPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
           <StatCard label={t("production.order.stats.total")} value={stats.total} icon={ClipboardList} color="blue" />
           <StatCard label={t("production.order.stats.waiting")} value={stats.waiting} icon={ClipboardList} color="yellow" />
           <StatCard label={t("production.order.stats.running")} value={stats.running} icon={ClipboardList} color="green" />
           <StatCard label={t("production.order.stats.done")} value={stats.done} icon={ClipboardList} color="purple" />
         </div>
 
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="작업지시"
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
@@ -312,7 +313,7 @@ export default function JobOrderPage() {
                 </div>
                 <div className="w-36 flex-shrink-0">
                   <ComCodeSelect groupCode="JOB_ORDER_STATUS" value={statusFilter}
-                    onChange={setStatusFilter} fullWidth />
+                    onChange={setStatusFilter} labelPrefix="상태" fullWidth />
                 </div>
                 <div className="w-36 flex-shrink-0">
                   <Input type="date" value={startDate}
@@ -322,9 +323,6 @@ export default function JobOrderPage() {
                   <Input type="date" value={endDate}
                     onChange={e => setEndDate(e.target.value)} fullWidth />
                 </div>
-                <Button variant="secondary" onClick={fetchData}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
               </div>
             } />
         </CardContent></Card>

@@ -276,7 +276,7 @@ export class DefectLogService {
 
     const repairLog = this.repairLogRepository.create({
       defectLogId: +dto.defectLogId,
-      workerCode: dto.workerId,
+      workerId: dto.workerId,
       repairAction: dto.repairAction,
       materialUsed: dto.materialUsed,
       repairTime: dto.repairTime,

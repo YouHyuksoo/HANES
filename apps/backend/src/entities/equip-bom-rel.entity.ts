@@ -63,10 +63,10 @@ export class EquipBomRel {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
-  @CreateDateColumn({ name: 'CREATED_AT', type: 'date' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'date' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 
   // Relations

@@ -17,7 +17,6 @@ import { api } from "@/services/api";
 
 /** 역할 데이터 인터페이스 */
 export interface Role {
-  id: number;
   code: string;
   name: string;
   description: string | null;
@@ -88,7 +87,7 @@ export default function RoleFormModal({
     setError("");
     try {
       if (isEdit && role) {
-        await api.patch(`/roles/${role.id}`, {
+        await api.patch(`/roles/${role.code}`, {
           name: name.trim(),
           description: description.trim() || null,
           sortOrder,

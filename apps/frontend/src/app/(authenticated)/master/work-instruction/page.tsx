@@ -120,9 +120,9 @@ export default function WorkInstructionPage() {
   ], [t, handleEditClick]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <FileText className="w-7 h-7 text-primary" />{t("master.workInstruction.title")}
@@ -139,7 +139,7 @@ export default function WorkInstructionPage() {
           </div>
         </div>
 
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={data}
             columns={columns}

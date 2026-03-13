@@ -80,23 +80,23 @@ function MoldPage() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <h1 className="text-2xl font-bold text-text">{t('crimping.mold.title')}</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="w-4 h-4" />
+          <Button variant="secondary" size="sm" onClick={() => refetch()}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button size="sm" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" />
             {t('common.add')}
           </Button>
         </div>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 gap-4 flex-shrink-0">
         <StatCard label={t('crimping.mold.total')} value={stats.total} icon={Package} color="blue" />
         <StatCard label={t('crimping.mold.ok')} value={stats.NORMAL || 0} icon={CheckCircle} color="green" />
         <StatCard label={t('crimping.mold.warning')} value={stats.WARNING || 0} icon={AlertTriangle} color="yellow" />
@@ -104,8 +104,8 @@ function MoldPage() {
         <StatCard label={t('crimping.mold.maint')} value={stats.MAINT || 0} icon={Settings2} color="purple" />
       </div>
 
-      <Card>
-        <CardContent className="p-4">
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4">
           <DataGrid
             columns={columns}
             data={filteredData}

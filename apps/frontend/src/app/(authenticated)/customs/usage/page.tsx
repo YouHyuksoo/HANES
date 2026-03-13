@@ -102,6 +102,19 @@ export default function CustomsUsagePage() {
   }, [fetchData]);
 
   const columns = useMemo<ColumnDef<UsageReport>[]>(() => [
+    {
+      id: "actions", header: t("common.manage"), size: 80, meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          {row.original.status === "DRAFT" && (
+            <button onClick={() => handleReport(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.report")}><Send className="w-4 h-4 text-primary" /></button>
+          )}
+          {row.original.status === "REPORTED" && (
+            <button onClick={() => handleConfirm(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.confirm")}><CheckCircle className="w-4 h-4 text-green-500" /></button>
+          )}
+        </div>
+      ),
+    },
     { accessorKey: "reportNo", header: t("customs.usage.reportNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "matUid", header: t("customs.stock.matUid"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
@@ -115,19 +128,6 @@ export default function CustomsUsagePage() {
       cell: ({ getValue }) => { const status = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>; },
     },
     { accessorKey: "workerName", header: t("customs.usage.worker"), size: 80, meta: { filterType: "text" as const } },
-    {
-      id: "actions", header: t("common.manage"), size: 80, meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          {row.original.status === "DRAFT" && (
-            <button onClick={() => handleReport(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.report")}><Send className="w-4 h-4 text-primary" /></button>
-          )}
-          {row.original.status === "REPORTED" && (
-            <button onClick={() => handleConfirm(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.confirm")}><CheckCircle className="w-4 h-4 text-green-500" /></button>
-          )}
-        </div>
-      ),
-    },
   ], [t, statusLabels, handleReport, handleConfirm]);
 
   const stats = useMemo(() => ({
@@ -138,24 +138,29 @@ export default function CustomsUsagePage() {
   }), [data]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Send className="w-7 h-7 text-primary" />{t("customs.usage.title")}</h1>
           <p className="text-text-muted mt-1">{t("customs.usage.description")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> {t("customs.usage.registerUsage")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> {t("customs.usage.registerUsage")}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label={t("customs.usage.statusDraft")} value={stats.draft} icon={Clock} color="gray" />
         <StatCard label={t("customs.usage.statusReported")} value={stats.reported} icon={Send} color="blue" />
         <StatCard label={t("customs.usage.statusConfirmed")} value={stats.confirmed} icon={CheckCircle} color="green" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -168,9 +173,6 @@ export default function CustomsUsagePage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("customs.usage.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

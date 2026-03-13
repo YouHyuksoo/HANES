@@ -98,7 +98,7 @@ export default function TabBar() {
   return (
     <>
       <div
-        className="sticky top-[var(--header-height)] z-[25] hidden lg:flex
+        className="flex-shrink-0 z-[25] hidden lg:flex
           items-center bg-background border-b border-border relative"
         style={{ height: "var(--tab-bar-height)" }}
       >

@@ -19,13 +19,19 @@ import { useComCodeOptions } from "@/hooks/useComCode";
 interface ComCodeSelectProps extends Omit<SelectProps, "options"> {
   groupCode: string;
   includeAll?: boolean;
+  /** 필터용: 옵션 라벨 앞에 접두어 추가 (예: "품목유형: 전체") */
+  labelPrefix?: string;
 }
 
 export default function ComCodeSelect({
   groupCode,
   includeAll = true,
+  labelPrefix,
   ...props
 }: ComCodeSelectProps) {
   const options = useComCodeOptions(groupCode, includeAll);
-  return <Select options={options} {...props} />;
+  const prefixedOptions = labelPrefix
+    ? options.map(o => ({ ...o, label: `${labelPrefix}: ${o.label}` }))
+    : options;
+  return <Select options={prefixedOptions} {...props} />;
 }

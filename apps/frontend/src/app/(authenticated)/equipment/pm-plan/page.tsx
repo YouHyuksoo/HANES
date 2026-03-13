@@ -28,7 +28,6 @@ import api from "@/services/api";
 import type { ColumnDef } from "@tanstack/react-table";
 
 interface PmPlanRow {
-  id: string;
   planCode: string;
   planName: string;
   pmType: string;
@@ -106,7 +105,7 @@ export default function PmPlanPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/equipment/pm-plans/${deleteTarget.id}`);
+      await api.delete(`/equipment/pm-plans/${deleteTarget.planCode}`);
       fetchData();
     } catch {
       // 에러는 api 인터셉터에서 처리
@@ -226,10 +225,10 @@ export default function PmPlanPage() {
   ], [t, isPanelOpen]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-5">
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <Wrench className="w-7 h-7 text-primary" />
@@ -248,7 +247,7 @@ export default function PmPlanPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
           <StatCard label={t("common.total")} value={stats.totalPlans} icon={Wrench} color="blue" />
           <StatCard label={t("equipment.pmPlan.timeBased")} value={stats.timeBased} icon={Calendar} color="green" />
           <StatCard label={t("equipment.pmPlan.usageBased")} value={stats.usageBased} icon={Wrench} color="yellow" />
@@ -256,7 +255,7 @@ export default function PmPlanPage() {
         </div>
 
         {/* DataGrid */}
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={data}
             columns={columns}
@@ -276,7 +275,7 @@ export default function PmPlanPage() {
                   />
                 </div>
                 <div className="w-32">
-                  <ComCodeSelect groupCode="PM_TYPE" value={pmTypeFilter} onChange={setPmTypeFilter} fullWidth />
+                  <ComCodeSelect groupCode="PM_TYPE" value={pmTypeFilter} onChange={setPmTypeFilter} labelPrefix="PM유형" fullWidth />
                 </div>
                 <div className="flex items-center gap-1">
                   <input

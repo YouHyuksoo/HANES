@@ -9,7 +9,7 @@
  * 2. **생산라인 탭**: 공정에 속하는 물리적 생산라인 CRUD
  * 3. **라우팅관리 탭**: 품목별 공정순서(ProcessMap) CRUD
  */
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Workflow, GitBranch, Route } from "lucide-react";
 import ProcessTab from "@/components/master/ProcessTab";
@@ -27,19 +27,25 @@ type TabKey = (typeof TABS)[number]["key"];
 export default function ProcessPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabKey>("process");
+  const [headerActions, setHeaderActions] = useState<ReactNode>(null);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-text flex items-center gap-2">
-          <Workflow className="w-7 h-7 text-primary" />
-          {t("master.process.title")}
-        </h1>
-        <p className="text-text-muted mt-1">{t("master.process.subtitle")}</p>
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
+        <div>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <Workflow className="w-7 h-7 text-primary" />
+            {t("master.process.title")}
+          </h1>
+          <p className="text-text-muted mt-1">{t("master.process.subtitle")}</p>
+        </div>
+        <div className="flex gap-2">
+          {headerActions}
+        </div>
       </div>
 
       {/* 탭 */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border flex-shrink-0">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -61,9 +67,11 @@ export default function ProcessPage() {
       </div>
 
       {/* 탭 컨텐츠 */}
-      {activeTab === "process" && <ProcessTab />}
-      {activeTab === "prodLine" && <ProdLineTab />}
-      {activeTab === "routing" && <RoutingTab />}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {activeTab === "process" && <ProcessTab onHeaderActions={setHeaderActions} />}
+        {activeTab === "prodLine" && <ProdLineTab onHeaderActions={setHeaderActions} />}
+        {activeTab === "routing" && <RoutingTab onHeaderActions={setHeaderActions} />}
+      </div>
     </div>
   );
 }

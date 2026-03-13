@@ -189,8 +189,8 @@ export default function InventoryStockPage() {
   const lotCount = filteredStocks.filter(s => s.prdUid).length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Package className="w-7 h-7 text-primary" />{t('inventory.stock.title')}
@@ -198,19 +198,18 @@ export default function InventoryStockPage() {
           <p className="text-text-muted mt-1">{t('inventory.stock.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchStocks}><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
+          <Button variant="secondary" size="sm" onClick={fetchStocks}><RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t('inventory.stock.totalStock')} value={totalStock} icon={Package} color="blue" />
         <StatCard label={t('inventory.stock.availableStock')} value={totalAvailable} icon={CheckCircle} color="green" />
         <StatCard label={t('inventory.stock.partCount')} value={partCount} icon={Layers} color="purple" />
         <StatCard label={t('inventory.stock.lotCount')} value={lotCount} icon={Hash} color="orange" />
       </div>
 
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={filteredStocks}
             columns={columns}
@@ -233,8 +232,7 @@ export default function InventoryStockPage() {
               </div>
             }
           />
-        </CardContent>
-      </Card>
+      </CardContent></Card>
     </div>
   );
 }

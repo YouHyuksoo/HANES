@@ -45,7 +45,7 @@ export class LabelPrintLog {
   labelCount: number;
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerCode: string | null;
+  workerId: string | null;
 
   @Column({ name: 'PRINTED_AT', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   printedAt: Date;

@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity, Search } from "lucide-react";
-import { Card, Button, ComCodeBadge, Input } from "@/components/ui";
+import { Card, CardContent, Button, ComCodeBadge, Input } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -84,6 +84,12 @@ export default function ConsumableLifePage() {
   };
 
   const columns = useMemo<ColumnDef<LifeStatus>[]>(() => [
+    {
+      id: "actions", header: t("common.manage"), size: 70, meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => row.original.status === "REPLACE" ? (
+        <Button size="sm" variant="secondary"><RotateCcw className="w-3 h-3 mr-1" /> {t("consumables.life.replaceAction")}</Button>
+      ) : null,
+    },
     { accessorKey: "status", header: t("common.status"), size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => getStatusBadge(getValue() as string) },
     { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 110, meta: { filterType: "text" as const } },
     { accessorKey: "name", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
@@ -118,25 +124,22 @@ export default function ConsumableLifePage() {
       accessorKey: "lastReplaced", header: t("consumables.life.lastReplaced"), size: 90, meta: { filterType: "date" as const },
       cell: ({ getValue }) => getValue() ? <span className="text-xs text-text-muted">{getValue() as string}</span> : "-",
     },
-    {
-      id: "actions", header: t("common.manage"), size: 70, meta: { filterType: "none" as const },
-      cell: ({ row }) => row.original.status === "REPLACE" ? (
-        <Button size="sm" variant="secondary"><RotateCcw className="w-3 h-3 mr-1" /> {t("consumables.life.replaceAction")}</Button>
-      ) : null,
-    },
   ], [t]);
 
   return (
-    <div className="space-y-3 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-primary" />
           <h1 className="text-lg font-bold text-text">{t("consumables.life.title")}</h1>
           <span className="text-xs text-text-muted">{data.length}{t("common.count")}</span>
         </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
 
-      <div className="flex gap-2 text-xs">
+      <div className="flex gap-2 text-xs flex-shrink-0">
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded">
           <Activity className="w-3 h-3" /> {t("common.total")} {stats.total}
         </span>
@@ -151,7 +154,7 @@ export default function ConsumableLifePage() {
         </span>
       </div>
 
-      <Card className="overflow-hidden p-4">
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -165,18 +168,15 @@ export default function ConsumableLifePage() {
                 <Input placeholder={t("consumables.life.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-3.5 h-3.5" />} fullWidth />
               </div>
               <div className="w-28 flex-shrink-0">
-                <ComCodeSelect groupCode="CONSUMABLE_LIFE_STATUS" value={statusFilter} onChange={setStatusFilter} fullWidth />
+                <ComCodeSelect groupCode="CONSUMABLE_LIFE_STATUS" value={statusFilter} onChange={setStatusFilter} labelPrefix="상태" fullWidth />
               </div>
               <div className="w-28 flex-shrink-0">
-                <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} fullWidth />
+                <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix="분류" fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />
-      </Card>
+      </CardContent></Card>
     </div>
   );
 }

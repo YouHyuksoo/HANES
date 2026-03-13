@@ -37,9 +37,9 @@ export default function EquipPage() {
   ];
 
   return (
-    <div className="flex flex-col animate-fade-in h-[calc(100vh-var(--header-height)-var(--tab-bar-height)-48px)]">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="shrink-0 mb-4">
+      <div className="flex-shrink-0">
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
           <Monitor className="w-7 h-7 text-primary" />
           {t("master.equip.title", "설비 관리")}
@@ -50,7 +50,7 @@ export default function EquipPage() {
       </div>
 
       {/* 탭 네비게이션 */}
-      <div className="border-b border-border shrink-0">
+      <div className="border-b border-border flex-shrink-0">
         <div className="flex gap-1">
           {tabs.map((tab) => (
             <button
@@ -70,7 +70,7 @@ export default function EquipPage() {
       </div>
 
       {/* 탭 컨텐츠 */}
-      <div className="flex-1 flex flex-col min-h-0 mt-4">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === "masters" && <EquipMasterTab />}
         {activeTab === "bom" && <EquipBomTab />}
       </div>

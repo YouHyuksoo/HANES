@@ -96,6 +96,21 @@ export default function ReceiptCancelPage() {
 
   const columns = useMemo<ColumnDef<ReceiptTransaction>[]>(() => [
     {
+      id: "actions", header: "", size: 90, meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => {
+        if (row.original.status === "CANCELED" || row.original.cancelRefId) return null;
+        return (
+          <Button size="sm" variant="secondary" onClick={() => {
+            setSelectedTx(row.original);
+            setReason("");
+            setIsModalOpen(true);
+          }}>
+            <XCircle className="w-4 h-4 mr-1" />{t("material.receiptCancel.cancel")}
+          </Button>
+        );
+      },
+    },
+    {
       accessorKey: "transDate", header: t("material.receiptCancel.transDate"), size: 100,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
@@ -147,26 +162,11 @@ export default function ReceiptCancelPage() {
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
       },
     },
-    {
-      id: "actions", header: "", size: 90, meta: { filterType: "none" as const },
-      cell: ({ row }) => {
-        if (row.original.status === "CANCELED" || row.original.cancelRefId) return null;
-        return (
-          <Button size="sm" variant="secondary" onClick={() => {
-            setSelectedTx(row.original);
-            setReason("");
-            setIsModalOpen(true);
-          }}>
-            <XCircle className="w-4 h-4 mr-1" />{t("material.receiptCancel.cancel")}
-          </Button>
-        );
-      },
-    },
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <RotateCcw className="w-7 h-7 text-primary" />
@@ -174,15 +174,18 @@ export default function ReceiptCancelPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("material.receiptCancel.subtitle")}</p>
         </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label={t("material.receiptCancel.stats.total")} value={stats.total} icon={RotateCcw} color="blue" />
         <StatCard label={t("material.receiptCancel.stats.cancellable")} value={stats.cancellable} icon={XCircle} color="yellow" />
         <StatCard label={t("material.receiptCancel.stats.canceled")} value={stats.canceled} icon={RotateCcw} color="red" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.receiptCancel.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
@@ -199,9 +202,6 @@ export default function ReceiptCancelPage() {
                 <Input type="date"
                   value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

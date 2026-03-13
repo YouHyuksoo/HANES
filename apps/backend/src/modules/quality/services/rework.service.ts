@@ -164,7 +164,7 @@ export class ReworkService {
       reworkNo,
       status: 'REGISTERED',
       isolationFlag: 1,
-      company: +company,
+      company,
       plant,
       createdBy: userId,
       updatedBy: userId,
@@ -179,12 +179,12 @@ export class ReworkService {
           processCode: pi.processCode,
           processName: pi.processName,
           seq: pi.seq,
-          workerCode: pi.workerCode ?? null,
+          workerId: pi.workerId ?? null,
           lineCode: pi.lineCode ?? null,
           equipCode: pi.equipCode ?? null,
           planQty: dto.reworkQty,
           status: 'WAITING',
-          company: +company,
+          company,
           plant,
           createdBy: userId,
           updatedBy: userId,
@@ -214,7 +214,8 @@ export class ReworkService {
         '등록/반려 상태에서만 수정할 수 있습니다.',
       );
     }
-    Object.assign(item, dto, { updatedBy: userId });
+    const { processItems, ...updateFields } = dto;
+    Object.assign(item, updateFields, { updatedBy: userId });
     return this.reworkRepo.save(item);
   }
 
@@ -413,7 +414,7 @@ export class ReworkService {
     const inspect = this.inspectRepo.create({
       ...dto,
       inspectAt: new Date(),
-      company: +company,
+      company,
       plant,
       createdBy: userId,
       updatedBy: userId,

@@ -11,7 +11,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+// X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button, Input, Select } from "@/components/ui";
 import api from "@/services/api";
 
@@ -102,9 +102,12 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("master.vendorBarcode.editMapping", "매핑 수정") : t("master.vendorBarcode.addMapping", "매핑 추가")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.vendorBarcode.trim()}>
+            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
@@ -148,12 +151,6 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
         </div>
       </div>
 
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.vendorBarcode.trim()}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-        </Button>
-      </div>
     </div>
   );
 }

@@ -500,8 +500,8 @@ function UserPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Users className="w-7 h-7 text-primary" />
@@ -519,8 +519,8 @@ function UserPage() {
         </div>
       </div>
 
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4">
           <DataGrid
             data={users}
             columns={columns}

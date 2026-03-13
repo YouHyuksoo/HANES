@@ -12,13 +12,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { PartSearchModal, LineSelect, ProcessSelect, EquipSelect } from "@/components/shared";
 import api from "@/services/api";
 
 export interface JobOrderFormData {
-  id: string;
   orderNo: string;
   itemCode: string;
   lineCode?: string;
@@ -108,8 +107,8 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
         remark: form.remark || undefined,
         autoCreateChildren: form.autoCreateChildren,
       };
-      if (isEdit && editingOrder?.id) {
-        await api.put(`/production/job-orders/${editingOrder.id}`, payload);
+      if (isEdit && editingOrder?.orderNo) {
+        await api.put(`/production/job-orders/${editingOrder.orderNo}`, payload);
       } else {
         await api.post("/production/job-orders", payload);
       }
@@ -130,9 +129,12 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
           <h2 className="text-sm font-bold text-text">
             {isEdit ? t("production.order.editTitle") : t("production.order.createTitle")}
           </h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-            <X className="w-4 h-4 text-text-muted hover:text-text" />
-          </button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+            <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode || !form.planQty}>
+              {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+            </Button>
+          </div>
         </div>
 
         {/* 본문 */}
@@ -197,13 +199,6 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
           )}
         </div>
 
-        {/* 푸터 */}
-        <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-          <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button onClick={handleSubmit} disabled={saving || !form.itemCode || !form.planQty}>
-            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-          </Button>
-        </div>
       </div>
 
       <PartSearchModal

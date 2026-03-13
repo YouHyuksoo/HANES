@@ -12,12 +12,15 @@ import {
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 import { DefectLog } from './defect-log.entity';
+import { PartMaster } from './part-master.entity';
+import { ProdLineMaster } from './prod-line-master.entity';
+import { EquipMaster } from './equip-master.entity';
 
 @Entity({ name: 'REWORK_ORDERS' })
 @Index(['company', 'plant', 'status'])
 @Index(['company', 'plant', 'reworkNo'], { unique: true })
 export class ReworkOrder {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
   @Column({ name: 'REWORK_NO', length: 30 })
@@ -32,6 +35,10 @@ export class ReworkOrder {
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
+
+  @ManyToOne(() => PartMaster)
+  @JoinColumn({ name: 'ITEM_CODE', referencedColumnName: 'itemCode' })
+  item: PartMaster;
 
   @Column({ name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string;
@@ -71,13 +78,21 @@ export class ReworkOrder {
   prodRejectReason: string;
 
   @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
-  workerCode: string;
+  workerId: string;
 
   @Column({ name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string;
 
+  @ManyToOne(() => ProdLineMaster, { nullable: true })
+  @JoinColumn({ name: 'LINE_CODE', referencedColumnName: 'lineCode' })
+  line: ProdLineMaster;
+
   @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string;
+
+  @ManyToOne(() => EquipMaster, { nullable: true })
+  @JoinColumn({ name: 'EQUIP_CODE', referencedColumnName: 'equipCode' })
+  equip: EquipMaster;
 
   @Column({ name: 'START_AT', type: 'timestamp', nullable: true })
   startAt: Date;
@@ -103,8 +118,8 @@ export class ReworkOrder {
   @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string;
 
-  @Column({ name: 'COMPANY', type: 'int' })
-  company: number;
+  @Column({ name: 'COMPANY', length: 50 })
+  company: string;
 
   @Column({ name: 'PLANT', length: 20 })
   plant: string;

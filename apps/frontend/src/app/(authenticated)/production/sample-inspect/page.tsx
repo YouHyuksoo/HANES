@@ -139,8 +139,8 @@ export default function SampleInspectPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <FlaskConical className="w-7 h-7 text-primary" />
@@ -149,20 +149,23 @@ export default function SampleInspectPage() {
           <p className="text-text-muted mt-1">{t("production.sampleInspect.description")}</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
           <Button size="sm" onClick={() => setShowInput(true)}>
             <Plus className="w-4 h-4 mr-1" /> {t("production.sampleInspect.inputBtn")}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
         <StatCard label={t("production.sampleInspect.totalInspect")} value={stats.total} icon={FlaskConical} color="blue" />
         <StatCard label={t("production.sampleInspect.pass")} value={stats.pass} icon={CheckCircle} color="green" />
         <StatCard label={t("production.sampleInspect.fail")} value={stats.fail} icon={XCircle} color="red" />
         <StatCard label={t("production.sampleInspect.passRate")} value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="샘플검사"
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
@@ -183,9 +186,6 @@ export default function SampleInspectPage() {
                 <Input type="date"
                   value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

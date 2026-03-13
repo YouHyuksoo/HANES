@@ -11,7 +11,6 @@
  */
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -33,7 +32,7 @@ interface Props {
 }
 
 interface ResultForm {
-  workerCode: string;
+  workerId: string;
   resultQty: string;
   goodQty: string;
   defectQty: string;
@@ -43,7 +42,7 @@ interface ResultForm {
 }
 
 const INIT: ResultForm = {
-  workerCode: "",
+  workerId: "",
   resultQty: "",
   goodQty: "",
   defectQty: "",
@@ -61,7 +60,7 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
-  const canSubmit = !!form.workerCode && !!form.resultQty && !!form.workDetail;
+  const canSubmit = !!form.workerId && !!form.resultQty && !!form.workDetail;
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
@@ -69,7 +68,7 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
     try {
       await api.post("/quality/rework-results", {
         reworkProcessId: target.processId,
-        workerCode: form.workerCode,
+        workerId: form.workerId,
         resultQty: Number(form.resultQty) || 0,
         goodQty: Number(form.goodQty) || 0,
         defectQty: Number(form.defectQty) || 0,
@@ -91,9 +90,12 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">{t("quality.rework.resultEntry")}</h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !canSubmit}>
+            {saving ? t("common.saving") : t("common.register")}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 */}
@@ -121,8 +123,8 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
         {/* 작업자 */}
         <WorkerSelect
           label={t("quality.rework.worker")}
-          value={form.workerCode}
-          onChange={v => setField("workerCode", v)}
+          value={form.workerId}
+          onChange={v => setField("workerId", v)}
           fullWidth
         />
 
@@ -183,13 +185,6 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
         />
       </div>
 
-      {/* 푸터 */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !canSubmit}>
-          {saving ? t("common.saving") : t("common.register")}
-        </Button>
-      </div>
     </div>
   );
 }

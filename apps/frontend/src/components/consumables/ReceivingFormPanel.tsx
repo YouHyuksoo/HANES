@@ -11,7 +11,7 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
 import { ConsumableSearchModal } from "@/components/shared";
 
@@ -66,9 +66,12 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
           <h2 className="text-sm font-bold text-text">{t("consumables.receiving.modalTitle")}</h2>
-          <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-            <X className="w-4 h-4 text-text-muted hover:text-text" />
-          </button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+            <Button size="sm" onClick={handleSubmit} disabled={loading || !form.consumableId}>
+              {loading ? t("common.saving") : t("common.register")}
+            </Button>
+          </div>
         </div>
 
         {/* 본문 */}
@@ -163,20 +166,13 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
           />
         </div>
 
-        {/* 푸터 */}
-        <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-          <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button onClick={handleSubmit} disabled={loading || !form.consumableId}>
-            {loading ? t("common.saving") : t("common.register")}
-          </Button>
-        </div>
       </div>
 
       <ConsumableSearchModal
         isOpen={consumableSearchOpen}
         onClose={() => setConsumableSearchOpen(false)}
         onSelect={(item) => {
-          set("consumableId", item.id);
+          set("consumableId", item.consumableCode);
           setConsumableLabel(`${item.consumableCode} - ${item.consumableName}`);
         }}
       />

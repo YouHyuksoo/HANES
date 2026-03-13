@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw, Building2 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -25,6 +25,7 @@ function PartnerPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [useYnFilter, setUseYnFilter] = useState("");
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
@@ -38,6 +39,7 @@ function PartnerPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
       if (typeFilter) params.partnerType = typeFilter;
+      if (useYnFilter) params.useYn = useYnFilter;
       const res = await api.get("/master/partners", { params });
       if (res.data.success) setPartners(res.data.data || []);
     } catch {
@@ -45,14 +47,14 @@ function PartnerPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, typeFilter]);
+  }, [searchText, typeFilter, useYnFilter]);
 
   useEffect(() => { fetchPartners(); }, [fetchPartners]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/partners/${deleteTarget.id}`);
+      await api.delete(`/master/partners/${deleteTarget.partnerCode}`);
       fetchPartners();
     } catch (e: any) {
       console.error("Delete failed:", e);
@@ -98,17 +100,23 @@ function PartnerPage() {
     { accessorKey: "contactPerson", header: t("master.partner.contactPerson"), size: 90 },
     { accessorKey: "email", header: t("master.partner.email"), size: 180 },
     {
-      accessorKey: "useYn", header: t("master.partner.useYn"), size: 60,
-      cell: ({ getValue }) => (
-        <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
-      ),
+      accessorKey: "useYn", header: t("common.useYn", "사용여부"), size: 60,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return (
+          <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y"
+            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+            : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>{v === "Y" ? "Y" : "N"}</span>
+        );
+      },
     },
   ], [t, isPanelOpen]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <Building2 className="w-7 h-7 text-primary" />{t("master.partner.title")}
@@ -125,7 +133,7 @@ function PartnerPage() {
           </div>
         </div>
 
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={partners}
             columns={columns}
@@ -135,13 +143,19 @@ function PartnerPage() {
             enableExport
             exportFileName={t("master.partner.title")}
             onRowClick={(row) => { if (isPanelOpen) setEditingPartner(row); }}
+            rowClassName={(row) => row.useYn === "N" ? "!text-red-500 dark:!text-red-400" : ""}
             toolbarLeft={
-              <div className="flex gap-2 items-center">
-                <Input placeholder={t("master.partner.searchPlaceholder")} value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
+              <div className="flex gap-2 items-center flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("master.partner.searchPlaceholder")} value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
                 <div className="w-40 flex-shrink-0">
                   <ComCodeSelect groupCode="PARTNER_TYPE" value={typeFilter} onChange={setTypeFilter}
-                    placeholder={t("master.partner.partnerType")} fullWidth />
+                    labelPrefix={t("master.partner.partnerType")} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <UseYnSelect value={useYnFilter} onChange={setUseYnFilter} fullWidth />
                 </div>
               </div>
             }

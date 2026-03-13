@@ -86,7 +86,29 @@
       "mcp__ide__getDiagnostics",
       "Bash(# 백엔드 포트 찾기\nnetstat -ano 2>/dev/null | grep \"LISTENING\" | grep -E \"300[0-9]\" || ss -tlnp 2>/dev/null | grep \"300[0-9]\" || powershell.exe -Command \"Get-NetTCPConnection -State Listen | Where-Object {\\(\\\\$_.LocalPort -ge 3000\\) -and \\(\\\\$_.LocalPort -le 3010\\)} | Select-Object LocalPort\" 2>/dev/null)",
       "Bash(__NEW_LINE_3b4dc2d833364963__ echo:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(head -60 \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/master/warehouse/components/WarehouseList.tsx\")",
+      "Bash(head -60 \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/master/prod-line/page.tsx\")",
+      "Bash(head -60 \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/consumables/master/page.tsx\")",
+      "Bash(which cli-anything-hanes:*)",
+      "Bash(ls \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/quality/capa/\" 2>/dev/null || echo \"directory does not exist\")",
+      "Bash(wc -l \"C:\\\\Project\\\\HANES\\\\apps\\\\frontend\\\\src\\\\app\\\\\\(authenticated\\)\\\\quality\\\\change-control\\\\page.tsx\" \"C:\\\\Project\\\\HANES\\\\apps\\\\frontend\\\\src\\\\app\\\\\\(authenticated\\)\\\\quality\\\\change-control\\\\components\\\\ChangeFormPanel.tsx\")",
+      "Bash(wc -l \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/quality/complaint/page.tsx\")",
+      "Bash(ls \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/quality/fai/\" 2>/dev/null || echo \"empty\")",
+      "Bash(wc -l C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/change-control/page.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/change-control/components/ChangeFormPanel.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/capa/page.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/capa/components/CapaFormPanel.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/capa/components/ActionList.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/complaint/page.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/complaint/components/ComplaintFormPanel.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/fai/page.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/fai/components/FaiFormPanel.tsx C:/Project/HANES/apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/quality/fai/components/FaiItemList.tsx)",
+      "Bash(wc -l \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/quality/audit/page.tsx\" \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/quality/control-plan/components/ControlPlanItemList.tsx\" \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/quality/ppap/components/PpapFormPanel.tsx\")",
+      "Bash(wc -l \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/quality/control-plan/components/ControlPlanItemList.tsx\")",
+      "Bash(wc -l \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/system/training/components/TrainingResultList.tsx\")",
+      "Bash(ls \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/system/department/\")",
+      "Bash(find /c/Project/HANES/apps/frontend/src/app/\"\\(authenticated\\)\"/quality/ppap -type f)",
+      "Bash(grep -n '\"pwa\"' /c/Project/HANES/apps/frontend/src/locales/zh.json && grep -n '\"pwa\"' /c/Project/HANES/apps/frontend/src/locales/vi.json)",
+      "Bash(grep -n '\"pda\"' /c/Project/HANES/apps/frontend/src/locales/en.json && grep -n '\"pda\"' /c/Project/HANES/apps/frontend/src/locales/zh.json && grep -n '\"pda\"' /c/Project/HANES/apps/frontend/src/locales/vi.json)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Project/HANES/apps/frontend/src/locales/**)",
+      "Bash(for key:*)",
+      "Bash(__NEW_LINE_47d4d24dc8bc7ecf__ for:*)",
+      "Bash(__NEW_LINE_47d4d24dc8bc7ecf__ done:*)"
     ]
   }
 }

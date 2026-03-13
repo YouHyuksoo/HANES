@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
 import StatCard from "@/components/ui/StatCard";
+import { Card, CardContent } from "@/components/ui";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import Input from "@/components/ui/Input";
@@ -242,9 +243,9 @@ export default function CommConfigPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-text">{t('system.commConfig.title')}</h1>
           <p className="text-sm text-text-muted mt-1">
@@ -252,8 +253,8 @@ export default function CommConfigPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fetchConfigs}>
-            <RefreshCw className="w-4 h-4 mr-1" />
+          <Button variant="secondary" size="sm" onClick={fetchConfigs}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             {t('common.refresh')}
           </Button>
           <Button size="sm" onClick={openCreateModal}>
@@ -264,7 +265,7 @@ export default function CommConfigPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
         <StatCard label={t('system.commConfig.totalConfig')} value={stats.total} icon={Radio} color="blue" />
         <StatCard label="SERIAL" value={stats.serialCount} icon={Cable} color="green" />
         <StatCard label="TCP" value={stats.tcpCount} icon={Network} color="orange" />
@@ -272,36 +273,38 @@ export default function CommConfigPage() {
       </div>
 
       {/* 데이터 그리드 */}
-      <DataGrid
-        data={configs}
-        columns={columns}
-        isLoading={loading}
-        enableColumnResizing
-        enableColumnFilter
-        enableExport
-        exportFileName={t('system.commConfig.title')}
-        toolbarLeft={
-          <div className="flex gap-3 flex-1 min-w-0">
-            <div className="flex-1 min-w-0">
-              <Input
-                placeholder={t('system.commConfig.searchPlaceholder')}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-                fullWidth
-              />
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+        <DataGrid
+          data={configs}
+          columns={columns}
+          isLoading={loading}
+          enableColumnResizing
+          enableColumnFilter
+          enableExport
+          exportFileName={t('system.commConfig.title')}
+          toolbarLeft={
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                <Input
+                  placeholder={t('system.commConfig.searchPlaceholder')}
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />}
+                  fullWidth
+                />
+              </div>
+              <div className="w-40 flex-shrink-0">
+                <Select
+                  options={FILTER_OPTIONS}
+                  value={typeFilter}
+                  onChange={setTypeFilter}
+                  fullWidth
+                />
+              </div>
             </div>
-            <div className="w-40 flex-shrink-0">
-              <Select
-                options={FILTER_OPTIONS}
-                value={typeFilter}
-                onChange={setTypeFilter}
-                fullWidth
-              />
-            </div>
-          </div>
-        }
-      />
+          }
+        />
+      </CardContent></Card>
 
       {/* 생성/수정 모달 */}
       <Modal

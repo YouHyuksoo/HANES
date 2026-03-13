@@ -11,7 +11,6 @@
  */
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -80,9 +79,12 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">{t("quality.rework.inspect")}</h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.inspectorCode}>
+            {saving ? t("common.saving") : t("common.register")}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 */}
@@ -138,13 +140,6 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
           onChange={e => setForm(p => ({ ...p, remarks: e.target.value }))} fullWidth />
       </div>
 
-      {/* 푸터 */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.inspectorCode}>
-          {saving ? t("common.saving") : t("common.register")}
-        </Button>
-      </div>
     </div>
   );
 }

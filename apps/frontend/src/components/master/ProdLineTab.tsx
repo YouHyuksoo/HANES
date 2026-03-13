@@ -8,7 +8,7 @@
  * 1. API: GET/POST/PUT/DELETE /master/prod-lines
  * 2. DataGrid로 목록 표시 + 모달로 등록/수정
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
@@ -28,7 +28,11 @@ interface ProdLine {
   useYn: string;
 }
 
-export default function ProdLineTab() {
+interface Props {
+  onHeaderActions?: (actions: ReactNode) => void;
+}
+
+export default function ProdLineTab({ onHeaderActions }: Props) {
   const { t } = useTranslation();
   const [lines, setLines] = useState<ProdLine[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,6 +63,19 @@ export default function ProdLineTab() {
     setFormData({ useYn: "Y" });
     setIsModalOpen(true);
   }, []);
+
+  useEffect(() => {
+    onHeaderActions?.(
+      <>
+        <Button variant="secondary" size="sm" onClick={fetchLines}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
+        <Button size="sm" onClick={openCreateModal}>
+          <Plus className="w-4 h-4 mr-1" />{t("master.prodLine.addLine")}
+        </Button>
+      </>
+    );
+  }, [onHeaderActions, fetchLines, openCreateModal, loading, t]);
 
   const openEditModal = useCallback((line: ProdLine) => {
     setEditingLine(line);
@@ -94,6 +111,19 @@ export default function ProdLineTab() {
   }, [fetchLines]);
 
   const columns = useMemo<ColumnDef<ProdLine>[]>(() => [
+    { id: "actions", header: t("common.actions"), size: 80,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     { accessorKey: "lineCode", header: t("master.prodLine.lineCode"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "lineName", header: t("master.prodLine.lineName"), size: 200, meta: { filterType: "text" as const } },
     { accessorKey: "oper", header: t("master.prodLine.oper"), size: 100,
@@ -122,19 +152,6 @@ export default function ProdLineTab() {
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),
     },
-    { id: "actions", header: t("common.actions"), size: 80,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original); }} className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
   ], [t, openEditModal, handleDelete]);
 
   return (
@@ -154,12 +171,6 @@ export default function ProdLineTab() {
                   <Input placeholder={t("master.prodLine.searchPlaceholder")} value={searchText}
                     onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
-                <Button variant="secondary" size="sm" onClick={fetchLines} className="flex-shrink-0">
-                  <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-                </Button>
-                <Button size="sm" onClick={openCreateModal} className="flex-shrink-0">
-                  <Plus className="w-4 h-4 mr-1" />{t("master.prodLine.addLine")}
-                </Button>
               </div>
             }
           />

@@ -12,11 +12,12 @@ import {
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 import { ReworkOrder } from './rework-order.entity';
+import { ProcessMaster } from './process-master.entity';
 
 @Entity({ name: 'REWORK_PROCESSES' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkProcess {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
   @Column({ name: 'REWORK_ORDER_ID' })
@@ -29,6 +30,10 @@ export class ReworkProcess {
   @Column({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;
 
+  @ManyToOne(() => ProcessMaster)
+  @JoinColumn({ name: 'PROCESS_CODE', referencedColumnName: 'processCode' })
+  process: ProcessMaster;
+
   @Column({ name: 'PROCESS_NAME', length: 200 })
   processName: string;
 
@@ -39,7 +44,7 @@ export class ReworkProcess {
   status: string;
 
   @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
-  workerCode: string;
+  workerId: string;
 
   @Column({ name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string;
@@ -62,8 +67,8 @@ export class ReworkProcess {
   @Column({ name: 'REMARKS', length: 1000, nullable: true })
   remarks: string;
 
-  @Column({ name: 'COMPANY', type: 'int' })
-  company: number;
+  @Column({ name: 'COMPANY', length: 50 })
+  company: string;
 
   @Column({ name: 'PLANT', length: 20 })
   plant: string;

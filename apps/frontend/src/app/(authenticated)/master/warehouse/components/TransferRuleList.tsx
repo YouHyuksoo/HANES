@@ -7,7 +7,7 @@
  * 2. 출발창고 → 도착창고 이동 허용 여부 관리
  * 3. 창고 목록은 /inventory/warehouses에서 동적 로드
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw, ArrowRightLeft } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
@@ -27,12 +27,13 @@ interface TransferRule {
   remark?: string;
 }
 
-interface WarehouseOption {
-  value: string;
-  label: string;
+interface WarehouseOption { value: string; label: string; }
+
+interface Props {
+  onHeaderActions?: (actions: ReactNode) => void;
 }
 
-export default function TransferRuleList() {
+export default function TransferRuleList({ onHeaderActions }: Props) {
   const { t } = useTranslation();
   const [data, setData] = useState<TransferRule[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,7 +49,7 @@ export default function TransferRuleList() {
     try {
       const res = await api.get("/inventory/warehouses");
       const list = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
-      setWarehouseOptions(list.map((w: any) => ({ value: w.id, label: `${w.warehouseCode} ${w.warehouseName}` })));
+      setWarehouseOptions(list.map((w: any) => ({ value: w.warehouseCode, label: `${w.warehouseCode} ${w.warehouseName}` })));
     } catch { /* ignore */ }
   }, []);
 
@@ -108,6 +109,20 @@ export default function TransferRuleList() {
     }
   }, [confirmModal.id, fetchData]);
 
+  // 헤더 버튼을 부모 페이지에 전달
+  useEffect(() => {
+    onHeaderActions?.(
+      <>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="w-4 h-4 mr-1" />{t("master.transferRule.addRule")}
+        </Button>
+      </>
+    );
+  }, [onHeaderActions, fetchData, openCreate, loading, t]);
+
   const columns = useMemo<ColumnDef<TransferRule>[]>(() => [
     { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
@@ -129,8 +144,8 @@ export default function TransferRuleList() {
   ], [t, openEdit]);
 
   return (
-    <>
-      <Card><CardContent>
+    <div className="h-full flex flex-col">
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -143,12 +158,6 @@ export default function TransferRuleList() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("master.transferRule.searchPlaceholder")} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Button variant="secondary" size="sm" onClick={fetchData} className="flex-shrink-0">
-                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-              </Button>
-              <Button size="sm" onClick={openCreate} className="flex-shrink-0">
-                <Plus className="w-4 h-4 mr-1" />{t("master.transferRule.addRule")}
-              </Button>
             </div>
           }
         />
@@ -168,6 +177,6 @@ export default function TransferRuleList() {
       </Modal>
 
       <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, id: "" })} onConfirm={handleDelete} title={t("master.transferRule.deleteRule")} message={t("master.transferRule.deleteConfirm")} variant="danger" />
-    </>
+    </div>
   );
 }

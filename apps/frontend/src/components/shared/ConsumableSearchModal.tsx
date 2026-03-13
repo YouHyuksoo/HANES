@@ -12,7 +12,7 @@
  * <ConsumableSearchModal
  *   isOpen={open}
  *   onClose={() => setOpen(false)}
- *   onSelect={(item) => setConsumableId(item.id)}
+ *   onSelect={(item) => setConsumableId(item.consumableCode)}
  *   category="MOLD"
  * />
  */
@@ -27,9 +27,8 @@ import { Modal, Button, Input, Select, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
-/** 소모품 데이터 타입 */
+/** 소모품 데이터 타입 — PK: consumableCode */
 export interface ConsumableItem {
-  id: string;
   consumableCode: string;
   consumableName: string;
   category: string | null;

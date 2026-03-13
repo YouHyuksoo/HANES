@@ -238,8 +238,8 @@ export default function ArrivalStockPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Warehouse className="w-7 h-7 text-primary" />
@@ -257,7 +257,7 @@ export default function ArrivalStockPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard
           label={t("material.arrivalStock.stats.totalArrivalQty")}
           value={stats.totalArrivalQty.toLocaleString()}
@@ -284,8 +284,7 @@ export default function ArrivalStockPage() {
         />
       </div>
 
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={data}
             columns={columns}
@@ -323,8 +322,7 @@ export default function ArrivalStockPage() {
               </div>
             }
           />
-        </CardContent>
-      </Card>
+      </CardContent></Card>
     </div>
   );
 }

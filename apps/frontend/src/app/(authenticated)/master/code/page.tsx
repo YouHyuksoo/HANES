@@ -62,7 +62,7 @@ function ComCodePage() {
 
   /* ── 수정 mutation ── */
   const updateMutation = useApiMutation<ComCodeDetail, ComCodeFormData>(
-    editingCode ? `/master/com-codes/${editingCode.id}` : "/master/com-codes",
+    editingCode ? `/master/com-codes/${editingCode.groupCode}::${editingCode.detailCode}` : "/master/com-codes",
     "put",
     {
       onSuccess: () => {
@@ -75,7 +75,7 @@ function ComCodePage() {
 
   /* ── 삭제 mutation ── */
   const deleteMutation = useApiMutation<void, void>(
-    deleteTarget ? `/master/com-codes/${deleteTarget.id}` : "/master/com-codes",
+    deleteTarget ? `/master/com-codes/${deleteTarget.groupCode}::${deleteTarget.detailCode}` : "/master/com-codes",
     "delete",
     {
       onSuccess: () => {
@@ -111,9 +111,9 @@ function ComCodePage() {
   }, [invalidate]);
 
   return (
-    <div className="flex flex-col animate-fade-in h-[calc(100vh-var(--header-height)-var(--tab-bar-height)-48px)]">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center mb-4 shrink-0">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Settings className="w-7 h-7 text-primary" />

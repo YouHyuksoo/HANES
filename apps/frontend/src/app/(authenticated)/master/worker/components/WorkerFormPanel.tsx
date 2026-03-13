@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+// X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button, Input, Select } from "@/components/ui";
 import WorkerPhotoUpload from "@/components/worker/WorkerPhotoUpload";
 import api from "@/services/api";
@@ -93,8 +93,8 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
         remark: form.remark.trim() || undefined,
         useYn: form.useYn,
       };
-      if (isEdit && editingWorker?.id) {
-        await api.put(`/master/workers/${editingWorker.id}`, payload);
+      if (isEdit && editingWorker?.workerCode) {
+        await api.put(`/master/workers/${editingWorker.workerCode}`, payload);
       } else {
         await api.post("/master/workers", payload);
       }
@@ -114,9 +114,12 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("master.worker.editWorker", "작업자 수정") : t("master.worker.addWorker", "작업자 추가")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.workerCode.trim() || !form.workerName.trim()}>
+            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
@@ -159,10 +162,12 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.worker.sectionWork", "근무정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.worker.hireDate", "입사일")} placeholder="YYYYMMDD"
-              value={form.hireDate} onChange={e => setField("hireDate", e.target.value)} fullWidth />
-            <Input label={t("master.worker.quitDate", "퇴사일")} placeholder="YYYYMMDD"
-              value={form.quitDate} onChange={e => setField("quitDate", e.target.value)} fullWidth />
+            <Input label={t("master.worker.hireDate", "입사일")} type="date"
+              value={form.hireDate?.slice(0, 10) ?? ""}
+              onChange={e => setField("hireDate", e.target.value)} fullWidth />
+            <Input label={t("master.worker.quitDate", "퇴사일")} type="date"
+              value={form.quitDate?.slice(0, 10) ?? ""}
+              onChange={e => setField("quitDate", e.target.value)} fullWidth />
             <Select label={t("master.worker.use", "사용")}
               options={[{ value: "Y", label: t("common.yes", "사용") }, { value: "N", label: t("common.no", "미사용") }]}
               value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
@@ -176,12 +181,6 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
         </div>
       </div>
 
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.workerCode.trim() || !form.workerName.trim()}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-        </Button>
-      </div>
     </div>
   );
 }

@@ -31,9 +31,10 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
   const { options: customerOptions } = usePartnerOptions("CUSTOMER");
 
   const partTypeOptions = useMemo(() => [
-    { value: "RAW", label: t("inventory.stock.raw", "원자재") },
-    { value: "WIP", label: t("inventory.stock.wip", "반제품") },
-    { value: "FG", label: t("inventory.stock.fg", "완제품") },
+    { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
+    { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
+    { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
+    { value: "CONSUMABLE", label: t("inventory.stock.consumable", "소모품") },
   ], [t]);
 
   const iqcOptions = [
@@ -46,7 +47,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     itemName: editingPart?.itemName || "",
     itemNo: editingPart?.itemNo || "",
     custPartNo: editingPart?.custPartNo || "",
-    itemType: (editingPart?.itemType || "RAW") as "RAW" | "WIP" | "FG",
+    itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
     productType: editingPart?.productType || "",
     spec: editingPart?.spec || "",
     rev: editingPart?.rev || "",
@@ -88,8 +89,8 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
         lotUnitQty: form.lotUnitQty || undefined,
       };
 
-      if (isEdit && editingPart?.id) {
-        await api.put(`/master/parts/${editingPart.id}`, payload);
+      if (isEdit && editingPart?.itemCode) {
+        await api.put(`/master/parts/${editingPart.itemCode}`, payload);
       } else {
         await api.post("/master/parts", payload);
       }

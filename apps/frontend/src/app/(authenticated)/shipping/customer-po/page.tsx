@@ -132,9 +132,9 @@ export default function CustomerPoPage() {
   ], [t, statusOptions, isPanelOpen]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <ShoppingCart className="w-7 h-7 text-primary" />{t("shipping.customerPo.title")}
@@ -143,7 +143,7 @@ export default function CustomerPoPage() {
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={fetchData}>
-              <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
             </Button>
             <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingItem(null); setIsPanelOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" />{t("common.register")}
@@ -151,7 +151,7 @@ export default function CustomerPoPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-5 gap-3 flex-shrink-0">
           <StatCard label={t("shipping.customerPo.statTotal")} value={stats.total} icon={FileText} color="blue" />
           <StatCard label={t("shipping.customerPo.statusReceived")} value={stats.received} icon={Clock} color="gray" />
           <StatCard label={t("shipping.customerPo.statusConfirmed")} value={stats.confirmed} icon={CheckCircle} color="green" />
@@ -159,7 +159,7 @@ export default function CustomerPoPage() {
           <StatCard label={t("shipping.customerPo.statusShipped")} value={stats.shipped} icon={Truck} color="purple" />
         </div>
 
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={data}
             columns={columns}

@@ -111,6 +111,25 @@ export default function ProductHoldPage() {
 
   const columns = useMemo<ColumnDef<ProductHoldStock>[]>(() => [
     {
+      id: "actions", header: "", size: 100,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => {
+        const isHold = row.original.status === "HOLD";
+        return (
+          <Button size="sm" variant={isHold ? "secondary" : "primary"} onClick={() => {
+            setSelectedStock(row.original);
+            setActionType(isHold ? "release" : "hold");
+            setReason("");
+            setIsModalOpen(true);
+          }}>
+            {isHold
+              ? <><Unlock className="w-4 h-4 mr-1" />{t("productHold.release")}</>
+              : <><Lock className="w-4 h-4 mr-1" />{t("productHold.hold")}</>}
+          </Button>
+        );
+      },
+    },
+    {
       accessorKey: "itemCode", header: t("productHold.partCode"), size: 120,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
@@ -165,30 +184,11 @@ export default function ProductHoldPage() {
         <span className="text-sm text-text-muted">{(getValue() as string) || "-"}</span>
       ),
     },
-    {
-      id: "actions", header: "", size: 100,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => {
-        const isHold = row.original.status === "HOLD";
-        return (
-          <Button size="sm" variant={isHold ? "secondary" : "primary"} onClick={() => {
-            setSelectedStock(row.original);
-            setActionType(isHold ? "release" : "hold");
-            setReason("");
-            setIsModalOpen(true);
-          }}>
-            {isHold
-              ? <><Unlock className="w-4 h-4 mr-1" />{t("productHold.release")}</>
-              : <><Lock className="w-4 h-4 mr-1" />{t("productHold.hold")}</>}
-          </Button>
-        );
-      },
-    },
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ShieldAlert className="w-7 h-7 text-primary" />
@@ -196,15 +196,18 @@ export default function ProductHoldPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("productHold.subtitle")}</p>
         </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label={t("productHold.stats.total")} value={stats.total} icon={ShieldAlert} color="blue" />
         <StatCard label={t("productHold.stats.holdCount")} value={stats.holdCount} icon={AlertTriangle} color="red" />
         <StatCard label={t("productHold.stats.normalCount")} value={stats.normalCount} icon={CheckCircle} color="green" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -229,9 +232,6 @@ export default function ProductHoldPage() {
               <div className="w-32 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

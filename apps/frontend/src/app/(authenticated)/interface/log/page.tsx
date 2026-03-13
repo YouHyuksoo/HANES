@@ -93,6 +93,18 @@ export default function InterfaceLogPage() {
 
   const columns = useMemo<ColumnDef<InterLog>[]>(() => [
     {
+      id: "actions", header: t("common.manage"), size: 100,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => { setSelectedLog(row.original); setIsDetailModalOpen(true); }} className="p-1 hover:bg-surface rounded" title={t("common.detail")}><Eye className="w-4 h-4 text-primary" /></button>
+          {row.original.status === "FAIL" && (
+            <button onClick={() => handleRetry(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("interface.log.retry")}><RotateCcw className="w-4 h-4 text-yellow-500" /></button>
+          )}
+        </div>
+      ),
+    },
+    {
       accessorKey: "direction", header: t("interface.log.direction"), size: 70,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
@@ -122,30 +134,21 @@ export default function InterfaceLogPage() {
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => { const msg = getValue() as string | null; return msg ? <span className="text-red-600 dark:text-red-400 text-xs">{msg}</span> : "-"; },
     },
-    {
-      id: "actions", header: t("common.manage"), size: 100,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => { setSelectedLog(row.original); setIsDetailModalOpen(true); }} className="p-1 hover:bg-surface rounded" title={t("common.detail")}><Eye className="w-4 h-4 text-primary" /></button>
-          {row.original.status === "FAIL" && (
-            <button onClick={() => handleRetry(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("interface.log.retry")}><RotateCcw className="w-4 h-4 text-yellow-500" /></button>
-          )}
-        </div>
-      ),
-    },
   ], [t, statusLabels, messageTypeLabels, handleRetry]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Network className="w-7 h-7 text-primary" />{t("interface.log.title")}</h1>
           <p className="text-text-muted mt-1">{t("interface.log.description")}</p>
         </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -158,11 +161,8 @@ export default function InterfaceLogPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("interface.log.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Select options={[{ value: "", label: t("interface.log.allDirections") }, { value: "IN", label: t("interface.log.directionIn") }, { value: "OUT", label: t("interface.log.directionOut") }]} value={directionFilter} onChange={setDirectionFilter} placeholder={t("interface.log.direction")} />
-              <Select options={[{ value: "", label: t("common.allStatus") }, { value: "SUCCESS", label: t("interface.log.statusSuccess") }, { value: "FAIL", label: t("interface.log.statusFail") }, { value: "PENDING", label: t("interface.log.statusPending") }, { value: "RETRY", label: t("interface.log.statusRetry") }]} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
+              <Select options={[{ value: "", label: `${t("interface.log.direction")}: ${t("common.all")}` }, { value: "IN", label: `${t("interface.log.direction")}: ${t("interface.log.directionIn")}` }, { value: "OUT", label: `${t("interface.log.direction")}: ${t("interface.log.directionOut")}` }]} value={directionFilter} onChange={setDirectionFilter} placeholder={t("interface.log.direction")} />
+              <Select options={[{ value: "", label: `${t("common.status")}: ${t("common.all")}` }, { value: "SUCCESS", label: `${t("common.status")}: ${t("interface.log.statusSuccess")}` }, { value: "FAIL", label: `${t("common.status")}: ${t("interface.log.statusFail")}` }, { value: "PENDING", label: `${t("common.status")}: ${t("interface.log.statusPending")}` }, { value: "RETRY", label: `${t("common.status")}: ${t("interface.log.statusRetry")}` }]} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
             </div>
           }
         />

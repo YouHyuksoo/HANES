@@ -15,8 +15,12 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  VersionColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { JobOrder } from './job-order.entity';
 
 @Entity({ name: 'PRODUCT_STOCKS' })
 @Index(['warehouseCode'])
@@ -40,6 +44,10 @@ export class ProductStock {
 
   @Column({ name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
+
+  @ManyToOne(() => JobOrder, { nullable: true })
+  @JoinColumn({ name: 'ORDER_NO', referencedColumnName: 'orderNo' })
+  jobOrder: JobOrder;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
@@ -85,4 +93,7 @@ export class ProductStock {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
+
+  @VersionColumn({ name: 'VERSION' })
+  version: number;
 }

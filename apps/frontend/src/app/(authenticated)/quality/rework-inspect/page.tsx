@@ -28,7 +28,7 @@ interface ReworkOrder {
   itemName: string;
   reworkQty: number;
   resultQty: number;
-  workerCode: string;
+  workerId: string;
   endAt: string;
   status: string;
 }
@@ -89,6 +89,12 @@ export default function ReworkInspectPage() {
 
   /* ── 컬럼 정의 ── */
   const columns = useMemo<ColumnDef<ReworkOrder>[]>(() => [
+    { id: "actions", header: t("common.manage"), size: 100, meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <Button size="sm" variant="secondary" onClick={() => openPanel(row.original)}>
+          <ClipboardCheck className="w-4 h-4 mr-1" />{t("quality.rework.inspect")}
+        </Button>
+      ) },
     { accessorKey: "reworkNo", header: t("quality.rework.reworkNo"), size: 170, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
     { accessorKey: "itemCode", header: t("quality.rework.itemCode"), size: 120, meta: { filterType: "text" as const } },
@@ -97,25 +103,19 @@ export default function ReworkInspectPage() {
       cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span> },
     { accessorKey: "resultQty", header: t("quality.rework.resultQty"), size: 90, meta: { filterType: "number" as const },
       cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span> },
-    { accessorKey: "workerCode", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "workerId", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "endAt", header: t("quality.rework.complete"), size: 140, meta: { filterType: "date" as const },
       cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleString() : "-"; } },
     { accessorKey: "status", header: t("common.status"), size: 110, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} /> },
-    { id: "actions", header: t("common.manage"), size: 100, meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <Button size="sm" variant="secondary" onClick={() => openPanel(row.original)}>
-          <ClipboardCheck className="w-4 h-4 mr-1" />{t("quality.rework.inspect")}
-        </Button>
-      ) },
   ], [t, openPanel]);
 
   return (
     <div className="flex h-full">
       {/* 메인 영역 */}
-      <div className="flex-1 space-y-6 animate-fade-in overflow-auto p-0">
+      <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
         {/* 헤더 */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <ClipboardCheck className="w-7 h-7 text-primary" />{t("quality.rework.inspectTitle")}
@@ -123,19 +123,19 @@ export default function ReworkInspectPage() {
             <p className="text-text-muted mt-1">{t("quality.rework.inspectSubtitle")}</p>
           </div>
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
         </div>
 
         {/* 통계 카드 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-shrink-0">
           <StatCard label={t("quality.rework.statsInspectPending")} value={data.length} icon={Clock} color="yellow" />
           <StatCard label={t("quality.rework.statusPASS")} value={passCount} icon={CheckCircle} color="green" />
           <StatCard label={t("quality.rework.statusFAIL")} value={failCount} icon={XCircle} color="red" />
         </div>
 
         {/* DataGrid */}
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.rework.inspectTitle")}
             onRowClick={row => openPanel(row as ReworkOrder)}

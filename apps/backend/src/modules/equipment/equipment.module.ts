@@ -45,6 +45,10 @@ import { EquipMasterService } from './services/equip-master.service';
 import { ConsumableService } from './services/consumable.service';
 import { EquipInspectService } from './services/equip-inspect.service';
 import { PmPlanService } from './services/pm-plan.service';
+import { MoldController } from './controllers/mold.controller';
+import { MoldService } from './services/mold.service';
+import { MoldMaster } from '../../entities/mold-master.entity';
+import { MoldUsageLog } from '../../entities/mold-usage-log.entity';
 
 @Module({
   imports: [
@@ -62,6 +66,8 @@ import { PmPlanService } from './services/pm-plan.service';
       User,
       ProdLineMaster,
       ProcessMaster,
+      MoldMaster,
+      MoldUsageLog,
     ]),
   ],
   controllers: [
@@ -73,18 +79,21 @@ import { PmPlanService } from './services/pm-plan.service';
     InspectHistoryController,
     PmPlanController,
     PmWorkOrderController,
+    MoldController,
   ],
   providers: [
     EquipMasterService,
     ConsumableService,
     EquipInspectService,
     PmPlanService,
+    MoldService,
   ],
   exports: [
     EquipMasterService,
     ConsumableService,
     EquipInspectService,
     PmPlanService,
+    MoldService,
   ],
 })
 export class EquipmentModule {}

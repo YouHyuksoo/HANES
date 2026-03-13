@@ -82,18 +82,18 @@ export default function LotPage() {
   const [detailTab, setDetailTab] = useState<'info' | 'stock' | 'history'>('info');
 
   const PART_TYPES = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: 'RAW', label: t('inventory.stock.raw') },
-    { value: 'WIP', label: t('inventory.stock.wip') },
-    { value: 'FG', label: t('inventory.stock.fg') },
+    { value: '', label: `${t('inventory.lot.partType', '품목유형')}: ${t('common.all', '전체')}` },
+    { value: 'RAW', label: `${t('inventory.lot.partType', '품목유형')}: ${t('inventory.stock.raw')}` },
+    { value: 'WIP', label: `${t('inventory.lot.partType', '품목유형')}: ${t('inventory.stock.wip')}` },
+    { value: 'FG', label: `${t('inventory.lot.partType', '품목유형')}: ${t('inventory.stock.fg')}` },
   ], [t]);
 
   const LOT_STATUS = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: 'NORMAL', label: t('inventory.lot.normal') },
-    { value: 'HOLD', label: t('inventory.lot.hold') },
-    { value: 'DEPLETED', label: t('inventory.lot.depleted') },
-    { value: 'EXPIRED', label: t('inventory.lot.expired') },
+    { value: '', label: `LOT${t('inventory.lot.status', '상태')}: ${t('common.all', '전체')}` },
+    { value: 'NORMAL', label: `LOT${t('inventory.lot.status', '상태')}: ${t('inventory.lot.normal')}` },
+    { value: 'HOLD', label: `LOT${t('inventory.lot.status', '상태')}: ${t('inventory.lot.hold')}` },
+    { value: 'DEPLETED', label: `LOT${t('inventory.lot.status', '상태')}: ${t('inventory.lot.depleted')}` },
+    { value: 'EXPIRED', label: `LOT${t('inventory.lot.status', '상태')}: ${t('inventory.lot.expired')}` },
   ], [t]);
 
   const getStatusLabel = (status: string) => {
@@ -283,26 +283,25 @@ export default function LotPage() {
   const depletedCount = lots.filter(l => l.status === 'DEPLETED').length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Tag className="w-7 h-7 text-primary" />{t('inventory.lot.title')}
           </h1>
           <p className="text-text-muted mt-1">{t('inventory.lot.subtitle')}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchLots}><RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}</Button>
+        <Button variant="secondary" size="sm" onClick={fetchLots}><RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}</Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t('inventory.lot.totalLot')} value={lots.length} icon={Layers} color="blue" />
         <StatCard label={t('inventory.lot.normal')} value={normalCount} icon={CheckCircle} color="green" />
         <StatCard label={t('inventory.lot.hold')} value={holdCount} icon={AlertCircle} color="yellow" />
         <StatCard label={t('inventory.lot.depleted')} value={depletedCount} icon={MinusCircle} color="gray" />
       </div>
 
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={filteredLots}
             columns={columns}
@@ -322,14 +321,10 @@ export default function LotPage() {
                 <div className="w-32 flex-shrink-0">
                   <Select options={LOT_STATUS} value={filters.status} onChange={(v) => setFilters({ ...filters, status: v })} fullWidth />
                 </div>
-                <Button variant="secondary" size="sm" onClick={fetchLots} className="flex-shrink-0">
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
               </div>
             }
           />
-        </CardContent>
-      </Card>
+      </CardContent></Card>
 
       {/* LOT 상세 모달 */}
       <Modal

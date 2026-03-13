@@ -1,0 +1,118 @@
+Metadata-Version: 2.4
+Name: cli-anything-hanes
+Version: 1.0.0
+Summary: CLI harness for HANES MES — Wire Harness Manufacturing Execution System
+Author: HANES MES Team
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Manufacturing
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: click>=8.0.0
+Requires-Dist: prompt-toolkit>=3.0.0
+Dynamic: author
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# cli-anything-hanes
+
+CLI harness for **HANES MES** (Wire Harness Manufacturing Execution System).
+
+Wraps the HANES MES REST API into a Click-based CLI with REPL support,
+enabling AI agents and power users to operate the MES without a browser.
+
+## Prerequisites
+
+- **Python 3.10+**
+- **HANES MES Backend** running on `localhost:3003`
+  ```bash
+  cd C:\Project\HANES\apps\backend
+  pnpm dev
+  ```
+
+## Installation
+
+```bash
+cd C:\Project\HANES\agent-harness
+pip install -e .
+```
+
+## Verify Installation
+
+```bash
+cli-anything-hanes --version
+cli-anything-hanes --help
+```
+
+## Usage
+
+### One-shot commands
+
+```bash
+# Login
+cli-anything-hanes auth login -e admin@hanes.com -p password
+
+# List parts (human-readable table)
+cli-anything-hanes master parts
+
+# List job orders in JSON mode (for agents)
+cli-anything-hanes --json production orders --status RUNNING
+
+# Show dashboard KPI
+cli-anything-hanes dashboard kpi
+```
+
+### Interactive REPL
+
+```bash
+# Just run without subcommand to enter REPL
+cli-anything-hanes
+```
+
+### JSON mode (for AI agents)
+
+All commands support `--json` for machine-readable output:
+
+```bash
+cli-anything-hanes --json master parts --search "wire"
+cli-anything-hanes --json production orders --status WAITING
+cli-anything-hanes --json quality reworks
+```
+
+## Command Groups
+
+| Group        | Description                    |
+|-------------|-------------------------------|
+| `auth`       | Login, logout, session status  |
+| `master`     | Parts, processes, BOM, routing |
+| `material`   | Arrivals, lots, stocks         |
+| `production` | Job orders, results            |
+| `quality`    | Inspections, reworks, defects  |
+| `inventory`  | Stocks, transactions           |
+| `dashboard`  | KPI and summaries              |
+
+## Running Tests
+
+```bash
+cd C:\Project\HANES\agent-harness
+python -m pytest cli_anything/hanes/tests/ -v -s
+```
+
+## Architecture
+
+```
+CLI (Click + REPL)
+  -> hanes_backend.py (urllib HTTP client)
+    -> HANES MES Backend API (NestJS, port 3003)
+      -> Oracle Database
+```
+
+The CLI is a **client** to the running HANES MES backend. It does NOT
+connect directly to the database — all operations go through the REST API.

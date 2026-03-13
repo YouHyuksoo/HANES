@@ -70,6 +70,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
           itemCode: item.itemCode,
           receivedQty: 0,
           warehouseCode: warehouses[0]?.value || '',
+          invoiceNo: '',
         };
       });
       setInputs(init);

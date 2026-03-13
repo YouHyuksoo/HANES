@@ -203,9 +203,9 @@ export default function ReworkHistoryPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardList className="w-7 h-7 text-primary" />
@@ -216,13 +216,13 @@ export default function ReworkHistoryPage() {
           </p>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className="w-4 h-4 mr-1" />
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
           {t("common.refresh")}
         </Button>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
         <StatCard
           label={t("quality.rework.statsTotal")}
           value={stats.total}
@@ -250,8 +250,8 @@ export default function ReworkHistoryPage() {
       </div>
 
       {/* DataGrid */}
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4">
           <DataGrid
             data={data}
             columns={columns}

@@ -16,7 +16,6 @@ export type WorkerType =
 
 /** 작업자 인터페이스 */
 export interface Worker {
-  id: string;
   workerCode: string;
   workerName: string;
   engName?: string;

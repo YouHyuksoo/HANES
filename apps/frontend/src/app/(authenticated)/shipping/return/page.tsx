@@ -127,6 +127,12 @@ export default function ShipReturnPage() {
   }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<ShipReturn>[]>(() => [
+    { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
+      <div className="flex gap-1">
+        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
+        <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+      </div>
+    ) },
     { accessorKey: "returnNo", header: t("shipping.return.returnNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "shipOrderNo", header: t("shipping.return.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.return.customer"), size: 120, meta: { filterType: "text" as const } },
@@ -138,35 +144,29 @@ export default function ShipReturnPage() {
       const label = statusOptions.find(o => o.value === s)?.label || s;
       return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{label}</span>;
     } },
-    { id: "actions", header: "", size: 80, meta: { filterType: "none" as const }, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
-      </div>
-    ) },
   ], [t, statusOptions, openEdit]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Undo2 className="w-7 h-7 text-primary" />{t("shipping.return.title")}</h1>
           <p className="text-text-muted mt-1">{t("shipping.return.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
           <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("shipping.return.statTotal")} value={stats.total} icon={FileText} color="blue" />
         <StatCard label={t("shipping.return.statusDraft")} value={stats.draft} icon={Clock} color="yellow" />
         <StatCard label={t("shipping.return.statusConfirmed")} value={stats.confirmed} icon={AlertTriangle} color="red" />
         <StatCard label={t("shipping.return.statusCompleted")} value={stats.completed} icon={CheckCircle} color="green" />
       </div>
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("shipping.return.title")}
           toolbarLeft={

@@ -105,20 +105,20 @@ export default function InspectPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Activity className="w-7 h-7 text-primary" />{t("quality.inspect.title")}</h1>
           <p className="text-text-muted mt-1">{t("quality.inspect.description")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 flex-shrink-0">
         <StatCard label={t("quality.inspect.totalInspections")} value={`${stats.total}${t("common.count")}`} icon={Activity} color="blue" />
         <StatCard label={t("quality.inspect.passRate")} value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
         <StatCard label={t("quality.inspect.pass")} value={`${stats.passed}${t("common.count")}`} icon={CheckCircle} color="green" />
@@ -126,7 +126,7 @@ export default function InspectPage() {
         <StatCard label={t("quality.inspect.avgTime")} value={`${stats.avgTime}${t("common.seconds")}`} icon={Clock} color="yellow" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-shrink-0"><CardContent>
         <div className="text-sm font-medium text-text mb-3">{t("quality.inspect.passRateByType")}</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(Object.entries(stats.byType) as [InspectType, { total: number; passed: number }][]).map(([type, d]) => {
@@ -145,7 +145,7 @@ export default function InspectPage() {
         </div>
       </CardContent></Card>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}

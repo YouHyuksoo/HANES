@@ -13,6 +13,7 @@ import { useState } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import TabBar from "./TabBar";
+import KeepAlive from "./KeepAlive";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -23,7 +24,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-hidden bg-background">
       <Header
         onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
         collapsed={collapsed}
@@ -39,13 +40,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
       <main
         className={`
-          pt-[var(--header-height)] min-h-screen transition-all duration-300
+          pt-[var(--header-height)] h-screen flex flex-col overflow-hidden transition-all duration-300
           ${collapsed ? "lg:pl-[var(--sidebar-collapsed-width)]" : "lg:pl-[var(--sidebar-width)]"}
         `}
       >
         <TabBar />
-        <div className="p-4 lg:p-6">
-          {children}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <KeepAlive>{children}</KeepAlive>
         </div>
       </main>
     </div>

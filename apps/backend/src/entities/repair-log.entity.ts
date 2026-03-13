@@ -19,7 +19,7 @@ import {
 
 @Entity({ name: 'REPAIR_LOGS' })
 @Index(['defectLogId'])
-@Index(['workerCode'])
+@Index(['workerId'])
 export class RepairLog {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
@@ -28,7 +28,7 @@ export class RepairLog {
   defectLogId: number;
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerCode: string | null;
+  workerId: string | null;
 
   @Column({ name: 'REPAIR_ACTION', length: 500, nullable: true })
   repairAction: string | null;

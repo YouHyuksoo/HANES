@@ -124,8 +124,8 @@ function LabelPage() {
   }, []);
 
   return (
-    <div className="flex flex-col animate-fade-in h-[calc(100vh-var(--header-height)-var(--tab-bar-height)-48px)]">
-      <div className="shrink-0 mb-4">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex-shrink-0">
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
           <Tag className="w-7 h-7 text-primary" />{t("master.label.title")}
         </h1>
@@ -133,7 +133,7 @@ function LabelPage() {
       </div>
 
       {/* 카테고리 탭 */}
-      <div className="flex border-b border-border shrink-0">
+      <div className="flex border-b border-border flex-shrink-0">
         {categories.map((cat) => (
           <button
             key={cat.key}
@@ -149,7 +149,7 @@ function LabelPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-12 gap-6 min-h-0 flex-1 mt-4">
+      <div className="grid grid-cols-12 gap-6 min-h-0 flex-1">
         {/* 좌측: 항목 선택 */}
         <div className="col-span-4 flex flex-col min-h-0">
           {category === "mat_lot" ? (

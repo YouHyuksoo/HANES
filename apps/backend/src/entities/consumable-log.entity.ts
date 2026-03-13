@@ -34,7 +34,7 @@ export class ConsumableLog {
   qty: number;
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerCode: string | null;
+  workerId: string | null;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

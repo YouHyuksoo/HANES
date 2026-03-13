@@ -278,8 +278,8 @@ export default function TransactionPage() {
   }, [transactions]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <History className="w-7 h-7 text-primary" />{t('inventory.transaction.title')}
@@ -288,19 +288,18 @@ export default function TransactionPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchTransactions}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label={t('inventory.transaction.totalTrans')} value={total} icon={History} color="blue" />
         <StatCard label={t('inventory.transaction.totalIn')} value={`+${totalIn.toLocaleString()}`} icon={ArrowDownToLine} color="green" />
         <StatCard label={t('inventory.transaction.totalOut')} value={`-${totalOut.toLocaleString()}`} icon={ArrowUpFromLine} color="red" />
       </div>
 
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={transactions}
             columns={columns}
@@ -324,8 +323,7 @@ export default function TransactionPage() {
               </div>
             }
           />
-        </CardContent>
-      </Card>
+      </CardContent></Card>
 
       {/* 취소 확인 모달 */}
       <Modal

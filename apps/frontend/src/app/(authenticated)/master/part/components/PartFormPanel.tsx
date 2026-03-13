@@ -12,8 +12,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+// X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button, Input, Select } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import { Part, PRODUCT_TYPE_OPTIONS } from "../types";
@@ -33,22 +34,37 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   const { options: customerOptions } = usePartnerOptions("CUSTOMER");
 
   const partTypeOptions = useMemo(() => [
-    { value: "RAW", label: t("inventory.stock.raw", "원자재") },
-    { value: "WIP", label: t("inventory.stock.wip", "반제품") },
-    { value: "FG", label: t("inventory.stock.fg", "완제품") },
+    { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
+    { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
+    { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
+    { value: "CONSUMABLE", label: t("inventory.stock.consumable", "소모품") },
   ], [t]);
 
-  const iqcOptions = [
-    { value: "Y", label: "Y (대상)" },
-    { value: "N", label: "N (비대상)" },
-  ];
+  /** Y/N 라디오 버튼 그룹 */
+  const YnRadio = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs font-medium text-text-muted">{label}</label>
+      <div className="flex gap-3 h-[34px] items-center">
+        {[
+          { v: "Y", l: "Y", cls: "text-green-600 dark:text-green-400" },
+          { v: "N", l: "N", cls: "text-red-500 dark:text-red-400" },
+        ].map(opt => (
+          <label key={opt.v} className={`flex items-center gap-1.5 cursor-pointer text-xs ${value === opt.v ? opt.cls + " font-semibold" : "text-text-muted"}`}>
+            <input type="radio" checked={value === opt.v} onChange={() => onChange(opt.v)}
+              className="w-3.5 h-3.5 accent-primary" />
+            {opt.l}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
 
   const [form, setForm] = useState(() => ({
     itemCode: editingPart?.itemCode || "",
     itemName: editingPart?.itemName || "",
     itemNo: editingPart?.itemNo || "",
     custPartNo: editingPart?.custPartNo || "",
-    itemType: (editingPart?.itemType || "RAW") as "RAW" | "WIP" | "FG",
+    itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
     productType: editingPart?.productType || "",
     spec: editingPart?.spec || "",
     rev: editingPart?.rev || "",
@@ -61,6 +77,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     tactTime: editingPart?.tactTime ?? 0,
     expiryDate: editingPart?.expiryDate ?? 0,
     iqcYn: editingPart?.iqcYn || "Y",
+    useYn: editingPart?.useYn || "Y",
     packUnit: editingPart?.packUnit || "",
     storageLocation: editingPart?.storageLocation || "",
     remark: editingPart?.remark || "",
@@ -74,7 +91,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       itemName: editingPart?.itemName || "",
       itemNo: editingPart?.itemNo || "",
       custPartNo: editingPart?.custPartNo || "",
-      itemType: (editingPart?.itemType || "RAW") as "RAW" | "WIP" | "FG",
+      itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
       productType: editingPart?.productType || "",
       spec: editingPart?.spec || "",
       rev: editingPart?.rev || "",
@@ -87,6 +104,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       tactTime: editingPart?.tactTime ?? 0,
       expiryDate: editingPart?.expiryDate ?? 0,
       iqcYn: editingPart?.iqcYn || "Y",
+      useYn: editingPart?.useYn || "Y",
       packUnit: editingPart?.packUnit || "",
       storageLocation: editingPart?.storageLocation || "",
       remark: editingPart?.remark || "",
@@ -104,21 +122,31 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     setSaving(true);
     try {
       const payload = {
-        ...form,
+        itemCode: form.itemCode,
+        itemName: form.itemName,
+        itemType: form.itemType,
         itemNo: form.itemNo || undefined,
         custPartNo: form.custPartNo || undefined,
         productType: form.productType || undefined,
         spec: form.spec || undefined,
         rev: form.rev || undefined,
+        unit: form.unit,
         vendor: form.vendor || undefined,
         customer: form.customer || undefined,
-        remark: form.remark || undefined,
+        boxQty: form.boxQty,
+        lotUnitQty: form.lotUnitQty || undefined,
+        safetyStock: form.safetyStock,
+        tactTime: form.tactTime,
+        expiryDate: form.expiryDate,
+        iqcYn: form.iqcYn,
+        useYn: form.useYn,
         packUnit: form.packUnit || undefined,
         storageLocation: form.storageLocation || undefined,
-        lotUnitQty: form.lotUnitQty || undefined,
+        remark: form.remark || undefined,
       };
-      if (isEdit && editingPart?.id) {
-        await api.put(`/master/parts/${editingPart.id}`, payload);
+      console.log("[PartForm] submitting payload:", JSON.stringify(payload, null, 2));
+      if (isEdit && editingPart?.itemCode) {
+        await api.put(`/master/parts/${editingPart.itemCode}`, payload);
       } else {
         await api.post("/master/parts", payload);
       }
@@ -140,9 +168,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("master.part.editPart") : t("master.part.addPart")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
+            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 (스크롤 가능) */}
@@ -167,7 +198,12 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <Input label={t("master.part.rev", "리비전")} placeholder="A"
               value={form.rev} onChange={e => setField("rev", e.target.value)} fullWidth />
             <Select label={t("master.part.type")} options={partTypeOptions}
-              value={form.itemType} onChange={v => setField("itemType", v)} fullWidth />
+              value={form.itemType} 
+              onChange={v => {
+                console.log("[PartForm] itemType changed:", v);
+                setField("itemType", v);
+              }} 
+              fullWidth />
             <Select label={t("master.part.productType", "제품유형")}
               options={PRODUCT_TYPE_OPTIONS.filter(o => o.value)}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
@@ -175,10 +211,10 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               <Input label={t("master.part.spec")} placeholder="Fuse to Minus Cable"
                 value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
             </div>
-            <Input label={t("master.part.unit")} placeholder="EA, M, KG"
-              value={form.unit} onChange={e => setField("unit", e.target.value)} fullWidth />
-            <Select label={t("master.part.iqcFlag", "IQC대상")} options={iqcOptions}
-              value={form.iqcYn} onChange={v => setField("iqcYn", v)} fullWidth />
+            <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false}
+              value={form.unit} onChange={v => setField("unit", v)} fullWidth />
+            <YnRadio label={t("master.part.iqcFlag", "IQC대상")} value={form.iqcYn} onChange={v => setField("iqcYn", v)} />
+            <YnRadio label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>
 
@@ -218,13 +254,6 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         </div>
       </div>
 
-      {/* 푸터 (저장/취소) */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-        </Button>
-      </div>
     </div>
   );
 }

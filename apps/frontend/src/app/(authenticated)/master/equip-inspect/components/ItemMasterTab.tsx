@@ -46,6 +46,12 @@ export default function ItemMasterTab() {
     { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
   ], [t]);
 
+  const typeFilterOptions = useMemo(() => [
+    { value: "", label: t("master.equipInspect.inspectType") + ": " + t("common.all") },
+    { value: "DAILY", label: t("master.equipInspect.inspectType") + ": " + t("master.equipInspect.typeDaily") },
+    { value: "PERIODIC", label: t("master.equipInspect.inspectType") + ": " + t("master.equipInspect.typePeriodic") },
+  ], [t]);
+
   const cycleOptions = useMemo(() => [
     { value: "DAILY", label: t("master.equipInspect.cycleDaily") },
     { value: "WEEKLY", label: t("master.equipInspect.cycleWeekly") },
@@ -188,7 +194,7 @@ export default function ItemMasterTab() {
                 onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
             </div>
             <div className="w-40 flex-shrink-0">
-              <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter}
+              <Select options={typeFilterOptions} value={typeFilter} onChange={setTypeFilter}
                 placeholder={t("master.equipInspect.filterByType")} fullWidth />
             </div>
           </div>

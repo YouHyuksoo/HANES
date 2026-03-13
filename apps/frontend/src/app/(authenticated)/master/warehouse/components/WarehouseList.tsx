@@ -7,7 +7,7 @@
  * 2. 창고유형별 필터링 + 검색 지원
  * 3. 기본창고 지정, 소프트 삭제
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Check, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
@@ -17,7 +17,11 @@ import { WarehouseData, WAREHOUSE_TYPE_COLORS } from "../types";
 import WarehouseForm from "./WarehouseForm";
 import api from "@/services/api";
 
-export default function WarehouseList() {
+interface Props {
+  onHeaderActions?: (actions: ReactNode) => void;
+}
+
+export default function WarehouseList({ onHeaderActions }: Props) {
   const { t } = useTranslation();
   const [warehouses, setWarehouses] = useState<WarehouseData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +41,14 @@ export default function WarehouseList() {
     { value: "SCRAP", label: t("inventory.warehouse.scrapWarehouse") },
     { value: "SUBCON", label: t("inventory.warehouse.subconWarehouse") },
   ], [t]);
+
+  const warehouseFilterOptions = useMemo(() => [
+    { value: "", label: t("inventory.warehouse.warehouseType") + ": " + t("common.all") },
+    ...WAREHOUSE_TYPES.filter(wt => wt.value).map(wt => ({
+      value: wt.value,
+      label: t("inventory.warehouse.warehouseType") + ": " + wt.label,
+    })),
+  ], [t, WAREHOUSE_TYPES]);
 
   const getTypeLabel = (type: string) => WAREHOUSE_TYPES.find(wt => wt.value === type)?.label || type;
 
@@ -72,11 +84,11 @@ export default function WarehouseList() {
     return warehouses.filter(w => w.warehouseCode.toLowerCase().includes(s) || w.warehouseName.toLowerCase().includes(s));
   }, [warehouses, searchText]);
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     setEditingWarehouse(null);
     setFormData({ warehouseCode: "", warehouseName: "", warehouseType: "RAW", plantCode: "", lineCode: "", processCode: "", isDefault: false });
     setModalOpen(true);
-  };
+  }, []);
 
   const handleEdit = (warehouse: WarehouseData) => {
     setEditingWarehouse(warehouse);
@@ -92,7 +104,7 @@ export default function WarehouseList() {
     setSaving(true);
     try {
       if (editingWarehouse) {
-        await api.put(`/inventory/warehouses/${editingWarehouse.id}`, formData);
+        await api.put(`/inventory/warehouses/${editingWarehouse.warehouseCode}`, formData);
       } else {
         await api.post("/inventory/warehouses", formData);
       }
@@ -105,13 +117,13 @@ export default function WarehouseList() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (warehouseCode: string) => {
     setConfirmModal({
       open: true, title: t("inventory.warehouse.deleteWarehouse"), message: t("inventory.warehouse.deleteConfirm"),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, open: false }));
         try {
-          await api.delete(`/inventory/warehouses/${id}`);
+          await api.delete(`/inventory/warehouses/${warehouseCode}`);
           fetchData();
         } catch (e) {
           console.error("Delete failed:", e);
@@ -120,11 +132,25 @@ export default function WarehouseList() {
     });
   };
 
+  // 헤더 버튼을 부모 페이지에 전달
+  useEffect(() => {
+    onHeaderActions?.(
+      <>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
+        <Button size="sm" onClick={handleCreate}>
+          <Plus className="w-4 h-4 mr-1" />{t("inventory.warehouse.newWarehouse")}
+        </Button>
+      </>
+    );
+  }, [onHeaderActions, fetchData, handleCreate, loading, t]);
+
   const columns: ColumnDef<WarehouseData>[] = useMemo(() => [
     { id: "actions", header: "", size: 100, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => handleEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Pencil className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => handleDelete(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}><Trash2 className="w-4 h-4 text-red-500" /></button>
+        <button onClick={() => handleDelete(row.original.warehouseCode)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
     { accessorKey: "warehouseCode", header: t("inventory.warehouse.warehouseCode"), size: 120, meta: { filterType: "text" as const } },
@@ -143,8 +169,8 @@ export default function WarehouseList() {
   ], [t]);
 
   return (
-    <>
-      <Card><CardContent>
+    <div className="h-full flex flex-col">
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={filtered}
           columns={columns}
@@ -158,14 +184,8 @@ export default function WarehouseList() {
                 <Input placeholder={t("inventory.warehouse.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-40 flex-shrink-0">
-                <Select options={WAREHOUSE_TYPES} value={filterType} onChange={(v) => setFilterType(v)} fullWidth />
+                <Select options={warehouseFilterOptions} value={filterType} onChange={(v) => setFilterType(v)} fullWidth />
               </div>
-              <Button variant="secondary" size="sm" onClick={fetchData} className="flex-shrink-0">
-                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-              </Button>
-              <Button size="sm" onClick={handleCreate} className="flex-shrink-0">
-                <Plus className="w-4 h-4 mr-1" />{t("inventory.warehouse.newWarehouse")}
-              </Button>
             </div>
           }
         />
@@ -174,6 +194,6 @@ export default function WarehouseList() {
       <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))} onConfirm={confirmModal.onConfirm} title={confirmModal.title} message={confirmModal.message} variant="danger" />
 
       <WarehouseForm isOpen={modalOpen} isEdit={!!editingWarehouse} formData={formData} typeOptions={WAREHOUSE_TYPES.filter(wt => wt.value !== "")} onClose={() => setModalOpen(false)} onChange={setFormData} onSave={handleSave} />
-    </>
+    </div>
   );
 }

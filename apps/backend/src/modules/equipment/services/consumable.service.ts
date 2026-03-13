@@ -306,7 +306,7 @@ export class ConsumableService {
         consumableCode: consumableCode,
         logType: 'IN',
         qty: 1,
-        workerCode: dto.workerId,
+        workerId: dto.workerId,
         remark: dto.remark ?? '교체 입고',
       });
 
@@ -367,7 +367,7 @@ export class ConsumableService {
       consumableCode: dto.consumableId,
       logType: dto.logType,
       qty: dto.qty ?? 1,
-      workerCode: dto.workerId,
+      workerId: dto.workerId,
       remark: dto.remark,
     });
 
@@ -555,7 +555,7 @@ export class ConsumableService {
         consumableCode: consumableCode,
         equipCode: dto.equipCode,
         action: 'MOUNT',
-        workerCode: dto.workerId ?? null,
+        workerId: dto.workerId ?? null,
         remark: dto.remark ?? null,
         company: consumable.company,
         plant: consumable.plant,
@@ -610,7 +610,7 @@ export class ConsumableService {
         consumableCode: consumableCode,
         equipCode: previousEquipCode,
         action: 'UNMOUNT',
-        workerCode: dto.workerId ?? null,
+        workerId: dto.workerId ?? null,
         remark: dto.remark ?? null,
         company: consumable.company,
         plant: consumable.plant,
@@ -654,7 +654,7 @@ export class ConsumableService {
           consumableCode: consumableCode,
           equipCode: consumable.mountedEquipCode,
           action: 'UNMOUNT',
-          workerCode: dto.workerId ?? null,
+          workerId: dto.workerId ?? null,
           remark: '수리 전환으로 인한 자동 해제',
           company: consumable.company,
           plant: consumable.plant,

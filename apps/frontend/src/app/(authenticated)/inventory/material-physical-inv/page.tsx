@@ -15,10 +15,10 @@ import { useTranslation } from "react-i18next";
 import {
   ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCircle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
-import { useWarehouseOptions } from "@/hooks/useMasterOptions";
+import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface StockForCount {
@@ -36,8 +36,6 @@ interface StockForCount {
 
 export default function MaterialPhysicalInvPage() {
   const { t } = useTranslation();
-  const { options: warehouseOpts } = useWarehouseOptions();
-
   const [data, setData] = useState<StockForCount[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -65,11 +63,6 @@ export default function MaterialPhysicalInvPage() {
   }, [searchText, warehouseFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const warehouseOptions = useMemo(() => [
-    { value: "", label: t("common.warehouse") },
-    ...warehouseOpts,
-  ], [t, warehouseOpts]);
 
   const updateCountedQty = useCallback((id: string, value: number | null) => {
     setData(prev => prev.map(row =>
@@ -171,8 +164,8 @@ export default function MaterialPhysicalInvPage() {
   ], [t, updateCountedQty]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardList className="w-7 h-7 text-primary" />
@@ -181,6 +174,9 @@ export default function MaterialPhysicalInvPage() {
           <p className="text-text-muted mt-1">{t("inventory.matPhysicalInv.description")}</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
           <Button size="sm" onClick={() => setShowConfirm(true)} disabled={countedItems.length === 0}>
             <CheckSquare className="w-4 h-4 mr-1" />
             {t("material.physicalInv.applyCount")} ({countedItems.length})
@@ -188,14 +184,14 @@ export default function MaterialPhysicalInvPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("material.physicalInv.stats.total")} value={stats.total} icon={ClipboardList} color="blue" />
         <StatCard label={t("material.physicalInv.stats.counted")} value={stats.counted} icon={CheckSquare} color="purple" />
         <StatCard label={t("material.physicalInv.stats.mismatch")} value={stats.mismatch} icon={AlertTriangle} color="red" />
         <StatCard label={t("material.physicalInv.stats.matched")} value={stats.matched} icon={CheckCircle} color="green" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("inventory.matPhysicalInv.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
@@ -205,11 +201,8 @@ export default function MaterialPhysicalInvPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-40 flex-shrink-0">
-                <Select options={warehouseOptions} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth />
+                <WarehouseSelect includeAll labelPrefix={t("common.warehouse", "창고")} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

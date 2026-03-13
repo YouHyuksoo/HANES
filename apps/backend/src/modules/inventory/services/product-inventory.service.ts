@@ -96,6 +96,7 @@ export class ProductInventoryService {
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(ProductStock, {
         where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (existingStock) {
@@ -163,6 +164,7 @@ export class ProductInventoryService {
 
     const existingStock = await qr.manager.findOne(ProductStock, {
       where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
+      lock: { mode: 'pessimistic_write' },
     });
 
     if (existingStock) {
@@ -202,6 +204,7 @@ export class ProductInventoryService {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -243,6 +246,7 @@ export class ProductInventoryService {
       if (dto.toWarehouseId) {
         const targetStock = await queryRunner.manager.findOne(ProductStock, {
           where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (targetStock) {
@@ -338,6 +342,7 @@ export class ProductInventoryService {
             itemCode: originalTrans.itemCode,
             prdUid: originalTrans.prdUid || IsNull(),
           },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (stock) {
@@ -360,6 +365,7 @@ export class ProductInventoryService {
             itemCode: originalTrans.itemCode,
             prdUid: originalTrans.prdUid || IsNull(),
           },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (stock) {

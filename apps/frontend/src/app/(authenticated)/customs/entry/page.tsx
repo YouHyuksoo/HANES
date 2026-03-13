@@ -108,6 +108,14 @@ export default function CustomsEntryPage() {
   }), [data]);
 
   const columns = useMemo<ColumnDef<CustomsEntry>[]>(() => [
+    {
+      id: "actions", header: t("common.manage"), size: 100, meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Edit2 className="w-4 h-4 text-primary" /></button>
+        </div>
+      ),
+    },
     { accessorKey: "entryNo", header: t("customs.entry.entryNo"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "blNo", header: t("customs.entry.blNo"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "invoiceNo", header: t("customs.entry.invoiceNo"), size: 120, meta: { filterType: "text" as const } },
@@ -121,36 +129,33 @@ export default function CustomsEntryPage() {
       cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[s]}`}>{statusLabels[s]}</span>; },
     },
     { accessorKey: "lotCount", header: t("customs.entry.lotCount"), size: 70, meta: { filterType: "number" as const } },
-    {
-      id: "actions", header: t("common.manage"), size: 100, meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Edit2 className="w-4 h-4 text-primary" /></button>
-        </div>
-      ),
-    },
   ], [t, statusLabels, openEdit]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><FileText className="w-7 h-7 text-primary" />{t("customs.entry.title")}</h1>
           <p className="text-text-muted mt-1">{t("customs.entry.description")}</p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="w-4 h-4 mr-1" /> {t("customs.entry.register")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> {t("customs.entry.register")}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("customs.entry.statusPending")} value={stats.pending} icon={FileText} color="yellow" />
         <StatCard label={t("customs.entry.statusCleared")} value={stats.cleared} icon={CheckCircle} color="blue" />
         <StatCard label={t("customs.entry.statusReleased")} value={stats.released} icon={Package} color="green" />
         <StatCard label={t("customs.entry.bondedLot")} value={stats.totalLots} icon={Layers} color="purple" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -163,9 +168,6 @@ export default function CustomsEntryPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("customs.entry.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

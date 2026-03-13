@@ -103,6 +103,15 @@ export default function SubconOrderPage() {
   }, [form, fetchData]);
 
   const columns = useMemo<ColumnDef<SubconOrder>[]>(() => [
+    {
+      id: "actions", header: t("common.manage"), size: 70,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button onClick={() => { setSelectedOrder(row.original); setIsDetailModalOpen(true); }} className="p-1 hover:bg-surface rounded">
+          <Eye className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "orderNo", header: t("outsourcing.order.orderNo"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "vendorName", header: t("outsourcing.order.vendor"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
@@ -119,14 +128,6 @@ export default function SubconOrderPage() {
         return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>;
       },
     },
-    {
-      id: "actions", header: t("common.manage"), size: 70,
-      cell: ({ row }) => (
-        <button onClick={() => { setSelectedOrder(row.original); setIsDetailModalOpen(true); }} className="p-1 hover:bg-surface rounded">
-          <Eye className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
   ], [t, statusLabels]);
 
   const stats = useMemo(() => ({
@@ -137,25 +138,30 @@ export default function SubconOrderPage() {
   }), [data]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><FileText className="w-7 h-7 text-primary" />{t("outsourcing.order.title")}</h1>
           <p className="text-text-muted mt-1">{t("outsourcing.order.description")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> {t("outsourcing.order.register")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> {t("outsourcing.order.register")}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("outsourcing.order.statusOrdered")} value={stats.ordered} icon={FileText} color="blue" />
         <StatCard label={t("outsourcing.order.statusDelivered")} value={stats.delivered} icon={Truck} color="purple" />
         <StatCard label={t("outsourcing.order.pendingReceive")} value={stats.pending} icon={Package} color="yellow" />
         <StatCard label={t("outsourcing.order.statusReceived")} value={stats.received} icon={CheckCircle} color="green" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -171,9 +177,6 @@ export default function SubconOrderPage() {
               <div className="w-36 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

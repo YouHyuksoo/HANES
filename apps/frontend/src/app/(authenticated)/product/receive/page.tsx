@@ -161,9 +161,9 @@ export default function ProductReceivePage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <PackageCheck className="w-7 h-7 text-primary" />
@@ -172,8 +172,8 @@ export default function ProductReceivePage() {
           <p className="text-text-muted mt-1">{t("productMgmt.receive.subtitle")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
           <Button onClick={() => setIsModalOpen(true)}>
             <ClipboardPlus className="w-4 h-4 mr-1" />
@@ -183,7 +183,7 @@ export default function ProductReceivePage() {
       </div>
 
       {/* StatCards */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard
           label={t("productMgmt.receive.stats.todayCount")}
           value={stats.todayCount}
@@ -211,10 +211,12 @@ export default function ProductReceivePage() {
       </div>
 
       {/* 박스 스캔 입고 */}
-      <BoxScanCard onSuccess={fetchData} />
+      <div className="flex-shrink-0">
+        <BoxScanCard onSuccess={fetchData} />
+      </div>
 
       {/* 탭 */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 border-b border-border flex-shrink-0">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -231,8 +233,8 @@ export default function ProductReceivePage() {
       </div>
 
       {/* DataGrid */}
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4">
           <DataGrid
             data={data}
             columns={columns}

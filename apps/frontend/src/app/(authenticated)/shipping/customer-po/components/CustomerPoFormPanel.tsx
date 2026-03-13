@@ -150,9 +150,12 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("shipping.customerPo.editTitle") : t("shipping.customerPo.addTitle")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={!canSubmit || saving}>
+            {saving ? t("common.saving") : isEdit ? t("common.edit") : t("common.register")}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 */}
@@ -297,13 +300,6 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
         </div>
       </div>
 
-      {/* 푸터 */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={!canSubmit || saving}>
-          {saving ? t("common.saving") : isEdit ? t("common.edit") : t("common.register")}
-        </Button>
-      </div>
     </div>
   );
 }

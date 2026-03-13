@@ -152,6 +152,22 @@ export default function PoPage() {
   /** 마스터 그리드 컬럼 (PO 목록) */
   const masterColumns = useMemo<ColumnDef<PurchaseOrder>[]>(() => [
     {
+      id: "actions", header: "", size: 70,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}
+            className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }}
+            className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
+    {
       accessorKey: "poNo", header: t("material.po.poNo"), size: 150,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (
@@ -190,22 +206,6 @@ export default function PoPage() {
           </span>
         );
       },
-    },
-    {
-      id: "actions", header: "", size: 70,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}
-            className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }}
-            className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
     },
   ], [t, openEdit]);
 
@@ -265,9 +265,9 @@ export default function PoPage() {
   const detailItems = selectedPo?.items ?? [];
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ShoppingCart className="w-7 h-7 text-primary" />{t("material.po.title")}
@@ -276,7 +276,7 @@ export default function PoPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
           <Button size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-1" />{t("common.register")}
@@ -285,7 +285,7 @@ export default function PoPage() {
       </div>
 
       {/* 통계 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("material.po.stats.total")} value={stats.total}
           icon={ShoppingCart} color="blue" />
         <StatCard label={t("material.po.stats.confirmed")} value={stats.confirmed}
@@ -297,10 +297,10 @@ export default function PoPage() {
       </div>
 
       {/* 마스터-디테일 좌우 분할 */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
         {/* 좌측: PO 마스터 */}
-        <div className="col-span-7">
-          <Card><CardContent>
+        <div className="col-span-7 min-h-0">
+          <Card className="h-full overflow-hidden" padding="none"><CardContent className="h-full p-4">
             <DataGrid data={data} columns={masterColumns} isLoading={loading}
               enableColumnFilter enableExport exportFileName={t("material.po.title")}
               onRowClick={(row) => setSelectedPo(row)}
@@ -323,9 +323,9 @@ export default function PoPage() {
         </div>
 
         {/* 우측: 품목 디테일 */}
-        <div className="col-span-5">
-          <Card>
-            <CardContent>
+        <div className="col-span-5 min-h-0">
+          <Card className="h-full overflow-hidden" padding="none">
+            <CardContent className="h-full p-4">
               {selectedPo ? (
                 <div className="space-y-3">
                   {/* 선택된 PO 헤더 정보 */}

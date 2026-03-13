@@ -33,7 +33,7 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
   const [editingItem, setEditingItem] = useState<RoutingItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<RoutingItem | null>(null);
 
-  const itemCode = routingTarget?.itemCode || selectedParent?.id || "";
+  const itemCode = routingTarget?.itemCode || selectedParent?.itemCode || "";
   const targetCode = routingTarget?.itemCode || selectedParent?.itemCode || "";
   const targetName = routingTarget?.itemName || selectedParent?.itemName || "";
 
@@ -53,7 +53,7 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
   const handleDelete = useCallback(async () => {
     if (!deletingItem) return;
     try {
-      await api.delete(`/master/routings/${deletingItem.id}`);
+      await api.delete(`/master/routings/${deletingItem.itemCode}/${deletingItem.seq}`);
       setDeletingItem(null);
       fetchRoutings();
     } catch { /* API 에러는 인터셉터에서 처리 */ }

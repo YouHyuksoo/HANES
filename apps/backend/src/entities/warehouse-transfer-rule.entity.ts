@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. id가 자동증가 PK (SEQUENCE)
- * 2. fromWarehouseCode + toWarehouseCode: 복합 유니크
+ * 2. fromWarehouseId + toWarehouseId: 복합 유니크
  * 3. allowYn: 이동 허용 여부
  */
 import {
@@ -14,23 +14,24 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   Index,
   Unique,
 } from 'typeorm';
 
 @Entity({ name: 'WAREHOUSE_TRANSFER_RULES' })
-@Unique(['fromWarehouseCode', 'toWarehouseCode'])
-@Index(['fromWarehouseCode'])
-@Index(['toWarehouseCode'])
+@Unique(['fromWarehouseId', 'toWarehouseId'])
+@Index(['fromWarehouseId'])
+@Index(['toWarehouseId'])
 export class WarehouseTransferRule {
   @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
-  @Column({ name: 'FROM_WAREHOUSE_CODE', length: 50 })
-  fromWarehouseCode: string;
+  @Column({ name: 'FROM_WAREHOUSE_ID', length: 50 })
+  fromWarehouseId: string;
 
-  @Column({ name: 'TO_WAREHOUSE_CODE', length: 50 })
-  toWarehouseCode: string;
+  @Column({ name: 'TO_WAREHOUSE_ID', length: 50 })
+  toWarehouseId: string;
 
   @Column({ name: 'ALLOW_YN', length: 1, default: 'Y' })
   allowYn: string;
@@ -55,4 +56,7 @@ export class WarehouseTransferRule {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
+  deletedAt: Date | null;
 }

@@ -1,7 +1,7 @@
 /**
  * @file prod-result.entity.ts
  * @description 생산실적(ProdResult) 엔티티 - 작업지시별 생산 결과를 기록한다.
- *              시퀀스 PK 사용, orderNo로 JobOrder 참조, equipCode/workerCode로 참조.
+ *              시퀀스 PK 사용, orderNo로 JobOrder 참조, equipCode/workerId로 참조.
  *
  * 초보자 가이드:
  * 1. ID는 자동 증가 시퀀스 (number)
@@ -29,7 +29,7 @@ import { MatIssue } from './mat-issue.entity';
 @Entity({ name: 'PROD_RESULTS' })
 @Index(['orderNo'])
 @Index(['equipCode'])
-@Index(['workerCode'])
+@Index(['workerId'])
 @Index(['status'])
 export class ProdResult {
   @PrimaryGeneratedColumn({ name: 'ID' })
@@ -50,7 +50,7 @@ export class ProdResult {
   equip: EquipMaster | null;
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
-  workerCode: string | null;
+  workerId: string | null;
 
   @ManyToOne(() => WorkerMaster)
   @JoinColumn({ name: 'WORKER_ID', referencedColumnName: 'workerCode' })

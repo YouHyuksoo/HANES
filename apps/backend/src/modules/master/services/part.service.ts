@@ -86,7 +86,7 @@ export class PartService {
     const part = this.partRepository.create({
       itemCode: dto.itemCode,
       itemName: dto.itemName,
-      itemNo: dto.partNo,
+      itemNo: dto.itemNo,
       custPartNo: dto.custPartNo,
       itemType: dto.itemType,
       productType: dto.productType,

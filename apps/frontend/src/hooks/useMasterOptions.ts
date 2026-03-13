@@ -16,9 +16,8 @@ import { useApiQuery } from "./useApi";
 import type { SelectOption } from "@/components/ui/Select";
 
 interface WarehouseItem {
-  id: string;
+  warehouseCode: string;
   warehouseName: string;
-  warehouseCode?: string;
 }
 
 interface PartItem {
@@ -44,7 +43,6 @@ interface ProcessItem {
 }
 
 interface EquipItem {
-  id: string;
   equipCode: string;
   equipName: string;
   equipType?: string;
@@ -82,7 +80,7 @@ export function useWarehouseOptions(warehouseType?: string) {
     const raw = data?.data;
     const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((w) => ({
-      value: w.id,
+      value: w.warehouseCode,
       label: w.warehouseName,
     }));
   }, [data]);
@@ -202,7 +200,7 @@ export function useEquipOptions() {
     const raw = data?.data;
     const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((e) => ({
-      value: e.id,
+      value: e.equipCode,
       label: `${e.equipCode} - ${e.equipName}`,
     }));
   }, [data]);

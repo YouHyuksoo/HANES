@@ -42,7 +42,7 @@ export default function SidebarMenu({
   const disabledCls = "opacity-40 cursor-not-allowed";
 
   return (
-    <ul className="space-y-1">
+    <ul className="space-y-0.5">
       {items.map((item) => {
         const disabled = isMenuDisabled(item);
 
@@ -54,7 +54,7 @@ export default function SidebarMenu({
                 <span
                   title={collapsed ? t(item.labelKey) : undefined}
                   className={`
-                    flex items-center gap-3 py-2.5 rounded-[var(--radius)]
+                    flex items-center gap-3 py-1.5 rounded-[var(--radius)]
                     text-sm font-medium select-none ${disabledCls}
                     ${collapsed ? "justify-center px-0" : "px-3"}
                     text-text
@@ -69,7 +69,7 @@ export default function SidebarMenu({
                   onClick={() => handleMenuClick(item as { code: string; path: string; labelKey: string }, item.code)}
                   title={collapsed ? t(item.labelKey) : undefined}
                   className={`
-                    flex items-center gap-3 py-2.5 rounded-[var(--radius)]
+                    flex items-center gap-3 py-1.5 rounded-[var(--radius)]
                     text-sm font-medium transition-colors duration-200
                     ${collapsed ? "justify-center px-0" : "px-3"}
                     ${pathname === item.path ? "bg-primary text-white" : "text-text hover:bg-background"}
@@ -86,7 +86,7 @@ export default function SidebarMenu({
                   onClick={() => !disabled && onToggleMenu(item.code)}
                   title={collapsed ? t(item.labelKey) : undefined}
                   className={`
-                    w-full flex items-center py-2.5 rounded-[var(--radius)]
+                    w-full flex items-center py-1.5 rounded-[var(--radius)]
                     text-sm font-medium transition-colors duration-200
                     ${collapsed ? "justify-center px-0" : "justify-between px-3"}
                     ${disabled ? disabledCls : ""}
@@ -106,7 +106,7 @@ export default function SidebarMenu({
 
                 {/* 하위 메뉴 리스트 (펼친 상태에서만) */}
                 {!collapsed && expandedMenus.includes(item.code) && item.children && (
-                  <ul className="mt-1 ml-4 pl-4 border-l border-border space-y-1">
+                  <ul className="mt-0.5 ml-4 pl-4 border-l border-border space-y-0">
                     {item.children.map((child) => {
                       const childDisabled = isMenuDisabled(child);
                       return (

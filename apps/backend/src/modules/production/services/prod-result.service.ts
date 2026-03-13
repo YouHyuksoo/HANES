@@ -94,7 +94,7 @@ export class ProdResultService {
       ...(plant && { plant }),
       ...(orderNo && { orderNo }),
       ...(equipCode && { equipCode }),
-      ...(workerId && { workerCode: workerId }),
+      ...(workerId && { workerId }),
       ...(prdUid && { prdUid: ILike(`%${prdUid}%`) }),
       ...(processCode && { processCode }),
       ...(status && { status }),
@@ -119,7 +119,7 @@ export class ProdResultService {
           id: true,
           orderNo: true,
           equipCode: true,
-          workerCode: true,
+          workerId: true,
           prdUid: true,
           processCode: true,
           goodQty: true,
@@ -218,7 +218,7 @@ export class ProdResultService {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerCode: true,
+        workerId: true,
         prdUid: true,
         processCode: true,
         goodQty: true,
@@ -355,7 +355,7 @@ export class ProdResultService {
       }
     }
 
-    // 작업자 존재 확인 (옵션) — workerCode로 User 테이블 조회
+    // 작업자 존재 확인 (옵션) — workerId로 User 테이블 조회
     if (dto.workerId) {
       const worker = await this.userRepository.findOne({
         where: { email: dto.workerId },
@@ -374,7 +374,7 @@ export class ProdResultService {
       const prodResult = queryRunner.manager.create(ProdResult, {
         orderNo: dto.orderNo,
         equipCode: dto.equipCode,
-        workerCode: dto.workerId,
+        workerId: dto.workerId ?? null,
         prdUid: dto.prdUid,
         processCode: dto.processCode,
         goodQty: dto.goodQty ?? 0,
@@ -415,7 +415,7 @@ export class ProdResultService {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerCode: true,
+        workerId: true,
         prdUid: true,
         processCode: true,
         goodQty: true,
@@ -446,7 +446,7 @@ export class ProdResultService {
 
     const updateData: any = {};
     if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
-    if (dto.workerId !== undefined) updateData.workerCode = dto.workerId;
+    if (dto.workerId !== undefined) updateData.workerId = dto.workerId ?? null;
     if (dto.prdUid !== undefined) updateData.prdUid = dto.prdUid;
     if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
     if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
@@ -466,7 +466,7 @@ export class ProdResultService {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerCode: true,
+        workerId: true,
         prdUid: true,
         processCode: true,
         goodQty: true,
@@ -616,7 +616,7 @@ export class ProdResultService {
         id: true,
         orderNo: true,
         equipCode: true,
-        workerCode: true,
+        workerId: true,
         prdUid: true,
         processCode: true,
         goodQty: true,
@@ -716,6 +716,7 @@ export class ProdResultService {
         // (c) MatStock 복원
         const stocks = await qr.manager.find(MatStock, {
           where: { matUid: issue.matUid },
+          lock: { mode: 'pessimistic_write' },
         });
         if (stocks.length > 0) {
           // 첫 번째 재고 레코드에 복원 (단순화)
@@ -777,6 +778,7 @@ export class ProdResultService {
       if (tx.toWarehouseId && tx.qty > 0) {
         const stock = await qr.manager.findOne(ProductStock, {
           where: { warehouseCode: tx.toWarehouseId, itemCode: tx.itemCode },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (stock) {
@@ -892,7 +894,7 @@ export class ProdResultService {
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
-      .where('pr.workerCode = :workerId', { workerId })
+      .where('pr.workerId = :workerId', { workerId })
       .andWhere('pr.status != :status', { status: 'CANCELED' });
 
     if (dateFrom || dateTo) {
@@ -981,7 +983,7 @@ export class ProdResultService {
         'SUM(pr.goodQty) AS "totalGoodQty"',
         'SUM(pr.defectQty) AS "totalDefectQty"',
         'COUNT(DISTINCT jo.orderNo) AS "orderCount"',
-        'COUNT(pr.id) AS "resultCount"',
+        'COUNT(pr."ID") AS "resultCount"',
       ])
       .where('pr.status != :status', { status: 'CANCELED' })
       .groupBy('p.itemCode')

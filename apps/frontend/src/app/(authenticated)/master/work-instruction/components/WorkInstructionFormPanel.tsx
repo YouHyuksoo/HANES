@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Upload, FileImage, FileText, Trash2 } from "lucide-react";
+import { Upload, FileImage, FileText, Trash2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import api from "@/services/api";
 
@@ -130,9 +130,12 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("master.workInstruction.editDoc") : t("master.workInstruction.addDoc")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.title.trim()}>
+            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
@@ -241,12 +244,6 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         </div>
       </div>
 
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.title.trim()}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-        </Button>
-      </div>
     </div>
   );
 }

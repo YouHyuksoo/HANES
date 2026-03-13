@@ -118,25 +118,30 @@ export default function SubconReceivePage() {
   }, [data]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />{t("outsourcing.receive.title")}</h1>
           <p className="text-text-muted mt-1">{t("outsourcing.receive.description")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> {t("outsourcing.receive.register")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={() => setIsModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> {t("outsourcing.receive.register")}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("outsourcing.receive.receiveCount")} value={stats.count} icon={Package} color="blue" />
         <StatCard label={t("outsourcing.receive.totalReceiveQty")} value={stats.totalQty.toLocaleString()} icon={Layers} color="purple" />
         <StatCard label={t("outsourcing.receive.goodQty")} value={stats.totalGood.toLocaleString()} icon={CheckCircle} color="green" />
         <StatCard label={t("outsourcing.receive.defectRate")} value={`${stats.defectRate}%`} icon={XCircle} color="red" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -149,9 +154,6 @@ export default function SubconReceivePage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("outsourcing.receive.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

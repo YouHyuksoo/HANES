@@ -92,10 +92,10 @@ export default function VendorBarcodeMappingPage() {
   }, [fetchData]);
 
   const matchTypeOptions = useMemo(() => [
-    { value: "", label: t("master.vendorBarcode.matchType", "매칭유형") },
+    { value: "", label: t("master.vendorBarcode.matchType", "매칭유형") + ": " + t("common.all") },
     ...MATCH_TYPE_OPTIONS.map(o => ({
       value: o.value,
-      label: t(`master.vendorBarcode.match${o.value.charAt(0) + o.value.slice(1).toLowerCase()}`, o.label),
+      label: t("master.vendorBarcode.matchType", "매칭유형") + ": " + t(`master.vendorBarcode.match${o.value.charAt(0) + o.value.slice(1).toLowerCase()}`, o.label),
     })),
   ], [t]);
 
@@ -143,9 +143,9 @@ export default function VendorBarcodeMappingPage() {
   ], [t, isPanelOpen]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <ScanLine className="w-7 h-7 text-primary" />
@@ -163,7 +163,7 @@ export default function VendorBarcodeMappingPage() {
           </div>
         </div>
 
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={filteredData} columns={columns} isLoading={loading} enableColumnPinning enableColumnFilter enableExport exportFileName={t("master.vendorBarcode.title")}
             onRowClick={(row) => { if (isPanelOpen) setEditingItem(row); }}
             toolbarLeft={

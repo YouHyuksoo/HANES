@@ -116,20 +116,23 @@ export default function CustomerPoStatusPage() {
   ], [t, statusOptions]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><BarChart3 className="w-7 h-7 text-primary" />{t("shipping.customerPoStatus.title")}</h1>
           <p className="text-text-muted mt-1">{t("shipping.customerPoStatus.subtitle")}</p>
         </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("shipping.customerPoStatus.statTotal")} value={stats.total} icon={FileText} color="blue" />
         <StatCard label={t("shipping.customerPoStatus.statusInProgress")} value={stats.inProgress} icon={Loader} color="yellow" />
         <StatCard label={t("shipping.customerPoStatus.statusPartialShip")} value={stats.partialShip} icon={TruckIcon} color="orange" />
         <StatCard label={t("shipping.customerPoStatus.statusCompleted")} value={stats.completed} icon={CheckCircle} color="green" />
       </div>
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -145,9 +148,6 @@ export default function CustomerPoStatusPage() {
               <div className="w-40 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

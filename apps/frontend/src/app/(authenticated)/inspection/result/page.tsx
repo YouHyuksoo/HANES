@@ -86,22 +86,25 @@ export default function ResultPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />{t("inspection.result.title")}</h1>
           <p className="text-text-muted mt-1">{t("inspection.result.description")}</p>
         </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
         <StatCard label={t("inspection.result.totalInspections")} value={`${stats.total}${t("common.count")}`} icon={Activity} color="blue" />
         <StatCard label={t("inspection.result.passRate")} value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
         <StatCard label={t("inspection.result.pass")} value={`${stats.passed}${t("common.count")}`} icon={CheckCircle} color="green" />
         <StatCard label={t("inspection.result.fail")} value={`${stats.failed}${t("common.count")}`} icon={XCircle} color="red" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -121,9 +124,6 @@ export default function ResultPage() {
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
               </div>
               <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder={t("inspection.result.resultCol")} />
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

@@ -151,8 +151,8 @@ export default function LotMergePage() {
   ], [t, selectedIds, toggleSelect]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Merge className="w-7 h-7 text-primary" />
@@ -162,7 +162,7 @@ export default function LotMergePage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => setShowConfirm(true)}
             disabled={!canMerge}>
@@ -174,7 +174,7 @@ export default function LotMergePage() {
 
       {/* 선택 상태 */}
       {selectedLots.length > 0 && (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-4 flex-shrink-0">
           <StatCard label={t("material.lotMerge.selectedCount")} value={selectedLots.length} icon={CheckSquare} color="blue" />
           <StatCard label={t("material.lotMerge.totalQty")} value={totalMergeQty.toLocaleString()} icon={Merge} color="purple" />
           <StatCard label={t("material.lotMerge.targetLot")} value={selectedLots[0]?.matUid || "-"} icon={Merge} color="green" />
@@ -185,13 +185,13 @@ export default function LotMergePage() {
       )}
 
       {partMismatch && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+        <div className="flex items-center gap-2 p-3 flex-shrink-0 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
           <AlertCircle className="w-4 h-4" />
           {t("material.lotMerge.partMismatchWarning")}
         </div>
       )}
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}

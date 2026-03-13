@@ -11,7 +11,6 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
 import { Button } from "@/components/ui";
 
 interface Props {
@@ -50,9 +49,14 @@ export default function ReworkApprovePanel({ type, onClose, onSubmit, animate = 
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
         <h2 className="text-sm font-bold text-text">{title}</h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit}
+            disabled={submitting || (action === "REJECT" && !reason.trim())}
+            variant={action === "REJECT" ? "danger" : "primary"}>
+            {submitting ? t("common.saving") : action === "APPROVE" ? t("quality.rework.approve") : t("quality.rework.reject")}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 */}
@@ -92,15 +96,6 @@ export default function ReworkApprovePanel({ type, onClose, onSubmit, animate = 
         )}
       </div>
 
-      {/* 푸터 */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit}
-          disabled={submitting || (action === "REJECT" && !reason.trim())}
-          variant={action === "REJECT" ? "danger" : "primary"}>
-          {submitting ? t("common.saving") : action === "APPROVE" ? t("quality.rework.approve") : t("quality.rework.reject")}
-        </Button>
-      </div>
     </div>
   );
 }

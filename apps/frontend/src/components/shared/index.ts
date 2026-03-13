@@ -15,3 +15,4 @@ export { default as ComCodeSelect } from "./ComCodeSelect";
 export { default as PartnerSelect } from "./PartnerSelect";
 export { default as ConsumableSearchModal } from "./ConsumableSearchModal";
 export type { ConsumableItem } from "./ConsumableSearchModal";
+export { default as UseYnSelect } from "./UseYnSelect";

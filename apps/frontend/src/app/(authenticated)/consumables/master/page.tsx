@@ -8,7 +8,7 @@
  * 1. **목록 조회**: GET /consumables (페이지네이션, 검색, 카테고리 필터)
  * 2. **통계 카드**: GET /consumables/summary (전체/경고/교체 건수)
  * 3. **등록/수정**: 우측 슬라이드 패널(ConsumableFormPanel)에서 처리
- * 4. **삭제**: DELETE /consumables/:id (소프트 삭제)
+ * 4. **삭제**: DELETE /consumables/:consumableCode (소프트 삭제)
  */
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -71,7 +71,7 @@ function ConsumableMasterPage() {
     setSaving(true);
     try {
       if (editing) {
-        await api.put(`/consumables/${editing.id}`, form);
+        await api.put(`/consumables/${editing.consumableCode}`, form);
       } else {
         await api.post("/consumables", form);
       }
@@ -125,7 +125,7 @@ function ConsumableMasterPage() {
             >
               <Edit2 className="w-4 h-4 text-primary" />
             </button>
-            <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original.id); }} className="p-1 hover:bg-surface rounded">
+            <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original.consumableCode); }} className="p-1 hover:bg-surface rounded">
               <Trash2 className="w-4 h-4 text-red-500" />
             </button>
           </div>
@@ -185,10 +185,10 @@ function ConsumableMasterPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+    <div className="flex h-full animate-fade-in">
       {/* 좌측: 메인 콘텐츠 */}
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <Wrench className="w-7 h-7 text-primary" />
@@ -206,15 +206,15 @@ function ConsumableMasterPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
           <StatCard label={t("consumables.master.totalConsumables")} value={computedStats.total} icon={Wrench} color="blue" />
           <StatCard label={t("consumables.master.mold")} value={computedStats.mold} icon={Package} color="purple" />
           <StatCard label={t("consumables.master.jig")} value={computedStats.jig} icon={Package} color="green" />
           <StatCard label={t("consumables.master.tool")} value={computedStats.tool} icon={Package} color="yellow" />
         </div>
 
-        <Card>
-          <CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4">
             <DataGrid
               data={data}
               columns={columns}
@@ -228,7 +228,7 @@ function ConsumableMasterPage() {
                   <Input placeholder={t("consumables.master.searchPlaceholder")}
                     value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />} />
-                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} placeholder={t("consumables.master.category")} />
+                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix="분류" />
                 </div>
               }
             />

@@ -23,7 +23,6 @@ import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 interface ShipOrder {
-  id: string;
   shipOrderNo: string;
   customerName: string;
   customerId: string;
@@ -93,7 +92,7 @@ export default function ShipOrderPage() {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/shipping/ship-orders/${editingItem.id}`, form);
+        await api.put(`/shipping/ship-orders/${editingItem.shipOrderNo}`, form);
       } else {
         await api.post("/shipping/ship-orders", form);
       }
@@ -109,7 +108,7 @@ export default function ShipOrderPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/shipping/ship-orders/${deleteTarget.id}`);
+      await api.delete(`/shipping/ship-orders/${deleteTarget.shipOrderNo}`);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);
@@ -119,6 +118,12 @@ export default function ShipOrderPage() {
   }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<ShipOrder>[]>(() => [
+    { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
+      <div className="flex gap-1">
+        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
+        <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+      </div>
+    ) },
     { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "customerName", header: t("shipping.shipOrder.customer"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "dueDate", header: t("shipping.shipOrder.dueDate"), size: 100, meta: { filterType: "date" as const } },
@@ -126,35 +131,29 @@ export default function ShipOrderPage() {
     { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
-    { id: "actions", header: "", size: 80, meta: { filterType: "none" as const }, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
-      </div>
-    ) },
   ], [t, openEdit]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><ClipboardList className="w-7 h-7 text-primary" />{t("shipping.shipOrder.title")}</h1>
           <p className="text-text-muted mt-1">{t("shipping.shipOrder.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
           <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("common.register")}</Button>
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("shipping.shipOrder.statTotal")} value={stats.total} icon={FileText} color="blue" />
         <StatCard label={t("shipping.shipOrder.statusDraft")} value={stats.draft} icon={Clock} color="yellow" />
         <StatCard label={t("shipping.shipOrder.statusConfirmed")} value={stats.confirmed} icon={CheckCircle} color="green" />
         <StatCard label={t("shipping.shipOrder.statusShipped")} value={stats.shipped} icon={Truck} color="purple" />
       </div>
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("shipping.shipOrder.title")}
           toolbarLeft={

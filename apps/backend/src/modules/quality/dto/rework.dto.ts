@@ -56,7 +56,7 @@ export class ReworkProcessItemDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  workerCode?: string;
+  workerId?: string;
 
   @ApiPropertyOptional({ description: '라인 코드', maxLength: 50 })
   @IsOptional()
@@ -83,7 +83,7 @@ export class CreateReworkResultDto {
   @ApiProperty({ description: '작업자 코드', maxLength: 50 })
   @IsString()
   @MaxLength(50)
-  workerCode: string;
+  workerId: string;
 
   @ApiProperty({ description: '작업 수량', minimum: 0 })
   @Type(() => Number)
@@ -173,7 +173,7 @@ export class CreateReworkOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  workerCode?: string;
+  workerId?: string;
 
   @ApiPropertyOptional({ description: '라인 코드', maxLength: 50 })
   @IsOptional()

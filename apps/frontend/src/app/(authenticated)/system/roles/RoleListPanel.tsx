@@ -46,11 +46,11 @@ export default function RoleListPanel({
         <div className="space-y-2">
           {roles.map((role) => (
             <div
-              key={role.id}
+              key={role.code}
               onClick={() => onSelect(role)}
               className={`p-3 rounded-lg cursor-pointer transition-all border
                 ${
-                  selectedRole?.id === role.id
+                  selectedRole?.code === role.code
                     ? "bg-primary/10 border-l-2 border-primary dark:bg-primary/20"
                     : "border-transparent hover:bg-gray-50 dark:hover:bg-slate-700/50"
                 }`}

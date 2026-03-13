@@ -16,7 +16,7 @@ import { ReworkProcess } from './rework-process.entity';
 @Entity({ name: 'REWORK_RESULTS' })
 @Index(['company', 'plant', 'reworkProcessId'])
 export class ReworkResult {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
   @Column({ name: 'REWORK_PROCESS_ID' })
@@ -27,7 +27,7 @@ export class ReworkResult {
   reworkProcess: ReworkProcess;
 
   @Column({ name: 'WORKER_CODE', length: 50 })
-  workerCode: string;
+  workerId: string;
 
   @Column({ name: 'RESULT_QTY', type: 'int', default: 0 })
   resultQty: number;
@@ -53,8 +53,8 @@ export class ReworkResult {
   @Column({ name: 'REMARKS', length: 1000, nullable: true })
   remarks: string;
 
-  @Column({ name: 'COMPANY', type: 'int' })
-  company: number;
+  @Column({ name: 'COMPANY', length: 50 })
+  company: string;
 
   @Column({ name: 'PLANT', length: 20 })
   plant: string;

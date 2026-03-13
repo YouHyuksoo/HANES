@@ -52,16 +52,16 @@ export class CreateWorkerDto {
   @MaxLength(100)
   email?: string;
 
-  @ApiPropertyOptional({ description: '입사일 (YYYYMMDD)' })
+  @ApiPropertyOptional({ description: '입사일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  @MaxLength(8)
+  @MaxLength(10)
   hireDate?: string;
 
-  @ApiPropertyOptional({ description: '퇴사일 (YYYYMMDD)' })
+  @ApiPropertyOptional({ description: '퇴사일 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  @MaxLength(8)
+  @MaxLength(10)
   quitDate?: string;
 
   @ApiPropertyOptional({ description: 'QR 코드' })

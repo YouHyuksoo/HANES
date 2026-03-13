@@ -50,8 +50,8 @@ const deptColors: Record<string, string> = {
 };
 
 /** 이니셜 아바타 컴포넌트 (사진 있으면 사진 표시) */
-export function WorkerAvatar({ name, dept, photoUrl, size = "md" }: { name: string; dept: string; photoUrl?: string | null; size?: "sm" | "md" }) {
-  const sizeClass = size === "sm" ? "w-6 h-6 text-xs" : "w-8 h-8 text-sm";
+export function WorkerAvatar({ name, dept, photoUrl, size = "md" }: { name: string; dept: string; photoUrl?: string | null; size?: "sm" | "md" | "lg" }) {
+  const sizeClass = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-10 h-10 text-sm";
 
   if (photoUrl) {
     return (

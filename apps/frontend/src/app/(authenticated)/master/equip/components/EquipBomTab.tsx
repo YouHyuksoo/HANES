@@ -199,7 +199,7 @@ export default function EquipBomTab() {
   }, [bomItems, selectedItemType, itemSearch]);
 
   const selectedEquip = useMemo(() => 
-    equipments.find(e => e.id === selectedEquipId),
+    equipments.find(e => e.equipCode === selectedEquipId),
     [equipments, selectedEquipId]
   );
 
@@ -227,7 +227,7 @@ export default function EquipBomTab() {
   const openItemEdit = (item: EquipBomItem) => {
     setEditingItem(item);
     setItemForm({
-      id: item.id,
+      id: item.bomItemCode,
       itemCode: item.itemCode,
       itemName: item.itemName,
       itemType: item.itemType,
@@ -260,7 +260,7 @@ export default function EquipBomTab() {
       };
 
       if (editingItem) {
-        await api.put(`/master/equip-bom/items/${editingItem.id}`, body);
+        await api.put(`/master/equip-bom/items/${editingItem.bomItemCode}`, body);
       } else {
         await api.post("/master/equip-bom/items", body);
       }
@@ -275,7 +275,7 @@ export default function EquipBomTab() {
   const handleDeleteItemConfirm = async () => {
     if (!deleteItemTarget) return;
     try {
-      await api.delete(`/master/equip-bom/items/${deleteItemTarget.id}`);
+      await api.delete(`/master/equip-bom/items/${deleteItemTarget.bomItemCode}`);
       fetchBomItems();
     } catch (e: any) {
       console.error("Delete item failed:", e);
@@ -518,10 +518,10 @@ export default function EquipBomTab() {
                 <div className="flex-1 overflow-auto space-y-1">
                   {filteredEquipments.map((equip) => (
                     <button
-                      key={equip.id}
-                      onClick={() => setSelectedEquipId(equip.id)}
+                      key={equip.equipCode}
+                      onClick={() => setSelectedEquipId(equip.equipCode)}
                       className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                        selectedEquipId === equip.id
+                        selectedEquipId === equip.equipCode
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/50 hover:bg-surface"
                       }`}
@@ -531,7 +531,7 @@ export default function EquipBomTab() {
                           <div className="font-medium">{equip.equipName}</div>
                           <div className="text-xs text-text-muted">{equip.equipCode}</div>
                         </div>
-                        <ChevronRight className={`w-4 h-4 ${selectedEquipId === equip.id ? "text-primary" : "text-text-muted"}`} />
+                        <ChevronRight className={`w-4 h-4 ${selectedEquipId === equip.equipCode ? "text-primary" : "text-text-muted"}`} />
                       </div>
                     </button>
                   ))}
@@ -730,7 +730,7 @@ export default function EquipBomTab() {
               label={t("master.equip.bomItem", "BOM 품목")}
               options={bomItems
                 .filter(i => i.useYn === "Y")
-                .map(i => ({ value: i.id, label: `${i.itemCode} - ${i.itemName}` }))}
+                .map(i => ({ value: i.bomItemCode, label: `${i.itemCode} - ${i.itemName}` }))}
               value={relForm.bomItemId}
               onChange={(v) => setRelForm({ ...relForm, bomItemId: v })}
               fullWidth

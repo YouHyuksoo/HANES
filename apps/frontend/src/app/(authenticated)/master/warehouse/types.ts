@@ -4,7 +4,6 @@
  */
 
 export interface WarehouseData {
-  id: string;
   warehouseCode: string;
   warehouseName: string;
   warehouseType: string;

@@ -24,7 +24,6 @@ import api from "@/services/api";
 import { ComCodeSelect, LineSelect, ProcessSelect } from '@/components/shared';
 
 interface FormState {
-  id?: string;
   equipCode: string;
   equipName: string;
   equipType: EquipType;
@@ -107,7 +106,6 @@ export default function EquipMasterTab() {
   const openEdit = (equip: EquipMaster) => {
     setEditing(equip);
     setForm({
-      id: equip.id,
       equipCode: equip.equipCode,
       equipName: equip.equipName,
       equipType: equip.equipType,
@@ -145,7 +143,7 @@ export default function EquipMasterTab() {
       };
 
       if (editing) {
-        await api.put(`/equipment/equips/${editing.id}`, body);
+        await api.put(`/equipment/equips/${editing.equipCode}`, body);
       } else {
         await api.post("/equipment/equips", body);
       }
@@ -160,7 +158,7 @@ export default function EquipMasterTab() {
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/equipment/equips/${deleteTarget.id}`);
+      await api.delete(`/equipment/equips/${deleteTarget.equipCode}`);
       fetchEquipments();
     } catch (e: any) {
       console.error("Delete failed:", e);
@@ -252,9 +250,9 @@ export default function EquipMasterTab() {
                     fullWidth
                   />
                 </div>
-                <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} placeholder={t("master.equip.type", "유형")} />
+                <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} labelPrefix="유형" />
                 <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
-                <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} placeholder={t("master.equip.commType", "통신")} />
+                <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} labelPrefix="통신" />
               </div>
             } />
         </CardContent>

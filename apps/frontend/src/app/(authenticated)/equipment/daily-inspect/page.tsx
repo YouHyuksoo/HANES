@@ -72,10 +72,10 @@ export default function DailyInspectPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const resultOptions = useMemo(() => [
-    { value: "", label: t("equipment.dailyInspect.allResult") },
-    { value: "PASS", label: t("equipment.dailyInspect.resultPass") },
-    { value: "FAIL", label: t("equipment.dailyInspect.resultFail") },
-    { value: "CONDITIONAL", label: t("equipment.dailyInspect.resultConditional") },
+    { value: "", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("common.all", "전체")}` },
+    { value: "PASS", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("equipment.dailyInspect.resultPass")}` },
+    { value: "FAIL", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("equipment.dailyInspect.resultFail")}` },
+    { value: "CONDITIONAL", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("equipment.dailyInspect.resultConditional")}` },
   ], [t]);
 
   const stats = useMemo(() => ({
@@ -128,6 +128,20 @@ export default function DailyInspectPage() {
   }, [deleteTarget, fetchData]);
 
   const columns = useMemo<ColumnDef<DailyInspect>[]>(() => [
+    {
+      id: "actions", header: "", size: 80,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     { accessorKey: "inspectDate", header: t("equipment.dailyInspect.inspectDate"), size: 110, meta: { filterType: "date" as const } },
     {
       accessorKey: "equipCode", header: t("equipment.dailyInspect.equipCode"), size: 110,
@@ -158,25 +172,11 @@ export default function DailyInspectPage() {
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
-    {
-      id: "actions", header: "", size: 80,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
   ], [t, openEdit]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardCheck className="w-7 h-7 text-primary" />{t("equipment.dailyInspect.title")}
@@ -185,7 +185,7 @@ export default function DailyInspectPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
           <Button size="sm" onClick={openCreate}>
             <Plus className="w-4 h-4 mr-1" />{t("common.register")}
@@ -193,14 +193,14 @@ export default function DailyInspectPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("equipment.dailyInspect.statTotal")} value={stats.total} icon={ClipboardCheck} color="blue" />
         <StatCard label={t("equipment.dailyInspect.resultPass")} value={stats.pass} icon={CheckCircle} color="green" />
         <StatCard label={t("equipment.dailyInspect.resultFail")} value={stats.fail} icon={XCircle} color="red" />
         <StatCard label={t("equipment.dailyInspect.resultConditional")} value={stats.conditional} icon={AlertTriangle} color="yellow" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("equipment.dailyInspect.title")}
           toolbarLeft={

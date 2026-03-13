@@ -153,8 +153,8 @@ export default function OqcPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardCheck className="w-7 h-7 text-primary" />
@@ -164,7 +164,7 @@ export default function OqcPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => setIsRequestModalOpen(true)}>
             <Plus className="w-4 h-4 mr-1" /> {t("quality.oqc.createRequest")}
@@ -172,14 +172,14 @@ export default function OqcPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("quality.oqc.statTotal")} value={stats.total} icon={FileText} color="blue" />
         <StatCard label={t("quality.oqc.statPending")} value={stats.pending} icon={Clock} color="yellow" />
         <StatCard label={t("quality.oqc.statPass")} value={stats.pass} icon={CheckCircle} color="green" />
         <StatCard label={t("quality.oqc.statFail")} value={stats.fail} icon={XCircle} color="red" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}

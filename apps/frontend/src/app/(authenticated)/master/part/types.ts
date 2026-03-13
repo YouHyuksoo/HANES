@@ -11,11 +11,10 @@
 import type { UseYn } from "@/types";
 
 /** 품목 분류 */
-export type PartType = "RAW" | "WIP" | "FG";
+export type PartType = "RAW_MATERIAL" | "SEMI_PRODUCT" | "FINISHED" | "CONSUMABLE";
 
 /** 품목 인터페이스 */
 export interface Part {
-  id: string;
   itemCode: string;
   itemName: string;
   itemNo?: string; // 품번 (Oracle PARTNO)
@@ -51,17 +50,21 @@ export const PART_TYPE_COLORS: Record<
   PartType,
   { label: string; color: string }
 > = {
-  RAW: {
+  RAW_MATERIAL: {
     label: "원자재",
     color: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
   },
-  WIP: {
+  SEMI_PRODUCT: {
     label: "반제품",
     color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
   },
-  FG: {
+  FINISHED: {
     label: "완제품",
     color: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+  },
+  CONSUMABLE: {
+    label: "소모품",
+    color: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
   },
 };
 

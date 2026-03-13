@@ -46,14 +46,14 @@ export default function InspectHistoryPage() {
 
   const comCodeTypeOptions = useComCodeOptions("INSPECT_CHECK_TYPE");
   const typeOptions = useMemo(() => [
-    { value: "", label: t("equipment.inspectHistory.allType") },
-    ...comCodeTypeOptions,
+    { value: "", label: `${t("equipment.inspectHistory.inspectType", "점검유형")}: ${t("common.all", "전체")}` },
+    ...comCodeTypeOptions.map(opt => ({ ...opt, label: `${t("equipment.inspectHistory.inspectType", "점검유형")}: ${opt.label}` })),
   ], [t, comCodeTypeOptions]);
 
   const comCodeResultOptions = useComCodeOptions("INSPECT_JUDGE");
   const resultOptions = useMemo(() => [
-    { value: "", label: t("equipment.inspectHistory.allResult") },
-    ...comCodeResultOptions,
+    { value: "", label: `${t("equipment.inspectHistory.result", "점검결과")}: ${t("common.all", "전체")}` },
+    ...comCodeResultOptions.map(opt => ({ ...opt, label: `${t("equipment.inspectHistory.result", "점검결과")}: ${opt.label}` })),
   ], [t, comCodeResultOptions]);
 
   const fetchData = useCallback(async () => {
@@ -116,8 +116,8 @@ export default function InspectHistoryPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ScrollText className="w-7 h-7 text-primary" />{t("equipment.inspectHistory.title")}
@@ -129,14 +129,14 @@ export default function InspectHistoryPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("equipment.inspectHistory.statTotal")} value={stats.total} icon={ClipboardCheck} color="blue" />
         <StatCard label={t("equipment.inspectHistory.resultPass")} value={stats.pass} icon={CheckCircle} color="green" />
         <StatCard label={t("equipment.inspectHistory.resultFail")} value={stats.fail} icon={XCircle} color="red" />
         <StatCard label={t("equipment.inspectHistory.resultConditional")} value={stats.conditional} icon={AlertTriangle} color="yellow" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("equipment.inspectHistory.title")}
           toolbarLeft={

@@ -14,7 +14,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, Package, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -38,6 +38,7 @@ export default function PartPage() {
   const [iqcLinkMap, setIqcLinkMap] = useState<Record<string, IqcLinkInfo[]>>({});
   const [searchText, setSearchText] = useState("");
   const [partTypeFilter, setPartTypeFilter] = useState("");
+  const [useYnFilter, setUseYnFilter] = useState("");
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
@@ -50,6 +51,7 @@ export default function PartPage() {
     try {
       const params: Record<string, string | number> = { limit: 5000 };
       if (partTypeFilter) params.itemType = partTypeFilter;
+      if (useYnFilter) params.useYn = useYnFilter;
       if (searchText) params.search = searchText;
 
       const [partsRes, linksRes] = await Promise.all([
@@ -80,7 +82,7 @@ export default function PartPage() {
     } finally {
       setLoading(false);
     }
-  }, [partTypeFilter, searchText]);
+  }, [partTypeFilter, useYnFilter, searchText]);
 
   useEffect(() => { fetchParts(); }, [fetchParts]);
 
@@ -90,7 +92,7 @@ export default function PartPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/parts/${deleteTarget.id}`);
+      await api.delete(`/master/parts/${deleteTarget.itemCode}`);
       fetchParts();
     } catch (e: any) {
       console.error("Delete failed:", e);
@@ -100,9 +102,10 @@ export default function PartPage() {
   }, [deleteTarget, fetchParts]);
 
   const typeLabels = useMemo<Record<string, string>>(() => ({
-    RAW: t("inventory.stock.raw", "원자재"),
-    WIP: t("inventory.stock.wip", "반제품"),
-    FG: t("inventory.stock.fg", "완제품"),
+    RAW_MATERIAL: t("inventory.stock.raw", "원자재"),
+    SEMI_PRODUCT: t("inventory.stock.wip", "반제품"),
+    FINISHED: t("inventory.stock.fg", "완제품"),
+    CONSUMABLE: t("inventory.stock.consumable", "소모품"),
   }), [t]);
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
@@ -177,7 +180,7 @@ export default function PartPage() {
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         if (row.original.iqcYn !== "Y") return <span className="text-xs text-text-muted">-</span>;
-        const links = iqcLinkMap[row.original.id];
+        const links = iqcLinkMap[row.original.itemCode];
         if (!links || links.length === 0) return <span className="text-xs text-text-muted">{t("master.part.iqc.notLinked", "미연결")}</span>;
         const first = links[0];
         if (!first.group) return <span className="text-xs text-text-muted">-</span>;
@@ -186,6 +189,20 @@ export default function PartPage() {
             {methodLabels[first.group.inspectMethod]}
             {first.group.inspectMethod === "SAMPLE" && first.group.sampleQty ? ` (${first.group.sampleQty})` : ""}
             {links.length > 1 ? ` +${links.length - 1}` : ""}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "useYn", header: t("common.useYn", "사용여부"), size: 60,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return (
+          <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y" 
+            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" 
+            : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>
+            {v === "Y" ? "Y" : "N"}
           </span>
         );
       },
@@ -203,10 +220,10 @@ export default function PartPage() {
   }, [fetchParts]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+    <div className="flex h-full animate-fade-in">
       {/* 좌측: 메인 콘텐츠 */}
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <Package className="w-7 h-7 text-primary" />{t("master.part.title")}
@@ -223,7 +240,7 @@ export default function PartPage() {
           </div>
         </div>
 
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid
             data={parts}
             columns={columns}
@@ -233,6 +250,7 @@ export default function PartPage() {
             enableColumnPinning
             exportFileName={t("master.part.title")}
             onRowClick={(row) => { if (isPanelOpen) setEditingPart(row); }}
+            rowClassName={(row) => row.useYn === "N" ? "!text-red-500 dark:!text-red-400" : ""}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
@@ -241,13 +259,17 @@ export default function PartPage() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <ComCodeSelect groupCode="ITEM_TYPE" value={partTypeFilter} onChange={handleTypeFilter} fullWidth />
+                  <ComCodeSelect groupCode="ITEM_TYPE" value={partTypeFilter} onChange={handleTypeFilter} labelPrefix={t("master.part.type")} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <UseYnSelect value={useYnFilter} onChange={setUseYnFilter} fullWidth />
                 </div>
               </div>
             }
           />
         </CardContent></Card>
       </div>
+
 
       {/* 우측: 품목 추가/수정 슬라이드 패널 */}
       {isPanelOpen && (

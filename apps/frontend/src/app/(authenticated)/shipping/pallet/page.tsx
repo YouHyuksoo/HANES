@@ -134,14 +134,8 @@ export default function PalletPage() {
     setSelectedBoxes((prev) => prev.includes(boxNo) ? prev.filter((b) => b !== boxNo) : [...prev, boxNo]);
 
   const columns = useMemo<ColumnDef<Pallet>[]>(() => [
-    { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
-    { accessorKey: "shipmentNo", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
     {
-      id: "actions", header: t("common.actions"), size: 120, meta: { filterType: "none" as const },
+      id: "actions", header: t("common.actions"), size: 120, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => {
         const pallet = row.original;
         return (
@@ -156,26 +150,37 @@ export default function PalletPage() {
         );
       },
     },
+    { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
+    { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
+    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
+    { accessorKey: "shipmentNo", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
+    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
   ], [t, handleClosePallet, fetchAvailableBoxes]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Layers className="w-7 h-7 text-primary" />{t("shipping.pallet.title")}</h1>
           <p className="text-text-muted mt-1">{t("shipping.pallet.description")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pallet.createPallet")}</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pallet.createPallet")}</Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("shipping.pallet.statOpen")} value={stats.open} icon={Layers} color="blue" />
         <StatCard label={t("shipping.pallet.statClosed")} value={stats.closed} icon={CheckCircle} color="green" />
         <StatCard label={t("shipping.pallet.statLoaded")} value={stats.loaded} icon={Truck} color="orange" />
         <StatCard label={t("shipping.pallet.statShipped")} value={stats.shipped} icon={Package} color="purple" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-auto">
         <div className="lg:col-span-2">
           <Card><CardContent>
             <DataGrid
@@ -193,9 +198,6 @@ export default function PalletPage() {
                   <div className="w-36 flex-shrink-0">
                     <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
-                  <Button variant="secondary" onClick={fetchData}>
-                    <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                  </Button>
                 </div>
               }
               onRowClick={(row) => setSelectedPallet(row)}

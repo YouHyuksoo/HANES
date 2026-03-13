@@ -1,0 +1,30 @@
+-- TRAINING_TYPE (교육 유형)
+MERGE INTO "COM_CODES" t
+USING (
+  SELECT 'TRAINING_TYPE' AS "GROUP_CODE", 'OJT'       AS "DETAIL_CODE", '현장교육'   AS "CODE_NAME", 1 AS "SORT_ORDER", 'OJT'       AS "ATTR1", '在职培训' AS "ATTR2", 'Đào tạo tại chỗ' AS "ATTR3" FROM DUAL UNION ALL
+  SELECT 'TRAINING_TYPE', 'CLASSROOM', '집합교육',   2, 'Classroom', '课堂培训', 'Lớp học'          FROM DUAL UNION ALL
+  SELECT 'TRAINING_TYPE', 'ONLINE',    '온라인교육', 3, 'Online',    '在线培训', 'Trực tuyến'       FROM DUAL UNION ALL
+  SELECT 'TRAINING_TYPE', 'EXTERNAL',  '외부교육',   4, 'External',  '外部培训', 'Bên ngoài'        FROM DUAL UNION ALL
+  SELECT 'TRAINING_TYPE', 'SAFETY',    '안전교육',   5, 'Safety',    '安全培训', 'An toàn'          FROM DUAL
+) s ON (t."COMPANY" = 'HANES' AND t."PLANT_CD" = 'VINA' AND t."GROUP_CODE" = s."GROUP_CODE" AND t."DETAIL_CODE" = s."DETAIL_CODE")
+WHEN NOT MATCHED THEN INSERT (
+  "ID", "COMPANY", "PLANT_CD", "GROUP_CODE", "DETAIL_CODE", "CODE_NAME", "SORT_ORDER", "USE_YN", "ATTR1", "ATTR2", "ATTR3", "CREATED_BY", "CREATED_AT", "UPDATED_AT"
+) VALUES (
+  SYS_GUID(), 'HANES', 'VINA', s."GROUP_CODE", s."DETAIL_CODE", s."CODE_NAME", s."SORT_ORDER", 'Y', s."ATTR1", s."ATTR2", s."ATTR3", 'SYSTEM', SYSDATE, SYSDATE
+);
+
+-- TRAINING_STATUS (교육 상태)
+MERGE INTO "COM_CODES" t
+USING (
+  SELECT 'TRAINING_STATUS' AS "GROUP_CODE", 'PLANNED'     AS "DETAIL_CODE", '예정'   AS "CODE_NAME", 1 AS "SORT_ORDER", 'Planned'     AS "ATTR1", '已计划' AS "ATTR2", 'Đã lên kế hoạch' AS "ATTR3" FROM DUAL UNION ALL
+  SELECT 'TRAINING_STATUS', 'IN_PROGRESS', '진행중', 2, 'In Progress', '进行中', 'Đang tiến hành'   FROM DUAL UNION ALL
+  SELECT 'TRAINING_STATUS', 'COMPLETED',   '완료',   3, 'Completed',   '已完成', 'Hoàn thành'       FROM DUAL UNION ALL
+  SELECT 'TRAINING_STATUS', 'CANCELLED',   '취소',   4, 'Cancelled',   '已取消', 'Đã hủy'           FROM DUAL
+) s ON (t."COMPANY" = 'HANES' AND t."PLANT_CD" = 'VINA' AND t."GROUP_CODE" = s."GROUP_CODE" AND t."DETAIL_CODE" = s."DETAIL_CODE")
+WHEN NOT MATCHED THEN INSERT (
+  "ID", "COMPANY", "PLANT_CD", "GROUP_CODE", "DETAIL_CODE", "CODE_NAME", "SORT_ORDER", "USE_YN", "ATTR1", "ATTR2", "ATTR3", "CREATED_BY", "CREATED_AT", "UPDATED_AT"
+) VALUES (
+  SYS_GUID(), 'HANES', 'VINA', s."GROUP_CODE", s."DETAIL_CODE", s."CODE_NAME", s."SORT_ORDER", 'Y', s."ATTR1", s."ATTR2", s."ATTR3", 'SYSTEM', SYSDATE, SYSDATE
+);
+
+COMMIT;

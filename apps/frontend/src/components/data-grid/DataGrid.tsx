@@ -287,7 +287,7 @@ function DataGrid<T>({
   }, [table]);
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       {/* Toolbar */}
       {(toolbarLeft || enableExport || enableColumnFilter) && (
         <div className="flex items-center justify-between gap-3 mb-1.5">
@@ -333,13 +333,13 @@ function DataGrid<T>({
       )}
 
       {/* Table Container (with scroll handles) */}
-      <div className="relative group/scroll">
+      <div className="relative group/scroll flex-1 min-h-0 flex flex-col">
         <ScrollHandle direction="left" scrollContainerRef={scrollContainerRef} />
         <ScrollHandle direction="right" scrollContainerRef={scrollContainerRef} />
 
         <div
           ref={scrollContainerRef}
-          className="relative overflow-auto rounded-[var(--radius)] border border-border"
+          className="relative overflow-auto rounded-[var(--radius)] border border-border flex-1"
           style={maxHeight ? { maxHeight } : undefined}
         >
           {/* 로딩 오버레이 */}
@@ -479,6 +479,7 @@ function DataGrid<T>({
                       : index % 2 === 0 ? 'bg-surface' : 'bg-background/50'}
                     ${onRowClick ? 'cursor-pointer' : ''}
                     hover:bg-primary/5
+                    text-text
                     ${rowClassName?.(row.original, index) ?? ''}
                   `}
                 >
@@ -494,7 +495,7 @@ function DataGrid<T>({
                     return (
                       <td
                         key={cell.id}
-                        className={`px-3 py-2 text-text whitespace-nowrap ${getAlignmentClass(cellAlign)} ${pinnedBg} ${showColumnBorder ? 'border-r border-border last:border-r-0' : ''}`}
+                        className={`px-3 py-2 whitespace-nowrap text-inherit ${getAlignmentClass(cellAlign)} ${pinnedBg} ${showColumnBorder ? 'border-r border-border last:border-r-0' : ''}`}
                         style={{
                           width: columnSizing[cell.column.id] ? cell.column.getSize() : 'auto',
                           minWidth: cell.column.columnDef.minSize ?? 50,

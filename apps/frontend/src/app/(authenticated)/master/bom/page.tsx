@@ -83,8 +83,8 @@ function BomPage() {
   ];
 
   return (
-    <div className="flex flex-col animate-fade-in h-[calc(100vh-var(--header-height)-var(--tab-bar-height)-48px)]">
-      <div className="flex justify-between items-center mb-4 shrink-0">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Layers className="w-7 h-7 text-primary" />{t("master.bom.title")}

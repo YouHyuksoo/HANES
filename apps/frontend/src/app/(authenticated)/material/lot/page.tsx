@@ -81,17 +81,17 @@ export default function MatLotPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const LOT_STATUS = useMemo(() => [
-    { value: "", label: t("common.status") },
-    { value: "NORMAL", label: t("material.lot.status.normal") },
-    { value: "HOLD", label: t("material.lot.status.hold") },
-    { value: "DEPLETED", label: t("material.lot.status.depleted") },
+    { value: "", label: `LOT${t("common.status")}: ${t("common.all")}` },
+    { value: "NORMAL", label: `LOT${t("common.status")}: ${t("material.lot.status.normal")}` },
+    { value: "HOLD", label: `LOT${t("common.status")}: ${t("material.lot.status.hold")}` },
+    { value: "DEPLETED", label: `LOT${t("common.status")}: ${t("material.lot.status.depleted")}` },
   ], [t]);
 
   const IQC_STATUS = useMemo(() => [
-    { value: "", label: "IQC" },
-    { value: "PASS", label: "PASS" },
-    { value: "FAIL", label: "FAIL" },
-    { value: "PENDING", label: "PENDING" },
+    { value: "", label: `IQC${t("common.status")}: ${t("common.all")}` },
+    { value: "PASS", label: `IQC${t("common.status")}: PASS` },
+    { value: "FAIL", label: `IQC${t("common.status")}: FAIL` },
+    { value: "PENDING", label: `IQC${t("common.status")}: PENDING` },
   ], [t]);
 
   const stats = useMemo(() => ({
@@ -102,6 +102,15 @@ export default function MatLotPage() {
   }), [data]);
 
   const columns = useMemo<ColumnDef<MatLotItem>[]>(() => [
+    {
+      id: "actions", header: "", size: 50, meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button className="p-1 hover:bg-surface rounded" title={t("common.detail")}
+          onClick={() => { setSelectedLot(row.original); setDetailModalOpen(true); }}>
+          <Eye className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     {
       accessorKey: "matUid", header: t("material.lot.columns.matUid"), size: 160,
       meta: { filterType: "text" as const },
@@ -156,20 +165,11 @@ export default function MatLotPage() {
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(s)}`}>{s}</span>;
       },
     },
-    {
-      id: "actions", header: "", size: 50, meta: { filterType: "none" as const },
-      cell: ({ row }) => (
-        <button className="p-1 hover:bg-surface rounded" title={t("common.detail")}
-          onClick={() => { setSelectedLot(row.original); setDetailModalOpen(true); }}>
-          <Eye className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Tag className="w-7 h-7 text-primary" />{t("material.lot.title")}
@@ -181,14 +181,14 @@ export default function MatLotPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("material.lot.stats.totalLot")} value={stats.total} icon={Layers} color="blue" />
         <StatCard label={t("material.lot.stats.normal")} value={stats.normal} icon={CheckCircle} color="green" />
         <StatCard label={t("material.lot.stats.hold")} value={stats.hold} icon={AlertCircle} color="yellow" />
         <StatCard label={t("material.lot.stats.depleted")} value={stats.depleted} icon={MinusCircle} color="gray" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("material.lot.title")}
           toolbarLeft={
@@ -204,9 +204,6 @@ export default function MatLotPage() {
               <div className="w-32 flex-shrink-0">
                 <Select options={IQC_STATUS} value={iqcFilter} onChange={setIqcFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

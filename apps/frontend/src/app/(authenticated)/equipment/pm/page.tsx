@@ -64,10 +64,10 @@ export default function PmPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const statusOptions = useMemo(() => [
-    { value: "", label: t("equipment.pm.allStatus") },
-    { value: "OK", label: t("equipment.pm.ok") },
-    { value: "WARNING", label: t("equipment.pm.warning") },
-    { value: "REPLACE", label: t("equipment.pm.replace") },
+    { value: "", label: `PM${t("common.status", "상태")}: ${t("common.all", "전체")}` },
+    { value: "OK", label: `PM${t("common.status", "상태")}: ${t("equipment.pm.ok")}` },
+    { value: "WARNING", label: `PM${t("common.status", "상태")}: ${t("equipment.pm.warning")}` },
+    { value: "REPLACE", label: `PM${t("common.status", "상태")}: ${t("equipment.pm.replace")}` },
   ], [t]);
 
   const stats = useMemo(() => ({
@@ -132,8 +132,8 @@ export default function PmPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Wrench className="w-7 h-7 text-primary" />{t("equipment.pm.title")}
@@ -142,7 +142,7 @@ export default function PmPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
           <Button size="sm" onClick={() => { setSelectedPart(null); setIsModalOpen(true); }}>
             <Plus className="w-4 h-4 mr-1" />{t("common.add")}
@@ -150,14 +150,14 @@ export default function PmPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("equipment.pm.total")} value={stats.total} icon={Package} color="blue" />
         <StatCard label={t("equipment.pm.ok")} value={stats.ok} icon={CheckCircle} color="green" />
         <StatCard label={t("equipment.pm.warning")} value={stats.warning} icon={AlertTriangle} color="yellow" />
         <StatCard label={t("equipment.pm.replace")} value={stats.replace} icon={XCircle} color="red" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("equipment.pm.title")}
           toolbarLeft={

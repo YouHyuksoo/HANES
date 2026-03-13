@@ -6,20 +6,19 @@
  * 1. **슬라이드 패널**: 오른쪽에서 슬라이드 인/아웃되는 폼 패널
  * 2. **등록 모드**: item이 null이면 새 소모품 등록
  * 3. **수정 모드**: item이 전달되면 기존 데이터 수정
- * 4. **API**: POST /consumables (등록), PUT /consumables/:id (수정)
+ * 4. **API**: POST /consumables (등록), PUT /consumables/:consumableCode (수정)
  */
 
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Upload, Trash2, ImageIcon, RefreshCw } from "lucide-react";
+import { Upload, Trash2, ImageIcon, RefreshCw } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 
 export interface ConsumableItem {
-  id: string;
   consumableCode: string;
   consumableName: string;
   category: string;
@@ -140,9 +139,12 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("consumables.master.editConsumable") : t("consumables.master.register")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} disabled={loading || !form.consumableCode || !form.consumableName}>
+            {loading ? t("common.saving") : (isEdit ? t("common.edit") : t("common.register"))}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 (스크롤 가능) */}
@@ -317,13 +319,6 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
         </div>
       </div>
 
-      {/* 푸터 (저장/취소) */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={loading || !form.consumableCode || !form.consumableName}>
-          {loading ? t("common.saving") : (isEdit ? t("common.edit") : t("common.register"))}
-        </Button>
-      </div>
     </div>
   );
 }

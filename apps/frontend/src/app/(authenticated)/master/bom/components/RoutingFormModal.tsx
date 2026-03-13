@@ -6,7 +6,7 @@
  *
  * 초보자 가이드:
  * 1. **editingItem = null**: 추가 모드 → POST /master/routings
- * 2. **editingItem != null**: 수정 모드 → PUT /master/routings/:id
+ * 2. **editingItem != null**: 수정 모드 → PUT /master/routings/:itemCode/:seq
  * 3. partId는 자동으로 설정 (부모에서 전달)
  */
 import { useState, useEffect } from "react";
@@ -76,7 +76,7 @@ export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem,
         weldCondition: weldCondition || undefined, useYn: "Y",
       };
       if (editingItem) {
-        await api.put(`/master/routings/${editingItem.id}`, body);
+        await api.put(`/master/routings/${editingItem.itemCode}/${editingItem.seq}`, body);
       } else {
         await api.post("/master/routings", body);
       }

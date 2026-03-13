@@ -114,14 +114,8 @@ export default function PackPage() {
   }, [fetchData]);
 
   const columns = useMemo<ColumnDef<Box>[]>(() => [
-    { accessorKey: "boxNo", header: t("shipping.pack.boxNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "quantity", header: t("common.quantity"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
-    { accessorKey: "closedAt", header: t("shipping.pack.closedAt"), size: 140, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
     {
-      id: "actions", header: t("common.actions"), size: 120, meta: { filterType: "none" as const },
+      id: "actions", header: t("common.actions"), size: 120, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => {
         const box = row.original;
         return (
@@ -136,26 +130,37 @@ export default function PackPage() {
         );
       },
     },
+    { accessorKey: "boxNo", header: t("shipping.pack.boxNo"), size: 160, meta: { filterType: "text" as const } },
+    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
+    { accessorKey: "quantity", header: t("common.quantity"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{(getValue() as number).toLocaleString()}</span> },
+    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
+    { accessorKey: "closedAt", header: t("shipping.pack.closedAt"), size: 140, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
   ], [t, handleCloseBox]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Package className="w-7 h-7 text-primary" />{t("shipping.pack.title")}</h1>
           <p className="text-text-muted mt-1">{t("shipping.pack.description")}</p>
         </div>
-        <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pack.createBox")}</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={() => setIsCreateModalOpen(true)}><Plus className="w-4 h-4 mr-1" /> {t("shipping.pack.createBox")}</Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("shipping.pack.statOpen")} value={stats.open} icon={Package} color="blue" />
         <StatCard label={t("shipping.pack.statClosed")} value={stats.closed} icon={CheckCircle} color="green" />
         <StatCard label={t("shipping.pack.statShipped")} value={stats.shipped} icon={Truck} color="purple" />
         <StatCard label={t("shipping.pack.statTotalQty")} value={stats.totalQty} icon={Package} color="gray" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
@@ -171,9 +176,6 @@ export default function PackPage() {
               <div className="w-36 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           }
         />

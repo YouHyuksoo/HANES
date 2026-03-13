@@ -154,9 +154,9 @@ function ReceiveLabelPage() {
     })), [createdUids]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Tag className="w-7 h-7 text-primary" />{t("material.receiveLabel.title")}
@@ -178,7 +178,7 @@ function ReceiveLabelPage() {
       </div>
 
       {/* 자동입고 배너 */}
-      <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm ${
+      <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm flex-shrink-0 ${
         isAutoReceive
           ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
           : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
@@ -194,7 +194,7 @@ function ReceiveLabelPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("material.receiveLabel.stats.unlabeledLots")} value={stats.unlabeledCount} icon={Package} color="blue" />
         <StatCard label={t("material.receiveLabel.stats.totalLots")} value={stats.totalCount} icon={Tag} color="gray" />
         <StatCard label={t("material.receiveLabel.stats.selectedLots")} value={stats.selectedCount} icon={CheckCircle} color="green" />
@@ -203,7 +203,7 @@ function ReceiveLabelPage() {
 
       {/* 자동입고 결과 알림 */}
       {autoReceiveResult && (
-        <div className="space-y-2">
+        <div className="space-y-2 flex-shrink-0">
           {autoReceiveResult.received?.length > 0 && (
             <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
@@ -229,7 +229,7 @@ function ReceiveLabelPage() {
 
       {/* 생성된 자재시리얼 결과 배너 */}
       {createdUids.length > 0 && (
-        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+        <div className="p-3 flex-shrink-0 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-4 h-4 text-indigo-500 shrink-0" />
             <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
@@ -254,7 +254,7 @@ function ReceiveLabelPage() {
       )}
 
       {/* DataGrid */}
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={filteredArrivals} columns={columns} isLoading={loading || issuing}
           enableColumnFilter enableExport exportFileName={t("material.receiveLabel.title")}
           toolbarLeft={

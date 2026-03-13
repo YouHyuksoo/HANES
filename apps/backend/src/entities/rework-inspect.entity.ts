@@ -16,7 +16,7 @@ import { ReworkOrder } from './rework-order.entity';
 @Entity({ name: 'REWORK_INSPECTS' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkInspect {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'ID' })
   id: number;
 
   @Column({ name: 'REWORK_ORDER_ID' })
@@ -53,8 +53,8 @@ export class ReworkInspect {
   @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string;
 
-  @Column({ name: 'COMPANY', type: 'int' })
-  company: number;
+  @Column({ name: 'COMPANY', length: 50 })
+  company: string;
 
   @Column({ name: 'PLANT', length: 20 })
   plant: string;

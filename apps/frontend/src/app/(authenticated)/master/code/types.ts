@@ -11,7 +11,6 @@ export interface ComCodeGroup {
 
 /** 공통코드 상세 (우측 그리드용) */
 export interface ComCodeDetail {
-  id: string;
   groupCode: string;
   detailCode: string;
   parentCode: string | null;

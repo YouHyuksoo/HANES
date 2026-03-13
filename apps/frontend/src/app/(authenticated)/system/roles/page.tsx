@@ -71,7 +71,7 @@ export default function RolesPage() {
 
     setPermLoading(true);
     try {
-      const res = await api.get(`/roles/${role.id}/permissions`);
+      const res = await api.get(`/roles/${role.code}/permissions`);
       const data = res.data?.data ?? res.data;
       const codes = new Set<string>(
         Array.isArray(data)
@@ -93,7 +93,7 @@ export default function RolesPage() {
     if (!selectedRole) return;
     setPermSaving(true);
     try {
-      await api.put(`/roles/${selectedRole.id}/permissions`, {
+      await api.put(`/roles/${selectedRole.code}/permissions`, {
         menuCodes: Array.from(checkedCodes),
       });
       setOriginalCodes(new Set(checkedCodes));
@@ -115,8 +115,8 @@ export default function RolesPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/roles/${deleteTarget.id}`);
-      if (selectedRole?.id === deleteTarget.id) {
+      await api.delete(`/roles/${deleteTarget.code}`);
+      if (selectedRole?.code === deleteTarget.code) {
         setSelectedRole(null);
         setCheckedCodes(new Set());
         setOriginalCodes(new Set());

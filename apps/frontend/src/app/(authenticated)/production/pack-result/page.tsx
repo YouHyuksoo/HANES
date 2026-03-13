@@ -77,21 +77,26 @@ export default function PackResultPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><BoxIcon className="w-7 h-7 text-primary" />{t('production.packResult.title')}</h1>
           <p className="text-text-muted mt-1">{t('production.packResult.description')}</p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 flex-shrink-0">
         <StatCard label={t('production.packResult.totalBox')} value={stats.totalBox} icon={Package} color="blue" />
         <StatCard label={t('production.packResult.totalPackQty')} value={stats.totalQty} icon={Layers} color="green" />
         <StatCard label={t('production.packResult.destination')} value={`${stats.destinations}${t('production.packResult.places')}`} icon={Truck} color="purple" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t('production.packResult.title')}
           toolbarLeft={
@@ -105,9 +110,6 @@ export default function PackResultPage() {
               <div className="w-36 flex-shrink-0">
                 <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

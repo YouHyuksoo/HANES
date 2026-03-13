@@ -2,64 +2,53 @@
 
 /**
  * @file src/app/(authenticated)/dashboard/page.tsx
- * @description 대시보드 페이지 — KPI, 일상/정기/예방점검 현황, 최근 작업지시
+ * @description 대시보드 페이지 — 설비/작업지시/자재/품질 현황 + 점검 요약
  *
  * 초보자 가이드:
- * 1. **KPI 카드**: 오늘 생산량, 재고현황, 품질합격률, 인터락 발생
+ * 1. **현황 카드 4개**: 설비 가동, 작업지시 진행, 자재 알림, 품질 이슈
  * 2. **점검 현황**: 일상점검, 정기점검, 예방보전(PM WO) 오늘 기준 요약
- * 3. **최근 작업지시**: DataGrid 테이블 (하단)
- * 4. API: /dashboard/kpi, /daily-inspect/calendar/day, /periodic-inspect/calendar/day,
- *         /pm-work-orders/calendar/day, /dashboard/recent-productions
+ * 3. API: /equipment/equips/stats, /production/job-orders, /material/stocks,
+ *         /material/shelf-life, /quality/defect-logs/stats/by-status
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Factory, Package, Shield, AlertTriangle,
-  TrendingUp, TrendingDown, LayoutDashboard, RefreshCw,
+  Cpu, ClipboardList, PackageSearch, Bug,
+  LayoutDashboard, RefreshCw,
   ClipboardCheck, CalendarCheck, Wrench,
 } from "lucide-react";
-import { Card, CardHeader, CardContent, Button } from "@/components/ui";
-import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
+import { Card, CardContent, Button } from "@/components/ui";
 import InspectSummaryCard from "./components/InspectSummaryCard";
 import type { InspectItem } from "./components/InspectSummaryCard";
 import api from "@/services/api";
 
-/* ── KPI Card ── */
-interface KpiCardProps {
+/* ── Status Card ── */
+interface StatusCardProps {
   title: string;
-  value: string | number;
-  unit?: string;
-  change?: number;
-  changeLabel?: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  items: { label: string; value: number; accent?: string }[];
 }
 
-function KpiCard({ title, value, unit, change, changeLabel, icon: Icon, color }: KpiCardProps) {
-  const isPositive = change && change > 0;
-  const isNegative = change && change < 0;
+function StatusCard({ title, icon: Icon, color, items }: StatusCardProps) {
   return (
     <Card padding="sm" className="relative overflow-hidden">
       <CardContent>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-text-muted">{title}</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-text leading-tight">{value}</span>
-              {unit && <span className="text-xs text-text-muted">{unit}</span>}
-            </div>
-            {change !== undefined && (
-              <div className={`flex items-center gap-1 mt-1 text-xs ${isPositive ? "text-success" : ""} ${isNegative ? "text-error" : ""} ${!isPositive && !isNegative ? "text-text-muted" : ""}`}>
-                {isPositive && <TrendingUp className="w-3 h-3" />}
-                {isNegative && <TrendingDown className="w-3 h-3" />}
-                <span>{isPositive && "+"}{change}% {changeLabel}</span>
+        <div className="flex items-center gap-2 mb-3">
+          <div className={`p-1.5 rounded-md ${color}`}>
+            <Icon className="w-4 h-4 text-white" />
+          </div>
+          <span className="text-xs font-semibold text-text">{title}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {items.map((item) => (
+            <div key={item.label} className="text-center p-1.5 rounded-md bg-surface dark:bg-slate-800/50">
+              <div className={`text-lg font-bold leading-tight ${item.accent || "text-text"}`}>
+                {item.value}
               </div>
-            )}
-          </div>
-          <div className={`p-2 rounded-md ${color}`}>
-            <Icon className="w-5 h-5 text-white" />
-          </div>
+              <div className="text-[10px] text-text-muted mt-0.5">{item.label}</div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -67,22 +56,17 @@ function KpiCard({ title, value, unit, change, changeLabel, icon: Icon, color }:
 }
 
 /* ── Types ── */
-interface KpiData {
-  todayProduction: { value: number; change: number };
-  inventoryStatus: { value: number; change: number };
-  qualityPassRate: { value: string; change: number };
-  interlockCount: { value: number; change: number };
+interface EquipStats {
+  normal: number; maint: number; stop: number; total: number;
 }
-
-interface RecentProduction {
-  id: string;
-  orderNo: string;
-  itemName: string;
-  line: string;
-  planQty: number;
-  actualQty: number;
-  progress: number;
-  status: string;
+interface JobStats {
+  wait: number; running: number; done: number; total: number;
+}
+interface MatAlert {
+  lowStock: number; nearExpiry: number; expired: number;
+}
+interface DefectStats {
+  wait: number; repair: number; rework: number; done: number; total: number;
 }
 
 interface InspectSummary {
@@ -93,13 +77,6 @@ interface InspectSummary {
   fail: number;
 }
 
-const defaultKpi: KpiData = {
-  todayProduction: { value: 0, change: 0 },
-  inventoryStatus: { value: 0, change: 0 },
-  qualityPassRate: { value: "0", change: 0 },
-  interlockCount: { value: 0, change: 0 },
-};
-
 const emptySummary: InspectSummary = { items: [], total: 0, completed: 0, pass: 0, fail: 0 };
 
 function formatDate(d: Date) {
@@ -108,23 +85,18 @@ function formatDate(d: Date) {
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const [kpi, setKpi] = useState<KpiData>(defaultKpi);
-  const [productions, setProductions] = useState<RecentProduction[]>([]);
+  const [equip, setEquip] = useState<EquipStats>({ normal: 0, maint: 0, stop: 0, total: 0 });
+  const [job, setJob] = useState<JobStats>({ wait: 0, running: 0, done: 0, total: 0 });
+  const [mat, setMat] = useState<MatAlert>({ lowStock: 0, nearExpiry: 0, expired: 0 });
+  const [defect, setDefect] = useState<DefectStats>({ wait: 0, repair: 0, rework: 0, done: 0, total: 0 });
   const [daily, setDaily] = useState<InspectSummary>(emptySummary);
   const [periodic, setPeriodic] = useState<InspectSummary>(emptySummary);
   const [pm, setPm] = useState<InspectSummary>(emptySummary);
   const [loading, setLoading] = useState(false);
   const [inspectLoading, setInspectLoading] = useState(false);
 
-  const statusDisplayMap: Record<string, string> = useMemo(() => ({
-    WAIT: t("dashboard.statusWaiting"),
-    RUNNING: t("dashboard.statusInProgress"),
-    DONE: t("dashboard.statusCompleted"),
-  }), [t]);
-
   const today = formatDate(new Date());
 
-  /** 일상/정기 점검 day 응답 → InspectSummary 변환 */
   const parseInspectDay = useCallback((data: any[]): InspectSummary => {
     const items: InspectItem[] = data.map((d: any) => ({
       equipCode: d.equipCode || "",
@@ -140,7 +112,6 @@ export default function DashboardPage() {
     return { items, total, completed, pass, fail };
   }, []);
 
-  /** PM WO day 응답 → InspectSummary 변환 */
   const parsePmDay = useCallback((data: any[]): InspectSummary => {
     const items: InspectItem[] = data.map((d: any) => ({
       equipCode: d.equip?.equipCode || d.equipCode || "",
@@ -160,15 +131,57 @@ export default function DashboardPage() {
     setLoading(true);
     setInspectLoading(true);
     try {
-      const [kpiRes, prodRes, dailyRes, periodicRes, pmRes] = await Promise.all([
-        api.get("/dashboard/kpi"),
-        api.get("/dashboard/recent-productions"),
+      const [equipRes, jobRes, lowStockRes, shelfRes, defectRes, dailyRes, periodicRes, pmRes] = await Promise.all([
+        api.get("/equipment/equips/stats").catch(() => ({ data: { data: null } })),
+        api.get("/production/job-orders", { params: { startDate: today, endDate: today, limit: 9999 } }).catch(() => ({ data: { data: [] } })),
+        api.get("/material/stocks", { params: { lowStockOnly: true, limit: 9999 } }).catch(() => ({ data: { data: [] } })),
+        api.get("/material/shelf-life").catch(() => ({ data: { data: [] } })),
+        api.get("/quality/defect-logs/stats/by-status").catch(() => ({ data: { data: [] } })),
         api.get("/equipment/daily-inspect/calendar/day", { params: { date: today } }).catch(() => ({ data: { data: [] } })),
         api.get("/equipment/periodic-inspect/calendar/day", { params: { date: today } }).catch(() => ({ data: { data: [] } })),
         api.get("/equipment/pm-work-orders/calendar/day", { params: { date: today } }).catch(() => ({ data: { data: [] } })),
       ]);
-      setKpi(kpiRes.data?.data ?? defaultKpi);
-      setProductions(prodRes.data?.data ?? []);
+
+      // 설비 현황
+      const eData = equipRes.data?.data;
+      if (eData) {
+        const statusMap: Record<string, number> = {};
+        (eData.byStatus || []).forEach((s: any) => { statusMap[s.status] = Number(s.count) || 0; });
+        setEquip({
+          normal: statusMap["NORMAL"] || 0,
+          maint: statusMap["MAINT"] || 0,
+          stop: statusMap["STOP"] || 0,
+          total: Number(eData.total) || 0,
+        });
+      }
+
+      // 작업지시 현황
+      const jobList = jobRes.data?.data ?? [];
+      const jWait = jobList.filter((j: any) => j.status === "WAIT").length;
+      const jRunning = jobList.filter((j: any) => j.status === "RUNNING").length;
+      const jDone = jobList.filter((j: any) => j.status === "DONE" || j.status === "COMPLETED").length;
+      setJob({ wait: jWait, running: jRunning, done: jDone, total: jobList.length });
+
+      // 자재 알림
+      const lowStockCount = (lowStockRes.data?.data ?? []).length;
+      const shelfList = shelfRes.data?.data ?? [];
+      const nearExpiry = shelfList.filter((s: any) => s.status === "NEAR_EXPIRY").length;
+      const expired = shelfList.filter((s: any) => s.status === "EXPIRED").length;
+      setMat({ lowStock: lowStockCount, nearExpiry, expired });
+
+      // 불량 현황
+      const defectList = defectRes.data?.data ?? [];
+      const dMap: Record<string, number> = {};
+      defectList.forEach((d: any) => { dMap[d.status] = Number(d.count) || 0; });
+      const dTotal = defectList.reduce((sum: number, d: any) => sum + (Number(d.count) || 0), 0);
+      setDefect({
+        wait: dMap["WAIT"] || 0,
+        repair: dMap["REPAIR"] || 0,
+        rework: dMap["REWORK"] || 0,
+        done: dMap["DONE"] || 0,
+        total: dTotal,
+      });
+
       setDaily(parseInspectDay(dailyRes.data?.data ?? []));
       setPeriodic(parseInspectDay(periodicRes.data?.data ?? []));
       setPm(parsePmDay(pmRes.data?.data ?? []));
@@ -182,50 +195,10 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<RecentProduction>[]>(() => [
-    { accessorKey: "orderNo", header: t("dashboard.orderNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("dashboard.partName"), size: 180, meta: { filterType: "text" as const } },
-    { accessorKey: "line", header: t("dashboard.line"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "planQty", header: t("dashboard.planQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: "actualQty", header: t("dashboard.actualQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    {
-      accessorKey: "progress", header: t("dashboard.progress"), size: 160,
-      meta: { filterType: "none" as const },
-      cell: ({ getValue }) => {
-        const value = getValue() as number;
-        return (
-          <div className="flex items-center gap-2">
-            <div className="w-20 h-2 bg-background rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${Math.min(value, 100)}%` }} />
-            </div>
-            <span className="text-sm">{value.toFixed(1)}%</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "status", header: t("dashboard.status"), size: 90,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const status = getValue() as string;
-        const colorMap: Record<string, string> = {
-          WAIT: "bg-muted text-muted-foreground",
-          RUNNING: "bg-info/10 text-info",
-          DONE: "bg-success/10 text-success",
-        };
-        return (
-          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${colorMap[status] || ""}`}>
-            {statusDisplayMap[status] || status}
-          </span>
-        );
-      },
-    },
-  ], [t, statusDisplayMap]);
-
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <LayoutDashboard className="w-7 h-7 text-primary" />{t("dashboard.title")}
@@ -237,68 +210,92 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title={t("dashboard.todayProduction")} value={kpi.todayProduction.value} unit="EA" change={kpi.todayProduction.change} changeLabel={t("common.vsYesterday")} icon={Factory} color="bg-primary" />
-        <KpiCard title={t("dashboard.inventoryStatus")} value={kpi.inventoryStatus.value} unit="EA" change={kpi.inventoryStatus.change} changeLabel={t("common.vsYesterday")} icon={Package} color="bg-blue-500" />
-        <KpiCard title={t("dashboard.qualityPassRate")} value={kpi.qualityPassRate.value} unit="%" change={kpi.qualityPassRate.change} changeLabel={t("common.vsYesterday")} icon={Shield} color="bg-success" />
-        <KpiCard title={t("dashboard.interlockOccurrence")} value={kpi.interlockCount.value} unit={t("common.count")} change={kpi.interlockCount.change} changeLabel={t("common.vsYesterday")} icon={AlertTriangle} color="bg-warning" />
-      </div>
-
-      {/* Inspection Summary (3 columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <InspectSummaryCard
-          title={t("dashboard.inspect.dailyTitle", "일상점검")}
-          icon={ClipboardCheck}
-          iconColor="bg-blue-500"
-          items={daily.items}
-          total={daily.total}
-          completed={daily.completed}
-          pass={daily.pass}
-          fail={daily.fail}
-          loading={inspectLoading}
-          linkPath="/equipment/inspect-calendar"
+      {/* Status Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
+        <StatusCard
+          title={t("dashboard.equipStatus", "설비 가동 현황")}
+          icon={Cpu} color="bg-primary"
+          items={[
+            { label: t("dashboard.equipNormal", "가동"), value: equip.normal, accent: "text-success" },
+            { label: t("dashboard.equipMaint", "정비중"), value: equip.maint, accent: "text-warning" },
+            { label: t("dashboard.equipStop", "정지"), value: equip.stop, accent: equip.stop > 0 ? "text-error" : "text-text" },
+            { label: t("dashboard.equipTotal", "전체"), value: equip.total },
+          ]}
         />
-        <InspectSummaryCard
-          title={t("dashboard.inspect.periodicTitle", "정기점검")}
-          icon={CalendarCheck}
-          iconColor="bg-purple-500"
-          items={periodic.items}
-          total={periodic.total}
-          completed={periodic.completed}
-          pass={periodic.pass}
-          fail={periodic.fail}
-          loading={inspectLoading}
-          linkPath="/equipment/periodic-inspect-calendar"
+        <StatusCard
+          title={t("dashboard.jobStatus", "오늘 작업지시")}
+          icon={ClipboardList} color="bg-blue-500"
+          items={[
+            { label: t("dashboard.jobWait", "대기"), value: job.wait },
+            { label: t("dashboard.jobRunning", "진행"), value: job.running, accent: "text-info" },
+            { label: t("dashboard.jobDone", "완료"), value: job.done, accent: "text-success" },
+            { label: t("dashboard.jobTotal", "전체"), value: job.total },
+          ]}
         />
-        <InspectSummaryCard
-          title={t("dashboard.inspect.pmTitle", "예방보전")}
-          icon={Wrench}
-          iconColor="bg-orange-500"
-          items={pm.items}
-          total={pm.total}
-          completed={pm.completed}
-          pass={pm.pass}
-          fail={pm.fail}
-          loading={inspectLoading}
-          linkPath="/equipment/pm-calendar"
+        <StatusCard
+          title={t("dashboard.matAlert", "자재 알림")}
+          icon={PackageSearch} color="bg-orange-500"
+          items={[
+            { label: t("dashboard.matLowStock", "안전재고 미달"), value: mat.lowStock, accent: mat.lowStock > 0 ? "text-warning" : "text-text" },
+            { label: t("dashboard.matNearExpiry", "유효기한 임박"), value: mat.nearExpiry, accent: mat.nearExpiry > 0 ? "text-warning" : "text-text" },
+            { label: t("dashboard.matExpired", "기한 초과"), value: mat.expired, accent: mat.expired > 0 ? "text-error" : "text-text" },
+            { label: t("dashboard.matAlertTotal", "알림 합계"), value: mat.lowStock + mat.nearExpiry + mat.expired },
+          ]}
+        />
+        <StatusCard
+          title={t("dashboard.defectStatus", "불량 현황")}
+          icon={Bug} color="bg-red-500"
+          items={[
+            { label: t("dashboard.defectWait", "미처리"), value: defect.wait, accent: defect.wait > 0 ? "text-error" : "text-text" },
+            { label: t("dashboard.defectRepair", "수리중"), value: defect.repair, accent: "text-warning" },
+            { label: t("dashboard.defectRework", "재작업"), value: defect.rework, accent: "text-warning" },
+            { label: t("dashboard.defectDone", "처리완료"), value: defect.done, accent: "text-success" },
+          ]}
         />
       </div>
 
-      {/* Recent Production Table (bottom) */}
-      <Card>
-        <CardHeader title={t("dashboard.recentOrders")} subtitle={t("dashboard.recentOrdersDesc")} />
-        <CardContent>
-          <DataGrid
-            data={productions}
-            columns={columns}
-            isLoading={loading}
-            enableColumnFilter
-            enableExport
-            exportFileName={t("dashboard.recentOrders")}
+      {/* Scrollable content area */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
+        {/* Inspection Summary (3 columns) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <InspectSummaryCard
+            title={t("dashboard.inspect.dailyTitle", "일상점검")}
+            icon={ClipboardCheck}
+            iconColor="bg-blue-500"
+            items={daily.items}
+            total={daily.total}
+            completed={daily.completed}
+            pass={daily.pass}
+            fail={daily.fail}
+            loading={inspectLoading}
+            linkPath="/equipment/inspect-calendar"
           />
-        </CardContent>
-      </Card>
+          <InspectSummaryCard
+            title={t("dashboard.inspect.periodicTitle", "정기점검")}
+            icon={CalendarCheck}
+            iconColor="bg-purple-500"
+            items={periodic.items}
+            total={periodic.total}
+            completed={periodic.completed}
+            pass={periodic.pass}
+            fail={periodic.fail}
+            loading={inspectLoading}
+            linkPath="/equipment/periodic-inspect-calendar"
+          />
+          <InspectSummaryCard
+            title={t("dashboard.inspect.pmTitle", "예방보전")}
+            icon={Wrench}
+            iconColor="bg-orange-500"
+            items={pm.items}
+            total={pm.total}
+            completed={pm.completed}
+            pass={pm.pass}
+            fail={pm.fail}
+            loading={inspectLoading}
+            linkPath="/equipment/pm-calendar"
+          />
+        </div>
+      </div>
     </div>
   );
 }

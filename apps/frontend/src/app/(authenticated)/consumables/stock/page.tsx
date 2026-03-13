@@ -64,10 +64,10 @@ function ConsumableStockPage() {
                   />
                 </div>
                 <div className="w-36 flex-shrink-0">
-                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} fullWidth />
+                  <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix="분류" fullWidth />
                 </div>
                 <div className="w-36 flex-shrink-0">
-                  <ComCodeSelect groupCode="CON_STOCK_STATUS" value={stockStatusFilter} onChange={setStockStatusFilter} fullWidth />
+                  <ComCodeSelect groupCode="CON_STOCK_STATUS" value={stockStatusFilter} onChange={setStockStatusFilter} labelPrefix="재고상태" fullWidth />
                 </div>
               </div>
             }

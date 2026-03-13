@@ -55,7 +55,6 @@ export type UserRole = "admin" | "manager" | "operator" | "viewer";
 // ========================================
 
 export interface JobOrder {
-  id: string;
   orderNo: string;
   itemCode: string;
   itemName: string;

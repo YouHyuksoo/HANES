@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Button, Input, Select } from "@/components/ui";
 import { PartSearchModal } from "@/components/shared";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
@@ -125,9 +125,13 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("monthlyPlan.editPlan") : t("monthlyPlan.addPlan")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit}
+            disabled={saving || !form.itemCode.trim() || form.planQty <= 0}>
+            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          </Button>
+        </div>
       </div>
 
       {/* 본문 */}
@@ -227,16 +231,6 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
         </div>
       </div>
 
-      {/* 푸터 */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={saving || !form.itemCode.trim() || form.planQty <= 0}
-        >
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-        </Button>
-      </div>
       <PartSearchModal
         isOpen={partSearchOpen}
         onClose={() => setPartSearchOpen(false)}

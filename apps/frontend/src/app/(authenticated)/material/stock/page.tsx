@@ -21,10 +21,10 @@ import {
   TrendingUp,
   Boxes,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { StatCard } from "@/components/ui";
-import { useWarehouseOptions } from "@/hooks/useMasterOptions";
+import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
 
 /** API 응답 재고 인터페이스 */
@@ -111,7 +111,6 @@ function StockLevelBadge({
 
 function StockPage() {
   const { t } = useTranslation();
-  const { options: warehouseOpts } = useWarehouseOptions();
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [searchText, setSearchText] = useState("");
   const [stocks, setStocks] = useState<StockItem[]>([]);
@@ -151,14 +150,6 @@ function StockPage() {
       ).length,
     }),
     [stocks]
-  );
-
-  const warehouseOptions = useMemo(
-    () => [
-      { value: "", label: t("material.stock.allWarehouse") },
-      ...warehouseOpts,
-    ],
-    [t, warehouseOpts]
   );
 
   const stockLevelLabels = useMemo(
@@ -318,8 +309,8 @@ function StockPage() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Warehouse className="w-7 h-7 text-primary" />
@@ -331,12 +322,12 @@ function StockPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={fetchStocks}>
-            <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard
           label={t("material.stock.stats.totalItems")}
           value={stats.totalItems}
@@ -363,8 +354,7 @@ function StockPage() {
         />
       </div>
 
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           {loading ? (
             <div className="py-10 text-center text-text-muted">
               {t("common.loading")}
@@ -383,8 +373,9 @@ function StockPage() {
                     />
                   </div>
                   <div className="w-40 flex-shrink-0">
-                    <Select
-                      options={warehouseOptions}
+                    <WarehouseSelect
+                      includeAll
+                      labelPrefix={t("common.warehouse", "창고")}
                       value={warehouseFilter}
                       onChange={setWarehouseFilter}
                       fullWidth
@@ -393,8 +384,7 @@ function StockPage() {
                 </div>
               } />
           )}
-        </CardContent>
-      </Card>
+      </CardContent></Card>
     </div>
   );
 }

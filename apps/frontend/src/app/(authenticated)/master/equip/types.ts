@@ -17,7 +17,6 @@ export type CommType = 'MQTT' | 'SERIAL' | 'TCP' | 'NONE';
 export type EquipStatus = 'NORMAL' | 'MAINT' | 'STOP';
 
 export interface EquipMaster {
-  id: string;
   equipCode: string;
   equipName: string;
   equipType: EquipType;
@@ -47,7 +46,7 @@ export interface EquipMaster {
 export type BomItemType = 'PART' | 'CONSUMABLE';
 
 export interface EquipBomItem {
-  id: string;
+  bomItemCode: string;
   itemCode: string;
   itemName: string;
   itemType: BomItemType;
@@ -135,14 +134,14 @@ export const seedEquipments: EquipMaster[] = [];
 // ========================================
 
 export const seedEquipBomItems: EquipBomItem[] = [
-  { id: '1', itemCode: 'PART-001', itemName: '커팅 블레이드', itemType: 'PART', spec: '100x50x2mm', maker: '日本特殊鋼', unit: 'EA', unitPrice: 150000, replacementCycle: 90, stockQty: 5, safetyStock: 2, useYn: 'Y' },
-  { id: '2', itemCode: 'PART-002', itemName: '압착 다이스', itemType: 'PART', spec: 'AWG 20-22', maker: 'TE Connectivity', unit: 'SET', unitPrice: 250000, replacementCycle: 180, stockQty: 3, safetyStock: 1, useYn: 'Y' },
-  { id: '3', itemCode: 'PART-003', itemName: '서보 모터', itemType: 'PART', spec: '750W AC', maker: 'Mitsubishi', unit: 'EA', unitPrice: 850000, replacementCycle: 365, stockQty: 2, safetyStock: 1, useYn: 'Y' },
-  { id: '4', itemCode: 'PART-004', itemName: 'PLC 모듈', itemType: 'PART', spec: 'FX5U-32MT', maker: 'Mitsubishi', unit: 'EA', unitPrice: 1200000, replacementCycle: 730, stockQty: 1, safetyStock: 1, useYn: 'Y' },
-  { id: '5', itemCode: 'CONS-001', itemName: '그리스', itemType: 'CONSUMABLE', spec: 'NLGI #2', maker: 'SKF', unit: 'CAN', unitPrice: 35000, replacementCycle: 30, stockQty: 12, safetyStock: 5, useYn: 'Y' },
-  { id: '6', itemCode: 'CONS-002', itemName: '클리닝 와이프', itemType: 'CONSUMABLE', spec: '300x300mm 무지', maker: '3M', unit: 'BOX', unitPrice: 25000, replacementCycle: 14, stockQty: 20, safetyStock: 10, useYn: 'Y' },
-  { id: '7', itemCode: 'CONS-003', itemName: '절단유', itemType: 'CONSUMABLE', spec: 'ISO VG 68', maker: 'Shell', unit: 'L', unitPrice: 15000, replacementCycle: 90, stockQty: 50, safetyStock: 20, useYn: 'Y' },
-  { id: '8', itemCode: 'CONS-004', itemName: '에어 필터', itemType: 'CONSUMABLE', spec: '5μm', maker: 'SMC', unit: 'EA', unitPrice: 8500, replacementCycle: 60, stockQty: 15, safetyStock: 5, useYn: 'Y' },
+  { bomItemCode: 'PART-001', itemCode: 'PART-001', itemName: '커팅 블레이드', itemType: 'PART', spec: '100x50x2mm', maker: '日本特殊鋼', unit: 'EA', unitPrice: 150000, replacementCycle: 90, stockQty: 5, safetyStock: 2, useYn: 'Y' },
+  { bomItemCode: 'PART-002', itemCode: 'PART-002', itemName: '압착 다이스', itemType: 'PART', spec: 'AWG 20-22', maker: 'TE Connectivity', unit: 'SET', unitPrice: 250000, replacementCycle: 180, stockQty: 3, safetyStock: 1, useYn: 'Y' },
+  { bomItemCode: 'PART-003', itemCode: 'PART-003', itemName: '서보 모터', itemType: 'PART', spec: '750W AC', maker: 'Mitsubishi', unit: 'EA', unitPrice: 850000, replacementCycle: 365, stockQty: 2, safetyStock: 1, useYn: 'Y' },
+  { bomItemCode: 'PART-004', itemCode: 'PART-004', itemName: 'PLC 모듈', itemType: 'PART', spec: 'FX5U-32MT', maker: 'Mitsubishi', unit: 'EA', unitPrice: 1200000, replacementCycle: 730, stockQty: 1, safetyStock: 1, useYn: 'Y' },
+  { bomItemCode: 'CONS-001', itemCode: 'CONS-001', itemName: '그리스', itemType: 'CONSUMABLE', spec: 'NLGI #2', maker: 'SKF', unit: 'CAN', unitPrice: 35000, replacementCycle: 30, stockQty: 12, safetyStock: 5, useYn: 'Y' },
+  { bomItemCode: 'CONS-002', itemCode: 'CONS-002', itemName: '클리닝 와이프', itemType: 'CONSUMABLE', spec: '300x300mm 무지', maker: '3M', unit: 'BOX', unitPrice: 25000, replacementCycle: 14, stockQty: 20, safetyStock: 10, useYn: 'Y' },
+  { bomItemCode: 'CONS-003', itemCode: 'CONS-003', itemName: '절단유', itemType: 'CONSUMABLE', spec: 'ISO VG 68', maker: 'Shell', unit: 'L', unitPrice: 15000, replacementCycle: 90, stockQty: 50, safetyStock: 20, useYn: 'Y' },
+  { bomItemCode: 'CONS-004', itemCode: 'CONS-004', itemName: '에어 필터', itemType: 'CONSUMABLE', spec: '5μm', maker: 'SMC', unit: 'EA', unitPrice: 8500, replacementCycle: 60, stockQty: 15, safetyStock: 5, useYn: 'Y' },
 ];
 
 export const seedEquipBomRels: EquipBomRel[] = [

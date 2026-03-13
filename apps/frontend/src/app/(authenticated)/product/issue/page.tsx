@@ -186,9 +186,9 @@ export default function ProductIssuePage() {
   return (
     <div className="flex h-full animate-fade-in">
       {/* 메인 영역 */}
-      <div className="flex-1 min-w-0 space-y-6 p-0">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
         {/* 헤더 */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <PackageX className="w-7 h-7 text-primary" />
@@ -196,14 +196,19 @@ export default function ProductIssuePage() {
             </h1>
             <p className="text-text-muted mt-1">{t("productMgmt.issue.subtitle")}</p>
           </div>
-          <Button onClick={() => setIsPanelOpen(true)} disabled={isPanelOpen}>
-            <ClipboardPlus className="w-4 h-4 mr-1" />
-            {t("productMgmt.issue.registerIssue")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={() => setIsPanelOpen(true)} disabled={isPanelOpen}>
+              <ClipboardPlus className="w-4 h-4 mr-1" />
+              {t("productMgmt.issue.registerIssue")}
+            </Button>
+          </div>
         </div>
 
         {/* StatCards */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
           <StatCard label={t("productMgmt.issue.stats.todayCount")} value={stats.todayCount} icon={Hash} color="blue" />
           <StatCard label={t("productMgmt.issue.stats.todayQty")} value={stats.todayQty} icon={Package} color="green" />
           <StatCard label={t("productMgmt.issue.stats.wipCount")} value={stats.wipCount} icon={PackageX} color="yellow" />
@@ -211,7 +216,7 @@ export default function ProductIssuePage() {
         </div>
 
         {/* DataGrid */}
-        <Card><CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport
             exportFileName={t("productMgmt.issue.title")}
             toolbarLeft={
@@ -227,9 +232,6 @@ export default function ProductIssuePage() {
                 <div className="w-36 flex-shrink-0">
                   <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
                 </div>
-                <Button variant="secondary" onClick={fetchData}>
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                </Button>
               </div>
             } />
         </CardContent></Card>

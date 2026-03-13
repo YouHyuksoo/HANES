@@ -9,7 +9,7 @@
  * 2. DataGrid로 공정 목록 표시 + 모달로 등록/수정
  * 3. 공정유형 필터링 + 검색 지원
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge } from "@/components/ui";
@@ -19,7 +19,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface Process {
-  id: string;
   processCode: string;
   processName: string;
   processType: string;
@@ -29,7 +28,11 @@ interface Process {
   useYn: string;
 }
 
-export default function ProcessTab() {
+interface Props {
+  onHeaderActions?: (actions: ReactNode) => void;
+}
+
+export default function ProcessTab({ onHeaderActions }: Props) {
   const { t } = useTranslation();
   const [processes, setProcesses] = useState<Process[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,8 +45,8 @@ export default function ProcessTab() {
 
   const processTypeOptions = useComCodeOptions("PROCESS_TYPE");
   const filterOptions = useMemo(() => [
-    { value: "", label: t("common.all") },
-    ...processTypeOptions,
+    { value: "", label: t("master.process.processType") + ": " + t("common.all") },
+    ...processTypeOptions.map(o => ({ ...o, label: t("master.process.processType") + ": " + o.label })),
   ], [t, processTypeOptions]);
 
   const fetchProcesses = useCallback(async () => {
@@ -78,6 +81,19 @@ export default function ProcessTab() {
     setIsModalOpen(true);
   }, []);
 
+  useEffect(() => {
+    onHeaderActions?.(
+      <>
+        <Button variant="secondary" size="sm" onClick={fetchProcesses}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
+        <Button size="sm" onClick={openCreateModal}>
+          <Plus className="w-4 h-4 mr-1" />{t("master.process.addProcess")}
+        </Button>
+      </>
+    );
+  }, [onHeaderActions, fetchProcesses, openCreateModal, loading, t]);
+
   const openEditModal = useCallback((item: Process) => {
     setEditingItem(item);
     setFormData({ ...item });
@@ -89,7 +105,7 @@ export default function ProcessTab() {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/master/processes/${editingItem.id}`, formData);
+        await api.put(`/master/processes/${editingItem.processCode}`, formData);
       } else {
         await api.post("/master/processes", formData);
       }
@@ -104,7 +120,7 @@ export default function ProcessTab() {
 
   const handleDelete = useCallback(async (item: Process) => {
     try {
-      await api.delete(`/master/processes/${item.id}`);
+      await api.delete(`/master/processes/${item.processCode}`);
       fetchProcesses();
     } catch (e: any) {
       console.error("Delete failed:", e);
@@ -112,6 +128,20 @@ export default function ProcessTab() {
   }, [fetchProcesses]);
 
   const columns = useMemo<ColumnDef<Process>[]>(() => [
+    {
+      id: "actions", header: t("common.actions"), size: 80,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original); }} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     { accessorKey: "processCode", header: t("master.process.processCode"), size: 120 },
     { accessorKey: "processName", header: t("master.process.processName"), size: 160 },
     { accessorKey: "processType", header: t("master.process.processType"), size: 100,
@@ -128,24 +158,19 @@ export default function ProcessTab() {
     { accessorKey: "remark", header: t("common.remark"), size: 150,
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
-    { accessorKey: "useYn", header: t("master.process.use"), size: 60,
-      cell: ({ getValue }) => (
-        <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
-      ),
+    {
+      accessorKey: "useYn", header: t("common.useYn", "사용여부"), size: 60,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return (
+          <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y"
+            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+            : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>{v === "Y" ? "Y" : "N"}</span>
+        );
+      },
     },
-    { id: "actions", header: t("common.actions"), size: 80,
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original); }} className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
-  ], [t, openEditModal, handleDelete]);
+  ], [t, openEditModal, handleDelete, processCategoryOptions]);
 
   return (
     <>
@@ -167,12 +192,6 @@ export default function ProcessTab() {
                 <div className="w-40 flex-shrink-0">
                   <Select options={filterOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
                 </div>
-                <Button variant="secondary" size="sm" onClick={fetchProcesses} className="flex-shrink-0">
-                  <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-                </Button>
-                <Button size="sm" onClick={openCreateModal} className="flex-shrink-0">
-                  <Plus className="w-4 h-4 mr-1" />{t("master.process.addProcess")}
-                </Button>
               </div>
             }
           />

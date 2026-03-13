@@ -109,6 +109,23 @@ export default function ProductIssueCancelPage() {
 
   const columns = useMemo<ColumnDef<ProductIssueTx>[]>(() => [
     {
+      id: "actions", header: "", size: 90,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => {
+        const tx = row.original;
+        if (tx.status === "CANCELED" || tx.cancelRefId || tx.transType.includes("CANCEL")) return null;
+        return (
+          <Button size="sm" variant="secondary" onClick={() => {
+            setSelectedTx(tx);
+            setReason("");
+            setIsModalOpen(true);
+          }}>
+            <XCircle className="w-4 h-4 mr-1" />{t("productMgmt.issueCancel.cancel")}
+          </Button>
+        );
+      },
+    },
+    {
       accessorKey: "transDate", header: t("productMgmt.issueCancel.transDate"), size: 100,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
@@ -171,28 +188,12 @@ export default function ProductIssueCancelPage() {
         return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
       },
     },
-    {
-      id: "actions", header: "", size: 90,
-      cell: ({ row }) => {
-        const tx = row.original;
-        if (tx.status === "CANCELED" || tx.cancelRefId || tx.transType.includes("CANCEL")) return null;
-        return (
-          <Button size="sm" variant="secondary" onClick={() => {
-            setSelectedTx(tx);
-            setReason("");
-            setIsModalOpen(true);
-          }}>
-            <XCircle className="w-4 h-4 mr-1" />{t("productMgmt.issueCancel.cancel")}
-          </Button>
-        );
-      },
-    },
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <RotateCcw className="w-7 h-7 text-primary" />
@@ -200,17 +201,20 @@ export default function ProductIssueCancelPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("productMgmt.issueCancel.subtitle")}</p>
         </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        </Button>
       </div>
 
       {/* StatCards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label={t("productMgmt.issueCancel.stats.total")} value={stats.total} icon={RotateCcw} color="blue" />
         <StatCard label={t("productMgmt.issueCancel.stats.cancellable")} value={stats.cancellable} icon={XCircle} color="yellow" />
         <StatCard label={t("productMgmt.issueCancel.stats.canceled")} value={stats.canceled} icon={RotateCcw} color="red" />
       </div>
 
       {/* DataGrid */}
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport
           exportFileName={t("productMgmt.issueCancel.title")}
           toolbarLeft={
@@ -226,9 +230,6 @@ export default function ProductIssueCancelPage() {
               <div className="w-36 flex-shrink-0">
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

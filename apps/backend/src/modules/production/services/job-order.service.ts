@@ -253,6 +253,7 @@ export class JobOrderService {
     if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
     if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
     if (dto.status !== undefined) updateData.status = dto.status;
+    if (dto.parentId !== undefined) updateData.parentOrderNo = dto.parentId || null;
 
     await this.jobOrderRepository.update({ orderNo: id }, updateData);
     return this.findOneWithSelect(id);

@@ -16,7 +16,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { PartMaster } from './part-master.entity';
+import { CustomsEntry } from './customs-entry.entity';
 
 @Entity({ name: 'CUSTOMS_LOTS' })
 @Index(['entryId'])
@@ -29,11 +33,19 @@ export class CustomsLot {
   @Column({ name: 'ENTRY_ID', type: 'number' })
   entryId: number;
 
+  @ManyToOne(() => CustomsEntry)
+  @JoinColumn({ name: 'ENTRY_ID' })
+  entry: CustomsEntry;
+
   @Column({ name: 'MAT_UID', length: 100 })
   matUid: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
+
+  @ManyToOne(() => PartMaster)
+  @JoinColumn({ name: 'ITEM_CODE', referencedColumnName: 'itemCode' })
+  item: PartMaster;
 
   @Column({ name: 'QTY', type: 'int' })
   qty: number;

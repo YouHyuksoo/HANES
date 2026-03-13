@@ -166,8 +166,8 @@ export default function AdjustmentPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <SlidersHorizontal className="w-7 h-7 text-primary" />
@@ -175,18 +175,23 @@ export default function AdjustmentPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("material.adjustment.subtitle")}</p>
         </div>
-        <Button size="sm" onClick={() => setShowRegister(true)}>
-          <Plus className="w-4 h-4 mr-1" />{t("material.adjustment.register")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+          <Button size="sm" onClick={() => setShowRegister(true)}>
+            <Plus className="w-4 h-4 mr-1" />{t("material.adjustment.register")}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         <StatCard label={t("material.adjustment.stats.total")} value={stats.total} icon={SlidersHorizontal} color="blue" />
         <StatCard label={t("material.adjustment.stats.increase")} value={stats.increase} icon={TrendingUp} color="green" />
         <StatCard label={t("material.adjustment.stats.decrease")} value={stats.decrease} icon={TrendingDown} color="red" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.adjustment.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
@@ -203,9 +208,6 @@ export default function AdjustmentPage() {
                 <Input type="date"
                   value={endDate} onChange={e => setEndDate(e.target.value)} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

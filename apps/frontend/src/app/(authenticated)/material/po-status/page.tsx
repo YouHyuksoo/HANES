@@ -206,9 +206,9 @@ export default function PoStatusPage() {
   const detailItems = selectedPo?.items ?? [];
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardList className="w-7 h-7 text-primary" />
@@ -223,7 +223,7 @@ export default function PoStatusPage() {
       </div>
 
       {/* 통계 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("material.poStatus.stats.total")} value={stats.total}
           icon={ShoppingCart} color="blue" />
         <StatCard label={t("material.poStatus.stats.confirmed")} value={stats.confirmed}
@@ -235,10 +235,10 @@ export default function PoStatusPage() {
       </div>
 
       {/* 마스터-디테일 좌우 분할 */}
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
         {/* 좌측: PO 마스터 */}
-        <div className="col-span-7">
-          <Card><CardContent>
+        <div className="col-span-7 min-h-0">
+          <Card className="h-full overflow-hidden" padding="none"><CardContent className="h-full p-4">
             <DataGrid data={data} columns={masterColumns} isLoading={loading}
               enableColumnFilter enableExport
               exportFileName={t("material.poStatus.title")}
@@ -262,9 +262,9 @@ export default function PoStatusPage() {
         </div>
 
         {/* 우측: 품목 입고현황 디테일 */}
-        <div className="col-span-5">
-          <Card>
-            <CardContent>
+        <div className="col-span-5 min-h-0">
+          <Card className="h-full overflow-hidden" padding="none">
+            <CardContent className="h-full p-4">
               {selectedPo ? (
                 <div className="space-y-3">
                   {/* 선택된 PO 헤더 정보 */}

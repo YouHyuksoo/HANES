@@ -14,10 +14,10 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Monitor, RefreshCw, Search, CheckCircle, AlertTriangle,
-  XCircle, Wifi, Activity,
+  Monitor, RefreshCw, Search,
+  Wifi, Activity,
 } from "lucide-react";
-import { Button, Input, StatCard } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { ComCodeSelect, LineSelect } from "@/components/shared";
 import { useApiQuery } from "@/hooks/useApi";
 
@@ -90,14 +90,6 @@ export default function EquipStatusPage() {
     return list;
   }, [equipments, search, typeFilter, lineFilter, statusFilter]);
 
-  const stats = useMemo(() => {
-    const total = filtered.length;
-    const normal = filtered.filter((e) => e.status === "NORMAL").length;
-    const maint = filtered.filter((e) => e.status === "MAINT").length;
-    const stop = filtered.filter((e) => e.status === "STOP").length;
-    return { total, normal, maint, stop };
-  }, [filtered]);
-
   const resetFilters = useCallback(() => {
     setSearch("");
     setTypeFilter("");
@@ -106,9 +98,9 @@ export default function EquipStatusPage() {
   }, []);
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Monitor className="w-7 h-7 text-primary" />
@@ -118,22 +110,14 @@ export default function EquipStatusPage() {
             {t("equipment.status.subtitle", "전체 설비의 실시간 가동 현황을 확인합니다.")}
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => refetch()}>
+        <Button variant="secondary" size="sm" onClick={() => { resetFilters(); refetch(); }}>
           <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} />
           {t("common.refresh")}
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t("common.total")} value={stats.total} icon={Monitor} color="blue" />
-        <StatCard label={t("equipment.normal")} value={stats.normal} icon={CheckCircle} color="green" />
-        <StatCard label={t("equipment.maint")} value={stats.maint} icon={AlertTriangle} color="yellow" />
-        <StatCard label={t("equipment.stop")} value={stats.stop} icon={XCircle} color="red" />
-      </div>
-
       {/* Filters */}
-      <div className="flex gap-3 items-center flex-wrap">
+      <div className="flex gap-3 items-center flex-wrap flex-shrink-0">
         <div className="flex-1 min-w-[200px] max-w-xs">
           <Input
             placeholder={t("common.search")}
@@ -143,19 +127,18 @@ export default function EquipStatusPage() {
           />
         </div>
         <div className="w-36">
-          <LineSelect value={lineFilter} onChange={setLineFilter} fullWidth />
+          <LineSelect value={lineFilter} onChange={setLineFilter} labelPrefix={t("master.equip.line", "라인")} fullWidth />
         </div>
         <div className="w-36">
-          <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} fullWidth />
+          <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} labelPrefix="유형" fullWidth />
         </div>
         <div className="w-36">
-          <ComCodeSelect groupCode="EQUIP_STATUS" value={statusFilter} onChange={setStatusFilter} fullWidth />
+          <ComCodeSelect groupCode="EQUIP_STATUS" value={statusFilter} onChange={setStatusFilter} labelPrefix="상태" fullWidth />
         </div>
-        <Button variant="ghost" size="sm" onClick={resetFilters}>{t("common.reset")}</Button>
       </div>
 
       {/* Equipment Card Grid — Control-Room Panel (라이트/다크 대응) */}
-      <div className="bg-slate-100 dark:bg-slate-950 rounded-2xl p-5">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-100 dark:bg-slate-950 rounded-2xl p-5">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />

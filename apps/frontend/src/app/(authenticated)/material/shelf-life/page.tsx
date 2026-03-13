@@ -137,8 +137,8 @@ export default function ShelfLifePage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <Timer className="w-7 h-7 text-primary" />{t("material.shelfLife.title")}
@@ -150,14 +150,14 @@ export default function ShelfLifePage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("material.shelfLife.stats.total")} value={stats.total} icon={Clock} color="blue" />
         <StatCard label={t("material.shelfLife.stats.expired")} value={stats.expired} icon={XCircle} color="red" />
         <StatCard label={t("material.shelfLife.stats.nearExpiry")} value={stats.nearExpiry} icon={AlertTriangle} color="yellow" />
         <StatCard label={t("material.shelfLife.stats.valid")} value={stats.valid} icon={CheckCircle} color="green" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter rowClassName={rowClassName}
           enableExport exportFileName={t("material.shelfLife.title")}
           toolbarLeft={
@@ -170,9 +170,6 @@ export default function ShelfLifePage() {
               <div className="w-40 flex-shrink-0">
                 <Select options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

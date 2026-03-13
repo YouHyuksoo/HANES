@@ -228,13 +228,16 @@ export default function InputEquipPage() {
   ], [t]);
 
   return (
-    <div className="space-y-3 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-lg font-bold text-text flex items-center gap-2"><Microscope className="w-6 h-6 text-primary" />{t('production.inputEquip.title')}</h1>
           <p className="text-text-muted text-sm">{t('production.inputEquip.description')}</p>
         </div>
         <div className="flex gap-2 items-center">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />{t('common.refresh')}
+          </Button>
           {hasAnySelection && (
             <Button variant="outline" size="sm" onClick={clearSelection}
               className="text-red-500 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20">
@@ -248,7 +251,7 @@ export default function InputEquipPage() {
       </div>
 
       {/* 라인/공정/설비 + 작업지시 + 작업자 + 통계 */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 flex-shrink-0">
         {/* 라인 / 공정 / 설비 선택 */}
         <Card padding="none">
           <CardContent className="p-3">
@@ -402,7 +405,7 @@ export default function InputEquipPage() {
       </div>
 
       {/* 실적 목록 */}
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t('production.inputEquip.title')}
           toolbarLeft={
@@ -410,9 +413,6 @@ export default function InputEquipPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t('production.inputEquip.searchPlaceholder')} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
             </div>
           } />
       </CardContent></Card>

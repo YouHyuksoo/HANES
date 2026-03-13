@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
-import { X, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEquipOptions, useEquipBomOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -31,7 +31,6 @@ interface PlanItemRow {
 }
 
 interface PmPlanData {
-  id: string;
   planCode: string;
   planName: string;
   pmType: string;
@@ -77,7 +76,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
 
   useEffect(() => {
     if (editingPlan) {
-      loadDetail(editingPlan.id);
+      loadDetail(editingPlan.planCode);
     } else {
       resetForm();
     }
@@ -172,7 +171,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
         })),
       };
       if (editingPlan) {
-        await api.put(`/equipment/pm-plans/${editingPlan.id}`, payload);
+        await api.put(`/equipment/pm-plans/${editingPlan.planCode}`, payload);
       } else {
         await api.post("/equipment/pm-plans", payload);
       }
@@ -192,9 +191,12 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
         <h2 className="text-sm font-bold text-text">
           {isEdit ? t("equipment.pmPlan.editPlan") : t("equipment.pmPlan.addPlan")}
         </h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-surface transition-colors">
-          <X className="w-4 h-4 text-text-muted hover:text-text" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSave} disabled={!canSave || saving}>
+            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+          </Button>
+        </div>
       </div>
 
       {/* Body */}
@@ -382,13 +384,6 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
         )}
       </div>
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-border flex gap-2 justify-end flex-shrink-0">
-        <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSave} disabled={!canSave || saving}>
-          {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-        </Button>
-      </div>
     </div>
   );
 }

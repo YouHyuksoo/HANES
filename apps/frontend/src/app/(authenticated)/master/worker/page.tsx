@@ -54,7 +54,7 @@ export default function WorkerPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/workers/${deleteTarget.id}`);
+      await api.delete(`/master/workers/${deleteTarget.workerCode}`);
       fetchData();
     } catch { /* ignore */ }
     finally {
@@ -117,9 +117,9 @@ export default function WorkerPage() {
   ], [t, isPanelOpen]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
-      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-center flex-shrink-0">
           <div>
             <h1 className="text-xl font-bold text-text flex items-center gap-2">
               <Users className="w-7 h-7 text-primary" />{t("master.worker.title", "작업자 관리")}
@@ -136,8 +136,8 @@ export default function WorkerPage() {
           </div>
         </div>
 
-        <Card>
-          <CardContent>
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4">
             <DataGrid
               data={workers}
               columns={columns}
@@ -157,7 +157,7 @@ export default function WorkerPage() {
                     leftIcon={<Search className="w-4 h-4" />}
                   />
                   <div className="w-28 flex-shrink-0">
-                    <ComCodeSelect groupCode="USE_YN" value={useYnFilter} onChange={setUseYnFilter} fullWidth />
+                    <ComCodeSelect groupCode="USE_YN" value={useYnFilter} onChange={setUseYnFilter} labelPrefix="사용여부" fullWidth />
                   </div>
                 </div>
               }

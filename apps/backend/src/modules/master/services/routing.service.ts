@@ -128,7 +128,9 @@ export class RoutingService {
 
   async update(itemCode: string, seq: number, dto: UpdateRoutingDto) {
     await this.findByKey(itemCode, seq);
-    await this.routingRepository.update({ itemCode, seq }, dto);
+    // PK 필드는 update 대상에서 제외
+    const { itemCode: _ic, seq: _seq, ...updateData } = dto;
+    await this.routingRepository.update({ itemCode, seq }, updateData);
     return this.findByKey(itemCode, seq);
   }
 

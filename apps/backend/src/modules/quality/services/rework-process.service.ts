@@ -134,7 +134,7 @@ export class ReworkProcessService {
 
     const result = this.resultRepo.create({
       ...dto,
-      company: +company,
+      company,
       plant,
       createdBy: userId,
       updatedBy: userId,

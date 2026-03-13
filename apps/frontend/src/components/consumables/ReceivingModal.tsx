@@ -140,7 +140,7 @@ function ReceivingModal({ isOpen, onClose, onSubmit }: ReceivingModalProps) {
       isOpen={consumableSearchOpen}
       onClose={() => setConsumableSearchOpen(false)}
       onSelect={(item) => {
-        handleChange('consumableId', item.id);
+        handleChange('consumableId', item.consumableCode);
         setConsumableLabel(`${item.consumableCode} - ${item.consumableName}`);
       }}
     />

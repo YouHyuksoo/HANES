@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In } from 'typeorm';
+import { Repository, DataSource, Like, In } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProductHoldActionDto, ProductReleaseHoldDto, ProductHoldQueryDto } from '../dto/product-hold.dto';
@@ -22,6 +22,7 @@ export class ProductHoldService {
     private readonly productStockRepository: Repository<ProductStock>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(query: ProductHoldQueryDto, company?: string, plant?: string) {
@@ -80,16 +81,32 @@ export class ProductHoldService {
     const { stockId, reason } = dto;
     const compositeKey = this.parseStockId(stockId);
 
-    const stock = await this.productStockRepository.findOne({ where: compositeKey });
-    if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
-    if (stock.status === 'HOLD') throw new BadRequestException('이미 HOLD 상태입니다.');
-    if (stock.qty <= 0) throw new BadRequestException('수량이 0인 재고는 HOLD할 수 없습니다.');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    await this.productStockRepository.update(compositeKey, {
-      status: 'HOLD',
-      holdReason: reason,
-      holdAt: new Date(),
-    });
+    try {
+      const stock = await queryRunner.manager.findOne(ProductStock, {
+        where: compositeKey,
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
+      if (stock.status === 'HOLD') throw new BadRequestException('이미 HOLD 상태입니다.');
+      if (stock.qty <= 0) throw new BadRequestException('수량이 0인 재고는 HOLD할 수 없습니다.');
+
+      await queryRunner.manager.update(ProductStock, compositeKey, {
+        status: 'HOLD',
+        holdReason: reason,
+        holdAt: new Date(),
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
 
     const updated = await this.productStockRepository.findOne({ where: compositeKey });
     const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });
@@ -108,15 +125,31 @@ export class ProductHoldService {
     const { stockId, reason } = dto;
     const compositeKey = this.parseStockId(stockId);
 
-    const stock = await this.productStockRepository.findOne({ where: compositeKey });
-    if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
-    if (stock.status !== 'HOLD') throw new BadRequestException('HOLD 상태가 아닙니다.');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    await this.productStockRepository.update(compositeKey, {
-      status: 'NORMAL',
-      holdReason: null,
-      holdAt: null,
-    });
+    try {
+      const stock = await queryRunner.manager.findOne(ProductStock, {
+        where: compositeKey,
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
+      if (stock.status !== 'HOLD') throw new BadRequestException('HOLD 상태가 아닙니다.');
+
+      await queryRunner.manager.update(ProductStock, compositeKey, {
+        status: 'NORMAL',
+        holdReason: null,
+        holdAt: null,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
 
     const updated = await this.productStockRepository.findOne({ where: compositeKey });
     const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });

@@ -1,0 +1,12 @@
+MERGE INTO "COM_CODES" t
+USING (
+  SELECT 'TRAINING_STATUS' AS "GROUP_CODE", 'PLANNED'     AS "DETAIL_CODE", '예정'   AS "CODE_NAME", 1 AS "SORT_ORDER", 'Planned'     AS "ATTR1", '已计划' AS "ATTR2", 'Đã lên kế hoạch' AS "ATTR3" FROM DUAL UNION ALL
+  SELECT 'TRAINING_STATUS', 'IN_PROGRESS', '진행중', 2, 'In Progress', '进行中', 'Đang tiến hành'   FROM DUAL UNION ALL
+  SELECT 'TRAINING_STATUS', 'COMPLETED',   '완료',   3, 'Completed',   '已完成', 'Hoàn thành'       FROM DUAL UNION ALL
+  SELECT 'TRAINING_STATUS', 'CANCELLED',   '취소',   4, 'Cancelled',   '已取消', 'Đã hủy'           FROM DUAL
+) s ON (t."COMPANY" = 'HANES' AND t."PLANT_CD" = 'VINA' AND t."GROUP_CODE" = s."GROUP_CODE" AND t."DETAIL_CODE" = s."DETAIL_CODE")
+WHEN NOT MATCHED THEN INSERT (
+  "COMPANY", "PLANT_CD", "GROUP_CODE", "DETAIL_CODE", "CODE_NAME", "SORT_ORDER", "USE_YN", "ATTR1", "ATTR2", "ATTR3", "CREATED_BY"
+) VALUES (
+  'HANES', 'VINA', s."GROUP_CODE", s."DETAIL_CODE", s."CODE_NAME", s."SORT_ORDER", 'Y', s."ATTR1", s."ATTR2", s."ATTR3", 'SYSTEM'
+)

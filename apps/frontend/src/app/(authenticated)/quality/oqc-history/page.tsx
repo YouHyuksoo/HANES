@@ -141,8 +141,8 @@ export default function OqcHistoryPage() {
   ], [t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
             <ClipboardCheck className="w-7 h-7 text-primary" />
@@ -151,18 +151,18 @@ export default function OqcHistoryPage() {
           <p className="text-text-muted mt-1">{t("quality.oqc.historyDescription")}</p>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("quality.oqc.statTotal")} value={stats.total} icon={FileText} color="blue" />
         <StatCard label={t("quality.oqc.statPass")} value={stats.pass} icon={CheckCircle} color="green" />
         <StatCard label={t("quality.oqc.statFail")} value={stats.fail} icon={XCircle} color="red" />
         <StatCard label={t("quality.oqc.passRate")} value={`${stats.passRate}%`} icon={BarChart3} color="purple" />
       </div>
 
-      <Card><CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
           data={data}
           columns={columns}
