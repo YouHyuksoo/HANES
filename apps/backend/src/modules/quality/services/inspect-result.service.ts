@@ -156,6 +156,8 @@ export class InspectResultService {
       inspectData: dto.inspectData ? JSON.stringify(dto.inspectData) : null,
       inspectAt: dto.inspectAt ? new Date(dto.inspectAt) : new Date(),
       inspectorId: dto.inspectorId,
+      company: '40',
+      plant: '1000',
     });
 
     return this.inspectResultRepository.save(inspectResult);
@@ -227,6 +229,8 @@ export class InspectResultService {
       errorDetail: dto.errorDetail,
       inspectAt: new Date(),
       inspectorId: dto.inspectorId,
+      company: '40',
+      plant: '1000',
     });
 
     const saved = await this.inspectResultRepository.save(inspectResult);

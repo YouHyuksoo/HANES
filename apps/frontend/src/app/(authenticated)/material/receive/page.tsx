@@ -13,8 +13,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PackagePlus, Clock, Package, CheckCircle, Hash, RefreshCw } from 'lucide-react';
-import { Card, CardContent, Button, StatCard } from '@/components/ui';
+import { PackagePlus, Clock, Package, CheckCircle, Hash, RefreshCw, Search } from 'lucide-react';
+import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
 import api from '@/services/api';
 import ReceivableTable from './components/ReceivableTable';
 import type { ReceivableLot, ReceivingStats, ReceiveInput } from './components/types';
@@ -29,6 +29,7 @@ export default function ReceivingPage() {
   const [inputs, setInputs] = useState<Record<string, ReceiveInput>>({});
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   /** 입고 가능 LOT 조회 */
   const fetchReceivable = useCallback(async () => {
@@ -38,10 +39,10 @@ export default function ReceivingPage() {
       setReceivable(lots);
       const init: Record<string, ReceiveInput> = {};
       lots.forEach((lot) => {
-        init[lot.id] = {
-          matUid: lot.id,
+        init[lot.matUid] = {
+          matUid: lot.matUid,
           qty: lot.remainingQty,
-          warehouseCode: lot.arrivalWarehouse?.id || '',
+          warehouseCode: lot.arrivalWarehouseCode || '',
           manufactureDate: lot.manufactureDate ? String(lot.manufactureDate).slice(0, 10) : '',
           selected: false,
         };
@@ -81,7 +82,19 @@ export default function ReceivingPage() {
     });
   };
 
-  const allSelected = receivable.length > 0 && receivable.every((lot) => inputs[lot.id]?.selected);
+  /** 검색 필터링 */
+  const filtered = searchText
+    ? receivable.filter((lot) => {
+        const q = searchText.toLowerCase();
+        return lot.matUid.toLowerCase().includes(q)
+          || lot.part?.itemCode?.toLowerCase().includes(q)
+          || lot.part?.itemName?.toLowerCase().includes(q)
+          || lot.vendor?.toLowerCase().includes(q)
+          || lot.poNo?.toLowerCase().includes(q);
+      })
+    : receivable;
+
+  const allSelected = filtered.length > 0 && filtered.every((lot) => inputs[lot.matUid]?.selected);
   const selectedItems = Object.values(inputs).filter((inp) => inp.selected && inp.qty > 0);
 
   /** 일괄 입고 등록 */
@@ -111,17 +124,12 @@ export default function ReceivingPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('material.receive.description')}</p>
         </div>
-        <div className="flex items-center gap-2">
-          {selectedItems.length > 0 && (
-            <Button size="sm" onClick={handleBulkReceive} disabled={submitting}>
-              <PackagePlus className="w-4 h-4 mr-1" />
-              {t('material.receive.bulkReceive')} ({selectedItems.length})
-            </Button>
-          )}
-          <Button variant="secondary" size="sm" onClick={refresh}>
-            <RefreshCw className="w-4 h-4 mr-1" /> {t('common.refresh')}
+        {selectedItems.length > 0 && (
+          <Button size="sm" onClick={handleBulkReceive} disabled={submitting}>
+            <PackagePlus className="w-4 h-4 mr-1" />
+            {t('material.receive.bulkReceive')} ({selectedItems.length})
           </Button>
-        </div>
+        )}
       </div>
 
       {/* 통계 카드 */}
@@ -135,17 +143,30 @@ export default function ReceivingPage() {
       {/* 입고대기 테이블 */}
       <Card>
         <CardContent>
-          {loading ? (
-            <div className="py-10 text-center text-text-muted">{t('common.loading')}</div>
-          ) : (
-            <ReceivableTable
-              data={receivable}
-              inputs={inputs}
-              onInputChange={handleInputChange}
-              onSelectAll={handleSelectAll}
-              allSelected={allSelected}
-            />
-          )}
+          <ReceivableTable
+            data={filtered}
+            inputs={inputs}
+            onInputChange={handleInputChange}
+            onSelectAll={handleSelectAll}
+            allSelected={allSelected}
+            isLoading={loading}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    placeholder={t('material.receive.searchPlaceholder')}
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                </div>
+                <Button variant="secondary" onClick={refresh} className="flex-shrink-0">
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
     </div>

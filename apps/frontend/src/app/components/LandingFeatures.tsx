@@ -60,7 +60,7 @@ const features = [
 
 export default function LandingFeatures() {
   return (
-    <section className="py-20 lg:py-28 bg-surface/50">
+    <section className="py-20 lg:py-28 bg-surface/50 border-t border-border">
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-14">
@@ -78,8 +78,8 @@ export default function LandingFeatures() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="
-                group p-6 rounded-xl
+            className="
+                group p-6 rounded-lg
                 bg-card border border-border
                 hover:border-primary/30 hover:shadow-lg
                 transition-all duration-300

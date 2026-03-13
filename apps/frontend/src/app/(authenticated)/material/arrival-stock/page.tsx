@@ -29,9 +29,9 @@ import api from "@/services/api";
 interface ArrivalStockItem {
   id: string;
   arrivalNo: string;
-  invoiceNo: string | null;
+  invoiceNo: string;
   poNo: string | null;
-  vendorName: string | null;
+  vendorName: string;
   itemCode: string;
   itemName: string;
   unit: string;

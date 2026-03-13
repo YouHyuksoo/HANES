@@ -11,7 +11,7 @@
  */
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, ArrowLeft, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, ArrowLeft } from "lucide-react";
 import { Button, ConfirmModal, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
@@ -128,16 +128,8 @@ export default function RoutingTab({ selectedParent, routingTarget, onClearTarge
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center h-48 text-text-muted">{t("common.loading")}</div>
-      ) : data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-48 text-text-muted border border-dashed border-border rounded-lg">
-          <AlertCircle className="w-8 h-8 mb-2 text-orange-400" />
-          <p className="text-sm font-medium">{t("master.bom.noRoutingData", "라우팅 데이터가 없습니다")}</p>
-        </div>
-      ) : (
-        <DataGrid data={data} columns={columns} enableColumnFilter enableExport exportFileName={`${targetCode}_routing`} />
-      )}
+      <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={`${targetCode}_routing`}
+        emptyMessage={t("master.bom.noRoutingData", "라우팅 데이터가 없습니다")} />
 
       <RoutingFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchRoutings}
         editingItem={editingItem} itemCode={itemCode} />

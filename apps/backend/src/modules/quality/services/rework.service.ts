@@ -72,8 +72,8 @@ export class ReworkService {
       .createQueryBuilder('r')
       .where('r.company = :company', { company })
       .andWhere('r.plant = :plant', { plant })
-      .andWhere('r.rework_no LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('r.rework_no', 'DESC')
+      .andWhere('r.reworkNo LIKE :prefix', { prefix: `${prefix}%` })
+      .orderBy('r.reworkNo', 'DESC')
       .getOne();
 
     const seq = last ? parseInt(last.reworkNo.slice(-3), 10) + 1 : 1;
@@ -106,22 +106,22 @@ export class ReworkService {
     if (company) qb.andWhere('r.company = :company', { company });
     if (plant) qb.andWhere('r.plant = :plant', { plant });
     if (status) qb.andWhere('r.status = :status', { status });
-    if (defectType) qb.andWhere('r.defect_type = :defectType', { defectType });
-    if (lineCode) qb.andWhere('r.line_code = :lineCode', { lineCode });
+    if (defectType) qb.andWhere('r.defectType = :defectType', { defectType });
+    if (lineCode) qb.andWhere('r.lineCode = :lineCode', { lineCode });
     if (search) {
       qb.andWhere(
-        '(r.rework_no ILIKE :s OR r.item_code ILIKE :s OR r.item_name ILIKE :s)',
+        '(UPPER(r.reworkNo) LIKE UPPER(:s) OR UPPER(r.itemCode) LIKE UPPER(:s) OR UPPER(r.itemName) LIKE UPPER(:s))',
         { s: `%${search}%` },
       );
     }
     if (startDate && endDate) {
-      qb.andWhere('r.created_at BETWEEN :startDate AND :endDate', {
+      qb.andWhere('r.createdAt BETWEEN :startDate AND :endDate', {
         startDate,
         endDate: `${endDate}T23:59:59`,
       });
     }
 
-    qb.orderBy('r.created_at', 'DESC');
+    qb.orderBy('r.createdAt', 'DESC');
     const total = await qb.getCount();
     const data = await qb
       .skip((page - 1) * limit)
@@ -163,13 +163,13 @@ export class ReworkService {
       ...dto,
       reworkNo,
       status: 'REGISTERED',
-      isolationFlag: true,
+      isolationFlag: 1,
       company: +company,
       plant,
       createdBy: userId,
       updatedBy: userId,
     });
-    const saved = await this.reworkRepo.save(entity);
+    const saved = await this.reworkRepo.save(entity) as ReworkOrder;
 
     // 공정 목록 생성
     if (dto.processItems && dto.processItems.length > 0) {
@@ -356,7 +356,7 @@ export class ReworkService {
       .createQueryBuilder('r')
       .select('r.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .addSelect('COALESCE(SUM(r.rework_qty), 0)', 'totalQty');
+      .addSelect('COALESCE(SUM(r.reworkQty), 0)', 'totalQty');
 
     if (company) qb.andWhere('r.company = :company', { company });
     if (plant) qb.andWhere('r.plant = :plant', { plant });
@@ -424,7 +424,7 @@ export class ReworkService {
     order.status = dto.inspectResult; // PASS, FAIL, SCRAP
     order.passQty = dto.passQty;
     order.failQty = dto.failQty;
-    order.isolationFlag = dto.inspectResult !== 'PASS';
+    order.isolationFlag = dto.inspectResult !== 'PASS' ? 1 : 0;
     order.updatedBy = userId;
     await this.reworkRepo.save(order);
 

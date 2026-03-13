@@ -96,6 +96,8 @@ export class IqcPartLinkService {
       groupId: dto.groupId,
       remark: dto.remark || null,
       useYn: dto.useYn ?? 'Y',
+      company: '40',
+      plant: '1000',
     });
 
     const saved = await this.linkRepo.save(entity);

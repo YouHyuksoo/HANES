@@ -13,61 +13,61 @@ import {
 } from 'typeorm';
 import { ReworkProcess } from './rework-process.entity';
 
-@Entity('rework_results')
+@Entity({ name: 'REWORK_RESULTS' })
 @Index(['company', 'plant', 'reworkProcessId'])
 export class ReworkResult {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'rework_process_id' })
+  @Column({ name: 'REWORK_PROCESS_ID' })
   reworkProcessId: number;
 
   @ManyToOne(() => ReworkProcess)
-  @JoinColumn({ name: 'rework_process_id' })
+  @JoinColumn({ name: 'REWORK_PROCESS_ID' })
   reworkProcess: ReworkProcess;
 
-  @Column({ name: 'worker_code', length: 50 })
+  @Column({ name: 'WORKER_CODE', length: 50 })
   workerCode: string;
 
-  @Column({ name: 'result_qty', type: 'int', default: 0 })
+  @Column({ name: 'RESULT_QTY', type: 'int', default: 0 })
   resultQty: number;
 
-  @Column({ name: 'good_qty', type: 'int', default: 0 })
+  @Column({ name: 'GOOD_QTY', type: 'int', default: 0 })
   goodQty: number;
 
-  @Column({ name: 'defect_qty', type: 'int', default: 0 })
+  @Column({ name: 'DEFECT_QTY', type: 'int', default: 0 })
   defectQty: number;
 
-  @Column({ name: 'work_detail', length: 2000 })
+  @Column({ name: 'WORK_DETAIL', length: 2000 })
   workDetail: string;
 
-  @Column({ name: 'work_time_min', type: 'int', nullable: true })
+  @Column({ name: 'WORK_TIME_MIN', type: 'int', nullable: true })
   workTimeMin: number;
 
-  @Column({ name: 'start_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'START_AT', type: 'timestamp', nullable: true })
   startAt: Date;
 
-  @Column({ name: 'end_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'END_AT', type: 'timestamp', nullable: true })
   endAt: Date;
 
-  @Column({ name: 'remarks', length: 1000, nullable: true })
+  @Column({ name: 'REMARKS', length: 1000, nullable: true })
   remarks: string;
 
-  @Column({ name: 'company', type: 'int' })
+  @Column({ name: 'COMPANY', type: 'int' })
   company: number;
 
-  @Column({ name: 'plant', length: 20 })
+  @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'created_by', length: 50, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'updated_by', length: 50, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'CREATED_AT' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'UPDATED_AT' })
   updatedAt: Date;
 }

@@ -157,6 +157,8 @@ export class LotSplitService {
         poNo: sourceLot.poNo,
         iqcStatus: sourceLot.iqcStatus,
         status: 'NORMAL',
+        company: sourceLot.company || '40',
+        plant: sourceLot.plant || '1000',
       });
       await queryRunner.manager.save(newLot);
 
@@ -182,23 +184,51 @@ export class LotSplitService {
           qty: splitQty,
           availableQty: splitQty,
           reservedQty: 0,
+          company: sourceStock.company || '40',
+          plant: sourceStock.plant || '1000',
         });
         await queryRunner.manager.save(newStock);
       }
 
-      // 트랜잭션 이력 생성
-      const transNo = await this.generateTransNo();
+      // 수불 트랜잭션 2건 생성 (원본 차감 + 신규 증가)
+      const transNo1 = await this.generateTransNo();
+      const transNo2 = await this.generateTransNo();
+      const transDate = new Date();
+      const warehouseCode = sourceStock?.warehouseCode || null;
+      const splitRemark = remark || `자재분할: ${sourceLot.matUid} → ${generatedLotNo}`;
+
+      // 1) 원본 시리얼 차감 (-splitQty)
       await queryRunner.manager.save(StockTransaction, {
-        transNo,
-        transType: 'LOT_SPLIT',
-        transDate: new Date(),
+        transNo: transNo1,
+        transType: 'LOT_SPLIT_OUT',
+        transDate,
+        fromWarehouseId: warehouseCode,
         itemCode: sourceLot.itemCode,
         matUid: sourceLotId,
-        qty: splitQty,
+        qty: -splitQty,
         refType: 'LOT_SPLIT',
         refId: newLot.matUid,
-        remark: remark || `LOT 분할: ${sourceLot.matUid} → ${generatedLotNo}`,
+        remark: splitRemark,
         status: 'DONE',
+        company: sourceLot.company || '40',
+        plant: sourceLot.plant || '1000',
+      });
+
+      // 2) 신규 시리얼 증가 (+splitQty)
+      await queryRunner.manager.save(StockTransaction, {
+        transNo: transNo2,
+        transType: 'LOT_SPLIT_IN',
+        transDate,
+        toWarehouseId: warehouseCode,
+        itemCode: sourceLot.itemCode,
+        matUid: newLot.matUid,
+        qty: splitQty,
+        refType: 'LOT_SPLIT',
+        refId: sourceLotId,
+        remark: splitRemark,
+        status: 'DONE',
+        company: sourceLot.company || '40',
+        plant: sourceLot.plant || '1000',
       });
 
       await queryRunner.commitTransaction();

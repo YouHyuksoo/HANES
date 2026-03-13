@@ -9,7 +9,7 @@
  * 2. **테마 토글**: 다크/라이트 모드 전환 버튼
  * 3. **사용자 메뉴**: 드롭다운 형태로 프로필/로그아웃
  */
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette } from "lucide-react";
@@ -35,6 +35,19 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const closeMenu = useCallback(() => setShowUserMenu(false), []);
+
+  /* Escape 키 및 외부 클릭 처리 */
+  useEffect(() => {
+    if (!showUserMenu) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMenu();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [showUserMenu, closeMenu]);
 
   const handleLogout = () => {
     setShowUserMenu(false);
@@ -118,7 +131,7 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
           className="p-2 rounded-md hover:bg-background transition-colors"
           aria-label={t('header.colorTheme')}
         >
-          <Palette className={`w-5 h-5 ${colorTheme === "custom" ? "text-[#E6096E]" : "text-text-muted"}`} />
+          <Palette className={`w-5 h-5 ${colorTheme === "custom" ? "text-primary" : "text-text-muted"}`} />
         </button>
 
         {/* 테마 토글 */}
@@ -148,9 +161,11 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
         )}
 
         {/* 사용자 메뉴 */}
-        <div className="relative">
+        <div className="relative" ref={menuRef}>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
+            aria-haspopup="menu"
+            aria-expanded={showUserMenu}
             className="
               flex items-center gap-2 p-2
               rounded-md hover:bg-background transition-colors
@@ -169,9 +184,12 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
             <>
               <div
                 className="fixed inset-0 z-10"
-                onClick={() => setShowUserMenu(false)}
+                aria-hidden="true"
+                onClick={closeMenu}
               />
               <div
+                role="menu"
+                aria-label={t('header.profile')}
                 className="
                   absolute right-0 top-full mt-2 z-20
                   w-48 py-1
@@ -180,36 +198,42 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
                 "
               >
                 <button
+                  role="menuitem"
                   onClick={() => {
-                    setShowUserMenu(false);
+                    closeMenu();
                     setShowProfileModal(true);
                   }}
                   className="
                     w-full px-4 py-2 text-left text-sm
                     text-text hover:bg-background
                     flex items-center gap-2
+                    focus:outline-none focus-visible:bg-background
                   "
                 >
                   <User className="w-4 h-4" />
                   {t('header.profile')}
                 </button>
                 <button
+                  role="menuitem"
                   className="
                     w-full px-4 py-2 text-left text-sm
                     text-text hover:bg-background
                     flex items-center gap-2
+                    focus:outline-none focus-visible:bg-background
                   "
                 >
                   <Settings className="w-4 h-4" />
                   {t('header.settings')}
                 </button>
-                <hr className="my-1 border-border" />
+                <hr className="my-1 border-border" role="separator" />
                 <button
+                  role="menuitem"
                   onClick={handleLogout}
                   className="
                     w-full px-4 py-2 text-left text-sm
                     text-error hover:bg-background
                     flex items-center gap-2
+                    focus:outline-none focus-visible:bg-background
                   "
                 >
                   <LogOut className="w-4 h-4" />

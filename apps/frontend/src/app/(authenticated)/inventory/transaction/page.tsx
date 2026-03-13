@@ -52,6 +52,13 @@ const getTransTypeColor = (type: string) => {
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
 const getToday = () => new Date().toISOString().slice(0, 10);
 
+/** 1개월 전 날짜를 YYYY-MM-DD 형식으로 반환 */
+const getOneMonthAgo = () => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
 export default function TransactionPage() {
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
@@ -69,15 +76,12 @@ export default function TransactionPage() {
     { value: 'MAT_IN_CANCEL', label: t('inventory.transaction.matInCancel') },
     { value: 'MAT_OUT', label: t('inventory.transaction.matOut') },
     { value: 'MAT_OUT_CANCEL', label: t('inventory.transaction.matOutCancel') },
-    { value: 'WIP_IN', label: t('inventory.transaction.wipIn') },
-    { value: 'WIP_OUT', label: t('inventory.transaction.wipOut') },
-    { value: 'FG_IN', label: t('inventory.transaction.fgIn') },
-    { value: 'FG_OUT', label: t('inventory.transaction.fgOut') },
-    { value: 'SUBCON_IN', label: t('inventory.transaction.subconIn') },
-    { value: 'SUBCON_OUT', label: t('inventory.transaction.subconOut') },
+    { value: 'LOT_SPLIT_IN', label: t('inventory.transaction.lotSplitIn', 'LOT분할(입)') },
+    { value: 'LOT_SPLIT_OUT', label: t('inventory.transaction.lotSplitOut', 'LOT분할(출)') },
+    { value: 'ADJUST_IN', label: t('inventory.transaction.adjPlus') },
+    { value: 'ADJUST_OUT', label: t('inventory.transaction.adjMinus') },
+    { value: 'MISC_IN', label: t('inventory.transaction.miscIn', '기타입고') },
     { value: 'TRANSFER', label: t('inventory.transaction.transfer') },
-    { value: 'ADJ_PLUS', label: t('inventory.transaction.adjPlus') },
-    { value: 'ADJ_MINUS', label: t('inventory.transaction.adjMinus') },
     { value: 'SCRAP', label: t('inventory.transaction.scrap') },
   ], [t]);
 
@@ -85,10 +89,10 @@ export default function TransactionPage() {
     return TRANS_TYPES.find(tt => tt.value === type)?.label || type;
   };
 
-  // 필터 (날짜 기본값: 오늘)
+  // 필터 (날짜 기본값: 최근 1개월)
   const [filters, setFilters] = useState({
     transType: '',
-    dateFrom: getToday(),
+    dateFrom: getOneMonthAgo(),
     dateTo: getToday(),
   });
 

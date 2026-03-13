@@ -88,6 +88,8 @@ export class IqcGroupService {
       inspectMethod: dto.inspectMethod,
       sampleQty: dto.inspectMethod === 'SAMPLE' ? dto.sampleQty : null,
       useYn: dto.useYn ?? 'Y',
+      company: '40',
+      plant: '1000',
     });
 
     const saved = await this.groupRepo.save(group);
@@ -98,6 +100,8 @@ export class IqcGroupService {
           groupId: saved.id,
           inspItemId: Number(i.itemId),
           seq: i.seq,
+          company: '40',
+          plant: '1000',
         }),
       );
       await this.groupItemRepo.save(items);

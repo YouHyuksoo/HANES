@@ -39,20 +39,20 @@ const statusStyle: Record<string, {
   pill: string; dot: string; pulse: boolean; glow: string;
 }> = {
   NORMAL: {
-    pill: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25",
-    dot: "bg-emerald-500 dark:bg-emerald-400",
+    pill: "bg-sky-600 text-white border-sky-700 dark:bg-sky-500 dark:border-sky-600",
+    dot: "bg-white dark:bg-white",
     pulse: true,
-    glow: "hover:shadow-emerald-200/60 dark:hover:shadow-emerald-500/10",
+    glow: "hover:shadow-sky-200/60 dark:hover:shadow-sky-500/10",
   },
   MAINT: {
-    pill: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/25",
-    dot: "bg-amber-500 dark:bg-amber-400",
+    pill: "bg-amber-500 text-white border-amber-600 dark:bg-amber-500 dark:border-amber-600",
+    dot: "bg-white dark:bg-white",
     pulse: false,
     glow: "hover:shadow-amber-200/60 dark:hover:shadow-amber-500/10",
   },
   STOP: {
-    pill: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/25",
-    dot: "bg-rose-500 dark:bg-rose-400",
+    pill: "bg-rose-600 text-white border-rose-700 dark:bg-rose-500 dark:border-rose-600",
+    dot: "bg-white dark:bg-white",
     pulse: false,
     glow: "hover:shadow-rose-200/60 dark:hover:shadow-rose-500/10",
   },
@@ -168,7 +168,7 @@ export default function EquipStatusPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {filtered.map((equip) => {
               const s = statusStyle[equip.status] || defaultStyle;
               const hasJob = !!equip.currentJobOrderId;
@@ -179,20 +179,20 @@ export default function EquipStatusPage() {
 
               return (
                 <div
-                  key={equip.id}
-                  className={`group rounded-xl border transition-all duration-300
-                    bg-white border-slate-200/80 hover:shadow-xl
+                  key={equip.equipCode}
+                  className={`group rounded-lg border transition-all duration-200
+                    bg-white border-slate-200/80 hover:shadow-md
                     dark:bg-slate-900 dark:border-slate-700/40 dark:hover:border-slate-600/60
-                    ${s.glow} hover:shadow-2xl`}
+                    ${s.glow}`}
                 >
-                  <div className="p-5">
-                    {/* Header: Label + Status pill */}
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
-                        EQUIP ID
-                      </span>
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5
-                        rounded-full text-[11px] font-semibold border ${s.pill}`}
+                  <div className="px-3 pt-3 pb-2">
+                    {/* Header: Code + Status pill */}
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-sm font-bold tracking-tight leading-tight text-slate-900 dark:text-white truncate mr-2">
+                        {equip.equipCode}
+                      </h3>
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-px shrink-0
+                        rounded text-[10px] font-semibold border ${s.pill}`}
                       >
                         <span className="relative flex h-1.5 w-1.5">
                           {s.pulse && (
@@ -204,29 +204,25 @@ export default function EquipStatusPage() {
                       </span>
                     </div>
 
-                    {/* Equipment Code — Bold mono */}
-                    <h3 className="text-xl font-extrabold font-mono tracking-tight leading-tight text-slate-900 dark:text-white">
-                      {equip.equipCode}
-                    </h3>
-                    <p className="text-[13px] mt-0.5 mb-4 truncate text-slate-500 dark:text-slate-400" title={equip.equipName}>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-2" title={equip.equipName}>
                       {equip.equipName}
                     </p>
 
                     {/* Metric Tiles */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-lg px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60">
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div className="rounded px-2 py-1.5 bg-slate-50 dark:bg-slate-800/60">
                         <span className="text-[9px] uppercase tracking-wider block text-slate-400 dark:text-slate-500">
                           TYPE
                         </span>
-                        <p className="text-sm font-semibold mt-0.5 truncate text-slate-700 dark:text-slate-200">
+                        <p className="text-xs font-medium mt-px truncate text-slate-700 dark:text-slate-200">
                           {typeLabel || "—"}
                         </p>
                       </div>
-                      <div className="rounded-lg px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60">
+                      <div className="rounded px-2 py-1.5 bg-slate-50 dark:bg-slate-800/60">
                         <span className="text-[9px] uppercase tracking-wider block text-slate-400 dark:text-slate-500">
                           LINE
                         </span>
-                        <p className="text-sm font-semibold mt-0.5 truncate text-slate-700 dark:text-slate-200">
+                        <p className="text-xs font-medium mt-px truncate text-slate-700 dark:text-slate-200">
                           {equip.lineCode || "—"}
                         </p>
                       </div>
@@ -234,17 +230,17 @@ export default function EquipStatusPage() {
                   </div>
 
                   {/* Footer */}
-                  <div className="px-5 py-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+                  <div className="px-3 py-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
                     {equip.ipAddress ? (
-                      <span className="text-[11px] flex items-center gap-1.5 font-mono text-slate-400 dark:text-slate-500">
+                      <span className="text-[10px] flex items-center gap-1 font-mono text-slate-400 dark:text-slate-500">
                         <Wifi className="w-3 h-3 text-emerald-500/70 dark:text-emerald-500/60" />
                         {equip.ipAddress}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-slate-300 dark:text-slate-600">—</span>
+                      <span className="text-[10px] text-slate-300 dark:text-slate-600">—</span>
                     )}
                     {hasJob ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold
+                      <span className="inline-flex items-center gap-1 px-1.5 py-px rounded text-[10px] font-semibold
                         bg-blue-100 text-blue-600 border border-blue-200
                         dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20"
                       >
@@ -252,7 +248,7 @@ export default function EquipStatusPage() {
                         {t("equipment.status.working", "작업중")}
                       </span>
                     ) : (
-                      <span className="text-[11px] flex items-center gap-1 text-slate-400 dark:text-slate-600">
+                      <span className="text-[10px] flex items-center gap-1 text-slate-400 dark:text-slate-600">
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
                         Idle
                       </span>

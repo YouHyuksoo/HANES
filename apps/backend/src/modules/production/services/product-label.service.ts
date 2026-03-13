@@ -93,6 +93,8 @@ export class ProductLabelService {
         uidList: JSON.stringify(results.map((r) => r.prdUid)),
         labelCount: dto.qty,
         status: 'SUCCESS',
+        company: '40',
+        plant: '1000',
       });
       await queryRunner.manager.save(log);
 

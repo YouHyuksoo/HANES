@@ -149,6 +149,8 @@ export class DefectLogService {
       cause: dto.cause,
       occurAt: dto.occurAt ? new Date(dto.occurAt) : new Date(),
       imageUrl: dto.imageUrl,
+      company: '40',
+      plant: '1000',
     });
 
     const savedDefectLog = await this.defectLogRepository.save(defectLog);
@@ -280,6 +282,8 @@ export class DefectLogService {
       repairTime: dto.repairTime,
       result: dto.result,
       remark: dto.remark,
+      company: '40',
+      plant: '1000',
     });
 
     const savedRepairLog = await this.repairLogRepository.save(repairLog);

@@ -23,7 +23,7 @@ interface LotData {
   expireDate?: string;
   origin?: string;
   vendor?: string;
-  invoiceNo?: string;
+  invoiceNo: string;
   poNo?: string;
   status: string;
   createdAt: string;

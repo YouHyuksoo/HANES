@@ -7,9 +7,9 @@
  * - 제품(WIP/FG)은 이 서비스(PRODUCT_STOCKS) 사용
  * - 핵심 원칙: 모든 수불 이력 보존, 취소 시 역분개
  */
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, In } from 'typeorm';
+import { Repository, DataSource, IsNull, In, QueryRunner } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -24,6 +24,8 @@ import { CancelTransactionDto } from '../dto/inventory.dto';
 
 @Injectable()
 export class ProductInventoryService {
+  private readonly logger = new Logger(ProductInventoryService.name);
+
   constructor(
     @InjectRepository(ProductTransaction)
     private readonly transactionRepository: Repository<ProductTransaction>,
@@ -37,11 +39,12 @@ export class ProductInventoryService {
   ) {}
 
   /** 제품 트랜잭션 번호 생성 (PTX20260224XXXXX 형식) */
-  private async generateTransNo(): Promise<string> {
+  private async generateTransNo(qr?: QueryRunner): Promise<string> {
     const today = new Date();
     const prefix = `PTX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
-    const lastTrans = await this.transactionRepository
+    const repo = qr ? qr.manager.getRepository(ProductTransaction) : this.transactionRepository;
+    const lastTrans = await repo
       .createQueryBuilder('t')
       .where('t.transNo LIKE :prefix', { prefix: `${prefix}%` })
       .orderBy('t.transNo', 'DESC')
@@ -84,6 +87,8 @@ export class ProductInventoryService {
         workerId: dto.workerId,
         remark: dto.remark,
         status: 'DONE',
+        company: dto.company || '40',
+        plant: dto.plant || '1000',
       });
 
       const savedTransaction = await queryRunner.manager.save(ProductTransaction, transaction);
@@ -109,6 +114,8 @@ export class ProductInventoryService {
           qty: dto.qty,
           reservedQty: 0,
           availableQty: dto.qty,
+          company: dto.company || '40',
+          plant: dto.plant || '1000',
         });
       }
 
@@ -120,6 +127,67 @@ export class ProductInventoryService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * 외부 트랜잭션(QueryRunner) 내에서 제품 입고 처리
+   * - 생산실적 완료 시 공정창고 자동 적재 등에 사용
+   * - 호출측 트랜잭션에 참여하므로 commit/rollback은 호출측이 담당
+   */
+  async receiveStockInTx(qr: QueryRunner, dto: ProductReceiveStockDto): Promise<ProductTransaction> {
+    const transNo = await this.generateTransNo(qr);
+
+    const transaction = qr.manager.create(ProductTransaction, {
+      transNo,
+      transType: dto.transType,
+      transDate: new Date(),
+      toWarehouseId: dto.warehouseId,
+      itemCode: dto.itemCode,
+      itemType: dto.itemType,
+      prdUid: dto.prdUid,
+      orderNo: dto.orderNo,
+      processCode: dto.processCode,
+      qty: dto.qty,
+      unitPrice: dto.unitPrice,
+      totalAmount: dto.unitPrice ? dto.unitPrice * dto.qty : null,
+      refType: dto.refType,
+      refId: dto.refId,
+      workerId: dto.workerId,
+      remark: dto.remark,
+      status: 'DONE',
+      company: dto.company || '40',
+      plant: dto.plant || '1000',
+    });
+
+    const saved = await qr.manager.save(ProductTransaction, transaction);
+
+    const existingStock = await qr.manager.findOne(ProductStock, {
+      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
+    });
+
+    if (existingStock) {
+      await qr.manager.update(ProductStock,
+        { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, prdUid: existingStock.prdUid },
+        { qty: existingStock.qty + dto.qty, availableQty: existingStock.qty + dto.qty - existingStock.reservedQty },
+      );
+    } else {
+      await qr.manager.save(ProductStock, {
+        warehouseCode: dto.warehouseId,
+        itemCode: dto.itemCode,
+        itemType: dto.itemType,
+        prdUid: dto.prdUid || null,
+        orderNo: dto.orderNo || null,
+        processCode: dto.processCode || null,
+        qty: dto.qty,
+        reservedQty: 0,
+        availableQty: dto.qty,
+        company: dto.company || '40',
+        plant: dto.plant || '1000',
+      });
+    }
+
+    this.logger.log(`제품 입고(Tx): ${dto.itemCode} × ${dto.qty} → ${dto.warehouseId} (${dto.transType})`);
+    return saved;
   }
 
   /** 제품 출고 처리 */
@@ -159,6 +227,8 @@ export class ProductInventoryService {
         issueType: dto.issueType,
         remark: dto.remark,
         status: 'DONE',
+        company: dto.company || '40',
+        plant: dto.plant || '1000',
       });
 
       const savedTransaction = await queryRunner.manager.save(ProductTransaction, transaction);
@@ -191,6 +261,8 @@ export class ProductInventoryService {
             qty: dto.qty,
             reservedQty: 0,
             availableQty: dto.qty,
+            company: dto.company || '40',
+            plant: dto.plant || '1000',
           });
         }
       }
@@ -252,6 +324,8 @@ export class ProductInventoryService {
         issueType: originalTrans.issueType,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,
         status: 'DONE',
+        company: originalTrans.company || '40',
+        plant: originalTrans.plant || '1000',
       });
 
       const savedCancelTrans = await queryRunner.manager.save(ProductTransaction, cancelTrans);
@@ -302,6 +376,8 @@ export class ProductInventoryService {
             qty: Math.abs(originalTrans.qty),
             reservedQty: 0,
             availableQty: Math.abs(originalTrans.qty),
+            company: originalTrans.company || '40',
+            plant: originalTrans.plant || '1000',
           });
         }
       }

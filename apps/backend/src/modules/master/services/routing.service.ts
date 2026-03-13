@@ -1,11 +1,11 @@
 /**
  * @file src/modules/master/services/routing.service.ts
- * @description 공정라우팅(ProcessMap) 비즈니스 로직 서비스 - TypeORM Repository 패턴
+ * @description 공정라우팅(ProcessMap) 비즈니스 로직 서비스 - 복합 PK (itemCode + seq)
  *
  * 초보자 가이드:
  * 1. **findAll**: itemCode 기반 라우팅 목록 조회
- * 2. **create**: itemCode+seq 유니크 체크 후 생성
- * 3. **include**: 품목명 조회를 위해 part relation 포함
+ * 2. **create**: itemCode+seq 복합 PK 중복 체크 후 생성
+ * 3. **update/delete**: itemCode+seq 복합키로 식별
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
@@ -62,7 +62,6 @@ export class RoutingService {
       queryBuilder.getCount(),
     ]);
 
-    // Fetch part information for each routing item
     const itemCodes = [...new Set(items.map(item => item.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
       ? await this.partRepository.find({
@@ -81,11 +80,11 @@ export class RoutingService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findByKey(itemCode: string, seq: number) {
     const item = await this.routingRepository.findOne({
-      where: { id: +id },
+      where: { itemCode, seq },
     });
-    if (!item) throw new NotFoundException(`라우팅을 찾을 수 없습니다: ${id}`);
+    if (!item) throw new NotFoundException(`라우팅을 찾을 수 없습니다: ${itemCode}/${seq}`);
 
     const part = await this.partRepository.findOne({
       where: { itemCode: item.itemCode },
@@ -94,12 +93,18 @@ export class RoutingService {
 
     return {
       ...item,
-      itemCode: part?.itemCode || null,
       itemName: part?.itemName || null,
     };
   }
 
   async create(dto: CreateRoutingDto) {
+    const existing = await this.routingRepository.findOne({
+      where: { itemCode: dto.itemCode, seq: dto.seq },
+    });
+    if (existing) {
+      throw new ConflictException(`이미 존재하는 라우팅입니다: ${dto.itemCode} / seq ${dto.seq}`);
+    }
+
     const routing = this.routingRepository.create({
       itemCode: dto.itemCode,
       seq: dto.seq,
@@ -121,15 +126,15 @@ export class RoutingService {
     return this.routingRepository.save(routing);
   }
 
-  async update(id: string, dto: UpdateRoutingDto) {
-    await this.findById(id);
-    await this.routingRepository.update(+id, dto);
-    return this.findById(id);
+  async update(itemCode: string, seq: number, dto: UpdateRoutingDto) {
+    await this.findByKey(itemCode, seq);
+    await this.routingRepository.update({ itemCode, seq }, dto);
+    return this.findByKey(itemCode, seq);
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    await this.routingRepository.delete(+id);
-    return { id };
+  async delete(itemCode: string, seq: number) {
+    await this.findByKey(itemCode, seq);
+    await this.routingRepository.delete({ itemCode, seq });
+    return { itemCode, seq };
   }
 }

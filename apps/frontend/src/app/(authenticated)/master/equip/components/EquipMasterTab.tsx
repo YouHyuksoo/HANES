@@ -240,7 +240,7 @@ export default function EquipMasterTab() {
 
       <Card>
         <CardContent>
-          <DataGrid data={equipments} columns={columns} pageSize={10} isLoading={loading} enableColumnPinning enableExport exportFileName={t("master.equip.title", "설비관리")}
+          <DataGrid data={equipments} columns={columns} pageSize={10} isLoading={loading} enableColumnPinning enableColumnFilter enableExport exportFileName={t("master.equip.title", "설비관리")}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">

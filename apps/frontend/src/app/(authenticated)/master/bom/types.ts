@@ -10,7 +10,6 @@
  */
 
 export interface ParentPart {
-  id: string;
   itemCode: string;
   itemName: string;
   itemNo?: string;
@@ -43,7 +42,7 @@ export interface BomTreeItem {
   itemCode: string;
   itemNo?: string | null;
   itemName: string;
-  itemType: "FG" | "WIP" | "RAW";
+  itemType: string;
   qtyPer: number;
   unit: string;
   revision: string;

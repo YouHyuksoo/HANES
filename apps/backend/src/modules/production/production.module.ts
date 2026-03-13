@@ -40,7 +40,10 @@ import { ProductLabelController } from './controllers/product-label.controller';
 import { ProductLabelService } from './services/product-label.service';
 import { ProdPlanController } from './controllers/prod-plan.controller';
 import { ProdPlanService } from './services/prod-plan.service';
+import { AutoIssueService } from './services/auto-issue.service';
 import { InventoryModule } from '../inventory/inventory.module';
+import { SystemModule } from '../system/system.module';
+import { NumRuleModule } from '../num-rule/num-rule.module';
 
 // Entities
 import { JobOrder } from '../../entities/job-order.entity';
@@ -59,11 +62,15 @@ import { BomMaster } from '../../entities/bom-master.entity';
 import { SampleInspectResult } from '../../entities/sample-inspect-result.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
 import { ProdPlan } from '../../entities/prod-plan.entity';
+import { MatLot } from '../../entities/mat-lot.entity';
+import { StockTransaction } from '../../entities/stock-transaction.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction]),
     InventoryModule,
+    SystemModule,
+    NumRuleModule,
   ],
   controllers: [
     JobOrderController,
@@ -80,6 +87,7 @@ import { ProdPlan } from '../../entities/prod-plan.entity';
     SampleInspectService,
     ProductLabelService,
     ProdPlanService,
+    AutoIssueService,
   ],
   exports: [
     JobOrderService,
@@ -87,6 +95,7 @@ import { ProdPlan } from '../../entities/prod-plan.entity';
     ProductionViewsService,
     SampleInspectService,
     ProdPlanService,
+    AutoIssueService,
   ],
 })
 export class ProductionModule {}

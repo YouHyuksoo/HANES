@@ -13,70 +13,70 @@ import {
 } from 'typeorm';
 import { ReworkOrder } from './rework-order.entity';
 
-@Entity('rework_processes')
+@Entity({ name: 'REWORK_PROCESSES' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkProcess {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'rework_order_id' })
+  @Column({ name: 'REWORK_ORDER_ID' })
   reworkOrderId: number;
 
   @ManyToOne(() => ReworkOrder)
-  @JoinColumn({ name: 'rework_order_id' })
+  @JoinColumn({ name: 'REWORK_ORDER_ID' })
   reworkOrder: ReworkOrder;
 
-  @Column({ name: 'process_code', length: 50 })
+  @Column({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;
 
-  @Column({ name: 'process_name', length: 200 })
+  @Column({ name: 'PROCESS_NAME', length: 200 })
   processName: string;
 
-  @Column({ name: 'seq', type: 'int' })
+  @Column({ name: 'SEQ', type: 'int' })
   seq: number;
 
-  @Column({ name: 'status', length: 30, default: 'WAITING' })
+  @Column({ name: 'STATUS', length: 30, default: 'WAITING' })
   status: string;
 
-  @Column({ name: 'worker_code', length: 50, nullable: true })
+  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
   workerCode: string;
 
-  @Column({ name: 'line_code', length: 50, nullable: true })
+  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string;
 
-  @Column({ name: 'equip_code', length: 50, nullable: true })
+  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string;
 
-  @Column({ name: 'plan_qty', type: 'int', default: 0 })
+  @Column({ name: 'PLAN_QTY', type: 'int', default: 0 })
   planQty: number;
 
-  @Column({ name: 'result_qty', type: 'int', default: 0 })
+  @Column({ name: 'RESULT_QTY', type: 'int', default: 0 })
   resultQty: number;
 
-  @Column({ name: 'start_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'START_AT', type: 'timestamp', nullable: true })
   startAt: Date;
 
-  @Column({ name: 'end_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'END_AT', type: 'timestamp', nullable: true })
   endAt: Date;
 
-  @Column({ name: 'remarks', length: 1000, nullable: true })
+  @Column({ name: 'REMARKS', length: 1000, nullable: true })
   remarks: string;
 
-  @Column({ name: 'company', type: 'int' })
+  @Column({ name: 'COMPANY', type: 'int' })
   company: number;
 
-  @Column({ name: 'plant', length: 20 })
+  @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'created_by', length: 50, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'updated_by', length: 50, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'CREATED_AT' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'UPDATED_AT' })
   updatedAt: Date;
 }

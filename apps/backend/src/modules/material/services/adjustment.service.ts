@@ -127,6 +127,8 @@ export class AdjustmentService {
           qty: afterQty,
           availableQty: afterQty,
           reservedQty: 0,
+          company: '40',
+          plant: '1000',
         });
         stock = await queryRunner.manager.save(newStock);
       }
@@ -154,6 +156,8 @@ export class AdjustmentService {
         diffQty,
         reason,
         createdBy,
+        company: '40',
+        plant: '1000',
       });
       await queryRunner.manager.save(invAdjLog);
 
@@ -173,6 +177,8 @@ export class AdjustmentService {
         remark: reason,
         status: 'DONE',
         createdBy,
+        company: '40',
+        plant: '1000',
       });
       await queryRunner.manager.save(stockTransaction);
 

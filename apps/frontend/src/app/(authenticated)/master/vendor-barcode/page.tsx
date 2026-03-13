@@ -164,7 +164,7 @@ export default function VendorBarcodeMappingPage() {
         </div>
 
         <Card><CardContent>
-          <DataGrid data={filteredData} columns={columns} isLoading={loading} enableColumnPinning enableExport exportFileName={t("master.vendorBarcode.title")}
+          <DataGrid data={filteredData} columns={columns} isLoading={loading} enableColumnPinning enableColumnFilter enableExport exportFileName={t("master.vendorBarcode.title")}
             onRowClick={(row) => { if (isPanelOpen) setEditingItem(row); }}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">

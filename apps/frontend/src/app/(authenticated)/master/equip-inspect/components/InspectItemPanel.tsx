@@ -108,7 +108,7 @@ export default function InspectItemPanel({ equip, links, allItems, onOpenLinkMod
           <p className="text-xs mt-1">{t("master.equipInspect.addItemGuide", "상단 버튼으로 점검항목을 추가하세요")}</p>
         </div>
       ) : (
-        <DataGrid data={rows} columns={columns} enableExport exportFileName={`${equip.equipCode}_inspect_items`} />
+        <DataGrid data={rows} columns={columns} enableColumnFilter enableExport exportFileName={`${equip.equipCode}_inspect_items`} />
       )}
     </>
   );

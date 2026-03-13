@@ -94,6 +94,8 @@ export interface DataGridProps<T> {
   selectedRowId?: string;
   /** 행에서 고유 ID를 추출하는 함수 */
   getRowId?: (row: T) => string;
+  /** 컬럼 간 세로 경계선 표시 (기본: false) */
+  showColumnBorder?: boolean;
 }
 
 function DataGrid<T>({
@@ -117,6 +119,7 @@ function DataGrid<T>({
   defaultPinnedColumns,
   selectedRowId,
   getRowId,
+  showColumnBorder = true,
 }: DataGridProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -271,7 +274,10 @@ function DataGrid<T>({
     const tableEl = (e.currentTarget as HTMLElement).closest('table');
     if (!tableEl) return;
     const allHeaders = table.getHeaderGroups().flatMap((hg) => hg.headers);
-    const ths = tableEl.querySelectorAll('thead th');
+    // 필터 행(tr)이 있을 수 있으므로 첫 번째 헤더 행의 th만 선택
+    const firstHeaderRow = tableEl.querySelector('thead tr');
+    if (!firstHeaderRow) return;
+    const ths = firstHeaderRow.querySelectorAll('th');
     if (ths.length !== allHeaders.length) return;
     const currentSizing: ColumnSizingState = {};
     allHeaders.forEach((h, i) => {
@@ -488,7 +494,7 @@ function DataGrid<T>({
                     return (
                       <td
                         key={cell.id}
-                        className={`px-3 py-2 text-text whitespace-nowrap ${getAlignmentClass(cellAlign)} ${pinnedBg}`}
+                        className={`px-3 py-2 text-text whitespace-nowrap ${getAlignmentClass(cellAlign)} ${pinnedBg} ${showColumnBorder ? 'border-r border-border last:border-r-0' : ''}`}
                         style={{
                           width: columnSizing[cell.column.id] ? cell.column.getSize() : 'auto',
                           minWidth: cell.column.columnDef.minSize ?? 50,

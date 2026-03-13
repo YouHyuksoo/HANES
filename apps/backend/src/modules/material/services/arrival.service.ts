@@ -184,7 +184,7 @@ export class ArrivalService {
         // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
         const arrival = queryRunner.manager.create(MatArrival, {
           arrivalNo,
-          invoiceNo: dto.invoiceNo || null,
+          invoiceNo: dto.invoiceNo,
           poId: dto.poId,
           poItemId: item.poItemId,
           poNo: po.poNo,
@@ -199,6 +199,8 @@ export class ArrivalService {
           remark: item.remark || dto.remark,
           iqcStatus: 'PENDING',
           status: 'DONE',
+          company: '40',
+          plant: '1000',
         });
         await queryRunner.manager.save(arrival);
 
@@ -213,6 +215,8 @@ export class ArrivalService {
           workerId: dto.workerId,
           refType: 'PO',
           refId: item.poItemId,
+          company: '40',
+          plant: '1000',
         });
         const savedTx = await queryRunner.manager.save(stockTx);
 
@@ -271,9 +275,9 @@ export class ArrivalService {
       // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
       const arrival = queryRunner.manager.create(MatArrival, {
         arrivalNo,
-        invoiceNo: dto.invoiceNo || null,
-        vendorId: dto.vendorId || null,
-        vendorName: dto.vendor || null,
+        invoiceNo: dto.invoiceNo,
+        vendorId: dto.vendorId,
+        vendorName: dto.vendor,
         supUid: dto.supUid || null,
         itemCode: dto.itemCode,
         qty: dto.qty,
@@ -696,6 +700,8 @@ export class ArrivalService {
         matUid,
         qty: qtyDelta,
         availableQty: qtyDelta,
+        company: '40',
+        plant: '1000',
       });
       await manager.save(newStock);
     }

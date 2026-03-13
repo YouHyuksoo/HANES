@@ -19,9 +19,9 @@ import BomFormModal from "./BomFormModal";
 import { ParentPart, BomTreeItem, RoutingTarget } from "../types";
 
 const partTypeConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
-  FG: { icon: Package, color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-100 dark:bg-emerald-900/50" },
-  WIP: { icon: Boxes, color: "text-amber-700 dark:text-amber-300", bg: "bg-amber-100 dark:bg-amber-900/50" },
-  RAW: { icon: CircleDot, color: "text-blue-700 dark:text-blue-300", bg: "bg-blue-100 dark:bg-blue-900/50" },
+  FINISHED: { icon: Package, color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-100 dark:bg-emerald-900/50" },
+  SEMI_PRODUCT: { icon: Boxes, color: "text-amber-700 dark:text-amber-300", bg: "bg-amber-100 dark:bg-amber-900/50" },
+  RAW_MATERIAL: { icon: CircleDot, color: "text-blue-700 dark:text-blue-300", bg: "bg-blue-100 dark:bg-blue-900/50" },
 };
 
 const levelColors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-purple-500", "bg-pink-500"];
@@ -47,7 +47,7 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
     try {
       const params: Record<string, string | number> = { depth: 5 };
       if (effectiveDate) params.effectiveDate = effectiveDate;
-      const res = await api.get(`/master/boms/hierarchy/${selectedParent.id}`, { params });
+      const res = await api.get(`/master/boms/hierarchy/${selectedParent.itemCode}`, { params });
       if (res.data.success) setBomTree(res.data.data || []);
     } catch { setBomTree([]); }
     finally { setLoading(false); }
@@ -144,13 +144,13 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
         {Object.entries(partTypeConfig).map(([key, cfg]) => (
           <div key={key} className="flex items-center gap-1.5">
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color} text-[10px] font-medium`}>{key}</span>
-            <span>{t(`comCode.PART_TYPE.${key}`, { defaultValue: key })}</span>
+            <span>{t(`comCode.ITEM_TYPE.${key}`, { defaultValue: key })}</span>
           </div>
         ))}
       </div>
 
       <BomFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchBomTree}
-        editingItem={editingBom} parentItemCode={selectedParent.id} parentItemCodeDisplay={selectedParent.itemCode} />
+        editingItem={editingBom} parentItemCode={selectedParent.itemCode} parentItemCodeDisplay={selectedParent.itemCode} />
 
       <ConfirmModal isOpen={!!deletingBom} onClose={() => setDeletingBom(null)} onConfirm={handleDelete}
         title={t("common.delete")} message={t("master.bom.deleteConfirm")} variant="danger" />
@@ -171,7 +171,7 @@ function BomTreeRows({
       {items.map((item, idx) => {
         const hasChildren = item.children && item.children.length > 0;
         const isExpanded = expanded.has(item.id);
-        const cfg = partTypeConfig[item.itemType] || partTypeConfig.RAW;
+        const cfg = partTypeConfig[item.itemType] || partTypeConfig.RAW_MATERIAL;
         const Icon = cfg.icon;
         const levelColor = levelColors[item.level % levelColors.length];
         const itemBreadcrumb = breadcrumb ? `${breadcrumb} > ${item.itemCode}` : `${parentCode} > ${item.itemCode}`;

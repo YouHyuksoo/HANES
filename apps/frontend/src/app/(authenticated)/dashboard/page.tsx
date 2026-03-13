@@ -46,7 +46,7 @@ function KpiCard({ title, value, unit, change, changeLabel, icon: Icon, color }:
           <div>
             <p className="text-xs text-text-muted">{title}</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-lg font-bold text-text leading-tight">{value}</span>
+              <span className="text-2xl font-bold text-text leading-tight">{value}</span>
               {unit && <span className="text-xs text-text-muted">{unit}</span>}
             </div>
             {change !== undefined && (
@@ -209,9 +209,9 @@ export default function DashboardPage() {
       cell: ({ getValue }) => {
         const status = getValue() as string;
         const colorMap: Record<string, string> = {
-          WAIT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-          RUNNING: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-          DONE: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+          WAIT: "bg-muted text-muted-foreground",
+          RUNNING: "bg-info/10 text-info",
+          DONE: "bg-success/10 text-success",
         };
         return (
           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${colorMap[status] || ""}`}>
@@ -240,7 +240,7 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard title={t("dashboard.todayProduction")} value={kpi.todayProduction.value} unit="EA" change={kpi.todayProduction.change} changeLabel={t("common.vsYesterday")} icon={Factory} color="bg-primary" />
-        <KpiCard title={t("dashboard.inventoryStatus")} value={kpi.inventoryStatus.value} unit="EA" change={kpi.inventoryStatus.change} changeLabel={t("common.vsYesterday")} icon={Package} color="bg-secondary" />
+        <KpiCard title={t("dashboard.inventoryStatus")} value={kpi.inventoryStatus.value} unit="EA" change={kpi.inventoryStatus.change} changeLabel={t("common.vsYesterday")} icon={Package} color="bg-blue-500" />
         <KpiCard title={t("dashboard.qualityPassRate")} value={kpi.qualityPassRate.value} unit="%" change={kpi.qualityPassRate.change} changeLabel={t("common.vsYesterday")} icon={Shield} color="bg-success" />
         <KpiCard title={t("dashboard.interlockOccurrence")} value={kpi.interlockCount.value} unit={t("common.count")} change={kpi.interlockCount.change} changeLabel={t("common.vsYesterday")} icon={AlertTriangle} color="bg-warning" />
       </div>

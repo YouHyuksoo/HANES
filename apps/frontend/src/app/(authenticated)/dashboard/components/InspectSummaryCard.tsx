@@ -41,10 +41,10 @@ interface Props {
 }
 
 const resultConfig: Record<string, { icon: typeof CheckCircle; color: string; bgColor: string }> = {
-  PASS: { icon: CheckCircle, color: "text-green-600 dark:text-green-400", bgColor: "bg-green-50 dark:bg-green-900/20" },
-  FAIL: { icon: XCircle, color: "text-red-600 dark:text-red-400", bgColor: "bg-red-50 dark:bg-red-900/20" },
-  CONDITIONAL: { icon: AlertTriangle, color: "text-yellow-600 dark:text-yellow-400", bgColor: "bg-yellow-50 dark:bg-yellow-900/20" },
-  COMPLETED: { icon: CheckCircle, color: "text-green-600 dark:text-green-400", bgColor: "bg-green-50 dark:bg-green-900/20" },
+  PASS: { icon: CheckCircle, color: "text-success", bgColor: "bg-success/10" },
+  FAIL: { icon: XCircle, color: "text-error", bgColor: "bg-error/10" },
+  CONDITIONAL: { icon: AlertTriangle, color: "text-warning", bgColor: "bg-warning/10" },
+  COMPLETED: { icon: CheckCircle, color: "text-success", bgColor: "bg-success/10" },
 };
 
 export default function InspectSummaryCard({
@@ -78,21 +78,21 @@ export default function InspectSummaryCard({
 
         {/* Summary Stats */}
         <div className="grid grid-cols-4 gap-2 mb-3">
-          <div className="text-center p-1.5 bg-surface rounded-lg">
+          <div className="text-center p-1.5 bg-background rounded-lg border border-border">
             <p className="text-lg font-bold text-text">{total}</p>
-            <p className="text-[10px] text-text-muted">{t("common.total")}</p>
+            <p className="text-xs text-text-muted">{t("common.total")}</p>
           </div>
-          <div className="text-center p-1.5 bg-surface rounded-lg">
-            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{completed}</p>
-            <p className="text-[10px] text-text-muted">{t("dashboard.inspect.completed", "완료")}</p>
+          <div className="text-center p-1.5 bg-background rounded-lg border border-border">
+            <p className="text-lg font-bold text-info">{completed}</p>
+            <p className="text-xs text-text-muted">{t("dashboard.inspect.completed", "완료")}</p>
           </div>
-          <div className="text-center p-1.5 bg-surface rounded-lg">
-            <p className="text-lg font-bold text-green-600 dark:text-green-400">{pass}</p>
-            <p className="text-[10px] text-text-muted">{t("dashboard.inspect.pass", "합격")}</p>
+          <div className="text-center p-1.5 bg-background rounded-lg border border-border">
+            <p className="text-lg font-bold text-success">{pass}</p>
+            <p className="text-xs text-text-muted">{t("dashboard.inspect.pass", "합격")}</p>
           </div>
-          <div className="text-center p-1.5 bg-surface rounded-lg">
-            <p className="text-lg font-bold text-red-600 dark:text-red-400">{fail}</p>
-            <p className="text-[10px] text-text-muted">{t("dashboard.inspect.fail", "불합격")}</p>
+          <div className="text-center p-1.5 bg-background rounded-lg border border-border">
+            <p className="text-lg font-bold text-error">{fail}</p>
+            <p className="text-xs text-text-muted">{t("dashboard.inspect.fail", "불합격")}</p>
           </div>
         </div>
 
@@ -102,9 +102,9 @@ export default function InspectSummaryCard({
             <span className="text-text-muted">{t("dashboard.inspect.progress", "진행률")}</span>
             <span className="font-medium text-text">{rate}%</span>
           </div>
-          <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-border rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${fail > 0 ? "bg-red-500" : "bg-green-500"}`}
+              className={`h-full rounded-full transition-all ${fail > 0 ? "bg-error" : "bg-success"}`}
               style={{ width: `${rate}%` }}
             />
           </div>
@@ -120,12 +120,12 @@ export default function InspectSummaryCard({
             {t("dashboard.inspect.noData", "오늘 점검 대상이 없습니다.")}
           </div>
         ) : (
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-hide">
             {items.map((item, idx) => {
               const cfg = item.result ? resultConfig[item.result] : null;
               const ResultIcon = cfg?.icon || Clock;
-              const colorCls = cfg?.color || "text-gray-400 dark:text-gray-500";
-              const bgCls = cfg?.bgColor || "bg-gray-50 dark:bg-gray-800/50";
+              const colorCls = cfg?.color || "text-muted-foreground";
+              const bgCls = cfg?.bgColor || "bg-muted/30";
               return (
                 <div key={idx} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg ${bgCls}`}>
                   <div className="flex items-center gap-2 min-w-0">
@@ -137,7 +137,7 @@ export default function InspectSummaryCard({
                     {item.inspectorName && (
                       <span className="text-[10px] text-text-muted">{item.inspectorName}</span>
                     )}
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${colorCls}`}>
+                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${colorCls}`}>
                       {item.result
                         ? t(`comCode.INSPECT_JUDGE.${item.result}`, { defaultValue: item.result })
                         : t("dashboard.inspect.notDone", "미실시")}

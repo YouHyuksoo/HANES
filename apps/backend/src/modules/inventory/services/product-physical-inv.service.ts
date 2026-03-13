@@ -193,6 +193,8 @@ export class ProductPhysicalInvService {
           beforeQty,
           afterQty,
           diffQty,
+          company: stock.company || '40',
+          plant: stock.plant || '1000',
           reason: [
             countType === 'CANCEL' ? '[취소]' : null,
             countMonth ? `[${countMonth}]` : null,

@@ -48,14 +48,14 @@ export function ResizeHandle<T>({ header, syncColumnWidths }: ResizeHandleProps<
         header.column.resetSize();
       }}
       className={`
-        absolute right-0 top-0 h-full w-4 cursor-col-resize
+        absolute right-0 top-0 h-full w-5 cursor-col-resize
         select-none touch-none z-10
-        flex items-center justify-center
+        flex items-center justify-end
       `}
-      style={{ userSelect: 'none', transform: 'translateX(50%)' }}
+      style={{ userSelect: 'none' }}
       title="더블클릭: 크기 초기화"
     >
-      {/* 시각적 리사이즈 바 */}
+      {/* 시각적 리사이즈 바 (우측 끝에 정렬) */}
       <div
         className={`
           h-full transition-all duration-100

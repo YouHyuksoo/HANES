@@ -24,9 +24,11 @@ interface ReceivableTableProps {
   onInputChange: (matUid: string, field: keyof ReceiveInput, value: string | number | boolean) => void;
   onSelectAll: (checked: boolean) => void;
   allSelected: boolean;
+  isLoading?: boolean;
+  toolbarLeft?: React.ReactNode;
 }
 
-export default function ReceivableTable({ data, inputs, onInputChange, onSelectAll, allSelected }: ReceivableTableProps) {
+export default function ReceivableTable({ data, inputs, onInputChange, onSelectAll, allSelected, isLoading, toolbarLeft }: ReceivableTableProps) {
   const { t } = useTranslation();
   const { options: warehouses } = useWarehouseOptions();
 
@@ -51,8 +53,8 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       cell: ({ row }) => (
         <input
           type="checkbox"
-          checked={inputs[row.original.id]?.selected || false}
-          onChange={(e) => onInputChange(row.original.id, 'selected', e.target.checked)}
+          checked={inputs[row.original.matUid]?.selected || false}
+          onChange={(e) => onInputChange(row.original.matUid, 'selected', e.target.checked)}
           className="w-4 h-4 rounded border-border"
         />
       ),
@@ -62,6 +64,13 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
     { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemCode || '-' },
     { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemName || '-' },
     { id: 'vendor', header: t('material.arrival.col.vendor'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.vendor || '-' },
+    {
+      id: 'recvDate',
+      header: t('material.receive.col.recvDate'),
+      size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.recvDate ? String(row.original.recvDate).slice(0, 10) : '-',
+    },
     {
       id: 'initQty',
       header: t('material.receive.col.initQty'),
@@ -95,8 +104,8 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       cell: ({ row }) => (
         <Input
           type="date"
-          value={inputs[row.original.id]?.manufactureDate || ''}
-          onChange={(e) => onInputChange(row.original.id, 'manufactureDate', e.target.value)}
+          value={inputs[row.original.matUid]?.manufactureDate || ''}
+          onChange={(e) => onInputChange(row.original.matUid, 'manufactureDate', e.target.value)}
           className="w-[130px]"
         />
       ),
@@ -111,8 +120,8 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
           type="number"
           min={0}
           max={row.original.remainingQty}
-          value={inputs[row.original.id]?.qty || 0}
-          onChange={(e) => handleQtyChange(row.original.id, e.target.value, row.original.remainingQty)}
+          value={inputs[row.original.matUid]?.qty || 0}
+          onChange={(e) => handleQtyChange(row.original.matUid, e.target.value, row.original.remainingQty)}
           className="w-20"
         />
       ),
@@ -125,13 +134,24 @@ export default function ReceivableTable({ data, inputs, onInputChange, onSelectA
       cell: ({ row }) => (
         <Select
           options={warehouses}
-          value={inputs[row.original.id]?.warehouseCode || ''}
-          onChange={(v) => onInputChange(row.original.id, 'warehouseCode', v)}
+          value={inputs[row.original.matUid]?.warehouseCode || ''}
+          onChange={(v) => onInputChange(row.original.matUid, 'warehouseCode', v)}
           placeholder={t('material.arrival.selectWarehouse')}
         />
       ),
     },
   ], [t, inputs, warehouses, onInputChange, onSelectAll, allSelected, handleQtyChange]);
 
-  return <DataGrid data={data} columns={columns} pageSize={20} enableColumnFilter />;
+  return (
+    <DataGrid
+      data={data}
+      columns={columns}
+      pageSize={20}
+      isLoading={isLoading}
+      enableColumnFilter
+      enableExport
+      exportFileName={t('material.receive.title')}
+      toolbarLeft={toolbarLeft}
+    />
+  );
 }

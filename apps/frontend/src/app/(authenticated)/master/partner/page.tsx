@@ -131,6 +131,7 @@ function PartnerPage() {
             columns={columns}
             isLoading={loading}
             enableColumnPinning
+            enableColumnFilter
             enableExport
             exportFileName={t("master.partner.title")}
             onRowClick={(row) => { if (isPanelOpen) setEditingPartner(row); }}

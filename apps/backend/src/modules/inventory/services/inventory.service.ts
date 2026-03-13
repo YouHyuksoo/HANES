@@ -557,7 +557,7 @@ export class InventoryService {
   }
 
   /**
-   * 수불 이력 조회
+   * 수불 이력 조회 (원자재 STOCK_TRANSACTIONS)
    */
   async getTransactions(query: TransactionQueryDto, company?: string, plant?: string) {
     const where: any = {};
@@ -582,7 +582,6 @@ export class InventoryService {
       qb.andWhere('trans.transDate >= :dateFrom', { dateFrom: query.dateFrom });
     }
     if (query.dateTo) {
-      // dateTo를 해당일 23:59:59로 설정 (자정 기준이면 당일 데이터 누락됨)
       const endOfDay = new Date(query.dateTo);
       endOfDay.setHours(23, 59, 59, 999);
       qb.andWhere('trans.transDate <= :dateTo', { dateTo: endOfDay });

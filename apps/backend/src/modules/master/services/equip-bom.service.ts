@@ -81,7 +81,7 @@ export class EquipBomService {
   }
 
   async createItem(dto: CreateEquipBomItemDto): Promise<EquipBomItem> {
-    const item = this.bomItemRepo.create(dto);
+    const item = this.bomItemRepo.create({ ...dto, company: '40', plant: '1000' });
     return this.bomItemRepo.save(item);
   }
 
@@ -157,6 +157,8 @@ export class EquipBomService {
       ...dto,
       installDate: dto.installDate ? new Date(dto.installDate) : null,
       expireDate: dto.expireDate ? new Date(dto.expireDate) : null,
+      company: '40',
+      plant: '1000',
     });
     return this.bomRelRepo.save(rel);
   }

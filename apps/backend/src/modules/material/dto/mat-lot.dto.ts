@@ -45,17 +45,15 @@ export class CreateMatLotDto {
   @MaxLength(50)
   origin?: string;
 
-  @ApiPropertyOptional({ description: '공급업체' })
-  @IsOptional()
+  @ApiProperty({ description: '공급업체' })
   @IsString()
   @MaxLength(100)
-  vendor?: string;
+  vendor: string;
 
-  @ApiPropertyOptional({ description: '인보이스 번호' })
-  @IsOptional()
+  @ApiProperty({ description: '인보이스 번호' })
   @IsString()
   @MaxLength(50)
-  invoiceNo?: string;
+  invoiceNo: string;
 
   @ApiPropertyOptional({ description: 'PO 번호' })
   @IsOptional()

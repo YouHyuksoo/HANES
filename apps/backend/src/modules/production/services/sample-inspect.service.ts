@@ -56,6 +56,8 @@ export class SampleInspectService {
           specLower: sample.specLower || null,
           passYn: sample.passYn,
           remark: sample.remark || null,
+          company: '40',
+          plant: '1000',
         });
         records.push(entity);
       }

@@ -34,12 +34,6 @@ export class CreateProcessDto {
   @MaxLength(50)
   processCategory?: string;
 
-  @ApiPropertyOptional({ description: '샘플검사 필요여부', default: 'N' })
-  @IsOptional()
-  @IsString()
-  @IsIn(['Y', 'N'])
-  sampleInspectYn?: string;
-
   @ApiPropertyOptional({ description: '정렬 순서', default: 0 })
   @IsOptional()
   @Type(() => Number)

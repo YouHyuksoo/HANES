@@ -46,11 +46,11 @@ export class MatLot {
   @Column({ name: 'ORIGIN', length: 50, nullable: true })
   origin: string | null;
 
-  @Column({ name: 'VENDOR', length: 50, nullable: true })
-  vendor: string | null;
+  @Column({ name: 'VENDOR', length: 50 })
+  vendor: string;
 
-  @Column({ name: 'INVOICE_NO', length: 50, nullable: true })
-  invoiceNo: string | null;
+  @Column({ name: 'INVOICE_NO', length: 50 })
+  invoiceNo: string;
 
   @Column({ name: 'PO_NO', length: 50, nullable: true })
   poNo: string | null;

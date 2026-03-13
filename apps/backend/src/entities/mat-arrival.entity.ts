@@ -33,8 +33,8 @@ export class MatArrival {
   @Column({ name: 'ARRIVAL_NO', length: 50 })
   arrivalNo: string;
 
-  @Column({ name: 'INVOICE_NO', length: 100, nullable: true })
-  invoiceNo: string | null;
+  @Column({ name: 'INVOICE_NO', length: 100 })
+  invoiceNo: string;
 
   @Column({ name: 'PO_ID', length: 50, nullable: true })
   poId: string | null;
@@ -45,11 +45,11 @@ export class MatArrival {
   @Column({ name: 'PO_NO', length: 50, nullable: true })
   poNo: string | null;
 
-  @Column({ name: 'VENDOR_ID', length: 50, nullable: true })
-  vendorId: string | null;
+  @Column({ name: 'VENDOR_ID', length: 50 })
+  vendorId: string;
 
-  @Column({ name: 'VENDOR_NAME', length: 200, nullable: true })
-  vendorName: string | null;
+  @Column({ name: 'VENDOR_NAME', length: 200 })
+  vendorName: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

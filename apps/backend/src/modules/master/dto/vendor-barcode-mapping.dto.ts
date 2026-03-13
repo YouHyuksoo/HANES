@@ -20,11 +20,10 @@ export class CreateVendorBarcodeMappingDto {
   @MaxLength(200)
   vendorBarcode: string;
 
-  @ApiPropertyOptional({ description: 'MES 품목 코드' })
-  @IsOptional()
+  @ApiProperty({ description: 'MES 품목 코드' })
   @IsString()
   @MaxLength(50)
-  itemCode?: string;
+  itemCode: string;
 
   @ApiPropertyOptional({ description: 'MES 품명' })
   @IsOptional()

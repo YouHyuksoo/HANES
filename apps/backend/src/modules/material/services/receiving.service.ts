@@ -109,6 +109,9 @@ export class ReceivingService {
       }
     }
 
+    // 기본 창고(양품창고) 조회 - 입고 시 기본 선택값
+    const defaultWarehouse = await this.warehouseRepository.findOne({ where: { isDefault: 1 } });
+
     // 창고 정보 조회 (warehouseCode 기준)
     const warehouseCodes = [...new Set(arrivalWhByItemCode.values())].filter(Boolean);
     const warehouseIds = [] as string[]; // 호환용
@@ -157,12 +160,10 @@ export class ReceivingService {
           receivedQty,
           remainingQty,
           arrivalWarehouse: arrivalWarehouse || null,
-          itemCode: part?.itemCode,
-          itemName: part?.itemName,
-          unit: part?.unit,
+          part: part ? { id: part.itemCode, itemCode: part.itemCode, itemName: part.itemName, unit: part.unit } : null,
           expiryDays: part?.expiryDate || 0,
-          arrivalWarehouseCode: arrivalWarehouse?.warehouseCode,
-          arrivalWarehouseName: arrivalWarehouse?.warehouseName,
+          arrivalWarehouseCode: defaultWarehouse?.warehouseCode || arrivalWarehouse?.warehouseCode,
+          arrivalWarehouseName: defaultWarehouse?.warehouseName || arrivalWarehouse?.warehouseName,
           labelPrinted: printedLotNos.has(lot.matUid),
         };
       })
@@ -312,6 +313,8 @@ export class ReceivingService {
           workerId: dto.workerId,
           remark: item.remark,
           status: 'DONE',
+          company: lot.company || '40',
+          plant: lot.plant || '1000',
         });
         await queryRunner.manager.save(receiving);
 
@@ -328,17 +331,19 @@ export class ReceivingService {
           workerId: dto.workerId,
           refType: 'RECEIVE',
           refId: String(receiving.id),
+          company: lot.company || '40',
+          plant: lot.plant || '1000',
         });
 
         const savedTx = await queryRunner.manager.save(stockTx);
 
         // 3. 입하 창고 재고 차감 (입하 창고 ≠ 입고 창고인 경우만)
         if (arrivalWarehouseCode && arrivalWarehouseCode !== item.warehouseId) {
-          await this.upsertStock(queryRunner.manager, arrivalWarehouseCode, lot.itemCode, item.matUid, -item.qty);
+          await this.upsertStock(queryRunner.manager, arrivalWarehouseCode, lot.itemCode, item.matUid, -item.qty, lot.company, lot.plant);
         }
 
         // 4. 입고 창고 재고 증가
-        await this.upsertStock(queryRunner.manager, item.warehouseId, lot.itemCode, item.matUid, item.qty);
+        await this.upsertStock(queryRunner.manager, item.warehouseId, lot.itemCode, item.matUid, item.qty, lot.company, lot.plant);
 
         results.push({ ...savedTx, receiveNo });
       }
@@ -587,7 +592,7 @@ export class ReceivingService {
   }
 
   /** MatStock upsert */
-  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number) {
+  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: matUid || null },
     });
@@ -605,6 +610,8 @@ export class ReceivingService {
         matUid,
         qty: qtyDelta,
         availableQty: qtyDelta,
+        company: company || '40',
+        plant: plant || '1000',
       });
       await manager.save(newStock);
     }

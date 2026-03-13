@@ -178,12 +178,21 @@ export default function ItemMasterTab() {
         <Button onClick={openCreate}><Plus className="w-4 h-4 mr-1" />{t("master.equipInspect.addItem")}</Button>
       </div>
 
-      <div className="flex gap-4">
-        <Input placeholder={t("master.equipInspect.searchPlaceholder")} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} className="flex-1" />
-        <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} placeholder={t("master.equipInspect.filterByType")} />
-      </div>
-
-      <DataGrid data={filtered} columns={columns} pageSize={10} emptyMessage={t("master.equipInspect.noItems")} />
+      <DataGrid data={filtered} columns={columns} pageSize={10} enableColumnFilter enableExport
+        exportFileName={t("master.equipInspect.title")}
+        emptyMessage={t("master.equipInspect.noItems")}
+        toolbarLeft={
+          <div className="flex gap-3 flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
+              <Input placeholder={t("master.equipInspect.searchPlaceholder")} value={searchText}
+                onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+            </div>
+            <div className="w-40 flex-shrink-0">
+              <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter}
+                placeholder={t("master.equipInspect.filterByType")} fullWidth />
+            </div>
+          </div>
+        } />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t("master.equipInspect.editItem") : t("master.equipInspect.addItem")} size="lg">
         <div className="space-y-4">

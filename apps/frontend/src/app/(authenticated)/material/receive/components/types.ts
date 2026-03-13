@@ -25,7 +25,6 @@ export interface WarehouseInfo {
 
 /** 입고 가능 LOT (IQC 합격 + 미입고) */
 export interface ReceivableLot {
-  id: string;
   matUid: string;
   itemCode: string;
   itemType: string;
@@ -42,6 +41,7 @@ export interface ReceivableLot {
   remainingQty: number;
   part: PartInfo;
   arrivalWarehouse?: WarehouseInfo | null;
+  arrivalWarehouseCode?: string | null;
 }
 
 /** 입고 이력 레코드 */

@@ -8,17 +8,19 @@
  * 1. **작업지시**: 완제품/반제품 생산 명령 (WAITING → RUNNING → DONE)
  * 2. **트리뷰**: 완제품 기준 하위 반제품 작업지시를 계층형 표시
  * 3. **자동생성**: 완제품 작업지시 생성 시 BOM 기반 반제품 지시 동시 생성
+ * 4. **우측 패널**: 생성/수정 폼을 오른쪽 슬라이드 패널로 표시
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge, StatCard } from "@/components/ui";
+import { Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown, Edit2, Trash2 } from "lucide-react";
+import { Card, CardContent, Button, Input, ComCodeBadge, StatCard, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-import CreateJobOrderModal from "./components/CreateJobOrderModal";
+import JobOrderFormPanel from "./components/JobOrderFormPanel";
+import type { JobOrderFormData } from "./components/JobOrderFormPanel";
 
 interface JobOrderItem {
   id: string;
@@ -27,6 +29,8 @@ interface JobOrderItem {
   itemCode: string;
   part?: { itemCode?: string; itemName?: string; itemType?: string };
   lineCode?: string;
+  processCode?: string;
+  equipCode?: string;
   custPoNo?: string | null;
   planQty: number;
   goodQty: number;
@@ -64,8 +68,15 @@ export default function JobOrderPage() {
     return d.toISOString().slice(0, 10);
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [showCreate, setShowCreate] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
+
+  // 패널 상태
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<JobOrderFormData | null>(null);
+  const panelAnimateRef = useRef(true);
+
+  // 삭제 상태
+  const [deleteTarget, setDeleteTarget] = useState<JobOrderItem | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -108,7 +119,70 @@ export default function JobOrderPage() {
     return Math.round((row.goodQty / row.planQty) * 100);
   };
 
+  /** 신규 생성 패널 열기 */
+  const handleCreate = () => {
+    panelAnimateRef.current = true;
+    setEditingOrder(null);
+    setIsPanelOpen(true);
+  };
+
+  /** 수정 패널 열기 */
+  const handleEdit = (row: JobOrderItem) => {
+    panelAnimateRef.current = !isPanelOpen;
+    setEditingOrder({
+      id: row.id,
+      orderNo: row.orderNo,
+      itemCode: row.itemCode,
+      lineCode: row.lineCode,
+      processCode: row.processCode,
+      equipCode: row.equipCode,
+      custPoNo: row.custPoNo,
+      planQty: row.planQty,
+      planDate: row.planDate,
+      priority: row.priority,
+      remark: row.remark,
+    });
+    setIsPanelOpen(true);
+  };
+
+  /** 패널 닫기 */
+  const handlePanelClose = () => {
+    setIsPanelOpen(false);
+    setEditingOrder(null);
+  };
+
+  /** 삭제 실행 */
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/production/job-orders/${deleteTarget.id}`);
+      fetchData();
+    } catch {
+      // 에러는 api 인터셉터에서 처리
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
   const columns = useMemo<ColumnDef<JobOrderItem & { _depth: number }>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
+          <button onClick={(e) => { e.stopPropagation(); handleEdit(row.original); }}
+            className="p-1 rounded hover:bg-primary/10 text-text-muted hover:text-primary transition-colors"
+            title={t("common.edit")}>
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }}
+            className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-text-muted hover:text-red-500 transition-colors"
+            title={t("common.delete")}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
     {
       accessorKey: "orderNo", header: t("production.order.orderNo"), size: 180,
       meta: { filterType: "text" as const },
@@ -195,65 +269,87 @@ export default function JobOrderPage() {
         return v ? String(v).slice(0, 10) : "-";
       },
     },
-  ], [t]);
+  ], [t, isPanelOpen]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <ClipboardList className="w-7 h-7 text-primary" />
-            {t("production.order.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("production.order.description")}</p>
+    <div className="flex h-[calc(100vh-theme(spacing.16))] animate-fade-in">
+      {/* 좌측: 메인 콘텐츠 */}
+      <div className="flex-1 min-w-0 overflow-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <ClipboardList className="w-7 h-7 text-primary" />
+              {t("production.order.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("production.order.description")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm"
+              onClick={() => setViewMode(v => v === "list" ? "tree" : "list")}>
+              {viewMode === "list" ? t("production.order.treeView") : t("production.order.listView")}
+            </Button>
+            <Button size="sm" onClick={handleCreate}>
+              <Plus className="w-4 h-4 mr-1" /> {t("production.order.create")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm"
-            onClick={() => setViewMode(v => v === "list" ? "tree" : "list")}>
-            {viewMode === "list" ? t("production.order.treeView") : t("production.order.listView")}
-          </Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="w-4 h-4 mr-1" /> {t("production.order.create")}
-          </Button>
+
+        <div className="grid grid-cols-4 gap-3">
+          <StatCard label={t("production.order.stats.total")} value={stats.total} icon={ClipboardList} color="blue" />
+          <StatCard label={t("production.order.stats.waiting")} value={stats.waiting} icon={ClipboardList} color="yellow" />
+          <StatCard label={t("production.order.stats.running")} value={stats.running} icon={ClipboardList} color="green" />
+          <StatCard label={t("production.order.stats.done")} value={stats.done} icon={ClipboardList} color="purple" />
         </div>
+
+        <Card><CardContent>
+          <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="작업지시"
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("production.order.searchPlaceholder")}
+                    value={searchText} onChange={e => setSearchText(e.target.value)}
+                    leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <ComCodeSelect groupCode="JOB_ORDER_STATUS" value={statusFilter}
+                    onChange={setStatusFilter} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Input type="date" value={startDate}
+                    onChange={e => setStartDate(e.target.value)} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <Input type="date" value={endDate}
+                    onChange={e => setEndDate(e.target.value)} fullWidth />
+                </div>
+                <Button variant="secondary" onClick={fetchData}>
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
+            } />
+        </CardContent></Card>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t("production.order.stats.total")} value={stats.total} icon={ClipboardList} color="blue" />
-        <StatCard label={t("production.order.stats.waiting")} value={stats.waiting} icon={ClipboardList} color="yellow" />
-        <StatCard label={t("production.order.stats.running")} value={stats.running} icon={ClipboardList} color="green" />
-        <StatCard label={t("production.order.stats.done")} value={stats.done} icon={ClipboardList} color="purple" />
-      </div>
+      {/* 우측: 패널 */}
+      {isPanelOpen && (
+        <JobOrderFormPanel
+          editingOrder={editingOrder}
+          onClose={handlePanelClose}
+          onSave={fetchData}
+          animate={panelAnimateRef.current}
+        />
+      )}
 
-      <Card><CardContent>
-        <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="작업지시"
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("production.order.searchPlaceholder")}
-                  value={searchText} onChange={e => setSearchText(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <ComCodeSelect groupCode="JOB_ORDER_STATUS" value={statusFilter}
-                  onChange={setStatusFilter} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={startDate}
-                  onChange={e => setStartDate(e.target.value)} fullWidth />
-              </div>
-              <div className="w-36 flex-shrink-0">
-                <Input type="date" value={endDate}
-                  onChange={e => setEndDate(e.target.value)} fullWidth />
-              </div>
-              <Button variant="secondary" onClick={fetchData}>
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
-            </div>
-          } />
-      </CardContent></Card>
-
-      <CreateJobOrderModal isOpen={showCreate} onClose={() => setShowCreate(false)} onCreated={fetchData} />
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={t("common.deleteConfirmTitle")}
+        message={t("common.deleteConfirmMessage", { name: deleteTarget?.orderNo })}
+        confirmText={t("common.delete")}
+        variant="danger"
+      />
     </div>
   );
 }

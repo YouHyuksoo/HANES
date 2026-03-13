@@ -155,9 +155,9 @@ function BomPage() {
                       </tr>
                     ) : (
                       filteredParents.map((parent) => (
-                        <tr key={parent.id} onClick={() => handleSelectParent(parent)}
+                        <tr key={parent.itemCode} onClick={() => handleSelectParent(parent)}
                           className={`cursor-pointer border-b border-border/50 transition-colors ${
-                            selectedParent?.id === parent.id
+                            selectedParent?.itemCode === parent.itemCode
                               ? "bg-primary text-white"
                               : "hover:bg-surface text-text"
                           }`}>
@@ -165,7 +165,7 @@ function BomPage() {
                             {parent.itemNo || parent.itemCode}
                           </td>
                           <td className={`py-1.5 px-2 truncate max-w-[120px] relative group/tip ${
-                            selectedParent?.id === parent.id ? "text-white/80" : "text-text-muted"
+                            selectedParent?.itemCode === parent.itemCode ? "text-white/80" : "text-text-muted"
                           }`}>
                             {parent.itemName}
                             {(parent.spec || parent.customer || parent.remark) && (
@@ -194,14 +194,14 @@ function BomPage() {
                           </td>
                           <td className="py-1.5 px-1 text-center">
                             <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                              selectedParent?.id === parent.id
+                              selectedParent?.itemCode === parent.itemCode
                                 ? "bg-white/20 text-white"
                                 : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                             }`}>{parent.itemType}</span>
                           </td>
                           <td className="py-1.5 px-1 text-center">
                             <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${
-                              selectedParent?.id === parent.id
+                              selectedParent?.itemCode === parent.itemCode
                                 ? "bg-white/20 text-white"
                                 : "bg-surface text-text-muted"
                             }`}>{parent.bomCount}</span>

@@ -19,7 +19,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface Routing {
-  id: string;
   itemCode: string;
   itemName: string;
   seq: number;
@@ -141,7 +140,7 @@ export default function RoutingTab() {
         useYn: form.useYn,
       };
       if (editingItem) {
-        await api.put(`/master/routings/${editingItem.id}`, payload);
+        await api.put(`/master/routings/${editingItem.itemCode}/${editingItem.seq}`, payload);
       } else {
         await api.post("/master/routings", payload);
       }
@@ -156,7 +155,7 @@ export default function RoutingTab() {
 
   const handleDelete = useCallback(async (item: Routing) => {
     try {
-      await api.delete(`/master/routings/${item.id}`);
+      await api.delete(`/master/routings/${item.itemCode}/${item.seq}`);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);

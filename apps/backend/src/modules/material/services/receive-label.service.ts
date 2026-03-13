@@ -118,6 +118,8 @@ export class ReceiveLabelService {
           recvDate: new Date(),
           poNo: arrival.poNo,
           vendor: arrival.vendorName,
+          company: '40',
+          plant: '1000',
         });
         await queryRunner.manager.save(lot);
 

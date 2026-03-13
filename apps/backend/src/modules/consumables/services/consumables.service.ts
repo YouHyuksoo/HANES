@@ -411,6 +411,8 @@ export class ConsumablesService {
         equipCode: dto.equipCode || null,
         issueReason: dto.issueReason || null,
         returnReason: dto.returnReason || null,
+        company: '40',
+        plant: '1000',
       });
 
       const savedLog = await queryRunner.manager.save(ConsumableLog, log);
@@ -493,6 +495,8 @@ export class ConsumablesService {
           qty: dto.addCount,
           equipCode: dto.equipCode,
           remark: `타수 업데이트: +${dto.addCount}`,
+          company: '40',
+          plant: '1000',
         });
         await queryRunner.manager.save(ConsumableLog, log);
       }
@@ -541,6 +545,8 @@ export class ConsumablesService {
         logType: 'REPLACE',
         qty: previousCount,
         remark: dto.remark || '소모품 교체 (타수 리셋)',
+        company: '40',
+        plant: '1000',
       });
       await queryRunner.manager.save(ConsumableLog, log);
 

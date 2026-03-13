@@ -28,9 +28,9 @@ export default function LandingHero({ onNavigate, isAuthenticated }: LandingHero
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px]
-                        bg-primary/5 rounded-full blur-3xl" />
+                        bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px]
-                        bg-accent/5 rounded-full blur-3xl" />
+                        bg-accent/10 rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6">
@@ -44,7 +44,7 @@ export default function LandingHero({ onNavigate, isAuthenticated }: LandingHero
 
           {/* Title */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-text
-                         leading-tight tracking-tight mb-6">
+                         leading-snug tracking-tight mb-6">
             스마트한{" "}
             <span className="text-primary">생산관리</span>의
             <br />
@@ -63,11 +63,11 @@ export default function LandingHero({ onNavigate, isAuthenticated }: LandingHero
               onClick={onNavigate}
               className="
                 flex items-center gap-2 px-8 py-3.5
-                bg-primary text-white rounded-xl
+                bg-primary text-white rounded-lg
                 text-base font-semibold
                 hover:bg-primary-hover active:scale-[0.98]
                 transition-all duration-200
-                shadow-lg shadow-primary/25
+                shadow-md shadow-primary/20
               "
             >
               {isAuthenticated ? "대시보드로 이동" : "시작하기"}

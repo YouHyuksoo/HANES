@@ -13,61 +13,61 @@ import {
 } from 'typeorm';
 import { ReworkOrder } from './rework-order.entity';
 
-@Entity('rework_inspects')
+@Entity({ name: 'REWORK_INSPECTS' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkInspect {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'rework_order_id' })
+  @Column({ name: 'REWORK_ORDER_ID' })
   reworkOrderId: number;
 
   @ManyToOne(() => ReworkOrder)
-  @JoinColumn({ name: 'rework_order_id' })
+  @JoinColumn({ name: 'REWORK_ORDER_ID' })
   reworkOrder: ReworkOrder;
 
-  @Column({ name: 'inspector_code', length: 50 })
+  @Column({ name: 'INSPECTOR_CODE', length: 50 })
   inspectorCode: string;
 
-  @Column({ name: 'inspect_at', type: 'timestamptz', nullable: true })
+  @Column({ name: 'INSPECT_AT', type: 'timestamp', nullable: true })
   inspectAt: Date;
 
-  @Column({ name: 'inspect_method', length: 500, nullable: true })
+  @Column({ name: 'INSPECT_METHOD', length: 500, nullable: true })
   inspectMethod: string;
 
-  @Column({ name: 'inspect_result', length: 30 })
+  @Column({ name: 'INSPECT_RESULT', length: 30 })
   inspectResult: string;
 
-  @Column({ name: 'pass_qty', type: 'int', default: 0 })
+  @Column({ name: 'PASS_QTY', type: 'int', default: 0 })
   passQty: number;
 
-  @Column({ name: 'fail_qty', type: 'int', default: 0 })
+  @Column({ name: 'FAIL_QTY', type: 'int', default: 0 })
   failQty: number;
 
-  @Column({ name: 'defect_detail', length: 1000, nullable: true })
+  @Column({ name: 'DEFECT_DETAIL', length: 1000, nullable: true })
   defectDetail: string;
 
-  @Column({ name: 'remarks', length: 1000, nullable: true })
+  @Column({ name: 'REMARKS', length: 1000, nullable: true })
   remarks: string;
 
-  @Column({ name: 'image_url', length: 500, nullable: true })
+  @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string;
 
-  @Column({ name: 'company', type: 'int' })
+  @Column({ name: 'COMPANY', type: 'int' })
   company: number;
 
-  @Column({ name: 'plant', length: 20 })
+  @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'created_by', length: 50, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'updated_by', length: 50, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'CREATED_AT' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'UPDATED_AT' })
   updatedAt: Date;
 }

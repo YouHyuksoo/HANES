@@ -31,8 +31,8 @@ export class VendorBarcodeMapping {
   vendorBarcode: string;
 
   /** MES 품목코드 (ITEM_MASTERS.ITEM_CODE 참조) */
-  @Column({ name: 'ITEM_CODE', length: 50, nullable: true })
-  itemCode: string | null;
+  @Column({ name: 'ITEM_CODE', length: 50 })
+  itemCode: string;
 
   /** MES 품명 (조회 편의용) */
   @Column({ name: 'ITEM_NAME', length: 100, nullable: true })

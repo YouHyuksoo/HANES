@@ -25,7 +25,7 @@ export interface LabelableArrival {
   poNo: string | null;
   vendor: string | null;
   supUid: string | null;
-  invoiceNo: string | null;
+  invoiceNo: string;
   iqcStatus: string;
   arrivalDate: string | Date;
   labelPrinted: boolean;

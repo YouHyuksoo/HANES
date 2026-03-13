@@ -35,6 +35,12 @@ import {
   ProdResultQueryDto,
   CompleteProdResultDto,
 } from '../dto/prod-result.dto';
+import { AutoIssueService } from './auto-issue.service';
+import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { NumRuleService } from '../../num-rule/num-rule.service';
 
 @Injectable()
 export class ProdResultService {
@@ -60,6 +66,9 @@ export class ProdResultService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly autoIssueService: AutoIssueService,
+    private readonly productInventoryService: ProductInventoryService,
+    private readonly numRuleService: NumRuleService,
   ) {}
 
   /**
@@ -356,25 +365,51 @@ export class ProdResultService {
       }
     }
 
-    const prodResult = this.prodResultRepository.create({
-      orderNo: dto.orderNo,
-      equipCode: dto.equipCode,
-      workerCode: dto.workerId,
-      prdUid: dto.prdUid,
-      processCode: dto.processCode,
-      goodQty: dto.goodQty ?? 0,
-      defectQty: dto.defectQty ?? 0,
-      startAt: dto.startAt ? new Date(dto.startAt) : new Date(),
-      endAt: dto.endAt ? new Date(dto.endAt) : null,
-      cycleTime: dto.cycleTime,
-      status: 'RUNNING',
-      remark: dto.remark,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const saved = await this.prodResultRepository.save(prodResult);
+    let savedId: number;
+    try {
+      const prodResult = queryRunner.manager.create(ProdResult, {
+        orderNo: dto.orderNo,
+        equipCode: dto.equipCode,
+        workerCode: dto.workerId,
+        prdUid: dto.prdUid,
+        processCode: dto.processCode,
+        goodQty: dto.goodQty ?? 0,
+        defectQty: dto.defectQty ?? 0,
+        startAt: dto.startAt ? new Date(dto.startAt) : new Date(),
+        endAt: dto.endAt ? new Date(dto.endAt) : null,
+        cycleTime: dto.cycleTime,
+        status: 'RUNNING',
+        remark: dto.remark,
+      });
+
+      const saved = await queryRunner.manager.save(ProdResult, prodResult);
+      savedId = saved.id;
+
+      // BOM 기반 자재 자동차감 (ON_CREATE)
+      const totalQty = (dto.goodQty ?? 0) + (dto.defectQty ?? 0);
+      if (totalQty > 0) {
+        const autoResult = await this.autoIssueService.execute(
+          'ON_CREATE', saved.id, dto.orderNo, totalQty, queryRunner,
+        );
+        if (autoResult.warnings.length > 0) {
+          this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
 
     return this.prodResultRepository.findOne({
-      where: { id: saved.id },  // saved.id is already number
+      where: { id: savedId },
       relations: ['jobOrder', 'equip', 'worker'],
       select: {
         id: true,
@@ -526,6 +561,46 @@ export class ProdResultService {
         this.logger.log(`설비 작업지시 해제: ${prodResult.equipCode}`);
       }
 
+      // 4. BOM 기반 자재 자동차감 (ON_COMPLETE)
+      const autoTotalQty = (dto.goodQty ?? prodResult.goodQty) + (dto.defectQty ?? prodResult.defectQty);
+      if (autoTotalQty > 0) {
+        const autoResult = await this.autoIssueService.execute(
+          'ON_COMPLETE', +id, prodResult.orderNo, autoTotalQty, queryRunner,
+        );
+        if (autoResult.warnings.length > 0) {
+          this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
+        }
+      }
+
+      // 5. 공정창고(WIP_MAIN) 자동 적재 — 양품만 재고화
+      const goodQty = dto.goodQty ?? prodResult.goodQty;
+      if (goodQty > 0) {
+        const jobOrder = await queryRunner.manager.findOne(JobOrder, {
+          where: { orderNo: prodResult.orderNo },
+          relations: ['part'],
+        });
+
+        if (jobOrder?.itemCode) {
+          const itemType = jobOrder.part?.itemType === 'FG' ? 'FG' : 'WIP';
+          await this.productInventoryService.receiveStockInTx(queryRunner, {
+            warehouseId: 'WIP_MAIN',
+            itemCode: jobOrder.itemCode,
+            itemType,
+            prdUid: prodResult.prdUid || undefined,
+            qty: goodQty,
+            transType: 'WIP_IN',
+            orderNo: prodResult.orderNo,
+            processCode: prodResult.processCode || undefined,
+            refType: 'PROD_RESULT',
+            refId: String(prodResult.id),
+            remark: `생산실적 완료 자동 적재`,
+          });
+          this.logger.log(
+            `공정재고 자동 적재: ${jobOrder.itemCode} × ${goodQty} → WIP_MAIN (실적 #${prodResult.id})`,
+          );
+        }
+      }
+
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -585,6 +660,12 @@ export class ProdResultService {
         this.logger.log(`설비 작업지시 해제 (취소): ${prodResult.equipCode}`);
       }
 
+      // PROD_AUTO 자동차감 역분개
+      await this.reverseAutoIssue(queryRunner, +id);
+
+      // 공정재고 자동 적재 역분개 — PROD_RESULT 참조 트랜잭션 찾아서 취소
+      await this.reverseProductStock(queryRunner, +id);
+
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
@@ -596,6 +677,141 @@ export class ProdResultService {
     return this.prodResultRepository.findOne({
       where: { id: +id },
     });
+  }
+
+  /**
+   * PROD_AUTO 자동차감 역분개
+   * - 해당 실적의 PROD_AUTO MatIssue를 모두 찾아 CANCELED 처리
+   * - MatLot.currentQty 복원, MatStock.qty 복원, 역방향 StockTransaction 생성
+   */
+  private async reverseAutoIssue(
+    qr: import('typeorm').QueryRunner,
+    prodResultId: number,
+  ): Promise<void> {
+    const issues = await qr.manager.find(MatIssue, {
+      where: { prodResultId, issueType: 'PROD_AUTO', status: 'DONE' },
+    });
+
+    if (issues.length === 0) return;
+
+    for (const issue of issues) {
+      // (a) MatIssue → CANCELED
+      await qr.manager.update(MatIssue, { issueNo: issue.issueNo }, {
+        status: 'CANCELED',
+      });
+
+      // (b) MatLot.currentQty 복원 + 상태 복원
+      if (issue.matUid && issue.issueQty > 0) {
+        const lot = await qr.manager.findOne(MatLot, {
+          where: { matUid: issue.matUid },
+        });
+        if (lot) {
+          const restoredQty = lot.currentQty + issue.issueQty;
+          await qr.manager.update(MatLot, { matUid: issue.matUid }, {
+            currentQty: restoredQty,
+            ...(lot.status === 'DEPLETED' ? { status: 'NORMAL' } : {}),
+          });
+        }
+
+        // (c) MatStock 복원
+        const stocks = await qr.manager.find(MatStock, {
+          where: { matUid: issue.matUid },
+        });
+        if (stocks.length > 0) {
+          // 첫 번째 재고 레코드에 복원 (단순화)
+          const stock = stocks[0];
+          await qr.manager.update(
+            MatStock,
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+            {
+              qty: stock.qty + issue.issueQty,
+              availableQty: stock.availableQty + issue.issueQty,
+            },
+          );
+        }
+
+        // (d) 역방향 StockTransaction 생성
+        const reverseTransNo = await this.numRuleService.nextNumberInTx(qr, 'STOCK_TX');
+        const reverseTx = qr.manager.create(StockTransaction, {
+          transNo: reverseTransNo,
+          transType: 'MAT_IN',
+          itemCode: lot?.itemCode ?? '',
+          matUid: issue.matUid,
+          qty: issue.issueQty,
+          refType: 'MAT_ISSUE_CANCEL',
+          refId: issue.issueNo,
+          status: 'DONE',
+          company: lot?.company || issue.company || '40',
+          plant: lot?.plant || issue.plant || '1000',
+        });
+        await qr.manager.save(StockTransaction, reverseTx);
+      }
+    }
+
+    this.logger.log(`자동차감 역분개 완료 — prodResultId: ${prodResultId}, ${issues.length}건`);
+  }
+
+  /**
+   * 공정재고 자동 적재 역분개
+   * - 해당 실적의 PROD_RESULT 참조 ProductTransaction(WIP_IN)을 찾아 취소
+   * - ProductStock(WIP_MAIN) 재고 복원
+   */
+  private async reverseProductStock(
+    qr: import('typeorm').QueryRunner,
+    prodResultId: number,
+  ): Promise<void> {
+    const { ProductTransaction } = await import('../../../entities/product-transaction.entity');
+    const { ProductStock } = await import('../../../entities/product-stock.entity');
+
+    const transactions = await qr.manager.find(ProductTransaction, {
+      where: { refType: 'PROD_RESULT', refId: String(prodResultId), status: 'DONE' },
+    });
+
+    if (transactions.length === 0) return;
+
+    for (const tx of transactions) {
+      // (a) 원본 트랜잭션 → CANCELED
+      await qr.manager.update(ProductTransaction, { id: tx.id }, { status: 'CANCELED' });
+
+      // (b) 재고 차감 (입고 취소이므로 toWarehouseId에서 감소)
+      if (tx.toWarehouseId && tx.qty > 0) {
+        const stock = await qr.manager.findOne(ProductStock, {
+          where: { warehouseCode: tx.toWarehouseId, itemCode: tx.itemCode },
+        });
+
+        if (stock) {
+          const newQty = Math.max(stock.qty - tx.qty, 0);
+          await qr.manager.update(ProductStock,
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid },
+            { qty: newQty, availableQty: Math.max(newQty - stock.reservedQty, 0) },
+          );
+        }
+      }
+
+      // (c) 취소 트랜잭션 생성 (역분개)
+      const cancelTx = qr.manager.create(ProductTransaction, {
+        transNo: `${tx.transNo}_C`,
+        transType: 'WIP_IN_CANCEL',
+        transDate: new Date(),
+        fromWarehouseId: tx.toWarehouseId,
+        itemCode: tx.itemCode,
+        itemType: tx.itemType,
+        prdUid: tx.prdUid,
+        orderNo: tx.orderNo,
+        processCode: tx.processCode,
+        qty: -tx.qty,
+        refType: 'PROD_RESULT_CANCEL',
+        refId: String(prodResultId),
+        cancelRefId: String(tx.id),
+        remark: `생산실적 취소 역분개`,
+        status: 'DONE',
+        company: tx.company || '40',
+        plant: tx.plant || '1000',
+      });
+      await qr.manager.save(ProductTransaction, cancelTx);
+    }
+
+    this.logger.log(`공정재고 역분개 완료 — prodResultId: ${prodResultId}, ${transactions.length}건`);
   }
 
   // ===== 실적 집계 =====

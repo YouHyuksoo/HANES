@@ -83,7 +83,10 @@
       "mcp__chrome-devtools__get_console_message",
       "mcp__chrome-devtools__new_page",
       "Bash(cd:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(# 백엔드 포트 찾기\nnetstat -ano 2>/dev/null | grep \"LISTENING\" | grep -E \"300[0-9]\" || ss -tlnp 2>/dev/null | grep \"300[0-9]\" || powershell.exe -Command \"Get-NetTCPConnection -State Listen | Where-Object {\\(\\\\$_.LocalPort -ge 3000\\) -and \\(\\\\$_.LocalPort -le 3010\\)} | Select-Object LocalPort\" 2>/dev/null)",
+      "Bash(__NEW_LINE_3b4dc2d833364963__ echo:*)",
+      "Bash(curl:*)"
     ]
   }
 }

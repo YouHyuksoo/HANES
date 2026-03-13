@@ -24,6 +24,7 @@ import {
   Cable,
   Network,
   Activity,
+  Search,
 } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
 import StatCard from "@/components/ui/StatCard";
@@ -270,26 +271,6 @@ export default function CommConfigPage() {
         <StatCard label={t('system.commConfig.mqttOther')} value={stats.otherCount} icon={Wifi} color="purple" />
       </div>
 
-      {/* 필터 */}
-      <div className="flex items-center gap-4">
-        <div className="w-48">
-          <Select
-            options={FILTER_OPTIONS}
-            value={typeFilter}
-            onChange={setTypeFilter}
-            fullWidth
-          />
-        </div>
-        <div className="w-64">
-          <Input
-            placeholder={t('system.commConfig.searchPlaceholder')}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            fullWidth
-          />
-        </div>
-      </div>
-
       {/* 데이터 그리드 */}
       <DataGrid
         data={configs}
@@ -297,6 +278,29 @@ export default function CommConfigPage() {
         isLoading={loading}
         enableColumnResizing
         enableColumnFilter
+        enableExport
+        exportFileName={t('system.commConfig.title')}
+        toolbarLeft={
+          <div className="flex gap-3 flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
+              <Input
+                placeholder={t('system.commConfig.searchPlaceholder')}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                leftIcon={<Search className="w-4 h-4" />}
+                fullWidth
+              />
+            </div>
+            <div className="w-40 flex-shrink-0">
+              <Select
+                options={FILTER_OPTIONS}
+                value={typeFilter}
+                onChange={setTypeFilter}
+                fullWidth
+              />
+            </div>
+          </div>
+        }
       />
 
       {/* 생성/수정 모달 */}

@@ -61,6 +61,14 @@ export class ProductReceiveStockDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @IsOptional()
+  @IsString()
+  plant?: string;
 }
 
 /** 제품 출고 DTO */
@@ -118,6 +126,14 @@ export class ProductIssueStockDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @IsOptional()
+  @IsString()
+  plant?: string;
 }
 
 /** 제품 수불 조회 DTO */

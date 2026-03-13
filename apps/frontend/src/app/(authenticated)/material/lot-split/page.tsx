@@ -2,10 +2,10 @@
 
 /**
  * @file src/app/(authenticated)/material/lot-split/page.tsx
- * @description 자재분할 페이지 - LOT 분할 관리
+ * @description 자재분할 페이지 - 자재시리얼 분할 관리
  *
  * 초보자 가이드:
- * 1. **LOT 분할**: 하나의 LOT에서 일부 수량을 분리하여 새 LOT 생성
+ * 1. **자재분할**: 하나의 자재시리얼에서 일부 수량을 분리하여 새 시리얼 생성
  * 2. **추적성**: 분할 후에도 parentLotId로 추적 가능
  * 3. API: GET /material/lot-split, POST /material/lot-split
  */
@@ -83,7 +83,7 @@ export default function LotSplitPage() {
 
   const columns = useMemo<ColumnDef<SplittableLot>[]>(() => [
     {
-      accessorKey: "matUid", header: "LOT No.", size: 160,
+      accessorKey: "matUid", header: t("material.col.matUid"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
@@ -161,7 +161,7 @@ export default function LotSplitPage() {
           <div className="space-y-4">
             <div className="p-3 bg-surface-alt dark:bg-surface rounded-lg border border-border">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-text-muted">LOT:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
+                <div><span className="text-text-muted">{t("material.col.matUid")}:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
                 <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
                 <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
                 <div><span className="text-text-muted">{t("material.lotSplit.currentQty")}:</span> <span className="font-semibold">{selectedLot.currentQty.toLocaleString()} {selectedLot.unit || ""}</span></div>

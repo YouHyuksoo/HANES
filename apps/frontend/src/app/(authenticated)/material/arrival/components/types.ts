@@ -21,7 +21,7 @@ export interface LotInfo {
   id: string;
   matUid: string;
   poNo?: string | null;
-  vendor?: string | null;
+  vendor: string;
 }
 
 /** 창고 정보 */
@@ -81,7 +81,7 @@ export interface ArrivalItemInput {
   receivedQty: number;
   warehouseCode: string;
   supUid?: string;
-  invoiceNo?: string;
+  invoiceNo: string;
   manufactureDate?: string;
   remark?: string;
 }

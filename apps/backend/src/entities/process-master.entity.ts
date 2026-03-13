@@ -6,7 +6,7 @@
  * 초보자 가이드:
  * 1. processCode가 PK (UUID 대신 자연키)
  * 2. processType으로 공정 유형 분류
- * 3. sampleInspectYn: 이 공정에서 표본검사 수행 여부
+ * 3. processCategory: 공정 대분류 (ASSY, INSP 등)
  */
 import {
   Entity,
@@ -31,9 +31,6 @@ export class ProcessMaster {
 
   @Column({ name: 'PROCESS_CATEGORY', length: 50, nullable: true })
   processCategory: string | null;
-
-  @Column({ name: 'SAMPLE_INSPECT_YN', length: 1, default: 'N' })
-  sampleInspectYn: string;
 
   @Column({ name: 'SORT_ORDER', type: 'int', default: 0 })
   sortOrder: number;

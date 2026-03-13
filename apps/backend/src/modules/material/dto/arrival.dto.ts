@@ -39,10 +39,9 @@ export class ArrivalItemDto {
   @IsString()
   supUid?: string;
 
-  @ApiPropertyOptional({ description: '인보이스 번호' })
-  @IsOptional()
+  @ApiProperty({ description: '인보이스 번호' })
   @IsString()
-  invoiceNo?: string;
+  invoiceNo: string;
 
   @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD)' })
   @IsOptional()
@@ -68,11 +67,10 @@ export class CreatePoArrivalDto {
   @Type(() => ArrivalItemDto)
   items: ArrivalItemDto[];
 
-  @ApiPropertyOptional({ description: '인보이스 번호' })
-  @IsOptional()
+  @ApiProperty({ description: '인보이스 번호' })
   @IsString()
   @MaxLength(100)
-  invoiceNo?: string;
+  invoiceNo: string;
 
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()
@@ -106,27 +104,24 @@ export class CreateManualArrivalDto {
   @IsString()
   supUid?: string;
 
-  @ApiPropertyOptional({ description: '인보이스 번호' })
-  @IsOptional()
+  @ApiProperty({ description: '인보이스 번호' })
   @IsString()
   @MaxLength(100)
-  invoiceNo?: string;
+  invoiceNo: string;
 
   @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD)' })
   @IsOptional()
   @IsDateString()
   manufactureDate?: string;
 
-  @ApiPropertyOptional({ description: '공급업체 ID' })
-  @IsOptional()
+  @ApiProperty({ description: '공급업체 ID' })
   @IsString()
-  vendorId?: string;
+  vendorId: string;
 
-  @ApiPropertyOptional({ description: '공급업체명' })
-  @IsOptional()
+  @ApiProperty({ description: '공급업체명' })
   @IsString()
   @MaxLength(200)
-  vendor?: string;
+  vendor: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

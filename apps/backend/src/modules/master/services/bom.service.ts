@@ -34,43 +34,47 @@ export class BomService {
       .andWhere('(bom.validTo IS NULL OR bom.validTo >= :date)', { date: d });
   }
 
-  /** BOM에 등재된 모품목(부모품목) 목록 + 자품목 수 */
+  /** BOM에 등재된 모품목(부모품목) 목록 + 자품목 수 (단일 JOIN 쿼리) */
   async findParents(search?: string, effectiveDate?: string) {
     try {
-      let queryBuilder = this.bomRepository.createQueryBuilder('bom')
-        .select('bom.parentItemCode', 'parentItemCode')
-        .addSelect('COUNT(bom.id)', 'bomCount')
-        .where('bom.useYn = :useYn', { useYn: 'Y' })
-        .groupBy('bom.parentItemCode');
+      const params: any[] = [];
+      let dateFilter = '';
+      if (effectiveDate) {
+        params.push(effectiveDate, effectiveDate);
+        dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
+          AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+      }
 
-      queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
+      let searchFilter = '';
+      if (search) {
+        params.push(`%${search.toUpperCase()}%`);
+        const idx = params.length;
+        searchFilter = `AND (UPPER(p.ITEM_CODE) LIKE :${idx} OR UPPER(p.ITEM_NAME) LIKE :${idx} OR UPPER(p.PART_NO) LIKE :${idx})`;
+      }
 
-    if (search) {
-      // 부모 품목 정보 조회를 위해 PartMaster와 조인
-      queryBuilder = queryBuilder
-        .innerJoin(PartMaster, 'parent', 'parent.itemCode = bom.parentItemCode')
-        .andWhere(
-          '(UPPER(parent.itemCode) LIKE UPPER(:search) OR UPPER(parent.itemName) LIKE UPPER(:search) OR UPPER(parent.itemNo) LIKE UPPER(:search))',
-          { search: `%${search}%` }
-        );
-    }
+      const rows: any[] = await this.bomRepository.query(
+        `SELECT p.ITEM_CODE   AS "itemCode",
+                p.ITEM_NAME   AS "itemName",
+                p.PART_NO     AS "itemNo",
+                p.ITEM_TYPE   AS "itemType",
+                p.SPEC        AS "spec",
+                p.UNIT        AS "unit",
+                p.CUSTOMER    AS "customer",
+                p.REMARKS     AS "remark",
+                COUNT(*)      AS "bomCount"
+           FROM BOM_MASTERS b
+           JOIN ITEM_MASTERS p ON p.ITEM_CODE = b.PARENT_ITEM_CODE
+          WHERE b.USE_YN = 'Y' ${dateFilter} ${searchFilter}
+          GROUP BY p.ITEM_CODE, p.ITEM_NAME, p.PART_NO, p.ITEM_TYPE,
+                   p.SPEC, p.UNIT, p.CUSTOMER, p.REMARKS
+          ORDER BY p.ITEM_CODE ASC`,
+        params,
+      );
 
-    const grouped = await queryBuilder.getRawMany();
-
-    if (grouped.length === 0) return [];
-
-    const parentIds = grouped.map((g) => g.parentItemCode);
-    const parents = await this.partRepository.find({
-      where: { itemCode: In(parentIds) },
-      select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit', 'customer', 'remark'],
-      order: { itemCode: 'asc' },
-    });
-
-    const countMap = new Map(grouped.map((g) => [g.parentItemCode, parseInt(g.bomCount, 10)]));
-    return parents.map((p) => ({
-      ...p,
-      bomCount: countMap.get(p.itemCode) || 0,
-    }));
+      return rows.map((r) => ({
+        ...r,
+        bomCount: parseInt(r.bomCount, 10),
+      }));
     } catch (error) {
       console.error('[BomService.findParents] Error:', error);
       throw error;
@@ -81,38 +85,37 @@ export class BomService {
     const { page = 1, limit = 10, parentItemCode, childItemCode, revision } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.bomRepository.createQueryBuilder('bom')
-      .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.itemCode = bom.parentItemCode')
-      .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.itemCode = bom.childItemCode')
+    const where: any = { useYn: 'Y' };
+    if (company) where.company = company;
+    if (plant) where.plant = plant;
+    if (parentItemCode) where.parentItemCode = parentItemCode;
+    if (childItemCode) where.childItemCode = childItemCode;
+    if (revision) where.revision = revision;
 
-    if (company) {
-      queryBuilder.andWhere('bom.company = :company', { company });
-    }
-    if (plant) {
-      queryBuilder.andWhere('bom.plant = :plant', { plant });
-    }
+    const [bomList, total] = await this.bomRepository.findAndCount({
+      where,
+      order: { parentItemCode: 'ASC', seq: 'ASC' },
+      skip,
+      take: limit,
+    });
 
-    if (parentItemCode) {
-      queryBuilder.andWhere('bom.parentItemCode = :parentItemCode', { parentItemCode });
-    }
+    if (bomList.length === 0) return { data: [], total: 0, page, limit };
 
-    if (childItemCode) {
-      queryBuilder.andWhere('bom.childItemCode = :childItemCode', { childItemCode });
-    }
+    const parentCodes = [...new Set(bomList.map((b) => b.parentItemCode))];
+    const childCodes = [...new Set(bomList.map((b) => b.childItemCode))];
+    const allCodes = [...new Set([...parentCodes, ...childCodes])];
 
-    if (revision) {
-      queryBuilder.andWhere('bom.revision = :revision', { revision });
-    }
+    const parts = await this.partRepository.find({
+      where: { itemCode: In(allCodes) },
+      select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
+    });
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
-    const [data, total] = await Promise.all([
-      queryBuilder
-        .orderBy('bom.parentItemCode', 'ASC')
-        .addOrderBy('bom.seq', 'ASC')
-        .skip(skip)
-        .take(limit)
-        .getMany(),
-      queryBuilder.getCount(),
-    ]);
+    const data = bomList.map((b) => ({
+      ...b,
+      parentPart: partMap.get(b.parentItemCode) || null,
+      childPart: partMap.get(b.childItemCode) || null,
+    }));
 
     return { data, total, page, limit };
   }
@@ -120,29 +123,69 @@ export class BomService {
   async findById(id: string) {
     // id is composite key encoded as "parentItemCode::childItemCode::revision"
     const [parentItemCode, childItemCode, revision] = id.split('::');
-    const bom = await this.bomRepository.createQueryBuilder('bom')
-      .leftJoinAndMapOne('bom.parentPart', PartMaster, 'parentPart', 'parentPart.itemCode = bom.parentItemCode')
-      .leftJoinAndMapOne('bom.childPart', PartMaster, 'childPart', 'childPart.itemCode = bom.childItemCode')
-      .where('bom.parentItemCode = :parentItemCode', { parentItemCode })
-      .andWhere('bom.childItemCode = :childItemCode', { childItemCode })
-      .andWhere('bom.revision = :revision', { revision: revision || 'A' })
-      .getOne();
+    const bom = await this.bomRepository.findOne({
+      where: { parentItemCode, childItemCode, revision: revision || 'A' },
+    });
 
     if (!bom) throw new NotFoundException(`BOM을 찾을 수 없습니다: ${id}`);
-    return bom;
+
+    const parts = await this.partRepository.find({
+      where: { itemCode: In([parentItemCode, childItemCode]) },
+      select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
+    });
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    return {
+      ...bom,
+      parentPart: partMap.get(parentItemCode) || null,
+      childPart: partMap.get(childItemCode) || null,
+    };
   }
 
   async findByParentId(parentItemCode: string, effectiveDate?: string) {
-    let queryBuilder = this.bomRepository.createQueryBuilder('bom')
-      .leftJoinAndSelect(PartMaster, 'childPart', 'childPart.itemCode = bom.childItemCode')
-      .where('bom.parentItemCode = :parentItemCode', { parentItemCode })
-      .andWhere('bom.useYn = :useYn', { useYn: 'Y' });
+    const params: any[] = [parentItemCode];
+    let dateFilter = '';
+    if (effectiveDate) {
+      params.push(effectiveDate, effectiveDate);
+      dateFilter = `AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:${params.length - 1}, 'YYYY-MM-DD'))
+        AND (b.VALID_TO IS NULL OR b.VALID_TO >= TO_DATE(:${params.length}, 'YYYY-MM-DD'))`;
+    }
 
-    queryBuilder = this.buildDateFilter(queryBuilder, effectiveDate);
+    const rows: any[] = await this.bomRepository.query(
+      `SELECT b.PARENT_ITEM_CODE AS "parentItemCode",
+              b.CHILD_ITEM_CODE  AS "childItemCode",
+              b.REVISION         AS "revision",
+              b.QTY_PER          AS "qtyPer",
+              b.SEQ              AS "seq",
+              b.BOM_GRP          AS "bomGrp",
+              b.OPER             AS "processCode",
+              b.SIDE             AS "side",
+              b.ECO_NO           AS "ecoNo",
+              b.VALID_FROM       AS "validFrom",
+              b.VALID_TO         AS "validTo",
+              b.USE_YN           AS "useYn",
+              b.REMARK           AS "remark"
+         FROM BOM_MASTERS b
+        WHERE b.PARENT_ITEM_CODE = :1
+          AND b.USE_YN = 'Y'
+          ${dateFilter}
+        ORDER BY b.SEQ ASC`,
+      params,
+    );
 
-    return queryBuilder
-      .orderBy('bom.seq', 'ASC')
-      .getMany();
+    if (rows.length === 0) return [];
+
+    const childCodes = rows.map((r) => r.childItemCode);
+    const parts = await this.partRepository.find({
+      where: { itemCode: In(childCodes) },
+      select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
+    });
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    return rows.map((r) => ({
+      ...r,
+      childPart: partMap.get(r.childItemCode) || null,
+    }));
   }
 
   /** 
@@ -174,32 +217,30 @@ export class BomService {
 
     const query = `
       SELECT
-        b.ID as id,
-        b.PARENT_ITEM_CODE as parentItemCode,
-        b.CHILD_ITEM_CODE as childItemCode,
-        b.QTY_PER as qtyPer,
-        b.SEQ as seq,
-        b.REVISION as revision,
-        b.OPER as processCode,
-        b.SIDE as side,
-        b.VALID_FROM as validFrom,
-        b.VALID_TO as validTo,
-        b.USE_YN as useYn,
-        p.ITEM_CODE as itemCode,
-        p.ITEM_NAME as itemName,
-        p.PART_NO as partNo,
-        p.PART_TYPE as itemType,
-        p.UNIT as unit,
-        LEVEL as lvl
+        b.PARENT_ITEM_CODE || '::' || b.CHILD_ITEM_CODE || '::' || b.REVISION AS "id",
+        b.PARENT_ITEM_CODE AS "parentItemCode",
+        b.CHILD_ITEM_CODE  AS "childItemCode",
+        b.QTY_PER          AS "qtyPer",
+        b.SEQ              AS "seq",
+        b.REVISION         AS "revision",
+        b.OPER             AS "processCode",
+        b.SIDE             AS "side",
+        b.VALID_FROM       AS "validFrom",
+        b.VALID_TO         AS "validTo",
+        b.USE_YN           AS "useYn",
+        p.ITEM_CODE        AS "itemCode",
+        p.ITEM_NAME        AS "itemName",
+        p.PART_NO          AS "itemNo",
+        p.ITEM_TYPE        AS "itemType",
+        p.UNIT             AS "unit",
+        LEVEL              AS "lvl"
       FROM BOM_MASTERS b
       JOIN ITEM_MASTERS p ON b.CHILD_ITEM_CODE = p.ITEM_CODE
-      WHERE b.DELETED_AT IS NULL
-        AND b.USE_YN = 'Y'
+      WHERE b.USE_YN = 'Y'
         ${dateFilter}
       START WITH b.PARENT_ITEM_CODE = :${parentIdx}
       CONNECT BY PRIOR b.CHILD_ITEM_CODE = b.PARENT_ITEM_CODE
         AND LEVEL <= ${safeDepth}
-        AND b.DELETED_AT IS NULL
         AND b.USE_YN = 'Y'
         ${dateFilterConnect}
       ORDER SIBLINGS BY b.SEQ ASC
@@ -211,46 +252,43 @@ export class BomService {
     return this.buildTreeFromFlatData(rawResults);
   }
 
-  /** 평면 데이터를 트리 구조로 변환 */
+  /** 평면 데이터를 트리 구조로 변환 (childItemCode 기준 부모 매칭) */
   private buildTreeFromFlatData(rows: any[]): any[] {
-    const map = new Map<string, any>();
     const roots: any[] = [];
+    // childItemCode → node 매핑 (부모 찾을 때 사용)
+    const childMap = new Map<string, any>();
 
-    // 먼저 모든 노드를 맵에 저장
-    for (const row of rows) {
+    const nodes = rows.map((row) => {
       const node = {
-        id: row.ID || row.id,
-        level: Number(row.LVL || row.lvl),
-        itemCode: row.PARTCODE || row.itemCode,
-        partNo: row.PARTNO || row.partNo,
-        itemName: row.PARTNAME || row.itemName,
-        itemType: row.PARTTYPE || row.itemType,
-        qtyPer: Number(row.QTYPER || row.qtyPer),
-        unit: row.UNIT || row.unit,
-        revision: row.REVISION || row.revision,
-        seq: Number(row.SEQ || row.seq),
-        processCode: row.PROCESSCODE || row.processCode,
-        side: row.SIDE || row.side,
-        validFrom: row.VALIDFROM || row.validFrom,
-        validTo: row.VALIDTO || row.validTo,
-        useYn: row.USEYN || row.useYn,
-        childItemCode: row.CHILDITEMCODE || row.childItemCode,
+        id: row.id,
+        level: Number(row.lvl),
+        parentItemCode: row.parentItemCode,
+        childItemCode: row.childItemCode,
+        itemCode: row.itemCode,
+        itemNo: row.itemNo,
+        itemName: row.itemName,
+        itemType: row.itemType,
+        qtyPer: Number(row.qtyPer),
+        unit: row.unit,
+        revision: row.revision,
+        seq: Number(row.seq),
+        processCode: row.processCode,
+        side: row.side,
+        validFrom: row.validFrom,
+        validTo: row.validTo,
+        useYn: row.useYn,
         children: [],
       };
-      map.set(node.id, node);
-    }
+      childMap.set(node.childItemCode, node);
+      return node;
+    });
 
-    // 부모-자식 관계 설정
-    for (const row of rows) {
-      const nodeId = row.ID || row.id;
-      const parentId = row.PARENTITEMCODE || row.parentItemCode;
-      const node = map.get(nodeId);
-      
-      // parentId가 현재 row들 중에 있는지 확인
-      const parent = map.get(parentId);
-      if (parent && parent.id !== node.id) {
+    // 부모-자식 관계 설정: parentItemCode로 부모 노드의 childItemCode를 매칭
+    for (const node of nodes) {
+      const parent = childMap.get(node.parentItemCode);
+      if (parent) {
         parent.children.push(node);
-      } else if (node.level === 1) {
+      } else {
         roots.push(node);
       }
     }

@@ -24,7 +24,6 @@ interface Process {
   processName: string;
   processType: string;
   processCategory?: string;
-  sampleInspectYn: string;
   sortOrder: number;
   remark?: string;
   useYn: string;
@@ -75,7 +74,7 @@ export default function ProcessTab() {
 
   const openCreateModal = useCallback(() => {
     setEditingItem(null);
-    setFormData({ useYn: "Y", sampleInspectYn: "N", sortOrder: 0 });
+    setFormData({ useYn: "Y", sortOrder: 0 });
     setIsModalOpen(true);
   }, []);
 
@@ -124,12 +123,6 @@ export default function ProcessTab() {
         const v = getValue() as string;
         return v ? <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{v}</span> : "-";
       },
-    },
-    { accessorKey: "sampleInspectYn", header: t("master.process.sampleInspectYn"), size: 80,
-      meta: { filterType: "multi" as const, filterOptions: [{ value: "Y", label: "Y" }, { value: "N", label: "N" }] },
-      cell: ({ getValue }) => (
-        <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-orange-500" : "bg-gray-300"}`} />
-      ),
     },
     { accessorKey: "sortOrder", header: t("master.process.sortOrder"), size: 80 },
     { accessorKey: "remark", header: t("common.remark"), size: 150,
@@ -200,9 +193,6 @@ export default function ProcessTab() {
           </div>
           <Select label={t("master.process.processCategory")} options={processCategoryOptions.filter(o => o.value)}
             value={formData.processCategory || ""} onChange={(v) => setFormData((p) => ({ ...p, processCategory: v }))} fullWidth />
-          <Select label={t("master.process.sampleInspectYn")}
-            options={[{ value: "Y", label: "Y" }, { value: "N", label: "N" }]}
-            value={formData.sampleInspectYn || "N"} onChange={(v) => setFormData((p) => ({ ...p, sampleInspectYn: v }))} fullWidth />
           <Input label={t("master.process.sortOrder")} type="number" placeholder="0"
             value={formData.sortOrder?.toString() || "0"} onChange={(e) => setFormData((p) => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remark")}

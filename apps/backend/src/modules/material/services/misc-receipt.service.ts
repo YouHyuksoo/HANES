@@ -187,6 +187,8 @@ export class MiscReceiptService {
           qty,
           availableQty: qty,
           reservedQty: 0,
+          company: '40',
+          plant: '1000',
         });
         await queryRunner.manager.save(newStock);
       }
@@ -215,6 +217,8 @@ export class MiscReceiptService {
         workerId,
         remark,
         status: 'DONE',
+        company: '40',
+        plant: '1000',
       });
       await queryRunner.manager.save(transaction);
 

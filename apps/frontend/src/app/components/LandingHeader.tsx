@@ -44,7 +44,7 @@ export default function LandingHeader({ isAuthenticated, onNavigate }: LandingHe
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center
+          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center
                           group-hover:scale-105 transition-transform">
             <Factory className="w-5 h-5 text-white" />
           </div>

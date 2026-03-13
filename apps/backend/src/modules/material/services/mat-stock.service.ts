@@ -243,6 +243,8 @@ export class MatStockService {
           qty: adjustQty,
           availableQty: adjustQty,
           reservedQty: 0,
+          company: '40',
+          plant: '1000',
         });
         stock = await queryRunner.manager.save(newStock);
       }
@@ -257,6 +259,8 @@ export class MatStockService {
         afterQty,
         diffQty: adjustQty,
         reason,
+        company: '40',
+        plant: '1000',
       });
 
       await queryRunner.commitTransaction();
@@ -313,6 +317,8 @@ export class MatStockService {
           qty,
           availableQty: qty,
           reservedQty: 0,
+          company: fromStock.company || '40',
+          plant: fromStock.plant || '1000',
         });
         toStock = await queryRunner.manager.save(newStock);
       }
