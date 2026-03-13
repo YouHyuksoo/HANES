@@ -548,6 +548,43 @@ export class PalletService {
   }
 
   /**
+   * 팔레트 바코드(팔레트번호)로 하위 박스 목록 조회
+   * 반환: { palletNo, status, boxCount, totalQty, boxes: [...] }
+   */
+  async findBoxesByPallet(palletBarcode: string) {
+    const pallet = await this.palletRepository.findOne({
+      where: { palletNo: palletBarcode },
+    });
+
+    if (!pallet) {
+      throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${palletBarcode}`);
+    }
+
+    const boxes = await this.boxRepository.find({
+      where: { palletNo: palletBarcode },
+      order: { createdAt: 'ASC' },
+    });
+
+    return {
+      palletNo: pallet.palletNo,
+      status: pallet.status,
+      boxCount: pallet.boxCount,
+      totalQty: pallet.totalQty,
+      shipmentId: pallet.shipmentId,
+      closeAt: pallet.closeAt,
+      boxes: boxes.map(box => ({
+        boxNo: box.boxNo,
+        itemCode: box.itemCode,
+        qty: box.qty,
+        status: box.status,
+        oqcStatus: box.oqcStatus,
+        closeAt: box.closeAt,
+        createdAt: box.createdAt,
+      })),
+    };
+  }
+
+  /**
    * 미할당 팔레트 목록 조회 (출하에 할당되지 않은 CLOSED 상태)
    */
   async findUnassignedPallets() {

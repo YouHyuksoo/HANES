@@ -95,6 +95,16 @@ export class PalletController {
     return ResponseUtil.success(data);
   }
 
+  @Get('barcode/:palletBarcode/boxes')
+  @ApiOperation({ summary: '팔레트 바코드로 하위 박스 목록 조회', description: '팔레트 바코드(팔레트번호)로 해당 팔레트에 속한 박스 목록 반환' })
+  @ApiParam({ name: 'palletBarcode', description: '팔레트 바코드(팔레트번호)', example: 'PLT-20250126-001' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiResponse({ status: 404, description: '팔레트 없음' })
+  async getPalletBoxes(@Param('palletBarcode') palletBarcode: string) {
+    const data = await this.palletService.findBoxesByPallet(palletBarcode);
+    return ResponseUtil.success(data);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '팔레트 상세 조회' })
   @ApiParam({ name: 'id', description: '팔레트 ID' })
