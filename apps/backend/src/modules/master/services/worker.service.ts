@@ -82,6 +82,35 @@ export class WorkerService {
     };
   }
 
+  /**
+   * QR 코드로 작업자 조회 (PDA 연동용)
+   *
+   * 1차: QR_CODE 컬럼으로 조회
+   * 2차: QR에 workerCode가 담긴 경우 대비해 WORKER_CODE로 재시도
+   * 둘 다 없으면 NotFoundException 발생
+   */
+  async findByQrCode(qrCode: string) {
+    // 1차 시도: qrCode 컬럼으로 조회
+    let item = await this.workerRepository.findOne({
+      where: { qrCode },
+    });
+
+    // 2차 시도: workerCode로 조회 (QR에 사번이 인쇄된 경우)
+    if (!item) {
+      item = await this.workerRepository.findOne({
+        where: { workerCode: qrCode },
+      });
+    }
+
+    if (!item) throw new NotFoundException('해당 QR 코드의 작업자를 찾을 수 없습니다');
+
+    return {
+      workerCode: item.workerCode,
+      workerName: item.workerName,
+      dept: item.dept,
+    };
+  }
+
   async create(dto: CreateWorkerDto) {
     const existing = await this.workerRepository.findOne({
       where: { workerCode: dto.workerCode },
