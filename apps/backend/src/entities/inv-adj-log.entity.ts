@@ -5,6 +5,9 @@
  * 초보자 가이드:
  * - adjType: 조정 유형 (PHYSICAL_INV, MANUAL_ADJ 등)
  * - beforeQty/afterQty/diffQty: 조정 전/후/차이 수량
+ * - adjustStatus: 승인 상태 (PENDING=대기, APPROVED=승인, REJECTED=반려)
+ *   - 일반 등록 시 기본값 'APPROVED' (하위 호환 유지)
+ *   - PDA 등록 시 'PENDING' 으로 저장 → 재고 변동 보류 → 승인 후 실반영
  * - id: SEQUENCE 자동증분 PK
  * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
  */
@@ -45,6 +48,9 @@ export class InvAdjLog {
 
   @Column({ name: 'DIFF_QTY', type: 'int' })
   diffQty: number;
+
+  @Column({ name: 'ADJUST_STATUS', length: 20, default: 'APPROVED' })
+  adjustStatus: string;
 
   @Column({ name: 'REASON', length: 500, nullable: true })
   reason: string | null;

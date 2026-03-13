@@ -1,6 +1,11 @@
 /**
  * @file src/modules/material/dto/adjustment.dto.ts
  * @description 재고보정 관련 DTO
+ *
+ * 초보자 가이드:
+ * - CreateAdjustmentDto: 보정 등록 (PC/PDA 공용)
+ * - ApproveAdjustmentDto: 승인/반려 시 처리자 ID 전달용
+ * - AdjustmentQueryDto: 목록 조회 필터
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -35,6 +40,17 @@ export class CreateAdjustmentDto {
   @IsOptional()
   @IsString()
   createdBy?: string;
+}
+
+/**
+ * 승인 / 반려 처리 시 사용하는 DTO
+ * - approvedBy: 처리자 사용자 ID (선택)
+ */
+export class ApproveAdjustmentDto {
+  @ApiPropertyOptional({ description: '승인/반려 처리자 ID' })
+  @IsOptional()
+  @IsString()
+  approvedBy?: string;
 }
 
 export class AdjustmentQueryDto {
