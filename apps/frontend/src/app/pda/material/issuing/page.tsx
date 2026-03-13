@@ -1,179 +1,184 @@
 "use client";
 
 /**
- * @file src/app/(pda)/material/issuing/page.tsx
- * @description 자재출고 PDA 페이지 - LOT 바코드 스캔 → 재고 확인 → 전량 출고
+ * @file src/app/pda/material/issuing/page.tsx
+ * @description 자재불출 PDA 페이지 - BOM 피킹 워크플로우 (Phase 3단계)
  *
  * 초보자 가이드:
- * 1. ScanInput: LOT 바코드 스캔 (LOT번호로 재고 조회)
- * 2. ScanResultCard: 스캔 결과 표시 (LOT번호, 품목, 잔여수량, 창고)
- * 3. PdaActionButton: 전량출고 + 다음스캔 버튼
- * 4. ScanHistoryList: 출고 완료 이력 표시
- * 5. useBarcodeDetector: 하드웨어 스캐너 키보드 이벤트 감지
+ * 1. **SCAN_JOB_ORDER**: 작업지시 스캔 + 출고유형 선택 → ScanJobOrderPhase 컴포넌트
+ * 2. **SCAN_MATERIAL**: 자재 스캔 + BOM 체크리스트 → ScanMaterialPhase 컴포넌트
+ * 3. **CONFIRM**: 최종 확인 + 출고 처리 → ConfirmPhase 컴포넌트
+ * 4. 수량 초과 스캔 시 → ConfirmModal 경고 (계속 허용)
+ * 5. ScanHistoryList: 출고 완료 이력
  */
-import { useCallback, useMemo } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import PdaHeader from "@/components/pda/PdaHeader";
-import ScanInput from "@/components/pda/ScanInput";
-import ScanResultCard from "@/components/pda/ScanResultCard";
-import type { ScanResultField } from "@/components/pda/ScanResultCard";
 import ScanHistoryList from "@/components/pda/ScanHistoryList";
-import PdaActionButton from "@/components/pda/PdaActionButton";
 import { useSoundFeedback } from "@/components/pda/SoundFeedback";
 import { useBarcodeDetector } from "@/hooks/pda/useBarcodeDetector";
-import { PackageMinus } from "lucide-react";
+import { ConfirmModal } from "@/components/ui";
+import type { ScanInputHandle } from "@/components/pda/ScanInput";
 import {
   useMatIssuingScan,
   type IssuingHistoryItem,
 } from "@/hooks/pda/useMatIssuingScan";
+import { ScanJobOrderPhase } from "./phases/ScanJobOrderPhase";
+import { ScanMaterialPhase } from "./phases/ScanMaterialPhase";
+import { ConfirmPhase } from "./phases/ConfirmPhase";
+
+// ── 메인 페이지 ───────────────────────────────────────
 
 export default function MaterialIssuingPage() {
   const { t } = useTranslation();
   const { playSuccess, playError } = useSoundFeedback();
+  const scanMatRef = useRef<ScanInputHandle>(null);
+
   const {
-    scannedLot,
+    phase,
+    jobOrder,
+    bomItems,
+    issueType,
     isScanning,
-    isIssuing,
+    isConfirming,
     error,
     history,
-    handleScan,
-    handleIssue,
-    handleReset,
+    setIssueType,
+    handleScanJobOrder,
+    handleScanMaterial,
+    handleConfirmIssue,
+    goToConfirm,
+    reset,
   } = useMatIssuingScan();
 
-  /** 바코드 스캔 처리 */
-  const onScan = useCallback(
-    async (matUid: string) => {
-      await handleScan(matUid);
+  /** 수량 초과 경고 모달 */
+  const [overQtyModal, setOverQtyModal] = useState(false);
+
+  // ── 에러 메시지 변환 ─────────────────────────────────
+
+  const errorMessage = (() => {
+    if (!error) return null;
+    if (error === "NOT_IN_BOM") return t("pda.issuing.notInBom");
+    if (error === "JOB_ORDER_NOT_FOUND") return t("pda.scan.noResult");
+    return error;
+  })();
+
+  // ── Phase 1: 작업지시 스캔 ───────────────────────────
+
+  const onScanJobOrder = useCallback(
+    async (barcode: string) => {
+      await handleScanJobOrder(barcode);
+      setTimeout(() => scanMatRef.current?.focus(), 150);
     },
-    [handleScan],
+    [handleScanJobOrder],
   );
 
-  /** 하드웨어 스캐너 감지 */
-  useBarcodeDetector({
-    onScan,
-    enabled: !scannedLot,
-  });
+  useBarcodeDetector({ onScan: onScanJobOrder, enabled: phase === "SCAN_JOB_ORDER" });
 
-  /** 스캔 결과 필드 구성 */
-  const resultFields: ScanResultField[] = useMemo(() => {
-    if (!scannedLot) return [];
-    return [
-      {
-        label: t("pda.issuing.matUid"),
-        value: scannedLot.matUid,
-        highlight: true,
-      },
-      { label: t("pda.issuing.partCode"), value: scannedLot.itemCode },
-      { label: t("pda.issuing.partName"), value: scannedLot.itemName },
-      {
-        label: t("pda.issuing.remainQty"),
-        value: `${scannedLot.remainQty} ${scannedLot.unit}`,
-      },
-      { label: t("pda.issuing.warehouse"), value: scannedLot.warehouse },
-    ];
-  }, [scannedLot, t]);
+  // ── Phase 2: 자재 스캔 ──────────────────────────────
 
-  /** 전량 출고 */
-  const onIssue = useCallback(async () => {
-    const success = await handleIssue();
-    if (success) {
-      playSuccess();
-    } else {
-      playError();
-    }
-  }, [handleIssue, playSuccess, playError]);
-
-  /** 다음 스캔 */
-  const onNextScan = useCallback(() => {
-    handleReset();
-  }, [handleReset]);
-
-  /** 이력 렌더 */
-  const renderHistoryItem = useCallback(
-    (item: IssuingHistoryItem) => (
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
-            {item.itemCode}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {item.matUid}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
-            -{item.issuedQty}
-          </p>
-          <p className="text-xs text-slate-400">{item.timestamp}</p>
-        </div>
-      </div>
-    ),
-    [],
+  const onScanMaterial = useCallback(
+    async (barcode: string) => {
+      const result = await handleScanMaterial(barcode);
+      if (result === "ok") {
+        playSuccess();
+      } else if (result === "over_qty") {
+        playError();
+        setOverQtyModal(true);
+      } else {
+        playError();
+      }
+    },
+    [handleScanMaterial, playSuccess, playError],
   );
+
+  useBarcodeDetector({ onScan: onScanMaterial, enabled: phase === "SCAN_MATERIAL" });
+
+  // ── Phase 3: 출고 확인 ──────────────────────────────
+
+  const onConfirmIssue = useCallback(async () => {
+    const success = await handleConfirmIssue();
+    if (success) playSuccess();
+    else playError();
+  }, [handleConfirmIssue, playSuccess, playError]);
+
+  // ── 렌더 ─────────────────────────────────────────────
 
   return (
     <>
       <PdaHeader titleKey="pda.issuing.title" backPath="/pda/material/menu" />
 
-      {/* LOT 바코드 스캔 입력 */}
-      <ScanInput
-        onScan={onScan}
-        placeholderKey="pda.issuing.scanLot"
-        disabled={!!scannedLot}
-        isLoading={isScanning}
-      />
-
-      {/* 스캔 결과 / 에러 */}
-      {(scannedLot || error) && (
-        <ScanResultCard
-          fields={resultFields}
-          variant={error ? "error" : "success"}
-          title={error ? undefined : t("pda.scan.success")}
-          errorMessage={error || undefined}
+      {/* Phase 1 */}
+      {phase === "SCAN_JOB_ORDER" && (
+        <ScanJobOrderPhase
+          isScanning={isScanning}
+          issueType={issueType}
+          errorMessage={errorMessage}
+          onScan={onScanJobOrder}
+          onIssueTypeChange={setIssueType}
         />
       )}
 
-      {/* 스캔 전 안내 */}
-      {!scannedLot && !error && !isScanning && (
-        <div className="mx-4 mt-4 p-8 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900">
-          <div className="text-center">
-            <PackageMinus className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              {t("pda.issuing.scanLot")}
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              {t("pda.issuing.title")}
-            </p>
-          </div>
-        </div>
+      {/* Phase 2 */}
+      {phase === "SCAN_MATERIAL" && jobOrder && (
+        <ScanMaterialPhase
+          jobOrder={jobOrder}
+          bomItems={bomItems}
+          isScanning={isScanning}
+          errorMessage={errorMessage}
+          scanMatRef={scanMatRef}
+          onScan={onScanMaterial}
+          onConfirm={goToConfirm}
+          onCancel={reset}
+        />
       )}
 
-      {/* 이력 */}
+      {/* Phase 3 */}
+      {phase === "CONFIRM" && jobOrder && (
+        <ConfirmPhase
+          jobOrder={jobOrder}
+          bomItems={bomItems}
+          isConfirming={isConfirming}
+          errorMessage={errorMessage}
+          onIssue={onConfirmIssue}
+          onBack={reset}
+        />
+      )}
+
+      {/* 출고 완료 이력 */}
       <ScanHistoryList
         items={history}
-        renderItem={renderHistoryItem}
-        keyExtractor={(item, idx) => `${item.matUid}-${idx}`}
+        renderItem={(item: IssuingHistoryItem) => (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                {item.orderNo}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {item.partCode} · {item.partName}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                -{item.totalScanned}
+              </p>
+              <p className="text-xs text-slate-400">{item.timestamp}</p>
+            </div>
+          </div>
+        )}
+        keyExtractor={(item, idx) => `${item.orderNo}-${idx}`}
       />
 
-      {/* 하단 버튼 */}
-      {scannedLot && (
-        <PdaActionButton
-          buttons={[
-            {
-              label: t("pda.issuing.issueAll"),
-              onClick: onIssue,
-              variant: "primary",
-              isLoading: isIssuing,
-            },
-            {
-              label: t("pda.scan.nextScan"),
-              onClick: onNextScan,
-              variant: "secondary",
-            },
-          ]}
-        />
-      )}
+      {/* 수량 초과 경고 모달 */}
+      <ConfirmModal
+        isOpen={overQtyModal}
+        onClose={() => setOverQtyModal(false)}
+        onConfirm={() => setOverQtyModal(false)}
+        title={t("common.confirm")}
+        message={t("pda.issuing.overQty")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+      />
     </>
   );
 }

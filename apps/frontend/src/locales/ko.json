@@ -4771,7 +4771,15 @@
       "confirmIssue": "출고확인",
       "issueAll": "전량출고",
       "issueSuccess": "출고 처리가 완료되었습니다",
-      "issueFailed": "출고 처리에 실패했습니다"
+      "issueFailed": "출고 처리에 실패했습니다",
+      "scanJobOrder": "작업지시 바코드를 스캔하세요",
+      "scanMaterial": "자재를 스캔하세요",
+      "issueType": "출고유형",
+      "production": "생산불출",
+      "transfer": "창고이동",
+      "return": "반품",
+      "notInBom": "해당 작업지시에 필요하지 않은 자재입니다",
+      "overQty": "요청 수량 초과입니다. 계속하시겠습니까?"
     },
     "adjustment": {
       "title": "재고조정",

@@ -4752,7 +4752,15 @@
       "confirmIssue": "Confirm Issue",
       "issueAll": "Issue All",
       "issueSuccess": "Issuing completed",
-      "issueFailed": "Issuing failed"
+      "issueFailed": "Issuing failed",
+      "scanJobOrder": "Scan job order barcode",
+      "scanMaterial": "Scan material",
+      "issueType": "Issue Type",
+      "production": "Production Issue",
+      "transfer": "Warehouse Transfer",
+      "return": "Return",
+      "notInBom": "Material not required for this job order",
+      "overQty": "Exceeds required quantity. Continue?"
     },
     "adjustment": {
       "title": "Adjustment",

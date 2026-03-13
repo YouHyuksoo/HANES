@@ -4752,7 +4752,15 @@
       "confirmIssue": "Xác nhận xuất",
       "issueAll": "Xuất toàn bộ",
       "issueSuccess": "Xuất kho thành công",
-      "issueFailed": "Xuất kho thất bại"
+      "issueFailed": "Xuất kho thất bại",
+      "scanJobOrder": "Quét mã vạch lệnh sản xuất",
+      "scanMaterial": "Quét vật tư",
+      "issueType": "Loại xuất kho",
+      "production": "Xuất sản xuất",
+      "transfer": "Chuyển kho",
+      "return": "Trả hàng",
+      "notInBom": "Vật tư không cần cho lệnh sản xuất này",
+      "overQty": "Vượt quá số lượng yêu cầu. Tiếp tục?"
     },
     "adjustment": {
       "title": "Điều chỉnh tồn kho",

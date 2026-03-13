@@ -4752,7 +4752,15 @@
       "confirmIssue": "确认出库",
       "issueAll": "全部出库",
       "issueSuccess": "出库处理完成",
-      "issueFailed": "出库处理失败"
+      "issueFailed": "出库处理失败",
+      "scanJobOrder": "请扫描工单条码",
+      "scanMaterial": "请扫描物料",
+      "issueType": "出库类型",
+      "production": "生产领料",
+      "transfer": "仓库转移",
+      "return": "退料",
+      "notInBom": "该工单不需要此物料",
+      "overQty": "超出需求数量，是否继续？"
     },
     "adjustment": {
       "title": "库存调整",
