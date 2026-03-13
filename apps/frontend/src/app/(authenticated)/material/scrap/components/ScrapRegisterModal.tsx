@@ -14,6 +14,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
 import { Modal, Button, Input, Select } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
@@ -140,8 +141,9 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
             min={1} max={maxQty}
             value={form.qty} onChange={e => setForm(p => ({ ...p, qty: e.target.value }))}
             fullWidth />
-          <Input label={t("material.scrap.reason")} placeholder={t("material.scrap.reasonPlaceholder")}
-            value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))}
+          <ComCodeSelect groupCode="SCRAP_REASON" includeAll={false}
+            label={t("material.scrap.reason")}
+            value={form.reason} onChange={v => setForm(p => ({ ...p, reason: v }))}
             fullWidth />
         </div>
       </div>

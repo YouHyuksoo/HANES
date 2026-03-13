@@ -42,6 +42,8 @@
     "description": "Description",
     "active": "Active",
     "inactive": "Inactive",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
     "includeZero": "Include zero stock",
     "vsYesterday": "vs yesterday",
     "count": "cases",
@@ -288,6 +290,7 @@
     "system.commConfig": "Comm Config Mgmt",
     "system.config": "System Config",
     "system.roles": "Role Management",
+    "system.pdaRoles": "PDA Role Management",
     "system.document": "Document Control",
     "system.training": "Training"
   },
@@ -644,7 +647,9 @@
       "roleOperator": "Operator",
       "roleViewer": "Viewer",
       "statusActive": "Active",
-      "statusInactive": "Inactive"
+      "statusInactive": "Inactive",
+      "pdaRole": "PDA Role",
+      "pdaRoleNone": "Not Assigned"
     },
     "roles": {
       "title": "Role Management",
@@ -669,6 +674,22 @@
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
       "codeFormatHint": "Only uppercase letters and underscores are allowed"
+    },
+    "pdaRoles": {
+      "title": "PDA Role Management",
+      "add": "Add Role",
+      "addTitle": "Add PDA Role",
+      "editTitle": "Edit PDA Role",
+      "deleteTitle": "Delete PDA Role",
+      "deleteMsg": "Are you sure you want to delete role '{{name}}'?",
+      "code": "Role Code",
+      "name": "Role Name",
+      "namePlaceholder": "e.g., PDA Material Handler",
+      "description": "Description",
+      "descPlaceholder": "Enter a description for this role",
+      "menuCount": "Menus",
+      "menuPermissions": "PDA Menu Permissions",
+      "empty": "No PDA roles registered."
     },
     "commConfig": {
       "title": "Comm Settings",
@@ -4188,6 +4209,26 @@
       "HI_POT": "Hi-Pot",
       "VISUAL": "Visual"
     },
+    "INSPECT_METHOD": {
+      "VISUAL": "Visual",
+      "MEASUREMENT": "Measurement",
+      "FUNCTIONAL": "Functional",
+      "ELECTRICAL": "Electrical",
+      "DESTRUCTIVE": "Destructive"
+    },
+    "SCRAP_REASON": {
+      "DAMAGE": "Damage",
+      "EXPIRY": "Expired",
+      "QUALITY": "Quality Defect",
+      "SURPLUS": "Surplus",
+      "OBSOLETE": "Obsolete",
+      "ETC": "Other"
+    },
+    "BOM_SIDE": {
+      "N": "N/A",
+      "L": "Left",
+      "R": "Right"
+    },
     "IQC_TYPE": {
       "IQC": "IQC",
       "PQC": "PQC",
@@ -4592,6 +4633,9 @@
     "DEFECT_DISPOSITION": "Defect Disposition",
     "INSPECT_RESULT": "Inspection Result",
     "INSPECT_TYPE": "Inspection Type",
+    "INSPECT_METHOD": "Inspection Method",
+    "SCRAP_REASON": "Scrap Reason",
+    "BOM_SIDE": "BOM Side",
     "IQC_TYPE": "IQC Type",
     "QUALITY_JUDGMENT": "Quality Judgment",
     "APPROVAL_STATUS": "Approval Status",
@@ -4927,6 +4971,10 @@
     "network": {
       "offline": "Please check your network connection",
       "online": "Network connection restored"
+    },
+    "server": {
+      "error": "Server connection failed. Please try again later.",
+      "retry": "Retry"
     }
   },
   "activityLog": {

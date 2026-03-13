@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, PartnerSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface ComplaintFormData {
@@ -124,12 +124,9 @@ export default function ComplaintFormPanel({ editData, onClose, onSave }: Props)
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         {/* 고객 정보 */}
-        <div className="grid grid-cols-2 gap-3">
-          <Input label={t("quality.complaint.customerCode")} value={form.customerCode}
-            onChange={e => setField("customerCode", e.target.value)} fullWidth required />
-          <Input label={t("quality.complaint.customerName")} value={form.customerName}
-            onChange={e => setField("customerName", e.target.value)} fullWidth />
-        </div>
+        <PartnerSelect partnerType="CUSTOMER"
+          label={t("quality.complaint.customerCode")} value={form.customerCode}
+          onChange={v => setField("customerCode", v)} fullWidth />
 
         {/* 접수일 + 긴급도 */}
         <div className="grid grid-cols-2 gap-3">
@@ -162,8 +159,8 @@ export default function ComplaintFormPanel({ editData, onClose, onSave }: Props)
         </div>
 
         {/* 담당자 */}
-        <Input label={t("common.manager")} value={form.responsibleCode}
-          onChange={e => setField("responsibleCode", e.target.value)} fullWidth />
+        <WorkerSelect label={t("common.manager")} value={form.responsibleCode}
+          onChange={v => setField("responsibleCode", v)} fullWidth />
 
         {/* 클레임 내용 */}
         <div>

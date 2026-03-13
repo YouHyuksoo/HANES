@@ -203,9 +203,13 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
 
       setInspectItems(items);
       setResults(new Map());
-    } catch (err) {
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message;
       const message =
-        err instanceof Error ? err.message : "Equipment scan failed";
+        status === 404
+          ? `설비를 찾을 수 없습니다: ${equipCode}`
+          : serverMsg || "설비 스캔에 실패했습니다.";
       setError(message);
       setScannedEquip(null);
       setInspectItems([]);

@@ -42,6 +42,8 @@
     "description": "Mô tả",
     "active": "Hoạt động",
     "inactive": "Ngừng hoạt động",
+    "selectAll": "Chọn tất cả",
+    "deselectAll": "Bỏ chọn tất cả",
     "includeZero": "Bao gồm tồn kho 0",
     "vsYesterday": "so với hôm qua",
     "count": "kiện",
@@ -288,6 +290,7 @@
     "system.commConfig": "Quản lý cài đặt truyền thông",
     "system.config": "Cấu hình hệ thống",
     "system.roles": "Quản lý vai trò",
+    "system.pdaRoles": "Quản lý vai trò PDA",
     "system.document": "Quản lý tài liệu",
     "system.training": "Quản lý đào tạo"
   },
@@ -644,7 +647,9 @@
       "roleOperator": "Vận hành",
       "roleViewer": "Xem",
       "statusActive": "Hoạt động",
-      "statusInactive": "Ngừng hoạt động"
+      "statusInactive": "Ngừng hoạt động",
+      "pdaRole": "Vai trò PDA",
+      "pdaRoleNone": "Chưa gán"
     },
     "roles": {
       "title": "Quản lý vai trò",
@@ -669,6 +674,22 @@
       "selectAll": "Chọn tất cả",
       "deselectAll": "Bỏ chọn tất cả",
       "codeFormatHint": "Chỉ cho phép chữ in hoa và dấu gạch dưới"
+    },
+    "pdaRoles": {
+      "title": "Quản lý vai trò PDA",
+      "add": "Thêm vai trò",
+      "addTitle": "Thêm vai trò PDA",
+      "editTitle": "Sửa vai trò PDA",
+      "deleteTitle": "Xóa vai trò PDA",
+      "deleteMsg": "Bạn có chắc muốn xóa vai trò '{{name}}'?",
+      "code": "Mã vai trò",
+      "name": "Tên vai trò",
+      "namePlaceholder": "VD: PDA Quản lý vật tư",
+      "description": "Mô tả",
+      "descPlaceholder": "Nhập mô tả cho vai trò này",
+      "menuCount": "Số menu",
+      "menuPermissions": "Quyền menu PDA",
+      "empty": "Không có vai trò PDA nào được đăng ký."
     },
     "commConfig": {
       "title": "Cài đặt truyền thông",
@@ -4188,6 +4209,26 @@
       "HI_POT": "Chịu áp",
       "VISUAL": "Ngoại quan"
     },
+    "INSPECT_METHOD": {
+      "VISUAL": "Kiểm tra bằng mắt",
+      "MEASUREMENT": "Đo lường",
+      "FUNCTIONAL": "Kiểm tra chức năng",
+      "ELECTRICAL": "Kiểm tra điện",
+      "DESTRUCTIVE": "Kiểm tra phá hủy"
+    },
+    "SCRAP_REASON": {
+      "DAMAGE": "Hư hỏng",
+      "EXPIRY": "Hết hạn",
+      "QUALITY": "Lỗi chất lượng",
+      "SURPLUS": "Dư thừa",
+      "OBSOLETE": "Ngừng sản xuất",
+      "ETC": "Khác"
+    },
+    "BOM_SIDE": {
+      "N": "N/A",
+      "L": "Trái",
+      "R": "Phải"
+    },
     "IQC_TYPE": {
       "IQC": "Kiểm tra nhập kho",
       "PQC": "Kiểm tra quy trình",
@@ -4592,6 +4633,9 @@
     "DEFECT_DISPOSITION": "Loại xử lý lỗi",
     "INSPECT_RESULT": "Kết quả kiểm tra",
     "INSPECT_TYPE": "Loại kiểm tra",
+    "INSPECT_METHOD": "Phương pháp kiểm tra",
+    "SCRAP_REASON": "Lý do phế liệu",
+    "BOM_SIDE": "Phía BOM",
     "IQC_TYPE": "Loại kiểm tra IQC",
     "QUALITY_JUDGMENT": "Đánh giá chất lượng",
     "APPROVAL_STATUS": "Trạng thái phê duyệt",
@@ -4927,6 +4971,10 @@
     "network": {
       "offline": "Vui lòng kiểm tra kết nối mạng",
       "online": "Kết nối mạng đã được khôi phục"
+    },
+    "server": {
+      "error": "Kết nối máy chủ thất bại. Vui lòng thử lại sau.",
+      "retry": "Thử lại"
     }
   },
   "activityLog": {

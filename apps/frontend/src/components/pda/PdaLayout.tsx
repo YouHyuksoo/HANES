@@ -13,6 +13,7 @@
  */
 
 import NetworkStatusBanner from "./NetworkStatusBanner";
+import ServerStatusBanner from "./ServerStatusBanner";
 
 interface PdaLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,8 @@ export default function PdaLayout({ children }: PdaLayoutProps) {
       <main className="flex flex-col min-h-screen">
         {/* 네트워크 상태 배너 — 오프라인 시 빨간 배너, 복구 시 초록 배너 3초 표시 */}
         <NetworkStatusBanner />
+        {/* 서버 연결 오류 배너 — DB 타임아웃/503 등 감지 시 표시 */}
+        <ServerStatusBanner />
         {children}
       </main>
     </div>

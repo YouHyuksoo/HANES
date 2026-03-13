@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, ComCodeBadge, Modal } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 
 /** 심사 폼 데이터 */
@@ -156,10 +156,10 @@ export default function AuditFormPanel({ isOpen, editData, onClose, onSave }: Pr
           onChange={(e) => setField("auditScope", e.target.value)} fullWidth />
 
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("quality.audit.auditor")} value={form.auditor}
-            onChange={(e) => setField("auditor", e.target.value)} fullWidth />
-          <Input label={t("quality.audit.coAuditor")} value={form.coAuditor}
-            onChange={(e) => setField("coAuditor", e.target.value)} fullWidth />
+          <WorkerSelect label={t("quality.audit.auditor")} value={form.auditor}
+            onChange={(v) => setField("auditor", v)} fullWidth />
+          <WorkerSelect label={t("quality.audit.coAuditor")} value={form.coAuditor}
+            onChange={(v) => setField("coAuditor", v)} fullWidth />
         </div>
 
         <Input label={t("quality.audit.scheduledDate")} type="date"

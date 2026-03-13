@@ -270,6 +270,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "SYS_DEPT", labelKey: "menu.system.department", path: "/system/department" },
       { code: "SYS_USER", labelKey: "menu.system.users", path: "/system/users" },
       { code: "SYS_ROLE", labelKey: "menu.system.roles", path: "/system/roles" },
+      { code: "SYS_PDA_ROLE", labelKey: "menu.system.pdaRoles", path: "/system/pda-roles" },
       { code: "SYS_COMM", labelKey: "menu.system.commConfig", path: "/system/comm-config" },
       { code: "SYS_CONFIG", labelKey: "menu.system.config", path: "/system/config" },
       { code: "SYS_CODE", labelKey: "menu.master.code", path: "/master/code" },

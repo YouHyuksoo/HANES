@@ -14,6 +14,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Minus } from "lucide-react";
 import { Modal, Button, Input, Select } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface JobOrderOption {
@@ -140,8 +141,9 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
             value={form.inspectDate} onChange={e => setForm(p => ({ ...p, inspectDate: e.target.value }))} fullWidth />
           <Input label={t("production.sampleInspect.inspector")}
             value={form.inspectorName} onChange={e => setForm(p => ({ ...p, inspectorName: e.target.value }))} fullWidth />
-          <Input label={t("production.sampleInspect.inspectType")} placeholder={t("production.sampleInspect.inspectTypePlaceholder")}
-            value={form.inspectType} onChange={e => setForm(p => ({ ...p, inspectType: e.target.value }))} fullWidth />
+          <ComCodeSelect groupCode="INSPECT_TYPE" includeAll={false}
+            label={t("production.sampleInspect.inspectType")}
+            value={form.inspectType} onChange={v => setForm(p => ({ ...p, inspectType: v }))} fullWidth />
         </div>
 
         <div className="flex items-center justify-between">

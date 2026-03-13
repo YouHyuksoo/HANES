@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Modal } from "@/components/ui";
-import { ComCodeSelect, PartSearchModal } from "@/components/shared";
+import { ComCodeSelect, PartSearchModal, PartnerSelect } from "@/components/shared";
 import api from "@/services/api";
 import PpapElementChecklist from "./PpapElementChecklist";
 
@@ -133,13 +133,10 @@ export default function PpapFormPanel({ isOpen, editData, onClose, onSave }: Pro
           <Input label={t("quality.ppap.itemName")} value={form.itemName} readOnly fullWidth />
         </div>
 
-        {/* 고객코드 / 고객명 */}
-        <div className="grid grid-cols-2 gap-3">
-          <Input label={t("quality.ppap.customerCode")} value={form.customerCode}
-            onChange={e => setField("customerCode", e.target.value)} fullWidth disabled={isReadonly} />
-          <Input label={t("quality.ppap.customerName")} value={form.customerName}
-            onChange={e => setField("customerName", e.target.value)} fullWidth disabled={isReadonly} />
-        </div>
+        {/* 고객 */}
+        <PartnerSelect partnerType="CUSTOMER"
+          label={t("quality.ppap.customerCode")} value={form.customerCode}
+          onChange={v => setField("customerCode", v)} fullWidth disabled={isReadonly} />
 
         {/* PPAP 레벨 / 사유 */}
         <div className="grid grid-cols-2 gap-3">

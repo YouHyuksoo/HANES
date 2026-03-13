@@ -64,6 +64,18 @@ export type InspectResultValue = typeof INSPECT_RESULT_VALUES[number];
 export const INSPECT_TYPE_VALUES = ['CONTINUITY', 'INSULATION', 'HI_POT', 'VISUAL'] as const;
 export type InspectTypeValue = typeof INSPECT_TYPE_VALUES[number];
 
+// ===== 검사 방법 =====
+export const INSPECT_METHOD_VALUES = ['VISUAL', 'MEASUREMENT', 'FUNCTIONAL', 'ELECTRICAL', 'DESTRUCTIVE'] as const;
+export type InspectMethodValue = typeof INSPECT_METHOD_VALUES[number];
+
+// ===== 폐기 사유 =====
+export const SCRAP_REASON_VALUES = ['DAMAGE', 'EXPIRY', 'QUALITY', 'SURPLUS', 'OBSOLETE', 'ETC'] as const;
+export type ScrapReasonValue = typeof SCRAP_REASON_VALUES[number];
+
+// ===== BOM 사이드 =====
+export const BOM_SIDE_VALUES = ['N', 'L', 'R'] as const;
+export type BomSideValue = typeof BOM_SIDE_VALUES[number];
+
 // ===== 품질 판정 =====
 export const QUALITY_JUDGMENT_VALUES = ['PASS', 'FAIL', 'PENDING', 'CONDITIONAL'] as const;
 export type QualityJudgmentValue = typeof QUALITY_JUDGMENT_VALUES[number];

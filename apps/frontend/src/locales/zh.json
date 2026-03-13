@@ -42,6 +42,8 @@
     "description": "描述",
     "active": "启用",
     "inactive": "停用",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
     "includeZero": "包含零库存",
     "vsYesterday": "较昨日",
     "count": "件",
@@ -288,6 +290,7 @@
     "system.commConfig": "通信设置管理",
     "system.config": "系统设置",
     "system.roles": "角色管理",
+    "system.pdaRoles": "PDA角色管理",
     "system.document": "文档管理",
     "system.training": "培训管理"
   },
@@ -644,7 +647,9 @@
       "roleOperator": "操作员",
       "roleViewer": "查看者",
       "statusActive": "启用",
-      "statusInactive": "停用"
+      "statusInactive": "停用",
+      "pdaRole": "PDA角色",
+      "pdaRoleNone": "未分配"
     },
     "roles": {
       "title": "角色管理",
@@ -669,6 +674,22 @@
       "selectAll": "全选",
       "deselectAll": "取消全选",
       "codeFormatHint": "仅允许大写字母和下划线"
+    },
+    "pdaRoles": {
+      "title": "PDA角色管理",
+      "add": "添加角色",
+      "addTitle": "添加PDA角色",
+      "editTitle": "编辑PDA角色",
+      "deleteTitle": "删除PDA角色",
+      "deleteMsg": "确定要删除角色'{{name}}'吗？",
+      "code": "角色代码",
+      "name": "角色名称",
+      "namePlaceholder": "例如：PDA物料管理员",
+      "description": "描述",
+      "descPlaceholder": "请输入角色描述",
+      "menuCount": "菜单数",
+      "menuPermissions": "PDA菜单权限",
+      "empty": "没有注册的PDA角色。"
     },
     "commConfig": {
       "title": "通信设置",
@@ -4188,6 +4209,26 @@
       "HI_POT": "耐压",
       "VISUAL": "外观"
     },
+    "INSPECT_METHOD": {
+      "VISUAL": "目视检查",
+      "MEASUREMENT": "测量检查",
+      "FUNCTIONAL": "功能检查",
+      "ELECTRICAL": "电气检查",
+      "DESTRUCTIVE": "破坏检查"
+    },
+    "SCRAP_REASON": {
+      "DAMAGE": "损坏",
+      "EXPIRY": "过期",
+      "QUALITY": "质量不良",
+      "SURPLUS": "过剩库存",
+      "OBSOLETE": "停产",
+      "ETC": "其他"
+    },
+    "BOM_SIDE": {
+      "N": "N/A",
+      "L": "左",
+      "R": "右"
+    },
     "IQC_TYPE": {
       "IQC": "进货检验",
       "PQC": "过程检验",
@@ -4592,6 +4633,9 @@
     "DEFECT_DISPOSITION": "不良处理类型",
     "INSPECT_RESULT": "检查结果",
     "INSPECT_TYPE": "检查类型",
+    "INSPECT_METHOD": "检查方法",
+    "SCRAP_REASON": "报废原因",
+    "BOM_SIDE": "BOM侧",
     "IQC_TYPE": "IQC检查类型",
     "QUALITY_JUDGMENT": "品质判定",
     "APPROVAL_STATUS": "审批状态",
@@ -4927,6 +4971,10 @@
     "network": {
       "offline": "请检查网络连接",
       "online": "网络连接已恢复"
+    },
+    "server": {
+      "error": "服务器连接失败，请稍后重试。",
+      "retry": "重试"
     }
   },
   "activityLog": {

@@ -94,7 +94,7 @@ export default function ProductInventoryCountPage() {
   if (isLoadingSession) {
     return (
       <>
-        <PdaHeader titleKey="pda.productInvCount.title" backPath="/pda/product/menu" />
+        <PdaHeader titleKey="pda.productInvCount.title" backPath="/pda/menu" />
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -109,7 +109,7 @@ export default function ProductInventoryCountPage() {
   if (noActiveInv) {
     return (
       <>
-        <PdaHeader titleKey="pda.productInvCount.title" backPath="/pda/product/menu" />
+        <PdaHeader titleKey="pda.productInvCount.title" backPath="/pda/menu" />
         <div className="mx-4 mt-8 p-8 rounded-2xl border-2 border-dashed border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/20">
           <div className="text-center">
             <AlertTriangle className="w-12 h-12 text-amber-400 dark:text-amber-500 mx-auto mb-3" />
@@ -128,7 +128,7 @@ export default function ProductInventoryCountPage() {
   /* ─── 메인 UI ─── */
   return (
     <>
-      <PdaHeader titleKey="pda.productInvCount.title" backPath="/pda/product/menu" />
+      <PdaHeader titleKey="pda.productInvCount.title" backPath="/pda/menu" />
 
       {/* 실사 정보 헤더 */}
       {session && (

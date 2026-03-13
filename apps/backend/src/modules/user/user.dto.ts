@@ -47,6 +47,11 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   photoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'PDA 역할 코드' })
+  @IsOptional()
+  @IsString()
+  pdaRoleCode?: string;
 }
 
 export class UpdateUserDto {
@@ -85,4 +90,9 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   photoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'PDA 역할 코드' })
+  @IsOptional()
+  @IsString()
+  pdaRoleCode?: string;
 }

@@ -98,15 +98,15 @@ export class InventoryFreezeGuard implements CanActivate {
       FROM PHYSICAL_INV_SESSIONS
       WHERE STATUS = 'IN_PROGRESS'
     `;
-    const params: Record<string, string> = {};
+    const params: string[] = [];
 
     if (company) {
-      sql += ` AND (COMPANY = :company OR COMPANY IS NULL)`;
-      params.company = company;
+      params.push(company);
+      sql += ` AND (COMPANY = :${params.length} OR COMPANY IS NULL)`;
     }
     if (plant) {
-      sql += ` AND (PLANT_CD = :plant OR PLANT_CD IS NULL)`;
-      params.plant = plant;
+      params.push(plant);
+      sql += ` AND (PLANT_CD = :${params.length} OR PLANT_CD IS NULL)`;
     }
 
     const result = await this.dataSource.query(sql, params);

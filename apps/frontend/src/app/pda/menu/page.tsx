@@ -28,10 +28,14 @@ export default function PdaMenuPage() {
   const { user, selectedCompany, selectedPlant, pdaAllowedMenus } =
     useAuthStore();
 
-  // menuCode 없는 항목은 항상 표시, menuCode 있는 항목은 pdaAllowedMenus에 있을 때만 표시
-  const visibleItems = pdaMainMenuItems.filter(
-    (item) => !item.menuCode || pdaAllowedMenus.includes(item.menuCode)
-  );
+  const isAdmin = user?.role === "ADMIN";
+
+  // ADMIN이면 전체 메뉴 표시, 일반 사용자는 pdaAllowedMenus 기반 필터링
+  const visibleItems = isAdmin
+    ? pdaMainMenuItems
+    : pdaMainMenuItems.filter(
+        (item) => !item.menuCode || pdaAllowedMenus.includes(item.menuCode)
+      );
 
   return (
     <>

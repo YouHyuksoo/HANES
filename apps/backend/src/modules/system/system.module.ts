@@ -31,6 +31,8 @@ import { TrainingResult } from '../../entities/training-result.entity';
 import { DocumentController } from './controllers/document.controller';
 import { DocumentService } from './services/document.service';
 import { DocumentMaster } from '../../entities/document-master.entity';
+import { PdaRoleController } from './controllers/pda-role.controller';
+import { PdaRoleService } from './services/pda-role.service';
 import { PdaRole } from '../../entities/pda-role.entity';
 import { PdaRoleMenu } from '../../entities/pda-role-menu.entity';
 
@@ -53,6 +55,7 @@ import { PdaRoleMenu } from '../../entities/pda-role-menu.entity';
     ActivityLogController,
     TrainingController,
     DocumentController,
+    PdaRoleController,
   ],
   providers: [
     CommConfigService,
@@ -61,6 +64,7 @@ import { PdaRoleMenu } from '../../entities/pda-role-menu.entity';
     ActivityLogService,
     TrainingService,
     DocumentService,
+    PdaRoleService,
   ],
   exports: [
     CommConfigService,
@@ -68,6 +72,7 @@ import { PdaRoleMenu } from '../../entities/pda-role-menu.entity';
     ActivityLogService,
     TrainingService,
     DocumentService,
+    PdaRoleService,
   ],
 })
 export class SystemModule {}

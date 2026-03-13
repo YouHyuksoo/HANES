@@ -29,8 +29,14 @@ interface User {
   role: string;
   status: string;
   photoUrl: string | null;
+  pdaRoleCode: string | null;
   lastLoginAt: string | null;
   createdAt: string;
+}
+
+interface PdaRoleOption {
+  code: string;
+  name: string;
 }
 
 // 이미지 크롭 모달
@@ -259,6 +265,8 @@ function UserPage() {
   const [formDept, setFormDept] = useState('');
   const [formRole, setFormRole] = useState('OPERATOR');
   const [formStatus, setFormStatus] = useState('ACTIVE');
+  const [formPdaRoleCode, setFormPdaRoleCode] = useState('');
+  const [pdaRoleOptions, setPdaRoleOptions] = useState<PdaRoleOption[]>([]);
   const [formError, setFormError] = useState('');
 
   const fetchUsers = useCallback(async () => {
@@ -278,6 +286,17 @@ function UserPage() {
     fetchUsers();
   }, [fetchUsers]);
 
+  /** PDA 역할 목록 로드 (Select 옵션용) */
+  useEffect(() => {
+    api
+      .get('/system/pda-roles/active')
+      .then((res) => {
+        const data = res.data?.data ?? res.data;
+        setPdaRoleOptions(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setPdaRoleOptions([]));
+  }, []);
+
   const openCreateModal = () => {
     setEditingUser(null);
     setFormEmail('');
@@ -287,6 +306,7 @@ function UserPage() {
     setFormDept('');
     setFormRole('OPERATOR');
     setFormStatus('ACTIVE');
+    setFormPdaRoleCode('');
     setFormError('');
     setCroppedImage(null);
     setPreviewUrl('');
@@ -302,6 +322,7 @@ function UserPage() {
     setFormDept(user.dept || '');
     setFormRole(user.role);
     setFormStatus(user.status);
+    setFormPdaRoleCode(user.pdaRoleCode || '');
     setFormError('');
     setCroppedImage(null);
     setPreviewUrl(user.photoUrl || '');
@@ -348,13 +369,15 @@ function UserPage() {
     try {
       if (editingUser) {
         // 수정
-        const data: Record<string, string> = {};
+        const data: Record<string, string | null> = {};
         if (formName !== (editingUser.name || '')) data.name = formName;
         if (formEmpNo !== (editingUser.empNo || '')) data.empNo = formEmpNo;
         if (formDept !== (editingUser.dept || '')) data.dept = formDept;
         if (formRole !== editingUser.role) data.role = formRole;
         if (formStatus !== editingUser.status) data.status = formStatus;
         if (formPassword) data.password = formPassword;
+        if (formPdaRoleCode !== (editingUser.pdaRoleCode || ''))
+          data.pdaRoleCode = formPdaRoleCode || null;
 
         // 일반 데이터 먼저 업데이트
         await api.patch(`/users/${editingUser.id}`, data);
@@ -381,6 +404,7 @@ function UserPage() {
           empNo: formEmpNo || undefined,
           dept: formDept || undefined,
           role: formRole,
+          pdaRoleCode: formPdaRoleCode || undefined,
         });
 
         // 사진 업로드 (TransformInterceptor로 인해 data.data 구조 사용)
@@ -650,6 +674,16 @@ function UserPage() {
               />
             )}
           </div>
+          <Select
+            label={t('system.users.pdaRole')}
+            value={formPdaRoleCode}
+            onChange={(value) => setFormPdaRoleCode(value)}
+            options={[
+              { value: '', label: t('system.users.pdaRoleNone') },
+              ...pdaRoleOptions.map((r) => ({ value: r.code, label: r.name })),
+            ]}
+            fullWidth
+          />
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
               {t('common.cancel')}

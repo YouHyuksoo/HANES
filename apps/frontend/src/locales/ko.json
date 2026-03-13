@@ -42,6 +42,8 @@
     "description": "설명",
     "active": "활성",
     "inactive": "비활성",
+    "selectAll": "전체 선택",
+    "deselectAll": "전체 해제",
     "includeZero": "재고 0 포함",
     "vsYesterday": "전일 대비",
     "count": "건",
@@ -289,6 +291,8 @@
     "system.commConfig": "통신설정관리",
     "system.config": "환경설정",
     "system.roles": "역할관리",
+    "system.pdaRoles": "PDA 역할관리",
+    "system.pdaRoles": "PDA 역할관리",
     "system.document": "문서관리",
     "system.training": "교육훈련"
   },
@@ -645,7 +649,9 @@
       "roleOperator": "작업자",
       "roleViewer": "조회자",
       "statusActive": "활성",
-      "statusInactive": "비활성"
+      "statusInactive": "비활성",
+      "pdaRole": "PDA 역할",
+      "pdaRoleNone": "미지정"
     },
     "roles": {
       "title": "역할 관리",
@@ -670,6 +676,22 @@
       "selectAll": "전체 선택",
       "deselectAll": "전체 해제",
       "codeFormatHint": "영문 대문자와 언더스코어만 입력 가능합니다"
+    },
+    "pdaRoles": {
+      "title": "PDA 역할 관리",
+      "add": "역할 추가",
+      "addTitle": "PDA 역할 추가",
+      "editTitle": "PDA 역할 수정",
+      "deleteTitle": "PDA 역할 삭제",
+      "deleteMsg": "'{{name}}' 역할을 삭제하시겠습니까?",
+      "code": "역할 코드",
+      "name": "역할 이름",
+      "namePlaceholder": "예: PDA 자재담당",
+      "description": "설명",
+      "descPlaceholder": "역할에 대한 설명을 입력하세요",
+      "menuCount": "메뉴 수",
+      "menuPermissions": "PDA 메뉴 권한",
+      "empty": "등록된 PDA 역할이 없습니다."
     },
     "commConfig": {
       "title": "통신설정",
@@ -4207,6 +4229,26 @@
       "HI_POT": "내압",
       "VISUAL": "외관"
     },
+    "INSPECT_METHOD": {
+      "VISUAL": "육안검사",
+      "MEASUREMENT": "계측검사",
+      "FUNCTIONAL": "기능검사",
+      "ELECTRICAL": "전기검사",
+      "DESTRUCTIVE": "파괴검사"
+    },
+    "SCRAP_REASON": {
+      "DAMAGE": "파손/손상",
+      "EXPIRY": "유효기한 초과",
+      "QUALITY": "품질불량",
+      "SURPLUS": "과잉재고",
+      "OBSOLETE": "단종/폐번",
+      "ETC": "기타"
+    },
+    "BOM_SIDE": {
+      "N": "N/A",
+      "L": "좌(Left)",
+      "R": "우(Right)"
+    },
     "IQC_TYPE": {
       "IQC": "수입검사",
       "PQC": "공정검사",
@@ -4611,6 +4653,9 @@
     "DEFECT_DISPOSITION": "불량 처리 유형",
     "INSPECT_RESULT": "검사 결과",
     "INSPECT_TYPE": "검사 유형",
+    "INSPECT_METHOD": "검사 방법",
+    "SCRAP_REASON": "폐기 사유",
+    "BOM_SIDE": "BOM 사이드",
     "IQC_TYPE": "IQC 검사 유형",
     "QUALITY_JUDGMENT": "품질 판정",
     "APPROVAL_STATUS": "승인 상태",
@@ -4946,6 +4991,10 @@
     "network": {
       "offline": "네트워크 연결을 확인하세요",
       "online": "네트워크가 복구되었습니다"
+    },
+    "server": {
+      "error": "서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.",
+      "retry": "다시 시도"
     }
   },
   "activityLog": {

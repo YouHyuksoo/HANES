@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { LineSelect, ComCodeSelect } from "@/components/shared";
+import { LineSelect, ComCodeSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface CapaFormData {
@@ -148,8 +148,8 @@ export default function CapaFormPanel({ editData, onClose, onSave }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <Input label={t("quality.capa.itemCode")} value={form.itemCode}
             onChange={e => setField("itemCode", e.target.value)} fullWidth />
-          <Input label={t("quality.capa.responsible")} value={form.responsibleCode}
-            onChange={e => setField("responsibleCode", e.target.value)} fullWidth />
+          <WorkerSelect label={t("quality.capa.responsible")} value={form.responsibleCode}
+            onChange={v => setField("responsibleCode", v)} fullWidth />
         </div>
 
         {/* 라인 / 목표완료일 */}

@@ -12,7 +12,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
-import { WorkerSelect } from "@/components/shared";
+import { WorkerSelect, ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
 export interface InspectTarget {
@@ -100,8 +100,9 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
         {/* 검사자/방법 */}
         <WorkerSelect label={t("quality.rework.inspectorCode")} value={form.inspectorCode}
           onChange={v => setForm(p => ({ ...p, inspectorCode: v }))} fullWidth />
-        <Input label={t("quality.rework.inspectMethod")} value={form.inspectMethod}
-          onChange={e => setForm(p => ({ ...p, inspectMethod: e.target.value }))} fullWidth />
+        <ComCodeSelect groupCode="INSPECT_METHOD" includeAll={false}
+          label={t("quality.rework.inspectMethod")} value={form.inspectMethod}
+          onChange={v => setForm(p => ({ ...p, inspectMethod: v }))} fullWidth />
 
         {/* 검사 결과 */}
         <div>

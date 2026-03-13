@@ -48,6 +48,7 @@ export class UserService {
         'role',
         'status',
         'photoUrl',
+        'pdaRoleCode',
         'lastLoginAt',
         'createdAt',
       ],
@@ -67,6 +68,7 @@ export class UserService {
         'role',
         'status',
         'photoUrl',
+        'pdaRoleCode',
         'lastLoginAt',
         'createdAt',
         'updatedAt',
@@ -97,6 +99,7 @@ export class UserService {
       empNo: dto.empNo,
       dept: dto.dept,
       role: dto.role || 'OPERATOR',
+      pdaRoleCode: dto.pdaRoleCode ?? null,
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -112,6 +115,7 @@ export class UserService {
       role: savedUser.role,
       status: savedUser.status,
       photoUrl: savedUser.photoUrl,
+      pdaRoleCode: savedUser.pdaRoleCode,
       createdAt: savedUser.createdAt,
     };
   }
@@ -132,6 +136,7 @@ export class UserService {
         'role',
         'status',
         'photoUrl',
+        'pdaRoleCode',
         'createdAt',
         'updatedAt',
       ],

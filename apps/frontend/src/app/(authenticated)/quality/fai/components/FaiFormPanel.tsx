@@ -14,7 +14,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { LineSelect, ComCodeSelect } from "@/components/shared";
+import { LineSelect, ComCodeSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface FaiFormData {
@@ -143,8 +143,8 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
         <Input label={t("quality.fai.sampleQty")} type="number" value={form.sampleQty}
           onChange={(e) => setField("sampleQty", e.target.value)} fullWidth />
 
-        <Input label={t("quality.fai.inspectorCode")} value={form.inspectorCode}
-          onChange={(e) => setField("inspectorCode", e.target.value)} fullWidth />
+        <WorkerSelect label={t("quality.fai.inspectorCode")} value={form.inspectorCode}
+          onChange={(v) => setField("inspectorCode", v)} fullWidth />
 
         <Input label={t("quality.fai.orderNo", "작업지시")} value={form.orderNo}
           onChange={(e) => setField("orderNo", e.target.value)} fullWidth />

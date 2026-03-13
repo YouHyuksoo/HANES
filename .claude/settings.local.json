@@ -108,7 +108,9 @@
       "Read(//c/Project/HANES/apps/frontend/src/locales/**)",
       "Bash(for key:*)",
       "Bash(__NEW_LINE_47d4d24dc8bc7ecf__ for:*)",
-      "Bash(__NEW_LINE_47d4d24dc8bc7ecf__ done:*)"
+      "Bash(__NEW_LINE_47d4d24dc8bc7ecf__ done:*)",
+      "Bash(ls apps/frontend/src/app/\\\\\\(authenticated\\\\\\)/system/)",
+      "Bash(ls -la \"C:/Project/HANES/apps/frontend/src/app/\\(authenticated\\)/\" | head -20)"
     ]
   }
 }
