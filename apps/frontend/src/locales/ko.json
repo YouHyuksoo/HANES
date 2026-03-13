@@ -254,6 +254,7 @@
     "equipment.inspectHistory": "점검이력조회",
     "equipment.mold": "금형관리",
     "equipment.moldMgmt": "금형관리(신규)",
+    "equipment.gauge": "계측기 마스터",
     "shipping": "출하관리",
     "shipping.pack": "제품포장관리",
     "shipping.pallet": "팔레트적재관리",
@@ -1166,6 +1167,24 @@
       "noRoutingData": "라우팅 데이터가 없습니다",
       "routingViewTarget": "라우팅 조회 대상",
       "viewAllRouting": "전체 라우팅 보기"
+    },
+    "gauge": {
+      "title": "계측기 마스터",
+      "subtitle": "계측기 정보를 등록하고 교정 주기를 관리합니다.",
+      "gaugeCode": "계측기코드",
+      "gaugeName": "계측기명",
+      "gaugeType": "유형",
+      "manufacturer": "제조사",
+      "model": "모델",
+      "serialNo": "시리얼번호",
+      "measureRange": "측정범위",
+      "resolution": "분해능",
+      "calibrationCycle": "교정주기",
+      "months": "개월",
+      "lastCalibrationDate": "최종교정일",
+      "nextCalibrationDate": "차기교정일",
+      "location": "보관위치",
+      "responsiblePerson": "담당자"
     },
     "equip": {
       "title": "설비마스터",
@@ -4814,6 +4833,11 @@
       "systemQty": "시스템 수량",
       "countedQty": "실사 수량"
     },
+    "productInv": {
+      "noActive": "진행 중인 제품실사가 없습니다",
+      "startOnPc": "PC에서 실사를 시작하세요",
+      "scanProduct": "제품 바코드 스캔"
+    },
     "shipping": {
       "title": "출하등록",
       "scanBarcode": "출하 바코드를 스캔하세요",
@@ -4831,7 +4855,13 @@
       "shipFailed": "출하등록에 실패했습니다",
       "duplicateBarcode": "이미 스캔된 바코드입니다",
       "orderLoaded": "출하지시가 로드되었습니다",
-      "itemScanned": "제품 바코드가 스캔되었습니다"
+      "itemScanned": "제품 바코드가 스캔되었습니다",
+      "scanOrder": "출하지시 바코드를 스캔하세요",
+      "scanWorker": "작업자 QR을 스캔하세요",
+      "scanProduct": "제품을 스캔하세요",
+      "wrongItem": "출하지시와 다른 품목입니다",
+      "overQty": "출하 수량을 초과했습니다",
+      "palletAdded": "팔레트 일괄 추가됨"
     },
     "productInvCount": {
       "title": "제품 재고실사",
@@ -4879,7 +4909,10 @@
       "noItems": "점검항목이 없습니다",
       "itemCount": "{{current}} / {{total}} 항목 완료",
       "inspectHistory": "점검 이력",
-      "itemUnit": "건"
+      "itemUnit": "건",
+      "ngReason": "NG 사유",
+      "alreadyDone": "이미 점검 완료된 설비입니다. 재점검 이력이 추가됩니다",
+      "interlock": "해당 설비가 사용 차단(인터락) 처리되었습니다"
     },
     "settings": {
       "title": "PDA 설정",

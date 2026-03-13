@@ -1,113 +1,155 @@
 /**
  * @file src/hooks/pda/useShippingScan.ts
- * @description 출하등록 스캔 플로우 훅 - 출하지시 바코드 스캔 → 제품 바코드 스캔 → 출하 확인
+ * @description 출하등록 3-Phase 스캔 워크플로우 훅
  *
  * 초보자 가이드:
- * 1. handleScan(barcode): 첫 스캔은 출하지시 바코드 → 이후 제품 바코드 추가
- * 2. handleConfirmShip(): 스캔된 제품 바코드 목록으로 출하등록 API 호출
- * 3. handleReset(): 스캔 데이터 전체 초기화 (다음 출하지시 준비)
- * 4. scannedOrder: 출하지시 데이터 (첫 스캔 후 세팅)
- * 5. scannedItems: 제품 바코드 목록 (중복 방지 포함)
+ * Phase 1 (SCAN_SHIPMENT_ORDER): 출하지시 바코드 → GET /shipping/orders/by-barcode/:barcode
+ * Phase 2 (SCAN_WORKER): 작업자 QR → GET /master/workers/by-qr/:qr → Phase 3 전환
+ * Phase 3 (SCAN_PRODUCT): 박스/팔레트 반복 스캔
+ *   - PLT- 접두사: GET /shipping/pallets/barcode/:barcode/boxes → 하위 박스 일괄 추가
+ *   - 일반 박스: GET /shipping/boxes/box-no/:barcode → 단건 추가
+ *   - 품목 불일치(WRONG_ITEM), 수량 초과(OVER_QTY), 중복(DUPLICATE) → 차단
+ * 출하확인: POST /shipping/register (부분출하 허용)
+ *
+ * 타입은 useShippingScan.types.ts 참조
  */
 import { useState, useCallback } from "react";
 import { api } from "@/services/api";
+import type {
+  ShippingPhase,
+  ShipOrderData,
+  ScannedShipItem,
+  WorkerInfo,
+  ShipHistoryItem,
+  PalletBoxesResponse,
+  BoxResponse,
+  WorkerQrResponse,
+  UseShippingScanReturn,
+} from "./useShippingScan.types";
 
-/** 서버에서 받아오는 출하지시 데이터 */
-export interface ShipOrderData {
-  id: string;
-  shipOrderNo: string;
-  customerName: string;
-  itemCode: string;
-  itemName: string;
-  orderQty: number;
-}
+export type {
+  ShippingPhase,
+  ShipOrderData,
+  ScannedShipItem,
+  WorkerInfo,
+  ShipHistoryItem,
+} from "./useShippingScan.types";
 
-/** 스캔된 제품 바코드 항목 */
-export interface ScannedShipItem {
-  barcode: string;
-  scannedAt: string;
-}
+// ── 내부 헬퍼 ─────────────────────────────────────────
 
-/** 출하 완료 이력 항목 */
-export interface ShipHistoryItem {
-  shipOrderNo: string;
-  customerName: string;
-  itemCode: string;
-  scannedQty: number;
-  timestamp: string;
-}
+/** PLT- 접두사로 팔레트 여부 판단 */
+const isPalletBarcode = (barcode: string) =>
+  barcode.toUpperCase().startsWith("PLT-");
 
-interface UseShippingScanReturn {
-  scannedOrder: ShipOrderData | null;
-  scannedItems: ScannedShipItem[];
-  isScanning: boolean;
-  isConfirming: boolean;
-  error: string | null;
-  history: ShipHistoryItem[];
-  handleScan: (barcode: string) => Promise<void>;
-  handleConfirmShip: () => Promise<boolean>;
-  handleReset: () => void;
-}
+/** API 에러 메시지 추출 */
+const extractErrMsg = (err: unknown, fallback: string): string =>
+  (err as { response?: { data?: { message?: string } } })?.response?.data
+    ?.message ?? fallback;
+
+// ── 훅 구현 ───────────────────────────────────────────
 
 /**
- * 출하등록 스캔 훅
+ * 출하등록 3-Phase 스캔 훅
  *
- * 플로우:
- * 1. 출하지시 바코드 스캔 → handleScan → 서버 조회 → scannedOrder 세팅
- * 2. 제품 바코드 스캔 → handleScan → scannedItems에 추가 (중복 시 에러)
- * 3. handleConfirmShip → 출하 등록 API 호출 → history에 추가
- * 4. handleReset → 다음 출하지시 준비
+ * SCAN_SHIPMENT_ORDER → SCAN_WORKER → SCAN_PRODUCT → 출하확인 → 리셋
  */
 export function useShippingScan(): UseShippingScanReturn {
+  const [phase, setPhase] = useState<ShippingPhase>("SCAN_SHIPMENT_ORDER");
   const [scannedOrder, setScannedOrder] = useState<ShipOrderData | null>(null);
+  const [worker, setWorker] = useState<WorkerInfo | null>(null);
   const [scannedItems, setScannedItems] = useState<ScannedShipItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<ShipHistoryItem[]>([]);
 
-  /** 바코드 스캔 처리 (출하지시 or 제품 바코드) */
-  const handleScan = useCallback(
-    async (barcode: string) => {
-      setError(null);
+  const scannedQty = scannedItems.reduce((sum, i) => sum + i.qty, 0);
+  const orderQty = scannedOrder?.orderQty ?? 0;
+  const progress = orderQty > 0 ? Math.min(scannedQty / orderQty, 1) : 0;
 
-      // 출하지시가 아직 없으면 → 출하지시 바코드 조회
-      if (!scannedOrder) {
-        setIsScanning(true);
-        try {
-          const { data } = await api.get<ShipOrderData>(
-            `/shipping/orders/by-barcode/${encodeURIComponent(barcode)}`,
-          );
-          setScannedOrder(data);
-        } catch (err: unknown) {
-          const message =
-            (err as { response?: { data?: { message?: string } } })?.response
-              ?.data?.message || "SCAN_FAILED";
-          setError(message);
-        } finally {
-          setIsScanning(false);
-        }
-        return;
-      }
+  // ── Phase 1 ───────────────────────────────────────────
 
-      // 출하지시가 이미 있으면 → 제품 바코드 추가
-      const isDuplicate = scannedItems.some(
-        (item) => item.barcode === barcode,
+  const handleScanShipOrder = useCallback(async (barcode: string): Promise<void> => {
+    if (!barcode.trim()) return;
+    setIsScanning(true);
+    setError(null);
+    try {
+      const { data } = await api.get<ShipOrderData>(
+        `/shipping/orders/by-barcode/${encodeURIComponent(barcode.trim())}`,
       );
-      if (isDuplicate) {
-        setError("DUPLICATE_BARCODE");
-        return;
-      }
+      setScannedOrder(data);
+      setPhase("SCAN_WORKER");
+    } catch (err) {
+      setError(extractErrMsg(err, "ORDER_NOT_FOUND"));
+    } finally {
+      setIsScanning(false);
+    }
+  }, []);
 
-      setScannedItems((prev) => [
-        { barcode, scannedAt: new Date().toLocaleTimeString() },
-        ...prev,
-      ]);
+  // ── Phase 2 ───────────────────────────────────────────
+
+  const handleScanWorker = useCallback(async (qr: string): Promise<void> => {
+    if (!qr.trim()) return;
+    setIsScanning(true);
+    setError(null);
+    try {
+      const { data } = await api.get<WorkerQrResponse>(
+        `/master/workers/by-qr/${encodeURIComponent(qr.trim())}`,
+      );
+      setWorker({ id: data.id, workerNo: data.workerNo, workerName: data.workerName });
+      setPhase("SCAN_PRODUCT");
+    } catch (err) {
+      setError(extractErrMsg(err, "WORKER_NOT_FOUND"));
+    } finally {
+      setIsScanning(false);
+    }
+  }, []);
+
+  // ── Phase 3 ───────────────────────────────────────────
+
+  const handleScanProduct = useCallback(
+    async (barcode: string): Promise<void> => {
+      if (!barcode.trim() || !scannedOrder) return;
+      setIsScanning(true);
+      setError(null);
+      try {
+        if (isPalletBarcode(barcode)) {
+          // 팔레트 → 하위 박스 일괄 추가
+          const { data } = await api.get<PalletBoxesResponse>(
+            `/shipping/pallets/barcode/${encodeURIComponent(barcode.trim())}/boxes`,
+          );
+          const newItems: ScannedShipItem[] = [];
+          for (const box of data.boxes) {
+            if (box.itemCode !== scannedOrder.itemCode) { setError("WRONG_ITEM"); return; }
+            if (!scannedItems.some((i) => i.boxNo === box.boxNo)) {
+              newItems.push({ boxNo: box.boxNo, itemCode: box.itemCode, qty: box.qty, fromPallet: data.palletNo });
+            }
+          }
+          if (newItems.length === 0) return;
+          const afterQty = scannedQty + newItems.reduce((s, i) => s + i.qty, 0);
+          if (afterQty > scannedOrder.orderQty) { setError("OVER_QTY"); return; }
+          setScannedItems((prev) => [...newItems, ...prev]);
+        } else {
+          // 일반 박스
+          if (scannedItems.some((i) => i.boxNo === barcode.trim())) { setError("DUPLICATE"); return; }
+          const { data: box } = await api.get<BoxResponse>(
+            `/shipping/boxes/box-no/${encodeURIComponent(barcode.trim())}`,
+          );
+          if (box.itemCode !== scannedOrder.itemCode) { setError("WRONG_ITEM"); return; }
+          if (scannedQty + box.qty > scannedOrder.orderQty) { setError("OVER_QTY"); return; }
+          setScannedItems((prev) => [{ boxNo: box.boxNo, itemCode: box.itemCode, qty: box.qty }, ...prev]);
+        }
+      } catch (err) {
+        setError(extractErrMsg(err, "SCAN_FAILED"));
+      } finally {
+        setIsScanning(false);
+      }
     },
-    [scannedOrder, scannedItems],
+    [scannedOrder, scannedItems, scannedQty],
   );
 
-  /** 출하 확인 처리 */
+  // ── 출하 확인 ─────────────────────────────────────────
+
   const handleConfirmShip = useCallback(async (): Promise<boolean> => {
     if (!scannedOrder || scannedItems.length === 0) return false;
     setIsConfirming(true);
@@ -115,50 +157,47 @@ export function useShippingScan(): UseShippingScanReturn {
     try {
       await api.post("/shipping/register", {
         shipOrderId: scannedOrder.id,
-        items: scannedItems,
+        workerId: worker?.id,
+        items: scannedItems.map((i) => ({ boxNo: i.boxNo, qty: i.qty })),
       });
-      // 이력 추가 (최신 항목이 상단)
       setHistory((prev) => [
         {
           shipOrderNo: scannedOrder.shipOrderNo,
           customerName: scannedOrder.customerName,
           itemCode: scannedOrder.itemCode,
-          scannedQty: scannedItems.length,
+          scannedQty,
+          workerName: worker?.workerName ?? "-",
           timestamp: new Date().toLocaleTimeString(),
         },
         ...prev,
       ]);
-      // 상태 초기화
+      setPhase("SCAN_SHIPMENT_ORDER");
       setScannedOrder(null);
+      setWorker(null);
       setScannedItems([]);
       return true;
-    } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "CONFIRM_FAILED";
-      setError(message);
+    } catch (err) {
+      setError(extractErrMsg(err, "CONFIRM_FAILED"));
       return false;
     } finally {
       setIsConfirming(false);
     }
-  }, [scannedOrder, scannedItems]);
+  }, [scannedOrder, scannedItems, scannedQty, worker]);
 
-  /** 전체 초기화 */
+  // ── 초기화 ────────────────────────────────────────────
+
   const handleReset = useCallback(() => {
+    setPhase("SCAN_SHIPMENT_ORDER");
     setScannedOrder(null);
+    setWorker(null);
     setScannedItems([]);
     setError(null);
   }, []);
 
   return {
-    scannedOrder,
-    scannedItems,
-    isScanning,
-    isConfirming,
-    error,
-    history,
-    handleScan,
-    handleConfirmShip,
-    handleReset,
+    phase, scannedOrder, worker, scannedItems, scannedQty, progress,
+    isScanning, isConfirming, error, history,
+    handleScanShipOrder, handleScanWorker, handleScanProduct,
+    handleConfirmShip, handleReset,
   };
 }

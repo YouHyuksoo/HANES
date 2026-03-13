@@ -253,6 +253,7 @@
     "equipment.inspectHistory": "点检历史查询",
     "equipment.mold": "模具管理",
     "equipment.moldMgmt": "模具管理(新)",
+    "equipment.gauge": "量具主数据",
     "shipping": "出货管理",
     "shipping.pack": "包装管理",
     "shipping.pallet": "托盘装载管理",
@@ -864,6 +865,24 @@
       "effectiveDate": "基准日期",
       "validFrom": "生效日",
       "validTo": "失效日"
+    },
+    "gauge": {
+      "title": "量具主数据",
+      "subtitle": "登记和管理量具信息及校准周期。",
+      "gaugeCode": "量具编号",
+      "gaugeName": "量具名称",
+      "gaugeType": "类型",
+      "manufacturer": "制造商",
+      "model": "型号",
+      "serialNo": "序列号",
+      "measureRange": "测量范围",
+      "resolution": "分辨率",
+      "calibrationCycle": "校准周期",
+      "months": "个月",
+      "lastCalibrationDate": "最后校准日",
+      "nextCalibrationDate": "下次校准日",
+      "location": "存放位置",
+      "responsiblePerson": "负责人"
     },
     "equip": {
       "title": "设备主数据",
@@ -4795,6 +4814,11 @@
       "systemQty": "系统数量",
       "countedQty": "盘点数量"
     },
+    "productInv": {
+      "noActive": "没有进行中的产品盘点",
+      "startOnPc": "请在PC上开始盘点",
+      "scanProduct": "扫描产品条码"
+    },
     "shipping": {
       "title": "出货登记",
       "scanBarcode": "请扫描出货条码",
@@ -4812,7 +4836,13 @@
       "shipFailed": "出货登记失败",
       "duplicateBarcode": "该条码已扫描",
       "orderLoaded": "出货指示已加载",
-      "itemScanned": "产品条码已扫描"
+      "itemScanned": "产品条码已扫描",
+      "scanOrder": "请扫描出货指示",
+      "scanWorker": "请扫描操作员二维码",
+      "scanProduct": "请扫描产品",
+      "wrongItem": "品目与出货指示不符",
+      "overQty": "超出出货数量",
+      "palletAdded": "托盘已批量添加"
     },
     "productInvCount": {
       "title": "产品库存盘点",
@@ -4860,7 +4890,10 @@
       "noItems": "没有检查项目",
       "itemCount": "{{current}} / {{total}} 项完成",
       "inspectHistory": "检查记录",
-      "itemUnit": "项"
+      "itemUnit": "项",
+      "ngReason": "NG原因",
+      "alreadyDone": "已完成检查。将添加重新检查记录",
+      "interlock": "该设备已被联锁"
     },
     "settings": {
       "title": "PDA设置",

@@ -253,6 +253,7 @@
     "equipment.inspectHistory": "Lịch sử kiểm tra",
     "equipment.mold": "Quản lý khuôn",
     "equipment.moldMgmt": "Quản lý khuôn (mới)",
+    "equipment.gauge": "Quản lý dụng cụ đo",
     "shipping": "Quản lý xuất hàng",
     "shipping.pack": "Quản lý đóng gói",
     "shipping.pallet": "Quản lý xếp pallet",
@@ -864,6 +865,24 @@
       "effectiveDate": "Ngày cơ sở",
       "validFrom": "Ngày áp dụng",
       "validTo": "Ngày kết thúc"
+    },
+    "gauge": {
+      "title": "Quản lý dụng cụ đo",
+      "subtitle": "Đăng ký và quản lý thông tin dụng cụ đo và chu kỳ hiệu chuẩn.",
+      "gaugeCode": "Mã dụng cụ",
+      "gaugeName": "Tên dụng cụ",
+      "gaugeType": "Loại",
+      "manufacturer": "Nhà sản xuất",
+      "model": "Model",
+      "serialNo": "Số serial",
+      "measureRange": "Phạm vi đo",
+      "resolution": "Độ phân giải",
+      "calibrationCycle": "Chu kỳ hiệu chuẩn",
+      "months": "tháng",
+      "lastCalibrationDate": "Ngày HC cuối",
+      "nextCalibrationDate": "Ngày HC tiếp",
+      "location": "Vị trí lưu trữ",
+      "responsiblePerson": "Người phụ trách"
     },
     "equip": {
       "title": "Danh mục thiết bị",
@@ -4795,6 +4814,11 @@
       "systemQty": "Số lượng hệ thống",
       "countedQty": "Số lượng kiểm"
     },
+    "productInv": {
+      "noActive": "Không có kiểm kê sản phẩm đang tiến hành",
+      "startOnPc": "Bắt đầu kiểm kê trên PC",
+      "scanProduct": "Quét mã vạch sản phẩm"
+    },
     "shipping": {
       "title": "Đăng ký xuất hàng",
       "scanBarcode": "Quét mã vạch xuất hàng",
@@ -4812,7 +4836,13 @@
       "shipFailed": "Đăng ký xuất hàng thất bại",
       "duplicateBarcode": "Mã vạch đã quét",
       "orderLoaded": "Đã tải lệnh xuất hàng",
-      "itemScanned": "Đã quét mã vạch sản phẩm"
+      "itemScanned": "Đã quét mã vạch sản phẩm",
+      "scanOrder": "Quét lệnh xuất hàng",
+      "scanWorker": "Quét QR công nhân",
+      "scanProduct": "Quét sản phẩm",
+      "wrongItem": "Sản phẩm không khớp lệnh xuất",
+      "overQty": "Vượt quá số lượng xuất",
+      "palletAdded": "Đã thêm pallet"
     },
     "productInvCount": {
       "title": "Kiểm kê sản phẩm",
@@ -4860,7 +4890,10 @@
       "noItems": "Không có hạng mục kiểm tra",
       "itemCount": "{{current}} / {{total}} hạng mục hoàn thành",
       "inspectHistory": "Lịch sử kiểm tra",
-      "itemUnit": " hạng mục"
+      "itemUnit": " hạng mục",
+      "ngReason": "Lý do NG",
+      "alreadyDone": "Đã kiểm tra. Sẽ thêm bản ghi kiểm tra lại",
+      "interlock": "Thiết bị đã bị khóa liên động"
     },
     "settings": {
       "title": "Cài đặt PDA",

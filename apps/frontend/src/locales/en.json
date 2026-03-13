@@ -253,6 +253,7 @@
     "equipment.inspectHistory": "Inspect History",
     "equipment.mold": "Mold Management",
     "equipment.moldMgmt": "Mold Management (New)",
+    "equipment.gauge": "Gauge Master",
     "shipping": "Shipping",
     "shipping.pack": "Packing",
     "shipping.pallet": "Pallet Load Mgmt",
@@ -864,6 +865,24 @@
       "effectiveDate": "Effective Date",
       "validFrom": "Valid From",
       "validTo": "Valid To"
+    },
+    "gauge": {
+      "title": "Gauge Master",
+      "subtitle": "Register and manage gauge information and calibration cycles.",
+      "gaugeCode": "Gauge Code",
+      "gaugeName": "Gauge Name",
+      "gaugeType": "Type",
+      "manufacturer": "Manufacturer",
+      "model": "Model",
+      "serialNo": "Serial No.",
+      "measureRange": "Measure Range",
+      "resolution": "Resolution",
+      "calibrationCycle": "Cal. Cycle",
+      "months": "months",
+      "lastCalibrationDate": "Last Cal. Date",
+      "nextCalibrationDate": "Next Cal. Date",
+      "location": "Location",
+      "responsiblePerson": "Responsible"
     },
     "equip": {
       "title": "Equipment Master",
@@ -4795,6 +4814,11 @@
       "systemQty": "System Qty",
       "countedQty": "Counted Qty"
     },
+    "productInv": {
+      "noActive": "No active product inventory count",
+      "startOnPc": "Start inventory count on PC",
+      "scanProduct": "Scan Product Barcode"
+    },
     "shipping": {
       "title": "Shipping",
       "scanBarcode": "Scan shipping barcode",
@@ -4812,7 +4836,13 @@
       "shipFailed": "Shipping failed",
       "duplicateBarcode": "Barcode already scanned",
       "orderLoaded": "Ship order loaded",
-      "itemScanned": "Product barcode scanned"
+      "itemScanned": "Product barcode scanned",
+      "scanOrder": "Scan shipment order",
+      "scanWorker": "Scan worker QR",
+      "scanProduct": "Scan product",
+      "wrongItem": "Item does not match shipment order",
+      "overQty": "Exceeds shipment quantity",
+      "palletAdded": "Pallet boxes added"
     },
     "productInvCount": {
       "title": "Product Inventory Count",
@@ -4860,7 +4890,10 @@
       "noItems": "No inspect items",
       "itemCount": "{{current}} / {{total}} items completed",
       "inspectHistory": "Inspect History",
-      "itemUnit": " items"
+      "itemUnit": " items",
+      "ngReason": "NG Reason",
+      "alreadyDone": "Already inspected. Re-inspection will be added",
+      "interlock": "Equipment has been interlocked"
     },
     "settings": {
       "title": "PDA Settings",
