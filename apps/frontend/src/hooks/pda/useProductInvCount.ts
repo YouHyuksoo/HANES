@@ -1,160 +1,183 @@
 /**
  * @file src/hooks/pda/useProductInvCount.ts
- * @description 제품 재고실사 훅 - 옵션(기준월/창고/실사구분) + 바코드 스캔 → 실사 확인
+ * @description 제품 재고실사 훅 - PC 개시 연동 버전
  *
  * 초보자 가이드:
- * 1. handleScan(barcode): 바코드 스캔 → 시스템 재고 조회 (ScannedProduct | null 반환)
- * 2. handleCount(actualQty): 실사 결과 전송 → 성공 시 자동 리셋 (다음 스캔 순환)
- * 3. handleReset(): 수동 리셋 (건너뛰기)
- * 4. options: { countMonth, warehouseCode, countType } 으로 실사 조건 설정
+ * 1. 마운트 시 GET /api/v1/inventory/products/physical-inv/active → 진행 중 실사 세션 조회
+ * 2. 세션 없으면 noActiveInv = true (PC에서 실사 개시 필요)
+ * 3. handleScanProduct(barcode): 제품 바코드 스캔 → POST /count → 해당 아이템 +1
+ * 4. countItems: 품목별 시스템수량 vs 실사수량 배열
+ * 5. history: 스캔 이력 (최신순)
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { api } from "@/services/api";
-import type { CountType } from "@/components/pda/ProductInvCountOptions";
 
-/** 서버에서 받아오는 제품 재고 정보 */
-export interface ScannedProduct {
-  id: string;
-  barcode: string;
+/** 실사 세션 정보 */
+export interface ProductPhysicalInvSession {
+  sessionId: number;
+  sessionNo: string;
+  warehouseName: string;
+  countMonth: string;
+  status: string;
+}
+
+/** 품목별 실사 현황 */
+export interface ProductCountItem {
   itemCode: string;
   itemName: string;
   systemQty: number;
-  warehouseName: string;
+  countedQty: number;
 }
 
-/** 실사 이력 항목 */
+/** 스캔 이력 항목 */
 export interface ProductCountHistoryItem {
   barcode: string;
   itemCode: string;
   itemName: string;
-  systemQty: number;
-  actualQty: number;
-  difference: number;
-  countType: CountType;
+  countedQty: number;
   timestamp: string;
 }
 
-interface UseProductInvCountOptions {
-  countMonth?: string;
-  warehouseCode?: string;
-  countType?: CountType;
-}
-
 interface UseProductInvCountReturn {
-  scannedProduct: ScannedProduct | null;
+  /** 진행 중 실사 세션 */
+  session: ProductPhysicalInvSession | null;
+  /** 세션 없음 플래그 */
+  noActiveInv: boolean;
+  /** 세션 로딩 중 */
+  isLoadingSession: boolean;
+  /** 품목별 실사 현황 */
+  countItems: ProductCountItem[];
+  /** 스캔 처리 중 */
   isScanning: boolean;
-  isCounting: boolean;
+  /** 에러 메시지 */
   error: string | null;
+  /** 스캔 이력 */
   history: ProductCountHistoryItem[];
-  handleScan: (barcode: string) => Promise<ScannedProduct | null>;
-  handleCount: (actualQty: number) => Promise<boolean>;
-  handleReset: () => void;
+  /** 제품 바코드 스캔 핸들러 */
+  handleScanProduct: (barcode: string) => Promise<boolean>;
+  /** 에러 초기화 */
+  clearError: () => void;
 }
 
 /**
- * 제품 재고실사 훅
+ * 제품 재고실사 훅 (PC 개시 연동)
  *
  * 플로우:
- * 1. 옵션 설정 (countMonth, warehouseCode, countType)
- * 2. handleScan → 서버에서 시스템 수량 조회 (ScannedProduct 반환)
- * 3. handleCount → 서버에 전송 (countMonth, countType 포함) → 성공 시 자동 리셋
- * 4. handleReset → 수동 리셋 (건너뛰기)
+ * 1. 마운트 → GET /inventory/products/physical-inv/active → 세션 로드
+ * 2. 제품 바코드 연속 스캔 → handleScanProduct → POST count → countItems 갱신 + 이력 추가
  */
-export function useProductInvCount(
-  options?: UseProductInvCountOptions,
-): UseProductInvCountReturn {
-  const { countMonth, warehouseCode, countType = "NORMAL" } = options || {};
+export function useProductInvCount(): UseProductInvCountReturn {
+  const [session, setSession] = useState<ProductPhysicalInvSession | null>(null);
+  const [noActiveInv, setNoActiveInv] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
 
-  const [scannedProduct, setScannedProduct] = useState<ScannedProduct | null>(null);
+  const [countItems, setCountItems] = useState<ProductCountItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [isCounting, setIsCounting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<ProductCountHistoryItem[]>([]);
 
-  /** 제품 바코드 스캔 → 시스템 재고 조회 */
-  const handleScan = useCallback(
-    async (barcode: string): Promise<ScannedProduct | null> => {
+  /** 마운트 시 활성 제품 실사 세션 조회 */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get<ProductPhysicalInvSession>(
+          "/inventory/products/physical-inv/active",
+        );
+        if (!cancelled) {
+          setSession(data);
+          setNoActiveInv(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setSession(null);
+          setNoActiveInv(true);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingSession(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** 제품 바코드 스캔 → 실사 수량 +1 처리 */
+  const handleScanProduct = useCallback(
+    async (barcode: string): Promise<boolean> => {
+      if (!session) return false;
       setIsScanning(true);
       setError(null);
-      setScannedProduct(null);
       try {
-        const params = warehouseCode ? `?warehouseCode=${warehouseCode}` : "";
-        const { data } = await api.get<ScannedProduct>(
-          `/inventory/products/by-barcode/${encodeURIComponent(barcode)}${params}`,
-        );
-        setScannedProduct(data);
-        return data;
+        const { data } = await api.post<{
+          itemCode: string;
+          itemName: string;
+          countedQty: number;
+          items: ProductCountItem[];
+        }>("/inventory/products/physical-inv/count", {
+          sessionId: session.sessionId,
+          barcode,
+        });
+        // 서버 응답에서 갱신된 품목 목록 반영
+        if (data.items) {
+          setCountItems(data.items);
+        } else {
+          // 서버가 items 반환 안 하면 로컬에서 낙관적 업데이트
+          setCountItems((prev) => {
+            const exists = prev.some((item) => item.itemCode === data.itemCode);
+            if (exists) {
+              return prev.map((item) =>
+                item.itemCode === data.itemCode
+                  ? { ...item, countedQty: data.countedQty }
+                  : item,
+              );
+            }
+            return [
+              ...prev,
+              {
+                itemCode: data.itemCode,
+                itemName: data.itemName,
+                systemQty: 0,
+                countedQty: data.countedQty,
+              },
+            ];
+          });
+        }
+        setHistory((prev) => [
+          {
+            barcode,
+            itemCode: data.itemCode,
+            itemName: data.itemName,
+            countedQty: data.countedQty,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+          ...prev,
+        ]);
+        return true;
       } catch (err: unknown) {
         const message =
           (err as { response?: { data?: { message?: string } } })?.response
             ?.data?.message || "SCAN_FAILED";
         setError(message);
-        return null;
+        return false;
       } finally {
         setIsScanning(false);
       }
     },
-    [warehouseCode],
+    [session],
   );
 
-  /** 실사 수량 확인 처리 → 성공 시 자동 리셋 */
-  const handleCount = useCallback(
-    async (actualQty: number): Promise<boolean> => {
-      if (!scannedProduct) return false;
-      setIsCounting(true);
-      setError(null);
-      try {
-        await api.post("/inventory/products/count", {
-          barcode: scannedProduct.barcode,
-          productId: scannedProduct.id,
-          systemQty: scannedProduct.systemQty,
-          actualQty,
-          countMonth: countMonth || undefined,
-          countType,
-        });
-        const difference = actualQty - scannedProduct.systemQty;
-        setHistory((prev) => [
-          {
-            barcode: scannedProduct.barcode,
-            itemCode: scannedProduct.itemCode,
-            itemName: scannedProduct.itemName,
-            systemQty: scannedProduct.systemQty,
-            actualQty,
-            difference,
-            countType,
-            timestamp: new Date().toLocaleTimeString(),
-          },
-          ...prev,
-        ]);
-        setScannedProduct(null);
-        return true;
-      } catch (err: unknown) {
-        const message =
-          (err as { response?: { data?: { message?: string } } })?.response
-            ?.data?.message || "COUNT_FAILED";
-        setError(message);
-        return false;
-      } finally {
-        setIsCounting(false);
-      }
-    },
-    [scannedProduct, countMonth, countType],
-  );
-
-  /** 스캔 데이터 초기화 */
-  const handleReset = useCallback(() => {
-    setScannedProduct(null);
-    setError(null);
-  }, []);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
-    scannedProduct,
+    session,
+    noActiveInv,
+    isLoadingSession,
+    countItems,
     isScanning,
-    isCounting,
     error,
     history,
-    handleScan,
-    handleCount,
-    handleReset,
+    handleScanProduct,
+    clearError,
   };
 }
