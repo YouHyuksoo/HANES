@@ -6,11 +6,15 @@
  * 1. handleScan(equipCode): 설비 바코드 스캔 → 설비 정보 + 점검항목 2단계 조회
  *    - GET /equipment/equips/code/{code} → 설비 정보
  *    - GET /master/equip-inspect-items?equipCode={code}&inspectType=DAILY&useYn=Y → 점검항목
+ *    - 이미 오늘 점검 완료 시 → alreadyInspected=true 반환 (경고 후 재기록 허용)
  * 2. handleSetResult(itemId, result): 각 점검항목에 합격/불합격/조건부 결과 설정
+ *    - FAIL 선택 시 → 해당 항목 reasonCode/reasonText 필드 활성화
  * 3. handleSetMeasuredValue(itemId, value): 각 점검항목에 측정값 입력
  * 4. handleSetRemark(itemId, remark): 각 점검항목에 비고 입력
- * 4. handleSubmit(): 점검 결과 제출 (POST /equipment/daily-inspect)
- * 5. handleReset(): 상태 초기화 (새 스캔 준비)
+ * 5. setItemReason(itemId, code, text): FAIL 항목의 사유코드 + 사유텍스트 설정
+ * 6. handleSubmit(): 점검 결과 제출 (POST /equipment/daily-inspect)
+ *    - overallResult에 FAIL이 있으면 interlockApplied=true 반환
+ * 7. handleReset(): 상태 초기화 (새 스캔 준비)
  */
 import { useState, useCallback } from "react";
 import { api } from "@/services/api";
@@ -22,6 +26,8 @@ export interface ScannedEquip {
   equipName: string;
   /** 라인코드 + 공정코드 조합 (예: "L01 / CUT") */
   lineProcess: string;
+  /** 오늘 이미 점검 완료 여부 */
+  alreadyInspected?: boolean;
 }
 
 /** 점검 항목 (API 응답 매핑) */
@@ -39,6 +45,10 @@ export interface InspectResult {
   /** 실제 측정값 (예: "3.25mm", "0.6MPa") */
   measuredValue: string;
   remark: string;
+  /** FAIL 선택 시 사유코드 (ComCode: INSPECT_NG_REASON) */
+  reasonCode?: string;
+  /** FAIL 선택 시 사유 텍스트 (ETC 직접입력 or 선택 라벨) */
+  reasonText?: string;
 }
 
 /** 완료 이력 항목 */
@@ -48,6 +58,15 @@ export interface InspectHistoryItem {
   overallResult: "PASS" | "FAIL" | "CONDITIONAL";
   itemCount: number;
   completedAt: string;
+  /** 인터락 처리 여부 */
+  interlockApplied?: boolean;
+}
+
+/** 제출 결과 */
+export interface SubmitResult {
+  success: boolean;
+  /** FAIL 항목이 있어 인터락 처리됐는지 여부 */
+  interlockApplied: boolean;
 }
 
 /** 훅 반환값 */
@@ -68,7 +87,8 @@ interface UseEquipInspectScanReturn {
   ) => void;
   handleSetMeasuredValue: (itemId: string, value: string) => void;
   handleSetRemark: (itemId: string, remark: string) => void;
-  handleSubmit: () => Promise<boolean>;
+  setItemReason: (itemId: string, code: string, text?: string) => void;
+  handleSubmit: () => Promise<SubmitResult>;
   handleReset: () => void;
 }
 
@@ -92,9 +112,12 @@ function calcOverallResult(
  *
  * 흐름:
  * 1. 설비 바코드 스캔 → 설비 정보 + 점검 체크리스트 로드
+ *    - 이미 점검 완료된 설비: alreadyInspected=true 경고 반환 (재기록은 허용)
  * 2. 각 항목별 결과(PASS/FAIL/CONDITIONAL) 선택
+ *    - FAIL 선택 시 → ReasonCodeSelect 표시
  * 3. 비고 입력 (선택사항)
  * 4. 전체 제출
+ *    - FAIL 포함 시 → 인터락 처리 안내 (interlockApplied=true)
  */
 export function useEquipInspectScan(): UseEquipInspectScanReturn {
   const [scannedEquip, setScannedEquip] = useState<ScannedEquip | null>(null);
@@ -128,14 +151,31 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
         .filter(Boolean)
         .join(" / ");
 
+      // 2) 오늘 이미 점검 완료 여부 확인 (선택적 API)
+      let alreadyInspected = false;
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const { data: checkRes } = await api.get(
+          "/equipment/daily-inspect/check",
+          {
+            params: { equipCode: equip.equipCode, inspectDate: today },
+          },
+        );
+        alreadyInspected = !!checkRes?.data?.alreadyInspected;
+      } catch {
+        // 점검 여부 확인 API 없어도 계속 진행
+        alreadyInspected = false;
+      }
+
       setScannedEquip({
         id: equip.id,
         equipCode: equip.equipCode,
         equipName: equip.equipName,
         lineProcess: lineProcess || "-",
+        alreadyInspected,
       });
 
-      // 2) 해당 설비의 DAILY 점검항목 조회 — 응답: { success, data: [...], meta }
+      // 3) 해당 설비의 DAILY 점검항목 조회 — 응답: { success, data: [...], meta }
       const { data: itemsRes } = await api.get("/master/equip-inspect-items", {
         params: {
           equipCode: equip.equipCode,
@@ -174,7 +214,11 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
     }
   }, []);
 
-  /** 점검항목 결과 설정 */
+  /**
+   * 점검항목 결과 설정
+   * FAIL로 변경 시 기존 reasonCode/reasonText 초기화
+   * PASS/CONDITIONAL로 변경 시 reasonCode/reasonText 제거
+   */
   const handleSetResult = useCallback(
     (itemId: string, result: "PASS" | "FAIL" | "CONDITIONAL") => {
       setResults((prev) => {
@@ -185,6 +229,9 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
           result,
           measuredValue: existing?.measuredValue || "",
           remark: existing?.remark || "",
+          // FAIL이 아닐 경우 사유코드 초기화
+          reasonCode: result === "FAIL" ? (existing?.reasonCode || "") : undefined,
+          reasonText: result === "FAIL" ? (existing?.reasonText || "") : undefined,
         });
         return next;
       });
@@ -219,9 +266,31 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
     });
   }, []);
 
+  /**
+   * FAIL 항목의 NG 사유코드 + 사유텍스트 설정
+   * @param itemId - 점검항목 ID
+   * @param code   - ComCode detailCode (INSPECT_NG_REASON 그룹)
+   * @param text   - ETC 직접입력 텍스트 (선택사항)
+   */
+  const setItemReason = useCallback(
+    (itemId: string, code: string, text?: string) => {
+      setResults((prev) => {
+        const next = new Map(prev);
+        const existing = next.get(itemId);
+        if (existing) {
+          next.set(itemId, { ...existing, reasonCode: code, reasonText: text });
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
   /** 점검 결과 제출 — 백엔드 CreateEquipInspectDto 구조에 맞춤 */
-  const handleSubmit = useCallback(async (): Promise<boolean> => {
-    if (!scannedEquip || !isAllCompleted) return false;
+  const handleSubmit = useCallback(async (): Promise<SubmitResult> => {
+    if (!scannedEquip || !isAllCompleted) {
+      return { success: false, interlockApplied: false };
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -229,6 +298,7 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
     try {
       const overallResult = calcOverallResult(results);
       const resultArray = Array.from(results.values());
+      const interlockApplied = overallResult === "FAIL";
 
       await api.post("/equipment/daily-inspect", {
         equipCode: scannedEquip.equipCode,
@@ -241,6 +311,8 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
             result: r.result,
             measuredValue: r.measuredValue || undefined,
             remark: r.remark || undefined,
+            reasonCode: r.reasonCode || undefined,
+            reasonText: r.reasonText || undefined,
           })),
         },
       });
@@ -253,16 +325,17 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
           overallResult,
           itemCount: resultArray.length,
           completedAt: new Date().toLocaleTimeString(),
+          interlockApplied,
         },
         ...prev,
       ]);
 
-      return true;
+      return { success: true, interlockApplied };
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Inspection submit failed";
       setError(message);
-      return false;
+      return { success: false, interlockApplied: false };
     } finally {
       setIsSubmitting(false);
     }
@@ -292,6 +365,7 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
     handleSetResult,
     handleSetMeasuredValue,
     handleSetRemark,
+    setItemReason,
     handleSubmit,
     handleReset,
   };

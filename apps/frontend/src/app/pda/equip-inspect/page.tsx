@@ -7,13 +7,16 @@
  * 초보자 가이드:
  * 1. ScanInput: 설비 바코드를 스캔하면 useEquipInspectScan.handleScan 호출
  * 2. ScanResultCard: 스캔된 설비 정보(코드, 이름, 라인/공정) 카드 표시
- * 3. 점검항목 리스트: 각 항목마다 PASS/FAIL/CONDITIONAL 버튼 + 비고 입력
+ *    - alreadyInspected=true 이면 경고 배너 표시 (재점검은 허용)
+ * 3. InspectItemCard: 각 항목마다 PASS/FAIL/CONDITIONAL 버튼
+ *    - FAIL 선택 시 → ReasonCodeSelect(INSPECT_NG_REASON) + 비고/측정값 표시
  * 4. PdaActionButton: 모든 항목 결과 입력 시 "점검확인" 버튼 활성화
- * 5. ScanHistoryList: 완료된 점검 이력을 하단에 표시
+ * 5. 제출 성공 후 FAIL 포함 → InterlockModal 표시
+ * 6. ScanHistoryList: 완료된 점검 이력을 하단에 표시
  */
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ClipboardCheck, RotateCcw } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, RotateCcw } from "lucide-react";
 import PdaHeader from "@/components/pda/PdaHeader";
 import ScanInput from "@/components/pda/ScanInput";
 import type { ScanInputHandle } from "@/components/pda/ScanInput";
@@ -25,45 +28,10 @@ import { useSoundFeedback } from "@/components/pda/SoundFeedback";
 import { useBarcodeDetector } from "@/hooks/pda/useBarcodeDetector";
 import {
   useEquipInspectScan,
-  type InspectItem,
   type InspectHistoryItem,
 } from "@/hooks/pda/useEquipInspectScan";
-
-/** 점검 결과 타입 */
-type ResultType = "PASS" | "FAIL" | "CONDITIONAL";
-
-/** 결과 버튼 설정 */
-const RESULT_BUTTONS: {
-  value: ResultType;
-  labelKey: string;
-  activeClass: string;
-  inactiveClass: string;
-}[] = [
-  {
-    value: "PASS",
-    labelKey: "pda.equipInspect.pass",
-    activeClass:
-      "bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/25",
-    inactiveClass:
-      "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20",
-  },
-  {
-    value: "FAIL",
-    labelKey: "pda.equipInspect.fail",
-    activeClass:
-      "bg-red-500 text-white border-red-500 shadow-sm shadow-red-500/25",
-    inactiveClass:
-      "bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20",
-  },
-  {
-    value: "CONDITIONAL",
-    labelKey: "pda.equipInspect.conditional",
-    activeClass:
-      "bg-amber-500 text-white border-amber-500 shadow-sm shadow-amber-500/25",
-    inactiveClass:
-      "bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20",
-  },
-];
+import InspectItemCard from "./InspectItemCard";
+import InterlockModal from "./InterlockModal";
 
 /** overallResult에 따른 배지 색상 */
 const RESULT_BADGE: Record<string, string> = {
@@ -77,6 +45,9 @@ export default function EquipInspectPage() {
   const { t } = useTranslation();
   const { playSuccess, playError } = useSoundFeedback();
   const scanRef = useRef<ScanInputHandle>(null);
+
+  /** 인터락 안내 모달 표시 여부 */
+  const [showInterlockModal, setShowInterlockModal] = useState(false);
 
   const {
     scannedEquip,
@@ -92,6 +63,7 @@ export default function EquipInspectPage() {
     handleSetResult,
     handleSetMeasuredValue,
     handleSetRemark,
+    setItemReason,
     handleSubmit,
     handleReset,
   } = useEquipInspectScan();
@@ -110,18 +82,28 @@ export default function EquipInspectPage() {
     enabled: !scannedEquip,
   });
 
-  /** 점검 제출 → 성공 시 리셋 + 스캔입력 포커스 복원 */
+  /** 점검 제출 → 성공 시 리셋 + 스캔입력 포커스 복원, FAIL → 인터락 모달 */
   const onSubmit = useCallback(async () => {
-    const success = await handleSubmit();
-    if (success) {
+    const submitResult = await handleSubmit();
+    if (submitResult.success) {
       playSuccess();
-      handleReset();
-      // 스캔 입력으로 포커스 복원
-      setTimeout(() => scanRef.current?.focus(), 100);
+      if (submitResult.interlockApplied) {
+        setShowInterlockModal(true);
+      } else {
+        handleReset();
+        setTimeout(() => scanRef.current?.focus(), 100);
+      }
     } else {
       playError();
     }
   }, [handleSubmit, handleReset, playSuccess, playError]);
+
+  /** 인터락 모달 확인 → 리셋 + 포커스 복원 */
+  const onInterlockConfirm = useCallback(() => {
+    setShowInterlockModal(false);
+    handleReset();
+    setTimeout(() => scanRef.current?.focus(), 100);
+  }, [handleReset]);
 
   /** 새 스캔 → 리셋 + 포커스 복원 */
   const onReset = useCallback(() => {
@@ -149,7 +131,7 @@ export default function EquipInspectPage() {
     ];
   }, [scannedEquip, t]);
 
-  /** 액션 버튼 */
+  /** 하단 액션 버튼 */
   const actionButtons = useMemo(() => {
     if (!scannedEquip) return [];
     return [
@@ -212,6 +194,16 @@ export default function EquipInspectPage() {
             title={t("pda.equipInspect.equipName")}
           />
 
+          {/* 이미 점검 완료된 설비 경고 배너 */}
+          {scannedEquip.alreadyInspected && (
+            <div className="mx-4 flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700">
+              <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                {t("pda.equipInspect.alreadyDone")}
+              </p>
+            </div>
+          )}
+
           {/* 진행 상황 */}
           <div className="mx-4 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -236,12 +228,11 @@ export default function EquipInspectPage() {
                 <InspectItemCard
                   key={item.id}
                   item={item}
-                  currentResult={results.get(item.id)?.result}
-                  currentMeasuredValue={results.get(item.id)?.measuredValue || ""}
-                  currentRemark={results.get(item.id)?.remark || ""}
+                  currentResult={results.get(item.id) ?? null}
                   onSetResult={handleSetResult}
                   onSetMeasuredValue={handleSetMeasuredValue}
                   onSetRemark={handleSetRemark}
+                  onSetReason={setItemReason}
                 />
               ))}
             </div>
@@ -271,6 +262,11 @@ export default function EquipInspectPage() {
               >
                 {t(`pda.equipInspect.${item.overallResult.toLowerCase()}`)}
               </span>
+              {item.interlockApplied && (
+                <p className="text-[10px] text-red-500 dark:text-red-400 mt-0.5">
+                  {t("pda.equipInspect.interlock")}
+                </p>
+              )}
               <p className="text-[10px] text-slate-400 mt-0.5">
                 {item.completedAt}
               </p>
@@ -281,81 +277,11 @@ export default function EquipInspectPage() {
 
       {/* 하단 액션 버튼 */}
       <PdaActionButton buttons={actionButtons} />
-    </>
-  );
-}
 
-/** 개별 점검항목 카드 */
-function InspectItemCard({
-  item,
-  currentResult,
-  currentMeasuredValue,
-  currentRemark,
-  onSetResult,
-  onSetMeasuredValue,
-  onSetRemark,
-}: {
-  item: InspectItem;
-  currentResult?: ResultType;
-  currentMeasuredValue: string;
-  currentRemark: string;
-  onSetResult: (itemId: string, result: ResultType) => void;
-  onSetMeasuredValue: (itemId: string, value: string) => void;
-  onSetRemark: (itemId: string, remark: string) => void;
-}) {
-  const { t } = useTranslation();
-  const inputClass =
-    "w-full h-9 px-3 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors";
-
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 space-y-2">
-      {/* 항목명 + 기준 */}
-      <div>
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-          {item.itemName}
-        </p>
-        {item.criteria && (
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {t("pda.equipInspect.criteria")}: {item.criteria}
-          </p>
-        )}
-      </div>
-
-      {/* 결과 버튼 3개 */}
-      <div className="grid grid-cols-3 gap-2">
-        {RESULT_BUTTONS.map((btn) => (
-          <button
-            key={btn.value}
-            type="button"
-            onClick={() => onSetResult(item.id, btn.value)}
-            className={`h-9 rounded-lg text-xs font-bold border transition-all active:scale-95 ${
-              currentResult === btn.value ? btn.activeClass : btn.inactiveClass
-            }`}
-          >
-            {t(btn.labelKey)}
-          </button>
-        ))}
-      </div>
-
-      {/* 측정값 + 비고 (결과 선택 후 표시) */}
-      {currentResult && (
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="text"
-            value={currentMeasuredValue}
-            onChange={(e) => onSetMeasuredValue(item.id, e.target.value)}
-            placeholder={t("pda.equipInspect.measuredValuePlaceholder")}
-            className={inputClass}
-          />
-          <input
-            type="text"
-            value={currentRemark}
-            onChange={(e) => onSetRemark(item.id, e.target.value)}
-            placeholder={t("pda.equipInspect.remarkPlaceholder")}
-            className={inputClass}
-          />
-        </div>
+      {/* 인터락 안내 모달 */}
+      {showInterlockModal && (
+        <InterlockModal onConfirm={onInterlockConfirm} />
       )}
-    </div>
+    </>
   );
 }
