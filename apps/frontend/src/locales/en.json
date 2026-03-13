@@ -4771,7 +4771,11 @@
       "confirmAdjust": "Confirm Adjust",
       "adjustSuccess": "Adjustment completed",
       "adjustFailed": "Adjustment failed",
-      "reasonRequired": "Please enter reason"
+      "reasonRequired": "Select a reason",
+      "pending": "Pending Approval",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "pendingMsg": "Stock will be updated after manager approval"
     },
     "inventoryCount": {
       "title": "Material Inventory Count",
@@ -4782,6 +4786,14 @@
       "confirmCount": "Confirm Count",
       "countSuccess": "Inventory count completed",
       "countFailed": "Inventory count failed"
+    },
+    "invCount": {
+      "noActive": "No active inventory count",
+      "startOnPc": "Start inventory count on PC",
+      "location": "Scan Location",
+      "scanMaterial": "Scan Material",
+      "systemQty": "System Qty",
+      "countedQty": "Counted Qty"
     },
     "shipping": {
       "title": "Shipping",

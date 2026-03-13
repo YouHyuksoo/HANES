@@ -4771,7 +4771,11 @@
       "confirmAdjust": "确认调整",
       "adjustSuccess": "库存调整完成",
       "adjustFailed": "库存调整失败",
-      "reasonRequired": "请输入调整原因"
+      "reasonRequired": "请选择原因",
+      "pending": "待审批",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "pendingMsg": "经管理员审批后库存将更新"
     },
     "inventoryCount": {
       "title": "物料库存盘点",
@@ -4782,6 +4786,14 @@
       "confirmCount": "确认盘点",
       "countSuccess": "库存盘点完成",
       "countFailed": "库存盘点失败"
+    },
+    "invCount": {
+      "noActive": "没有进行中的盘点",
+      "startOnPc": "请在PC上开始盘点",
+      "location": "扫描库位",
+      "scanMaterial": "扫描物料",
+      "systemQty": "系统数量",
+      "countedQty": "盘点数量"
     },
     "shipping": {
       "title": "出货登记",

@@ -4771,7 +4771,11 @@
       "confirmAdjust": "Xác nhận điều chỉnh",
       "adjustSuccess": "Điều chỉnh thành công",
       "adjustFailed": "Điều chỉnh thất bại",
-      "reasonRequired": "Vui lòng nhập lý do"
+      "reasonRequired": "Vui lòng chọn lý do",
+      "pending": "Chờ phê duyệt",
+      "approved": "Đã phê duyệt",
+      "rejected": "Đã từ chối",
+      "pendingMsg": "Tồn kho sẽ được cập nhật sau khi quản lý phê duyệt"
     },
     "inventoryCount": {
       "title": "Kiểm kê vật tư",
@@ -4782,6 +4786,14 @@
       "confirmCount": "Xác nhận kiểm kê",
       "countSuccess": "Kiểm kê thành công",
       "countFailed": "Kiểm kê thất bại"
+    },
+    "invCount": {
+      "noActive": "Không có kiểm kê đang tiến hành",
+      "startOnPc": "Bắt đầu kiểm kê trên PC",
+      "location": "Quét vị trí",
+      "scanMaterial": "Quét vật tư",
+      "systemQty": "Số lượng hệ thống",
+      "countedQty": "Số lượng kiểm"
     },
     "shipping": {
       "title": "Đăng ký xuất hàng",

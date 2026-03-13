@@ -1,15 +1,19 @@
 /**
  * @file src/hooks/pda/useMatAdjustment.ts
- * @description 재고조정 스캔 플로우 훅 - LOT 스캔 → 현재 수량 조회 → 조정 처리
+ * @description 재고조정 스캔 플로우 훅 - LOT 스캔 → 현재 수량 조회 → 승인 요청 처리
  *
  * 초보자 가이드:
  * 1. handleScan(matUid): 자재UID 바코드 스캔 → 현재 재고 수량 조회
- * 2. handleAdjust(adjustQty, reason): 수량 조정 + 사유 기록
+ * 2. handleAdjust(adjustQty): 수량 조정 → PENDING 상태로 승인 요청 등록
  * 3. handleReset(): 스캔 데이터 초기화 (다음 스캔 준비)
- * 4. 재고조정은 +/- 값 모두 가능 (양수=증가, 음수=감소)
+ * 4. reasonCode / reasonText: ComCode 기반 사유 코드 + ETC 직접입력 텍스트
+ * 5. 승인 요청 후 관리자가 승인/반려 처리 → 재고 실반영
  */
 import { useState, useCallback } from "react";
 import { api } from "@/services/api";
+
+/** 조정 상태 */
+export type AdjustStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 /** LOT 재고 정보 (조정용) */
 export interface MatLotAdjustData {
@@ -26,8 +30,11 @@ export interface AdjustmentHistoryItem {
   matUid: string;
   itemCode: string;
   adjustQty: number;
-  reason: string;
+  reasonCode: string;
+  reasonText?: string;
   timestamp: string;
+  /** 승인 상태 (PENDING/APPROVED/REJECTED) */
+  adjustStatus: AdjustStatus;
 }
 
 interface UseMatAdjustmentReturn {
@@ -36,18 +43,25 @@ interface UseMatAdjustmentReturn {
   isAdjusting: boolean;
   error: string | null;
   history: AdjustmentHistoryItem[];
+  /** 현재 선택된 사유 코드 (ComCode) */
+  reasonCode: string;
+  /** ETC 선택 시 직접입력 텍스트 */
+  reasonText: string;
+  /** 사유 코드 + 텍스트 동시 설정 */
+  setReason: (code: string, text?: string) => void;
   handleScan: (matUid: string) => Promise<void>;
-  handleAdjust: (adjustQty: number, reason: string) => Promise<boolean>;
+  handleAdjust: (adjustQty: number) => Promise<boolean>;
   handleReset: () => void;
 }
 
 /**
- * 재고조정 훅
+ * 재고조정 훅 (승인 워크플로우)
  *
  * 플로우:
  * 1. LOT 바코드 스캔 → handleScan → 재고 조회
- * 2. 조정 수량 + 사유 입력 → handleAdjust → 서버 처리
- * 3. handleReset → 다음 스캔 준비
+ * 2. 조정 수량 + 사유 코드 선택 → handleAdjust → PENDING 상태로 서버 등록
+ * 3. 관리자가 PC에서 승인/반려 처리 → 재고 실반영
+ * 4. handleReset → 다음 스캔 준비
  */
 export function useMatAdjustment(): UseMatAdjustmentReturn {
   const [scannedLot, setScannedLot] = useState<MatLotAdjustData | null>(null);
@@ -55,6 +69,17 @@ export function useMatAdjustment(): UseMatAdjustmentReturn {
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<AdjustmentHistoryItem[]>([]);
+
+  /** 사유 코드 (ComCode: ADJ_REASON) */
+  const [reasonCode, setReasonCode] = useState<string>("");
+  /** ETC 직접입력 텍스트 */
+  const [reasonText, setReasonText] = useState<string>("");
+
+  /** 사유 코드 + 텍스트 동시 설정 */
+  const setReason = useCallback((code: string, text?: string) => {
+    setReasonCode(code);
+    setReasonText(text ?? "");
+  }, []);
 
   /** 자재UID 바코드 스캔 → 재고 조회 */
   const handleScan = useCallback(async (matUid: string) => {
@@ -76,25 +101,31 @@ export function useMatAdjustment(): UseMatAdjustmentReturn {
     }
   }, []);
 
-  /** 재고 조정 처리 */
+  /**
+   * 재고 조정 승인 요청 처리
+   * POST /api/v1/material/adjustment/pending → status='PENDING' 으로 등록
+   */
   const handleAdjust = useCallback(
-    async (adjustQty: number, reason: string): Promise<boolean> => {
+    async (adjustQty: number): Promise<boolean> => {
       if (!scannedLot) return false;
       setIsAdjusting(true);
       setError(null);
       try {
-        await api.post("/material/adjustment", {
+        await api.post("/material/adjustment/pending", {
           matUid: scannedLot.matUid,
           adjustQty,
-          reason,
+          reasonCode,
+          reasonText: reasonText || undefined,
         });
         setHistory((prev) => [
           {
             matUid: scannedLot.matUid,
             itemCode: scannedLot.itemCode,
             adjustQty,
-            reason,
+            reasonCode,
+            reasonText: reasonText || undefined,
             timestamp: new Date().toLocaleTimeString(),
+            adjustStatus: "PENDING",
           },
           ...prev,
         ]);
@@ -110,7 +141,7 @@ export function useMatAdjustment(): UseMatAdjustmentReturn {
         setIsAdjusting(false);
       }
     },
-    [scannedLot],
+    [scannedLot, reasonCode, reasonText],
   );
 
   /** 스캔 데이터 초기화 */
@@ -125,6 +156,9 @@ export function useMatAdjustment(): UseMatAdjustmentReturn {
     isAdjusting,
     error,
     history,
+    reasonCode,
+    reasonText,
+    setReason,
     handleScan,
     handleAdjust,
     handleReset,

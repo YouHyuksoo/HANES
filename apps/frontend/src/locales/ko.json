@@ -4790,7 +4790,11 @@
       "confirmAdjust": "조정확인",
       "adjustSuccess": "재고조정이 완료되었습니다",
       "adjustFailed": "재고조정에 실패했습니다",
-      "reasonRequired": "조정사유를 입력하세요"
+      "reasonRequired": "사유를 선택하세요",
+      "pending": "승인 대기",
+      "approved": "승인 완료",
+      "rejected": "반려됨",
+      "pendingMsg": "관리자 승인 후 재고가 반영됩니다"
     },
     "inventoryCount": {
       "title": "자재 재고실사",
@@ -4801,6 +4805,14 @@
       "confirmCount": "실사확인",
       "countSuccess": "재고실사가 완료되었습니다",
       "countFailed": "재고실사에 실패했습니다"
+    },
+    "invCount": {
+      "noActive": "진행 중인 실사가 없습니다",
+      "startOnPc": "PC에서 실사를 시작하세요",
+      "location": "로케이션 스캔",
+      "scanMaterial": "자재 스캔",
+      "systemQty": "시스템 수량",
+      "countedQty": "실사 수량"
     },
     "shipping": {
       "title": "출하등록",
