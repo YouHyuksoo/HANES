@@ -3,12 +3,13 @@
  * @description 기타입고 API 컨트롤러
  */
 
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MiscReceiptService } from '../services/misc-receipt.service';
 import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - 기타입고')
 @Controller('material/misc-receipt')
@@ -24,6 +25,7 @@ export class MiscReceiptController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '기타입고 등록' })
   async create(@Body() dto: CreateMiscReceiptDto) {
     const data = await this.miscReceiptService.create(dto);

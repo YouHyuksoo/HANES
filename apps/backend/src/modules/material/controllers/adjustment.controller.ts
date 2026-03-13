@@ -9,12 +9,13 @@
  * - PATCH /material/adjustment/:id/reject  → 반려 (재고 변동 없음)
  */
 
-import { Controller, Get, Post, Patch, Body, Query, Param, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, Param, ParseIntPipe, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { AdjustmentService } from '../services/adjustment.service';
 import { CreateAdjustmentDto, AdjustmentQueryDto, ApproveAdjustmentDto } from '../dto/adjustment.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - 재고보정')
 @Controller('material/adjustment')
@@ -30,6 +31,7 @@ export class AdjustmentController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '재고보정 즉시 승인 등록 (PC)' })
   async create(@Body() dto: CreateAdjustmentDto) {
     const data = await this.adjustmentService.create(dto);
@@ -38,6 +40,7 @@ export class AdjustmentController {
 
   @Post('pending')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '재고보정 승인 대기 등록 (PDA) — 재고 즉시 반영 안 함' })
   async createPending(@Body() dto: CreateAdjustmentDto) {
     const data = await this.adjustmentService.createPending(dto);
@@ -45,6 +48,7 @@ export class AdjustmentController {
   }
 
   @Patch(':id/approve')
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '재고보정 승인 — PENDING → APPROVED, 재고 실반영' })
   @ApiParam({ name: 'id', description: 'InvAdjLog PK' })
   async approve(

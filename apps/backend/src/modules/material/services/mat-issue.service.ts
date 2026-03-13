@@ -184,6 +184,7 @@ export class MatIssueService {
         if (warehouseCode) {
           const stock = await queryRunner.manager.findOne(MatStock, {
             where: { itemCode: lot.itemCode, warehouseCode, matUid: lot.matUid },
+            lock: { mode: 'pessimistic_write' },
           });
 
           if (stock) {
@@ -316,6 +317,7 @@ export class MatIssueService {
       // 4. 창고 재고 복구 (stock이 있는 경우)
       const stock = rawIssue.matUid ? await queryRunner.manager.findOne(MatStock, {
         where: { matUid: rawIssue.matUid },
+        lock: { mode: 'pessimistic_write' },
       }) : null;
 
       if (stock) {

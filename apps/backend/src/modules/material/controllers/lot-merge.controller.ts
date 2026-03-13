@@ -7,12 +7,13 @@
  * 2. POST /material/lot-merge — LOT 병합 실행
  */
 
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LotMergeService } from '../services/lot-merge.service';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - LOT병합')
 @Controller('material/lot-merge')
@@ -28,6 +29,7 @@ export class LotMergeController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: 'LOT 병합 실행' })
   async merge(@Body() dto: LotMergeDto) {
     const data = await this.lotMergeService.merge(dto);

@@ -3,12 +3,13 @@
  * @description 자재폐기 API 컨트롤러
  */
 
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ScrapService } from '../services/scrap.service';
 import { CreateScrapDto, ScrapQueryDto } from '../dto/scrap.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - 자재폐기')
 @Controller('material/scrap')
@@ -24,6 +25,7 @@ export class ScrapController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '자재 폐기 등록' })
   async create(@Body() dto: CreateScrapDto) {
     const data = await this.scrapService.create(dto);

@@ -139,6 +139,7 @@ export class LotMergeService {
       // MatStock 동기화 — 대상 재고에 합산, 원본 재고 0으로
       const targetStock = await queryRunner.manager.findOne(MatStock, {
         where: { matUid: target.matUid },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (targetStock) {
@@ -151,6 +152,7 @@ export class LotMergeService {
       for (const src of sources) {
         const srcStock = await queryRunner.manager.findOne(MatStock, {
           where: { matUid: src.matUid },
+          lock: { mode: 'pessimistic_write' },
         });
         if (srcStock) {
           await queryRunner.manager.update(MatStock,

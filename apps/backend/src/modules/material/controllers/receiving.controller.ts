@@ -9,12 +9,13 @@
  * 4. **POST /material/receiving**: 일괄/분할 입고 등록
  */
 
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ReceivingService } from '../services/receiving.service';
 import { CreateBulkReceiveDto, ReceivingQueryDto, AutoReceiveDto } from '../dto/receiving.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - 입고관리')
 @Controller('material/receiving')
@@ -44,6 +45,7 @@ export class ReceivingController {
 
   @Post('auto')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '자동입고 처리 (라벨 발행 시)' })
   async autoReceive(@Body() dto: AutoReceiveDto) {
     const data = await this.receivingService.autoReceive(dto.matUids, dto.workerId);
@@ -52,6 +54,7 @@ export class ReceivingController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '일괄/분할 입고 등록' })
   async createBulkReceive(@Body() dto: CreateBulkReceiveDto) {
     const data = await this.receivingService.createBulkReceive(dto);

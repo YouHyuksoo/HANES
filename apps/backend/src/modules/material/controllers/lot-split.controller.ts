@@ -3,12 +3,13 @@
  * @description 자재 LOT 분할 API 컨트롤러
  */
 
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LotSplitService } from '../services/lot-split.service';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - LOT분할')
 @Controller('material/lot-split')
@@ -24,6 +25,7 @@ export class LotSplitController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: 'LOT 분할 실행' })
   async split(@Body() dto: LotSplitDto) {
     const data = await this.lotSplitService.split(dto);

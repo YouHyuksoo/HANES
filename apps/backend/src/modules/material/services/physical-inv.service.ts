@@ -1,16 +1,29 @@
 /**
  * @file src/modules/material/services/physical-inv.service.ts
- * @description 재고실사 비즈니스 로직 - Stock 대사 후 차이분 InvAdjLog 생성 (TypeORM)
+ * @description 재고실사 비즈니스 로직 — Stock 대사 + InvAdjLog 기록 + 실사 세션 관리
+ *
+ * 초보자 가이드:
+ * 1. startSession(): 실사 개시 — PHYSICAL_INV_SESSIONS 테이블에 IN_PROGRESS 레코드 생성
+ * 2. getSessionStatus(): 실사 세션 상태 조회 — InventoryFreezeGuard가 이 테이블을 참조
+ * 3. completeSession(): 실사 완료 — status를 COMPLETED로 업데이트 (차단 해제)
+ * 4. applyCount(): 실사 결과 반영 — MatStock 수량 업데이트 + InvAdjLog 기록
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { CreatePhysicalInvDto, PhysicalInvQueryDto, PhysicalInvHistoryQueryDto } from '../dto/physical-inv.dto';
+import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
+import {
+  CreatePhysicalInvDto,
+  PhysicalInvQueryDto,
+  PhysicalInvHistoryQueryDto,
+  StartPhysicalInvSessionDto,
+  CompletePhysicalInvSessionDto,
+} from '../dto/physical-inv.dto';
 
 @Injectable()
 export class PhysicalInvService {
@@ -23,8 +36,83 @@ export class PhysicalInvService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(PhysicalInvSession)
+    private readonly sessionRepository: Repository<PhysicalInvSession>,
     private readonly dataSource: DataSource,
   ) {}
+
+  // ─── 실사 세션 관리 ────────────────────────────────────────────────
+
+  /**
+   * 현재 실사 세션 상태 조회
+   * 프론트엔드 배너 표시, InventoryFreezeGuard 검증에 활용
+   */
+  async getSessionStatus(company?: string, plant?: string) {
+    const where: any = { status: 'IN_PROGRESS' };
+    if (company) where.company = company;
+    if (plant) where.plant = plant;
+
+    const session = await this.sessionRepository.findOne({ where });
+    return {
+      isFreeze: !!session,
+      session: session ?? null,
+    };
+  }
+
+  /**
+   * 실사 개시 — IN_PROGRESS 세션 생성
+   * 이미 진행 중인 실사가 있으면 BadRequestException
+   */
+  async startSession(
+    dto: StartPhysicalInvSessionDto,
+    company?: string,
+    plant?: string,
+  ): Promise<PhysicalInvSession> {
+    // 이미 진행 중인 세션이 있으면 예외
+    const existing = await this.sessionRepository.findOne({
+      where: { status: 'IN_PROGRESS', ...(company && { company }), ...(plant && { plant }) },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        `이미 진행 중인 재고실사 세션이 있습니다. (ID: ${existing.id})`,
+      );
+    }
+
+    const session = this.sessionRepository.create({
+      invType: dto.invType,
+      status: 'IN_PROGRESS',
+      warehouseCode: dto.warehouseCode ?? null,
+      company: company ?? null,
+      plant: plant ?? null,
+      startedBy: dto.startedBy ?? null,
+      remark: dto.remark ?? null,
+    });
+    return this.sessionRepository.save(session);
+  }
+
+  /**
+   * 실사 완료 — IN_PROGRESS → COMPLETED 전환
+   * 이 메서드 실행 후 InventoryFreezeGuard 차단이 해제됩니다.
+   */
+  async completeSession(
+    id: number,
+    dto: CompletePhysicalInvSessionDto,
+  ): Promise<PhysicalInvSession> {
+    const session = await this.sessionRepository.findOne({ where: { id } });
+    if (!session) {
+      throw new NotFoundException(`실사 세션을 찾을 수 없습니다. (ID: ${id})`);
+    }
+    if (session.status !== 'IN_PROGRESS') {
+      throw new BadRequestException(`진행 중인 실사 세션이 아닙니다. (현재 상태: ${session.status})`);
+    }
+
+    session.status = 'COMPLETED';
+    session.completedBy = dto.completedBy ?? null;
+    session.completedAt = new Date();
+    if (dto.remark) session.remark = dto.remark;
+
+    return this.sessionRepository.save(session);
+  }
 
   async findStocks(query: PhysicalInvQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, warehouseId } = query;
@@ -155,6 +243,7 @@ export class PhysicalInvService {
         const [whCode, itCode, ltNo] = item.stockId.split('::');
         const stock = await queryRunner.manager.findOne(MatStock, {
           where: { warehouseCode: whCode, itemCode: itCode, matUid: ltNo || '' },
+          lock: { mode: 'pessimistic_write' },
         });
 
         if (!stock) {

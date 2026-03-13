@@ -165,6 +165,7 @@ export class LotSplitService {
       // 재고 정보도 분할 (원본 LOT의 재고가 있는 경우)
       const sourceStock = await queryRunner.manager.findOne(MatStock, {
         where: { matUid: sourceLotId },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (sourceStock) {

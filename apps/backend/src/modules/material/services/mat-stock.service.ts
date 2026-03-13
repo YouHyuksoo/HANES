@@ -15,6 +15,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
 
 @Injectable()
@@ -28,6 +29,8 @@ export class MatStockService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(InvAdjLog)
     private readonly invAdjLogRepository: Repository<InvAdjLog>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -57,13 +60,17 @@ export class MatStockService {
     const itemCodes = data.map((stock) => stock.itemCode).filter(Boolean);
     const matUids = data.map((stock) => stock.matUid).filter(Boolean) as string[];
     
-    const [parts, lots] = await Promise.all([
+    const warehouseCodes = [...new Set(data.map((s) => s.warehouseCode).filter(Boolean))];
+
+    const [parts, lots, warehouses] = await Promise.all([
       this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }),
       matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
+      warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes) } }) : Promise.resolve([]),
     ]);
-    
+
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
+    const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
 
     // 안전재고 미달 필터링 및 중첩 객체 평면화
     const today = new Date();
@@ -88,6 +95,7 @@ export class MatStockService {
 
       return {
         ...stock,
+        warehouseName: warehouseMap.get(stock.warehouseCode) || stock.warehouseCode,
         itemCode: part?.itemCode,
         itemName: part?.itemName,
         unit: part?.unit,
@@ -214,6 +222,7 @@ export class MatStockService {
       // 기존 재고 조회 또는 생성
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode, ...(matUid && { matUid }) },
+        lock: { mode: 'pessimistic_write' },
       });
 
       const beforeQty = stock?.qty ?? 0;
@@ -284,6 +293,7 @@ export class MatStockService {
       // 출고 창고 재고 확인
       const fromStock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode: fromWarehouseCode, ...(matUid && { matUid }) },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!fromStock || fromStock.qty < qty) {
@@ -299,6 +309,7 @@ export class MatStockService {
       // 입고 창고 재고 확인 또는 생성
       let toStock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode: toWarehouseCode, ...(matUid && { matUid }) },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (toStock) {

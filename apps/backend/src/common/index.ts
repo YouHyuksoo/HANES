@@ -19,6 +19,7 @@ export * from './decorators/tenant.decorator';
 
 // Guards
 export * from './guards/jwt-auth.guard';
+export * from './guards/inventory-freeze.guard';
 
 // Interceptors
 export * from './interceptors/logging.interceptor';

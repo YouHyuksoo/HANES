@@ -44,6 +44,8 @@ import { MatIssueRequestItem } from '../../entities/mat-issue-request-item.entit
 import { LabelTemplate } from '../../entities/label-template.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
 import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.entity';
+import { PhysicalInvSession } from '../../entities/physical-inv-session.entity';
+import { InventoryFreezeGuard } from '../../common/guards/inventory-freeze.guard';
 
 // 기존 컨트롤러/서비스
 import { MatLotController } from './controllers/mat-lot.controller';
@@ -113,6 +115,7 @@ import { ReceiveLabelService } from './services/receive-label.service';
       LabelTemplate,
       LabelPrintLog,
       VendorBarcodeMapping,
+      PhysicalInvSession,
     ]),
   ],
   controllers: [
@@ -138,6 +141,7 @@ import { ReceiveLabelService } from './services/receive-label.service';
     ReceiveLabelController,
   ],
   providers: [
+    InventoryFreezeGuard,
     MatLotService,
     MatStockService,
     MatIssueService,

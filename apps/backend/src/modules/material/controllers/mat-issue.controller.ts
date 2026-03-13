@@ -3,13 +3,14 @@
  * @description 자재출고 API 컨트롤러
  */
 
-import { Controller, Get, Post, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MatIssueService } from '../services/mat-issue.service';
 import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 import { ScanIssueDto } from '../dto/scan-issue.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - 출고')
 @Controller('material/issues')
@@ -25,6 +26,7 @@ export class MatIssueController {
 
   @Post('scan')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '바코드 스캔 출고 (LOT 전량)' })
   async scanIssue(@Body() dto: ScanIssueDto) {
     const data = await this.matIssueService.scanIssue(dto);
@@ -40,6 +42,7 @@ export class MatIssueController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '자재 출고' })
   async create(@Body() dto: CreateMatIssueDto) {
     const data = await this.matIssueService.create(dto);
@@ -47,6 +50,7 @@ export class MatIssueController {
   }
 
   @Post(':id/cancel')
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '출고 취소' })
   async cancel(@Param('id') id: string, @Body('reason') reason?: string) {
     const data = await this.matIssueService.cancel(Number(id), reason);
