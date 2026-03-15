@@ -46,9 +46,10 @@ export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, ani
 
   /** 상세 데이터 조회 (content 포함) */
   useEffect(() => {
-    if (!item.id) return;
+    if (!item.itemCode || !item.processCode) return;
+    const compositeId = `${item.itemCode}::${item.processCode}::${item.revision ?? 'A'}`;
     setLoading(true);
-    api.get(`/master/work-instructions/${item.id}`)
+    api.get(`/master/work-instructions/${encodeURIComponent(compositeId)}`)
       .then((res) => {
         if (res.data?.success) {
           setDetail({ ...item, ...res.data.data });
@@ -56,7 +57,7 @@ export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, ani
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [item.id]);
+  }, [item.itemCode, item.processCode, item.revision]);
 
   /** item이 바뀔 때 즉시 기본 정보 반영 */
   useEffect(() => {

@@ -30,7 +30,7 @@ export default function MaterialMenuPage() {
   return (
     <>
       <PdaHeader titleKey="pda.menu.material" backPath="/pda/menu" />
-      <PdaMenuGrid items={visibleItems} layout="grid" />
+      <PdaMenuGrid items={visibleItems} layout="grid" centered />
     </>
   );
 }

@@ -102,7 +102,7 @@ export default function PeriodicInspectPage() {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/equipment/periodic-inspect/${editingItem.id}`, form);
+        await api.put(`/equipment/periodic-inspect/${editingItem.equipCode}/${editingItem.inspectDate}`, form);
       } else {
         await api.post("/equipment/periodic-inspect", { ...form, inspectType: "PERIODIC" });
       }
@@ -118,7 +118,7 @@ export default function PeriodicInspectPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/equipment/periodic-inspect/${deleteTarget.id}`);
+      await api.delete(`/equipment/periodic-inspect/${deleteTarget.equipCode}/${deleteTarget.inspectDate}`);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);

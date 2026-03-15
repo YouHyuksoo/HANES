@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, FileText, Clock, Play, CheckCircle, Search as SearchIcon,
-  Calendar, Send, ShieldCheck, Eye,
+  Calendar, Send, ShieldCheck, Eye, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -26,7 +26,6 @@ import ChangeFormPanel from "./components/ChangeFormPanel";
 
 /** 변경점 데이터 타입 */
 interface ChangeOrder {
-  id: number;
   changeNo: string;
   changeType: string;
   title: string;
@@ -106,14 +105,26 @@ export default function ChangeControlPage() {
   }, [data]);
 
   /* -- 상태 전환 API -- */
-  const patchAction = useCallback(async (id: number, endpoint: string, body?: object) => {
-    await api.patch(`/quality/changes/${id}/${endpoint}`, body ?? {});
+  const patchAction = useCallback(async (changeNo: string, endpoint: string, body?: object) => {
+    await api.patch(`/quality/changes/${changeNo}/${endpoint}`, body ?? {});
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<ChangeOrder>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "changeNo", header: t("quality.change.changeNo"), size: 180,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
@@ -152,7 +163,7 @@ export default function ChangeControlPage() {
             <Button size="sm"
               onClick={() => setConfirmAction({
                 label: t("quality.change.submit"),
-                action: () => patchAction(selectedRow.id, "submit"),
+                action: () => patchAction(selectedRow.changeNo, "submit"),
               })}>
               <Send className="w-4 h-4 mr-1" />{t("quality.change.submit")}
             </Button>
@@ -162,14 +173,14 @@ export default function ChangeControlPage() {
           <>
             <Button size="sm" onClick={() => setConfirmAction({
               label: t("quality.change.review") + " (APPROVE)",
-              action: () => patchAction(selectedRow.id, "review", { action: "APPROVE" }),
+              action: () => patchAction(selectedRow.changeNo, "review", { action: "APPROVE" }),
             })}>
               <ShieldCheck className="w-4 h-4 mr-1" />{t("quality.change.approve")}
             </Button>
             <Button size="sm" variant="danger"
               onClick={() => setConfirmAction({
                 label: t("quality.change.review") + " (REJECT)",
-                action: () => patchAction(selectedRow.id, "review", { action: "REJECT" }),
+                action: () => patchAction(selectedRow.changeNo, "review", { action: "REJECT" }),
               })}>
               {t("common.reject")}
             </Button>
@@ -178,7 +189,7 @@ export default function ChangeControlPage() {
         {s === "APPROVED" && (
           <Button size="sm" onClick={() => setConfirmAction({
             label: t("quality.change.start"),
-            action: () => patchAction(selectedRow.id, "start"),
+            action: () => patchAction(selectedRow.changeNo, "start"),
           })}>
             <Play className="w-4 h-4 mr-1" />{t("quality.change.start")}
           </Button>
@@ -186,7 +197,7 @@ export default function ChangeControlPage() {
         {s === "IN_PROGRESS" && (
           <Button size="sm" onClick={() => setConfirmAction({
             label: t("quality.change.complete"),
-            action: () => patchAction(selectedRow.id, "complete"),
+            action: () => patchAction(selectedRow.changeNo, "complete"),
           })}>
             <CheckCircle className="w-4 h-4 mr-1" />{t("quality.change.complete")}
           </Button>
@@ -227,19 +238,21 @@ export default function ChangeControlPage() {
 
         {/* 액션 버튼 */}
         {actionButtons && (
-          <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
-            <span className="text-sm text-text-muted font-medium">{selectedRow?.changeNo}</span>
+          <div className="flex items-center gap-3 flex-shrink-0 px-1">
+            <span className="text-xs text-text-muted font-medium">{selectedRow?.changeNo}</span>
             {actionButtons}
-          </div></CardContent></Card>
+            <button onClick={() => setSelectedRow(null)} className="ml-auto p-1 hover:bg-surface rounded transition-colors" title={t("common.close")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
+          </div>
         )}
 
         {/* DataGrid */}
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.change.title")}
-            onRowClick={row => setSelectedRow(row as ChangeOrder)}
-            getRowId={row => String((row as ChangeOrder).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as ChangeOrder).changeNo}
+            selectedRowId={selectedRow ? String(selectedRow.changeNo) : undefined}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">

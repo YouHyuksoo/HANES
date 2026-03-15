@@ -30,11 +30,15 @@ export class IqcHistoryController {
     return ResponseUtil.success(data, 'IQC 검사결과가 등록되었습니다.');
   }
 
-  @Post(':id/cancel')
+  @Post('cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'IQC 판정 취소 (LOT iqcStatus → PENDING 복원)' })
-  async cancel(@Param('id') id: string, @Body() dto: CancelIqcResultDto) {
-    const data = await this.iqcHistoryService.cancel(Number(id), dto);
+  async cancel(
+    @Query('inspectDate') inspectDate: string,
+    @Query('seq') seq: string,
+    @Body() dto: CancelIqcResultDto,
+  ) {
+    const data = await this.iqcHistoryService.cancel(inspectDate, Number(seq), dto);
     return ResponseUtil.success(data, 'IQC 판정이 취소되었습니다.');
   }
 }

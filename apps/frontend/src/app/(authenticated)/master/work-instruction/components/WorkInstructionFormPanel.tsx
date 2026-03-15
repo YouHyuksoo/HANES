@@ -110,8 +110,9 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
     if (!form.itemCode.trim() || !form.title.trim()) return;
     setSaving(true);
     try {
-      if (isEdit && editingItem?.id) {
-        await api.put(`/master/work-instructions/${editingItem.id}`, form);
+      if (isEdit && editingItem?.itemCode && editingItem?.processCode) {
+        const compositeId = `${editingItem.itemCode}::${editingItem.processCode}::${editingItem.revision ?? 'A'}`;
+        await api.put(`/master/work-instructions/${encodeURIComponent(compositeId)}`, form);
       } else {
         await api.post("/master/work-instructions", form);
       }

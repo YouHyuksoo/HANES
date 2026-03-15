@@ -70,12 +70,12 @@ export class VendorBarcodeMappingService {
   }
 
   /** 상세 조회 */
-  async findById(id: string) {
+  async findByBarcode(vendorBarcode: string) {
     const mapping = await this.repo.findOne({
-      where: { id: +id },
+      where: { vendorBarcode },
     });
     if (!mapping) {
-      throw new NotFoundException(`바코드 매핑을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`바코드 매핑을 찾을 수 없습니다: ${vendorBarcode}`);
     }
     return mapping;
   }
@@ -101,17 +101,19 @@ export class VendorBarcodeMappingService {
   }
 
   /** 수정 */
-  async update(id: string, dto: UpdateVendorBarcodeMappingDto) {
-    await this.findById(id);
-    await this.repo.update(+id, dto);
-    return this.findById(id);
+  async update(vendorBarcode: string, dto: UpdateVendorBarcodeMappingDto) {
+    await this.findByBarcode(vendorBarcode);
+    // PK인 vendorBarcode는 변경 불가 — dto에서 제거
+    const { vendorBarcode: _ignore, ...updateData } = dto as any;
+    await this.repo.update({ vendorBarcode }, updateData);
+    return this.findByBarcode(vendorBarcode);
   }
 
   /** 삭제 (Soft Delete) */
-  async delete(id: string) {
-    await this.findById(id);
-    await this.repo.delete(+id);
-    return { id };
+  async delete(vendorBarcode: string) {
+    await this.findByBarcode(vendorBarcode);
+    await this.repo.delete({ vendorBarcode });
+    return { vendorBarcode };
   }
 
   /**

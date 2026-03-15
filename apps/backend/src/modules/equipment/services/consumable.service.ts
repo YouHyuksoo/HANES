@@ -31,10 +31,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In, QueryRunner } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import { User } from '../../../entities/user.entity';
 import {
   EquipCreateConsumableDto,
@@ -62,8 +63,32 @@ export class ConsumableService {
     private readonly mountLogRepository: Repository<ConsumableMountLog>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(EquipMaster)
+    private readonly equipMasterRepository: Repository<EquipMaster>,
     private readonly dataSource: DataSource,
   ) {}
+
+  /** CONSUMABLE_LOGS 테이블 오늘 날짜 기준 다음 SEQ */
+  private async getNextLogSeq(transDate: Date, qr?: QueryRunner): Promise<number> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const dateStr = transDate.toISOString().slice(0, 10);
+    const result = await manager.query(
+      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
+      [dateStr],
+    );
+    return result[0].nextSeq;
+  }
+
+  /** CONSUMABLE_MOUNT_LOGS 테이블 오늘 날짜 기준 다음 SEQ */
+  private async getNextMountSeq(mountDate: Date, qr?: QueryRunner): Promise<number> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const dateStr = mountDate.toISOString().slice(0, 10);
+    const result = await manager.query(
+      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_MOUNT_LOGS" WHERE "MOUNT_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
+      [dateStr],
+    );
+    return result[0].nextSeq;
+  }
 
   // =============================================
   // CRUD 기본 기능
@@ -302,7 +327,12 @@ export class ConsumableService {
       });
 
       // 입고 로그 생성
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logSeq = await this.getNextLogSeq(today, queryRunner);
       await queryRunner.manager.save(ConsumableLog, {
+        transDate: today,
+        seq: logSeq,
         consumableCode: consumableCode,
         logType: 'IN',
         qty: 1,
@@ -349,6 +379,21 @@ export class ConsumableService {
       this.logger.log(
         `소모품 상태 자동 변경: ${consumable.consumableCode} (${consumable.status} -> ${newStatus})`
       );
+
+      // 소모품이 REPLACE 상태이고 설비에 장착되어 있으면 설비 상태를 INTERLOCK으로 변경
+      if (newStatus === 'REPLACE' && consumable.mountedEquipCode) {
+        try {
+          await this.equipMasterRepository.update(
+            { equipCode: consumable.mountedEquipCode },
+            { status: 'INTERLOCK' },
+          );
+          this.logger.warn(
+            `소모품 수명 초과로 설비 인터락: ${consumable.mountedEquipCode} ← ${consumable.consumableCode}`,
+          );
+        } catch (err) {
+          this.logger.error(`설비 인터락 설정 실패: ${consumable.mountedEquipCode}`, err);
+        }
+      }
     }
   }
 
@@ -363,7 +408,13 @@ export class ConsumableService {
     // 소모품 존재 확인
     const consumable = await this.findById(dto.consumableId);
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const logSeq = await this.getNextLogSeq(today);
+
     const log = this.consumableLogRepository.create({
+      transDate: today,
+      seq: logSeq,
       consumableCode: dto.consumableId,
       logType: dto.logType,
       qty: dto.qty ?? 1,
@@ -551,7 +602,12 @@ export class ConsumableService {
         mountedEquipCode: dto.equipCode,
       });
 
+      const mountDate = new Date();
+      mountDate.setHours(0, 0, 0, 0);
+      const mountSeq = await this.getNextMountSeq(mountDate, queryRunner);
       await queryRunner.manager.save(ConsumableMountLog, {
+        mountDate,
+        seq: mountSeq,
         consumableCode: consumableCode,
         equipCode: dto.equipCode,
         action: 'MOUNT',
@@ -606,7 +662,12 @@ export class ConsumableService {
         mountedEquipCode: null,
       });
 
+      const mountDate = new Date();
+      mountDate.setHours(0, 0, 0, 0);
+      const mountSeq = await this.getNextMountSeq(mountDate, queryRunner);
       await queryRunner.manager.save(ConsumableMountLog, {
+        mountDate,
+        seq: mountSeq,
         consumableCode: consumableCode,
         equipCode: previousEquipCode,
         action: 'UNMOUNT',
@@ -650,7 +711,12 @@ export class ConsumableService {
     try {
       // 장착 상태면 먼저 해제 로그 기록
       if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipCode) {
+        const mountDate = new Date();
+        mountDate.setHours(0, 0, 0, 0);
+        const mountSeq = await this.getNextMountSeq(mountDate, queryRunner);
         await queryRunner.manager.save(ConsumableMountLog, {
+          mountDate,
+          seq: mountSeq,
           consumableCode: consumableCode,
           equipCode: consumable.mountedEquipCode,
           action: 'UNMOUNT',

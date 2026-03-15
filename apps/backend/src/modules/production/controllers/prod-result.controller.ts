@@ -9,13 +9,13 @@
  *
  * API 구조:
  * - GET    /                        : 생산실적 목록 (페이지네이션)
- * - GET    /:id                     : 생산실적 단건 조회
+ * - GET    /:resultNo               : 생산실적 단건 조회 (resultNo 기준)
  * - GET    /job-order/:orderNo   : 작업지시별 실적 목록
  * - POST   /                        : 생산실적 생성
- * - PUT    /:id                     : 생산실적 수정
- * - DELETE /:id                     : 생산실적 삭제
- * - POST   /:id/complete            : 실적 완료
- * - POST   /:id/cancel              : 실적 취소
+ * - PUT    /:resultNo               : 생산실적 수정
+ * - DELETE /:resultNo               : 생산실적 삭제
+ * - POST   /:resultNo/complete      : 실적 완료
+ * - POST   /:resultNo/cancel        : 실적 취소
  * - GET    /summary/job-order/:id   : 작업지시별 집계
  * - GET    /summary/equip/:id       : 설비별 집계
  * - GET    /summary/worker/:id      : 작업자별 집계
@@ -76,13 +76,13 @@ export class ProdResultController {
     return ResponseUtil.success(data);
   }
 
-  @Get(':id')
+  @Get(':resultNo')
   @ApiOperation({ summary: '생산실적 상세 조회' })
-  @ApiParam({ name: 'id', description: '생산실적 ID' })
+  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '생산실적 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.prodResultService.findById(id);
+  async findById(@Param('resultNo') resultNo: string) {
+    const data = await this.prodResultService.findById(resultNo);
     return ResponseUtil.success(data);
   }
 
@@ -97,50 +97,50 @@ export class ProdResultController {
     return ResponseUtil.success(data, '생산실적이 등록되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':resultNo')
   @ApiOperation({ summary: '생산실적 수정' })
-  @ApiParam({ name: 'id', description: '생산실적 ID' })
+  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   @ApiResponse({ status: 404, description: '생산실적 없음' })
   @ApiResponse({ status: 400, description: '수정 불가 상태' })
-  async update(@Param('id') id: string, @Body() dto: UpdateProdResultDto) {
-    const data = await this.prodResultService.update(id, dto);
+  async update(@Param('resultNo') resultNo: string, @Body() dto: UpdateProdResultDto) {
+    const data = await this.prodResultService.update(resultNo, dto);
     return ResponseUtil.success(data, '생산실적이 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':resultNo')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산실적 삭제' })
-  @ApiParam({ name: 'id', description: '생산실적 ID' })
+  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
   @ApiResponse({ status: 404, description: '생산실적 없음' })
-  async delete(@Param('id') id: string) {
-    await this.prodResultService.delete(id);
+  async delete(@Param('resultNo') resultNo: string) {
+    await this.prodResultService.delete(resultNo);
     return ResponseUtil.success(null, '생산실적이 삭제되었습니다.');
   }
 
   // ===== 상태 변경 =====
 
-  @Post(':id/complete')
+  @Post(':resultNo/complete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산실적 완료', description: 'RUNNING -> DONE 상태로 변경' })
-  @ApiParam({ name: 'id', description: '생산실적 ID' })
+  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
   @ApiResponse({ status: 200, description: '완료 성공' })
   @ApiResponse({ status: 400, description: '상태 변경 불가' })
-  async complete(@Param('id') id: string, @Body() dto: CompleteProdResultDto) {
-    const data = await this.prodResultService.complete(id, dto);
+  async complete(@Param('resultNo') resultNo: string, @Body() dto: CompleteProdResultDto) {
+    const data = await this.prodResultService.complete(resultNo, dto);
     return ResponseUtil.success(data, '생산실적이 완료되었습니다.');
   }
 
-  @Post(':id/cancel')
+  @Post(':resultNo/cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산실적 취소' })
-  @ApiParam({ name: 'id', description: '생산실적 ID' })
+  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
   @ApiBody({ schema: { type: 'object', properties: { remark: { type: 'string', description: '취소 사유' } } } })
   @ApiResponse({ status: 200, description: '취소 성공' })
   @ApiResponse({ status: 400, description: '이미 취소됨' })
-  async cancel(@Param('id') id: string, @Body('remark') remark?: string) {
-    const data = await this.prodResultService.cancel(id, remark);
+  async cancel(@Param('resultNo') resultNo: string, @Body('remark') remark?: string) {
+    const data = await this.prodResultService.cancel(resultNo, remark);
     return ResponseUtil.success(data, '생산실적이 취소되었습니다.');
   }
 

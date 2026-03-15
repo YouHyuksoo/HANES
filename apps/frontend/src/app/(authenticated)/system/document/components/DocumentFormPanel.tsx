@@ -17,7 +17,7 @@ import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface DocumentData {
-  id: number; docNo: string; docTitle: string; docType: string;
+  docNo: string; docTitle: string; docType: string;
   category: string; revisionNo: number; status: string;
   approvedBy: string; approvedAt: string; filePath: string;
   retentionPeriod: number; description: string;
@@ -66,7 +66,7 @@ export default function DocumentFormPanel({ editData, onClose, onSave }: Props) 
         retentionPeriod: Number(form.retentionPeriod) || undefined,
         description: form.description || undefined,
       };
-      if (isEdit && editData) await api.patch(`/system/documents/${editData.id}`, payload);
+      if (isEdit && editData) await api.patch(`/system/documents/${editData.docNo}`, payload);
       else await api.post("/system/documents", payload);
       onSave();
     } catch { /* api interceptor */ } finally { setSaving(false); }
@@ -75,14 +75,14 @@ export default function DocumentFormPanel({ editData, onClose, onSave }: Props) 
   const handleApprove = () => {
     if (!editData) return;
     setConfirmAction({ label: t("system.document.approve"),
-      action: async () => { await api.patch(`/system/documents/approve/${editData.id}`); onSave(); },
+      action: async () => { await api.patch(`/system/documents/approve/${editData.docNo}`); onSave(); },
     });
   };
 
   const handleRevise = () => {
     if (!editData) return;
     setConfirmAction({ label: t("system.document.revise"),
-      action: async () => { await api.post(`/system/documents/revise/${editData.id}`); onSave(); },
+      action: async () => { await api.post(`/system/documents/revise/${editData.docNo}`); onSave(); },
     });
   };
 

@@ -17,6 +17,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
+import { OracleModule } from './common/modules/oracle.module';
 import configuration from './config/configuration';
 
 // 기능 모듈
@@ -50,6 +51,9 @@ import { SharedModule } from './shared/shared.module';
 
     // 데이터베이스 (글로벌) - TypeORM + Oracle
     DatabaseModule,
+
+    // Oracle 패키지/프로시저 호출 헬퍼 (글로벌)
+    OracleModule,
 
     // ===== 기능 모듈 =====
 

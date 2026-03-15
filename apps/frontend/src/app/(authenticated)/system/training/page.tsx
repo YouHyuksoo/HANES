@@ -27,7 +27,6 @@ import TrainingResultList from "./components/TrainingResultList";
 
 /** 교육 계획 데이터 타입 */
 interface TrainingPlan {
-  id: number;
   planNo: string;
   title: string;
   trainingType: string;
@@ -82,7 +81,7 @@ export default function TrainingPage() {
     setConfirmAction({
       label: t("system.training.complete"),
       action: async () => {
-        await api.patch(`/system/trainings/${selectedRow.id}/complete`);
+        await api.patch(`/system/trainings/${selectedRow.planNo}/complete`);
         fetchData();
         setSelectedRow(null);
       },
@@ -95,7 +94,7 @@ export default function TrainingPage() {
     setConfirmAction({
       label: t("system.training.cancelComplete"),
       action: async () => {
-        await api.patch(`/system/trainings/${selectedRow.id}/cancel-complete`);
+        await api.patch(`/system/trainings/${selectedRow.planNo}/cancel-complete`);
         fetchData();
         setSelectedRow(null);
       },
@@ -108,7 +107,7 @@ export default function TrainingPage() {
     setConfirmAction({
       label: t("common.delete"),
       action: async () => {
-        await api.delete(`/system/trainings/${selectedRow.id}`);
+        await api.delete(`/system/trainings/${selectedRow.planNo}`);
         fetchData();
         setSelectedRow(null);
       },
@@ -251,8 +250,8 @@ export default function TrainingPage() {
                   setSelectedRow(r);
                   if (isPanelOpen) setEditTarget(r);
                 }}
-                getRowId={row => String((row as TrainingPlan).id)}
-                selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+                getRowId={row => (row as TrainingPlan).planNo}
+                selectedRowId={selectedRow ? String(selectedRow.planNo) : undefined}
                 toolbarLeft={
                   <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                     <ComCodeSelect groupCode="TRAINING_TYPE" value={typeFilter}
@@ -268,7 +267,7 @@ export default function TrainingPage() {
           {/* 우측: 교육 결과 목록 */}
           {selectedRow && (
             <div className="w-1/2 min-h-0 overflow-auto">
-              <TrainingResultList planId={selectedRow.id} planNo={selectedRow.planNo}
+              <TrainingResultList planId={selectedRow.planNo} planNo={selectedRow.planNo}
                 status={selectedRow.status} onRefresh={fetchData} />
             </div>
           )}

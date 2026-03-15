@@ -4,13 +4,13 @@
  *
  * 초보자 가이드:
  * - issueType: 출고 유형 (PRODUCTION, MANUAL, SCRAP 등)
- * - id: SEQUENCE 자동증분 PK
+ * - 복합 PK: issueNo + seq (같은 출고번호의 여러 자재 행)
  * - matUid: 출고 자재시리얼, orderNo: 작업지시 참조
  * - prodResultId: 생산실적 ID (number, 자재 투입 이력 연결)
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -24,13 +24,12 @@ import { ProdResult } from './prod-result.entity';
 @Index(['orderNo'])
 @Index(['matUid'])
 @Index(['issueType'])
-@Index(['issueNo'])
 export class MatIssue {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
+  @PrimaryColumn({ name: 'ISSUE_NO', length: 50 })
+  issueNo: string;
 
-  @Column({ name: 'ISSUE_NO', length: 50, nullable: true })
-  issueNo: string | null;
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
 
   @Column({ name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;

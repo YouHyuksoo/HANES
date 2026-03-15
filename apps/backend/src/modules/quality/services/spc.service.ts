@@ -26,7 +26,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { SpcChart } from '../../../entities/spc-chart.entity';
 import { SpcData } from '../../../entities/spc-data.entity';
 import {
@@ -58,7 +58,17 @@ export class SpcService {
     private readonly chartRepo: Repository<SpcChart>,
     @InjectRepository(SpcData)
     private readonly dataRepo: Repository<SpcData>,
+    private readonly dataSource: DataSource,
   ) {}
+
+  /** chartId + sampleDate 기준 다음 SEQ 번호 조회 */
+  private async getNextDataSeq(chartId: number, sampleDate: Date): Promise<number> {
+    const result = await this.dataSource.query(
+      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "SPC_DATA" WHERE "CHART_ID" = :1 AND "SAMPLE_DATE" = :2`,
+      [chartId, sampleDate],
+    );
+    return result[0].nextSeq;
+  }
 
   // =============================================
   // 관리도 번호 자동채번
@@ -121,9 +131,20 @@ export class SpcService {
   }
 
   /**
-   * 관리도 단건 조회
+   * 관리도 단건 조회 (chartNo PK)
    */
-  async findChartById(id: number) {
+  async findChartById(chartNo: string) {
+    const item = await this.chartRepo.findOne({ where: { chartNo } });
+    if (!item) {
+      throw new NotFoundException('SPC 관리도를 찾을 수 없습니다.');
+    }
+    return item;
+  }
+
+  /**
+   * 관리도 단건 조회 (id, SpcData FK 호환용)
+   */
+  private async findChartByIdNum(id: number) {
     const item = await this.chartRepo.findOne({ where: { id } });
     if (!item) {
       throw new NotFoundException('SPC 관리도를 찾을 수 없습니다.');
@@ -157,8 +178,8 @@ export class SpcService {
   /**
    * 관리도 수정
    */
-  async updateChart(id: number, dto: UpdateSpcChartDto, userId: string) {
-    const item = await this.findChartById(id);
+  async updateChart(chartNo: string, dto: UpdateSpcChartDto, userId: string) {
+    const item = await this.findChartById(chartNo);
     Object.assign(item, dto, { updatedBy: userId });
     return this.chartRepo.save(item);
   }
@@ -166,8 +187,8 @@ export class SpcService {
   /**
    * 관리도 삭제
    */
-  async deleteChart(id: number) {
-    const item = await this.findChartById(id);
+  async deleteChart(chartNo: string) {
+    const item = await this.findChartById(chartNo);
     await this.chartRepo.remove(item);
   }
 
@@ -184,7 +205,7 @@ export class SpcService {
     plant: string,
     userId: string,
   ) {
-    const chart = await this.findChartById(dto.chartId);
+    const chart = await this.findChartByIdNum(dto.chartId);
     const vals = dto.values;
 
     if (vals.length !== chart.subgroupSize) {
@@ -203,9 +224,13 @@ export class SpcService {
     if (chart.ucl != null && mean > Number(chart.ucl)) outOfControl = 1;
     if (chart.lcl != null && mean < Number(chart.lcl)) outOfControl = 1;
 
+    const sampleDate = new Date(dto.sampleDate);
+    const seq = await this.getNextDataSeq(dto.chartId, sampleDate);
+
     const entity = this.dataRepo.create({
       chartId: dto.chartId,
-      sampleDate: new Date(dto.sampleDate),
+      sampleDate,
+      seq,
       subgroupNo: dto.subgroupNo,
       values: JSON.stringify(vals),
       mean: parseFloat(mean.toFixed(4)),
@@ -230,10 +255,10 @@ export class SpcService {
   /**
    * 관리한계 계산 (Xbar-R 기준): UCL/LCL/CL 산출 후 관리도에 저장
    */
-  async calculateControlLimits(chartId: number, userId: string) {
-    const chart = await this.findChartById(chartId);
+  async calculateControlLimits(chartNo: string, userId: string) {
+    const chart = await this.findChartById(chartNo);
     const dataList = await this.dataRepo.find({
-      where: { chartId },
+      where: { chartId: chart.id },
       order: { subgroupNo: 'ASC' },
     });
 
@@ -261,7 +286,7 @@ export class SpcService {
     chart.updatedBy = userId;
 
     const saved = await this.chartRepo.save(chart);
-    this.logger.log(`관리한계 계산 완료: chartId=${chartId}, UCL=${chart.ucl}, CL=${chart.cl}, LCL=${chart.lcl}`);
+    this.logger.log(`관리한계 계산 완료: chartNo=${chartNo}, UCL=${chart.ucl}, CL=${chart.cl}, LCL=${chart.lcl}`);
     return saved;
   }
 
@@ -272,8 +297,8 @@ export class SpcService {
   /**
    * Cpk/Ppk 계산 — 최근 데이터 기반
    */
-  async calculateCpk(chartId: number) {
-    const chart = await this.findChartById(chartId);
+  async calculateCpk(chartNo: string) {
+    const chart = await this.findChartById(chartNo);
 
     if (chart.usl == null || chart.lsl == null) {
       throw new BadRequestException(
@@ -282,7 +307,7 @@ export class SpcService {
     }
 
     const dataList = await this.dataRepo.find({
-      where: { chartId },
+      where: { chartId: chart.id },
       order: { subgroupNo: 'ASC' },
     });
 
@@ -312,8 +337,8 @@ export class SpcService {
     const cpk = parseFloat(Math.min(cpupper, cplower).toFixed(4));
     const ppk = cpk; // Ppk 근사 (전체 데이터 기준)
 
-    this.logger.log(`Cpk 계산 완료: chartId=${chartId}, Cpk=${cpk}`);
-    return { chartId, cpk, ppk, mean: parseFloat(overallMean.toFixed(4)), sigma: parseFloat(overallSigma.toFixed(4)) };
+    this.logger.log(`Cpk 계산 완료: chartNo=${chartNo}, Cpk=${cpk}`);
+    return { chartNo, cpk, ppk, mean: parseFloat(overallMean.toFixed(4)), sigma: parseFloat(overallSigma.toFixed(4)) };
   }
 
   // =============================================
@@ -324,17 +349,17 @@ export class SpcService {
    * 차트 렌더링용 데이터 포인트 조회
    */
   async getChartData(
-    chartId: number,
+    chartNo: string,
     from?: string,
     to?: string,
     company?: string,
     plant?: string,
   ) {
-    const chart = await this.findChartById(chartId);
+    const chart = await this.findChartById(chartNo);
 
     const qb = this.dataRepo
       .createQueryBuilder('d')
-      .where('d.chartId = :chartId', { chartId });
+      .where('d.chartId = :chartId', { chartId: chart.id });
 
     if (company) qb.andWhere('d.company = :company', { company });
     if (plant) qb.andWhere('d.plant = :plant', { plant });

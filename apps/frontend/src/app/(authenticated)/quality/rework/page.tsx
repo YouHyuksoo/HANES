@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardList, Clock, Play, CheckCircle, Search as SearchIcon,
-  Calendar, Send, ShieldCheck, Factory, Eye, Layers,
+  Calendar, Send, ShieldCheck, Factory, Eye, Layers, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -30,7 +30,6 @@ import type { ResultTarget } from "./components/ReworkResultPanel";
 
 /** 재작업 지시 데이터 타입 */
 interface ReworkOrder {
-  id: number;
   reworkNo: string;
   itemCode: string;
   itemName: string;
@@ -50,7 +49,7 @@ interface ReworkOrder {
 
 /** 재작업 공정 데이터 타입 */
 interface ReworkProcess {
-  id: number;
+  reworkOrderId: number;
   processCode: string;
   processName: string;
   seq: number;
@@ -110,7 +109,7 @@ export default function ReworkPage() {
   /* ── 행 선택 시 공정 목록 조회 ── */
   useEffect(() => {
     if (selectedRow) {
-      api.get(`/quality/reworks/${selectedRow.id}/processes`)
+      api.get(`/quality/reworks/${selectedRow.reworkNo}/processes`)
         .then(res => setProcesses(res.data?.data ?? []))
         .catch(() => setProcesses([]));
     } else {
@@ -129,8 +128,8 @@ export default function ReworkPage() {
   }, [data]);
 
   /* ── 상태 전환 API ── */
-  const patchAction = useCallback(async (id: number, endpoint: string, body?: object) => {
-    await api.patch(`/quality/reworks/${id}/${endpoint}`, body ?? {});
+  const patchAction = useCallback(async (reworkNo: string, endpoint: string, body?: object) => {
+    await api.patch(`/quality/reworks/${reworkNo}/${endpoint}`, body ?? {});
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
@@ -138,57 +137,57 @@ export default function ReworkPage() {
   /* ── 액션 핸들러 ── */
   const handleRequestApproval = () => {
     if (!selectedRow) return;
-    setConfirmAction({ label: t("quality.rework.requestApproval"), action: () => patchAction(selectedRow.id, "request-approval") });
+    setConfirmAction({ label: t("quality.rework.requestApproval"), action: () => patchAction(selectedRow.reworkNo, "request-approval") });
   };
   const handleQcApprove = () => { setApproveType("qc"); setIsApproveOpen(true); };
   const handleProdApprove = () => { setApproveType("prod"); setIsApproveOpen(true); };
   const handleStart = () => {
     if (!selectedRow) return;
-    setConfirmAction({ label: t("quality.rework.start"), action: () => patchAction(selectedRow.id, "start") });
+    setConfirmAction({ label: t("quality.rework.start"), action: () => patchAction(selectedRow.reworkNo, "start") });
   };
   const handleComplete = () => {
     if (!selectedRow) return;
-    setConfirmAction({ label: t("quality.rework.complete"), action: () => patchAction(selectedRow.id, "complete", { resultQty: selectedRow.reworkQty }) });
+    setConfirmAction({ label: t("quality.rework.complete"), action: () => patchAction(selectedRow.reworkNo, "complete", { resultQty: selectedRow.reworkQty }) });
   };
 
   const handleApproveSubmit = async (action: "APPROVE" | "REJECT", reason?: string) => {
     if (!selectedRow) return;
     const endpoint = approveType === "qc" ? "qc-approve" : "prod-approve";
-    await api.patch(`/quality/reworks/${selectedRow.id}/${endpoint}`, { action, reason });
+    await api.patch(`/quality/reworks/${selectedRow.reworkNo}/${endpoint}`, { action, reason });
     fetchData();
     setSelectedRow(null);
   };
 
   /* ── 공정별 액션 ── */
-  const fetchProcesses = useCallback(async (orderId: number) => {
+  const fetchProcesses = useCallback(async (reworkNo: string) => {
     try {
-      const res = await api.get(`/quality/reworks/${orderId}/processes`);
+      const res = await api.get(`/quality/reworks/${reworkNo}/processes`);
       setProcesses(res.data?.data ?? []);
     } catch { setProcesses([]); }
   }, []);
 
   const handleProcessStart = useCallback(async (proc: ReworkProcess) => {
-    await api.patch(`/quality/rework-processes/${proc.id}/start`);
-    if (selectedRow) fetchProcesses(selectedRow.id);
+    await api.patch(`/quality/reworks/processes/${proc.reworkOrderId}/${proc.processCode}/start`);
+    if (selectedRow) fetchProcesses(selectedRow.reworkNo);
     fetchData();
   }, [selectedRow, fetchProcesses, fetchData]);
 
   const handleProcessComplete = useCallback(async (proc: ReworkProcess) => {
-    await api.patch(`/quality/rework-processes/${proc.id}/complete`, { resultQty: proc.resultQty || proc.planQty });
-    if (selectedRow) fetchProcesses(selectedRow.id);
+    await api.patch(`/quality/reworks/processes/${proc.reworkOrderId}/${proc.processCode}/complete`, { resultQty: proc.resultQty || proc.planQty });
+    if (selectedRow) fetchProcesses(selectedRow.reworkNo);
     fetchData();
   }, [selectedRow, fetchProcesses, fetchData]);
 
   const handleProcessSkip = useCallback(async (proc: ReworkProcess) => {
-    await api.patch(`/quality/rework-processes/${proc.id}/skip`);
-    if (selectedRow) fetchProcesses(selectedRow.id);
+    await api.patch(`/quality/reworks/processes/${proc.reworkOrderId}/${proc.processCode}/skip`);
+    if (selectedRow) fetchProcesses(selectedRow.reworkNo);
     fetchData();
   }, [selectedRow, fetchProcesses, fetchData]);
 
   const handleOpenResult = useCallback((proc: ReworkProcess) => {
     if (!selectedRow) return;
     setResultTarget({
-      processId: proc.id,
+      reworkOrderId: proc.reworkOrderId,
       processCode: proc.processCode,
       processName: proc.processName,
       seq: proc.seq,
@@ -199,12 +198,24 @@ export default function ReworkPage() {
 
   const handleResultSave = useCallback(() => {
     setResultTarget(null);
-    if (selectedRow) fetchProcesses(selectedRow.id);
+    if (selectedRow) fetchProcesses(selectedRow.reworkNo);
     fetchData();
   }, [selectedRow, fetchProcesses, fetchData]);
 
   /* ── 컬럼 정의 ── */
   const columns = useMemo<ColumnDef<ReworkOrder>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "reworkNo", header: t("quality.rework.reworkNo"), size: 170, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
     { accessorKey: "itemCode", header: t("quality.rework.itemCode"), size: 130, meta: { filterType: "text" as const } },
@@ -290,6 +301,12 @@ export default function ReworkPage() {
           <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
             <span className="text-sm text-text-muted font-medium">{selectedRow?.reworkNo}</span>
             {actionButtons}
+            <div className="ml-auto">
+              <button onClick={() => setSelectedRow(null)}
+                className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+                <X className="w-4 h-4 text-text-muted" />
+              </button>
+            </div>
           </div></CardContent></Card>
         )}
 
@@ -316,7 +333,7 @@ export default function ReworkPage() {
                 </thead>
                 <tbody>
                   {processes.map(proc => (
-                    <tr key={proc.id} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
+                    <tr key={`${proc.reworkOrderId}-${proc.processCode}`} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
                       <td className="px-3 py-2 text-text-muted">{proc.seq}</td>
                       <td className="px-3 py-2 font-medium text-text">{proc.processCode}</td>
                       <td className="px-3 py-2 text-text">{proc.processName}</td>
@@ -366,9 +383,8 @@ export default function ReworkPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.rework.title")}
-            onRowClick={row => setSelectedRow(row as ReworkOrder)}
-            getRowId={row => String((row as ReworkOrder).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as ReworkOrder).reworkNo}
+            selectedRowId={selectedRow?.reworkNo}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">

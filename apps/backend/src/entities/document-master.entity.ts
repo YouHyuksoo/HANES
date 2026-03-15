@@ -11,7 +11,7 @@
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -19,14 +19,10 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'DOCUMENT_MASTERS' })
-@Index(['company', 'plant', 'docNo'], { unique: true })
 @Index(['company', 'plant', 'docType'])
 @Index(['company', 'plant', 'status'])
 export class DocumentMaster {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'DOC_NO', length: 30 })
+  @PrimaryColumn({ name: 'DOC_NO', length: 50 })
   docNo: string;
 
   @Column({ name: 'DOC_TITLE', length: 200 })

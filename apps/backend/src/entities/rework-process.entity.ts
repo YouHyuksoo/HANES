@@ -8,7 +8,7 @@
  * 3. 상태: WAITING → IN_PROGRESS → COMPLETED / SKIPPED
  */
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn,
+  Entity, PrimaryColumn, Column, ManyToOne, JoinColumn,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 import { ReworkOrder } from './rework-order.entity';
@@ -17,17 +17,14 @@ import { ProcessMaster } from './process-master.entity';
 @Entity({ name: 'REWORK_PROCESSES' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkProcess {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'REWORK_ORDER_ID' })
+  @PrimaryColumn({ name: 'REWORK_ORDER_ID' })
   reworkOrderId: number;
 
   @ManyToOne(() => ReworkOrder)
   @JoinColumn({ name: 'REWORK_ORDER_ID' })
   reworkOrder: ReworkOrder;
 
-  @Column({ name: 'PROCESS_CODE', length: 50 })
+  @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;
 
   @ManyToOne(() => ProcessMaster)

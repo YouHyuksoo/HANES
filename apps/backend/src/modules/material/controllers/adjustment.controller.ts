@@ -3,10 +3,10 @@
  * @description 재고보정 API 컨트롤러
  *
  * 초보자 가이드:
- * - POST /material/adjustment          → 즉시 승인 보정 (PC 화면)
- * - POST /material/adjustment/pending  → 승인 대기 보정 (PDA)
- * - PATCH /material/adjustment/:id/approve → 승인 (재고 반영)
- * - PATCH /material/adjustment/:id/reject  → 반려 (재고 변동 없음)
+ * - POST /material/adjustment                           → 즉시 승인 보정 (PC 화면)
+ * - POST /material/adjustment/pending                   → 승인 대기 보정 (PDA)
+ * - PATCH /material/adjustment/:adjDate/:seq/approve    → 승인 (재고 반영)
+ * - PATCH /material/adjustment/:adjDate/:seq/reject     → 반려 (재고 변동 없음)
  */
 
 import { Controller, Get, Post, Patch, Body, Query, Param, ParseIntPipe, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
@@ -47,26 +47,30 @@ export class AdjustmentController {
     return ResponseUtil.success(data, '보정 요청이 등록되었습니다. 승인 후 재고에 반영됩니다.');
   }
 
-  @Patch(':id/approve')
+  @Patch(':adjDate/:seq/approve')
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '재고보정 승인 — PENDING → APPROVED, 재고 실반영' })
-  @ApiParam({ name: 'id', description: 'InvAdjLog PK' })
+  @ApiParam({ name: 'adjDate', description: 'InvAdjLog 조정일자 (YYYY-MM-DD)' })
+  @ApiParam({ name: 'seq', description: 'InvAdjLog 일련번호' })
   async approve(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('adjDate') adjDate: string,
+    @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: ApproveAdjustmentDto,
   ) {
-    const data = await this.adjustmentService.approve(id, dto.approvedBy);
+    const data = await this.adjustmentService.approve(adjDate, seq, dto.approvedBy);
     return ResponseUtil.success(data, '보정이 승인되었습니다. 재고에 반영되었습니다.');
   }
 
-  @Patch(':id/reject')
+  @Patch(':adjDate/:seq/reject')
   @ApiOperation({ summary: '재고보정 반려 — PENDING → REJECTED, 재고 변동 없음' })
-  @ApiParam({ name: 'id', description: 'InvAdjLog PK' })
+  @ApiParam({ name: 'adjDate', description: 'InvAdjLog 조정일자 (YYYY-MM-DD)' })
+  @ApiParam({ name: 'seq', description: 'InvAdjLog 일련번호' })
   async reject(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('adjDate') adjDate: string,
+    @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: ApproveAdjustmentDto,
   ) {
-    const data = await this.adjustmentService.reject(id, dto.approvedBy);
+    const data = await this.adjustmentService.reject(adjDate, seq, dto.approvedBy);
     return ResponseUtil.success(data, '보정 요청이 반려되었습니다.');
   }
 }

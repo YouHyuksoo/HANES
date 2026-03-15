@@ -3,14 +3,13 @@
  * @description 월간생산계획(ProdPlan) 엔티티 - 월별 생산 계획 정보를 관리한다.
  *
  * 초보자 가이드:
- * 1. ID가 PK (자동증가 시퀀스)
- * 2. PLAN_NO는 유니크 자연키 (PP-YYYYMM-NNN)
- * 3. ITEM_CODE로 PartMaster(품목)를 참조
- * 4. STATUS: DRAFT → CONFIRMED → CLOSED 워크플로우
+ * 1. PLAN_NO가 자연키 PK (PP-YYYYMM-NNN)
+ * 2. ITEM_CODE로 PartMaster(품목)를 참조
+ * 3. STATUS: DRAFT → CONFIRMED → CLOSED 워크플로우
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -24,10 +23,7 @@ import { PartMaster } from './part-master.entity';
 @Index(['planMonth'])
 @Index(['status'])
 export class ProdPlan {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'PLAN_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'PLAN_NO', length: 50 })
   planNo: string;
 
   @Column({ name: 'PLAN_MONTH', length: 7 })

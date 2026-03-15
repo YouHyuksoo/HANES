@@ -1,34 +1,27 @@
 /**
  * @file iqc-item-master.entity.ts
  * @description IQC 검사항목 마스터(IqcItemMaster) 엔티티 - 품목별 검사항목을 정의한다.
- *              시퀀스 PK 사용, partId → itemCode로 변환됨.
+ *              itemCode + seq 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
+ * 1. itemCode + seq가 복합 PK (자연키)
  * 2. ITEM_CODE로 ItemMaster(품목)를 참조
  * 3. SEQ로 검사 순서 관리
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'IQC_ITEM_MASTERS' })
-@Unique(['itemCode', 'seq'])
-@Index(['itemCode'])
 export class IqcItemMaster {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'ITEM_CODE', length: 50 })
+  @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'SEQ', type: 'int' })
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
   seq: number;
 
   @Column({ name: 'INSPECT_ITEM', length: 255 })

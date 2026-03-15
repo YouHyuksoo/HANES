@@ -3,20 +3,20 @@
  * @description CAPA 시정/예방조치 API 컨트롤러 — IATF 16949 10.2
  *
  * 초보자 가이드:
- * 1. **CAPA API**: /api/v1/quality/capas
- *    - GET    /capas              : 목록 조회
- *    - GET    /capas/stats        : 통계
- *    - GET    /capas/:id          : 단건 조회 (actions 포함)
- *    - POST   /capas              : 등록
- *    - PUT    /capas/:id          : 수정
- *    - DELETE /capas/:id          : 삭제 (OPEN만)
- *    - PATCH  /capas/:id/analyze  : 원인 분석 완료
- *    - PATCH  /capas/:id/plan     : 조치 계획 등록
- *    - PATCH  /capas/:id/start    : 조치 시작
- *    - PATCH  /capas/:id/verify   : 유효성 검증
- *    - PATCH  /capas/:id/close    : 종료
- *    - POST   /capas/:id/actions  : 조치항목 추가
- *    - PATCH  /capas/:id/actions/:actionId : 조치항목 수정
+ * 1. **CAPA API**: @Controller('quality/capas')
+ *    - GET    /quality/capas              : 목록 조회
+ *    - GET    /quality/capas/stats        : 통계
+ *    - GET    /quality/capas/:id          : 단건 조회 (actions 포함)
+ *    - POST   /quality/capas              : 등록
+ *    - PUT    /quality/capas/:id          : 수정
+ *    - DELETE /quality/capas/:id          : 삭제 (OPEN만)
+ *    - PATCH  /quality/capas/:id/analyze  : 원인 분석 완료
+ *    - PATCH  /quality/capas/:id/plan     : 조치 계획 등록
+ *    - PATCH  /quality/capas/:id/start    : 조치 시작
+ *    - PATCH  /quality/capas/:id/verify   : 유효성 검증
+ *    - PATCH  /quality/capas/:id/close    : 종료
+ *    - POST   /quality/capas/:id/actions  : 조치항목 추가
+ *    - PATCH  /quality/capas/:id/actions/:actionId : 조치항목 수정
  *
  * 2. **인증**: @Company(), @Plant() 데코레이터로 테넌시, req.user.id로 사용자 ID
  */
@@ -52,13 +52,13 @@ import {
 } from '../dto/capa.dto';
 
 @ApiTags('품질관리 - CAPA')
-@Controller('quality')
+@Controller('quality/capas')
 export class CapaController {
   constructor(private readonly capaService: CapaService) {}
 
   // ===== 통계 (목록보다 먼저 정의) =====
 
-  @Get('capas/stats')
+  @Get('stats')
   @ApiOperation({ summary: 'CAPA 통계', description: '상태/유형별 건수' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStats(@Company() company: string, @Plant() plant: string) {
@@ -68,7 +68,7 @@ export class CapaController {
 
   // ===== CAPA CRUD =====
 
-  @Get('capas')
+  @Get()
   @ApiOperation({ summary: 'CAPA 목록 조회', description: '페이지네이션 및 필터링' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findAll(
@@ -80,7 +80,7 @@ export class CapaController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('capas/:id')
+  @Get(':id')
   @ApiOperation({ summary: 'CAPA 단건 조회', description: '조치 항목 포함' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
@@ -90,7 +90,7 @@ export class CapaController {
     return ResponseUtil.success(data);
   }
 
-  @Post('capas')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'CAPA 등록', description: '시정/예방조치 요청 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
@@ -106,7 +106,7 @@ export class CapaController {
     return ResponseUtil.success(data, 'CAPA가 등록되었습니다.');
   }
 
-  @Put('capas/:id')
+  @Put(':id')
   @ApiOperation({ summary: 'CAPA 수정' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
@@ -119,7 +119,7 @@ export class CapaController {
     return ResponseUtil.success(data, 'CAPA가 수정되었습니다.');
   }
 
-  @Delete('capas/:id')
+  @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'CAPA 삭제', description: 'OPEN 상태에서만 가능' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
@@ -131,7 +131,7 @@ export class CapaController {
 
   // ===== 상태 전이 =====
 
-  @Patch('capas/:id/analyze')
+  @Patch(':id/analyze')
   @ApiOperation({ summary: '원인 분석 완료', description: 'OPEN → ANALYZING' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '분석 등록 성공' })
@@ -144,7 +144,7 @@ export class CapaController {
     return ResponseUtil.success(data, '원인 분석이 등록되었습니다.');
   }
 
-  @Patch('capas/:id/plan')
+  @Patch(':id/plan')
   @ApiOperation({ summary: '조치 계획 등록', description: 'ANALYZING → ACTION_PLANNED' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '계획 등록 성공' })
@@ -157,7 +157,7 @@ export class CapaController {
     return ResponseUtil.success(data, '조치 계획이 등록되었습니다.');
   }
 
-  @Patch('capas/:id/start')
+  @Patch(':id/start')
   @ApiOperation({ summary: '조치 시작', description: 'ACTION_PLANNED → IN_PROGRESS' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '조치 시작 성공' })
@@ -169,7 +169,7 @@ export class CapaController {
     return ResponseUtil.success(data, '조치가 시작되었습니다.');
   }
 
-  @Patch('capas/:id/verify')
+  @Patch(':id/verify')
   @ApiOperation({ summary: '유효성 검증', description: 'IN_PROGRESS → VERIFYING' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '검증 등록 성공' })
@@ -182,7 +182,7 @@ export class CapaController {
     return ResponseUtil.success(data, '유효성 검증이 등록되었습니다.');
   }
 
-  @Patch('capas/:id/close')
+  @Patch(':id/close')
   @ApiOperation({ summary: 'CAPA 종료', description: 'VERIFYING → CLOSED' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '종료 성공' })
@@ -196,7 +196,7 @@ export class CapaController {
 
   // ===== 조치 항목 =====
 
-  @Post('capas/:id/actions')
+  @Post(':id/actions')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '조치항목 추가' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
@@ -210,19 +210,19 @@ export class CapaController {
     return ResponseUtil.success(data, '조치항목이 추가되었습니다.');
   }
 
-  @Patch('capas/:id/actions/:actionId')
+  @Patch(':id/actions/:seq')
   @ApiOperation({ summary: '조치항목 수정' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
-  @ApiParam({ name: 'actionId', description: '조치항목 ID' })
+  @ApiParam({ name: 'seq', description: '조치항목 순번' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async updateAction(
     @Param('id', ParseIntPipe) id: number,
-    @Param('actionId', ParseIntPipe) actionId: number,
+    @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: Partial<CAPAActionItemDto>,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.capaService.updateAction(
-      id, actionId, dto, req.user?.id ?? 'system',
+      id, seq, dto, req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '조치항목이 수정되었습니다.');
   }

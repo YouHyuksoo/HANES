@@ -19,8 +19,8 @@ import api from "@/services/api";
 
 /** 발견사항 데이터 타입 */
 interface Finding {
-  id: number;
-  findingNo: string;
+  auditId: number;
+  findingNo: number;
   clauseRef: string;
   category: string;
   description: string;
@@ -104,9 +104,9 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
 
   /** 발견사항 삭제 */
   const handleDelete = useCallback(
-    async (findingId: number) => {
+    async (findingAuditId: number, findingNo: number) => {
       try {
-        await api.delete(`/quality/audits/findings/${findingId}`);
+        await api.delete(`/quality/audits/findings/${findingAuditId}/${findingNo}`);
         fetchFindings();
       } catch {
         // api 인터셉터에서 처리
@@ -117,9 +117,9 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
 
   /** CAPA 연결 */
   const handleLinkCapa = useCallback(
-    async (findingId: number) => {
+    async (findingAuditId: number, findingNo: number) => {
       try {
-        await api.patch(`/quality/audits/findings/link-capa/${findingId}`);
+        await api.patch(`/quality/audits/findings/${findingAuditId}/${findingNo}/link-capa`);
         fetchFindings();
       } catch {
         // api 인터셉터에서 처리
@@ -229,7 +229,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
                 </tr>
               )}
               {findings.map((f) => (
-                <tr key={f.id} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
+                <tr key={`${f.auditId}-${f.findingNo}`} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
                   <td className="px-3 py-2 font-medium text-primary">{f.findingNo}</td>
                   <td className="px-3 py-2 text-text">{f.clauseRef || "-"}</td>
                   <td className="px-3 py-2">
@@ -247,7 +247,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => handleLinkCapa(f.id)}
+                          onClick={() => handleLinkCapa(f.auditId, f.findingNo)}
                           className="text-[10px] px-1.5 py-0.5 h-6"
                         >
                           <Link className="w-3 h-3 mr-0.5" />
@@ -257,7 +257,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDelete(f.id)}
+                        onClick={() => handleDelete(f.auditId, f.findingNo)}
                         className="text-[10px] px-1.5 py-0.5 h-6 text-red-500"
                       >
                         <Trash2 className="w-3 h-3" />

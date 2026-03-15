@@ -76,6 +76,18 @@ export type ScrapReasonValue = typeof SCRAP_REASON_VALUES[number];
 export const BOM_SIDE_VALUES = ['N', 'L', 'R'] as const;
 export type BomSideValue = typeof BOM_SIDE_VALUES[number];
 
+// ===== 시료 크기 =====
+export const SAMPLE_SIZE_VALUES = ['N1', 'N3', 'N5', 'N10', 'N30', 'ALL'] as const;
+export type SampleSizeValue = typeof SAMPLE_SIZE_VALUES[number];
+
+// ===== 시료 빈도 =====
+export const SAMPLE_FREQ_VALUES = ['EVERY_LOT', 'HOURLY', 'PER_SHIFT', 'DAILY', 'WEEKLY', 'MONTHLY', 'CONTINUOUS'] as const;
+export type SampleFreqValue = typeof SAMPLE_FREQ_VALUES[number];
+
+// ===== 관리 방법 =====
+export const CONTROL_METHOD_VALUES = ['SPC', 'CHECK_SHEET', 'VISUAL', 'GAUGE', 'POKA_YOKE', 'FIRST_ARTICLE', 'AUTO_INSPECT'] as const;
+export type ControlMethodValue = typeof CONTROL_METHOD_VALUES[number];
+
 // ===== 품질 판정 =====
 export const QUALITY_JUDGMENT_VALUES = ['PASS', 'FAIL', 'PENDING', 'CONDITIONAL'] as const;
 export type QualityJudgmentValue = typeof QUALITY_JUDGMENT_VALUES[number];

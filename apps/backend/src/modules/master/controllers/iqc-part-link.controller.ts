@@ -5,8 +5,8 @@
  * 초보자 가이드:
  * 1. **GET /master/iqc-part-links**: 연결 목록 (Part/Partner/Group JOIN)
  * 2. **POST /master/iqc-part-links**: 연결 생성
- * 3. **PUT /master/iqc-part-links/:id**: 연결 수정
- * 4. **DELETE /master/iqc-part-links/:id**: 연결 삭제
+ * 3. **PUT /master/iqc-part-links/:itemCode/:partnerId**: 연결 수정
+ * 4. **DELETE /master/iqc-part-links/:itemCode/:partnerId**: 연결 삭제
  */
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
@@ -28,10 +28,10 @@ export class IqcPartLinkController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get(':id')
+  @Get(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.iqcPartLinkService.findById(id);
+  async findByCompositeKey(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string) {
+    const data = await this.iqcPartLinkService.findByCompositeKey(itemCode, partnerId);
     return ResponseUtil.success(data);
   }
 
@@ -43,17 +43,21 @@ export class IqcPartLinkController {
     return ResponseUtil.success(data, 'IQC 연결이 생성되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateIqcPartLinkDto) {
-    const data = await this.iqcPartLinkService.update(id, dto);
+  async update(
+    @Param('itemCode') itemCode: string,
+    @Param('partnerId') partnerId: string,
+    @Body() dto: UpdateIqcPartLinkDto,
+  ) {
+    const data = await this.iqcPartLinkService.update(itemCode, partnerId, dto);
     return ResponseUtil.success(data, 'IQC 연결이 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.iqcPartLinkService.delete(id);
+  async delete(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string) {
+    await this.iqcPartLinkService.delete(itemCode, partnerId);
     return ResponseUtil.success(null, 'IQC 연결이 삭제되었습니다.');
   }
 }

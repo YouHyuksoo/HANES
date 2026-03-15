@@ -4,15 +4,14 @@
  *
  * 초보자 가이드:
  * - MatIssueRequest의 상세 품목 테이블
- * - requestId로 헤더(MAT_ISSUE_REQUESTS)와 연결
+ * - requestId + seq 복합 PK
  * - itemCode로 품목 마스터(ITEM_MASTERS)와 연결
  * - requestQty: 요청 수량, issuedQty: 실제 출고된 수량
- * - id: SEQUENCE 자동증분 PK
  */
 
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -20,14 +19,13 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'MAT_ISSUE_REQUEST_ITEMS' })
-@Index(['requestId'])
 @Index(['itemCode'])
 export class MatIssueRequestItem {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'REQUEST_ID', length: 50 })
+  @PrimaryColumn({ name: 'REQUEST_ID', length: 50 })
   requestId: string;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
+  seq: number;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

@@ -22,7 +22,6 @@ import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 interface ShipReturn {
-  id: string;
   returnNo: string;
   shipOrderNo: string;
   customerName: string;
@@ -101,7 +100,7 @@ export default function ShipReturnPage() {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/shipping/returns/${editingItem.id}`, form);
+        await api.put(`/shipping/returns/${editingItem.returnNo}`, form);
       } else {
         await api.post("/shipping/returns", form);
       }
@@ -117,7 +116,7 @@ export default function ShipReturnPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/shipping/returns/${deleteTarget.id}`);
+      await api.delete(`/shipping/returns/${deleteTarget.returnNo}`);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);

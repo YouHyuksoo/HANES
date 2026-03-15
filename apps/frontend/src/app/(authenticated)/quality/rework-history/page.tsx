@@ -40,7 +40,6 @@ import api from "@/services/api";
 
 /** 재작업 지시 레코드 타입 */
 interface ReworkOrder {
-  id: number;
   reworkNo: string;
   itemCode: string;
   itemName: string;

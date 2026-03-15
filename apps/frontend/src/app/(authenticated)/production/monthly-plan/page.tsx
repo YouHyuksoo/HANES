@@ -92,14 +92,14 @@ export default function MonthlyPlanPage() {
 
   const handleConfirm = useCallback(async (item: ProdPlanItem) => {
     try {
-      await api.post(`/production/prod-plans/${item.id}/confirm`);
+      await api.post(`/production/prod-plans/${item.planNo}/confirm`);
       fetchData();
     } catch { /* api interceptor */ }
   }, [fetchData]);
 
   const handleUnconfirm = useCallback(async (item: ProdPlanItem) => {
     try {
-      await api.post(`/production/prod-plans/${item.id}/unconfirm`);
+      await api.post(`/production/prod-plans/${item.planNo}/unconfirm`);
       fetchData();
     } catch { /* api interceptor */ }
   }, [fetchData]);
@@ -107,7 +107,7 @@ export default function MonthlyPlanPage() {
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/production/prod-plans/${deleteTarget.id}`);
+      await api.delete(`/production/prod-plans/${deleteTarget.planNo}`);
       fetchData();
     } catch { /* api interceptor */ }
     finally { setDeleteTarget(null); }

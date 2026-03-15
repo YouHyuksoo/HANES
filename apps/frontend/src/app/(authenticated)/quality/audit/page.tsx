@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardCheck,
-  CheckCircle, Lock, Eye, Pencil, Trash2, Undo2,
+  CheckCircle, Lock, Eye, Pencil, Trash2, Undo2, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -82,6 +82,18 @@ export default function AuditPage() {
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<Audit>[]>(
     () => [
+      {
+        id: "actions", header: "", size: 60,
+        meta: { align: "center" as const, filterType: "none" as const },
+        cell: ({ row }) => (
+          <button
+            onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+            className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+          >
+            <FileSearch className="w-4 h-4 text-primary" />
+          </button>
+        ),
+      },
       {
         accessorKey: "auditNo",
         header: t("quality.audit.auditNo"),
@@ -242,6 +254,10 @@ export default function AuditPage() {
           <div className="flex items-center gap-3 flex-shrink-0 px-1">
             <span className="text-xs text-text-muted font-medium">{selectedRow?.auditNo}</span>
             {actionButtons}
+            <button onClick={() => setSelectedRow(null)}
+              className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
           </div>
         )}
 
@@ -257,7 +273,6 @@ export default function AuditPage() {
                 enableColumnFilter
                 enableExport
                 exportFileName={t("quality.audit.title")}
-                onRowClick={(row) => setSelectedRow(row as Audit)}
                 getRowId={(row) => String((row as Audit).id)}
                 selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
                 toolbarLeft={

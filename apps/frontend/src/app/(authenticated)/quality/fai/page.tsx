@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardCheck, Clock, Play, CheckCircle,
-  Search as SearchIcon, Calendar, ShieldCheck, XCircle,
+  Search as SearchIcon, Calendar, ShieldCheck, XCircle, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -89,6 +89,18 @@ export default function FaiPage() {
   };
 
   const columns = useMemo<ColumnDef<FaiRequest>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "faiNo", header: t("quality.fai.faiNo"), size: 170, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
     { accessorKey: "triggerType", header: t("quality.fai.triggerType"), size: 130,
@@ -169,6 +181,9 @@ export default function FaiPage() {
           <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
             <span className="text-sm text-text-muted font-medium">{selectedRow?.faiNo}</span>
             {actionButtons}
+            <button onClick={() => setSelectedRow(null)} className="ml-auto p-1 hover:bg-surface rounded transition-colors" title={t("common.close")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
           </div></CardContent></Card>
         )}
 
@@ -176,7 +191,6 @@ export default function FaiPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.fai.title")}
-            onRowClick={row => setSelectedRow(row as FaiRequest)}
             getRowId={row => String((row as FaiRequest).id)}
             selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
             toolbarLeft={

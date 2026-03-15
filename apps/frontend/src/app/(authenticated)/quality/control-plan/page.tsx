@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardList, Search as SearchIcon,
-  ShieldCheck, FileEdit,
+  ShieldCheck, FileEdit, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -94,6 +94,18 @@ export default function ControlPlanPage() {
 
   /* -- 컬럼 -- */
   const columns = useMemo<ColumnDef<ControlPlan>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "planNo", header: t("quality.controlPlan.planNo"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
@@ -177,6 +189,10 @@ export default function ControlPlanPage() {
           <div className="flex items-center gap-3 flex-shrink-0 px-1">
             <span className="text-xs text-text-muted font-medium">{selectedRow?.planNo}</span>
             {actionButtons}
+            <button onClick={() => setSelectedRow(null)}
+              className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
           </div>
         )}
 
@@ -184,7 +200,6 @@ export default function ControlPlanPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.controlPlan.title")}
-            onRowClick={row => setSelectedRow(row as ControlPlan)}
             getRowId={row => String((row as ControlPlan).id)}
             selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
             toolbarLeft={
@@ -209,12 +224,10 @@ export default function ControlPlanPage() {
           title={confirmAction?.label ?? ""} message={`${confirmAction?.label ?? ""} ${t("common.confirm")}?`} />
       </div>
 
-      {/* 우측 패널 */}
-      {isPanelOpen && (
-        <ControlPlanFormPanel editData={editTarget}
-          onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
-          onSave={fetchData} />
-      )}
+      {/* 등록/수정 모달 */}
+      <ControlPlanFormPanel isOpen={isPanelOpen} editData={editTarget}
+        onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
+        onSave={fetchData} />
     </div>
   );
 }

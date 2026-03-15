@@ -74,7 +74,7 @@ export class PhysicalInvService {
     });
     if (existing) {
       throw new BadRequestException(
-        `이미 진행 중인 재고실사 세션이 있습니다. (ID: ${existing.id})`,
+        `이미 진행 중인 재고실사 세션이 있습니다. (${existing.sessionDate}-${existing.seq})`,
       );
     }
 
@@ -95,12 +95,13 @@ export class PhysicalInvService {
    * 이 메서드 실행 후 InventoryFreezeGuard 차단이 해제됩니다.
    */
   async completeSession(
-    id: number,
+    sessionDate: string,
+    seq: number,
     dto: CompletePhysicalInvSessionDto,
   ): Promise<PhysicalInvSession> {
-    const session = await this.sessionRepository.findOne({ where: { id } });
+    const session = await this.sessionRepository.findOne({ where: { sessionDate: new Date(sessionDate), seq } });
     if (!session) {
-      throw new NotFoundException(`실사 세션을 찾을 수 없습니다. (ID: ${id})`);
+      throw new NotFoundException(`실사 세션을 찾을 수 없습니다. (${sessionDate}-${seq})`);
     }
     if (session.status !== 'IN_PROGRESS') {
       throw new BadRequestException(`진행 중인 실사 세션이 아닙니다. (현재 상태: ${session.status})`);
@@ -180,7 +181,8 @@ export class PhysicalInvService {
       .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
       .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid')
       .select([
-        'log.id AS "id"',
+        'log.adjDate AS "adjDate"',
+        'log.seq AS "seq"',
         'log.warehouseCode AS "warehouseCode"',
         'log.itemCode AS "itemCode"',
         'part.itemCode AS "itemCode"',

@@ -9,7 +9,7 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, And } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
 import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import {
@@ -113,7 +113,7 @@ export class EquipBomService {
     }
 
     if (bomItemId) {
-      queryBuilder.andWhere('rel.bomItemId = :bomItemId', { bomItemId });
+      queryBuilder.andWhere('rel.bomItemCode = :bomItemId', { bomItemId });
     }
 
     if (itemType) {
@@ -133,9 +133,9 @@ export class EquipBomService {
     return { data, total, page, limit };
   }
 
-  async findRelById(id: number): Promise<EquipBomRel> {
+  async findRelByCompositeKey(equipCode: string, bomItemCode: string): Promise<EquipBomRel> {
     const rel = await this.bomRelRepo.findOne({
-      where: { id },
+      where: { equipCode, bomItemCode },
       relations: ['equipment', 'bomItem'],
     });
     if (!rel) {
@@ -154,27 +154,31 @@ export class EquipBomService {
 
   async createRel(dto: CreateEquipBomRelDto): Promise<EquipBomRel> {
     const rel = this.bomRelRepo.create({
-      ...dto,
+      equipCode: dto.equipCode,
+      bomItemCode: dto.bomItemId,
+      quantity: dto.quantity,
       installDate: dto.installDate ? new Date(dto.installDate) : null,
       expireDate: dto.expireDate ? new Date(dto.expireDate) : null,
+      remark: dto.remark,
+      useYn: dto.useYn,
       company: '40',
       plant: '1000',
     });
     return this.bomRelRepo.save(rel);
   }
 
-  async updateRel(id: number, dto: UpdateEquipBomRelDto): Promise<EquipBomRel> {
-    const rel = await this.findRelById(id);
-    Object.assign(rel, {
-      ...dto,
-      installDate: dto.installDate ? new Date(dto.installDate) : rel.installDate,
-      expireDate: dto.expireDate ? new Date(dto.expireDate) : rel.expireDate,
-    });
+  async updateRel(equipCode: string, bomItemCode: string, dto: UpdateEquipBomRelDto): Promise<EquipBomRel> {
+    const rel = await this.findRelByCompositeKey(equipCode, bomItemCode);
+    if (dto.quantity !== undefined) rel.quantity = dto.quantity;
+    if (dto.installDate !== undefined) rel.installDate = dto.installDate ? new Date(dto.installDate) : null;
+    if (dto.expireDate !== undefined) rel.expireDate = dto.expireDate ? new Date(dto.expireDate) : null;
+    if (dto.remark !== undefined) rel.remark = dto.remark ?? null;
+    if (dto.useYn !== undefined) rel.useYn = dto.useYn;
     return this.bomRelRepo.save(rel);
   }
 
-  async deleteRel(id: number): Promise<void> {
-    const rel = await this.findRelById(id);
+  async deleteRel(equipCode: string, bomItemCode: string): Promise<void> {
+    const rel = await this.findRelByCompositeKey(equipCode, bomItemCode);
     await this.bomRelRepo.remove(rel);
   }
 
@@ -190,7 +194,6 @@ export class EquipBomService {
     });
 
     return rels.map((rel) => ({
-      id: rel.id,
       equipCode: rel.equipCode,
       bomItemCode: rel.bomItemCode,
       quantity: rel.quantity,

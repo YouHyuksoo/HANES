@@ -1,6 +1,9 @@
 /**
  * @file src/modules/master/services/transfer-rule.service.ts
  * @description 창고이동규칙 비즈니스 로직 서비스 - TypeORM
+ *
+ * 초보자 가이드:
+ * 1. fromWarehouseId + toWarehouseId 복합 PK로 조회/수정/삭제
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
@@ -74,11 +77,11 @@ export class TransferRuleService {
     return { data, total, page, limit };
   }
 
-  async findById(id: number) {
+  async findByCompositeKey(fromWarehouseId: string, toWarehouseId: string) {
     const rule = await this.transferRuleRepository.findOne({
-      where: { id },
+      where: { fromWarehouseId, toWarehouseId },
     });
-    if (!rule) throw new NotFoundException(`창고이동규칙을 찾을 수 없습니다: ${id}`);
+    if (!rule) throw new NotFoundException(`창고이동규칙을 찾을 수 없습니다: ${fromWarehouseId} → ${toWarehouseId}`);
     return rule;
   }
 
@@ -101,15 +104,15 @@ export class TransferRuleService {
     return this.transferRuleRepository.save(rule);
   }
 
-  async update(id: number, dto: UpdateTransferRuleDto) {
-    await this.findById(id);
-    await this.transferRuleRepository.update({ id }, dto);
-    return this.findById(id);
+  async update(fromWarehouseId: string, toWarehouseId: string, dto: UpdateTransferRuleDto) {
+    await this.findByCompositeKey(fromWarehouseId, toWarehouseId);
+    await this.transferRuleRepository.update({ fromWarehouseId, toWarehouseId }, dto);
+    return this.findByCompositeKey(fromWarehouseId, toWarehouseId);
   }
 
-  async delete(id: number) {
-    await this.findById(id);
-    await this.transferRuleRepository.delete({ id });
-    return { id };
+  async delete(fromWarehouseId: string, toWarehouseId: string) {
+    await this.findByCompositeKey(fromWarehouseId, toWarehouseId);
+    await this.transferRuleRepository.delete({ fromWarehouseId, toWarehouseId });
+    return { fromWarehouseId, toWarehouseId };
   }
 }

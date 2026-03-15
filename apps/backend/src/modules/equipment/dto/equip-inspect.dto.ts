@@ -84,10 +84,10 @@ export class InspectCalendarQueryDto {
   @Max(12)
   month: number;
 
-  @ApiPropertyOptional({ description: '라인코드 필터' })
+  @ApiPropertyOptional({ description: '공정코드 필터' })
   @IsOptional()
   @IsString()
-  lineCode?: string;
+  processCode?: string;
 }
 
 /** 점검 캘린더 일별 스케줄 조회 DTO */
@@ -96,10 +96,10 @@ export class InspectDayScheduleQueryDto {
   @IsString()
   date: string;
 
-  @ApiPropertyOptional({ description: '라인코드 필터' })
+  @ApiPropertyOptional({ description: '공정코드 필터' })
   @IsOptional()
   @IsString()
-  lineCode?: string;
+  processCode?: string;
 }
 
 /** 설비 점검 목록 조회 쿼리 DTO */

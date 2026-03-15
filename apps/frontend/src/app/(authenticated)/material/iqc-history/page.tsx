@@ -8,7 +8,7 @@
  * 1. **IQC**: Incoming Quality Control (수입검사)
  * 2. **결과**: PASS(합격), FAIL(불합격)
  * 3. **취소**: DONE 상태만 취소 가능 → LOT iqcStatus가 PENDING으로 복원
- * 4. API: GET /material/iqc-history, POST /material/iqc-history/:id/cancel
+ * 4. API: GET /material/iqc-history, POST /material/iqc-history/cancel?inspectDate=...&seq=...
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -30,6 +30,7 @@ interface IqcHistoryItem {
   status: string;
   inspectorName?: string;
   inspectDate: string;
+  seq?: number;
   remark?: string;
   received?: boolean;
 }
@@ -85,9 +86,10 @@ export default function IqcHistoryPage() {
     if (!cancelTarget || !cancelReason.trim()) return;
     setCancelling(true);
     try {
-      await api.post(`/material/iqc-history/${cancelTarget.id}/cancel`, {
-        reason: cancelReason.trim(),
-      });
+      await api.post(
+        `/material/iqc-history/cancel?inspectDate=${encodeURIComponent(cancelTarget.inspectDate)}&seq=${cancelTarget.seq}`,
+        { reason: cancelReason.trim() },
+      );
       setCancelTarget(null);
       setCancelReason("");
       fetchData();

@@ -63,7 +63,7 @@ export default function IqcItemTab() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<IqcItemPool | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; id: string }>({ open: false, id: "" });
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; itemCode: string }>({ open: false, itemCode: "" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -147,7 +147,7 @@ export default function IqcItemTab() {
       }
 
       if (editing) {
-        await api.put(`/master/iqc-item-pool/${editing.id}`, payload);
+        await api.put(`/master/iqc-item-pool/${editing.itemCode}`, payload);
       } else {
         await api.post("/master/iqc-item-pool", payload);
       }
@@ -162,13 +162,13 @@ export default function IqcItemTab() {
 
   const handleDelete = useCallback(async () => {
     try {
-      await api.delete(`/master/iqc-item-pool/${confirmModal.id}`);
-      setConfirmModal({ open: false, id: "" });
+      await api.delete(`/master/iqc-item-pool/${confirmModal.itemCode}`);
+      setConfirmModal({ open: false, itemCode: "" });
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);
     }
-  }, [confirmModal.id, fetchData]);
+  }, [confirmModal.itemCode, fetchData]);
 
   const formatSpec = (item: IqcItemPool) => {
     if (item.judgeMethod === "VISUAL") return "-";
@@ -186,7 +186,7 @@ export default function IqcItemTab() {
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-          <button onClick={() => setConfirmModal({ open: true, id: row.original.id })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+          <button onClick={() => setConfirmModal({ open: true, itemCode: row.original.itemCode })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
         </div>
       ),
     },
@@ -262,7 +262,7 @@ export default function IqcItemTab() {
         </div>
       </Modal>
 
-      <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, id: "" })} onConfirm={handleDelete}
+      <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, itemCode: "" })} onConfirm={handleDelete}
         title={t("master.iqcItem.deleteItem", "검사항목 삭제")} message={t("master.iqcItem.deleteConfirm", "이 검사항목을 삭제하시겠습니까?")} variant="danger" />
     </>
   );

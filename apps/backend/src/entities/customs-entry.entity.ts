@@ -1,16 +1,15 @@
 /**
  * @file entities/customs-entry.entity.ts
  * @description 수입신고 엔티티 - 보세 수입신고 정보를 관리한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              ENTRY_NO 자연키 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. entryNo: 수입신고번호 (유니크)
- * 3. status: PENDING, CLEARED, CANCELLED 등
+ * 1. ENTRY_NO가 자연키 PK (수입신고번호)
+ * 2. status: PENDING, CLEARED, CANCELLED 등
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -21,10 +20,7 @@ import {
 @Index(['status'])
 @Index(['declarationDate'])
 export class CustomsEntry {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'ENTRY_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'ENTRY_NO', length: 50 })
   entryNo: string;
 
   @Column({ name: 'BL_NO', length: 50, nullable: true })

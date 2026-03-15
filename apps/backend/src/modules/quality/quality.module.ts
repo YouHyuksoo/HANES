@@ -18,14 +18,15 @@
  * - InspectResultController: 검사실적 API (/quality/inspect-results)
  * - DefectLogController: 불량로그 API (/quality/defect-logs)
  * - OqcController: OQC 출하검사 API (/quality/oqc)
- * - ReworkController: 재작업 API (/quality/reworks, /quality/rework-inspects)
+ * - ReworkController: 재작업 API (/quality/reworks, /quality/reworks/inspects, /quality/reworks/processes)
  * - ChangeOrderController: 변경점관리 API (/quality/changes)
  * - ComplaintController: 고객클레임 API (/quality/complaints)
  * - CapaController: CAPA API (/quality/capas)
  * - FaiController: 초물검사 API (/quality/fai)
- * - SpcController: SPC 관리도 API (/quality/spc-charts, /quality/spc-data)
- * - MsaController: MSA 계측기/교정 API (/quality/gauges, /quality/calibrations)
+ * - SpcController: SPC 관리도 API (/quality/spc/charts, /quality/spc/data)
+ * - MsaController: MSA 계측기/교정 API (/quality/msa/gauges, /quality/msa/calibrations)
  * - PpapController: PPAP API (/quality/ppap)
+ * - ContinuityInspectController: 통전검사 API (/quality/continuity-inspect)
  *
  * 서비스:
  * - InspectResultService: 검사실적 비즈니스 로직
@@ -39,6 +40,7 @@
  * - SpcService: SPC 통계적 공정 관리 비즈니스 로직
  * - MsaService: MSA 계측기 마스터/교정 이력 비즈니스 로직
  * - PpapService: PPAP 제출/승인 비즈니스 로직
+ * - ContinuityInspectService: 통전검사 + FG_BARCODE 발행 비즈니스 로직
  */
 
 import { Module } from '@nestjs/common';
@@ -99,6 +101,11 @@ import { AuditController } from './controllers/audit.controller';
 import { AuditService } from './services/audit.service';
 import { AuditPlan } from '../../entities/audit-plan.entity';
 import { AuditFinding } from '../../entities/audit-finding.entity';
+import { FgLabel } from '../../entities/fg-label.entity';
+import { JobOrder } from '../../entities/job-order.entity';
+import { EquipProtocol } from '../../entities/equip-protocol.entity';
+import { ContinuityInspectController } from './controllers/continuity-inspect.controller';
+import { ContinuityInspectService } from './services/continuity-inspect.service';
 
 @Module({
   imports: [
@@ -132,6 +139,9 @@ import { AuditFinding } from '../../entities/audit-finding.entity';
       PpapSubmission,
       AuditPlan,
       AuditFinding,
+      FgLabel,
+      JobOrder,
+      EquipProtocol,
     ]),
   ],
   controllers: [
@@ -148,6 +158,7 @@ import { AuditFinding } from '../../entities/audit-finding.entity';
     ControlPlanController,
     PpapController,
     AuditController,
+    ContinuityInspectController,
   ],
   providers: [
     InspectResultService,
@@ -164,6 +175,7 @@ import { AuditFinding } from '../../entities/audit-finding.entity';
     ControlPlanService,
     PpapService,
     AuditService,
+    ContinuityInspectService,
   ],
   exports: [
     InspectResultService,
@@ -180,6 +192,7 @@ import { AuditFinding } from '../../entities/audit-finding.entity';
     ControlPlanService,
     PpapService,
     AuditService,
+    ContinuityInspectService,
   ],
 })
 export class QualityModule {}

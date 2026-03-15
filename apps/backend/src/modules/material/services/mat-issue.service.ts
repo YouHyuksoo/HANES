@@ -98,10 +98,10 @@ export class MatIssueService {
     return { data: flattenedData, total, page, limit };
   }
 
-  async findById(id: number) {
-    const issue = await this.matIssueRepository.findOne({ where: { id } });
+  async findById(issueNo: string, seq: number) {
+    const issue = await this.matIssueRepository.findOne({ where: { issueNo, seq } });
 
-    if (!issue) throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${id}`);
+    if (!issue) throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${issueNo}-${seq}`);
     return this.flattenIssue(issue);
   }
 
@@ -116,6 +116,7 @@ export class MatIssueService {
       const results = [];
       // 같은 배치의 모든 아이템에 동일한 issueNo 부여
       const issueNo = await this.numRuleService.nextNumberInTx(queryRunner, 'MAT_ISSUE');
+      let seqCounter = 1;
 
       for (const item of items) {
         // LOT 유효성 확인
@@ -139,9 +140,11 @@ export class MatIssueService {
           throw new BadRequestException(`LOT 재고 부족: ${lot.matUid} (현재: ${lot.currentQty}, 요청: ${item.issueQty})`);
         }
 
-        // 1. 출고 이력 생성 (issueNo 포함)
+        // 1. 출고 이력 생성 (issueNo + seq)
+        const currentSeq = seqCounter++;
         const issue = queryRunner.manager.create(MatIssue, {
           issueNo,
+          seq: currentSeq,
           orderNo,
           prodResultId: prodResultId ? Number(prodResultId) : null,
           matUid: item.matUid,
@@ -167,7 +170,7 @@ export class MatIssueService {
           remark: remark || `자재출고: ${lot.matUid}`,
           workerId,
           refType: 'MAT_ISSUE',
-          refId: String(savedIssue.id),
+          refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
           status: 'DONE',
           company: lot.company || '40',
           plant: lot.plant || '1000',
@@ -257,10 +260,10 @@ export class MatIssueService {
     };
   }
 
-  async cancel(id: number, reason?: string) {
-    const rawIssue = await this.matIssueRepository.findOne({ where: { id } });
+  async cancel(issueNo: string, seq: number, reason?: string) {
+    const rawIssue = await this.matIssueRepository.findOne({ where: { issueNo, seq } });
     if (!rawIssue) {
-      throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${issueNo}-${seq}`);
     }
 
     if (rawIssue.status !== 'DONE') {
@@ -273,11 +276,12 @@ export class MatIssueService {
 
     try {
       // 1. 출고 상태 변경
-      await queryRunner.manager.update(MatIssue, id, { status: 'CANCELED', remark: reason });
+      await queryRunner.manager.update(MatIssue, { issueNo, seq }, { status: 'CANCELED', remark: reason });
 
       // 2. StockTransaction 역분개 (MAT_OUT 취소)
+      const refId = `${issueNo}-${seq}`;
       const originalTx = await queryRunner.manager.findOne(StockTransaction, {
-        where: { refType: 'MAT_ISSUE', refId: String(id), status: 'DONE' },
+        where: { refType: 'MAT_ISSUE', refId, status: 'DONE' },
       });
 
       if (originalTx) {
@@ -291,8 +295,8 @@ export class MatIssueService {
           qty: -originalTx.qty,
           remark: reason || `출고취소 역분개: ${originalTx.transNo}`,
           refType: 'MAT_ISSUE_CANCEL',
-          refId: String(id),
-          cancelRefId: String(originalTx.id),
+          refId: refId,
+          cancelRefId: originalTx.transNo,
           status: 'DONE',
           company: originalTx.company || '40',
           plant: originalTx.plant || '1000',
@@ -300,7 +304,7 @@ export class MatIssueService {
         await queryRunner.manager.save(cancelTx);
 
         // 원본 트랜잭션 상태 변경
-        await queryRunner.manager.update(StockTransaction, originalTx.id, { status: 'CANCELED' });
+        await queryRunner.manager.update(StockTransaction, { transNo: originalTx.transNo }, { status: 'CANCELED' });
       }
 
       // 3. LOT 재고 복구
@@ -328,7 +332,7 @@ export class MatIssueService {
       }
 
       await queryRunner.commitTransaction();
-      return { id, status: 'CANCELED' };
+      return { issueNo, seq, status: 'CANCELED' };
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;

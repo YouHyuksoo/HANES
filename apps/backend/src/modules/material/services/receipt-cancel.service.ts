@@ -64,7 +64,7 @@ export class ReceiptCancelService {
     try {
       // 원본 트랜잭션 조회
       const originalTransaction = await queryRunner.manager.findOne(StockTransaction, {
-        where: { id: Number(transactionId) },
+        where: { transNo: transactionId },
       });
 
       if (!originalTransaction) {
@@ -116,12 +116,16 @@ export class ReceiptCancelService {
 
       // PO 품목 입고량 감소
       if (originalTransaction.refId && originalTransaction.refType === 'PO') {
-        const poItem = await queryRunner.manager.findOne(PurchaseOrderItem, {
-          where: { id: Number(originalTransaction.refId) },
-        });
+        const refSeq = Number(originalTransaction.refId);
+        // refId를 seq로 해석 — 해당 품목의 PO 품목 조회
+        const poItem = !isNaN(refSeq)
+          ? await queryRunner.manager.findOne(PurchaseOrderItem, {
+              where: { seq: refSeq },
+            })
+          : null;
 
         if (poItem) {
-          await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
+          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq }, {
             receivedQty: Math.max(0, poItem.receivedQty - qty),
           });
         }
@@ -138,7 +142,7 @@ export class ReceiptCancelService {
         matUid,
         qty: -qty,
         refType: 'TRANSACTION',
-        refId: String(originalTransaction.id),
+        refId: originalTransaction.transNo,
         workerId,
         remark: reason,
       });
@@ -146,17 +150,17 @@ export class ReceiptCancelService {
       const savedCancelTrans = await queryRunner.manager.save(cancelTransaction);
 
       // 원본 트랜잭션에 취소 참조 설정
-      await queryRunner.manager.update(StockTransaction, originalTransaction.id, {
-        cancelRefId: String(savedCancelTrans.id),
+      await queryRunner.manager.update(StockTransaction, { transNo: originalTransaction.transNo }, {
+        cancelRefId: savedCancelTrans.transNo,
       });
 
       await queryRunner.commitTransaction();
 
       return {
-        id: savedCancelTrans.id,
+        transNo: savedCancelTrans.transNo,
         transactionId,
         cancelled: true,
-        cancelTransactionId: savedCancelTrans.id,
+        cancelTransNo: savedCancelTrans.transNo,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();

@@ -8,7 +8,7 @@
  * 1. gaugeId를 받아 해당 계측기의 교정 로그를 DataGrid로 표시
  * 2. "교정추가" 버튼으로 간단한 인라인 폼을 토글
  * 3. 교정결과(ComCodeBadge)로 PASS/FAIL 등 표시
- * 4. API: GET /quality/calibrations?gaugeId=, POST /quality/calibrations
+ * 4. API: GET /quality/msa/calibrations?gaugeId=, POST /quality/msa/calibrations
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -56,7 +56,7 @@ const INIT_FORM: CalibrationForm = {
 };
 
 interface Props {
-  gaugeId: number;
+  gaugeId: string;
   onCalibrationAdded?: () => void;
 }
 
@@ -71,7 +71,7 @@ export default function CalibrationList({ gaugeId, onCalibrationAdded }: Props) 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/quality/calibrations", { params: { gaugeId } });
+      const res = await api.get("/quality/msa/calibrations", { params: { gaugeId } });
       setData(res.data?.data ?? []);
     } catch { setData([]); } finally { setLoading(false); }
   }, [gaugeId]);
@@ -85,7 +85,7 @@ export default function CalibrationList({ gaugeId, onCalibrationAdded }: Props) 
     if (!form.calibrationDate || !form.result) return;
     setSaving(true);
     try {
-      await api.post("/quality/calibrations", { gaugeId, ...form });
+      await api.post("/quality/msa/calibrations", { gaugeId, ...form });
       setForm(INIT_FORM);
       setShowForm(false);
       fetchData();
@@ -165,7 +165,7 @@ export default function CalibrationList({ gaugeId, onCalibrationAdded }: Props) 
       {/* 교정 이력 DataGrid */}
       <div className="flex-1 min-h-0">
         <DataGrid data={data} columns={columns} isLoading={loading}
-          getRowId={row => String((row as CalibrationLog).id)} />
+          getRowId={row => (row as CalibrationLog).calibrationNo} />
       </div>
     </div>
   );

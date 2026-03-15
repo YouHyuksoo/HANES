@@ -22,8 +22,8 @@ import api from '@/services/api';
 
 /** 출고 이력 레코드 타입 */
 interface IssueRecord {
-  id: string;
-  issueNo: string | null;
+  issueNo: string;
+  seq: number;
   issueQty: number;
   issueDate: string;
   issueType: string;
@@ -96,7 +96,7 @@ export default function IssueHistoryTab() {
     if (!cancelTarget || !cancelReason.trim()) return;
     setCancelling(true);
     try {
-      await api.post(`/material/issues/${cancelTarget.id}/cancel`, {
+      await api.post(`/material/issues/${cancelTarget.issueNo}/${cancelTarget.seq}/cancel`, {
         reason: cancelReason.trim(),
       });
       setCancelTarget(null);

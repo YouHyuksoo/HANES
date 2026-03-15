@@ -99,7 +99,7 @@ export default function IqcGroupTab() {
         })),
       };
       if (editingGroup) {
-        await api.put(`/master/iqc-groups/${editingGroup.id}`, body);
+        await api.put(`/master/iqc-groups/${editingGroup.groupCode}`, body);
       } else {
         await api.post("/master/iqc-groups", body);
       }
@@ -115,7 +115,7 @@ export default function IqcGroupTab() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/iqc-groups/${deleteTarget.id}`);
+      await api.delete(`/master/iqc-groups/${deleteTarget.groupCode}`);
       fetchGroups();
     } catch (e: any) {
       console.error("Delete failed:", e);

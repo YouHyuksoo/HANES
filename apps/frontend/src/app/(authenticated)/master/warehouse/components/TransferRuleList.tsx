@@ -16,7 +16,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface TransferRule {
-  id: string;
   fromWarehouseId: string;
   fromWarehouseCode?: string;
   fromWarehouseName?: string;
@@ -43,7 +42,7 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
   const [editingItem, setEditingItem] = useState<TransferRule | null>(null);
   const [warehouseOptions, setWarehouseOptions] = useState<WarehouseOption[]>([]);
   const [form, setForm] = useState({ fromWarehouseId: "", toWarehouseId: "", allowYn: "Y", remark: "" });
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; id: string }>({ open: false, id: "" });
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; fromId: string; toId: string }>({ open: false, fromId: "", toId: "" });
 
   const fetchWarehouses = useCallback(async () => {
     try {
@@ -86,7 +85,7 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/master/transfer-rules/${editingItem.id}`, form);
+        await api.put(`/master/transfer-rules/${editingItem.fromWarehouseId}/${editingItem.toWarehouseId}`, form);
       } else {
         await api.post("/master/transfer-rules", form);
       }
@@ -101,13 +100,13 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
 
   const handleDelete = useCallback(async () => {
     try {
-      await api.delete(`/master/transfer-rules/${confirmModal.id}`);
-      setConfirmModal({ open: false, id: "" });
+      await api.delete(`/master/transfer-rules/${confirmModal.fromId}/${confirmModal.toId}`);
+      setConfirmModal({ open: false, fromId: "", toId: "" });
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);
     }
-  }, [confirmModal.id, fetchData]);
+  }, [confirmModal.fromId, confirmModal.toId, fetchData]);
 
   // 헤더 버튼을 부모 페이지에 전달
   useEffect(() => {
@@ -127,7 +126,7 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
     { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
         <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setConfirmModal({ open: true, id: row.original.id })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+        <button onClick={() => setConfirmModal({ open: true, fromId: row.original.fromWarehouseId, toId: row.original.toWarehouseId })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
     { accessorKey: "fromWarehouseCode", header: t("master.transferRule.fromWarehouseCode"), size: 120, meta: { filterType: "text" as const } },
@@ -176,7 +175,7 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
         </div>
       </Modal>
 
-      <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, id: "" })} onConfirm={handleDelete} title={t("master.transferRule.deleteRule")} message={t("master.transferRule.deleteConfirm")} variant="danger" />
+      <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, fromId: "", toId: "" })} onConfirm={handleDelete} title={t("master.transferRule.deleteRule")} message={t("master.transferRule.deleteConfirm")} variant="danger" />
     </div>
   );
 }

@@ -7,7 +7,7 @@
  * 2. GET /dashboard/recent-productions - 최근 작업지시 10건 반환
  */
 
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 
 @Controller('dashboard')
@@ -17,6 +17,12 @@ export class DashboardController {
   @Get('kpi')
   async getKpi() {
     const data = await this.dashboardService.getKpi();
+    return { success: true, data };
+  }
+
+  @Get('summary')
+  async getSummary(@Query('date') date: string) {
+    const data = await this.dashboardService.getSummary(date);
     return { success: true, data };
   }
 

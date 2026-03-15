@@ -7,11 +7,12 @@
  * 2. **inspectType**: 'DAILY'(일상), 'PERIODIC'(정기)로 구분
  * 3. EquipInspectLog 테이블 사용
  * 4. **인터락**: 점검 결과가 FAIL이면 해당 설비의 STATUS를 'INTERLOCK'으로 자동 변경
+ * 5. **복합키**: equipCode + inspectType + inspectDate
  */
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
@@ -27,6 +28,21 @@ export class EquipInspectService {
     @InjectRepository(EquipInspectItemMaster)
     private readonly inspectItemRepository: Repository<EquipInspectItemMaster>,
   ) {}
+
+  /** 오늘 해당 설비의 점검 완료 여부 확인 */
+  async checkAlreadyInspected(
+    equipCode: string,
+    inspectDate: string,
+    inspectType: string,
+  ): Promise<boolean> {
+    const count = await this.equipInspectLogRepository
+      .createQueryBuilder('log')
+      .where('log.equipCode = :equipCode', { equipCode })
+      .andWhere('log.inspectType = :inspectType', { inspectType })
+      .andWhere('TRUNC(log.inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
+      .getCount();
+    return count > 0;
+  }
 
   /** 점검 목록 조회 */
   async findAll(query: EquipInspectQueryDto, company?: string, plant?: string) {
@@ -82,7 +98,6 @@ export class EquipInspectService {
       queryBuilder.getCount(),
     ]);
 
-    // Transform raw results to include equip info
     const data = logs.map((log) => ({
       ...log.log,
       equip: {
@@ -95,15 +110,21 @@ export class EquipInspectService {
     return { data, total, page, limit };
   }
 
-  /** 점검 단건 조회 */
-  async findById(id: number) {
-    const log = await this.equipInspectLogRepository.findOne({
-      where: { id },
-    });
+  /** 점검 단건 조회 (복합키) */
+  async findByKey(equipCode: string, inspectType: string, inspectDate: string) {
+    const log = await this.equipInspectLogRepository
+      .createQueryBuilder('log')
+      .where('log.equipCode = :equipCode', { equipCode })
+      .andWhere('log.inspectType = :inspectType', { inspectType })
+      .andWhere('TRUNC(log.inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
+      .getOne();
 
-    if (!log) throw new NotFoundException(`점검 기록을 찾을 수 없습니다: ${id}`);
+    if (!log) {
+      throw new NotFoundException(
+        `점검 기록을 찾을 수 없습니다: ${equipCode}/${inspectType}/${inspectDate}`,
+      );
+    }
 
-    // Get equip info
     const equip = await this.equipMasterRepository.findOne({
       where: { equipCode: log.equipCode },
       select: ['equipCode', 'equipName', 'lineCode'],
@@ -120,7 +141,6 @@ export class EquipInspectService {
     dto: CreateEquipInspectDto,
     context?: { company: string; plant: string },
   ) {
-    // 설비 존재 확인
     const equip = await this.equipMasterRepository.findOne({
       where: { equipCode: dto.equipCode },
     });
@@ -140,7 +160,6 @@ export class EquipInspectService {
 
     const saved = await this.equipInspectLogRepository.save(log);
 
-    // 인터락: overallResult가 FAIL이면 설비 상태를 INTERLOCK으로 변경
     if (saved.overallResult && saved.overallResult.toUpperCase().includes('FAIL')) {
       await this.equipMasterRepository.update(
         { equipCode: equip.equipCode },
@@ -158,37 +177,37 @@ export class EquipInspectService {
     };
   }
 
-  /** 점검 결과 수정 */
-  async update(id: number, dto: UpdateEquipInspectDto) {
-    const log = await this.findById(id);
+  /** 점검 결과 수정 (복합키) */
+  async update(equipCode: string, inspectType: string, inspectDate: string, dto: UpdateEquipInspectDto) {
+    const log = await this.findByKey(equipCode, inspectType, inspectDate);
 
     const updateData: Partial<EquipInspectLog> = {};
 
-    if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
-    if (dto.inspectType !== undefined) updateData.inspectType = dto.inspectType;
-    if (dto.inspectDate !== undefined) updateData.inspectDate = new Date(dto.inspectDate);
     if (dto.inspectorName !== undefined) updateData.inspectorName = dto.inspectorName;
     if (dto.overallResult !== undefined) updateData.overallResult = dto.overallResult;
     if (dto.details !== undefined) updateData.details = dto.details ? JSON.stringify(dto.details) : null;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.equipInspectLogRepository.update(id, updateData);
+    await this.equipInspectLogRepository
+      .createQueryBuilder()
+      .update(EquipInspectLog)
+      .set(updateData)
+      .where('equipCode = :equipCode', { equipCode })
+      .andWhere('inspectType = :inspectType', { inspectType })
+      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
+      .execute();
 
-    const targetEquipCode = updateData.equipCode || log.equipCode;
-
-    // Get equip info for response
     const equip = await this.equipMasterRepository.findOne({
-      where: { equipCode: targetEquipCode },
+      where: { equipCode },
       select: ['equipCode', 'equipName', 'lineCode'],
     });
 
-    const updated = await this.equipInspectLogRepository.findOne({ where: { id: id } });
+    const updated = await this.findByKey(equipCode, inspectType, inspectDate);
 
-    // 인터락: 수정 후 overallResult가 FAIL이면 설비 상태를 INTERLOCK으로 변경
     const finalResult = updated?.overallResult ?? '';
     if (finalResult.toUpperCase().includes('FAIL')) {
       await this.equipMasterRepository.update(
-        { equipCode: targetEquipCode },
+        { equipCode },
         { status: 'INTERLOCK' },
       );
     }
@@ -199,11 +218,18 @@ export class EquipInspectService {
     };
   }
 
-  /** 점검 결과 삭제 */
-  async delete(id: number) {
-    await this.findById(id);
-    await this.equipInspectLogRepository.delete(id);
-    return { id, deleted: true };
+  /** 점검 결과 삭제 (복합키) */
+  async deleteByKey(equipCode: string, inspectType: string, inspectDate: string) {
+    await this.findByKey(equipCode, inspectType, inspectDate);
+    await this.equipInspectLogRepository
+      .createQueryBuilder()
+      .delete()
+      .from(EquipInspectLog)
+      .where('equipCode = :equipCode', { equipCode })
+      .andWhere('inspectType = :inspectType', { inspectType })
+      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
+      .execute();
+    return { equipCode, inspectType, inspectDate, deleted: true };
   }
 
   /**
@@ -219,14 +245,13 @@ export class EquipInspectService {
   }
 
   /** 캘린더 월별 요약 조회 */
-  async getCalendarSummary(year: number, month: number, lineCode?: string, inspectType: string = 'DAILY') {
+  async getCalendarSummary(year: number, month: number, processCode?: string, inspectType: string = 'DAILY') {
     const daysInMonth = new Date(year, month, 0).getDate();
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
 
-    // 1) 사용중인 설비 목록 (lineCode 필터)
     const equipWhere: Record<string, unknown> = { useYn: 'Y' };
-    if (lineCode) equipWhere.lineCode = lineCode;
+    if (processCode) equipWhere.processCode = processCode;
     const equips = await this.equipMasterRepository.find({ where: equipWhere, select: ['equipCode', 'lineCode'] });
     const equipIds = equips.map((e) => e.equipCode);
     if (equipIds.length === 0) {
@@ -236,7 +261,6 @@ export class EquipInspectService {
       }));
     }
 
-    // 2) 해당 설비의 점검항목 조회
     const allItems = await this.inspectItemRepository
       .createQueryBuilder('item')
       .where('item.inspectType = :type', { type: inspectType })
@@ -244,7 +268,6 @@ export class EquipInspectService {
       .andWhere('item.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
       .getMany();
 
-    // 설비별 점검항목 그룹핑
     const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
     for (const item of allItems) {
       const list = itemsByEquip.get(item.equipCode) || [];
@@ -252,7 +275,6 @@ export class EquipInspectService {
       itemsByEquip.set(item.equipCode, list);
     }
 
-    // 3) 해당 월의 점검로그 조회
     const logs = await this.equipInspectLogRepository
       .createQueryBuilder('log')
       .where('log.inspectType = :type', { type: inspectType })
@@ -262,7 +284,6 @@ export class EquipInspectService {
       .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
       .getMany();
 
-    // 날짜별 로그 인덱싱
     const logsByDate = new Map<string, EquipInspectLog[]>();
     for (const log of logs) {
       const d = new Date(log.inspectDate);
@@ -275,20 +296,17 @@ export class EquipInspectService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 4) 날짜별 집계
     const result = [];
     for (let day = 1; day <= daysInMonth; day++) {
       const dateObj = new Date(year, month - 1, day);
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-      // 해당 날짜에 점검 대상인 설비 수 산출
       let totalEquips = 0;
-      for (const [equipCode, items] of itemsByEquip) {
+      for (const [, items] of itemsByEquip) {
         const hasDue = items.some((item) => this.isDue(item.cycle, dateObj));
         if (hasDue) totalEquips++;
       }
 
-      // 해당 날짜의 로그에서 완료 설비 추출
       const dayLogs = logsByDate.get(dateStr) || [];
       const completedEquipIds = new Set(dayLogs.map((l) => l.equipCode));
       const completed = completedEquipIds.size;
@@ -315,12 +333,11 @@ export class EquipInspectService {
   }
 
   /** 캘린더 일별 설비 점검 스케줄 조회 */
-  async getDaySchedule(date: string, lineCode?: string, inspectType: string = 'DAILY') {
+  async getDaySchedule(date: string, processCode?: string, inspectType: string = 'DAILY') {
     const dateObj = new Date(date);
 
-    // 1) 사용중인 설비 목록
     const equipWhere: Record<string, unknown> = { useYn: 'Y' };
-    if (lineCode) equipWhere.lineCode = lineCode;
+    if (processCode) equipWhere.processCode = processCode;
     const equips = await this.equipMasterRepository.find({
       where: equipWhere,
       select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
@@ -329,7 +346,6 @@ export class EquipInspectService {
 
     const equipIds = equips.map((e) => e.equipCode);
 
-    // 2) 점검항목 조회
     const allItems = await this.inspectItemRepository
       .createQueryBuilder('item')
       .where('item.inspectType = :type', { type: inspectType })
@@ -345,7 +361,6 @@ export class EquipInspectService {
       itemsByEquip.set(item.equipCode, list);
     }
 
-    // 3) 해당 날짜의 점검로그
     const dayStart = new Date(dateObj);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(dateObj);
@@ -363,7 +378,6 @@ export class EquipInspectService {
       logByEquip.set(log.equipCode, log);
     }
 
-    // 4) 설비별 스케줄 구성 (isDue인 항목이 있는 설비만)
     const result = [];
     for (const equip of equips) {
       const items = itemsByEquip.get(equip.equipCode) || [];
@@ -377,9 +391,9 @@ export class EquipInspectService {
       }
 
       const itemResults = dueItems.map((item) => {
-        const detailItem = details?.items?.find((d) => d.itemId === item.id || d.seq === item.seq);
+        const detailItem = details?.items?.find((d) => d.seq === item.seq || d.itemName === item.itemName);
         return {
-          itemId: item.id,
+          itemId: `${item.equipCode}_${item.inspectType}_${item.seq}`,
           seq: item.seq,
           itemName: item.itemName,
           criteria: item.criteria,
@@ -397,7 +411,6 @@ export class EquipInspectService {
         inspected: !!log,
         overallResult: log?.overallResult || null,
         inspectorName: log?.inspectorName || null,
-        logId: log?.id || null,
         items: itemResults,
       });
     }

@@ -62,9 +62,21 @@ export class WorkInstructionService {
     return { data, total, page, limit };
   }
 
+  /**
+   * id 문자열에서 복합키 파싱 ("itemCode::processCode::revision" 형식)
+   */
+  private parseCompositeId(id: string): { itemCode: string; processCode: string; revision: string } {
+    const parts = id.split('::');
+    if (parts.length === 3) {
+      return { itemCode: parts[0], processCode: parts[1], revision: parts[2] };
+    }
+    throw new NotFoundException(`잘못된 작업지도서 ID 형식입니다: ${id}`);
+  }
+
   async findById(id: string) {
+    const key = this.parseCompositeId(id);
     const workInstruction = await this.workInstructionRepository.findOne({
-      where: { id: +id },
+      where: key,
     });
     if (!workInstruction) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
     return workInstruction;
@@ -73,7 +85,7 @@ export class WorkInstructionService {
   async create(dto: CreateWorkInstructionDto) {
     const workInstruction = this.workInstructionRepository.create({
       itemCode: dto.itemCode,
-      processCode: dto.processCode,
+      processCode: dto.processCode ?? '',
       title: dto.title,
       content: dto.content,
       imageUrl: dto.imageUrl,
@@ -85,14 +97,18 @@ export class WorkInstructionService {
   }
 
   async update(id: string, dto: UpdateWorkInstructionDto) {
-    await this.findById(id);
-    await this.workInstructionRepository.update(+id, dto);
-    return this.findById(id);
+    const existing = await this.findById(id);
+    const key = this.parseCompositeId(id);
+    await this.workInstructionRepository.update(key, dto);
+    return this.findById(
+      `${dto.itemCode ?? key.itemCode}::${dto.processCode ?? key.processCode}::${dto.revision ?? key.revision}`,
+    );
   }
 
   async delete(id: string) {
     await this.findById(id);
-    await this.workInstructionRepository.delete(+id);
+    const key = this.parseCompositeId(id);
+    await this.workInstructionRepository.delete(key);
     return { id };
   }
 }

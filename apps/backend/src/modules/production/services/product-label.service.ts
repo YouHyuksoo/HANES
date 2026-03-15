@@ -14,14 +14,14 @@ import { ProdResult } from '../../../entities/prod-result.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { UidGeneratorService } from '../../../shared/uid-generator.service';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import { CreatePrdLabelsDto, PrdLabelResultDto } from '../dto/product-label.dto';
 
 @Injectable()
 export class ProductLabelService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly uidGenerator: UidGeneratorService,
+    private readonly seqGenerator: SeqGeneratorService,
     @InjectRepository(ProdResult)
     private readonly prodResultRepo: Repository<ProdResult>,
     @InjectRepository(PartMaster)
@@ -73,7 +73,7 @@ export class ProductLabelService {
       const results: PrdLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
-        const prdUid = await this.uidGenerator.nextPrdUid(queryRunner);
+        const prdUid = await this.seqGenerator.nextPrdUid(queryRunner);
         results.push({
           prdUid,
           itemCode,
@@ -82,7 +82,7 @@ export class ProductLabelService {
       }
 
       if (dto.qty === 1 && !prodResult.prdUid) {
-        await queryRunner.manager.update(ProdResult, prodResult.id, {
+        await queryRunner.manager.update(ProdResult, prodResult.resultNo, {
           prdUid: results[0].prdUid,
         });
       }

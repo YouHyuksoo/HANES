@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, BarChart3, Search as SearchIcon,
-  Calculator, TrendingUp, Eye,
+  Calculator, TrendingUp, Eye, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -84,7 +84,7 @@ export default function SpcPage() {
   /* -- 관리한계 계산 -- */
   const handleCalcLimits = useCallback(async () => {
     if (!selectedRow) return;
-    await api.post(`/quality/spc/charts/calculate-limits/${selectedRow.id}`);
+    await api.post(`/quality/spc/charts/calculate-limits/${selectedRow.chartNo}`);
     fetchData();
     setSelectedRow(null);
   }, [selectedRow, fetchData]);
@@ -98,6 +98,18 @@ export default function SpcPage() {
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<SpcChart>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "chartNo", header: t("quality.spc.chartNo"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
@@ -168,6 +180,10 @@ export default function SpcPage() {
           <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
             <span className="text-sm text-text-muted font-medium">{selectedRow?.chartNo}</span>
             {actionButtons}
+            <button onClick={() => setSelectedRow(null)}
+              className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
           </div></CardContent></Card>
         )}
 
@@ -175,9 +191,8 @@ export default function SpcPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.spc.title")}
-            onRowClick={row => setSelectedRow(row as SpcChart)}
-            getRowId={row => String((row as SpcChart).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as SpcChart).chartNo}
+            selectedRowId={selectedRow?.chartNo}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">

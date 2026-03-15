@@ -1,32 +1,30 @@
 /**
  * @file iqc-item-pool.entity.ts
  * @description IQC 검사항목 풀(Pool) 엔티티 - 전역 검사항목 정의 마스터
- *              시퀀스 PK 사용. 충돌 해결: itemCode → inspItemCode, itemName → inspItemName.
+ *              INSP_ITEM_CODE 자연키 PK 사용. ID는 자식 FK 참조용으로 유지.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
- * 2. INSP_ITEM_CODE: 검사항목 코드 (IQC-001 등) - 품목코드(itemCode)와 구분
+ * 1. INSP_ITEM_CODE가 자연키 PK (IQC-001 등) - 품목코드(itemCode)와 구분
+ * 2. ID는 자식 테이블 FK 참조용 (시퀀스 자동 생성, 직접 입력/수정 불가)
  * 3. INSP_ITEM_NAME: 검사항목명
  * 4. JUDGE_METHOD: VISUAL(육안) / MEASURE(계측)
  * 5. 계측 항목은 LSL/USL/UNIT으로 규격 범위 정의
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
 @Entity({ name: 'IQC_ITEM_POOL' })
-@Index(['inspItemCode'], { unique: true })
 export class IqcItemPool {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'INSP_ITEM_CODE', length: 20 })
+  @PrimaryColumn({ name: 'INSP_ITEM_CODE', length: 20 })
   inspItemCode: string;
+
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
+  id: number;
 
   @Column({ name: 'INSP_ITEM_NAME', length: 100 })
   inspItemName: string;

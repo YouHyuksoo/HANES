@@ -8,7 +8,7 @@
  * 3. 상태 흐름: REGISTERED → QC_PENDING → ... → PASS/FAIL/SCRAP
  */
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn,
+  Entity, PrimaryColumn, Column, ManyToOne, JoinColumn,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 import { DefectLog } from './defect-log.entity';
@@ -18,12 +18,11 @@ import { EquipMaster } from './equip-master.entity';
 
 @Entity({ name: 'REWORK_ORDERS' })
 @Index(['company', 'plant', 'status'])
-@Index(['company', 'plant', 'reworkNo'], { unique: true })
 export class ReworkOrder {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
-  @Column({ name: 'REWORK_NO', length: 30 })
+  @PrimaryColumn({ name: 'REWORK_NO', length: 50 })
   reworkNo: string;
 
   @Column({ name: 'DEFECT_LOG_ID', nullable: true })

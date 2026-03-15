@@ -1,33 +1,32 @@
 /**
  * @file shipment-log.entity.ts
  * @description 출하이력(ShipmentLog) 엔티티 - 출하 실적 정보를 기록한다.
- *              시퀀스 PK 사용.
+ *              자연키 PK: shipNo (출하번호).
+ *              id는 자식 FK(pallet-master.shipmentId 등) 호환을 위해 generated @Column으로 유지.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
- * 2. SHIP_NO: 출하번호 (유니크)
+ * 1. shipNo가 PK (자연키)
+ * 2. id는 자동 증가 시퀀스이지만 PK가 아님 (기존 FK 참조 호환용)
  * 3. 차량, 운전기사, 목적지, 수량 등 출하 정보 관리
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'SHIPMENT_LOGS' })
-@Unique(['shipNo'])
 @Index(['status'])
 @Index(['shipDate'])
 @Index(['customer'])
 export class ShipmentLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
-  @Column({ name: 'SHIP_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'SHIP_NO', length: 50 })
   shipNo: string;
 
   @Column({ name: 'SHIP_DATE', type: 'date', nullable: true })

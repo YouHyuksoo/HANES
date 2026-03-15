@@ -127,8 +127,8 @@ export default function InspectExecuteModal({
         details,
         remark: remark.trim() || null,
       };
-      if (isEditMode && equip.logId) {
-        await api.put(`${apiBasePath}/${equip.logId}`, payload);
+      if (isEditMode) {
+        await api.put(`${apiBasePath}/${equip.equipCode}/${date}`, payload);
       } else {
         await api.post(apiBasePath, payload);
       }

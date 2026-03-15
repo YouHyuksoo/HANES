@@ -49,10 +49,10 @@ export class VendorBarcodeMappingController {
     );
   }
 
-  @Get(':id')
+  @Get(':vendorBarcode')
   @ApiOperation({ summary: '매핑 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.service.findById(id);
+  async findByBarcode(@Param('vendorBarcode') vendorBarcode: string) {
+    const data = await this.service.findByBarcode(vendorBarcode);
     return ResponseUtil.success(data);
   }
 
@@ -64,20 +64,20 @@ export class VendorBarcodeMappingController {
     return ResponseUtil.success(data, '바코드 매핑이 생성되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':vendorBarcode')
   @ApiOperation({ summary: '매핑 수정' })
   async update(
-    @Param('id') id: string,
+    @Param('vendorBarcode') vendorBarcode: string,
     @Body() dto: UpdateVendorBarcodeMappingDto,
   ) {
-    const data = await this.service.update(id, dto);
+    const data = await this.service.update(vendorBarcode, dto);
     return ResponseUtil.success(data, '바코드 매핑이 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':vendorBarcode')
   @ApiOperation({ summary: '매핑 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.service.delete(id);
+  async delete(@Param('vendorBarcode') vendorBarcode: string) {
+    await this.service.delete(vendorBarcode);
     return ResponseUtil.success(null, '바코드 매핑이 삭제되었습니다.');
   }
 

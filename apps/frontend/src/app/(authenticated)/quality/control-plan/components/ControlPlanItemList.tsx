@@ -13,16 +13,18 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Save, X, Trash2 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
+import { useComCodeOptions } from "@/hooks/useComCode";
+import { useProcessOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 /** 관리항목 타입 */
 interface PlanItem {
-  id: number; seq: number; processName: string; characteristicNo: string;
+  seq: number; processName: string; characteristicNo: string;
   productCharacteristic: string; processCharacteristic: string; specialCharClass: string;
   specification: string; evalMethod: string; sampleSize: string; sampleFreq: string;
   controlMethod: string; reactionPlan: string;
 }
-type FormFields = Omit<PlanItem, "id">;
+type FormFields = PlanItem;
 
 const INIT_FORM: FormFields = {
   seq: 0, processName: "", characteristicNo: "", productCharacteristic: "",
@@ -39,9 +41,16 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
   const { t } = useTranslation();
   const [items, setItems] = useState<PlanItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingSeq, setEditingSeq] = useState<number | null>(null);
   const [form, setForm] = useState<FormFields>(INIT_FORM);
   const canEdit = planStatus === "DRAFT";
+
+  /* 셀렉트 옵션 */
+  const { options: processOptions } = useProcessOptions();
+  const evalMethodOpts = useComCodeOptions("INSPECT_METHOD");
+  const sampleSizeOpts = useComCodeOptions("SAMPLE_SIZE");
+  const sampleFreqOpts = useComCodeOptions("SAMPLE_FREQ");
+  const controlMethodOpts = useComCodeOptions("CONTROL_METHOD");
 
   const fetchItems = useCallback(async () => {
     try {
@@ -70,24 +79,24 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
     } catch { /* api 인터셉터 */ }
   };
 
-  const handleUpdate = async (itemId: number) => {
+  const handleUpdate = async (itemSeq: number) => {
     try {
-      await api.put(`/quality/control-plans/${planId}/items/${itemId}`, form);
-      setEditingId(null);
+      await api.put(`/quality/control-plans/${planId}/items/${itemSeq}`, form);
+      setEditingSeq(null);
       setForm(INIT_FORM);
       fetchItems();
     } catch { /* api 인터셉터 */ }
   };
 
-  const handleDelete = async (itemId: number) => {
+  const handleDelete = async (itemSeq: number) => {
     try {
-      await api.delete(`/quality/control-plans/${planId}/items/${itemId}`);
+      await api.delete(`/quality/control-plans/${planId}/items/${itemSeq}`);
       fetchItems();
     } catch { /* api 인터셉터 */ }
   };
 
   const startEdit = (item: PlanItem) => {
-    setEditingId(item.id);
+    setEditingSeq(item.seq);
     const s = (v: string) => v ?? "";
     setForm({ seq: item.seq, processName: s(item.processName), characteristicNo: s(item.characteristicNo),
       productCharacteristic: s(item.productCharacteristic), processCharacteristic: s(item.processCharacteristic),
@@ -98,9 +107,15 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
   const specialOptions = [{ value: "", label: "-" }, { value: "CC", label: "CC" }, { value: "SC", label: "SC" }, { value: "HI", label: "HI" }];
 
   /** 인라인 편집 셀 */
-  const renderEditCells = (isNew: boolean, itemId?: number) => (
+  const renderEditCells = (isNew: boolean, itemSeq?: number) => (
     <>
-      <td className="px-2 py-1"><Input value={form.processName} onChange={e => setF("processName", e.target.value)} fullWidth className="text-xs" /></td>
+      <td className="px-2 py-1">
+        <select value={form.processName} onChange={e => setF("processName", e.target.value)}
+          className="w-full rounded border border-border bg-white dark:bg-slate-900 text-text px-1.5 py-1 text-xs">
+          <option value="">-</option>
+          {processOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </td>
       <td className="px-2 py-1"><Input value={form.characteristicNo} onChange={e => setF("characteristicNo", e.target.value)} fullWidth className="text-xs" /></td>
       <td className="px-2 py-1"><Input value={form.productCharacteristic} onChange={e => setF("productCharacteristic", e.target.value)} fullWidth className="text-xs" /></td>
       <td className="px-2 py-1"><Input value={form.processCharacteristic} onChange={e => setF("processCharacteristic", e.target.value)} fullWidth className="text-xs" /></td>
@@ -111,19 +126,53 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
         </select>
       </td>
       <td className="px-2 py-1"><Input value={form.specification} onChange={e => setF("specification", e.target.value)} fullWidth className="text-xs" /></td>
-      <td className="px-2 py-1"><Input value={form.evalMethod} onChange={e => setF("evalMethod", e.target.value)} fullWidth className="text-xs" /></td>
-      <td className="px-2 py-1"><Input value={form.sampleSize} onChange={e => setF("sampleSize", e.target.value)} fullWidth className="text-xs" /></td>
-      <td className="px-2 py-1"><Input value={form.sampleFreq} onChange={e => setF("sampleFreq", e.target.value)} fullWidth className="text-xs" /></td>
-      <td className="px-2 py-1"><Input value={form.controlMethod} onChange={e => setF("controlMethod", e.target.value)} fullWidth className="text-xs" /></td>
+      <td className="px-2 py-1">
+        <select value={form.evalMethod} onChange={e => setF("evalMethod", e.target.value)}
+          className="w-full rounded border border-border bg-white dark:bg-slate-900 text-text px-1.5 py-1 text-xs">
+          <option value="">-</option>
+          {evalMethodOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </td>
+      <td className="px-2 py-1">
+        <select value={form.sampleSize} onChange={e => setF("sampleSize", e.target.value)}
+          className="w-full rounded border border-border bg-white dark:bg-slate-900 text-text px-1.5 py-1 text-xs">
+          <option value="">-</option>
+          {sampleSizeOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </td>
+      <td className="px-2 py-1">
+        <select value={form.sampleFreq} onChange={e => setF("sampleFreq", e.target.value)}
+          className="w-full rounded border border-border bg-white dark:bg-slate-900 text-text px-1.5 py-1 text-xs">
+          <option value="">-</option>
+          {sampleFreqOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </td>
+      <td className="px-2 py-1">
+        <select value={form.controlMethod} onChange={e => setF("controlMethod", e.target.value)}
+          className="w-full rounded border border-border bg-white dark:bg-slate-900 text-text px-1.5 py-1 text-xs">
+          <option value="">-</option>
+          {controlMethodOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </td>
       <td className="px-2 py-1"><Input value={form.reactionPlan} onChange={e => setF("reactionPlan", e.target.value)} fullWidth className="text-xs" /></td>
       <td className="px-2 py-1 text-center">
         <div className="flex gap-1 justify-center">
-          <Button size="sm" variant="primary" onClick={isNew ? handleAdd : () => handleUpdate(itemId!)} className="px-1.5 py-0.5 h-6"><Save className="w-3 h-3" /></Button>
-          <Button size="sm" variant="ghost" onClick={() => { isNew ? setIsAdding(false) : setEditingId(null); setForm(INIT_FORM); }} className="px-1.5 py-0.5 h-6"><X className="w-3 h-3" /></Button>
+          <Button size="sm" variant="primary" onClick={isNew ? handleAdd : () => handleUpdate(itemSeq!)} className="px-1.5 py-0.5 h-6"><Save className="w-3 h-3" /></Button>
+          <Button size="sm" variant="ghost" onClick={() => { isNew ? setIsAdding(false) : setEditingSeq(null); setForm(INIT_FORM); }} className="px-1.5 py-0.5 h-6"><X className="w-3 h-3" /></Button>
         </div>
       </td>
     </>
   );
+
+  /** 코드값 → 라벨 변환 헬퍼 */
+  const codeLabelMap = (opts: { value: string; label: string }[]) =>
+    Object.fromEntries(opts.map(o => [o.value, o.label]));
+  const processMap = codeLabelMap(processOptions);
+  const evalMap = codeLabelMap(evalMethodOpts);
+  const sizeMap = codeLabelMap(sampleSizeOpts);
+  const freqMap = codeLabelMap(sampleFreqOpts);
+  const ctrlMap = codeLabelMap(controlMethodOpts);
+  const toLabel = (v: string, map: Record<string, string>) => map[v] || v;
 
   const cp = "quality.controlPlan";
   const headers = [
@@ -160,19 +209,19 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
             </thead>
             <tbody>
               {items.map(item => (
-                <tr key={item.id} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
-                  {editingId === item.id ? (
-                    <><td className="px-2 py-1 text-text-muted">{item.seq}</td>{renderEditCells(false, item.id)}</>
+                <tr key={item.seq} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
+                  {editingSeq === item.seq ? (
+                    <><td className="px-2 py-1 text-text-muted">{item.seq}</td>{renderEditCells(false, item.seq)}</>
                   ) : (<>
-                    {[item.seq, item.processName, item.characteristicNo, item.productCharacteristic,
-                      item.processCharacteristic, item.specialCharClass, item.specification, item.evalMethod,
-                      item.sampleSize, item.sampleFreq, item.controlMethod, item.reactionPlan,
+                    {[item.seq, toLabel(item.processName, processMap), item.characteristicNo, item.productCharacteristic,
+                      item.processCharacteristic, item.specialCharClass, item.specification, toLabel(item.evalMethod, evalMap),
+                      toLabel(item.sampleSize, sizeMap), toLabel(item.sampleFreq, freqMap), toLabel(item.controlMethod, ctrlMap), item.reactionPlan,
                     ].map((v, i) => <td key={i} className="px-2 py-1 text-text-muted">{v || "-"}</td>)}
                     {canEdit && (
                       <td className="px-2 py-1 text-center">
                         <div className="flex gap-1 justify-center">
                           <Button size="sm" variant="ghost" onClick={() => startEdit(item)} className="text-[10px] px-1.5 py-0.5 h-6">{t("common.edit")}</Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(item.id)} className="text-[10px] px-1.5 py-0.5 h-6 text-red-500"><Trash2 className="w-3 h-3" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDelete(item.seq)} className="text-[10px] px-1.5 py-0.5 h-6 text-red-500"><Trash2 className="w-3 h-3" /></Button>
                         </div>
                       </td>
                     )}

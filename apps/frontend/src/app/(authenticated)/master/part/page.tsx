@@ -20,23 +20,16 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { createPartColumns, createUnitColumn } from "@/lib/table-utils";
 import { Part, PART_TYPE_COLORS, PRODUCT_TYPE_OPTIONS } from "./types";
-import { INSPECT_METHOD_COLORS } from "../iqc-item/types";
-import PartFormPanel from "./components/PartFormPanel";
 
-/** IQC 연결 정보 (API 응답) */
-interface IqcLinkInfo {
-  itemCode: string;
-  group?: { groupCode: string; groupName: string; inspectMethod: string; sampleQty?: number | null };
-  partner?: { partnerCode: string; partnerName: string } | null;
-}
+import PartFormPanel from "./components/PartFormPanel";
 
 export default function PartPage() {
   const { t } = useTranslation();
   const [parts, setParts] = useState<Part[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [iqcLinkMap, setIqcLinkMap] = useState<Record<string, IqcLinkInfo[]>>({});
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [partTypeFilter, setPartTypeFilter] = useState("");
   const [useYnFilter, setUseYnFilter] = useState("");
 
@@ -45,45 +38,36 @@ export default function PartPage() {
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
   const panelAnimateRef = useRef(true);
 
-  /** DB에서 품목 목록 + IQC 연결 정보 조회 */
+  /** 검색어 디바운스 (300ms) */
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+
+  /** DB에서 품목 목록 조회 */
   const fetchParts = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { limit: 5000 };
       if (partTypeFilter) params.itemType = partTypeFilter;
       if (useYnFilter) params.useYn = useYnFilter;
-      if (searchText) params.search = searchText;
+      if (debouncedSearch) params.search = debouncedSearch;
 
-      const [partsRes, linksRes] = await Promise.all([
-        api.get("/master/parts", { params }),
-        api.get("/master/iqc-part-links", { params: { limit: 5000 } }),
-      ]);
-
+      const partsRes = await api.get("/master/parts", { params });
       const partsBody = partsRes.data;
       if (partsBody.success) {
         setParts(partsBody.data || []);
         setTotal(partsBody.meta?.total || 0);
-      }
-
-      const linksBody = linksRes.data;
-      if (linksBody.success) {
-        const map: Record<string, IqcLinkInfo[]> = {};
-        (linksBody.data || []).forEach((link: IqcLinkInfo & { part?: { id: string } }) => {
-          const pid = link.itemCode || link.part?.id;
-          if (pid) {
-            if (!map[pid]) map[pid] = [];
-            map[pid].push(link);
-          }
-        });
-        setIqcLinkMap(map);
       }
     } catch {
       setParts([]);
     } finally {
       setLoading(false);
     }
-  }, [partTypeFilter, useYnFilter, searchText]);
+  }, [partTypeFilter, useYnFilter, debouncedSearch]);
 
+  /** 초기 로드 */
   useEffect(() => { fetchParts(); }, [fetchParts]);
 
   const handleSearch = (val: string) => { setSearchText(val); };
@@ -106,12 +90,6 @@ export default function PartPage() {
     SEMI_PRODUCT: t("inventory.stock.wip", "반제품"),
     FINISHED: t("inventory.stock.fg", "완제품"),
     CONSUMABLE: t("inventory.stock.consumable", "소모품"),
-  }), [t]);
-
-  const methodLabels = useMemo<Record<string, string>>(() => ({
-    FULL: t("master.part.iqc.methodFull", "전수"),
-    SAMPLE: t("master.part.iqc.methodSample", "샘플"),
-    SKIP: t("master.part.iqc.methodSkip", "무검사"),
   }), [t]);
 
   const productTypeLabels = useMemo<Record<string, string>>(() => {
@@ -169,30 +147,27 @@ export default function PartPage() {
         return <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>{v}</span>;
       },
     },
+    {
+      accessorKey: "inspectMethod", header: t("master.part.inspectMethod", "검사방법"), size: 70,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        if (!v) return <span className="text-xs text-text-muted">-</span>;
+        const colors: Record<string, string> = {
+          FULL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+          SAMPLE: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+          SKIP: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+        };
+        const labels: Record<string, string> = { FULL: t("master.part.inspectFull", "전수"), SAMPLE: t("master.part.inspectSample", "샘플"), SKIP: t("master.part.inspectSkip", "무검사") };
+        return <span className={`px-2 py-0.5 text-xs rounded-full ${colors[v] || ""}`}>{labels[v] || v}</span>;
+      },
+    },
     { accessorKey: "tactTime", header: t("master.part.tactTime", "택타임"), size: 65, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}s` : "-"; } },
     { accessorKey: "expiryDate", header: t("master.part.expiryDate", "유효기간"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? `${v}일` : "-"; } },
     { accessorKey: "packUnit", header: t("master.part.packUnit", "포장단위"), size: 70, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "storageLocation", header: t("master.part.storageLocation", "적재위치"), size: 90, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "vendor", header: t("master.part.vendor"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "customer", header: t("master.part.customer"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-    {
-      id: "iqcSetup", header: t("master.part.iqc.header", "IQC검사"), size: 100,
-      meta: { filterType: "none" as const },
-      cell: ({ row }) => {
-        if (row.original.iqcYn !== "Y") return <span className="text-xs text-text-muted">-</span>;
-        const links = iqcLinkMap[row.original.itemCode];
-        if (!links || links.length === 0) return <span className="text-xs text-text-muted">{t("master.part.iqc.notLinked", "미연결")}</span>;
-        const first = links[0];
-        if (!first.group) return <span className="text-xs text-text-muted">-</span>;
-        return (
-          <span className={`px-2 py-0.5 text-xs rounded-full ${INSPECT_METHOD_COLORS[first.group.inspectMethod] || ""}`}>
-            {methodLabels[first.group.inspectMethod]}
-            {first.group.inspectMethod === "SAMPLE" && first.group.sampleQty ? ` (${first.group.sampleQty})` : ""}
-            {links.length > 1 ? ` +${links.length - 1}` : ""}
-          </span>
-        );
-      },
-    },
     {
       accessorKey: "useYn", header: t("common.useYn", "사용여부"), size: 60,
       meta: { filterType: "multi" as const },
@@ -207,7 +182,7 @@ export default function PartPage() {
         );
       },
     },
-  ], [t, typeLabels, methodLabels, productTypeLabels, iqcLinkMap, isPanelOpen]);
+  ], [t, typeLabels, productTypeLabels, isPanelOpen]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);
@@ -231,7 +206,7 @@ export default function PartPage() {
             <p className="text-text-muted mt-1">{t("master.part.subtitle")} ({total}건)</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={fetchParts}>
+            <Button variant="secondary" size="sm" onClick={() => { fetchParts(); }}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
             <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(null); setIsPanelOpen(true); }}>

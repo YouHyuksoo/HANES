@@ -97,101 +97,27 @@ export default function DashboardPage() {
 
   const today = formatDate(new Date());
 
-  const parseInspectDay = useCallback((data: any[]): InspectSummary => {
-    const items: InspectItem[] = data.map((d: any) => ({
-      equipCode: d.equipCode || "",
-      equipName: d.equipName || "",
-      result: d.inspected ? (d.overallResult || "PASS") : null,
-      inspectorName: d.inspectorName || null,
-      lineCode: d.lineCode || null,
-    }));
-    const total = items.length;
-    const completed = items.filter((i) => i.result !== null).length;
-    const pass = items.filter((i) => i.result === "PASS").length;
-    const fail = items.filter((i) => i.result === "FAIL").length;
-    return { items, total, completed, pass, fail };
-  }, []);
-
-  const parsePmDay = useCallback((data: any[]): InspectSummary => {
-    const items: InspectItem[] = data.map((d: any) => ({
-      equipCode: d.equip?.equipCode || d.equipCode || "",
-      equipName: d.equip?.equipName || "",
-      result: d.status === "COMPLETED" ? (d.overallResult || "COMPLETED") : null,
-      inspectorName: null,
-      lineCode: d.equip?.lineCode || null,
-    }));
-    const total = items.length;
-    const completed = items.filter((i) => i.result !== null).length;
-    const pass = items.filter((i) => i.result === "PASS" || i.result === "COMPLETED").length;
-    const fail = items.filter((i) => i.result === "FAIL").length;
-    return { items, total, completed, pass, fail };
-  }, []);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     setInspectLoading(true);
     try {
-      const [equipRes, jobRes, lowStockRes, shelfRes, defectRes, dailyRes, periodicRes, pmRes] = await Promise.all([
-        api.get("/equipment/equips/stats").catch(() => ({ data: { data: null } })),
-        api.get("/production/job-orders", { params: { startDate: today, endDate: today, limit: 9999 } }).catch(() => ({ data: { data: [] } })),
-        api.get("/material/stocks", { params: { lowStockOnly: true, limit: 9999 } }).catch(() => ({ data: { data: [] } })),
-        api.get("/material/shelf-life").catch(() => ({ data: { data: [] } })),
-        api.get("/quality/defect-logs/stats/by-status").catch(() => ({ data: { data: [] } })),
-        api.get("/equipment/daily-inspect/calendar/day", { params: { date: today } }).catch(() => ({ data: { data: [] } })),
-        api.get("/equipment/periodic-inspect/calendar/day", { params: { date: today } }).catch(() => ({ data: { data: [] } })),
-        api.get("/equipment/pm-work-orders/calendar/day", { params: { date: today } }).catch(() => ({ data: { data: [] } })),
-      ]);
+      const res = await api.get("/dashboard/summary", { params: { date: today } });
+      const { equip, job, mat, defect, daily, periodic, pm } = res.data.data;
 
-      // 설비 현황
-      const eData = equipRes.data?.data;
-      if (eData) {
-        const statusMap: Record<string, number> = {};
-        (eData.byStatus || []).forEach((s: any) => { statusMap[s.status] = Number(s.count) || 0; });
-        setEquip({
-          normal: statusMap["NORMAL"] || 0,
-          maint: statusMap["MAINT"] || 0,
-          stop: statusMap["STOP"] || 0,
-          total: Number(eData.total) || 0,
-        });
-      }
-
-      // 작업지시 현황
-      const jobList = jobRes.data?.data ?? [];
-      const jWait = jobList.filter((j: any) => j.status === "WAIT").length;
-      const jRunning = jobList.filter((j: any) => j.status === "RUNNING").length;
-      const jDone = jobList.filter((j: any) => j.status === "DONE" || j.status === "COMPLETED").length;
-      setJob({ wait: jWait, running: jRunning, done: jDone, total: jobList.length });
-
-      // 자재 알림
-      const lowStockCount = (lowStockRes.data?.data ?? []).length;
-      const shelfList = shelfRes.data?.data ?? [];
-      const nearExpiry = shelfList.filter((s: any) => s.status === "NEAR_EXPIRY").length;
-      const expired = shelfList.filter((s: any) => s.status === "EXPIRED").length;
-      setMat({ lowStock: lowStockCount, nearExpiry, expired });
-
-      // 불량 현황
-      const defectList = defectRes.data?.data ?? [];
-      const dMap: Record<string, number> = {};
-      defectList.forEach((d: any) => { dMap[d.status] = Number(d.count) || 0; });
-      const dTotal = defectList.reduce((sum: number, d: any) => sum + (Number(d.count) || 0), 0);
-      setDefect({
-        wait: dMap["WAIT"] || 0,
-        repair: dMap["REPAIR"] || 0,
-        rework: dMap["REWORK"] || 0,
-        done: dMap["DONE"] || 0,
-        total: dTotal,
-      });
-
-      setDaily(parseInspectDay(dailyRes.data?.data ?? []));
-      setPeriodic(parseInspectDay(periodicRes.data?.data ?? []));
-      setPm(parsePmDay(pmRes.data?.data ?? []));
+      if (equip) setEquip(equip);
+      if (job) setJob(job);
+      if (mat) setMat(mat);
+      if (defect) setDefect(defect);
+      if (daily) setDaily(daily);
+      if (periodic) setPeriodic(periodic);
+      if (pm) setPm(pm);
     } catch {
       /* keep current state */
     } finally {
       setLoading(false);
       setInspectLoading(false);
     }
-  }, [today, parseInspectDay, parsePmDay]);
+  }, [today]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

@@ -83,7 +83,6 @@ export class SampleInspectService {
       .leftJoin(JobOrder, 'jo', 'jo.orderNo = si.orderNo')
       .leftJoin(PartMaster, 'p', 'p.itemCode = jo.itemCode')
       .select([
-        'si.id AS "id"',
         'si.orderNo AS "orderNo"',
         'jo.orderNo AS "orderNo"',
         'p.itemCode AS "itemCode"',

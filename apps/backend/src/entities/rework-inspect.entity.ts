@@ -8,7 +8,7 @@
  * 3. 재작업 후 요구사항 충족 여부를 재검증하는 IATF 필수 프로세스
  */
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn,
+  Entity, PrimaryColumn, Column, ManyToOne, JoinColumn,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 import { ReworkOrder } from './rework-order.entity';
@@ -16,11 +16,11 @@ import { ReworkOrder } from './rework-order.entity';
 @Entity({ name: 'REWORK_INSPECTS' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkInspect {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'REWORK_ORDER_ID' })
+  @PrimaryColumn({ name: 'REWORK_ORDER_ID' })
   reworkOrderId: number;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
+  seq: number;
 
   @ManyToOne(() => ReworkOrder)
   @JoinColumn({ name: 'REWORK_ORDER_ID' })

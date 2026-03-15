@@ -172,7 +172,19 @@ export const useAuthStore = create<AuthState>()(
             pdaAllowedMenus: pdaAllowedMenus || [],
             isAuthenticated: true,
           });
-        } catch {
+        } catch (error: any) {
+          const status = error?.response?.status;
+          const isServerError =
+            status === 500 || status === 502 || status === 503 || status === 504;
+          const isNetworkError = !error.response && error.code !== "ERR_CANCELED";
+
+          if (isServerError || isNetworkError) {
+            // 서버 다운/DB 타임아웃 시 기존 캐시된 인증 상태 유지
+            // ServerStatusBanner가 에러를 표시하도록 함
+            return;
+          }
+
+          // 401 등 인증 실패만 로그아웃 처리
           localStorage.removeItem("harness-token");
           set({
             user: null,

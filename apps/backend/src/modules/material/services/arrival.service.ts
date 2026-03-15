@@ -161,9 +161,9 @@ export class ArrivalService {
       where: { poNo: dto.poId },
     });
 
-    // 잔량 검증
+    // 잔량 검증 — poItemId는 "poNo-seq" 형식 또는 seq 번호
     for (const item of dto.items) {
-      const poItem = poItems.find((pi) => pi.id === Number(item.poItemId));
+      const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
       if (!poItem) throw new BadRequestException(`PO 품목을 찾을 수 없습니다: ${item.poItemId}`);
       const remaining = poItem.orderQty - poItem.receivedQty;
       if (item.receivedQty > remaining) {
@@ -180,6 +180,7 @@ export class ArrivalService {
     try {
       const results = [];
       const arrivalNo = await this.numRuleService.nextNumberInTx(queryRunner, 'ARRIVAL');
+      let arrivalSeq = 1;
 
       for (const item of dto.items) {
         const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
@@ -190,6 +191,7 @@ export class ArrivalService {
         // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
         const arrival = queryRunner.manager.create(MatArrival, {
           arrivalNo,
+          seq: arrivalSeq++,
           invoiceNo: dto.invoiceNo,
           poId: dto.poId,
           poItemId: item.poItemId,
@@ -230,9 +232,9 @@ export class ArrivalService {
         await this.upsertStock(queryRunner.manager, item.warehouseId, item.itemCode, null, item.receivedQty);
 
         // 4. PurchaseOrderItem.receivedQty 증가
-        const poItem = poItems.find((pi) => pi.id === Number(item.poItemId));
+        const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
         if (poItem) {
-          await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
+          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq }, {
             receivedQty: poItem.receivedQty + item.receivedQty,
           });
         }
@@ -281,6 +283,7 @@ export class ArrivalService {
       // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
       const arrival = queryRunner.manager.create(MatArrival, {
         arrivalNo,
+        seq: 1,
         invoiceNo: dto.invoiceNo,
         vendorId: dto.vendorId,
         vendorName: dto.vendor,
@@ -432,7 +435,7 @@ export class ArrivalService {
   /** 입하 취소 (역분개 트랜잭션) */
   async cancel(dto: CancelArrivalDto) {
     const original = await this.stockTransactionRepository.findOne({
-      where: { id: Number(dto.transactionId) },
+      where: { transNo: dto.transactionId },
     });
 
     if (!original) throw new NotFoundException(`트랜잭션을 찾을 수 없습니다: ${dto.transactionId}`);
@@ -447,7 +450,7 @@ export class ArrivalService {
 
     try {
       // 1. 원본 CANCELED 처리
-      await queryRunner.manager.update(StockTransaction, Number(dto.transactionId), { status: 'CANCELED' });
+      await queryRunner.manager.update(StockTransaction, { transNo: original.transNo }, { status: 'CANCELED' });
 
       // 1-1. MatArrival도 CANCELED 처리 (itemCode 기준으로 찾기)
       if (original.itemCode) {
@@ -456,7 +459,7 @@ export class ArrivalService {
           order: { arrivalDate: 'DESC' },
         });
         if (arrivalRecord) {
-          await queryRunner.manager.update(MatArrival, arrivalRecord.id, { status: 'CANCELED' });
+          await queryRunner.manager.update(MatArrival, { arrivalNo: arrivalRecord.arrivalNo, seq: arrivalRecord.seq }, { status: 'CANCELED' });
         }
       }
 
@@ -470,7 +473,7 @@ export class ArrivalService {
         qty: -original.qty,
         remark: dto.reason,
         workerId: dto.workerId,
-        cancelRefId: String(original.id),
+        cancelRefId: original.transNo,
         refType: 'CANCEL',
       });
       const savedCancelTx = await queryRunner.manager.save(cancelTx);
@@ -496,9 +499,13 @@ export class ArrivalService {
 
       // 5. PO receivedQty 감소 + PO status 재계산
       if (original.refType === 'PO' && original.refId) {
-        const poItem = await queryRunner.manager.findOne(PurchaseOrderItem, { where: { id: Number(original.refId) } });
+        // refId는 seq 번호 — 해당 PO + seq로 품목 조회
+        const refSeq = Number(original.refId);
+        const poItem = !isNaN(refSeq)
+          ? await queryRunner.manager.findOne(PurchaseOrderItem, { where: { poNo: original.itemCode ? undefined : original.refId, seq: refSeq } })
+          : null;
         if (poItem) {
-          await queryRunner.manager.update(PurchaseOrderItem, poItem.id, {
+          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq }, {
             receivedQty: Math.max(0, poItem.receivedQty - original.qty),
           });
           await this.updatePOStatus(queryRunner.manager, poItem.poNo);
@@ -623,8 +630,8 @@ export class ArrivalService {
       const currentStock = stockMap.get(stockKey) ?? 0;
 
       return {
-        id: a.id,
         arrivalNo: a.arrivalNo,
+        seq: a.seq,
         invoiceNo: a.invoiceNo,
         poNo: a.poNo,
         vendorName: a.vendorName,
@@ -732,16 +739,20 @@ export class ArrivalService {
     // PO 기반 입하의 경우 발주수량 조회
     let orderQty = 0;
     if (arrival.poId && arrival.poItemId) {
-      const poItem = await this.purchaseOrderItemRepository.findOne({
-        where: { id: Number(arrival.poItemId) },
-      });
+      // poItemId는 seq 번호 또는 "poNo-seq" 형식
+      const poItemSeq = Number(arrival.poItemId);
+      const poItem = !isNaN(poItemSeq)
+        ? await this.purchaseOrderItemRepository.findOne({
+            where: { poNo: arrival.poNo || arrival.poId, seq: poItemSeq },
+          })
+        : null;
       if (poItem) {
         orderQty = poItem.orderQty;
       }
     }
 
     return {
-      arrivalId: arrival.id,
+      arrivalNo: arrival.arrivalNo,
       poNo: arrival.poNo ?? '',
       itemCode: arrival.itemCode,
       itemName: part?.itemName ?? '',

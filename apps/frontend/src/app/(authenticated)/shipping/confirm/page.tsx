@@ -123,7 +123,7 @@ export default function ShipmentPage() {
     if (!endpoint) return;
 
     try {
-      await api.post(`/shipping/shipments/${shipment.id}/${endpoint}`);
+      await api.post(`/shipping/shipments/${shipment.shipNo}/${endpoint}`);
       fetchData();
     } catch (e) {
       console.error('Status change failed:', e);
@@ -135,7 +135,7 @@ export default function ShipmentPage() {
     if (!cancelTarget || !cancelRemark.trim()) return;
     setCancelling(true);
     try {
-      await api.post(`/shipping/shipments/${cancelTarget.id}/cancel`, {
+      await api.post(`/shipping/shipments/${cancelTarget.shipNo}/cancel`, {
         remark: cancelRemark.trim(),
       });
       setCancelTarget(null);
@@ -302,7 +302,7 @@ export default function ShipmentPage() {
         <ShipmentScanModal
           isOpen={isScanModalOpen}
           onClose={() => { setIsScanModalOpen(false); setScanTarget(null); }}
-          shipmentId={scanTarget.id}
+          shipmentId={scanTarget.shipNo}
           shipmentNo={scanTarget.shipNo}
           onConfirm={fetchData}
         />

@@ -272,9 +272,9 @@ export class AuditService {
   /**
    * 발견사항에 CAPA 연결
    */
-  async linkCapa(findingId: number, capaId: number) {
+  async linkCapa(auditId: number, findingNo: number, capaId: number) {
     const finding = await this.findingRepo.findOne({
-      where: { id: findingId },
+      where: { auditId, findingNo },
     });
     if (!finding) {
       throw new NotFoundException('발견사항을 찾을 수 없습니다.');
@@ -283,7 +283,7 @@ export class AuditService {
     finding.status = 'IN_PROGRESS';
     const saved = await this.findingRepo.save(finding);
     this.logger.log(
-      `CAPA 연결: findingId=${findingId}, capaId=${capaId}`,
+      `CAPA 연결: auditId=${auditId}, findingNo=${findingNo}, capaId=${capaId}`,
     );
     return saved;
   }

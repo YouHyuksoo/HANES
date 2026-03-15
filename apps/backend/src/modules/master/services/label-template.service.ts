@@ -56,8 +56,24 @@ export class LabelTemplateService {
   }
 
   async findById(id: string) {
+    // id는 "templateName::category" 형식 또는 단순 조회용
+    const [templateName, category] = id.includes('::') ? id.split('::') : [id, undefined];
+    const where: any = category
+      ? { templateName, category }
+      : { templateName };
+
+    const template = await this.labelTemplateRepository.findOne({ where });
+
+    if (!template) {
+      throw new NotFoundException('라벨 템플릿을 찾을 수 없습니다.');
+    }
+
+    return template;
+  }
+
+  async findByKey(templateName: string, category: string) {
     const template = await this.labelTemplateRepository.findOne({
-      where: { id: +id },
+      where: { templateName, category },
     });
 
     if (!template) {
@@ -89,15 +105,13 @@ export class LabelTemplateService {
 
     // Build update data manually to handle type conversion
     const updateData: Partial<LabelTemplate> = {
-      templateName: dto.templateName,
-      category: dto.category,
       isDefault: dto.isDefault,
       remark: dto.remark,
       zplCode: dto.zplCode,
       printMode: dto.printMode,
       printerId: dto.printerId,
     };
-    
+
     if (dto.designData) {
       updateData.designData = JSON.stringify(dto.designData);
     }
@@ -105,7 +119,8 @@ export class LabelTemplateService {
     const updated = await this.labelTemplateRepository.save({
       ...template,
       ...updateData,
-      id: +id,
+      templateName: dto.templateName ?? template.templateName,
+      category: dto.category ?? template.category,
     });
 
     return updated;
@@ -116,7 +131,7 @@ export class LabelTemplateService {
 
     await this.labelTemplateRepository.remove(template);
 
-    return { id, deleted: true };
+    return { templateName: template.templateName, category: template.category, deleted: true };
   }
 
   private async clearDefaultByCategory(category: string): Promise<void> {

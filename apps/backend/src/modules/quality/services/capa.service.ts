@@ -324,12 +324,12 @@ export class CapaService {
    */
   async updateAction(
     capaId: number,
-    actionId: number,
+    actionSeq: number,
     dto: Partial<CAPAActionItemDto>,
     userId: string,
   ) {
     const action = await this.actionRepo.findOne({
-      where: { id: actionId, capaId },
+      where: { capaId, seq: actionSeq },
     });
     if (!action) {
       throw new NotFoundException('조치 항목을 찾을 수 없습니다.');
@@ -345,7 +345,7 @@ export class CapaService {
     if (dto.result !== undefined) action.result = dto.result;
 
     // CAPA updatedBy 갱신
-    await this.capaRepo.update(capaId, { updatedBy: userId });
+    await this.capaRepo.update({ id: capaId }, { updatedBy: userId });
     return this.actionRepo.save(action);
   }
 

@@ -154,9 +154,10 @@ export class ShipOrderService {
 
       // 품목 생성
       if (dto.items && dto.items.length > 0) {
-        const items = dto.items.map((item) =>
+        const items = dto.items.map((item, idx) =>
           this.shipOrderItemRepository.create({
             shipOrderNo: savedOrder.shipOrderNo,
+            seq: idx + 1,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
@@ -192,9 +193,10 @@ export class ShipOrderService {
       if (dto.items) {
         await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderNo });
 
-        const items = dto.items.map((item) =>
+        const items = dto.items.map((item, idx) =>
           this.shipOrderItemRepository.create({
             shipOrderNo,
+            seq: idx + 1,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,

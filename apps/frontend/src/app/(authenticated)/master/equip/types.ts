@@ -67,9 +67,8 @@ export interface EquipBomItem {
 // ========================================
 
 export interface EquipBomRel {
-  id: string;
-  equipId: string;
-  bomItemId: string;
+  equipCode: string;
+  bomItemCode: string;
   quantity: number;
   installDate?: string;
   expireDate?: string;
@@ -145,11 +144,11 @@ export const seedEquipBomItems: EquipBomItem[] = [
 ];
 
 export const seedEquipBomRels: EquipBomRel[] = [
-  { id: '1', equipId: '1', bomItemId: '1', quantity: 2, installDate: '2024-01-15', remark: '메인 블레이드', useYn: 'Y', bomItem: seedEquipBomItems[0] },
-  { id: '2', equipId: '1', bomItemId: '5', quantity: 1, installDate: '2024-01-15', remark: '주간 점검용', useYn: 'Y', bomItem: seedEquipBomItems[4] },
-  { id: '3', equipId: '2', bomItemId: '1', quantity: 2, installDate: '2024-02-01', remark: '메인 블레이드', useYn: 'Y', bomItem: seedEquipBomItems[0] },
-  { id: '4', equipId: '3', bomItemId: '2', quantity: 1, installDate: '2024-01-20', remark: '압착 다이스 세트', useYn: 'Y', bomItem: seedEquipBomItems[1] },
-  { id: '5', equipId: '3', bomItemId: '6', quantity: 2, installDate: '2024-01-20', useYn: 'Y', bomItem: seedEquipBomItems[5] },
-  { id: '6', equipId: '4', bomItemId: '4', quantity: 1, installDate: '2024-01-10', remark: '제어 모듈', useYn: 'Y', bomItem: seedEquipBomItems[3] },
-  { id: '7', equipId: '5', bomItemId: '4', quantity: 1, installDate: '2024-01-10', remark: '제어 모듈', useYn: 'Y', bomItem: seedEquipBomItems[3] },
+  { equipCode: '1', bomItemCode: '1', quantity: 2, installDate: '2024-01-15', remark: '메인 블레이드', useYn: 'Y', bomItem: seedEquipBomItems[0] },
+  { equipCode: '1', bomItemCode: '5', quantity: 1, installDate: '2024-01-15', remark: '주간 점검용', useYn: 'Y', bomItem: seedEquipBomItems[4] },
+  { equipCode: '2', bomItemCode: '1', quantity: 2, installDate: '2024-02-01', remark: '메인 블레이드', useYn: 'Y', bomItem: seedEquipBomItems[0] },
+  { equipCode: '3', bomItemCode: '2', quantity: 1, installDate: '2024-01-20', remark: '압착 다이스 세트', useYn: 'Y', bomItem: seedEquipBomItems[1] },
+  { equipCode: '3', bomItemCode: '6', quantity: 2, installDate: '2024-01-20', useYn: 'Y', bomItem: seedEquipBomItems[5] },
+  { equipCode: '4', bomItemCode: '4', quantity: 1, installDate: '2024-01-10', remark: '제어 모듈', useYn: 'Y', bomItem: seedEquipBomItems[3] },
+  { equipCode: '5', bomItemCode: '4', quantity: 1, installDate: '2024-01-10', remark: '제어 모듈', useYn: 'Y', bomItem: seedEquipBomItems[3] },
 ];

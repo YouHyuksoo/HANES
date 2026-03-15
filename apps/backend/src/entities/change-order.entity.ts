@@ -10,7 +10,7 @@
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -19,12 +19,8 @@ import {
 
 @Entity({ name: 'CHANGE_ORDERS' })
 @Index(['company', 'plant', 'status'])
-@Index(['company', 'plant', 'changeNo'], { unique: true })
 export class ChangeOrder {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'CHANGE_NO', length: 30 })
+  @PrimaryColumn({ name: 'CHANGE_NO', length: 50 })
   changeNo: string;
 
   @Column({ name: 'CHANGE_TYPE', length: 30 })

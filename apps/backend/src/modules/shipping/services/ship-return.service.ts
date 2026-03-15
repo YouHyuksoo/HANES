@@ -39,7 +39,7 @@ export class ShipReturnService {
   /** items 배열의 part를 평면화하는 헬퍼 메서드 */
   private async flattenItems(data: any): Promise<any> {
     const items = await this.shipReturnItemRepository.find({
-      where: { returnId: data.id },
+      where: { returnNo: data.returnNo },
     });
 
     const itemsWithPart = await Promise.all(
@@ -116,12 +116,12 @@ export class ShipReturnService {
   }
 
   /** 반품 단건 조회 */
-  async findById(id: number) {
+  async findById(returnNo: string) {
     const ret = await this.shipReturnRepository.findOne({
-      where: { id },
+      where: { returnNo },
     });
 
-    if (!ret) throw new NotFoundException(`반품을 찾을 수 없습니다: ${id}`);
+    if (!ret) throw new NotFoundException(`반품을 찾을 수 없습니다: ${returnNo}`);
 
     const shipOrder = ret.shipmentId
       ? await this.shipOrderRepository.findOne({
@@ -162,9 +162,10 @@ export class ShipReturnService {
 
       // 품목 생성
       if (dto.items && dto.items.length > 0) {
-        const items = dto.items.map((item) =>
+        const items = dto.items.map((item, idx) =>
           this.shipReturnItemRepository.create({
-            returnId: savedReturn.id,
+            returnNo: savedReturn.returnNo,
+            seq: idx + 1,
             itemCode: item.itemCode,
             returnQty: item.returnQty,
             disposalType: item.disposalType ?? 'RESTOCK',
@@ -176,7 +177,7 @@ export class ShipReturnService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(savedReturn.id);
+      return this.findById(savedReturn.returnNo);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -186,8 +187,8 @@ export class ShipReturnService {
   }
 
   /** 반품 수정 */
-  async update(id: number, dto: UpdateShipReturnDto) {
-    const ret = await this.findById(id);
+  async update(returnNo: string, dto: UpdateShipReturnDto) {
+    const ret = await this.findById(returnNo);
     if (ret.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 수정할 수 있습니다.');
     }
@@ -198,11 +199,12 @@ export class ShipReturnService {
 
     try {
       if (dto.items) {
-        await queryRunner.manager.delete(ShipmentReturnItem, { returnId: id });
+        await queryRunner.manager.delete(ShipmentReturnItem, { returnNo });
 
-        const items = dto.items.map((item) =>
+        const items = dto.items.map((item, idx) =>
           this.shipReturnItemRepository.create({
-            returnId: id,
+            returnNo,
+            seq: idx + 1,
             itemCode: item.itemCode,
             returnQty: item.returnQty,
             disposalType: item.disposalType ?? 'RESTOCK',
@@ -220,11 +222,11 @@ export class ShipReturnService {
       if (dto.status !== undefined) updateData.status = dto.status;
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ShipmentReturn, { id }, updateData);
+      await queryRunner.manager.update(ShipmentReturn, { returnNo }, updateData);
 
       await queryRunner.commitTransaction();
 
-      return this.findById(id);
+      return this.findById(returnNo);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -234,14 +236,14 @@ export class ShipReturnService {
   }
 
   /** 반품 삭제 */
-  async delete(id: number) {
-    const ret = await this.findById(id);
+  async delete(returnNo: string) {
+    const ret = await this.findById(returnNo);
     if (ret.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipReturnRepository.delete({ id });
+    await this.shipReturnRepository.delete({ returnNo });
 
-    return { id, deleted: true };
+    return { returnNo, deleted: true };
   }
 }

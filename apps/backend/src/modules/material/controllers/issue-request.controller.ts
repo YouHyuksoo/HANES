@@ -60,42 +60,42 @@ export class IssueRequestController {
     );
   }
 
-  @Get(':id')
+  @Get(':requestNo')
   @ApiOperation({ summary: '출고요청 상세 조회' })
-  @ApiParam({ name: 'id', description: '출고요청 ID' })
-  async findById(@Param('id') id: string) {
-    const data = await this.issueRequestService.findById(Number(id));
+  @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
+  async findByRequestNo(@Param('requestNo') requestNo: string) {
+    const data = await this.issueRequestService.findByRequestNo(requestNo);
     return ResponseUtil.success(data);
   }
 
-  @Patch(':id/approve')
+  @Patch(':requestNo/approve')
   @ApiOperation({ summary: '출고요청 승인' })
-  @ApiParam({ name: 'id', description: '출고요청 ID' })
-  async approve(@Param('id') id: string) {
-    const data = await this.issueRequestService.approve(Number(id));
+  @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
+  async approve(@Param('requestNo') requestNo: string) {
+    const data = await this.issueRequestService.approve(requestNo);
     return ResponseUtil.success(data, '출고요청이 승인되었습니다.');
   }
 
-  @Patch(':id/reject')
+  @Patch(':requestNo/reject')
   @ApiOperation({ summary: '출고요청 반려' })
-  @ApiParam({ name: 'id', description: '출고요청 ID' })
+  @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
   async reject(
-    @Param('id') id: string,
+    @Param('requestNo') requestNo: string,
     @Body() dto: RejectIssueRequestDto,
   ) {
-    const data = await this.issueRequestService.reject(Number(id), dto);
+    const data = await this.issueRequestService.reject(requestNo, dto);
     return ResponseUtil.success(data, '출고요청이 반려되었습니다.');
   }
 
-  @Post(':id/issue')
+  @Post(':requestNo/issue')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '출고요청 기반 실출고' })
-  @ApiParam({ name: 'id', description: '출고요청 ID' })
+  @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
   async issueFromRequest(
-    @Param('id') id: string,
+    @Param('requestNo') requestNo: string,
     @Body() dto: RequestIssueDto,
   ) {
-    const data = await this.issueRequestService.issueFromRequest(Number(id), dto);
+    const data = await this.issueRequestService.issueFromRequest(requestNo, dto);
     return ResponseUtil.success(data, '출고가 완료되었습니다.');
   }
 }

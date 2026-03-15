@@ -38,7 +38,7 @@ interface Props {
   onClose: () => void;
   onSave: (data: LinkFormData) => void;
   editing?: {
-    id: string; itemCode: string; partnerId?: string | null;
+    itemCode: string; partnerId?: string | null;
     groupId: string; remark?: string | null;
     part?: { itemCode: string; itemName: string };
   } | null;

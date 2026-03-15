@@ -2,132 +2,143 @@
 
 /**
  * @file src/app/(authenticated)/inspection/result/page.tsx
- * @description 통전검사 실적 페이지 - PASS/FAIL 검사 결과 조회, 시리얼별 검사 이력
+ * @description 통전검사 관리 페이지 - 2-panel 레이아웃
  *
  * 초보자 가이드:
- * 1. **검사 결과 목록**: DataGrid로 시리얼, 결과, 에러코드 표시
- * 2. **통계 카드**: 합격률, 검사건수 실시간 통계
- * 3. **필터링**: 날짜, 결과, 검사기 필터
- * 4. API: GET /inspection/results
+ * 1. **좌측 패널 (col-span-4)**: 작업지시 목록 (WAITING/IN_PROGRESS)
+ * 2. **우측 패널 (col-span-8)**: 선택된 작업지시의 검사 영역
+ * 3. PASS → FG_BARCODE 자동 발행, FAIL → 불량코드 입력 후 등록
+ * 4. API: /quality/continuity-inspect/*
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw, Calendar, CheckCircle, XCircle, TrendingUp, Activity, Cpu, Search } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
-import DataGrid from "@/components/data-grid/DataGrid";
+import { ScanLine, RefreshCw, Search } from "lucide-react";
+import { Card, CardContent, Button, Input } from "@/components/ui";
+import { ComCodeBadge } from "@/components/ui";
 import api from "@/services/api";
+import type { JobOrderRow } from "./types";
+import InspectPanel from "./components/InspectPanel";
 
-interface InspectRecord {
-  id: string;
-  inspectedAt: string;
-  serialNo: string;
-  result: string;
-  errorCode?: string;
-  errorDesc?: string;
-  workOrderNo: string;
-  equipmentNo: string;
-  voltage: number;
-  current: number;
-}
-
-export default function ResultPage() {
+export default function ContinuityInspectPage() {
   const { t } = useTranslation();
-  const [data, setData] = useState<InspectRecord[]>([]);
+  const [orders, setOrders] = useState<JobOrderRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<JobOrderRow | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const resultOptions = useMemo(() => [
-    { value: "", label: t("inspection.result.allResults") },
-    { value: "PASS", label: t("inspection.result.pass") },
-    { value: "FAIL", label: t("inspection.result.fail") },
-  ], [t]);
+  /* 300ms 디바운스 */
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchText]);
 
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [resultFilter, setResultFilter] = useState("");
-  const [searchSerial, setSearchSerial] = useState("");
-
-  const fetchData = useCallback(async () => {
+  /** 작업지시 목록 조회 */
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
-      if (searchSerial) params.search = searchSerial;
-      if (resultFilter) params.result = resultFilter;
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo) params.dateTo = dateTo;
-      const res = await api.get("/inspection/results", { params });
-      setData(res.data?.data ?? []);
+      const res = await api.get("/quality/continuity-inspect/job-orders");
+      setOrders(res.data?.data ?? []);
     } catch {
-      setData([]);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
-  }, [searchSerial, resultFilter, dateFrom, dateTo]);
+  }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const stats = useMemo(() => {
-    const total = data.length;
-    const passed = data.filter((r) => r.result === "PASS").length;
-    const failed = total - passed;
-    const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : "0.0";
-    return { total, passed, failed, passRate };
-  }, [data]);
-
-  const columns = useMemo<ColumnDef<InspectRecord>[]>(() => [
-    { accessorKey: "inspectedAt", header: t("inspection.result.inspectedAt"), size: 150, meta: { filterType: "date" as const } },
-    { accessorKey: "serialNo", header: t("inspection.result.serialNo"), size: 170, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: "result", header: t("inspection.result.resultCol"), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_RESULT" code={getValue() as string} /> },
-    { accessorKey: "errorCode", header: t("inspection.result.errorCode"), size: 80, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
-    { accessorKey: "errorDesc", header: t("inspection.result.errorDesc"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || <span className="text-text-muted">-</span> },
-    { accessorKey: "voltage", header: t("inspection.result.voltage"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(1)}</span> },
-    { accessorKey: "current", header: t("inspection.result.current"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number).toFixed(2)}</span> },
-    { accessorKey: "equipmentNo", header: t("inspection.result.equipmentNo"), size: 90, meta: { filterType: "text" as const } },
-  ], [t]);
+  /** 검색 필터 적용 */
+  const filtered = useMemo(() => {
+    if (!debouncedSearch) return orders;
+    const q = debouncedSearch.toLowerCase();
+    return orders.filter(
+      (o) =>
+        o.orderNo.toLowerCase().includes(q) ||
+        (o.itemName ?? "").toLowerCase().includes(q) ||
+        o.itemCode.toLowerCase().includes(q),
+    );
+  }, [orders, debouncedSearch]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      {/* 헤더 */}
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2"><Cpu className="w-7 h-7 text-primary" />{t("inspection.result.title")}</h1>
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <ScanLine className="w-7 h-7 text-primary" />
+            {t("inspection.result.title")}
+          </h1>
           <p className="text-text-muted mt-1">{t("inspection.result.description")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+        <Button variant="secondary" size="sm" onClick={fetchOrders}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+          {t("common.refresh")}
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
-        <StatCard label={t("inspection.result.totalInspections")} value={`${stats.total}${t("common.count")}`} icon={Activity} color="blue" />
-        <StatCard label={t("inspection.result.passRate")} value={`${stats.passRate}%`} icon={TrendingUp} color="green" />
-        <StatCard label={t("inspection.result.pass")} value={`${stats.passed}${t("common.count")}`} icon={CheckCircle} color="green" />
-        <StatCard label={t("inspection.result.fail")} value={`${stats.failed}${t("common.count")}`} icon={XCircle} color="red" />
-      </div>
-
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid
-          data={data}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("inspection.result.title")}
-          toolbarLeft={
-            <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
-              <div className="flex-1 min-w-[200px]">
-                <Input placeholder={t("inspection.result.searchPlaceholder")} value={searchSerial} onChange={(e) => setSearchSerial(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-text-muted" />
-                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" />
-                <span className="text-text-muted">~</span>
-                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
-              </div>
-              <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} placeholder={t("inspection.result.resultCol")} />
+      {/* 2-panel */}
+      <div className="grid grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
+        {/* 좌측: 작업지시 목록 */}
+        <Card className="col-span-4 overflow-hidden flex flex-col" padding="none">
+          <CardContent className="flex flex-col h-full p-3 gap-2">
+            <Input
+              placeholder={t("inspection.result.searchPlaceholder")}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              leftIcon={<Search className="w-4 h-4" />}
+              fullWidth
+            />
+            <div className="flex-1 overflow-auto">
+              {filtered.length === 0 && !loading && (
+                <p className="text-sm text-text-muted text-center mt-8">
+                  {t("common.noData")}
+                </p>
+              )}
+              {filtered.map((o) => (
+                <button
+                  key={o.orderNo}
+                  onClick={() => setSelected(o)}
+                  className={`w-full text-left p-3 rounded-lg mb-1 transition-colors text-sm
+                    ${selected?.orderNo === o.orderNo
+                      ? "bg-primary/10 dark:bg-primary/20 border border-primary/30"
+                      : "hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent"
+                    }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-mono font-semibold text-text">{o.orderNo}</span>
+                    <ComCodeBadge groupCode="JOB_STATUS" code={o.status} />
+                  </div>
+                  <p className="text-text-muted truncate mt-0.5">{o.itemName ?? o.itemCode}</p>
+                  <div className="flex gap-3 mt-1 text-xs text-text-muted">
+                    <span>{t("inspection.result.planQty")}: {o.planQty}</span>
+                    <span className="text-green-600 dark:text-green-400">{t("inspection.result.pass")}: {o.goodQty}</span>
+                    <span className="text-red-600 dark:text-red-400">{t("inspection.result.fail")}: {o.defectQty}</span>
+                  </div>
+                </button>
+              ))}
             </div>
-          }
-        />
-      </CardContent></Card>
+          </CardContent>
+        </Card>
+
+        {/* 우측: 검사 영역 */}
+        <div className="col-span-8 overflow-hidden flex flex-col">
+          {selected ? (
+            <InspectPanel key={selected.orderNo} order={selected} />
+          ) : (
+            <Card className="flex-1 flex items-center justify-center">
+              <CardContent>
+                <div className="text-center text-text-muted">
+                  <ScanLine className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p>{t("inspection.result.selectOrder")}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

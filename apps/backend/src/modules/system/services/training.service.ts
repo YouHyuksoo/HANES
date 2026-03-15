@@ -123,8 +123,8 @@ export class TrainingService {
   /**
    * 교육 계획 단건 조회
    */
-  async findById(id: number) {
-    const item = await this.planRepo.findOne({ where: { id } });
+  async findById(planNo: string) {
+    const item = await this.planRepo.findOne({ where: { planNo } });
     if (!item) {
       throw new NotFoundException('교육 계획을 찾을 수 없습니다.');
     }
@@ -158,8 +158,8 @@ export class TrainingService {
   /**
    * 교육 계획 수정 (PLANNED 상태에서만 가능)
    */
-  async update(id: number, dto: UpdateTrainingPlanDto, userId: string) {
-    const item = await this.findById(id);
+  async update(planNo: string, dto: UpdateTrainingPlanDto, userId: string) {
+    const item = await this.findById(planNo);
     Object.assign(item, dto, { updatedBy: userId });
     return this.planRepo.save(item);
   }
@@ -167,10 +167,10 @@ export class TrainingService {
   /**
    * 교육 계획 삭제
    */
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async delete(planNo: string) {
+    const item = await this.findById(planNo);
     // 연관된 교육 결과도 함께 삭제
-    await this.resultRepo.delete({ planId: id });
+    await this.resultRepo.delete({ planNo });
     await this.planRepo.remove(item);
   }
 
@@ -181,8 +181,8 @@ export class TrainingService {
   /**
    * 완료 처리 (PLANNED/IN_PROGRESS → COMPLETED)
    */
-  async complete(id: number, userId: string) {
-    const item = await this.findById(id);
+  async complete(planNo: string, userId: string) {
+    const item = await this.findById(planNo);
     if (!['PLANNED', 'IN_PROGRESS'].includes(item.status)) {
       throw new BadRequestException(
         '계획 또는 진행중 상태에서만 완료할 수 있습니다.',
@@ -198,8 +198,8 @@ export class TrainingService {
   /**
    * 완료 취소 (COMPLETED → PLANNED)
    */
-  async cancelComplete(id: number, userId: string) {
-    const item = await this.findById(id);
+  async cancelComplete(planNo: string, userId: string) {
+    const item = await this.findById(planNo);
     if (item.status !== 'COMPLETED') {
       throw new BadRequestException('완료 상태에서만 취소할 수 있습니다.');
     }
@@ -218,23 +218,23 @@ export class TrainingService {
    * 교육 결과 등록
    */
   async addResult(
-    planId: number,
+    planNo: string,
     dto: CreateTrainingResultDto,
     company: string,
     plant: string,
     userId: string,
   ) {
-    await this.findById(planId);
+    await this.findById(planNo);
     const entity = this.resultRepo.create({
       ...dto,
-      planId,
+      planNo,
       company,
       plant,
       createdBy: userId,
     });
     const saved = await this.resultRepo.save(entity);
     this.logger.log(
-      `교육 결과 등록: planId=${planId}, worker=${dto.workerCode}`,
+      `교육 결과 등록: planNo=${planNo}, worker=${dto.workerCode}`,
     );
     return saved;
   }
@@ -242,10 +242,10 @@ export class TrainingService {
   /**
    * 교육 계획별 결과 조회 (작업자 사진 포함)
    */
-  async getResults(planId: number) {
+  async getResults(planNo: string) {
     const results = await this.resultRepo
       .createQueryBuilder('r')
-      .where('r.planId = :planId', { planId })
+      .where('r.planNo = :planNo', { planNo })
       .orderBy('r.createdAt', 'DESC')
       .getMany();
 
@@ -275,8 +275,8 @@ export class TrainingService {
   /**
    * 교육 결과 수정
    */
-  async updateResult(resultId: number, dto: Partial<CreateTrainingResultDto>) {
-    const item = await this.resultRepo.findOne({ where: { id: resultId } });
+  async updateResult(planNo: string, workerCode: string, dto: Partial<CreateTrainingResultDto>) {
+    const item = await this.resultRepo.findOne({ where: { planNo, workerCode } });
     if (!item) {
       throw new NotFoundException('교육 결과를 찾을 수 없습니다.');
     }
@@ -287,8 +287,8 @@ export class TrainingService {
   /**
    * 교육 결과 삭제
    */
-  async deleteResult(resultId: number) {
-    const item = await this.resultRepo.findOne({ where: { id: resultId } });
+  async deleteResult(planNo: string, workerCode: string) {
+    const item = await this.resultRepo.findOne({ where: { planNo, workerCode } });
     if (!item) {
       throw new NotFoundException('교육 결과를 찾을 수 없습니다.');
     }

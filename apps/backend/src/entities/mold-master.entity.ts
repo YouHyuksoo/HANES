@@ -12,23 +12,18 @@
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 import { PartMaster } from './part-master.entity';
 
 @Entity({ name: 'MOLD_MASTERS' })
-@Index(['company', 'plant', 'moldCode'], { unique: true })
 export class MoldMaster {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'MOLD_CODE', length: 50 })
+  @PrimaryColumn({ name: 'MOLD_CODE', length: 50 })
   moldCode: string;
 
   @Column({ name: 'MOLD_NAME', length: 200 })

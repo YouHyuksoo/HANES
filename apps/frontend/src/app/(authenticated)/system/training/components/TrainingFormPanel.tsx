@@ -34,7 +34,7 @@ const INIT: TrainingFormData = {
 
 /** 수정 시 전달되는 편집 데이터 */
 export interface TrainingEditData {
-  id: number;
+  planNo: string;
   title: string;
   trainingType: string;
   targetRole: string;
@@ -95,7 +95,7 @@ export default function TrainingFormPanel({ isOpen, editData, onClose, onSave }:
         description: form.description || undefined,
       };
       if (isEdit && editData) {
-        await api.put(`/system/trainings/${editData.id}`, payload);
+        await api.put(`/system/trainings/${editData.planNo}`, payload);
       } else {
         await api.post("/system/trainings", payload);
       }

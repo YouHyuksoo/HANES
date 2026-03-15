@@ -227,6 +227,7 @@ export class AutoIssueService {
       const issueNo = await this.numRuleService.nextNumberInTx(qr, 'MAT_ISSUE');
       const issueEntity = qr.manager.create(MatIssue, {
         issueNo,
+        seq: 1,
         orderNo,
         prodResultId,
         matUid: lot.matUid,
@@ -247,7 +248,7 @@ export class AutoIssueService {
         matUid: lot.matUid,
         qty: -issueQty,
         refType: 'MAT_ISSUE',
-        refId: issueNo,
+        refId: `${issueNo}-1`,
         status: 'DONE',
         company: lot.company || '40',
         plant: lot.plant || '1000',

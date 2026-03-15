@@ -29,7 +29,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
@@ -85,7 +84,7 @@ export class DocumentController {
   @ApiParam({ name: 'id', description: '문서 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '문서 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.documentService.findById(id);
     return ResponseUtil.success(data);
   }
@@ -114,7 +113,7 @@ export class DocumentController {
   @ApiParam({ name: 'id', description: '문서 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateDocumentDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -131,7 +130,7 @@ export class DocumentController {
   @ApiOperation({ summary: '문서 삭제', description: 'DRAFT 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '문서 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.documentService.delete(id);
     return ResponseUtil.success(null, '문서가 삭제되었습니다.');
   }
@@ -143,7 +142,7 @@ export class DocumentController {
   @ApiParam({ name: 'id', description: '문서 ID' })
   @ApiResponse({ status: 200, description: '승인 성공' })
   async approve(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.documentService.approve(
@@ -158,7 +157,7 @@ export class DocumentController {
   @ApiParam({ name: 'id', description: '문서 ID' })
   @ApiResponse({ status: 200, description: '개정 성공' })
   async revise(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.documentService.revise(

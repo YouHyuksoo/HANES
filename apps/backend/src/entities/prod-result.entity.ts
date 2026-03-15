@@ -1,16 +1,17 @@
 /**
  * @file prod-result.entity.ts
  * @description 생산실적(ProdResult) 엔티티 - 작업지시별 생산 결과를 기록한다.
- *              시퀀스 PK 사용, orderNo로 JobOrder 참조, equipCode/workerId로 참조.
+ *              PK는 RESULT_NO(채번), ID는 자동증분 서브키(자식 FK 호환용).
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
- * 2. ORDER_NO로 JobOrder(작업지시)를 참조
- * 3. EQUIP_CODE로 EquipMaster, WORKER_ID로 WorkerMaster 참조
+ * 1. RESULT_NO가 PK (SeqGenerator로 채번, 예: PR260316-00001)
+ * 2. ID는 자동증분 — 자식 엔티티(InspectResult, DefectLog, MatIssue)가 참조
+ * 3. ORDER_NO로 JobOrder(작업지시)를 참조
+ * 4. EQUIP_CODE로 EquipMaster, WORKER_ID로 WorkerMaster 참조
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -32,7 +33,11 @@ import { MatIssue } from './mat-issue.entity';
 @Index(['workerId'])
 @Index(['status'])
 export class ProdResult {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @PrimaryColumn({ name: 'RESULT_NO', length: 30 })
+  resultNo: string;
+
+  /** 자동증분 ID — 자식 엔티티(InspectResult, DefectLog, MatIssue)의 FK 호환용 */
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
   @Column({ name: 'ORDER_NO', length: 50 })

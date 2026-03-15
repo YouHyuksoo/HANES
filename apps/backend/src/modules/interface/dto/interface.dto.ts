@@ -92,9 +92,8 @@ export class RetryInterLogDto {
 }
 
 export class BulkRetryDto {
-  @ApiProperty({ description: '로그 ID 목록' })
-  @IsString({ each: true })
-  logIds: string[];
+  @ApiProperty({ description: '로그 키 목록 [{transDate, seq}]' })
+  logIds: { transDate: string; seq: number }[];
 }
 
 // ============================================================================

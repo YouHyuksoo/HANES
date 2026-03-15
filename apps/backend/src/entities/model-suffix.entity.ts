@@ -1,32 +1,26 @@
 /**
  * @file entities/model-suffix.entity.ts
  * @description 모델 접미사 엔티티 - 모델별 접미사(variant) 정보를 관리한다.
- *              자연키 없으므로 SEQUENCE(패턴 B)를 사용한다.
+ *              modelCode + suffixCode 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. modelCode + suffixCode 조합으로 식별
- * 3. customer: 해당 접미사가 적용되는 고객
+ * 1. modelCode + suffixCode가 복합 PK (자연키)
+ * 2. customer: 해당 접미사가 적용되는 고객
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
 @Entity({ name: 'MODEL_SUFFIXES' })
-@Index(['modelCode'])
 export class ModelSuffix {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'MODEL_CODE', length: 100 })
+  @PrimaryColumn({ name: 'MODEL_CODE', length: 100 })
   modelCode: string;
 
-  @Column({ name: 'SUFFIX_CODE', length: 50 })
+  @PrimaryColumn({ name: 'SUFFIX_CODE', length: 50 })
   suffixCode: string;
 
   @Column({ name: 'SUFFIX_NAME', length: 200 })

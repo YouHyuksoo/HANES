@@ -1,17 +1,16 @@
 /**
  * @file entities/customs-lot.entity.ts
  * @description 보세 LOT 엔티티 - 수입신고별 LOT 정보를 관리한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              복합 PK: entryNo + matUid
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. entryId: 수입신고 ID 참조 (number)
- * 3. status: BONDED(보세), CONSUMED(소진) 등
- * 4. remainQty = qty - usedQty
+ * 1. 복합 PK: entryNo(수입신고번호) + matUid(자재시리얼)
+ * 2. status: BONDED(보세), CONSUMED(소진) 등
+ * 3. remainQty = qty - usedQty
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -23,21 +22,16 @@ import { PartMaster } from './part-master.entity';
 import { CustomsEntry } from './customs-entry.entity';
 
 @Entity({ name: 'CUSTOMS_LOTS' })
-@Index(['entryId'])
-@Index(['matUid'])
 @Index(['status'])
 export class CustomsLot {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'ENTRY_ID', type: 'number' })
-  entryId: number;
+  @PrimaryColumn({ name: 'ENTRY_NO', length: 50 })
+  entryNo: string;
 
   @ManyToOne(() => CustomsEntry)
-  @JoinColumn({ name: 'ENTRY_ID' })
+  @JoinColumn({ name: 'ENTRY_NO', referencedColumnName: 'entryNo' })
   entry: CustomsEntry;
 
-  @Column({ name: 'MAT_UID', length: 100 })
+  @PrimaryColumn({ name: 'MAT_UID', length: 100 })
   matUid: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })

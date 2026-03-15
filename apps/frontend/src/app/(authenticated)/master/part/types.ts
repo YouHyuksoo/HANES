@@ -30,6 +30,7 @@ export interface Part {
   lotUnitQty?: number; // LOT 단위수량 (Oracle LOTUNITQTY)
   boxQty?: number; // 박스 입수량 (Oracle BOXQTY) (기본값: 0)
   iqcYn?: UseYn; // IQC 대상여부 Y/N (Oracle IQCFLAG) (기본값: Y)
+  inspectMethod?: string; // 검사방법 (FULL/SAMPLE/SKIP)
   tactTime?: number; // 택타임 초 (Oracle TACTTIME) (기본값: 0)
   expiryDate?: number; // 유효기간 일 (Oracle EXPIRYDATE) (기본값: 0)
   packUnit?: string; // 포장단위 (EA, BOX, BAG 등)

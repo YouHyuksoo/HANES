@@ -1,6 +1,9 @@
 /**
  * @file src/modules/master/services/model-suffix.service.ts
  * @description 모델접미사 비즈니스 로직 서비스
+ *
+ * 초보자 가이드:
+ * 1. modelCode + suffixCode 복합 PK로 조회/수정/삭제
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
@@ -57,9 +60,9 @@ export class ModelSuffixService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findByCompositeKey(modelCode: string, suffixCode: string) {
     const suffix = await this.modelSuffixRepository.findOne({
-      where: { id: +id },
+      where: { modelCode, suffixCode },
     });
 
     if (!suffix) {
@@ -86,36 +89,24 @@ export class ModelSuffixService {
     return saved;
   }
 
-  async update(id: string, dto: UpdateModelSuffixDto) {
-    const suffix = await this.findById(id);
-
-    if (dto.modelCode && dto.suffixCode) {
-      const existing = await this.modelSuffixRepository.findOne({
-        where: {
-          modelCode: dto.modelCode,
-          suffixCode: dto.suffixCode,
-          },
-      });
-
-      if (existing && existing.id !== +id) {
-        throw new ConflictException('이미 존재하는 모델접미사 조합입니다.');
-      }
-    }
+  async update(modelCode: string, suffixCode: string, dto: UpdateModelSuffixDto) {
+    const suffix = await this.findByCompositeKey(modelCode, suffixCode);
 
     const updated = await this.modelSuffixRepository.save({
       ...suffix,
       ...dto,
-      id: +id,
+      modelCode,
+      suffixCode,
     });
 
     return updated;
   }
 
-  async delete(id: string) {
-    const suffix = await this.findById(id);
+  async delete(modelCode: string, suffixCode: string) {
+    const suffix = await this.findByCompositeKey(modelCode, suffixCode);
 
     await this.modelSuffixRepository.remove(suffix);
 
-    return { id, deleted: true };
+    return { modelCode, suffixCode, deleted: true };
   }
 }

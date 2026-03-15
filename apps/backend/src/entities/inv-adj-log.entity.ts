@@ -3,17 +3,17 @@
  * @description 재고 조정 로그 엔티티 - 재고 조정(실사/수동) 이력 기록
  *
  * 초보자 가이드:
+ * - adjDate + seq: 복합 PK (조정일자 + 일련번호)
  * - adjType: 조정 유형 (PHYSICAL_INV, MANUAL_ADJ 등)
  * - beforeQty/afterQty/diffQty: 조정 전/후/차이 수량
  * - adjustStatus: 승인 상태 (PENDING=대기, APPROVED=승인, REJECTED=반려)
  *   - 일반 등록 시 기본값 'APPROVED' (하위 호환 유지)
  *   - PDA 등록 시 'PENDING' 으로 저장 → 재고 변동 보류 → 승인 후 실반영
- * - id: SEQUENCE 자동증분 PK
  * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -25,8 +25,11 @@ import {
 @Index(['itemCode'])
 @Index(['adjType'])
 export class InvAdjLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
+  @PrimaryColumn({ name: 'ADJ_DATE', type: 'date', default: () => 'SYSDATE' })
+  adjDate: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
 
   @Column({ name: 'WAREHOUSE_CODE', length: 50 })
   warehouseCode: string;

@@ -8,12 +8,12 @@
  * 3. **invoiceNo**: 공급상 인보이스 번호 (거래 추적용)
  * 4. **vendorId/vendorName**: 공급상(거래처) 정보
  * 5. **StockTransaction과의 관계**: 입하 시 MatArrival + StockTransaction(MAT_IN) 모두 생성
- * 6. **id**: SEQUENCE 자동증분 PK
+ * 6. **복합 PK**: arrivalNo + seq (같은 입하번호의 여러 품목 행)
  */
 
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -21,17 +21,16 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'MAT_ARRIVALS' })
-@Index(['arrivalNo'])
 @Index(['itemCode'])
 @Index(['arrivalDate'])
 @Index(['invoiceNo'])
 @Index(['vendorId'])
 export class MatArrival {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'ARRIVAL_NO', length: 50 })
+  @PrimaryColumn({ name: 'ARRIVAL_NO', length: 50 })
   arrivalNo: string;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
 
   @Column({ name: 'INVOICE_NO', length: 100 })
   invoiceNo: string;

@@ -5,12 +5,12 @@
  * 초보자 가이드:
  * 1. 연결 CRUD — Part, Partner, IqcGroup을 JOIN하여 조회
  * 2. 중복 체크: 같은 품목+거래처 조합은 하나만 허용
- * 3. partnerId가 null이면 기본 검사그룹으로 등록
+ * 3. partnerId가 없으면 '*'(기본 검사그룹)으로 등록
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { IqcPartLink } from '../../../entities/iqc-part-link.entity';
 import { CreateIqcPartLinkDto, UpdateIqcPartLinkDto, IqcPartLinkQueryDto } from '../dto/iqc-part-link.dto';
 
@@ -53,7 +53,7 @@ export class IqcPartLinkService {
 
     const [data, total] = await qb
       .orderBy('part.itemCode', 'ASC')
-      .addOrderBy('partner.partnerCode', 'ASC')
+      .addOrderBy('link.partnerId', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
@@ -61,9 +61,9 @@ export class IqcPartLinkService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findByCompositeKey(itemCode: string, partnerId: string) {
     const link = await this.linkRepo.findOne({
-      where: { id: +id },
+      where: { itemCode, partnerId },
       relations: ['part', 'partner', 'group'],
     });
 
@@ -75,24 +75,18 @@ export class IqcPartLinkService {
   }
 
   async create(dto: CreateIqcPartLinkDto) {
-    const whereCondition: any = {
-      itemCode: dto.itemCode,
-    };
+    const resolvedPartnerId = dto.partnerId || '*';
 
-    if (dto.partnerId) {
-      whereCondition.partnerId = dto.partnerId;
-    } else {
-      whereCondition.partnerId = IsNull();
-    }
-
-    const exists = await this.linkRepo.findOne({ where: whereCondition });
+    const exists = await this.linkRepo.findOne({
+      where: { itemCode: dto.itemCode, partnerId: resolvedPartnerId },
+    });
     if (exists) {
       throw new ConflictException('이미 동일한 품목-거래처 연결이 존재합니다.');
     }
 
     const entity = this.linkRepo.create({
       itemCode: dto.itemCode,
-      partnerId: dto.partnerId || null,
+      partnerId: resolvedPartnerId,
       groupId: dto.groupId,
       remark: dto.remark || null,
       useYn: dto.useYn ?? 'Y',
@@ -100,26 +94,24 @@ export class IqcPartLinkService {
       plant: '1000',
     });
 
-    const saved = await this.linkRepo.save(entity);
-    return this.findById(String(saved.id));
+    await this.linkRepo.save(entity);
+    return this.findByCompositeKey(entity.itemCode, entity.partnerId);
   }
 
-  async update(id: string, dto: UpdateIqcPartLinkDto) {
-    const link = await this.findById(id);
+  async update(itemCode: string, partnerId: string, dto: UpdateIqcPartLinkDto) {
+    const link = await this.findByCompositeKey(itemCode, partnerId);
 
-    if (dto.itemCode !== undefined) link.itemCode = dto.itemCode;
-    if (dto.partnerId !== undefined) link.partnerId = dto.partnerId || null;
     if (dto.groupId !== undefined) link.groupId = dto.groupId;
     if (dto.remark !== undefined) link.remark = dto.remark || null;
     if (dto.useYn !== undefined) link.useYn = dto.useYn;
 
     await this.linkRepo.save(link);
-    return this.findById(id);
+    return this.findByCompositeKey(itemCode, partnerId);
   }
 
-  async delete(id: string) {
-    const link = await this.findById(id);
+  async delete(itemCode: string, partnerId: string) {
+    const link = await this.findByCompositeKey(itemCode, partnerId);
     await this.linkRepo.remove(link);
-    return { id, deleted: true };
+    return { itemCode, partnerId, deleted: true };
   }
 }

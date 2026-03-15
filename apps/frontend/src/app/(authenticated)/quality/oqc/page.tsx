@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   ClipboardCheck, Search, RefreshCw, Plus, Clock, CheckCircle,
-  XCircle, FileText, Calendar,
+  XCircle, FileText, Calendar, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -94,6 +94,18 @@ export default function OqcPage() {
 
   const columns = useMemo<ColumnDef<OqcRequest>[]>(() => [
     {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleRowClick(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
+    {
       accessorKey: "requestNo", header: t("quality.oqc.requestNo"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span>,
@@ -150,7 +162,7 @@ export default function OqcPage() {
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
-  ], [t]);
+  ], [t, handleRowClick]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -187,7 +199,6 @@ export default function OqcPage() {
           enableColumnFilter
           enableExport
           exportFileName={t("quality.oqc.title")}
-          onRowClick={(row) => handleRowClick(row)}
           toolbarLeft={
             <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
               <div className="flex-1 min-w-[200px]">

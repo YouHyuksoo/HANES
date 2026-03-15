@@ -1,16 +1,16 @@
 /**
  * @file iqc-log.entity.ts
  * @description IQC 검사이력(IqcLog) 엔티티 - 수입검사 결과를 기록한다.
- *              시퀀스 PK 사용, partId → itemCode로 변환됨.
+ *              복합 PK(INSPECT_DATE + SEQ) 사용, partId → itemCode로 변환됨.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
+ * 1. 복합 PK: inspectDate(INSPECT_DATE) + seq(SEQ)
  * 2. ITEM_CODE로 ItemMaster(품목)를 참조
  * 3. 검사유형(INITIAL/RETEST), 결과(PASS/FAIL) 관리
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -23,8 +23,11 @@ import {
 @Index(['inspectType'])
 @Index(['result'])
 export class IqcLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
+  @PrimaryColumn({ name: 'INSPECT_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  inspectDate: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
 
   @Column({ name: 'ARRIVAL_NO', length: 50, nullable: true })
   arrivalNo: string | null;
@@ -43,9 +46,6 @@ export class IqcLog {
 
   @Column({ name: 'INSPECTOR_NAME', length: 100, nullable: true })
   inspectorName: string | null;
-
-  @Column({ name: 'INSPECT_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  inspectDate: Date;
 
   @Column({ name: 'STATUS', length: 50, default: 'DONE' })
   status: string;

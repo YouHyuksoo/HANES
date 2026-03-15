@@ -8,12 +8,13 @@
  * 3. **완료**: "실사반영" 후 status='COMPLETED'로 업데이트합니다.
  * 4. **invType**: 'MATERIAL'(자재실사) | 'PRODUCT'(제품실사)
  * 5. **scope**: 전사 차단 또는 특정 창고(warehouseCode)만 차단할 수 있습니다.
+ * 6. **sessionDate + seq**: 복합 PK (세션일자 + 일련번호)
  *
  * DB 테이블: PHYSICAL_INV_SESSIONS
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -30,8 +31,11 @@ export type PhysicalInvType = 'MATERIAL' | 'PRODUCT';
 @Index(['status'])
 @Index(['company', 'plant', 'status'])
 export class PhysicalInvSession {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
+  @PrimaryColumn({ name: 'SESSION_DATE', type: 'date', default: () => 'SYSDATE' })
+  sessionDate: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
 
   /** 실사 유형: MATERIAL(자재) | PRODUCT(제품) */
   @Column({ name: 'INV_TYPE', length: 20 })

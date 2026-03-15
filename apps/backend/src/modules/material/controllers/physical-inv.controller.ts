@@ -87,14 +87,16 @@ export class PhysicalInvController {
    * 실사 완료 — COMPLETED 상태 전환
    * 이 API 호출 후 InventoryFreezeGuard 차단이 해제됩니다.
    */
-  @Post('session/:id/complete')
+  @Post('session/:sessionDate/:seq/complete')
   @ApiOperation({ summary: '실사 완료 — COMPLETED 상태 전환, 트랜잭션 차단 해제' })
-  @ApiParam({ name: 'id', description: 'PhysicalInvSession PK' })
+  @ApiParam({ name: 'sessionDate', description: 'PhysicalInvSession 세션일자 (YYYY-MM-DD)' })
+  @ApiParam({ name: 'seq', description: 'PhysicalInvSession 일련번호' })
   async completeSession(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('sessionDate') sessionDate: string,
+    @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: CompletePhysicalInvSessionDto,
   ) {
-    const data = await this.physicalInvService.completeSession(id, dto);
+    const data = await this.physicalInvService.completeSession(sessionDate, seq, dto);
     return ResponseUtil.success(data, '재고실사가 완료되었습니다. 자재 트랜잭션이 재개됩니다.');
   }
 

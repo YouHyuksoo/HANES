@@ -3,7 +3,7 @@
  * @description MSA(측정시스템분석) API 컨트롤러 — IATF 16949 7.1.5
  *
  * 초보자 가이드:
- * 1. **계측기 API**: /api/v1/quality/gauges
+ * 1. **계측기 API**: /api/v1/quality/msa/gauges
  *    - GET    /gauges              : 목록 조회 (페이지네이션)
  *    - GET    /gauges/expiring-soon: 교정 만료 예정 조회
  *    - GET    /gauges/:id          : 단건 조회
@@ -11,7 +11,7 @@
  *    - PUT    /gauges/:id          : 수정
  *    - DELETE /gauges/:id          : 삭제
  *
- * 2. **교정 이력 API**: /api/v1/quality/calibrations
+ * 2. **교정 이력 API**: /api/v1/quality/msa/calibrations
  *    - GET    /calibrations        : 목록 조회 (페이지네이션)
  *    - POST   /calibrations        : 등록 (자동채번)
  *    - DELETE /calibrations/:id    : 삭제
@@ -35,7 +35,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
@@ -51,7 +50,7 @@ import {
 } from '../dto/msa.dto';
 
 @ApiTags('품질관리 - MSA')
-@Controller('quality')
+@Controller('quality/msa')
 export class MsaController {
   constructor(private readonly msaService: MsaService) {}
 
@@ -88,10 +87,10 @@ export class MsaController {
 
   @Get('gauges/:id')
   @ApiOperation({ summary: '계측기 단건 조회' })
-  @ApiParam({ name: 'id', description: '계측기 ID' })
+  @ApiParam({ name: 'id', description: '계측기 코드' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '계측기 없음' })
-  async findGaugeById(@Param('id', ParseIntPipe) id: number) {
+  async findGaugeById(@Param('id') id: string) {
     const data = await this.msaService.findGaugeById(id);
     return ResponseUtil.success(data);
   }
@@ -117,10 +116,10 @@ export class MsaController {
 
   @Put('gauges/:id')
   @ApiOperation({ summary: '계측기 수정' })
-  @ApiParam({ name: 'id', description: '계측기 ID' })
+  @ApiParam({ name: 'id', description: '계측기 코드' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async updateGauge(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateGaugeDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -135,9 +134,9 @@ export class MsaController {
   @Delete('gauges/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '계측기 삭제', description: '교정 이력 없는 경우만 삭제 가능' })
-  @ApiParam({ name: 'id', description: '계측기 ID' })
+  @ApiParam({ name: 'id', description: '계측기 코드' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteGauge(@Param('id', ParseIntPipe) id: number) {
+  async deleteGauge(@Param('id') id: string) {
     await this.msaService.deleteGauge(id);
     return ResponseUtil.success(null, '계측기가 삭제되었습니다.');
   }
@@ -192,9 +191,9 @@ export class MsaController {
   @Delete('calibrations/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '교정 이력 삭제' })
-  @ApiParam({ name: 'id', description: '교정 이력 ID' })
+  @ApiParam({ name: 'id', description: '교정번호 (calibrationNo)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteCalibration(@Param('id', ParseIntPipe) id: number) {
+  async deleteCalibration(@Param('id') id: string) {
     await this.msaService.deleteCalibration(id);
     return ResponseUtil.success(null, '교정 이력이 삭제되었습니다.');
   }

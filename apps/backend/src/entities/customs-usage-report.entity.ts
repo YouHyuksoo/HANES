@@ -1,17 +1,16 @@
 /**
  * @file entities/customs-usage-report.entity.ts
  * @description 보세 사용 보고서 엔티티 - 보세자재 사용 실적을 관리한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              REPORT_NO 자연키 PK 사용.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. reportNo: 보고서 번호 (유니크)
- * 3. customsLotId: 보세 LOT ID 참조 (number)
- * 4. status: DRAFT, SUBMITTED, APPROVED 등
+ * 1. reportNo가 자연키 PK (보고서 번호)
+ * 2. lotEntryNo + lotMatUid: 보세 LOT 복합키 참조
+ * 3. status: DRAFT, SUBMITTED, APPROVED 등
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -19,18 +18,18 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CUSTOMS_USAGE_REPORTS' })
-@Index(['customsLotId'])
+@Index(['lotEntryNo', 'lotMatUid'])
 @Index(['status'])
 @Index(['usageDate'])
 export class CustomsUsageReport {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'REPORT_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'REPORT_NO', length: 50 })
   reportNo: string;
 
-  @Column({ name: 'CUSTOMS_LOT_ID', type: 'number' })
-  customsLotId: number;
+  @Column({ name: 'LOT_ENTRY_NO', length: 50 })
+  lotEntryNo: string;
+
+  @Column({ name: 'LOT_MAT_UID', length: 100 })
+  lotMatUid: string;
 
   @Column({ name: 'ORDER_NO', length: 36, nullable: true })
   jobOrderId: string | null;

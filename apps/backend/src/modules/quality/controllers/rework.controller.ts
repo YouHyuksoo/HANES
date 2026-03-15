@@ -4,24 +4,31 @@
  *
  * 초보자 가이드:
  * 1. **재작업 지시 API**: /api/v1/quality/reworks
- *    - GET    /reworks              : 목록 조회 (페이지네이션)
- *    - GET    /reworks/stats        : 상태별 통계
- *    - GET    /reworks/:id          : 단건 조회
- *    - POST   /reworks              : 등록
- *    - PUT    /reworks/:id          : 수정
- *    - DELETE /reworks/:id          : 삭제
- *    - PATCH  /reworks/:id/request-approval : 품질승인 요청
- *    - PATCH  /reworks/:id/qc-approve       : 품질 승인/반려
- *    - PATCH  /reworks/:id/prod-approve     : 생산 승인/반려
- *    - PATCH  /reworks/:id/start            : 작업 시작
- *    - PATCH  /reworks/:id/complete         : 작업 완료
+ *    - GET    /                     : 목록 조회 (페이지네이션)
+ *    - GET    /stats                : 상태별 통계
+ *    - GET    /:id                  : 단건 조회
+ *    - POST   /                     : 등록
+ *    - PUT    /:id                  : 수정
+ *    - DELETE /:id                  : 삭제
+ *    - PATCH  /:id/request-approval : 품질승인 요청
+ *    - PATCH  /:id/qc-approve       : 품질 승인/반려
+ *    - PATCH  /:id/prod-approve     : 생산 승인/반려
+ *    - PATCH  /:id/start            : 작업 시작
+ *    - PATCH  /:id/complete         : 작업 완료
  *
- * 2. **재검사 API**: /api/v1/quality/rework-inspects
- *    - GET    /rework-inspects      : 재검사 목록
- *    - GET    /rework-inspects/:id  : 재검사 단건
- *    - POST   /rework-inspects      : 재검사 등록
+ * 2. **공정별 API**: /api/v1/quality/reworks/processes
+ *    - GET    /:id/processes                              : 공정 목록
+ *    - PATCH  /processes/:orderId/:processCode/start      : 공정 시작
+ *    - PATCH  /processes/:orderId/:processCode/complete   : 공정 완료
+ *    - PATCH  /processes/:orderId/:processCode/skip       : 공정 건너뛰기
+ *    - GET    /processes/:orderId/:processCode/results    : 공정별 실적 조회
  *
- * 3. **인증**: @Company(), @Plant() 데코레이터로 테넌시 정보, req.user.id로 사용자 ID 추출
+ * 3. **재검사 API**: /api/v1/quality/reworks/inspects
+ *    - GET    /inspects                       : 재검사 목록
+ *    - GET    /inspects/:orderId/:seq         : 재검사 단건
+ *    - POST   /inspects                       : 재검사 등록
+ *
+ * 4. **인증**: @Company(), @Plant() 데코레이터로 테넌시 정보, req.user.id로 사용자 ID 추출
  */
 
 import {
@@ -56,7 +63,7 @@ import {
 } from '../dto/rework.dto';
 
 @ApiTags('품질관리 - 재작업')
-@Controller('quality')
+@Controller('quality/reworks')
 export class ReworkController {
   constructor(
     private readonly reworkService: ReworkService,
@@ -65,7 +72,7 @@ export class ReworkController {
 
   // ===== 통계 API (목록 조회보다 먼저 정의) =====
 
-  @Get('reworks/stats')
+  @Get('stats')
   @ApiOperation({ summary: '재작업 통계', description: '상태별 건수 및 수량 합계' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStats(@Company() company: string, @Plant() plant: string) {
@@ -75,7 +82,7 @@ export class ReworkController {
 
   // ===== 재작업 지시 CRUD =====
 
-  @Get('reworks')
+  @Get()
   @ApiOperation({ summary: '재작업 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findAll(
@@ -87,17 +94,17 @@ export class ReworkController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('reworks/:id')
+  @Get(':id')
   @ApiOperation({ summary: '재작업 단건 조회' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '재작업 지시 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.reworkService.findById(id);
+  async findById(@Param('id') reworkNo: string) {
+    const data = await this.reworkService.findById(reworkNo);
     return ResponseUtil.success(data);
   }
 
-  @Post('reworks')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '재작업 등록', description: '재작업 지시 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
@@ -116,110 +123,110 @@ export class ReworkController {
     return ResponseUtil.success(data, '재작업이 등록되었습니다.');
   }
 
-  @Put('reworks/:id')
+  @Put(':id')
   @ApiOperation({ summary: '재작업 수정' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') reworkNo: string,
     @Body() dto: UpdateReworkOrderDto,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.reworkService.update(
-      id,
+      reworkNo,
       dto,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '재작업이 수정되었습니다.');
   }
 
-  @Delete('reworks/:id')
+  @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '재작업 삭제' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
-    await this.reworkService.delete(id);
+  async delete(@Param('id') reworkNo: string) {
+    await this.reworkService.delete(reworkNo);
     return ResponseUtil.success(null, '재작업이 삭제되었습니다.');
   }
 
   // ===== 2단계 승인 =====
 
-  @Patch('reworks/:id/request-approval')
+  @Patch(':id/request-approval')
   @ApiOperation({ summary: '품질승인 요청', description: 'REGISTERED → QC_PENDING' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '승인 요청 성공' })
   async requestApproval(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') reworkNo: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.reworkService.requestQcApproval(
-      id,
+      reworkNo,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '승인 요청이 완료되었습니다.');
   }
 
-  @Patch('reworks/:id/qc-approve')
+  @Patch(':id/qc-approve')
   @ApiOperation({ summary: '품질 승인/반려', description: 'QC_PENDING → PROD_PENDING 또는 QC_REJECTED' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '처리 성공' })
   async qcApprove(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') reworkNo: string,
     @Body() dto: ApproveReworkDto,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.reworkService.qcApprove(
-      id,
+      reworkNo,
       dto,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data);
   }
 
-  @Patch('reworks/:id/prod-approve')
+  @Patch(':id/prod-approve')
   @ApiOperation({ summary: '생산 승인/반려', description: 'PROD_PENDING → APPROVED 또는 PROD_REJECTED' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '처리 성공' })
   async prodApprove(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') reworkNo: string,
     @Body() dto: ApproveReworkDto,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.reworkService.prodApprove(
-      id,
+      reworkNo,
       dto,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data);
   }
 
-  @Patch('reworks/:id/start')
+  @Patch(':id/start')
   @ApiOperation({ summary: '작업 시작', description: 'APPROVED → IN_PROGRESS' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '시작 성공' })
   async start(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') reworkNo: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.reworkService.start(
-      id,
+      reworkNo,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '작업이 시작되었습니다.');
   }
 
-  @Patch('reworks/:id/complete')
+  @Patch(':id/complete')
   @ApiOperation({ summary: '작업 완료', description: 'IN_PROGRESS → INSPECT_PENDING' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '완료 성공' })
   async complete(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') reworkNo: string,
     @Body() dto: CompleteReworkDto,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.reworkService.complete(
-      id,
+      reworkNo,
       dto,
       req.user?.id ?? 'system',
     );
@@ -228,57 +235,68 @@ export class ReworkController {
 
   // ===== 공정별 작업 관리 =====
 
-  @Get('reworks/:id/processes')
+  @Get(':id/processes')
   @ApiOperation({ summary: '공정 목록 조회', description: '재작업 지시의 공정별 작업 목록' })
-  @ApiParam({ name: 'id', description: '재작업 지시 ID' })
-  async findProcesses(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.reworkProcessService.findProcesses(id);
+  @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
+  async findProcesses(@Param('id') reworkNo: string) {
+    const order = await this.reworkService.findById(reworkNo);
+    const data = await this.reworkProcessService.findProcesses(order.id);
     return ResponseUtil.success(data);
   }
 
-  @Patch('rework-processes/:id/start')
+  @Patch('processes/:orderId/:processCode/start')
   @ApiOperation({ summary: '공정 작업시작', description: 'WAITING → IN_PROGRESS' })
-  @ApiParam({ name: 'id', description: '공정 ID' })
+  @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
+  @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
   async startProcess(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('processCode') processCode: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.reworkProcessService.startProcess(id, req.user?.id ?? 'system');
+    const data = await this.reworkProcessService.startProcess(orderId, processCode, req.user?.id ?? 'system');
     return ResponseUtil.success(data, '공정 작업이 시작되었습니다.');
   }
 
-  @Patch('rework-processes/:id/complete')
+  @Patch('processes/:orderId/:processCode/complete')
   @ApiOperation({ summary: '공정 작업완료', description: 'IN_PROGRESS → COMPLETED' })
-  @ApiParam({ name: 'id', description: '공정 ID' })
+  @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
+  @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
   async completeProcess(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('processCode') processCode: string,
     @Body() body: { resultQty: number },
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.reworkProcessService.completeProcess(id, body.resultQty ?? 0, req.user?.id ?? 'system');
+    const data = await this.reworkProcessService.completeProcess(orderId, processCode, body.resultQty ?? 0, req.user?.id ?? 'system');
     return ResponseUtil.success(data, '공정 작업이 완료되었습니다.');
   }
 
-  @Patch('rework-processes/:id/skip')
+  @Patch('processes/:orderId/:processCode/skip')
   @ApiOperation({ summary: '공정 건너뛰기', description: 'WAITING → SKIPPED' })
-  @ApiParam({ name: 'id', description: '공정 ID' })
+  @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
+  @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
   async skipProcess(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('processCode') processCode: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    const data = await this.reworkProcessService.skipProcess(id, req.user?.id ?? 'system');
+    const data = await this.reworkProcessService.skipProcess(orderId, processCode, req.user?.id ?? 'system');
     return ResponseUtil.success(data, '공정을 건너뛰었습니다.');
   }
 
-  @Get('rework-processes/:id/results')
+  @Get('processes/:orderId/:processCode/results')
   @ApiOperation({ summary: '공정별 실적 조회' })
-  @ApiParam({ name: 'id', description: '공정 ID' })
-  async findResults(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.reworkProcessService.findResults(id);
+  @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
+  @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
+  async findResults(
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('processCode') processCode: string,
+  ) {
+    const data = await this.reworkProcessService.findResults(orderId, processCode);
     return ResponseUtil.success(data);
   }
 
-  @Post('rework-results')
+  @Post('results')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '재작업 실적 등록', description: '공정별 실적 기록' })
   async createResult(
@@ -293,7 +311,7 @@ export class ReworkController {
 
   // ===== 재작업 후 검사 =====
 
-  @Get('rework-inspects')
+  @Get('inspects')
   @ApiOperation({ summary: '재검사 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findInspects(
@@ -309,17 +327,21 @@ export class ReworkController {
     return ResponseUtil.success(data);
   }
 
-  @Get('rework-inspects/:id')
+  @Get('inspects/:orderId/:seq')
   @ApiOperation({ summary: '재검사 단건 조회' })
-  @ApiParam({ name: 'id', description: '재검사 ID' })
+  @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
+  @ApiParam({ name: 'seq', description: '검사 순번 (SEQ)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '재검사 없음' })
-  async findInspectById(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.reworkService.findInspectById(id);
+  async findInspectById(
+    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('seq', ParseIntPipe) seq: number,
+  ) {
+    const data = await this.reworkService.findInspectById(orderId, seq);
     return ResponseUtil.success(data);
   }
 
-  @Post('rework-inspects')
+  @Post('inspects')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '재검사 결과 등록', description: '재작업 후 재검증 결과 기록' })
   @ApiResponse({ status: 201, description: '생성 성공' })

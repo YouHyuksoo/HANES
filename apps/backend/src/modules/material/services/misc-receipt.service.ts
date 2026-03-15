@@ -226,7 +226,6 @@ export class MiscReceiptService {
       await queryRunner.commitTransaction();
 
       return {
-        id: transaction.id,
         transNo,
         warehouseId,
         warehouseCode: warehouse.warehouseCode,

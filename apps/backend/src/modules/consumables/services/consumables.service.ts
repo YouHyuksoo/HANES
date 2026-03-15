@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, In } from 'typeorm';
+import { Repository, DataSource, Between, In, QueryRunner } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import {
@@ -46,6 +46,17 @@ export class ConsumablesService {
     private readonly consumableLogRepository: Repository<ConsumableLog>,
     private readonly dataSource: DataSource,
   ) {}
+
+  /** CONSUMABLE_LOGS 테이블 오늘 날짜 기준 다음 SEQ */
+  private async getNextLogSeq(transDate: Date, qr?: QueryRunner): Promise<number> {
+    const manager = qr?.manager ?? this.dataSource.manager;
+    const dateStr = transDate.toISOString().slice(0, 10);
+    const result = await manager.query(
+      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
+      [dateStr],
+    );
+    return result[0].nextSeq;
+  }
 
   // =============================================
   // CRUD 기본 기능
@@ -324,7 +335,7 @@ export class ConsumablesService {
     const where: any = {};
 
     if (consumableId) {
-      where.consumableId = consumableId;
+      where.consumableCode = consumableId;
     }
 
     if (logType) {
@@ -396,8 +407,14 @@ export class ConsumablesService {
       }
 
       // 이력 생성
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logSeq = await this.getNextLogSeq(today, queryRunner);
+
       const log = queryRunner.manager.create(ConsumableLog, {
-        consumableId: dto.consumableId,
+        transDate: today,
+        seq: logSeq,
+        consumableCode: dto.consumableId,
         logType: dto.logType,
         qty: dto.qty || 1,
         workerId: dto.workerId || null,
@@ -407,7 +424,7 @@ export class ConsumablesService {
         unitPrice: dto.unitPrice || null,
         incomingType: dto.incomingType || null,
         department: dto.department || null,
-        lineId: dto.lineId || null,
+        lineCode: dto.lineId || null,
         equipCode: dto.equipCode || null,
         issueReason: dto.issueReason || null,
         returnReason: dto.returnReason || null,
@@ -489,8 +506,14 @@ export class ConsumablesService {
 
       // 로그 기록 (선택적)
       if (dto.equipCode) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const logSeq = await this.getNextLogSeq(today, queryRunner);
+
         const log = queryRunner.manager.create(ConsumableLog, {
-          consumableId: dto.consumableId,
+          transDate: today,
+          seq: logSeq,
+          consumableCode: dto.consumableId,
           logType: 'USAGE',
           qty: dto.addCount,
           equipCode: dto.equipCode,
@@ -540,8 +563,14 @@ export class ConsumablesService {
       const now = new Date();
 
       // 교체 이력 로그 생성
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logSeq = await this.getNextLogSeq(today, queryRunner);
+
       const log = queryRunner.manager.create(ConsumableLog, {
-        consumableId: dto.consumableId,
+        transDate: today,
+        seq: logSeq,
+        consumableCode: dto.consumableId,
         logType: 'REPLACE',
         qty: previousCount,
         remark: dto.remark || '소모품 교체 (타수 리셋)',

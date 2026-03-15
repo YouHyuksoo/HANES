@@ -173,11 +173,16 @@ export class IqcHistoryService {
     };
   }
 
-  /** IQC 판정 취소 - LOT iqcStatus를 PENDING으로 복원 */
-  async cancel(id: number, dto: CancelIqcResultDto) {
-    const log = await this.iqcLogRepository.findOne({ where: { id } });
+  /** IQC 판정 취소 - LOT iqcStatus를 PENDING으로 복원
+   *  @param inspectDate ISO 날짜 문자열 (복합 PK 일부)
+   *  @param seq 시퀀스 번호 (복합 PK 일부)
+   */
+  async cancel(inspectDate: string, seq: number, dto: CancelIqcResultDto) {
+    const log = await this.iqcLogRepository.findOne({
+      where: { inspectDate: new Date(inspectDate), seq },
+    });
     if (!log) {
-      throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
     }
     if (log.status === 'CANCELED') {
       throw new BadRequestException('이미 취소된 판정입니다.');
@@ -194,10 +199,10 @@ export class IqcHistoryService {
     }
 
     // IqcLog 상태 변경
-    await this.iqcLogRepository.update(id, {
-      status: 'CANCELED',
-      remark: dto.reason,
-    });
+    await this.iqcLogRepository.update(
+      { inspectDate: new Date(inspectDate), seq },
+      { status: 'CANCELED', remark: dto.reason },
+    );
 
     // LOT의 iqcStatus를 PENDING으로 복원 (itemCode 기준으로 LOT 찾기)
     if (log.itemCode) {
@@ -212,6 +217,6 @@ export class IqcHistoryService {
       }
     }
 
-    return { id, status: 'CANCELED' };
+    return { inspectDate, seq, status: 'CANCELED' };
   }
 }

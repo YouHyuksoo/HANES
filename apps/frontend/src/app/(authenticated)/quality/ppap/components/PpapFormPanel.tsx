@@ -26,7 +26,7 @@ const INIT: PpapFormData = { itemCode: "", itemName: "", customerCode: "", custo
 interface Props {
   isOpen: boolean;
   editData: {
-    id: number;
+    ppapNo: string;
     itemCode: string;
     itemName: string;
     customerCode: string;
@@ -76,7 +76,7 @@ export default function PpapFormPanel({ isOpen, editData, onClose, onSave }: Pro
     try {
       const payload = { ...form, elements };
       if (isEdit && editData) {
-        await api.patch(`/quality/ppap/${editData.id}`, payload);
+        await api.patch(`/quality/ppap/${editData.ppapNo}`, payload);
       } else {
         await api.post("/quality/ppap", payload);
       }

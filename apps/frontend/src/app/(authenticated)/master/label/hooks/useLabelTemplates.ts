@@ -13,6 +13,7 @@ import { api } from "@/services/api";
 import { LabelDesign, LabelCategory } from "../types";
 
 export interface LabelTemplateItem {
+  /** 복합키 식별자: "templateName::category" */
   id: string;
   templateName: string;
   category: string;
@@ -37,7 +38,13 @@ export function useLabelTemplates() {
     try {
       const params = category ? { category } : {};
       const res = await api.get(BASE, { params });
-      setTemplates(res.data?.data ?? []);
+      const raw = res.data?.data ?? [];
+      // 복합키를 id 필드로 생성
+      setTemplates(raw.map((tpl: any) => ({
+        ...tpl,
+        id: `${tpl.templateName}::${tpl.category}`,
+        designData: typeof tpl.designData === 'string' ? JSON.parse(tpl.designData) : tpl.designData,
+      })));
     } catch {
       setTemplates([]);
     } finally {

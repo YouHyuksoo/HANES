@@ -19,7 +19,7 @@ import {
   AlertTriangle, Clock, Play, Wrench,
 } from "lucide-react";
 import { Button, StatCard } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, ProcessSelect } from "@/components/shared";
 import InspectCalendar from "../inspect-calendar/components/InspectCalendar";
 import type { CalendarDaySummary } from "../inspect-calendar/components/InspectCalendar";
 import PmWorkOrderPanel from "./components/PmWorkOrderPanel";
@@ -33,7 +33,7 @@ export default function PmCalendarPage() {
 
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
-  const [lineCode, setLineCode] = useState("");
+  const [processCode, setProcessCode] = useState("");
   const [equipType, setEquipType] = useState("");
   const [calendarData, setCalendarData] = useState<CalendarDaySummary[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -50,7 +50,7 @@ export default function PmCalendarPage() {
     setCalendarLoading(true);
     try {
       const params: Record<string, string | number> = { year: y, month: m };
-      if (lineCode) params.lineCode = lineCode;
+      if (processCode) params.processCode = processCode;
       if (equipType) params.equipType = equipType;
       const res = await api.get("/equipment/pm-work-orders/calendar", { params });
       setCalendarData(res.data?.data ?? []);
@@ -59,13 +59,13 @@ export default function PmCalendarPage() {
     } finally {
       setCalendarLoading(false);
     }
-  }, [lineCode, equipType]);
+  }, [processCode, equipType]);
 
   const fetchDaySchedule = useCallback(async (date: string) => {
     setDayLoading(true);
     try {
       const params: Record<string, string> = { date };
-      if (lineCode) params.lineCode = lineCode;
+      if (processCode) params.processCode = processCode;
       if (equipType) params.equipType = equipType;
       const res = await api.get("/equipment/pm-work-orders/calendar/day", { params });
       setDayData(res.data?.data ?? []);
@@ -74,7 +74,7 @@ export default function PmCalendarPage() {
     } finally {
       setDayLoading(false);
     }
-  }, [lineCode, equipType]);
+  }, [processCode, equipType]);
 
   useEffect(() => { fetchCalendar(year, month); }, [year, month, fetchCalendar]);
   useEffect(() => { fetchDaySchedule(selectedDate); }, [selectedDate, fetchDaySchedule]);
@@ -149,12 +149,12 @@ export default function PmCalendarPage() {
   }, [year, month, t]);
 
   const handleReset = useCallback(() => {
-    setLineCode("");
+    setProcessCode("");
     setEquipType("");
   }, []);
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-5 p-6 animate-fade-in">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -165,13 +165,8 @@ export default function PmCalendarPage() {
           <p className="text-text-muted mt-1">{t("equipment.pmCalendar.woDescription")}</p>
         </div>
         <div className="flex gap-2 items-center">
-          <div className="w-28">
-            <ComCodeSelect
-              groupCode="EQUIP_TYPE"
-              value={equipType}
-              onChange={setEquipType}
-              fullWidth
-            />
+          <div className="w-36">
+            <ProcessSelect value={processCode} onChange={setProcessCode} labelPrefix={t("common.process", "공정")} fullWidth />
           </div>
           <Button variant="ghost" size="sm" onClick={handleReset}>
             <RefreshCw className="w-4 h-4" />

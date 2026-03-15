@@ -75,10 +75,15 @@ export class ReworkProcessItemDto {
  * 재작업 실적 등록 DTO
  */
 export class CreateReworkResultDto {
-  @ApiProperty({ description: '재작업 공정 ID' })
+  @ApiProperty({ description: '재작업 지시 ID (REWORK_ORDER_ID)' })
   @Type(() => Number)
   @IsNumber()
-  reworkProcessId: number;
+  reworkOrderId: number;
+
+  @ApiProperty({ description: '공정 코드', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  processCode: string;
 
   @ApiProperty({ description: '작업자 코드', maxLength: 50 })
   @IsString()
@@ -295,10 +300,10 @@ export class CompleteReworkDto {
  * 재작업 후 재검사 결과 등록 DTO
  */
 export class CreateReworkInspectDto {
-  @ApiProperty({ description: '재작업 지시 ID' })
-  @Type(() => Number)
-  @IsNumber()
-  reworkOrderId: number;
+  @ApiProperty({ description: '재작업번호', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  reworkNo: string;
 
   @ApiProperty({ description: '검사자 코드', maxLength: 50 })
   @IsString()

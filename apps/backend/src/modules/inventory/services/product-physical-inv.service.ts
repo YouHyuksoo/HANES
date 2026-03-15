@@ -99,7 +99,8 @@ export class ProductPhysicalInvService {
       .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid')
       .leftJoin(Warehouse, 'wh', 'wh.warehouseCode = log.warehouseCode')
       .select([
-        'log.id AS "id"',
+        'log.adjDate AS "adjDate"',
+        'log.seq AS "seq"',
         'log.warehouseCode AS "warehouseId"',
         'wh.warehouseName AS "warehouseName"',
         'log.itemCode AS "itemCode"',

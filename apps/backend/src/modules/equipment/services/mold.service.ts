@@ -26,6 +26,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MoldMaster } from '../../../entities/mold-master.entity';
 import { MoldUsageLog } from '../../../entities/mold-usage-log.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import {
   CreateMoldDto,
   UpdateMoldDto,
@@ -42,6 +43,8 @@ export class MoldService {
     private readonly moldRepo: Repository<MoldMaster>,
     @InjectRepository(MoldUsageLog)
     private readonly usageRepo: Repository<MoldUsageLog>,
+    @InjectRepository(EquipMaster)
+    private readonly equipMasterRepo: Repository<EquipMaster>,
   ) {}
 
   // =============================================
@@ -80,8 +83,8 @@ export class MoldService {
   /**
    * 금형 단건 조회
    */
-  async findById(id: number) {
-    const item = await this.moldRepo.findOne({ where: { id } });
+  async findById(moldCode: string) {
+    const item = await this.moldRepo.findOne({ where: { moldCode } });
     if (!item) {
       throw new NotFoundException('금형을 찾을 수 없습니다.');
     }
@@ -114,8 +117,8 @@ export class MoldService {
   /**
    * 금형 수정
    */
-  async update(id: number, dto: UpdateMoldDto, userId: string) {
-    const item = await this.findById(id);
+  async update(moldCode: string, dto: UpdateMoldDto, userId: string) {
+    const item = await this.findById(moldCode);
     if (item.status === 'SCRAPPED') {
       throw new BadRequestException('폐기된 금형은 수정할 수 없습니다.');
     }
@@ -126,10 +129,10 @@ export class MoldService {
   /**
    * 금형 삭제 (사용 이력이 없는 경우만)
    */
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async delete(moldCode: string) {
+    const item = await this.findById(moldCode);
     const usageCount = await this.usageRepo.count({
-      where: { moldId: id },
+      where: { moldCode },
     });
     if (usageCount > 0) {
       throw new BadRequestException(
@@ -147,13 +150,13 @@ export class MoldService {
    * 사용 이력 등록 + currentShots 누적
    */
   async addUsage(
-    moldId: number,
+    moldCode: string,
     dto: CreateMoldUsageDto,
     company: string,
     plant: string,
     userId: string,
   ) {
-    const mold = await this.findById(moldId);
+    const mold = await this.findById(moldCode);
     if (mold.status !== 'ACTIVE') {
       throw new BadRequestException(
         '활성 상태의 금형만 사용 등록할 수 있습니다.',
@@ -163,7 +166,7 @@ export class MoldService {
     // 사용 이력 저장
     const usage = this.usageRepo.create({
       ...dto,
-      moldId,
+      moldCode,
       company,
       plant,
       createdBy: userId,
@@ -175,6 +178,21 @@ export class MoldService {
     mold.updatedBy = userId;
     await this.moldRepo.save(mold);
 
+    // 보증 타수 초과 시 사용 설비 인터락 처리
+    if (mold.guaranteedShots && mold.currentShots >= mold.guaranteedShots && dto.equipCode) {
+      try {
+        await this.equipMasterRepo.update(
+          { equipCode: dto.equipCode },
+          { status: 'INTERLOCK' },
+        );
+        this.logger.warn(
+          `금형 보증타수 초과로 설비 인터락: ${dto.equipCode} ← ${mold.moldCode} (${mold.currentShots}/${mold.guaranteedShots})`,
+        );
+      } catch (err) {
+        this.logger.error(`설비 인터락 설정 실패: ${dto.equipCode}`, err);
+      }
+    }
+
     this.logger.log(
       `금형 사용 등록: ${mold.moldCode}, shots=${dto.shotCount}, total=${mold.currentShots}`,
     );
@@ -184,9 +202,9 @@ export class MoldService {
   /**
    * 금형별 사용 이력 조회
    */
-  async getUsageLogs(moldId: number) {
+  async getUsageLogs(moldCode: string) {
     return this.usageRepo.find({
-      where: { moldId },
+      where: { moldCode },
       order: { usageDate: 'DESC' },
     });
   }
@@ -229,8 +247,8 @@ export class MoldService {
   /**
    * 금형 폐기 처리 (ACTIVE/MAINTENANCE → RETIRED)
    */
-  async retire(id: number, userId: string) {
-    const item = await this.findById(id);
+  async retire(moldCode: string, userId: string) {
+    const item = await this.findById(moldCode);
     if (['RETIRED', 'SCRAPPED'].includes(item.status)) {
       throw new BadRequestException('이미 폐기/스크랩된 금형입니다.');
     }

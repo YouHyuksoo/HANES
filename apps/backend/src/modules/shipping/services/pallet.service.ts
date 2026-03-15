@@ -407,7 +407,7 @@ export class PalletService {
 
     // 출하 존재 및 상태 확인
     const shipment = await this.shipmentRepository.findOne({
-      where: { id: Number(dto.shipmentId) },
+      where: { shipNo: dto.shipmentId },
     });
 
     if (!shipment) {
@@ -445,7 +445,7 @@ export class PalletService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id: dto.shipmentId },
+        { shipNo: dto.shipmentId },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
@@ -476,7 +476,7 @@ export class PalletService {
 
     // 출하가 PREPARING 상태일 때만 제거 가능
     const shipment = await this.shipmentRepository.findOne({
-      where: { id: Number(pallet.shipmentId) },
+      where: { shipNo: pallet.shipmentId },
     });
 
     if (!shipment) {
@@ -516,7 +516,7 @@ export class PalletService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id: shipmentId },
+        { shipNo: shipmentId },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,

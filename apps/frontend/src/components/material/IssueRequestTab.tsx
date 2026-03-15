@@ -139,7 +139,7 @@ export default function IssueRequestTab() {
                   type="button"
                   className="p-1 hover:bg-surface rounded"
                   title={t('material.issue.approveAction')}
-                  onClick={() => setApproveTarget(record.id)}
+                  onClick={() => setApproveTarget(record.requestNo)}
                 >
                   <CheckCircle className="w-4 h-4 text-blue-500" />
                 </button>
@@ -147,7 +147,7 @@ export default function IssueRequestTab() {
                   type="button"
                   className="p-1 hover:bg-surface rounded"
                   title={t('material.issue.rejectAction')}
-                  onClick={() => setRejectTarget(record.id)}
+                  onClick={() => setRejectTarget(record.requestNo)}
                 >
                   <XCircle className="w-4 h-4 text-red-400" />
                 </button>
@@ -158,7 +158,7 @@ export default function IssueRequestTab() {
                 type="button"
                 className="p-1 hover:bg-surface rounded"
                 title={t('material.issue.processAction')}
-                onClick={() => setIssueTarget(record.id)}
+                onClick={() => setIssueTarget(record.requestNo)}
               >
                 <Play className="w-4 h-4 text-primary" />
               </button>

@@ -102,7 +102,7 @@ export default function DailyInspectPage() {
     setSaving(true);
     try {
       if (editingItem) {
-        await api.put(`/equipment/daily-inspect/${editingItem.id}`, form);
+        await api.put(`/equipment/daily-inspect/${editingItem.equipCode}/${editingItem.inspectDate}`, form);
       } else {
         await api.post("/equipment/daily-inspect", { ...form, inspectType: "DAILY" });
       }
@@ -118,7 +118,7 @@ export default function DailyInspectPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/equipment/daily-inspect/${deleteTarget.id}`);
+      await api.delete(`/equipment/daily-inspect/${deleteTarget.equipCode}/${deleteTarget.inspectDate}`);
       fetchData();
     } catch (e) {
       console.error("Delete failed:", e);

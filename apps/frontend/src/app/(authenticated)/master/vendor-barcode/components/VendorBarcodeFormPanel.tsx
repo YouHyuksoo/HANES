@@ -82,8 +82,8 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
     if (!form.vendorBarcode.trim()) return;
     setSaving(true);
     try {
-      if (isEdit && editingItem?.id) {
-        await api.put(`/master/vendor-barcode-mappings/${editingItem.id}`, form);
+      if (isEdit && editingItem?.vendorBarcode) {
+        await api.put(`/master/vendor-barcode-mappings/${encodeURIComponent(editingItem.vendorBarcode)}`, form);
       } else {
         await api.post("/master/vendor-barcode-mappings", form);
       }

@@ -102,8 +102,8 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
         remark: form.remark || undefined,
       };
 
-      if (isEdit && editingPlan?.id) {
-        await api.put(`/production/prod-plans/${editingPlan.id}`, payload);
+      if (isEdit && editingPlan?.planNo) {
+        await api.put(`/production/prod-plans/${editingPlan.planNo}`, payload);
       } else {
         await api.post("/production/prod-plans", payload);
       }

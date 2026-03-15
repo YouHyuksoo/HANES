@@ -49,9 +49,8 @@ interface ItemFormState {
 }
 
 interface RelFormState {
-  id?: string;
-  equipId: string;
-  bomItemId: string;
+  equipCode: string;
+  bomItemCode: string;
   quantity: string;
   installDate: string;
   expireDate: string;
@@ -73,8 +72,8 @@ const EMPTY_ITEM_FORM: ItemFormState = {
 };
 
 const EMPTY_REL_FORM: RelFormState = {
-  equipId: "",
-  bomItemId: "",
+  equipCode: "",
+  bomItemCode: "",
   quantity: "1",
   installDate: "",
   expireDate: "",
@@ -205,7 +204,7 @@ export default function EquipBomTab() {
 
   const selectedEquipBomRels = useMemo(() => {
     if (!selectedEquipId) return [];
-    return bomRels.filter(r => r.equipId === selectedEquipId && r.useYn === "Y");
+    return bomRels.filter(r => r.equipCode === selectedEquipId && r.useYn === "Y");
   }, [bomRels, selectedEquipId]);
 
   const itemTypeOptions = useMemo(() => [
@@ -296,7 +295,7 @@ export default function EquipBomTab() {
     setEditingRel(null);
     setRelForm({
       ...EMPTY_REL_FORM,
-      equipId: selectedEquipId,
+      equipCode: selectedEquipId,
     });
     setRelModalOpen(true);
   };
@@ -304,9 +303,8 @@ export default function EquipBomTab() {
   const openRelEdit = (rel: EquipBomRel) => {
     setEditingRel(rel);
     setRelForm({
-      id: rel.id,
-      equipId: rel.equipId,
-      bomItemId: rel.bomItemId,
+      equipCode: rel.equipCode,
+      bomItemCode: rel.bomItemCode,
       quantity: rel.quantity.toString(),
       installDate: rel.installDate?.split("T")[0] || "",
       expireDate: rel.expireDate?.split("T")[0] || "",
@@ -318,8 +316,8 @@ export default function EquipBomTab() {
   const handleSaveRel = async () => {
     try {
       const body = {
-        equipId: relForm.equipId,
-        bomItemId: relForm.bomItemId,
+        equipCode: relForm.equipCode,
+        bomItemId: relForm.bomItemCode,
         quantity: parseFloat(relForm.quantity) || 1,
         installDate: relForm.installDate || undefined,
         expireDate: relForm.expireDate || undefined,
@@ -327,7 +325,7 @@ export default function EquipBomTab() {
       };
 
       if (editingRel) {
-        await api.put(`/master/equip-bom/rels/${editingRel.id}`, body);
+        await api.put(`/master/equip-bom/rels/${editingRel.equipCode}/${editingRel.bomItemCode}`, body);
       } else {
         await api.post("/master/equip-bom/rels", body);
       }
@@ -342,7 +340,7 @@ export default function EquipBomTab() {
   const handleDeleteRelConfirm = async () => {
     if (!deleteRelTarget) return;
     try {
-      await api.delete(`/master/equip-bom/rels/${deleteRelTarget.id}`);
+      await api.delete(`/master/equip-bom/rels/${deleteRelTarget.equipCode}/${deleteRelTarget.bomItemCode}`);
       fetchBomRels();
     } catch (e: any) {
       console.error("Delete relation failed:", e);
@@ -731,8 +729,8 @@ export default function EquipBomTab() {
               options={bomItems
                 .filter(i => i.useYn === "Y")
                 .map(i => ({ value: i.bomItemCode, label: `${i.itemCode} - ${i.itemName}` }))}
-              value={relForm.bomItemId}
-              onChange={(v) => setRelForm({ ...relForm, bomItemId: v })}
+              value={relForm.bomItemCode}
+              onChange={(v) => setRelForm({ ...relForm, bomItemCode: v })}
               fullWidth
               disabled={!!editingRel}
             />

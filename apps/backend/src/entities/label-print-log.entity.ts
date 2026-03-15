@@ -1,17 +1,17 @@
 /**
  * @file entities/label-print-log.entity.ts
  * @description 라벨 발행 이력 엔티티 (LABEL_PRINT_LOGS 테이블)
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              복합 PK(PRINTED_AT + SEQ) 사용.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
+ * 1. 복합 PK: printedAt(PRINTED_AT) + seq(SEQ)
  * 2. templateId: 라벨 템플릿 ID (number)
  * 3. STATUS: SUCCESS(성공), FAILED(실패)
  * 4. printMode: BROWSER(브라우저) / ZPL(직접출력)
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -23,8 +23,11 @@ import {
 @Index(['printedAt'])
 @Index(['status'])
 export class LabelPrintLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
+  @PrimaryColumn({ name: 'PRINTED_AT', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  printedAt: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
 
   @Column({ name: 'TEMPLATE_ID', type: 'number', nullable: true })
   templateId: number | null;
@@ -46,9 +49,6 @@ export class LabelPrintLog {
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
-
-  @Column({ name: 'PRINTED_AT', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  printedAt: Date;
 
   @Column({ name: 'STATUS', length: 20, default: 'SUCCESS' })
   status: string;

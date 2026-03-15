@@ -34,7 +34,7 @@ const INIT: ChangeFormData = {
 
 interface Props {
   editData: {
-    id: number;
+    changeNo: string;
     changeType: string;
     title: string;
     description: string;
@@ -90,7 +90,7 @@ export default function ChangeFormPanel({ editData, onClose, onSave }: Props) {
         effectiveDate: form.effectiveDate || undefined,
       };
       if (isEdit && editData) {
-        await api.put(`/quality/changes/${editData.id}`, payload);
+        await api.put(`/quality/changes/${editData.changeNo}`, payload);
       } else {
         await api.post("/quality/changes", payload);
       }

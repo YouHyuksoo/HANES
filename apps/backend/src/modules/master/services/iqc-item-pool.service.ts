@@ -61,9 +61,9 @@ export class IqcItemPoolService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findByCode(inspItemCode: string) {
     const item = await this.repo.findOne({
-      where: { id: +id },
+      where: { inspItemCode },
     });
     if (!item) {
       throw new NotFoundException('검사항목을 찾을 수 없습니다.');
@@ -83,25 +83,18 @@ export class IqcItemPoolService {
     return this.repo.save(entity);
   }
 
-  async update(id: string, dto: UpdateIqcItemPoolDto) {
-    const item = await this.findById(id);
+  async update(inspItemCode: string, dto: UpdateIqcItemPoolDto) {
+    const item = await this.findByCode(inspItemCode);
 
-    if (dto.inspItemCode && dto.inspItemCode !== item.inspItemCode) {
-      const dup = await this.repo.findOne({
-        where: { inspItemCode: dto.inspItemCode },
-      });
-      if (dup) {
-        throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.inspItemCode}`);
-      }
-    }
-
-    Object.assign(item, dto);
+    // PK인 inspItemCode는 변경 불가 — dto에서 제거
+    const { inspItemCode: _ignore, ...updateData } = dto as any;
+    Object.assign(item, updateData);
     return this.repo.save(item);
   }
 
-  async delete(id: string) {
-    const item = await this.findById(id);
+  async delete(inspItemCode: string) {
+    const item = await this.findByCode(inspItemCode);
     await this.repo.remove(item);
-    return { id, deleted: true };
+    return { inspItemCode, deleted: true };
   }
 }

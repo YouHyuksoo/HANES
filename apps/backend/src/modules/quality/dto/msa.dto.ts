@@ -161,9 +161,9 @@ export class GaugeFilterDto {
  * 교정 이력 등록 DTO
  */
 export class CreateCalibrationDto {
-  @ApiProperty({ description: '계측기 ID' })
-  @IsInt()
-  gaugeId: number;
+  @ApiProperty({ description: '계측기 코드' })
+  @IsString()
+  gaugeId: string;
 
   @ApiProperty({ description: '교정일 (ISO 8601)' })
   @IsDateString()
@@ -258,11 +258,10 @@ export class CalibrationFilterDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '계측기 ID 필터' })
+  @ApiPropertyOptional({ description: '계측기 코드 필터' })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  gaugeId?: number;
+  @IsString()
+  gaugeId?: string;
 
   @ApiPropertyOptional({ description: '교정 유형 필터 (INTERNAL/EXTERNAL)' })
   @IsOptional()

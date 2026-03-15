@@ -58,9 +58,12 @@ export class LabelPrintService {
    * @returns zplDataList(치환된 ZPL 배열), lotDetails(LOT 정보 배열)
    */
   async generateZpl(dto: GenerateZplDto) {
-    const template = await this.templateRepo.findOne({
-      where: { id: Number(dto.templateId) },
-    });
+    // templateId는 "templateName::category" 형식
+    const parts = dto.templateId.includes('::') ? dto.templateId.split('::') : [dto.templateId, undefined];
+    const where: any = parts[1]
+      ? { templateName: parts[0], category: parts[1] }
+      : { templateName: parts[0] };
+    const template = await this.templateRepo.findOne({ where });
     if (!template) {
       throw new NotFoundException(
         `템플릿을 찾을 수 없습니다: ${dto.templateId}`,

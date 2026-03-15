@@ -1,18 +1,19 @@
 /**
  * @file src/entities/product-transaction.entity.ts
  * @description 제품 수불 트랜잭션 엔티티 - 반제품/완제품 입고/출고 이력
+ *              TRANS_NO 자연키 PK 사용.
  *
  * 초보자 가이드:
  * - 원자재(RAW) 수불은 STOCK_TRANSACTIONS, 제품(WIP/FG) 수불은 PRODUCT_TRANSACTIONS
+ * - TRANS_NO가 자연키 PK (트랜잭션 번호)
  * - transType: WIP_IN, FG_IN, WIP_OUT, FG_OUT 등
  * - 삭제 금지, 취소 시 원본 참조(cancelRefId) + 음수 수량
  * - itemType: 'WIP'(반제품) 또는 'FG'(완제품)
  * - orderNo: 작업지시 참조, processCode: 공정코드
- * - id: SEQUENCE 자동증분 PK
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -29,10 +30,7 @@ import {
 @Index(['refType', 'refId'])
 @Index(['cancelRefId'])
 export class ProductTransaction {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'TRANS_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'TRANS_NO', length: 50 })
   transNo: string;
 
   @Column({ name: 'TRANS_TYPE', length: 50 })

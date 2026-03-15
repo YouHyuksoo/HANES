@@ -11,8 +11,8 @@
  * 6. **GET /master/equip-bom/rels**: 설비-BOM 연결 목록
  * 7. **GET /master/equip-bom/equip/:equipCode**: 특정 설비의 BOM 목록
  * 8. **POST /master/equip-bom/rels**: 설비-BOM 연결 생성
- * 9. **PUT /master/equip-bom/rels/:id**: 설비-BOM 연결 수정
- * 10. **DELETE /master/equip-bom/rels/:id**: 설비-BOM 연결 삭제
+ * 9. **PUT /master/equip-bom/rels/:equipCode/:bomItemCode**: 설비-BOM 연결 수정
+ * 10. **DELETE /master/equip-bom/rels/:equipCode/:bomItemCode**: 설비-BOM 연결 삭제
  */
 
 import {
@@ -96,10 +96,10 @@ export class EquipBomController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('rels/:id')
+  @Get('rels/:equipCode/:bomItemCode')
   @ApiOperation({ summary: '설비-BOM 연결 상세 조회' })
-  async findRelById(@Param('id') id: string) {
-    const data = await this.equipBomService.findRelById(+id);
+  async findRelByCompositeKey(@Param('equipCode') equipCode: string, @Param('bomItemCode') bomItemCode: string) {
+    const data = await this.equipBomService.findRelByCompositeKey(equipCode, bomItemCode);
     return ResponseUtil.success(data);
   }
 
@@ -118,17 +118,21 @@ export class EquipBomController {
     return ResponseUtil.success(data, '설비-BOM 연결이 생성되었습니다.');
   }
 
-  @Put('rels/:id')
+  @Put('rels/:equipCode/:bomItemCode')
   @ApiOperation({ summary: '설비-BOM 연결 수정' })
-  async updateRel(@Param('id') id: string, @Body() dto: UpdateEquipBomRelDto) {
-    const data = await this.equipBomService.updateRel(+id, dto);
+  async updateRel(
+    @Param('equipCode') equipCode: string,
+    @Param('bomItemCode') bomItemCode: string,
+    @Body() dto: UpdateEquipBomRelDto,
+  ) {
+    const data = await this.equipBomService.updateRel(equipCode, bomItemCode, dto);
     return ResponseUtil.success(data, '설비-BOM 연결이 수정되었습니다.');
   }
 
-  @Delete('rels/:id')
+  @Delete('rels/:equipCode/:bomItemCode')
   @ApiOperation({ summary: '설비-BOM 연결 삭제' })
-  async deleteRel(@Param('id') id: string) {
-    await this.equipBomService.deleteRel(+id);
+  async deleteRel(@Param('equipCode') equipCode: string, @Param('bomItemCode') bomItemCode: string) {
+    await this.equipBomService.deleteRel(equipCode, bomItemCode);
     return ResponseUtil.success(null, '설비-BOM 연결이 삭제되었습니다.');
   }
 }

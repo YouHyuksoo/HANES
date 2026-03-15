@@ -45,13 +45,13 @@ import {
 } from '../dto/ppap.dto';
 
 @ApiTags('품질관리 - PPAP')
-@Controller('quality')
+@Controller('quality/ppap')
 export class PpapController {
   constructor(private readonly ppapService: PpapService) {}
 
   // ===== Level별 필수 요소 (목록 조회보다 먼저 정의) =====
 
-  @Get('ppap/required-elements/:level')
+  @Get('required-elements/:level')
   @ApiOperation({
     summary: 'PPAP Level별 필수 요소 조회',
     description: 'Level 1~5에 따른 필수/보관 요소 목록',
@@ -65,21 +65,21 @@ export class PpapController {
 
   // ===== 완성률 조회 =====
 
-  @Get('ppap/completion/:id')
+  @Get('completion/:id')
   @ApiOperation({
     summary: 'PPAP 완성률 조회',
     description: '필수 요소 대비 완료된 비율',
   })
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getCompletionRate(@Param('id', ParseIntPipe) id: number) {
+  async getCompletionRate(@Param('id') id: string) {
     const data = await this.ppapService.getCompletionRate(id);
     return ResponseUtil.success(data);
   }
 
   // ===== CRUD =====
 
-  @Get('ppap')
+  @Get()
   @ApiOperation({
     summary: 'PPAP 목록 조회',
     description: '페이지네이션 및 필터링 지원',
@@ -99,17 +99,17 @@ export class PpapController {
     );
   }
 
-  @Get('ppap/:id')
+  @Get(':id')
   @ApiOperation({ summary: 'PPAP 단건 조회' })
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: 'PPAP 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.ppapService.findById(id);
     return ResponseUtil.success(data);
   }
 
-  @Post('ppap')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'PPAP 등록', description: 'DRAFT 상태로 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
@@ -128,12 +128,12 @@ export class PpapController {
     return ResponseUtil.success(data, 'PPAP가 등록되었습니다.');
   }
 
-  @Put('ppap/:id')
+  @Put(':id')
   @ApiOperation({ summary: 'PPAP 수정' })
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdatePpapDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -145,7 +145,7 @@ export class PpapController {
     return ResponseUtil.success(data, 'PPAP가 수정되었습니다.');
   }
 
-  @Delete('ppap/:id')
+  @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'PPAP 삭제',
@@ -153,14 +153,14 @@ export class PpapController {
   })
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.ppapService.delete(id);
     return ResponseUtil.success(null, 'PPAP가 삭제되었습니다.');
   }
 
   // ===== 상태 전이 =====
 
-  @Patch('ppap/submit/:id')
+  @Patch('submit/:id')
   @ApiOperation({
     summary: 'PPAP 제출',
     description: 'DRAFT → SUBMITTED',
@@ -168,7 +168,7 @@ export class PpapController {
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '제출 성공' })
   async submit(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.ppapService.submit(
@@ -178,7 +178,7 @@ export class PpapController {
     return ResponseUtil.success(data, 'PPAP가 제출되었습니다.');
   }
 
-  @Patch('ppap/approve/:id')
+  @Patch('approve/:id')
   @ApiOperation({
     summary: 'PPAP 승인',
     description: 'SUBMITTED → APPROVED',
@@ -186,7 +186,7 @@ export class PpapController {
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '승인 성공' })
   async approve(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.ppapService.approve(
@@ -196,7 +196,7 @@ export class PpapController {
     return ResponseUtil.success(data, 'PPAP가 승인되었습니다.');
   }
 
-  @Patch('ppap/reject/:id')
+  @Patch('reject/:id')
   @ApiOperation({
     summary: 'PPAP 반려',
     description: 'SUBMITTED → REJECTED',
@@ -204,7 +204,7 @@ export class PpapController {
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '반려 완료' })
   async reject(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body('reason') reason: string,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -216,7 +216,7 @@ export class PpapController {
     return ResponseUtil.success(data, 'PPAP가 반려되었습니다.');
   }
 
-  @Patch('ppap/cancel-approve/:id')
+  @Patch('cancel-approve/:id')
   @ApiOperation({
     summary: 'PPAP 승인 취소',
     description: 'APPROVED → SUBMITTED',
@@ -224,7 +224,7 @@ export class PpapController {
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '승인 취소 완료' })
   async cancelApproval(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.ppapService.cancelApproval(
@@ -234,7 +234,7 @@ export class PpapController {
     return ResponseUtil.success(data, 'PPAP 승인이 취소되었습니다.');
   }
 
-  @Patch('ppap/cancel-submit/:id')
+  @Patch('cancel-submit/:id')
   @ApiOperation({
     summary: 'PPAP 제출 취소',
     description: 'SUBMITTED → DRAFT',
@@ -242,7 +242,7 @@ export class PpapController {
   @ApiParam({ name: 'id', description: 'PPAP ID' })
   @ApiResponse({ status: 200, description: '제출 취소 완료' })
   async cancelSubmit(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.ppapService.cancelSubmit(

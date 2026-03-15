@@ -4,14 +4,15 @@
  *
  * 초보자 가이드:
  * 1. AuditPlan에 연결된 개별 발견사항 기록
- * 2. category: NC_MAJOR(중부적합), NC_MINOR(경부적합), OBSERVATION(관찰사항), OFI(개선기회)
- * 3. clauseRef: IATF 16949 조항 참조 (예: "8.7.1")
- * 4. capaId: CAPA(시정/예방조치)와 연결 가능
- * 5. 상태: OPEN → IN_PROGRESS → CLOSED
+ * 2. 복합 PK: auditId + findingNo (부모 FK + 발견사항 번호)
+ * 3. category: NC_MAJOR(중부적합), NC_MINOR(경부적합), OBSERVATION(관찰사항), OFI(개선기회)
+ * 4. clauseRef: IATF 16949 조항 참조 (예: "8.7.1")
+ * 5. capaId: CAPA(시정/예방조치)와 연결 가능
+ * 6. 상태: OPEN → IN_PROGRESS → CLOSED
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   ManyToOne,
   JoinColumn,
@@ -21,20 +22,16 @@ import {
 import { AuditPlan } from './audit-plan.entity';
 
 @Entity({ name: 'AUDIT_FINDINGS' })
-@Index(['auditId'])
 @Index(['capaId'])
 export class AuditFinding {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'AUDIT_ID' })
+  @PrimaryColumn({ name: 'AUDIT_ID' })
   auditId: number;
 
   @ManyToOne(() => AuditPlan)
   @JoinColumn({ name: 'AUDIT_ID' })
   audit: AuditPlan;
 
-  @Column({ name: 'FINDING_NO', type: 'int' })
+  @PrimaryColumn({ name: 'FINDING_NO', type: 'int' })
   findingNo: number;
 
   @Column({ name: 'CLAUSE_REF', length: 50, nullable: true })

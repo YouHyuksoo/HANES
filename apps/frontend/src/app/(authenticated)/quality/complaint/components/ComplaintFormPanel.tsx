@@ -37,7 +37,7 @@ const INIT: ComplaintFormData = {
 
 interface Props {
   editData: {
-    id: number; customerCode: string; customerName: string; complaintDate: string;
+    complaintNo: string; customerCode: string; customerName: string; complaintDate: string;
     itemCode: string; lotNo: string; defectQty: number; complaintType: string;
     urgency: string; description: string; responsibleCode: string; costAmount: number | null;
   } | null;
@@ -93,7 +93,7 @@ export default function ComplaintFormPanel({ editData, onClose, onSave }: Props)
         costAmount: form.costAmount ? Number(form.costAmount) : undefined,
       };
       if (isEdit && editData) {
-        await api.put(`/quality/complaints/${editData.id}`, payload);
+        await api.put(`/quality/complaints/${editData.complaintNo}`, payload);
       } else {
         await api.post("/quality/complaints", payload);
       }

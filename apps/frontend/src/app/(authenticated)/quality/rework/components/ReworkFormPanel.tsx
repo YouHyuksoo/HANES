@@ -45,7 +45,7 @@ const INIT: ReworkFormData = {
 };
 
 export interface ReworkEditData {
-  id: number;
+  reworkNo: string;
   itemCode: string;
   itemName: string;
   reworkQty: number;
@@ -161,7 +161,7 @@ export default function ReworkFormPanel({ editData, onClose, onSave, animate = t
           })),
       };
       if (isEdit && editData) {
-        await api.put(`/quality/reworks/${editData.id}`, payload);
+        await api.put(`/quality/reworks/${editData.reworkNo}`, payload);
       } else {
         await api.post("/quality/reworks", payload);
       }

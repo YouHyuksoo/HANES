@@ -19,7 +19,7 @@ export type IqcStatus = "PASS" | "FAIL" | "IN_PROGRESS" | "NONE";
 
 /** 서버에서 받아오는 입고 대상 데이터 */
 export interface MatArrivalData {
-  id: number;
+  arrivalNo: string;
   poNo: string;
   itemCode: string;
   itemName: string;
@@ -135,7 +135,7 @@ export function useMatReceivingScan(): UseMatReceivingScanReturn {
         const { data: result } = await api.post<{ matUid: string }>(
           "/material/receiving",
           {
-            arrivalId: scannedData.id,
+            arrivalId: scannedData.arrivalNo,
             receivedQty,
             warehouseCode,
             locationCode: locCode,

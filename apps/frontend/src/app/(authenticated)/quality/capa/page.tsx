@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardList, Clock, Play, CheckCircle, Search as SearchIcon,
-  Calendar, Shield, Eye, FileSearch, Lock,
+  Calendar, Shield, Eye, FileSearch, Lock, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -137,6 +137,18 @@ export default function CapaPage() {
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<CapaRequest>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "capaNo", header: t("quality.capa.capaNo"), size: 170, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
     { accessorKey: "capaType", header: t("quality.capa.capaType"), size: 100,
@@ -232,6 +244,9 @@ export default function CapaPage() {
           <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
             <span className="text-sm text-text-muted font-medium">{selectedRow?.capaNo}</span>
             {actionButtons}
+            <button onClick={() => setSelectedRow(null)} className="ml-auto p-1 hover:bg-surface rounded transition-colors" title={t("common.close")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
           </div></CardContent></Card>
         )}
 
@@ -244,7 +259,6 @@ export default function CapaPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.capa.pageTitle")}
-            onRowClick={row => setSelectedRow(row as CapaRequest)}
             getRowId={row => String((row as CapaRequest).id)}
             selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
             toolbarLeft={

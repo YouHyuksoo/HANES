@@ -43,13 +43,13 @@ import {
 } from '../dto/control-plan.dto';
 
 @ApiTags('품질관리 - 관리계획서')
-@Controller('quality')
+@Controller('quality/control-plans')
 export class ControlPlanController {
   constructor(private readonly controlPlanService: ControlPlanService) {}
 
   // ===== 품목별 조회 (목록 조회보다 먼저 정의) =====
 
-  @Get('control-plans/by-item/:itemCode')
+  @Get('by-item/:itemCode')
   @ApiOperation({
     summary: '품목별 관리계획서 조회',
     description: '해당 품목의 최신 APPROVED 관리계획서',
@@ -71,7 +71,7 @@ export class ControlPlanController {
 
   // ===== CRUD =====
 
-  @Get('control-plans')
+  @Get()
   @ApiOperation({
     summary: '관리계획서 목록 조회',
     description: '페이지네이션 및 필터링 지원',
@@ -95,7 +95,7 @@ export class ControlPlanController {
     );
   }
 
-  @Get('control-plans/:id')
+  @Get(':id')
   @ApiOperation({ summary: '관리계획서 단건 조회', description: '항목 포함' })
   @ApiParam({ name: 'id', description: '관리계획서 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
@@ -105,7 +105,7 @@ export class ControlPlanController {
     return ResponseUtil.success(data);
   }
 
-  @Post('control-plans')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '관리계획서 등록',
@@ -127,7 +127,7 @@ export class ControlPlanController {
     return ResponseUtil.success(data, '관리계획서가 등록되었습니다.');
   }
 
-  @Put('control-plans/:id')
+  @Put(':id')
   @ApiOperation({ summary: '관리계획서 수정', description: 'DRAFT 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '관리계획서 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
@@ -144,7 +144,7 @@ export class ControlPlanController {
     return ResponseUtil.success(data, '관리계획서가 수정되었습니다.');
   }
 
-  @Delete('control-plans/:id')
+  @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '관리계획서 삭제',
@@ -159,7 +159,7 @@ export class ControlPlanController {
 
   // ===== 상태 전이 =====
 
-  @Patch('control-plans/approve/:id')
+  @Patch('approve/:id')
   @ApiOperation({
     summary: '관리계획서 승인',
     description: 'DRAFT/REVIEW → APPROVED',
@@ -177,7 +177,7 @@ export class ControlPlanController {
     return ResponseUtil.success(data, '관리계획서가 승인되었습니다.');
   }
 
-  @Post('control-plans/revise/:id')
+  @Post('revise/:id')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '관리계획서 개정',

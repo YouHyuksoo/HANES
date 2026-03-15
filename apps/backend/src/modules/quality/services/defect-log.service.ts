@@ -100,7 +100,22 @@ export class DefectLogService {
   }
 
   /**
-   * 불량로그 단건 조회
+   * 불량로그 단건 조회 (occurAt + seq 복합키)
+   */
+  async findByCompositeKey(occurAt: string, seq: number) {
+    const defect = await this.defectLogRepository.findOne({
+      where: { occurAt: new Date(occurAt), seq },
+    });
+
+    if (!defect) {
+      throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${occurAt}/${seq}`);
+    }
+
+    return defect;
+  }
+
+  /**
+   * 불량로그 단건 조회 (id 기준 — 기존 FK 호환)
    */
   async findById(id: string) {
     const defect = await this.defectLogRepository.findOne({
@@ -169,13 +184,14 @@ export class DefectLogService {
    */
   async update(id: string, dto: UpdateDefectLogDto) {
     const existing = await this.findById(id);
+    const pk = { occurAt: existing.occurAt, seq: existing.seq };
 
     // 수량 변경 시 생산실적 반영
     const qtyDiff = (dto.qty ?? existing.qty) - existing.qty;
 
     if (qtyDiff !== 0) {
       await this.defectLogRepository.update(
-        { id: +id },
+        pk,
         {
           ...(dto.defectCode !== undefined && { defectCode: dto.defectCode }),
           ...(dto.defectName !== undefined && { defectName: dto.defectName }),
@@ -191,7 +207,7 @@ export class DefectLogService {
       );
     } else {
       await this.defectLogRepository.update(
-        { id: +id },
+        pk,
         {
           ...(dto.defectCode !== undefined && { defectCode: dto.defectCode }),
           ...(dto.defectName !== undefined && { defectName: dto.defectName }),
@@ -211,7 +227,7 @@ export class DefectLogService {
     const existing = await this.findById(id);
 
     // 불량 삭제 시 생산실적 불량수량 감소
-    await this.defectLogRepository.delete(+id);
+    await this.defectLogRepository.delete({ occurAt: existing.occurAt, seq: existing.seq });
 
     await this.prodResultRepository.update(
       { id: existing.prodResultId },  // already number from entity
@@ -235,7 +251,7 @@ export class DefectLogService {
     this.validateStatusChange(existing.status, dto.status);
 
     await this.defectLogRepository.update(
-      { id: +id },
+      { occurAt: existing.occurAt, seq: existing.seq },
       { status: dto.status }
     );
 
@@ -303,8 +319,9 @@ export class DefectLogService {
           return savedRepairLog;
       }
 
+      const defect = await this.findById(dto.defectLogId);
       await this.defectLogRepository.update(
-        { id: +dto.defectLogId },
+        { occurAt: defect.occurAt, seq: defect.seq },
         { status: newStatus }
       );
     }

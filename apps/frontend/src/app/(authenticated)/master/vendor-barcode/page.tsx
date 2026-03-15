@@ -72,7 +72,7 @@ export default function VendorBarcodeMappingPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/vendor-barcode-mappings/${deleteTarget.id}`);
+      await api.delete(`/master/vendor-barcode-mappings/${encodeURIComponent(deleteTarget.vendorBarcode)}`);
       fetchData();
     } catch (e: unknown) {
       console.error("Delete error:", e);

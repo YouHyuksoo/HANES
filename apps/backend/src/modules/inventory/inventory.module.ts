@@ -3,11 +3,11 @@
  * @description 재고관리 모듈 - 창고, 재고, 수불 통합 관리
  *
  * 초보자 가이드:
- * 1. 서버 시작 시 OnModuleInit으로 기본 창고 8개 자동 초기화
- * 2. 다른 모듈에서 InventoryService를 import하여 재고 처리
- * 3. WarehouseService로 창고 마스터 관리
+ * 1. 다른 모듈에서 InventoryService를 import하여 재고 처리
+ * 2. WarehouseService로 창고 마스터 관리
+ * 3. 기본 창고 초기화는 API(POST /inventory/warehouses/init)로 수동 실행
  */
-import { Module, OnModuleInit, Logger } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatStock } from '../../entities/mat-stock.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
@@ -35,21 +35,4 @@ import { ProductHoldService } from './services/product-hold.service';
   providers: [InventoryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService],
   exports: [InventoryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService],
 })
-export class InventoryModule implements OnModuleInit {
-  private readonly logger = new Logger(InventoryModule.name);
-
-  constructor(private readonly warehouseService: WarehouseService) {}
-
-  /** 서버 시작 시 기본 창고 자동 초기화 (이미 존재하면 스킵) */
-  async onModuleInit() {
-    try {
-      const result = await this.warehouseService.initDefaultWarehouses();
-      const created = result.results.filter((r) => r.status === 'created');
-      if (created.length > 0) {
-        this.logger.log(`기본 창고 ${created.length}개 생성됨: ${created.map((r) => r.code).join(', ')}`);
-      }
-    } catch (err) {
-      this.logger.warn(`기본 창고 초기화 실패 (무시): ${(err as Error).message}`);
-    }
-  }
-}
+export class InventoryModule {}

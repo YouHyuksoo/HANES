@@ -1,6 +1,11 @@
 /**
  * @file src/modules/customs/services/customs.service.ts
  * @description 보세관리 비즈니스 로직 서비스 - TypeORM Repository 패턴
+ *
+ * 초보자 가이드:
+ * 1. CustomsLot은 복합 PK (entryNo + matUid) 사용
+ * 2. CustomsUsageReport는 lotEntryNo + lotMatUid 로 Lot 참조
+ * 3. Map 키로 `${entryNo}::${matUid}` 복합 문자열 사용
  */
 
 import {
@@ -25,6 +30,11 @@ import {
   UpdateUsageReportDto,
   UsageReportQueryDto,
 } from '../dto/customs.dto';
+
+/** 복합키를 Map 키 문자열로 변환 */
+function lotKey(entryNo: string, matUid: string): string {
+  return `${entryNo}::${matUid}`;
+}
 
 @Injectable()
 export class CustomsService {
@@ -53,10 +63,9 @@ export class CustomsService {
       .leftJoinAndSelect(
         'customs_lot',
         'cl',
-        'cl.ENTRY_ID = ce.ID',
+        'cl.ENTRY_NO = ce.ENTRY_NO',
       )
       .select([
-        'ce.id',
         'ce.entryNo',
         'ce.blNo',
         'ce.invoiceNo',
@@ -72,7 +81,7 @@ export class CustomsService {
         'ce.updatedAt',
       ])
       .addSelect([
-        'cl.id AS cl_id',
+        'cl.ENTRY_NO AS cl_entryNo',
         'cl.MAT_UID AS cl_matUid',
         'cl.ITEM_CODE AS cl_itemCode',
         'cl.QTY AS cl_qty',
@@ -135,57 +144,59 @@ export class CustomsService {
     ]);
 
     // 일괄 조회로 N+1 방지
-    const entryIds = entries.map((e) => e.id);
-    const lots = entryIds.length > 0
+    const entryNos = entries.map((e) => e.entryNo);
+    const lots = entryNos.length > 0
       ? await this.customsLotRepository.find({
-          where: { entryId: In(entryIds) },
-          select: ['id', 'entryId', 'matUid', 'itemCode', 'qty', 'usedQty', 'remainQty', 'status'],
+          where: { entryNo: In(entryNos) },
+          select: ['entryNo', 'matUid', 'itemCode', 'qty', 'usedQty', 'remainQty', 'status'],
         })
       : [];
 
-    const lotsByEntryId = new Map<number, CustomsLot[]>();
+    const lotsByEntryNo = new Map<string, CustomsLot[]>();
     for (const lot of lots) {
-      if (!lotsByEntryId.has(lot.entryId)) lotsByEntryId.set(lot.entryId, []);
-      lotsByEntryId.get(lot.entryId)!.push(lot);
+      if (!lotsByEntryNo.has(lot.entryNo)) lotsByEntryNo.set(lot.entryNo, []);
+      lotsByEntryNo.get(lot.entryNo)!.push(lot);
     }
 
     const data = entries.map((entry) => ({
       ...entry,
-      customsLots: lotsByEntryId.get(entry.id) || [],
+      customsLots: lotsByEntryNo.get(entry.entryNo) || [],
     }));
 
     return { data, total, page, limit };
   }
 
-  async findEntryById(id: string | number) {
-    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+  async findEntryById(entryNo: string) {
     const entry = await this.customsEntryRepository.findOne({
-      where: { id: numId },
+      where: { entryNo },
     });
 
     if (!entry) {
-      throw new NotFoundException(`수입신고를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`수입신고를 찾을 수 없습니다: ${entryNo}`);
     }
 
     const lots = await this.customsLotRepository.find({
-      where: { entryId: numId },
+      where: { entryNo },
     });
 
-    // 일괄 조회로 N+1 방지
-    const lotIds = lots.map((l) => l.id);
-    const reports = lotIds.length > 0
-      ? await this.customsUsageReportRepository.find({ where: { customsLotId: In(lotIds) } })
+    // 일괄 조회로 N+1 방지: lotEntryNo + lotMatUid 복합키로 조회
+    const lotKeys = lots.map((l) => ({ lotEntryNo: l.entryNo, lotMatUid: l.matUid }));
+    const reports = lotKeys.length > 0
+      ? await this.customsUsageReportRepository.find({
+          where: lotKeys.map((k) => ({ lotEntryNo: k.lotEntryNo, lotMatUid: k.lotMatUid })),
+        })
       : [];
 
-    const reportsByLotId = new Map<number, CustomsUsageReport[]>();
+    const reportsByLotKey = new Map<string, CustomsUsageReport[]>();
     for (const report of reports) {
-      if (!reportsByLotId.has(report.customsLotId)) reportsByLotId.set(report.customsLotId, []);
-      reportsByLotId.get(report.customsLotId)!.push(report);
+      const key = lotKey(report.lotEntryNo, report.lotMatUid);
+      if (!reportsByLotKey.has(key)) reportsByLotKey.set(key, []);
+      reportsByLotKey.get(key)!.push(report);
     }
 
     const lotsWithReports = lots.map((lot) => ({
       ...lot,
-      usageReports: reportsByLotId.get(lot.id) || [],
+      usageReports: reportsByLotKey.get(lotKey(lot.entryNo, lot.matUid)) || [],
     }));
 
     return { ...entry, customsLots: lotsWithReports };
@@ -216,8 +227,8 @@ export class CustomsService {
     return this.customsEntryRepository.save(entry);
   }
 
-  async updateEntry(id: string | number, dto: UpdateCustomsEntryDto) {
-    await this.findEntryById(id);
+  async updateEntry(entryNo: string, dto: UpdateCustomsEntryDto) {
+    await this.findEntryById(entryNo);
 
     const updateData: Partial<CustomsEntry> = {};
     if (dto.blNo !== undefined) updateData.blNo = dto.blNo;
@@ -231,72 +242,81 @@ export class CustomsService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
-    await this.customsEntryRepository.update(numId, updateData);
-    return this.findEntryById(numId);
+    await this.customsEntryRepository.update({ entryNo }, updateData);
+    return this.findEntryById(entryNo);
   }
 
-  async deleteEntry(id: string | number) {
-    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
-    await this.findEntryById(numId);
+  async deleteEntry(entryNo: string) {
+    await this.findEntryById(entryNo);
 
-    await this.customsEntryRepository.delete(numId);
-    return { id };
+    await this.customsEntryRepository.delete({ entryNo });
+    return { entryNo };
   }
 
   // ============================================================================
-  // 보세자재 LOT (Customs Lot)
+  // 보세자재 LOT (Customs Lot) - 복합 PK: entryNo + matUid
   // ============================================================================
 
-  async findLotsByEntryId(entryId: string | number) {
-    const numEntryId = typeof entryId === 'string' ? parseInt(entryId, 10) : entryId;
+  async findLotsByEntryId(entryNo: string) {
     const lots = await this.customsLotRepository.find({
-      where: { entryId: numEntryId },
+      where: { entryNo },
       order: { createdAt: 'DESC' },
     });
 
     // 일괄 조회로 N+1 방지
-    const lotIds = lots.map((l) => l.id);
-    const reports = lotIds.length > 0
-      ? await this.customsUsageReportRepository.find({ where: { customsLotId: In(lotIds) } })
+    const lotKeys = lots.map((l) => ({ lotEntryNo: l.entryNo, lotMatUid: l.matUid }));
+    const reports = lotKeys.length > 0
+      ? await this.customsUsageReportRepository.find({
+          where: lotKeys.map((k) => ({ lotEntryNo: k.lotEntryNo, lotMatUid: k.lotMatUid })),
+        })
       : [];
 
-    const reportsByLotId = new Map<number, CustomsUsageReport[]>();
+    const reportsByLotKey = new Map<string, CustomsUsageReport[]>();
     for (const report of reports) {
-      if (!reportsByLotId.has(report.customsLotId)) reportsByLotId.set(report.customsLotId, []);
-      reportsByLotId.get(report.customsLotId)!.push(report);
+      const key = lotKey(report.lotEntryNo, report.lotMatUid);
+      if (!reportsByLotKey.has(key)) reportsByLotKey.set(key, []);
+      reportsByLotKey.get(key)!.push(report);
     }
 
     return lots.map((lot) => ({
       ...lot,
-      usageReports: reportsByLotId.get(lot.id) || [],
+      usageReports: reportsByLotKey.get(lotKey(lot.entryNo, lot.matUid)) || [],
     }));
   }
 
-  async findLotById(id: string | number) {
-    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+  async findLotByKey(entryNo: string, matUid: string) {
     const lot = await this.customsLotRepository.findOne({
-      where: { id: numId },
+      where: { entryNo, matUid },
     });
 
     if (!lot) {
-      throw new NotFoundException(`보세자재 LOT을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`보세자재 LOT을 찾을 수 없습니다: entryNo=${entryNo}, matUid=${matUid}`);
     }
 
     const entry = await this.customsEntryRepository.findOne({
-      where: { id: lot.entryId },
+      where: { entryNo: lot.entryNo },
     });
 
     const reports = await this.customsUsageReportRepository.find({
-      where: { customsLotId: numId },
+      where: { lotEntryNo: entryNo, lotMatUid: matUid },
     });
 
     return { ...lot, entry, usageReports: reports };
   }
 
   async createLot(dto: CreateCustomsLotDto) {
+    const existing = await this.customsLotRepository.findOne({
+      where: { entryNo: dto.entryNo, matUid: dto.matUid },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `이미 존재하는 보세자재 LOT입니다: entryNo=${dto.entryNo}, matUid=${dto.matUid}`,
+      );
+    }
+
     const lot = this.customsLotRepository.create({
-      entryId: typeof dto.entryId === 'string' ? parseInt(dto.entryId, 10) : dto.entryId,
+      entryNo: dto.entryNo,
       matUid: dto.matUid,
       itemCode: dto.itemCode,
       qty: dto.qty,
@@ -307,15 +327,14 @@ export class CustomsService {
     return this.customsLotRepository.save(lot);
   }
 
-  async updateLot(id: string | number, dto: UpdateCustomsLotDto) {
-    await this.findLotById(id);
+  async updateLot(entryNo: string, matUid: string, dto: UpdateCustomsLotDto) {
+    await this.findLotByKey(entryNo, matUid);
 
     const updateData: Partial<CustomsLot> = {};
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
-    await this.customsLotRepository.update(numId, updateData);
-    return this.findLotById(numId);
+    await this.customsLotRepository.update({ entryNo, matUid }, updateData);
+    return this.findLotByKey(entryNo, matUid);
   }
 
   // ============================================================================
@@ -328,8 +347,12 @@ export class CustomsService {
 
     const queryBuilder = this.customsUsageReportRepository
       .createQueryBuilder('cur')
-      .leftJoinAndSelect(CustomsLot, 'cl', 'cl.ID = cur.CUSTOMS_LOT_ID')
-      .leftJoinAndSelect(CustomsEntry, 'ce', 'ce.ID = cl.ENTRY_ID')
+      .leftJoinAndSelect(
+        CustomsLot,
+        'cl',
+        'cl.ENTRY_NO = cur.LOT_ENTRY_NO AND cl.MAT_UID = cur.LOT_MAT_UID',
+      )
+      .leftJoinAndSelect(CustomsEntry, 'ce', 'ce.ENTRY_NO = cl.ENTRY_NO')
       .where('1=1');
 
     if (company) {
@@ -359,23 +382,36 @@ export class CustomsService {
     ]);
 
     // 일괄 조회로 N+1 방지 (reports → lots → entries)
-    const lotIds = [...new Set(reports.map((r) => r.customsLotId).filter(Boolean))];
-    const lots = lotIds.length > 0
-      ? await this.customsLotRepository.find({ where: { id: In(lotIds) } })
-      : [];
-    const lotMap = new Map(lots.map((l) => [l.id, l]));
+    const lotKeysSet = new Set<string>();
+    for (const r of reports) {
+      if (r.lotEntryNo && r.lotMatUid) {
+        lotKeysSet.add(lotKey(r.lotEntryNo, r.lotMatUid));
+      }
+    }
 
-    const entryIds = [...new Set(lots.map((l) => l.entryId).filter(Boolean))];
-    const entries = entryIds.length > 0
-      ? await this.customsEntryRepository.find({ where: { id: In(entryIds) } })
+    const lotKeysArr = [...lotKeysSet].map((k) => {
+      const [entryNo, matUid] = k.split('::');
+      return { entryNo, matUid };
+    });
+
+    const lots = lotKeysArr.length > 0
+      ? await this.customsLotRepository.find({
+          where: lotKeysArr.map((k) => ({ entryNo: k.entryNo, matUid: k.matUid })),
+        })
       : [];
-    const entryMap = new Map(entries.map((e) => [e.id, e]));
+    const lotMap = new Map(lots.map((l) => [lotKey(l.entryNo, l.matUid), l]));
+
+    const entryNos = [...new Set(lots.map((l) => l.entryNo).filter(Boolean))];
+    const entries = entryNos.length > 0
+      ? await this.customsEntryRepository.find({ where: { entryNo: In(entryNos) } })
+      : [];
+    const entryMap = new Map(entries.map((e) => [e.entryNo, e]));
 
     const data = reports.map((report) => {
-      const lot = lotMap.get(report.customsLotId);
+      const lot = lotMap.get(lotKey(report.lotEntryNo, report.lotMatUid));
       return {
         ...report,
-        customsLot: lot ? { ...lot, entry: entryMap.get(lot.entryId) || null } : null,
+        customsLot: lot ? { ...lot, entry: entryMap.get(lot.entryNo) || null } : null,
       };
     });
 
@@ -383,8 +419,7 @@ export class CustomsService {
   }
 
   async createUsageReport(dto: CreateUsageReportDto) {
-    const numLotId = typeof dto.customsLotId === 'string' ? parseInt(dto.customsLotId, 10) : dto.customsLotId;
-    const lot = await this.findLotById(numLotId);
+    const lot = await this.findLotByKey(dto.lotEntryNo, dto.lotMatUid);
 
     if (lot.remainQty < dto.usageQty) {
       throw new BadRequestException(
@@ -405,7 +440,8 @@ export class CustomsService {
     return this.dataSource.transaction(async (manager) => {
       const report = manager.create(CustomsUsageReport, {
         reportNo,
-        customsLotId: numLotId,
+        lotEntryNo: dto.lotEntryNo,
+        lotMatUid: dto.lotMatUid,
         usageQty: dto.usageQty,
         workerId: dto.workerId,
         remark: dto.remark,
@@ -420,7 +456,7 @@ export class CustomsService {
 
       await manager.update(
         CustomsLot,
-        { id: numLotId },
+        { entryNo: dto.lotEntryNo, matUid: dto.lotMatUid },
         {
           usedQty: newUsedQty,
           remainQty: newRemainQty,
@@ -432,14 +468,13 @@ export class CustomsService {
     });
   }
 
-  async updateUsageReport(id: string | number, dto: UpdateUsageReportDto) {
-    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+  async updateUsageReport(reportNo: string, dto: UpdateUsageReportDto) {
     const report = await this.customsUsageReportRepository.findOne({
-      where: { id: numId },
+      where: { reportNo },
     });
 
     if (!report) {
-      throw new NotFoundException(`사용신고를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`사용신고를 찾을 수 없습니다: ${reportNo}`);
     }
 
     const updateData: Partial<CustomsUsageReport> = {};
@@ -447,8 +482,8 @@ export class CustomsService {
     if (dto.status === 'REPORTED') updateData.reportDate = new Date();
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.customsUsageReportRepository.update(numId, updateData);
-    return this.customsUsageReportRepository.findOne({ where: { id: numId } });
+    await this.customsUsageReportRepository.update({ reportNo }, updateData);
+    return this.customsUsageReportRepository.findOne({ where: { reportNo } });
   }
 
   // ============================================================================

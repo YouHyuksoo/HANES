@@ -56,6 +56,12 @@ const statusStyle: Record<string, {
     pulse: false,
     glow: "hover:shadow-rose-200/60 dark:hover:shadow-rose-500/10",
   },
+  INTERLOCK: {
+    pill: "bg-gray-800 text-white border-gray-900 dark:bg-gray-600 dark:border-gray-500",
+    dot: "bg-red-400 dark:bg-red-400",
+    pulse: true,
+    glow: "hover:shadow-gray-400/60 dark:hover:shadow-gray-500/10",
+  },
 };
 
 const defaultStyle = statusStyle.NORMAL;

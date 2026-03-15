@@ -61,9 +61,9 @@ export class IqcGroupService {
     return { data, total, page, limit };
   }
 
-  async findById(id: number) {
+  async findByCode(groupCode: string) {
     const group = await this.groupRepo.findOne({
-      where: { id },
+      where: { groupCode },
       relations: ['items'],
     });
 
@@ -107,20 +107,11 @@ export class IqcGroupService {
       await this.groupItemRepo.save(items);
     }
 
-    return this.findById(saved.id);
+    return this.findByCode(saved.groupCode);
   }
 
-  async update(id: number, dto: UpdateIqcGroupDto) {
-    const group = await this.findById(id);
-
-    if (dto.groupCode && dto.groupCode !== group.groupCode) {
-      const exists = await this.groupRepo.findOne({
-        where: { groupCode: dto.groupCode },
-      });
-      if (exists) {
-        throw new ConflictException(`그룹코드 ${dto.groupCode}가 이미 존재합니다.`);
-      }
-    }
+  async update(groupCode: string, dto: UpdateIqcGroupDto) {
+    const group = await this.findByCode(groupCode);
 
     if (dto.groupName !== undefined) group.groupName = dto.groupName;
     if (dto.inspectMethod !== undefined) group.inspectMethod = dto.inspectMethod;
@@ -134,12 +125,12 @@ export class IqcGroupService {
     await this.groupRepo.save(group);
 
     if (dto.items !== undefined) {
-      await this.groupItemRepo.delete({ groupId: id });
+      await this.groupItemRepo.delete({ groupId: group.id });
 
       if (dto.items.length) {
         const items = dto.items.map(i =>
           this.groupItemRepo.create({
-            groupId: id,
+            groupId: group.id,
             inspItemId: Number(i.itemId),
             seq: i.seq,
           }),
@@ -148,12 +139,12 @@ export class IqcGroupService {
       }
     }
 
-    return this.findById(id);
+    return this.findByCode(groupCode);
   }
 
-  async delete(id: number) {
-    const group = await this.findById(id);
+  async delete(groupCode: string) {
+    const group = await this.findByCode(groupCode);
     await this.groupRepo.remove(group);
-    return { id, deleted: true };
+    return { groupCode, deleted: true };
   }
 }

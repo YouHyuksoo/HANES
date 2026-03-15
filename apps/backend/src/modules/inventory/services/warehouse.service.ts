@@ -217,45 +217,47 @@ export class WarehouseService {
    */
   async initDefaultWarehouses() {
     const defaultWarehouses = [
-      // 원자재 창고
       { code: 'RM_MAIN', name: '원자재 메인창고', type: 'RM', isDefault: true },
       { code: 'RM_SUB', name: '원자재 서브창고', type: 'RM', isDefault: false },
-      // 반제품 창고
       { code: 'WIP_MAIN', name: '반제품 메인창고', type: 'WIP', isDefault: true },
-      // 완제품 창고
       { code: 'FG_MAIN', name: '완제품 메인창고', type: 'FG', isDefault: true },
       { code: 'FG_SHIP', name: '출하대기창고', type: 'FG', isDefault: false },
-      // 불량 창고
       { code: 'DEFECT', name: '불량품창고', type: 'DEFECT', isDefault: true },
-      // 폐기 창고
       { code: 'SCRAP', name: '폐기창고', type: 'SCRAP', isDefault: true },
-      // 외주 창고
       { code: 'SUBCON_MAIN', name: '외주 메인창고', type: 'SUBCON', isDefault: true },
     ];
 
+    const allCodes = defaultWarehouses.map((wh) => wh.code);
+    const existingList = await this.warehouseRepository.find({
+      where: allCodes.map((code) => ({ warehouseCode: code })),
+      select: ['warehouseCode'],
+    });
+    const existingSet = new Set(existingList.map((w) => w.warehouseCode));
+
     const results = [];
+    const toCreate: Warehouse[] = [];
 
     for (const wh of defaultWarehouses) {
-      const existing = await this.warehouseRepository.findOne({
-        where: { warehouseCode: wh.code },
-      });
-
-      if (!existing) {
-        const warehouse = this.warehouseRepository.create({
-          warehouseCode: wh.code,
-          warehouseName: wh.name,
-          warehouseType: wh.type,
-          isDefault: wh.isDefault ? 1 : 0,
-          useYn: 'Y',
-          company: '40',
-          plant: '1000',
-        });
-
-        const saved = await this.warehouseRepository.save(warehouse) as Warehouse;
-        results.push({ code: wh.code, status: 'created', id: saved.warehouseCode });
+      if (existingSet.has(wh.code)) {
+        results.push({ code: wh.code, status: 'exists', id: wh.code });
       } else {
-        results.push({ code: wh.code, status: 'exists', id: existing.warehouseCode });
+        toCreate.push(
+          this.warehouseRepository.create({
+            warehouseCode: wh.code,
+            warehouseName: wh.name,
+            warehouseType: wh.type,
+            isDefault: wh.isDefault ? 1 : 0,
+            useYn: 'Y',
+            company: '40',
+            plant: '1000',
+          }),
+        );
+        results.push({ code: wh.code, status: 'created', id: wh.code });
       }
+    }
+
+    if (toCreate.length > 0) {
+      await this.warehouseRepository.save(toCreate);
     }
 
     return {

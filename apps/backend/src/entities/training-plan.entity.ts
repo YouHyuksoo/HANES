@@ -10,20 +10,15 @@
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
 @Entity({ name: 'TRAINING_PLANS' })
-@Index(['company', 'plant', 'planNo'], { unique: true })
 export class TrainingPlan {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'PLAN_NO', length: 30 })
+  @PrimaryColumn({ name: 'PLAN_NO', length: 50 })
   planNo: string;
 
   @Column({ name: 'TITLE', length: 200 })

@@ -10,7 +10,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, Between } from 'typeorm';
+import { Repository, DataSource, MoreThanOrEqual, Between } from 'typeorm';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -37,7 +37,18 @@ export class InterfaceService {
     private readonly bomMasterRepository: Repository<BomMaster>,
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
+    private readonly dataSource: DataSource,
   ) {}
+
+  /** 오늘 날짜 기준 다음 SEQ 번호 조회 */
+  private async getNextSeq(transDate: Date): Promise<number> {
+    const dateStr = transDate.toISOString().slice(0, 10);
+    const result = await this.dataSource.query(
+      `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "INTER_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
+      [dateStr],
+    );
+    return result[0].nextSeq;
+  }
 
   // ============================================================================
   // 인터페이스 로그 관리
@@ -71,20 +82,26 @@ export class InterfaceService {
     return { data, total, page, limit };
   }
 
-  async findLogById(id: number) {
+  async findLogById(transDate: Date, seq: number) {
     const log = await this.interLogRepository.findOne({
-      where: { id },
+      where: { transDate, seq },
     });
 
     if (!log) {
-      throw new NotFoundException(`인터페이스 로그를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`인터페이스 로그를 찾을 수 없습니다: ${transDate}/${seq}`);
     }
 
     return log;
   }
 
   async createLog(dto: CreateInterLogDto) {
+    const transDate = new Date();
+    transDate.setHours(0, 0, 0, 0);
+    const seq = await this.getNextSeq(transDate);
+
     const log = this.interLogRepository.create({
+      transDate,
+      seq,
       direction: dto.direction,
       messageType: dto.messageType,
       interfaceId: dto.interfaceId,
@@ -95,26 +112,27 @@ export class InterfaceService {
     return this.interLogRepository.save(log);
   }
 
-  async updateLogStatus(id: number, status: string, errorMsg?: string) {
-    await this.findLogById(id);
+  async updateLogStatus(transDate: Date, seq: number, status: string, errorMsg?: string) {
+    await this.findLogById(transDate, seq);
 
     const updateData: Partial<InterLog> = { status };
     if (errorMsg) updateData.errorMsg = errorMsg;
     if (status === 'SUCCESS') updateData.recvAt = new Date();
 
-    await this.interLogRepository.update(id, updateData);
-    return this.findLogById(id);
+    await this.interLogRepository.update({ transDate, seq }, updateData);
+    return this.findLogById(transDate, seq);
   }
 
-  async retryLog(id: number) {
-    const log = await this.findLogById(id);
+  async retryLog(transDate: Date, seq: number) {
+    const log = await this.findLogById(transDate, seq);
+    const pk = { transDate: log.transDate, seq: log.seq };
 
     if (log.status !== 'FAIL') {
       throw new BadRequestException('실패한 로그만 재시도할 수 있습니다.');
     }
 
     // 재시도 횟수 증가
-    await this.interLogRepository.update(id, {
+    await this.interLogRepository.update(pk, {
       status: 'RETRY',
       retryCount: log.retryCount + 1,
     });
@@ -125,29 +143,29 @@ export class InterfaceService {
         await this.processOutbound(log.messageType, log.payload ? JSON.parse(log.payload) : {});
       }
 
-      await this.interLogRepository.update(id, {
+      await this.interLogRepository.update(pk, {
         status: 'SUCCESS',
         recvAt: new Date(),
       });
 
-      return this.findLogById(id);
+      return this.findLogById(transDate, seq);
     } catch (error) {
-      await this.interLogRepository.update(id, {
+      await this.interLogRepository.update(pk, {
         status: 'FAIL',
         errorMsg: error instanceof Error ? error.message : '알 수 없는 오류',
       });
-      return this.findLogById(id);
+      return this.findLogById(transDate, seq);
     }
   }
 
-  async bulkRetry(logIds: number[]) {
+  async bulkRetry(logKeys: { transDate: Date; seq: number }[]) {
     const results = await Promise.all(
-      logIds.map(async (id) => {
+      logKeys.map(async (key) => {
         try {
-          await this.retryLog(id);
-          return { id, success: true };
+          await this.retryLog(key.transDate, key.seq);
+          return { transDate: key.transDate, seq: key.seq, success: true };
         } catch (error) {
-          return { id, success: false, error: error instanceof Error ? error.message : '오류' };
+          return { transDate: key.transDate, seq: key.seq, success: false, error: error instanceof Error ? error.message : '오류' };
         }
       })
     );
@@ -190,12 +208,13 @@ export class InterfaceService {
 
       await this.jobOrderRepository.save(jobOrder);
 
-      await this.updateLogStatus(log.id, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
 
       return jobOrder;
     } catch (error) {
       await this.updateLogStatus(
-        log.id,
+        log.transDate,
+        log.seq,
         'FAIL',
         error instanceof Error ? error.message : '알 수 없는 오류'
       );
@@ -255,12 +274,13 @@ export class InterfaceService {
         })
       );
 
-      await this.updateLogStatus(log.id, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
 
       return results;
     } catch (error) {
       await this.updateLogStatus(
-        log.id,
+        log.transDate,
+        log.seq,
         'FAIL',
         error instanceof Error ? error.message : '알 수 없는 오류'
       );
@@ -311,12 +331,13 @@ export class InterfaceService {
         })
       );
 
-      await this.updateLogStatus(log.id, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
 
       return results;
     } catch (error) {
       await this.updateLogStatus(
-        log.id,
+        log.transDate,
+        log.seq,
         'FAIL',
         error instanceof Error ? error.message : '알 수 없는 오류'
       );
@@ -349,12 +370,13 @@ export class InterfaceService {
         await this.jobOrderRepository.update(jobOrder.orderNo, { erpSyncYn: 'Y' });
       }
 
-      await this.updateLogStatus(log.id, 'SUCCESS');
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
 
-      return { success: true, logId: log.id };
+      return { success: true, transDate: log.transDate, seq: log.seq };
     } catch (error) {
       await this.updateLogStatus(
-        log.id,
+        log.transDate,
+        log.seq,
         'FAIL',
         error instanceof Error ? error.message : '알 수 없는 오류'
       );

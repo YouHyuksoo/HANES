@@ -18,7 +18,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface CustomsEntry {
-  id: string;
   entryNo: string;
   blNo: string;
   invoiceNo: string;
@@ -87,7 +86,7 @@ export default function CustomsEntryPage() {
     setSaving(true);
     try {
       if (selectedEntry) {
-        await api.put(`/customs/entries/${selectedEntry.id}`, form);
+        await api.put(`/customs/entries/${selectedEntry.entryNo}`, form);
       } else {
         await api.post("/customs/entries", form);
       }

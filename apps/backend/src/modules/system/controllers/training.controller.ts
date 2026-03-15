@@ -87,7 +87,7 @@ export class TrainingController {
   @ApiParam({ name: 'id', description: '교육 계획 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '계획 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.trainingService.findById(id);
     return ResponseUtil.success(data);
   }
@@ -116,7 +116,7 @@ export class TrainingController {
   @ApiParam({ name: 'id', description: '교육 계획 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateTrainingPlanDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -133,7 +133,7 @@ export class TrainingController {
   @ApiOperation({ summary: '교육 계획 삭제', description: 'PLANNED 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '교육 계획 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.trainingService.delete(id);
     return ResponseUtil.success(null, '교육 계획이 삭제되었습니다.');
   }
@@ -145,7 +145,7 @@ export class TrainingController {
   @ApiParam({ name: 'id', description: '교육 계획 ID' })
   @ApiResponse({ status: 200, description: '완료 성공' })
   async complete(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.trainingService.complete(
@@ -160,7 +160,7 @@ export class TrainingController {
   @ApiParam({ name: 'id', description: '교육 계획 ID' })
   @ApiResponse({ status: 200, description: '완료 취소 성공' })
   async cancelComplete(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.trainingService.cancelComplete(
@@ -176,7 +176,7 @@ export class TrainingController {
   @ApiOperation({ summary: '교육 결과 목록', description: '계획별 결과 조회' })
   @ApiParam({ name: 'id', description: '교육 계획 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getResults(@Param('id', ParseIntPipe) id: number) {
+  async getResults(@Param('id') id: string) {
     const data = await this.trainingService.getResults(id);
     return ResponseUtil.success(data);
   }
@@ -187,7 +187,7 @@ export class TrainingController {
   @ApiParam({ name: 'id', description: '교육 계획 ID' })
   @ApiResponse({ status: 201, description: '등록 성공' })
   async addResult(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: CreateTrainingResultDto,
     @Company() company: string,
     @Plant() plant: string,
@@ -203,25 +203,31 @@ export class TrainingController {
     return ResponseUtil.success(data, '교육 결과가 등록되었습니다.');
   }
 
-  @Patch('trainings/results/:resultId')
+  @Patch('trainings/results/:planNo/:workerCode')
   @ApiOperation({ summary: '교육 결과 수정' })
-  @ApiParam({ name: 'resultId', description: '교육 결과 ID' })
+  @ApiParam({ name: 'planNo', description: '교육계획번호' })
+  @ApiParam({ name: 'workerCode', description: '작업자코드' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async updateResult(
-    @Param('resultId', ParseIntPipe) resultId: number,
+    @Param('planNo') planNo: string,
+    @Param('workerCode') workerCode: string,
     @Body() dto: CreateTrainingResultDto,
   ) {
-    const data = await this.trainingService.updateResult(resultId, dto);
+    const data = await this.trainingService.updateResult(planNo, workerCode, dto);
     return ResponseUtil.success(data, '교육 결과가 수정되었습니다.');
   }
 
-  @Delete('trainings/results/:resultId')
+  @Delete('trainings/results/:planNo/:workerCode')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '교육 결과 삭제' })
-  @ApiParam({ name: 'resultId', description: '교육 결과 ID' })
+  @ApiParam({ name: 'planNo', description: '교육계획번호' })
+  @ApiParam({ name: 'workerCode', description: '작업자코드' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteResult(@Param('resultId', ParseIntPipe) resultId: number) {
-    await this.trainingService.deleteResult(resultId);
+  async deleteResult(
+    @Param('planNo') planNo: string,
+    @Param('workerCode') workerCode: string,
+  ) {
+    await this.trainingService.deleteResult(planNo, workerCode);
     return ResponseUtil.success(null, '교육 결과가 삭제되었습니다.');
   }
 }

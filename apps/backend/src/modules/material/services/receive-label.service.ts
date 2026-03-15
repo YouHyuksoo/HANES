@@ -14,14 +14,14 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { UidGeneratorService } from '../../../shared/uid-generator.service';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import { CreateMatLabelsDto, MatLabelResultDto } from '../dto/receive-label.dto';
 
 @Injectable()
 export class ReceiveLabelService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly uidGenerator: UidGeneratorService,
+    private readonly seqGenerator: SeqGeneratorService,
     @InjectRepository(MatArrival)
     private readonly arrivalRepo: Repository<MatArrival>,
     @InjectRepository(MatLot)
@@ -60,22 +60,22 @@ export class ReceiveLabelService {
       }
     }
 
-    const labeledArrivalIds = new Set<number>();
+    const labeledArrivalKeys = new Set<string>();
     const lots = await this.matLotRepo.find();
     for (const lot of lots) {
       if (printedUids.has(lot.matUid)) {
         const arrival = arrivals.find(
           (a) => a.itemCode === lot.itemCode && a.poNo === lot.poNo,
         );
-        if (arrival) labeledArrivalIds.add(arrival.id);
+        if (arrival) labeledArrivalKeys.add(`${arrival.arrivalNo}-${arrival.seq}`);
       }
     }
 
     return arrivals.map((a) => {
       const part = partMap.get(a.itemCode);
       return {
-        id: a.id,
         arrivalNo: a.arrivalNo,
+        seq: a.seq,
         itemCode: a.itemCode,
         itemName: part?.itemName ?? '',
         unit: part?.unit ?? '',
@@ -86,14 +86,14 @@ export class ReceiveLabelService {
         invoiceNo: a.invoiceNo,
         iqcStatus: a.iqcStatus,
         arrivalDate: a.arrivalDate,
-        labelPrinted: labeledArrivalIds.has(a.id),
+        labelPrinted: labeledArrivalKeys.has(`${a.arrivalNo}-${a.seq}`),
       };
     });
   }
 
   /** matUid 채번 + MatLot 생성 + 라벨 인쇄 로그 */
   async createMatLabels(dto: CreateMatLabelsDto): Promise<MatLabelResultDto[]> {
-    const arrival = await this.arrivalRepo.findOne({ where: { id: dto.arrivalId } });
+    const arrival = await this.arrivalRepo.findOne({ where: { arrivalNo: dto.arrivalId, seq: dto.arrivalSeq ?? 1 } });
     if (!arrival) throw new NotFoundException('입하건을 찾을 수 없습니다.');
     if (arrival.iqcStatus !== 'PASS') {
       throw new NotFoundException('IQC 합격 상태가 아닙니다.');
@@ -109,7 +109,7 @@ export class ReceiveLabelService {
       const results: MatLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
-        const matUid = await this.uidGenerator.nextMatUid(queryRunner);
+        const matUid = await this.seqGenerator.nextMatUid(queryRunner);
         const lot = queryRunner.manager.create(MatLot, {
           matUid,
           itemCode: arrival.itemCode,

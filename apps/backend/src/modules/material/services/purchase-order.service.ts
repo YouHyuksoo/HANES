@@ -155,9 +155,10 @@ export class PurchaseOrderService {
       const savedPo = await queryRunner.manager.save(po);
 
       // 품목 생성
-      const itemEntities = dto.items.map((item) =>
+      const itemEntities = dto.items.map((item, idx) =>
         queryRunner.manager.create(PurchaseOrderItem, {
           poNo: savedPo.poNo,
+          seq: idx + 1,
           itemCode: item.itemCode,
           orderQty: item.orderQty,
           unitPrice: item.unitPrice,
@@ -220,9 +221,10 @@ export class PurchaseOrderService {
         await queryRunner.manager.update(PurchaseOrder, poNo, updateData);
 
         // 새 품목 생성
-        const itemEntities = items.map((item) =>
+        const itemEntities = items.map((item, idx) =>
           queryRunner.manager.create(PurchaseOrderItem, {
             poNo,
+            seq: idx + 1,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             unitPrice: item.unitPrice,

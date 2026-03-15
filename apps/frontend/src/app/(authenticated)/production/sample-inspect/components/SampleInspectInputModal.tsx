@@ -57,7 +57,7 @@ export default function SampleInspectInputModal({ isOpen, onClose, onCreated }: 
     if (!isOpen) return;
     api.get("/production/job-orders", { params: { limit: 5000 } }).then(res => {
       const list = (res.data?.data ?? []).map((jo: any) => ({
-        value: jo.id,
+        value: jo.orderNo,
         label: `${jo.orderNo} - ${jo.part?.itemName || ""}`,
       }));
       setJobOrders(list);

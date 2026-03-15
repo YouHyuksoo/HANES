@@ -9,12 +9,12 @@
  * 2. **행 색상**: 교정만료(빨강), 30일 이내(노랑) 하이라이트
  * 3. **우측 패널**: 선택된 계측기의 교정 이력(CalibrationList) + 교정 추가
  * 4. 계측기 등록/수정은 설비관리 > 계측기 마스터(/master/gauge)에서 수행
- * 5. API: GET /quality/gauges, GET/POST /quality/calibrations
+ * 5. API: GET /quality/msa/gauges, GET/POST /quality/msa/calibrations
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw, AlertTriangle, Ruler } from "lucide-react";
+import { RefreshCw, AlertTriangle, Ruler, X, FileSearch } from "lucide-react";
 import { Card, CardContent, Button, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
@@ -23,7 +23,6 @@ import CalibrationList from "./components/CalibrationList";
 
 /** 계측기 데이터 타입 */
 interface Gauge {
-  id: number;
   gaugeCode: string;
   gaugeName: string;
   gaugeType: string;
@@ -63,7 +62,7 @@ export default function MsaPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const url = expiringOnly ? "/quality/gauges/expiring-soon" : "/quality/gauges";
+      const url = expiringOnly ? "/quality/msa/gauges/expiring-soon" : "/quality/msa/gauges";
       const params: Record<string, string> = { limit: "5000" };
       if (typeFilter) params.gaugeType = typeFilter;
       if (statusFilter) params.status = statusFilter;
@@ -77,6 +76,18 @@ export default function MsaPage() {
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<Gauge>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("quality.msa.viewCalibration", "교정이력")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "gaugeCode", header: t("master.gauge.gaugeCode"), size: 130,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (
@@ -147,9 +158,8 @@ export default function MsaPage() {
             <DataGrid data={data} columns={columns} isLoading={loading}
               enableColumnFilter enableExport
               exportFileName={t("quality.msa.title")}
-              onRowClick={row => setSelectedRow(row as Gauge)}
-              getRowId={row => String((row as Gauge).id)}
-              selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+              getRowId={row => (row as Gauge).gaugeCode}
+              selectedRowId={selectedRow ? selectedRow.gaugeCode : undefined}
               rowClassName={row => getRowClassName(row as Gauge)}
               toolbarLeft={
                 <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
@@ -169,16 +179,22 @@ export default function MsaPage() {
         {selectedRow && (
           <Card className="w-1/2 min-h-0 overflow-hidden" padding="none">
             <CardContent className="h-full p-4 flex flex-col">
-              <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-                <span className="text-sm font-bold text-text">
-                  {selectedRow.gaugeCode}
-                </span>
-                <span className="text-xs text-text-muted">
-                  {selectedRow.gaugeName}
-                </span>
+              <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-text">
+                    {selectedRow.gaugeCode}
+                  </span>
+                  <span className="text-xs text-text-muted">
+                    {selectedRow.gaugeName}
+                  </span>
+                </div>
+                <button onClick={() => setSelectedRow(null)}
+                  className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+                  <X className="w-4 h-4 text-text-muted" />
+                </button>
               </div>
               <div className="flex-1 min-h-0">
-                <CalibrationList gaugeId={selectedRow.id}
+                <CalibrationList gaugeId={selectedRow.gaugeCode}
                   onCalibrationAdded={fetchData} />
               </div>
             </CardContent>

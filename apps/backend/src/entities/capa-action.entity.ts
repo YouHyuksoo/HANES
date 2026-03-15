@@ -4,11 +4,12 @@
  *
  * 초보자 가이드:
  * 1. 하나의 CAPA 요청에 여러 조치 항목이 연결됨 (1:N 관계)
- * 2. 각 항목은 담당자, 기한, 진행 상태를 개별 관리
- * 3. 상태: PENDING → IN_PROGRESS → DONE
+ * 2. 복합 PK: capaId + seq (부모 FK + 순번)
+ * 3. 각 항목은 담당자, 기한, 진행 상태를 개별 관리
+ * 4. 상태: PENDING → IN_PROGRESS → DONE
  */
 import {
-  Entity, PrimaryGeneratedColumn, Column,
+  Entity, PrimaryColumn, Column,
   ManyToOne, JoinColumn,
   CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
@@ -16,17 +17,14 @@ import { CAPARequest } from './capa-request.entity';
 
 @Entity({ name: 'CAPA_ACTIONS' })
 export class CAPAAction {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'CAPA_ID' })
+  @PrimaryColumn({ name: 'CAPA_ID' })
   capaId: number;
 
   @ManyToOne(() => CAPARequest, { nullable: false })
   @JoinColumn({ name: 'CAPA_ID' })
   capaRequest: CAPARequest;
 
-  @Column({ name: 'SEQ', type: 'int' })
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
   seq: number;
 
   @Column({ name: 'ACTION_DESC', length: 1000 })

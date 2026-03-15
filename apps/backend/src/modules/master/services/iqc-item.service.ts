@@ -1,6 +1,10 @@
 /**
  * @file src/modules/master/services/iqc-item.service.ts
  * @description IQC 검사항목마스터 비즈니스 로직 서비스
+ *
+ * 초보자 가이드:
+ * 1. itemCode + seq 복합 PK로 조회/수정/삭제
+ * 2. findAll: 목록 조회 (itemCode, search 필터)
  */
 
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -53,9 +57,9 @@ export class IqcItemService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findByCompositeKey(itemCode: string, seq: number) {
     const item = await this.iqcItemRepository.findOne({
-      where: { id: +id },
+      where: { itemCode, seq },
     });
 
     if (!item) {
@@ -71,23 +75,24 @@ export class IqcItemService {
     return saved;
   }
 
-  async update(id: string, dto: UpdateIqcItemDto) {
-    const item = await this.findById(id);
+  async update(itemCode: string, seq: number, dto: UpdateIqcItemDto) {
+    const item = await this.findByCompositeKey(itemCode, seq);
 
     const updated = await this.iqcItemRepository.save({
       ...item,
       ...dto,
-      id: +id,
+      itemCode,
+      seq,
     });
 
     return updated;
   }
 
-  async delete(id: string) {
-    const item = await this.findById(id);
+  async delete(itemCode: string, seq: number) {
+    const item = await this.findByCompositeKey(itemCode, seq);
 
     await this.iqcItemRepository.remove(item);
 
-    return { id, deleted: true };
+    return { itemCode, seq, deleted: true };
   }
 }

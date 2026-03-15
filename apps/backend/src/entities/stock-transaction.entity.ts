@@ -1,16 +1,17 @@
 /**
  * @file src/entities/stock-transaction.entity.ts
  * @description 원자재 수불 트랜잭션 엔티티 - 원자재 입고/출고/이동 이력 (수불원장)
+ *              TRANS_NO 자연키 PK 사용.
  *
  * 초보자 가이드:
+ * - TRANS_NO가 자연키 PK (트랜잭션 번호)
  * - transType: MAT_IN(입고), MAT_OUT(출고), MAT_ADJ(조정) 등
  * - 삭제 금지, 취소 시 원본 참조(cancelRefId) + 음수 수량
- * - id: SEQUENCE 자동증분 PK
  * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -27,10 +28,7 @@ import {
 @Index(['refType', 'refId'])
 @Index(['cancelRefId'])
 export class StockTransaction {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'TRANS_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'TRANS_NO', length: 50 })
   transNo: string;
 
   @Column({ name: 'TRANS_TYPE', length: 50 })

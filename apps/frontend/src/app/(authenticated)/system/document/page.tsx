@@ -27,7 +27,6 @@ import DocumentFormPanel from "./components/DocumentFormPanel";
 
 /** 문서 데이터 타입 */
 interface Document {
-  id: number;
   docNo: string;
   docTitle: string;
   docType: string;
@@ -186,8 +185,8 @@ export default function DocumentPage() {
               enableExport
               exportFileName={t("system.document.title")}
               onRowClick={row => handleRowClick(row as Document)}
-              getRowId={row => String((row as Document).id)}
-              selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+              getRowId={row => (row as Document).docNo}
+              selectedRowId={selectedRow ? String(selectedRow.docNo) : undefined}
               rowClassName={row => {
                 const doc = row as Document;
                 return isExpiringSoon(doc.expiresAt)

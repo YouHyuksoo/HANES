@@ -9,18 +9,14 @@
  * 4. 8D 프로세스: 접수 → 조사 → 원인분석 → 봉쇄조치 → 시정조치 → 예방조치 → 종료
  */
 import {
-  Entity, PrimaryGeneratedColumn, Column,
+  Entity, PrimaryColumn, Column,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 
 @Entity({ name: 'CUSTOMER_COMPLAINTS' })
 @Index(['company', 'plant', 'status'])
-@Index(['company', 'plant', 'complaintNo'], { unique: true })
 export class CustomerComplaint {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'COMPLAINT_NO', length: 30 })
+  @PrimaryColumn({ name: 'COMPLAINT_NO', length: 50 })
   complaintNo: string;
 
   @Column({ name: 'CUSTOMER_CODE', length: 50 })

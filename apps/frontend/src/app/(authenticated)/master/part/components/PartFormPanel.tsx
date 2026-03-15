@@ -77,6 +77,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     tactTime: editingPart?.tactTime ?? 0,
     expiryDate: editingPart?.expiryDate ?? 0,
     iqcYn: editingPart?.iqcYn || "Y",
+    inspectMethod: editingPart?.inspectMethod || "",
     useYn: editingPart?.useYn || "Y",
     packUnit: editingPart?.packUnit || "",
     storageLocation: editingPart?.storageLocation || "",
@@ -104,6 +105,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       tactTime: editingPart?.tactTime ?? 0,
       expiryDate: editingPart?.expiryDate ?? 0,
       iqcYn: editingPart?.iqcYn || "Y",
+      inspectMethod: editingPart?.inspectMethod || "",
       useYn: editingPart?.useYn || "Y",
       packUnit: editingPart?.packUnit || "",
       storageLocation: editingPart?.storageLocation || "",
@@ -139,6 +141,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         tactTime: form.tactTime,
         expiryDate: form.expiryDate,
         iqcYn: form.iqcYn,
+        inspectMethod: form.inspectMethod || undefined,
         useYn: form.useYn,
         packUnit: form.packUnit || undefined,
         storageLocation: form.storageLocation || undefined,
@@ -214,6 +217,14 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false}
               value={form.unit} onChange={v => setField("unit", v)} fullWidth />
             <YnRadio label={t("master.part.iqcFlag", "IQC대상")} value={form.iqcYn} onChange={v => setField("iqcYn", v)} />
+            <Select label={t("master.part.inspectMethod", "검사방법")}
+              options={[
+                { value: "", label: "-" },
+                { value: "FULL", label: t("master.part.inspectFull", "전수") },
+                { value: "SAMPLE", label: t("master.part.inspectSample", "샘플") },
+                { value: "SKIP", label: t("master.part.inspectSkip", "무검사") },
+              ]}
+              value={form.inspectMethod} onChange={v => setField("inspectMethod", v)} fullWidth />
             <YnRadio label={t("common.useYn", "사용여부")} value={form.useYn} onChange={v => setField("useYn", v)} />
           </div>
         </div>

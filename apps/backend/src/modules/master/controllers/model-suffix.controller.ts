@@ -5,8 +5,8 @@
  * 초보자 가이드:
  * 1. **GET /master/model-suffixes**: 접미사 목록 (modelCode, customer 필터)
  * 2. **POST /master/model-suffixes**: 접미사 생성
- * 3. **PUT /master/model-suffixes/:id**: 접미사 수정
- * 4. **DELETE /master/model-suffixes/:id**: 접미사 삭제
+ * 3. **PUT /master/model-suffixes/:modelCode/:suffixCode**: 접미사 수정
+ * 4. **DELETE /master/model-suffixes/:modelCode/:suffixCode**: 접미사 삭제
  */
 
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
@@ -28,10 +28,10 @@ export class ModelSuffixController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get(':id')
+  @Get(':modelCode/:suffixCode')
   @ApiOperation({ summary: '모델접미사 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.modelSuffixService.findById(id);
+  async findByCompositeKey(@Param('modelCode') modelCode: string, @Param('suffixCode') suffixCode: string) {
+    const data = await this.modelSuffixService.findByCompositeKey(modelCode, suffixCode);
     return ResponseUtil.success(data);
   }
 
@@ -43,17 +43,21 @@ export class ModelSuffixController {
     return ResponseUtil.success(data, '모델접미사가 생성되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':modelCode/:suffixCode')
   @ApiOperation({ summary: '모델접미사 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateModelSuffixDto) {
-    const data = await this.modelSuffixService.update(id, dto);
+  async update(
+    @Param('modelCode') modelCode: string,
+    @Param('suffixCode') suffixCode: string,
+    @Body() dto: UpdateModelSuffixDto,
+  ) {
+    const data = await this.modelSuffixService.update(modelCode, suffixCode, dto);
     return ResponseUtil.success(data, '모델접미사가 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':modelCode/:suffixCode')
   @ApiOperation({ summary: '모델접미사 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.modelSuffixService.delete(id);
+  async delete(@Param('modelCode') modelCode: string, @Param('suffixCode') suffixCode: string) {
+    await this.modelSuffixService.delete(modelCode, suffixCode);
     return ResponseUtil.success(null, '모델접미사가 삭제되었습니다.');
   }
 }

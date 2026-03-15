@@ -32,8 +32,8 @@ export interface AutoReceiveResult {
 interface UseLabelIssueParams {
   /** 필터링된 입하 목록 */
   filteredArrivals: LabelableArrival[];
-  /** 선택된 입하 id Set */
-  selectedIds: Set<number>;
+  /** 선택된 입하 키(arrivalNo) Set */
+  selectedIds: Set<string>;
   /** 자동입고 활성 여부 */
   isAutoReceive: boolean;
   /** 데이터 새로고침 콜백 */
@@ -50,7 +50,7 @@ export function useLabelIssue({
 
   /** 선택된 입하 건에 대해 matUid 생성 (POST create) */
   const createMatUids = useCallback(async (): Promise<CreatedMatUid[]> => {
-    const selected = filteredArrivals.filter((a) => selectedIds.has(a.id));
+    const selected = filteredArrivals.filter((a) => selectedIds.has(`${a.arrivalNo}-${a.seq}`));
     if (selected.length === 0) return [];
 
     setIssuing(true);
@@ -58,7 +58,8 @@ export function useLabelIssue({
     try {
       for (const arrival of selected) {
         const res = await api.post('/material/receive-label/create', {
-          arrivalId: arrival.id,
+          arrivalId: arrival.arrivalNo,
+          arrivalSeq: arrival.seq,
           qty: arrival.qty,
           supUid: arrival.supUid ?? undefined,
         });

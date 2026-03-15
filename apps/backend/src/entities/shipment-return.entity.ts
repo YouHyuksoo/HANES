@@ -1,32 +1,26 @@
 /**
  * @file shipment-return.entity.ts
  * @description 출하반품(ShipmentReturn) 엔티티 - 출하 후 반품 정보를 관리한다.
- *              시퀀스 PK 사용.
+ *              RETURN_NO 자연키 PK 사용.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
- * 2. RETURN_NO: 반품번호 (유니크)
- * 3. 상태 흐름: DRAFT → CONFIRMED → CLOSED
+ * 1. RETURN_NO가 자연키 PK (반품번호)
+ * 2. 상태 흐름: DRAFT → CONFIRMED → CLOSED
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'SHIPMENT_RETURNS' })
-@Unique(['returnNo'])
 @Index(['shipmentId'])
 @Index(['status'])
 export class ShipmentReturn {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'RETURN_NO', length: 50, unique: true })
+  @PrimaryColumn({ name: 'RETURN_NO', length: 50 })
   returnNo: string;
 
   @Column({ name: 'SHIPMENT_ID', length: 255, nullable: true })

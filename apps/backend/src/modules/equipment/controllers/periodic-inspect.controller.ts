@@ -5,13 +5,14 @@
  * 초보자 가이드:
  * 1. **엔드포인트**: /api/v1/equipment/periodic-inspect
  * 2. inspectType을 'PERIODIC'으로 고정하여 정기점검만 처리
+ * 3. 복합키: equipCode + inspectType(PERIODIC) + inspectDate
  *
  * API 경로:
- * - GET    /equipment/periodic-inspect       정기점검 목록 조회
- * - GET    /equipment/periodic-inspect/:id   정기점검 상세 조회
- * - POST   /equipment/periodic-inspect       정기점검 등록
- * - PUT    /equipment/periodic-inspect/:id   정기점검 수정
- * - DELETE /equipment/periodic-inspect/:id   정기점검 삭제
+ * - GET    /equipment/periodic-inspect                         정기점검 목록 조회
+ * - GET    /equipment/periodic-inspect/:equipCode/:inspectDate 정기점검 상세 조회
+ * - POST   /equipment/periodic-inspect                         정기점검 등록
+ * - PUT    /equipment/periodic-inspect/:equipCode/:inspectDate 정기점검 수정
+ * - DELETE /equipment/periodic-inspect/:equipCode/:inspectDate 정기점검 삭제
  */
 
 import {
@@ -43,7 +44,7 @@ export class PeriodicInspectController {
   @ApiOperation({ summary: '정기점검 캘린더 월별 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getCalendarSummary(@Query() query: InspectCalendarQueryDto) {
-    const data = await this.equipInspectService.getCalendarSummary(query.year, query.month, query.lineCode, 'PERIODIC');
+    const data = await this.equipInspectService.getCalendarSummary(query.year, query.month, query.processCode, 'PERIODIC');
     return ResponseUtil.success(data);
   }
 
@@ -51,7 +52,7 @@ export class PeriodicInspectController {
   @ApiOperation({ summary: '정기점검 캘린더 일별 스케줄' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getDaySchedule(@Query() query: InspectDayScheduleQueryDto) {
-    const data = await this.equipInspectService.getDaySchedule(query.date, query.lineCode, 'PERIODIC');
+    const data = await this.equipInspectService.getDaySchedule(query.date, query.processCode, 'PERIODIC');
     return ResponseUtil.success(data);
   }
 
@@ -63,11 +64,15 @@ export class PeriodicInspectController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get(':id')
+  @Get(':equipCode/:inspectDate')
   @ApiOperation({ summary: '정기점검 상세 조회' })
-  @ApiParam({ name: 'id', description: '점검 ID' })
-  async findById(@Param('id') id: string) {
-    const data = await this.equipInspectService.findById(+id);
+  @ApiParam({ name: 'equipCode', description: '설비코드' })
+  @ApiParam({ name: 'inspectDate', description: '점검일 (YYYY-MM-DD)' })
+  async findByKey(
+    @Param('equipCode') equipCode: string,
+    @Param('inspectDate') inspectDate: string,
+  ) {
+    const data = await this.equipInspectService.findByKey(equipCode, 'PERIODIC', inspectDate);
     return ResponseUtil.success(data);
   }
 
@@ -80,19 +85,28 @@ export class PeriodicInspectController {
     return ResponseUtil.success(data, '정기점검이 등록되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':equipCode/:inspectDate')
   @ApiOperation({ summary: '정기점검 수정' })
-  @ApiParam({ name: 'id', description: '점검 ID' })
-  async update(@Param('id') id: string, @Body() dto: UpdateEquipInspectDto) {
-    const data = await this.equipInspectService.update(+id, dto);
+  @ApiParam({ name: 'equipCode', description: '설비코드' })
+  @ApiParam({ name: 'inspectDate', description: '점검일 (YYYY-MM-DD)' })
+  async update(
+    @Param('equipCode') equipCode: string,
+    @Param('inspectDate') inspectDate: string,
+    @Body() dto: UpdateEquipInspectDto,
+  ) {
+    const data = await this.equipInspectService.update(equipCode, 'PERIODIC', inspectDate, dto);
     return ResponseUtil.success(data, '정기점검이 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':equipCode/:inspectDate')
   @ApiOperation({ summary: '정기점검 삭제' })
-  @ApiParam({ name: 'id', description: '점검 ID' })
-  async delete(@Param('id') id: string) {
-    await this.equipInspectService.delete(+id);
+  @ApiParam({ name: 'equipCode', description: '설비코드' })
+  @ApiParam({ name: 'inspectDate', description: '점검일 (YYYY-MM-DD)' })
+  async delete(
+    @Param('equipCode') equipCode: string,
+    @Param('inspectDate') inspectDate: string,
+  ) {
+    await this.equipInspectService.deleteByKey(equipCode, 'PERIODIC', inspectDate);
     return ResponseUtil.success(null, '정기점검이 삭제되었습니다.');
   }
 }

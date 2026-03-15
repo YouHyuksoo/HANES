@@ -47,13 +47,13 @@ import {
 } from '../dto/fai.dto';
 
 @ApiTags('품질관리 - 초물검사')
-@Controller('quality')
+@Controller('quality/fai')
 export class FaiController {
   constructor(private readonly faiService: FaiService) {}
 
   // ===== 통계 API (목록 조회보다 먼저 정의) =====
 
-  @Get('fai/stats')
+  @Get('stats')
   @ApiOperation({ summary: 'FAI 통계', description: '상태별 건수' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStats(@Company() company: string, @Plant() plant: string) {
@@ -63,7 +63,7 @@ export class FaiController {
 
   // ===== FAI 요청 CRUD =====
 
-  @Get('fai')
+  @Get()
   @ApiOperation({ summary: 'FAI 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findAll(
@@ -75,7 +75,7 @@ export class FaiController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('fai/:id')
+  @Get(':id')
   @ApiOperation({ summary: 'FAI 단건 조회', description: '검사항목(items) 포함' })
   @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
@@ -85,7 +85,7 @@ export class FaiController {
     return ResponseUtil.success(data);
   }
 
-  @Post('fai')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'FAI 등록', description: '초물검사 요청 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
@@ -104,7 +104,7 @@ export class FaiController {
     return ResponseUtil.success(data, '초물검사가 등록되었습니다.');
   }
 
-  @Put('fai/:id')
+  @Put(':id')
   @ApiOperation({ summary: 'FAI 수정' })
   @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
@@ -121,7 +121,7 @@ export class FaiController {
     return ResponseUtil.success(data, '초물검사가 수정되었습니다.');
   }
 
-  @Delete('fai/:id')
+  @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'FAI 삭제' })
   @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
@@ -133,7 +133,7 @@ export class FaiController {
 
   // ===== 상태 전이 =====
 
-  @Patch('fai/:id/start')
+  @Patch(':id/start')
   @ApiOperation({ summary: '검사 시작', description: 'REQUESTED → SAMPLING' })
   @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
   @ApiResponse({ status: 200, description: '시작 성공' })
@@ -145,7 +145,7 @@ export class FaiController {
     return ResponseUtil.success(data, '검사가 시작되었습니다.');
   }
 
-  @Patch('fai/:id/complete')
+  @Patch(':id/complete')
   @ApiOperation({ summary: '검사 완료', description: '판정 결과 입력 (자동/수동)' })
   @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
   @ApiResponse({ status: 200, description: '완료 성공' })
@@ -162,7 +162,7 @@ export class FaiController {
     return ResponseUtil.success(data, '검사가 완료되었습니다.');
   }
 
-  @Patch('fai/:id/approve')
+  @Patch(':id/approve')
   @ApiOperation({ summary: 'FAI 승인' })
   @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
   @ApiResponse({ status: 200, description: '승인 성공' })
@@ -176,7 +176,7 @@ export class FaiController {
 
   // ===== 검사항목 =====
 
-  @Post('fai/:id/items')
+  @Post(':id/items')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '검사항목 일괄 등록', description: '기존 항목 교체' })
   @ApiParam({ name: 'id', description: 'FAI 요청 ID' })

@@ -39,7 +39,6 @@ const INIT: GaugeFormData = {
 
 interface Props {
   editData: {
-    id: number;
     gaugeCode: string;
     gaugeName: string;
     gaugeType: string;
@@ -93,7 +92,7 @@ export default function GaugeFormPanel({ editData, onClose, onSave }: Props) {
     try {
       const payload = { ...form, calibrationCycle: Number(form.calibrationCycle) || 12 };
       if (isEdit && editData) {
-        await api.patch(`/quality/msa/gauges/${editData.id}`, payload);
+        await api.patch(`/quality/msa/gauges/${editData.gaugeCode}`, payload);
       } else {
         await api.post("/quality/msa/gauges", payload);
       }

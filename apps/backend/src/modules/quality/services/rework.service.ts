@@ -132,18 +132,18 @@ export class ReworkService {
   }
 
   /**
-   * 재작업 단건 조회
+   * 재작업 단건 조회 (reworkNo 기준)
    */
-  async findById(id: number) {
+  async findById(reworkNo: string) {
     const item = await this.reworkRepo.findOne({
-      where: { id },
+      where: { reworkNo },
       relations: ['defectLog'],
     });
     if (!item) {
       throw new NotFoundException('재작업 지시를 찾을 수 없습니다.');
     }
     const processes = await this.processRepo.find({
-      where: { reworkOrderId: id },
+      where: { reworkOrderId: item.id },
       order: { seq: 'ASC' },
     });
     return { ...item, processes };
@@ -169,7 +169,9 @@ export class ReworkService {
       createdBy: userId,
       updatedBy: userId,
     });
-    const saved = await this.reworkRepo.save(entity) as ReworkOrder;
+    await this.reworkRepo.save(entity);
+    // save 후 generated ID를 가져오기 위해 다시 조회
+    const saved = await this.reworkRepo.findOne({ where: { reworkNo } });
 
     // 공정 목록 생성
     if (dto.processItems && dto.processItems.length > 0) {
@@ -193,9 +195,15 @@ export class ReworkService {
       await this.processRepo.save(processEntities);
     }
 
-    // 불량 이력 상태 연동
+    // 불량 이력 상태 연동 (복합 PK 기준 업데이트)
     if (dto.defectLogId) {
-      await this.defectLogRepo.update(dto.defectLogId, { status: 'REWORK' });
+      const defect = await this.defectLogRepo.findOne({ where: { id: dto.defectLogId } });
+      if (defect) {
+        await this.defectLogRepo.update(
+          { occurAt: defect.occurAt, seq: defect.seq },
+          { status: 'REWORK' },
+        );
+      }
     }
 
     this.logger.log(
@@ -207,27 +215,27 @@ export class ReworkService {
   /**
    * 재작업 지시 수정 (등록/반려 상태에서만 가능)
    */
-  async update(id: number, dto: UpdateReworkOrderDto, userId: string) {
-    const item = await this.findById(id);
+  async update(reworkNo: string, dto: UpdateReworkOrderDto, userId: string) {
+    const item = await this.findById(reworkNo);
     if (!['REGISTERED', 'QC_REJECTED', 'PROD_REJECTED'].includes(item.status)) {
       throw new BadRequestException(
         '등록/반려 상태에서만 수정할 수 있습니다.',
       );
     }
     const { processItems, ...updateFields } = dto;
-    Object.assign(item, updateFields, { updatedBy: userId });
-    return this.reworkRepo.save(item);
+    await this.reworkRepo.update({ reworkNo }, { ...updateFields, updatedBy: userId });
+    return this.findById(reworkNo);
   }
 
   /**
    * 재작업 지시 삭제 (등록 상태에서만 가능)
    */
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async delete(reworkNo: string) {
+    const item = await this.findById(reworkNo);
     if (item.status !== 'REGISTERED') {
       throw new BadRequestException('등록 상태에서만 삭제할 수 있습니다.');
     }
-    await this.reworkRepo.remove(item);
+    await this.reworkRepo.delete({ reworkNo });
   }
 
   // =============================================
@@ -237,58 +245,58 @@ export class ReworkService {
   /**
    * 품질승인 요청 (REGISTERED → QC_PENDING)
    */
-  async requestQcApproval(id: number, userId: string) {
-    const item = await this.findById(id);
+  async requestQcApproval(reworkNo: string, userId: string) {
+    const item = await this.findById(reworkNo);
     if (!['REGISTERED', 'QC_REJECTED', 'PROD_REJECTED'].includes(item.status)) {
       throw new BadRequestException(
         '등록 또는 반려 상태에서만 승인 요청할 수 있습니다.',
       );
     }
-    item.status = 'QC_PENDING';
-    item.updatedBy = userId;
-    return this.reworkRepo.save(item);
+    await this.reworkRepo.update({ reworkNo }, {
+      status: 'QC_PENDING',
+      updatedBy: userId,
+    });
+    return this.findById(reworkNo);
   }
 
   /**
    * 품질 승인/반려 (QC_PENDING → PROD_PENDING 또는 QC_REJECTED)
    */
-  async qcApprove(id: number, dto: ApproveReworkDto, userId: string) {
-    const item = await this.findById(id);
+  async qcApprove(reworkNo: string, dto: ApproveReworkDto, userId: string) {
+    const item = await this.findById(reworkNo);
     if (item.status !== 'QC_PENDING') {
       throw new BadRequestException('품질승인대기 상태가 아닙니다.');
     }
+    const updateData: Partial<ReworkOrder> = { updatedBy: userId, qcApproverCode: userId };
     if (dto.action === 'APPROVE') {
-      item.status = 'PROD_PENDING';
-      item.qcApproverCode = userId;
-      item.qcApprovedAt = new Date();
+      updateData.status = 'PROD_PENDING';
+      updateData.qcApprovedAt = new Date();
     } else {
-      item.status = 'QC_REJECTED';
-      item.qcApproverCode = userId;
-      item.qcRejectReason = dto.reason ?? null;
+      updateData.status = 'QC_REJECTED';
+      updateData.qcRejectReason = dto.reason ?? null;
     }
-    item.updatedBy = userId;
-    return this.reworkRepo.save(item);
+    await this.reworkRepo.update({ reworkNo }, updateData);
+    return this.findById(reworkNo);
   }
 
   /**
    * 생산 승인/반려 (PROD_PENDING → APPROVED 또는 PROD_REJECTED)
    */
-  async prodApprove(id: number, dto: ApproveReworkDto, userId: string) {
-    const item = await this.findById(id);
+  async prodApprove(reworkNo: string, dto: ApproveReworkDto, userId: string) {
+    const item = await this.findById(reworkNo);
     if (item.status !== 'PROD_PENDING') {
       throw new BadRequestException('생산승인대기 상태가 아닙니다.');
     }
+    const updateData: Partial<ReworkOrder> = { updatedBy: userId, prodApproverCode: userId };
     if (dto.action === 'APPROVE') {
-      item.status = 'APPROVED';
-      item.prodApproverCode = userId;
-      item.prodApprovedAt = new Date();
+      updateData.status = 'APPROVED';
+      updateData.prodApprovedAt = new Date();
     } else {
-      item.status = 'PROD_REJECTED';
-      item.prodApproverCode = userId;
-      item.prodRejectReason = dto.reason ?? null;
+      updateData.status = 'PROD_REJECTED';
+      updateData.prodRejectReason = dto.reason ?? null;
     }
-    item.updatedBy = userId;
-    return this.reworkRepo.save(item);
+    await this.reworkRepo.update({ reworkNo }, updateData);
+    return this.findById(reworkNo);
   }
 
   // =============================================
@@ -299,8 +307,8 @@ export class ReworkService {
    * 작업 시작 (APPROVED / IN_PROGRESS → IN_PROGRESS)
    * 공정이 있는 경우 공정별 메서드(startProcess)로 세부 관리
    */
-  async start(id: number, userId: string) {
-    const item = await this.findById(id);
+  async start(reworkNo: string, userId: string) {
+    const item = await this.findById(reworkNo);
     if (!['APPROVED', 'IN_PROGRESS'].includes(item.status)) {
       throw new BadRequestException(
         '승인 완료 또는 진행중 상태에서만 시작할 수 있습니다.',
@@ -308,28 +316,28 @@ export class ReworkService {
     }
     // If has processes, auto-transition is handled by process-level methods
     if (item.status === 'APPROVED') {
-      await this.reworkRepo.update(id, {
+      await this.reworkRepo.update({ reworkNo }, {
         status: 'IN_PROGRESS',
         startAt: new Date(),
         updatedBy: userId,
       });
     }
-    return this.findById(id);
+    return this.findById(reworkNo);
   }
 
   /**
    * 작업 완료 (IN_PROGRESS → INSPECT_PENDING)
    * 공정이 있는 경우 공정별 resultQty 합산
    */
-  async complete(id: number, dto: CompleteReworkDto, userId: string) {
-    const order = await this.reworkRepo.findOne({ where: { id } });
+  async complete(reworkNo: string, dto: CompleteReworkDto, userId: string) {
+    const order = await this.reworkRepo.findOne({ where: { reworkNo } });
     if (!order) throw new NotFoundException('재작업 지시를 찾을 수 없습니다.');
     if (order.status !== 'IN_PROGRESS') {
       throw new BadRequestException('진행중 상태에서만 완료할 수 있습니다.');
     }
 
     // 공정 실적 합산
-    const processes = await this.processRepo.find({ where: { reworkOrderId: id } });
+    const processes = await this.processRepo.find({ where: { reworkOrderId: order.id } });
     let totalResultQty = dto.resultQty;
     if (processes.length > 0) {
       totalResultQty = processes
@@ -337,12 +345,14 @@ export class ReworkService {
         .reduce((sum, p) => sum + p.resultQty, 0);
     }
 
-    order.status = 'INSPECT_PENDING';
-    order.endAt = new Date();
-    order.resultQty = totalResultQty;
-    order.remarks = dto.remarks ?? order.remarks;
-    order.updatedBy = userId;
-    return this.reworkRepo.save(order);
+    await this.reworkRepo.update({ reworkNo }, {
+      status: 'INSPECT_PENDING',
+      endAt: new Date(),
+      resultQty: totalResultQty,
+      remarks: dto.remarks ?? order.remarks,
+      updatedBy: userId,
+    });
+    return this.findById(reworkNo);
   }
 
   // =============================================
@@ -406,13 +416,26 @@ export class ReworkService {
     plant: string,
     userId: string,
   ) {
-    const order = await this.findById(dto.reworkOrderId);
+    const order = await this.findById(dto.reworkNo);
     if (order.status !== 'INSPECT_PENDING') {
       throw new BadRequestException('재검사대기 상태가 아닙니다.');
     }
 
+    // seq 자동채번: 해당 reworkOrderId의 검사 건수 + 1
+    const existingCount = await this.inspectRepo.count({
+      where: { reworkOrderId: order.id },
+    });
+
     const inspect = this.inspectRepo.create({
-      ...dto,
+      reworkOrderId: order.id,
+      seq: existingCount + 1,
+      inspectorCode: dto.inspectorCode,
+      inspectMethod: dto.inspectMethod,
+      inspectResult: dto.inspectResult,
+      passQty: dto.passQty,
+      failQty: dto.failQty,
+      defectDetail: dto.defectDetail,
+      remarks: dto.remarks,
       inspectAt: new Date(),
       company,
       plant,
@@ -422,14 +445,15 @@ export class ReworkService {
     const saved = await this.inspectRepo.save(inspect);
 
     // ReworkOrder 상태 및 수량 업데이트
-    order.status = dto.inspectResult; // PASS, FAIL, SCRAP
-    order.passQty = dto.passQty;
-    order.failQty = dto.failQty;
-    order.isolationFlag = dto.inspectResult !== 'PASS' ? 1 : 0;
-    order.updatedBy = userId;
-    await this.reworkRepo.save(order);
+    await this.reworkRepo.update({ reworkNo: dto.reworkNo }, {
+      status: dto.inspectResult, // PASS, FAIL, SCRAP
+      passQty: dto.passQty,
+      failQty: dto.failQty,
+      isolationFlag: dto.inspectResult !== 'PASS' ? 1 : 0,
+      updatedBy: userId,
+    });
 
-    // 불량 이력 상태 연동
+    // 불량 이력 상태 연동 (복합 PK 기준 업데이트)
     if (order.defectLogId) {
       const defectStatus =
         dto.inspectResult === 'PASS'
@@ -437,23 +461,27 @@ export class ReworkService {
           : dto.inspectResult === 'SCRAP'
             ? 'SCRAP'
             : 'REWORK';
-      await this.defectLogRepo.update(order.defectLogId, {
-        status: defectStatus,
-      });
+      const defect = await this.defectLogRepo.findOne({ where: { id: order.defectLogId } });
+      if (defect) {
+        await this.defectLogRepo.update(
+          { occurAt: defect.occurAt, seq: defect.seq },
+          { status: defectStatus },
+        );
+      }
     }
 
     this.logger.log(
-      `재검사 등록: reworkOrderId=${dto.reworkOrderId}, result=${dto.inspectResult}`,
+      `재검사 등록: reworkNo=${dto.reworkNo}, result=${dto.inspectResult}`,
     );
     return saved;
   }
 
   /**
-   * 재검사 단건 조회
+   * 재검사 단건 조회 (복합키: reworkOrderId + seq)
    */
-  async findInspectById(id: number) {
+  async findInspectById(reworkOrderId: number, seq: number) {
     const item = await this.inspectRepo.findOne({
-      where: { id },
+      where: { reworkOrderId, seq },
       relations: ['reworkOrder'],
     });
     if (!item) {

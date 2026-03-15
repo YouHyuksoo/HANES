@@ -30,7 +30,6 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -91,9 +90,9 @@ export class ProdPlanController {
 
   @Put(':id')
   @ApiOperation({ summary: '생산계획 수정', description: 'DRAFT 상태만 수정 가능' })
-  @ApiParam({ name: 'id', description: '계획 ID' })
+  @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '수정 성공' })
-  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProdPlanDto) {
+  async update(@Param('id') id: string, @Body() dto: UpdateProdPlanDto) {
     const data = await this.prodPlanService.update(id, dto);
     return ResponseUtil.success(data, '생산계획이 수정되었습니다.');
   }
@@ -101,9 +100,9 @@ export class ProdPlanController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산계획 삭제', description: 'DRAFT 상태만 삭제 가능' })
-  @ApiParam({ name: 'id', description: '계획 ID' })
+  @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.prodPlanService.delete(id);
     return ResponseUtil.success(null, '생산계획이 삭제되었습니다.');
   }
@@ -111,9 +110,9 @@ export class ProdPlanController {
   @Post(':id/confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산계획 확정', description: 'DRAFT → CONFIRMED' })
-  @ApiParam({ name: 'id', description: '계획 ID' })
+  @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '확정 성공' })
-  async confirm(@Param('id', ParseIntPipe) id: number) {
+  async confirm(@Param('id') id: string) {
     const data = await this.prodPlanService.confirm(id);
     return ResponseUtil.success(data, '생산계획이 확정되었습니다.');
   }
@@ -121,9 +120,9 @@ export class ProdPlanController {
   @Post('bulk-confirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산계획 일괄 확정' })
-  @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'number' } } } } })
+  @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
   @ApiResponse({ status: 200, description: '확정 성공' })
-  async bulkConfirm(@Body('ids') ids: number[]) {
+  async bulkConfirm(@Body('ids') ids: string[]) {
     const result = await this.prodPlanService.bulkConfirm(ids);
     return ResponseUtil.success(result, `${result.count}건의 생산계획이 확정되었습니다.`);
   }
@@ -131,9 +130,9 @@ export class ProdPlanController {
   @Post(':id/unconfirm')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산계획 확정 취소', description: 'CONFIRMED → DRAFT' })
-  @ApiParam({ name: 'id', description: '계획 ID' })
+  @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '확정 취소 성공' })
-  async unconfirm(@Param('id', ParseIntPipe) id: number) {
+  async unconfirm(@Param('id') id: string) {
     const data = await this.prodPlanService.unconfirm(id);
     return ResponseUtil.success(data, '생산계획 확정이 취소되었습니다.');
   }
@@ -141,9 +140,9 @@ export class ProdPlanController {
   @Post(':id/close')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산계획 마감', description: 'CONFIRMED → CLOSED' })
-  @ApiParam({ name: 'id', description: '계획 ID' })
+  @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '마감 성공' })
-  async close(@Param('id', ParseIntPipe) id: number) {
+  async close(@Param('id') id: string) {
     const data = await this.prodPlanService.close(id);
     return ResponseUtil.success(data, '생산계획이 마감되었습니다.');
   }

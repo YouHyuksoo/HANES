@@ -2,31 +2,19 @@
 
 /**
  * @file src/app/(authenticated)/master/process/page.tsx
- * @description 공정/라인/라우팅 통합 관리 페이지 - 탭으로 구분
+ * @description 공정관리 페이지 - 공정 코드/유형별 CRUD
  *
  * 초보자 가이드:
- * 1. **공정관리 탭**: 공정 코드/유형별 CRUD (최상위 개념)
- * 2. **생산라인 탭**: 공정에 속하는 물리적 생산라인 CRUD
- * 3. **라우팅관리 탭**: 품목별 공정순서(ProcessMap) CRUD
+ * 1. 공정 코드, 이름, 유형 등을 관리하는 마스터 페이지
+ * 2. ProcessTab 컴포넌트가 실제 CRUD UI 담당
  */
 import { useState, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Workflow, GitBranch, Route } from "lucide-react";
+import { Workflow } from "lucide-react";
 import ProcessTab from "@/components/master/ProcessTab";
-import ProdLineTab from "@/components/master/ProdLineTab";
-import RoutingTab from "@/components/master/RoutingTab";
-
-const TABS = [
-  { key: "process", labelKey: "master.process.title", icon: Workflow },
-  { key: "prodLine", labelKey: "master.prodLine.title", icon: GitBranch },
-  { key: "routing", labelKey: "master.routing.title", icon: Route },
-] as const;
-
-type TabKey = (typeof TABS)[number]["key"];
 
 export default function ProcessPage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabKey>("process");
   const [headerActions, setHeaderActions] = useState<ReactNode>(null);
 
   return (
@@ -44,33 +32,8 @@ export default function ProcessPage() {
         </div>
       </div>
 
-      {/* 탭 */}
-      <div className="flex border-b border-border flex-shrink-0">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? "border-primary text-primary"
-                  : "border-transparent text-text-muted hover:text-text hover:border-border"
-              }`}
-            >
-              <Icon className="w-4 h-4" />{t(tab.labelKey)}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 탭 컨텐츠 */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === "process" && <ProcessTab onHeaderActions={setHeaderActions} />}
-        {activeTab === "prodLine" && <ProdLineTab onHeaderActions={setHeaderActions} />}
-        {activeTab === "routing" && <RoutingTab onHeaderActions={setHeaderActions} />}
+        <ProcessTab onHeaderActions={setHeaderActions} />
       </div>
     </div>
   );

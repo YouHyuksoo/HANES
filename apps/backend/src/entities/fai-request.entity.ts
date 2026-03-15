@@ -6,20 +6,20 @@
  * 1. 신규 품목, ECN 변경, 공정 변경, 장기정지 후 재가동 시 초물검사를 요청
  * 2. 상태 흐름: REQUESTED → SAMPLING → INSPECTING → PASS / FAIL / CONDITIONAL
  * 3. FAI_ITEMS 테이블에 검사항목별 측정값/판정 기록
+ * 4. PK: faiNo (자연키), id는 FK 호환용 자동증가 컬럼으로 유지
  */
 import {
-  Entity, PrimaryGeneratedColumn, Column,
+  Entity, PrimaryColumn, Column,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 
 @Entity({ name: 'FAI_REQUESTS' })
 @Index(['company', 'plant', 'status'])
-@Index(['company', 'plant', 'faiNo'], { unique: true })
 export class FaiRequest {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
-  @Column({ name: 'FAI_NO', length: 30 })
+  @PrimaryColumn({ name: 'FAI_NO', length: 30 })
   faiNo: string;
 
   @Column({ name: 'TRIGGER_TYPE', length: 30 })

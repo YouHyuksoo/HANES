@@ -255,8 +255,8 @@ export class PpapService {
   /**
    * PPAP 단건 조회
    */
-  async findById(id: number) {
-    const item = await this.ppapRepo.findOne({ where: { id } });
+  async findById(ppapNo: string) {
+    const item = await this.ppapRepo.findOne({ where: { ppapNo } });
     if (!item) {
       throw new NotFoundException('PPAP 제출을 찾을 수 없습니다.');
     }
@@ -290,8 +290,8 @@ export class PpapService {
   /**
    * PPAP 수정 (DRAFT 또는 REJECTED 상태에서만 가능)
    */
-  async update(id: number, dto: UpdatePpapDto, userId: string) {
-    const item = await this.findById(id);
+  async update(ppapNo: string, dto: UpdatePpapDto, userId: string) {
+    const item = await this.findById(ppapNo);
     if (!['DRAFT', 'REJECTED'].includes(item.status)) {
       throw new BadRequestException(
         '초안 또는 반려 상태에서만 수정할 수 있습니다.',
@@ -304,8 +304,8 @@ export class PpapService {
   /**
    * PPAP 삭제 (DRAFT 상태에서만 가능)
    */
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async delete(ppapNo: string) {
+    const item = await this.findById(ppapNo);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 삭제할 수 있습니다.');
     }
@@ -319,8 +319,8 @@ export class PpapService {
   /**
    * 제출 (DRAFT → SUBMITTED)
    */
-  async submit(id: number, userId: string) {
-    const item = await this.findById(id);
+  async submit(ppapNo: string, userId: string) {
+    const item = await this.findById(ppapNo);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 제출할 수 있습니다.');
     }
@@ -335,8 +335,8 @@ export class PpapService {
   /**
    * 승인 (SUBMITTED → APPROVED)
    */
-  async approve(id: number, userId: string) {
-    const item = await this.findById(id);
+  async approve(ppapNo: string, userId: string) {
+    const item = await this.findById(ppapNo);
     if (item.status !== 'SUBMITTED') {
       throw new BadRequestException(
         '제출된 상태에서만 승인할 수 있습니다.',
@@ -354,8 +354,8 @@ export class PpapService {
   /**
    * 반려 (SUBMITTED → REJECTED)
    */
-  async reject(id: number, reason: string, userId: string) {
-    const item = await this.findById(id);
+  async reject(ppapNo: string, reason: string, userId: string) {
+    const item = await this.findById(ppapNo);
     if (item.status !== 'SUBMITTED') {
       throw new BadRequestException(
         '제출된 상태에서만 반려할 수 있습니다.',
@@ -372,8 +372,8 @@ export class PpapService {
   /**
    * 승인 취소 (APPROVED → SUBMITTED)
    */
-  async cancelApproval(id: number, userId: string) {
-    const item = await this.findById(id);
+  async cancelApproval(ppapNo: string, userId: string) {
+    const item = await this.findById(ppapNo);
     if (item.status !== 'APPROVED') {
       throw new BadRequestException(
         '승인 상태에서만 승인취소할 수 있습니다.',
@@ -391,8 +391,8 @@ export class PpapService {
   /**
    * 제출 취소 (SUBMITTED → DRAFT)
    */
-  async cancelSubmit(id: number, userId: string) {
-    const item = await this.findById(id);
+  async cancelSubmit(ppapNo: string, userId: string) {
+    const item = await this.findById(ppapNo);
     if (item.status !== 'SUBMITTED') {
       throw new BadRequestException(
         '제출 상태에서만 제출취소할 수 있습니다.',
@@ -426,12 +426,12 @@ export class PpapService {
   /**
    * 완성률 계산 (필수 요소 대비 완료된 비율)
    */
-  async getCompletionRate(id: number) {
-    const item = await this.findById(id);
+  async getCompletionRate(ppapNo: string) {
+    const item = await this.findById(ppapNo);
     const matrix = PPAP_LEVEL_MATRIX[item.ppapLevel] ?? PPAP_LEVEL_MATRIX[3];
     const requiredKeys = PPAP_ELEMENT_KEYS.filter((key) => matrix[key]);
     if (requiredKeys.length === 0) {
-      return { id, ppapNo: item.ppapNo, level: item.ppapLevel, rate: 100, completed: 0, total: 0 };
+      return { ppapNo: item.ppapNo, level: item.ppapLevel, rate: 100, completed: 0, total: 0 };
     }
 
     const completed = requiredKeys.filter(
@@ -440,7 +440,6 @@ export class PpapService {
     const rate = Math.round((completed / requiredKeys.length) * 100);
 
     return {
-      id,
       ppapNo: item.ppapNo,
       level: item.ppapLevel,
       rate,

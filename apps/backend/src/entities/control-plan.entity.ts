@@ -6,12 +6,12 @@
  * 1. 제품/공정별 품질특성, 관리방법, 검사기준을 정의하는 관리계획서
  * 2. 단계: PROTOTYPE(시작품) → PRE_LAUNCH(양산시험) → PRODUCTION(양산)
  * 3. 상태 흐름: DRAFT → REVIEW → APPROVED → OBSOLETE
- * 4. planNo 자동채번: CP-YYYYMMDD-NNN
+ * 4. planNo 자동채번: CP-YYYYMMDD-NNN — PK (자연키), id는 FK 호환용 자동증가 컬럼으로 유지
  * 5. 개정(revise) 시 기존 버전을 OBSOLETE로 변경하고 새 버전 생성
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -22,13 +22,12 @@ import {
 import { PartMaster } from './part-master.entity';
 
 @Entity({ name: 'CONTROL_PLANS' })
-@Index(['company', 'plant', 'planNo'], { unique: true })
 @Index(['company', 'plant', 'itemCode'])
 export class ControlPlan {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
-  @Column({ name: 'PLAN_NO', length: 30 })
+  @PrimaryColumn({ name: 'PLAN_NO', length: 30 })
   planNo: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })

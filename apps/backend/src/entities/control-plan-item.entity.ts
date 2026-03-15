@@ -4,35 +4,30 @@
  *
  * 초보자 가이드:
  * 1. 관리계획서(ControlPlan)의 개별 관리 항목 (공정별 품질특성, 관리방법 등)
- * 2. 하나의 관리계획서에 여러 항목이 순서(seq)대로 포함
+ * 2. 복합 PK: controlPlanId + seq (부모 FK + 순번)
  * 3. specialCharClass: CC(Critical), SC(Significant), HI(High Impact) 등 특별특성 분류
  * 4. 각 항목에 규격, 평가방법, 시료수/주기, 관리방법, 이상 시 대응계획 기록
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
-  Index,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
 import { ControlPlan } from './control-plan.entity';
 
 @Entity({ name: 'CONTROL_PLAN_ITEMS' })
-@Index(['controlPlanId'])
 export class ControlPlanItem {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'CONTROL_PLAN_ID', type: 'int' })
+  @PrimaryColumn({ name: 'CONTROL_PLAN_ID', type: 'int' })
   controlPlanId: number;
 
   @ManyToOne(() => ControlPlan, { nullable: false })
   @JoinColumn({ name: 'CONTROL_PLAN_ID' })
   controlPlan: ControlPlan;
 
-  @Column({ name: 'SEQ', type: 'int' })
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
   seq: number;
 
   @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })

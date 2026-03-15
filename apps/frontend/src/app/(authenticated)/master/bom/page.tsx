@@ -51,10 +51,9 @@ function BomPage() {
       if (effectiveDate) params.effectiveDate = effectiveDate;
       const res = await api.get("/master/boms/parents", { params });
       if (res.data.success) {
-        setParents(res.data.data || []);
-        if (!selectedParent && res.data.data?.length > 0) {
-          setSelectedParent(res.data.data[0]);
-        }
+        const data = res.data.data || [];
+        setParents(data);
+        setSelectedParent(prev => prev ?? (data.length > 0 ? data[0] : null));
       }
     } catch {
       setParents([]);

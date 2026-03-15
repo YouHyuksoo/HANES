@@ -16,7 +16,7 @@ import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { UidGeneratorService } from '../../../shared/uid-generator.service';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import {
   CreateConLabelsDto,
   ConfirmConReceivingDto,
@@ -28,7 +28,7 @@ import {
 export class ConsumableLabelService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly uidGenerator: UidGeneratorService,
+    private readonly seqGenerator: SeqGeneratorService,
     @InjectRepository(ConsumableMaster)
     private readonly masterRepo: Repository<ConsumableMaster>,
     @InjectRepository(ConsumableStock)
@@ -91,7 +91,7 @@ export class ConsumableLabelService {
       const results: ConLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
-        const conUid = await this.uidGenerator.nextConUid(queryRunner);
+        const conUid = await this.seqGenerator.nextConUid(queryRunner);
         const stock = queryRunner.manager.create(ConsumableStock, {
           conUid,
           consumableCode: dto.consumableCode,
@@ -182,7 +182,17 @@ export class ConsumableLabelService {
         1,
       );
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const logSeqResult = await queryRunner.manager.query(
+        `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
+        [today.toISOString().slice(0, 10)],
+      );
+      const logSeq = logSeqResult[0].nextSeq;
+
       const log = queryRunner.manager.create(ConsumableLog, {
+        transDate: today,
+        seq: logSeq,
         consumableCode: stock.consumableCode,
         logType: 'INCOMING',
         qty: 1,

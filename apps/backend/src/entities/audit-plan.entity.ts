@@ -5,13 +5,13 @@
  * 초보자 가이드:
  * 1. 내부심사(시스템/공정/제품/계층) 계획 등록 및 관리
  * 2. 상태 흐름: PLANNED → IN_PROGRESS → COMPLETED → CLOSED
- * 3. auditNo 자동채번: AUD-YYYYMMDD-NNN
+ * 3. auditNo 자동채번: AUD-YYYYMMDD-NNN — PK (자연키), id는 FK 호환용 자동증가 컬럼으로 유지
  * 4. AuditFinding 엔티티와 1:N 관계 (부적합/관찰사항)
  * 5. overallResult: CONFORMING / MINOR_NC / MAJOR_NC / CRITICAL
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -19,12 +19,11 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'AUDIT_PLANS' })
-@Index(['company', 'plant', 'auditNo'], { unique: true })
 export class AuditPlan {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
-  @Column({ name: 'AUDIT_NO', length: 30 })
+  @PrimaryColumn({ name: 'AUDIT_NO', length: 30 })
   auditNo: string;
 
   @Column({ name: 'AUDIT_TYPE', length: 30 })

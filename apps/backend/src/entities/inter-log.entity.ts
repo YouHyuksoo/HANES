@@ -1,17 +1,18 @@
 /**
  * @file entities/inter-log.entity.ts
  * @description 인터페이스 로그 엔티티 - 외부 시스템 연동 이력을 관리한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              복합키: TRANS_DATE + SEQ (일자 + 일련번호).
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
+ * 1. 복합 PK: transDate(전송일) + seq(일련번호)
  * 2. direction: INBOUND(수신) / OUTBOUND(송신)
  * 3. status: PENDING, SUCCESS, FAILED
  * 4. payload: 연동 데이터 (CLOB)
+ * 5. id는 레거시 FK 호환을 위해 generated @Column으로 유지
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -23,8 +24,14 @@ import {
 @Index(['status'])
 @Index(['interfaceId'])
 export class InterLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
+
+  @PrimaryColumn({ name: 'TRANS_DATE', type: 'date' })
+  transDate: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
+  seq: number;
 
   @Column({ name: 'DIRECTION', length: 50 })
   direction: string;

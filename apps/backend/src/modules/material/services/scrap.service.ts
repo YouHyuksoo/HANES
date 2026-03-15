@@ -139,12 +139,12 @@ export class ScrapService {
       await queryRunner.commitTransaction();
 
       return {
-        id: savedTransaction.id,
+        transNo: savedTransaction.transNo,
         matUid,
         warehouseId,
         qty,
         reason,
-        transactionId: savedTransaction.id,
+        transactionId: savedTransaction.transNo,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();

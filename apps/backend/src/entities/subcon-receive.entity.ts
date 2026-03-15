@@ -1,34 +1,28 @@
 /**
  * @file subcon-receive.entity.ts
  * @description 외주수입(SubconReceive) 엔티티 - 외주 가공품 수입검사/입고 정보를 기록한다.
- *              시퀀스 PK 사용, orderId → orderNo로 SubconOrder 참조.
+ *              자연키 PK: receiveNo (수입번호).
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
+ * 1. receiveNo가 PK (자연키)
  * 2. ORDER_ID로 SubconOrder(외주발주)를 참조
- * 3. RECEIVE_NO: 수입번호 (유니크)
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'SUBCON_RECEIVES' })
-@Unique(['receiveNo'])
 @Index(['orderNo'])
 @Index(['receivedAt'])
 export class SubconReceive {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
   @Column({ name: 'ORDER_ID', length: 50 })
   orderNo: string;
 
-  @Column({ name: 'RECEIVE_NO', length: 255, unique: true })
+  @PrimaryColumn({ name: 'RECEIVE_NO', length: 255 })
   receiveNo: string;
 
   @Column({ name: 'MAT_UID', length: 50, nullable: true })

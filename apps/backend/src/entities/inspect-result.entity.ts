@@ -1,15 +1,16 @@
 /**
  * @file inspect-result.entity.ts
  * @description 검사결과(InspectResult) 엔티티 - 생산실적별 검사 결과를 기록한다.
- *              시퀀스 PK 사용, prodResultId는 number 타입으로 ProdResult 참조.
+ *              PK는 RESULT_NO (채번: SEQ_RULES 'INSPECT_RESULT'), ID는 FK 호환용으로 유지.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
- * 2. PROD_RESULT_ID(number)로 ProdResult를 참조
+ * 1. RESULT_NO가 PK (문자열, SeqGeneratorService로 채번)
+ * 2. ID는 FG_LABELS.inspectResultId FK 호환을 위해 @Column으로 유지 (auto-generated, 직접 설정 금지)
+ * 3. PROD_RESULT_ID(number)로 ProdResult를 참조
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -25,11 +26,14 @@ import { ProdResult } from './prod-result.entity';
 @Index(['serialNo'])
 @Index(['inspectScope'])
 export class InspectResult {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @PrimaryColumn({ name: 'RESULT_NO', length: 30 })
+  resultNo: string;
+
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
-  @Column({ name: 'PROD_RESULT_ID', type: 'int' })
-  prodResultId: number;
+  @Column({ name: 'PROD_RESULT_ID', type: 'int', nullable: true })
+  prodResultId: number | null;
 
   @ManyToOne(() => ProdResult, (prodResult) => prodResult.inspectResults)
   @JoinColumn({ name: 'PROD_RESULT_ID' })
@@ -55,6 +59,9 @@ export class InspectResult {
 
   @Column({ name: 'INSPECT_DATA', type: 'clob', nullable: true })
   inspectData: string | null;
+
+  @Column({ name: 'FG_BARCODE', length: 30, nullable: true })
+  fgBarcode: string | null;
 
   @Column({ name: 'INSPECT_TIME', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   inspectAt: Date;

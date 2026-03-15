@@ -18,7 +18,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface CustomsLot {
-  id: string;
   entryNo: string;
   matUid: string;
   itemCode: string;

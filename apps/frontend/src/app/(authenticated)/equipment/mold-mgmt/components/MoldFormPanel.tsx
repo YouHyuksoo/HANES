@@ -20,7 +20,7 @@ import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
 
 interface MoldEditData {
-  id: number; moldCode: string; moldName: string; moldType: string;
+  moldCode: string; moldName: string; moldType: string;
   itemCode: string; cavity: number; currentShots: number; guaranteedShots: number;
   maintenanceCycle: number; status: string; lastMaintenanceDate: string | null;
   nextMaintenanceDate: string | null; location: string; maker: string;
@@ -76,7 +76,7 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
         location: form.location || undefined, maker: form.maker || undefined,
         purchaseDate: form.purchaseDate || undefined, remarks: form.remarks || undefined,
       };
-      if (isEdit && editData) await api.patch(`/equipment/molds/${editData.id}`, payload);
+      if (isEdit && editData) await api.put(`/equipment/molds/${editData.moldCode}`, payload);
       else await api.post("/equipment/molds", payload);
       onSave(); onClose();
     } catch { /* api interceptor */ } finally { setSaving(false); }
@@ -84,7 +84,7 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
 
   const handleRetire = useCallback(async () => {
     if (!editData) return;
-    try { await api.patch(`/equipment/molds/retire/${editData.id}`); onSave(); onClose(); }
+    try { await api.patch(`/equipment/molds/${editData.moldCode}/retire`); onSave(); onClose(); }
     catch { /* api interceptor */ }
   }, [editData, onSave, onClose]);
 

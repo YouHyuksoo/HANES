@@ -100,25 +100,9 @@ export class ShipmentService {
   }
 
   /**
-   * 출하 단건 조회 (ID)
+   * 출하 단건 조회 (shipNo PK)
    */
-  async findById(id: string | number) {
-    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
-    const shipment = await this.shipmentRepository.findOne({
-      where: { id: numId },
-    });
-
-    if (!shipment) {
-      throw new NotFoundException(`출하를 찾을 수 없습니다: ${id}`);
-    }
-
-    return shipment;
-  }
-
-  /**
-   * 출하 단건 조회 (출하번호)
-   */
-  async findByShipNo(shipNo: string) {
+  async findById(shipNo: string) {
     const shipment = await this.shipmentRepository.findOne({
       where: { shipNo },
     });
@@ -128,6 +112,13 @@ export class ShipmentService {
     }
 
     return shipment;
+  }
+
+  /**
+   * 출하 단건 조회 (출하번호) — findById와 동일, 호환용
+   */
+  async findByShipNo(shipNo: string) {
+    return this.findById(shipNo);
   }
 
   /**
@@ -181,7 +172,7 @@ export class ShipmentService {
     if (dto.remark !== undefined) updateData.remark = dto.remark;
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.shipmentRepository.update({ id: typeof id === 'string' ? parseInt(id, 10) : id }, updateData);
+    await this.shipmentRepository.update({ shipNo: typeof id === 'string' ? id : String(id) }, updateData);
 
     return this.findById(id);
   }
@@ -202,7 +193,7 @@ export class ShipmentService {
       throw new BadRequestException('팔레트가 적재된 출하는 삭제할 수 없습니다. 먼저 팔레트를 하차해주세요.');
     }
 
-    await this.shipmentRepository.delete(typeof id === 'string' ? parseInt(id, 10) : id);
+    await this.shipmentRepository.delete({ shipNo: id });
 
     return { id, deleted: true };
   }
@@ -272,7 +263,7 @@ export class ShipmentService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id: typeof id === 'string' ? parseInt(id, 10) : id },
+        { shipNo: typeof id === 'string' ? id : String(id) },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
@@ -343,7 +334,7 @@ export class ShipmentService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id: typeof id === 'string' ? parseInt(id, 10) : id },
+        { shipNo: typeof id === 'string' ? id : String(id) },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
@@ -379,7 +370,7 @@ export class ShipmentService {
     }
 
     await this.shipmentRepository.update(
-      { id: typeof id === 'string' ? parseInt(id, 10) : id },
+      { shipNo: typeof id === 'string' ? id : String(id) },
       { status: 'LOADED' }
     );
 
@@ -446,7 +437,7 @@ export class ShipmentService {
       // 출하 상태 업데이트
       await queryRunner.manager.update(
         ShipmentLog,
-        { id: typeof id === 'string' ? parseInt(id, 10) : id },
+        { shipNo: typeof id === 'string' ? id : String(id) },
         {
           status: 'SHIPPED',
           shipAt: new Date(),
@@ -475,7 +466,7 @@ export class ShipmentService {
     }
 
     await this.shipmentRepository.update(
-      { id: typeof id === 'string' ? parseInt(id, 10) : id },
+      { shipNo: typeof id === 'string' ? id : String(id) },
       { status: 'DELIVERED' }
     );
 
@@ -519,7 +510,7 @@ export class ShipmentService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { id: typeof id === 'string' ? parseInt(id, 10) : id },
+        { shipNo: typeof id === 'string' ? id : String(id) },
         updateData
       );
 
@@ -543,7 +534,7 @@ export class ShipmentService {
     const updateData: any = { status: dto.status };
     if (dto.remark) updateData.remark = dto.remark;
 
-    await this.shipmentRepository.update({ id: typeof id === 'string' ? parseInt(id, 10) : id }, updateData);
+    await this.shipmentRepository.update({ shipNo: typeof id === 'string' ? id : String(id) }, updateData);
 
     return this.findById(id);
   }
@@ -557,7 +548,7 @@ export class ShipmentService {
     await this.findById(id); // 존재 확인
 
     await this.shipmentRepository.update(
-      { id: typeof id === 'string' ? parseInt(id, 10) : id },
+      { shipNo: typeof id === 'string' ? id : String(id) },
       { erpSyncYn: dto.erpSyncYn }
     );
 
@@ -580,10 +571,9 @@ export class ShipmentService {
   /**
    * ERP 동기화 완료 처리 (일괄)
    */
-  async markAsSynced(ids: (string | number)[]) {
-    const numIds = ids.map(id => typeof id === 'string' ? parseInt(id, 10) : id);
+  async markAsSynced(ids: string[]) {
     await this.shipmentRepository.update(
-      { id: In(numIds) },
+      { shipNo: In(ids) },
       { erpSyncYn: 'Y' }
     );
 
@@ -606,7 +596,7 @@ export class ShipmentService {
 
     const shipments = await this.shipmentRepository.find({
       where,
-      select: ['id', 'shipNo', 'shipDate', 'customer', 'palletCount', 'boxCount', 'totalQty', 'status'],
+      select: ['shipNo', 'shipDate', 'customer', 'palletCount', 'boxCount', 'totalQty', 'status'],
       order: { shipDate: 'ASC' },
     });
 
@@ -794,7 +784,6 @@ export class ShipmentService {
     });
 
     return {
-      shipmentId: id,
       shipNo: shipment.shipNo,
       status: shipment.status,
       customer: shipment.customer,

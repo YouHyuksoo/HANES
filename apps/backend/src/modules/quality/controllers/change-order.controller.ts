@@ -3,18 +3,18 @@
  * @description 4M 변경점관리 API 컨트롤러 — IATF 16949 8.5.6
  *
  * 초보자 가이드:
- * 1. **변경점 API**: /api/v1/quality/changes
- *    - GET    /changes          : 목록 조회 (페이지네이션)
- *    - GET    /changes/stats    : 상태별 통계
- *    - GET    /changes/:id      : 단건 조회
- *    - POST   /changes          : 등록
- *    - PUT    /changes/:id      : 수정
- *    - DELETE /changes/:id      : 삭제 (DRAFT만)
- *    - PATCH  /changes/:id/submit  : 제출 (DRAFT → SUBMITTED)
- *    - PATCH  /changes/:id/review  : 검토 (SUBMITTED → APPROVED/REJECTED)
- *    - PATCH  /changes/:id/approve : 최종 승인
- *    - PATCH  /changes/:id/start   : 시행 시작
- *    - PATCH  /changes/:id/complete: 완료
+ * 1. **변경점 API**: @Controller('quality/changes')
+ *    - GET    /quality/changes          : 목록 조회 (페이지네이션)
+ *    - GET    /quality/changes/stats    : 상태별 통계
+ *    - GET    /quality/changes/:id      : 단건 조회
+ *    - POST   /quality/changes          : 등록
+ *    - PUT    /quality/changes/:id      : 수정
+ *    - DELETE /quality/changes/:id      : 삭제 (DRAFT만)
+ *    - PATCH  /quality/changes/:id/submit  : 제출 (DRAFT → SUBMITTED)
+ *    - PATCH  /quality/changes/:id/review  : 검토 (SUBMITTED → APPROVED/REJECTED)
+ *    - PATCH  /quality/changes/:id/approve : 최종 승인
+ *    - PATCH  /quality/changes/:id/start   : 시행 시작
+ *    - PATCH  /quality/changes/:id/complete: 완료
  *
  * 2. **인증**: @Company(), @Plant() 데코레이터로 테넌시 정보, req.user.id로 사용자 ID 추출
  */
@@ -32,7 +32,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
@@ -47,13 +46,13 @@ import {
 } from '../dto/change-order.dto';
 
 @ApiTags('품질관리 - 변경점관리')
-@Controller('quality')
+@Controller('quality/changes')
 export class ChangeOrderController {
   constructor(private readonly changeOrderService: ChangeOrderService) {}
 
   // ===== 통계 API (목록 조회보다 먼저 정의) =====
 
-  @Get('changes/stats')
+  @Get('stats')
   @ApiOperation({ summary: '변경점 통계', description: '상태별 건수' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getStats(@Company() company: string, @Plant() plant: string) {
@@ -63,7 +62,7 @@ export class ChangeOrderController {
 
   // ===== CRUD =====
 
-  @Get('changes')
+  @Get()
   @ApiOperation({ summary: '변경점 목록 조회', description: '페이지네이션 및 필터링 지원' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findAll(
@@ -75,17 +74,17 @@ export class ChangeOrderController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('changes/:id')
+  @Get(':id')
   @ApiOperation({ summary: '변경점 단건 조회' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '변경점 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.changeOrderService.findById(id);
     return ResponseUtil.success(data);
   }
 
-  @Post('changes')
+  @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '변경점 등록', description: 'DRAFT 상태로 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
@@ -104,12 +103,12 @@ export class ChangeOrderController {
     return ResponseUtil.success(data, '변경점이 등록되었습니다.');
   }
 
-  @Put('changes/:id')
+  @Put(':id')
   @ApiOperation({ summary: '변경점 수정' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateChangeOrderDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -121,24 +120,24 @@ export class ChangeOrderController {
     return ResponseUtil.success(data, '변경점이 수정되었습니다.');
   }
 
-  @Delete('changes/:id')
+  @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '변경점 삭제', description: 'DRAFT 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.changeOrderService.delete(id);
     return ResponseUtil.success(null, '변경점이 삭제되었습니다.');
   }
 
   // ===== 상태 전이 =====
 
-  @Patch('changes/:id/submit')
+  @Patch(':id/submit')
   @ApiOperation({ summary: '변경점 제출', description: 'DRAFT → SUBMITTED' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '제출 성공' })
   async submit(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.submit(
@@ -148,7 +147,7 @@ export class ChangeOrderController {
     return ResponseUtil.success(data, '변경점이 제출되었습니다.');
   }
 
-  @Patch('changes/:id/review')
+  @Patch(':id/review')
   @ApiOperation({
     summary: '변경점 검토',
     description: 'SUBMITTED → APPROVED 또는 REJECTED',
@@ -156,7 +155,7 @@ export class ChangeOrderController {
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '검토 완료' })
   async review(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: ReviewChangeOrderDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -168,12 +167,12 @@ export class ChangeOrderController {
     return ResponseUtil.success(data);
   }
 
-  @Patch('changes/:id/approve')
+  @Patch(':id/approve')
   @ApiOperation({ summary: '변경점 최종 승인' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '승인 완료' })
   async approve(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: ReviewChangeOrderDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -185,12 +184,12 @@ export class ChangeOrderController {
     return ResponseUtil.success(data, '변경점이 승인되었습니다.');
   }
 
-  @Patch('changes/:id/start')
+  @Patch(':id/start')
   @ApiOperation({ summary: '시행 시작', description: 'APPROVED → IN_PROGRESS' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '시행 시작' })
   async start(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.start(
@@ -200,12 +199,12 @@ export class ChangeOrderController {
     return ResponseUtil.success(data, '시행이 시작되었습니다.');
   }
 
-  @Patch('changes/:id/complete')
+  @Patch(':id/complete')
   @ApiOperation({ summary: '변경점 완료', description: 'IN_PROGRESS → COMPLETED' })
   @ApiParam({ name: 'id', description: '변경점 ID' })
   @ApiResponse({ status: 200, description: '완료' })
   async complete(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.changeOrderService.complete(

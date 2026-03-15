@@ -1,13 +1,12 @@
 /**
  * @file entities/pda-role-menu.entity.ts
  * @description PDA 역할-메뉴 매핑 엔티티 - PDA 역할별 접근 가능한 메뉴 정의
- *              RoleMenuPermission 엔티티와 동일한 패턴을 따른다.
+ *              pdaRoleCode + menuCode 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE 기반)
- * 2. pdaRoleCode + menuCode: 복합 유니크 인덱스로 중복 방지
- * 3. isActive: true면 해당 메뉴 접근 허용
- * 4. CASCADE 삭제: PDA 역할 삭제 시 관련 메뉴 매핑도 자동 삭제
+ * 1. pdaRoleCode + menuCode가 복합 PK (자연키)
+ * 2. isActive: true면 해당 메뉴 접근 허용
+ * 3. CASCADE 삭제: PDA 역할 삭제 시 관련 메뉴 매핑도 자동 삭제
  *
  * 메뉴 코드 목록:
  * - PDA_MAT_RECEIVING  : 자재 입고
@@ -20,29 +19,23 @@
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
 import { PdaRole } from './pda-role.entity';
 
 @Entity({ name: 'PDA_ROLE_MENU' })
-@Index(['pdaRoleCode', 'menuCode'], { unique: true })
 export class PdaRoleMenu {
-  /** 자동증가 PK */
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
   /** PDA 역할 코드 (FK → PDA_ROLE.CODE) */
-  @Column({ name: 'PDA_ROLE_CODE', length: 50 })
+  @PrimaryColumn({ name: 'PDA_ROLE_CODE', length: 50 })
   pdaRoleCode: string;
 
   /** PDA 메뉴 코드 */
-  @Column({ name: 'MENU_CODE', length: 50 })
+  @PrimaryColumn({ name: 'MENU_CODE', length: 50 })
   menuCode: string;
 
   /** 활성 여부 — Oracle char(1), Y/N 저장 */

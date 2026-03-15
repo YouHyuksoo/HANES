@@ -1,36 +1,27 @@
 /**
  * @file entities/warehouse-transfer-rule.entity.ts
  * @description 창고 이동 규칙 엔티티 - 창고 간 이동 허용 여부를 관리한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              fromWarehouseId + toWarehouseId 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. fromWarehouseId + toWarehouseId: 복합 유니크
- * 3. allowYn: 이동 허용 여부
+ * 1. fromWarehouseId + toWarehouseId가 복합 PK (자연키)
+ * 2. allowYn: 이동 허용 여부
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
-  Index,
-  Unique,
 } from 'typeorm';
 
 @Entity({ name: 'WAREHOUSE_TRANSFER_RULES' })
-@Unique(['fromWarehouseId', 'toWarehouseId'])
-@Index(['fromWarehouseId'])
-@Index(['toWarehouseId'])
 export class WarehouseTransferRule {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'FROM_WAREHOUSE_ID', length: 50 })
+  @PrimaryColumn({ name: 'FROM_WAREHOUSE_ID', length: 50 })
   fromWarehouseId: string;
 
-  @Column({ name: 'TO_WAREHOUSE_ID', length: 50 })
+  @PrimaryColumn({ name: 'TO_WAREHOUSE_ID', length: 50 })
   toWarehouseId: string;
 
   @Column({ name: 'ALLOW_YN', length: 1, default: 'Y' })

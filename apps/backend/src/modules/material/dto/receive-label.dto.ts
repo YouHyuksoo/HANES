@@ -4,14 +4,19 @@
  *
  * 초보자 가이드:
  * 1. CreateMatLabelsDto: IQC PASS 입하건에서 matUid 채번 + MatLot 생성 요청
- * 2. arrivalId: 입하 레코드 ID
- * 3. qty: 발행 수량 (= matUid 채번 수, 각 qty=1)
+ * 2. arrivalId: 입하번호 (ARRIVAL_NO)
+ * 3. arrivalSeq: 입하 순번 (SEQ), 기본값 1
+ * 4. qty: 발행 수량 (= matUid 채번 수, 각 qty=1)
  */
 import { IsInt, Min, Max, IsOptional, IsString } from 'class-validator';
 
 export class CreateMatLabelsDto {
+  @IsString()
+  arrivalId: string;
+
+  @IsOptional()
   @IsInt()
-  arrivalId: number;
+  arrivalSeq?: number;
 
   @IsInt()
   @Min(1)

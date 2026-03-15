@@ -2,7 +2,7 @@
 
 /**
  * @file quality/control-plan/components/ControlPlanFormPanel.tsx
- * @description 관리계획서 등록/수정 우측 슬라이드 패널
+ * @description 관리계획서 등록/수정 모달 (full 사이즈)
  *
  * 초보자 가이드:
  * 1. editData=null -> 신규 등록, editData 있으면 수정
@@ -12,8 +12,8 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Search } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { Search } from "lucide-react";
+import { Modal, Button, Input, Select } from "@/components/ui";
 import { PartSearchModal } from "@/components/shared";
 import type { PartItem } from "@/components/shared";
 import api from "@/services/api";
@@ -30,6 +30,7 @@ interface FormData {
 const INIT: FormData = { itemCode: "", itemName: "", phase: "PROTOTYPE", remarks: "" };
 
 interface Props {
+  isOpen: boolean;
   editData: {
     id: number;
     itemCode: string;
@@ -43,7 +44,7 @@ interface Props {
   onSave: () => void;
 }
 
-export default function ControlPlanFormPanel({ editData, onClose, onSave }: Props) {
+export default function ControlPlanFormPanel({ isOpen, editData, onClose, onSave }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editData;
   const [form, setForm] = useState<FormData>(INIT);
@@ -96,86 +97,57 @@ export default function ControlPlanFormPanel({ editData, onClose, onSave }: Prop
     }
   }, [form, isEdit, editData, onSave, onClose]);
 
-  /** 단계 옵션 */
-  const phaseOptions = [
-    { value: "PROTOTYPE", label: "Prototype" },
-    { value: "PRE_LAUNCH", label: "Pre-Launch" },
-    { value: "PRODUCTION", label: "Production" },
-  ];
-
   return (
-    <div className="w-[560px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
-      {/* 헤더 */}
-      <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-        <h2 className="text-sm font-bold text-text">
-          {isEdit ? t("common.edit") : t("quality.controlPlan.create")}
-        </h2>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={onClose}>
-            <X className="w-4 h-4 mr-1" />{t("common.cancel")}
-          </Button>
+    <Modal isOpen={isOpen} onClose={onClose} size="full"
+      title={isEdit ? `${t("common.edit")} - ${t("quality.controlPlan.title")}` : t("quality.controlPlan.create")}
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode}>
             {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
           </Button>
         </div>
-      </div>
-
-      {/* 본문 */}
-      <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
-        {/* 품목코드 */}
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">
-            {t("quality.controlPlan.itemCode")}
-          </label>
-          <div className="flex gap-2">
-            <Input value={form.itemCode} readOnly fullWidth placeholder={t("quality.controlPlan.itemCode")} />
-            <Button size="sm" variant="secondary" onClick={() => setPartModalOpen(true)}>
-              <Search className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* 품목명 (읽기전용) */}
-        {form.itemName && (
-          <Input label={t("quality.controlPlan.itemName")} value={form.itemName} readOnly fullWidth />
-        )}
-
-        {/* 단계 / 개정번호 / 상태 */}
-        <div className="grid grid-cols-3 gap-3">
+      }>
+      <div className="space-y-4 text-xs">
+        {/* 기본 정보 */}
+        <div className="grid grid-cols-4 gap-3">
           <div>
             <label className="block text-xs font-medium text-text mb-1">
-              {t("quality.controlPlan.phase")}
+              {t("quality.controlPlan.itemCode")} *
             </label>
-            <select value={form.phase} onChange={e => setField("phase", e.target.value)}
-              className="w-full rounded-md border border-border bg-white dark:bg-slate-900
-                text-text px-3 py-2 text-xs focus:outline-none focus:ring-2
-                focus:ring-primary/30 focus:border-primary">
-              {phaseOptions.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <Input value={form.itemCode} readOnly fullWidth placeholder={t("quality.controlPlan.itemCode")} />
+              <Button size="sm" variant="secondary" onClick={() => setPartModalOpen(true)}>
+                <Search className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          {isEdit && (
-            <>
+          <Input label={t("quality.controlPlan.itemName")} value={form.itemName} readOnly fullWidth />
+          <Select label={t("quality.controlPlan.phase")} value={form.phase}
+            onChange={v => setField("phase", v)} fullWidth
+            options={[
+              { value: "PROTOTYPE", label: "Prototype" },
+              { value: "PRE_LAUNCH", label: "Pre-Launch" },
+              { value: "PRODUCTION", label: "Production" },
+            ]} />
+          {isEdit && editData ? (
+            <div className="flex gap-3">
               <Input label={t("quality.controlPlan.revisionNo")}
-                value={`Rev.${editData?.revisionNo ?? 0}`} readOnly fullWidth />
+                value={`Rev.${editData.revisionNo ?? 0}`} readOnly fullWidth />
               <Input label={t("common.status")}
-                value={editData?.status ?? ""} readOnly fullWidth />
-            </>
+                value={editData.status ?? ""} readOnly fullWidth />
+            </div>
+          ) : (
+            <Input label={t("common.remark")} value={form.remarks}
+              onChange={e => setField("remarks", e.target.value)} fullWidth />
           )}
         </div>
 
-        {/* 비고 */}
-        <div>
-          <label className="block text-xs font-medium text-text mb-1">
-            {t("common.remark")}
-          </label>
-          <textarea className="w-full rounded-md border border-border bg-white dark:bg-slate-900
-            text-text px-3 py-2 text-xs min-h-[60px] focus:outline-none focus:ring-2
-            focus:ring-primary/30 focus:border-primary"
-            value={form.remarks}
-            onChange={e => setField("remarks", e.target.value)} />
-        </div>
+        {/* 비고 (수정 모드) */}
+        {isEdit && (
+          <Input label={t("common.remark")} value={form.remarks}
+            onChange={e => setField("remarks", e.target.value)} fullWidth />
+        )}
 
         {/* 관리항목 목록 (수정 모드에서만) */}
         {isEdit && editData && (
@@ -187,6 +159,6 @@ export default function ControlPlanFormPanel({ editData, onClose, onSave }: Prop
       <PartSearchModal isOpen={partModalOpen}
         onClose={() => setPartModalOpen(false)}
         onSelect={handlePartSelect} />
-    </div>
+    </Modal>
   );
 }

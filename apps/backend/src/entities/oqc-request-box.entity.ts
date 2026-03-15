@@ -1,36 +1,30 @@
 /**
  * @file oqc-request-box.entity.ts
  * @description OQC 의뢰-박스 연결 엔티티 - 검사 의뢰에 포함된 박스 목록
- *              시퀀스 PK 사용, oqcRequestId → requestNo로 OqcRequest 참조.
+ *              requestNo + boxNo 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
+ * 1. requestNo + boxNo가 복합 PK (자연키)
  * 2. OQC_REQUEST_ID로 OqcRequest(검사의뢰)를 참조
  * 3. IS_SAMPLE: 'Y'면 샘플로 선정된 박스
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  Index,
 } from 'typeorm';
 import { OqcRequest } from './oqc-request.entity';
 
 @Entity({ name: 'OQC_REQUEST_BOXES' })
-@Index(['requestNo'])
-@Index(['boxNo'])
 export class OqcRequestBox {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'OQC_REQUEST_ID', length: 50 })
+  @PrimaryColumn({ name: 'OQC_REQUEST_ID', length: 50 })
   requestNo: string;
 
-  @Column({ name: 'BOX_NO', length: 50 })
+  @PrimaryColumn({ name: 'BOX_NO', length: 50 })
   boxNo: string;
 
   @Column({ name: 'QTY', type: 'int', default: 0 })

@@ -68,6 +68,9 @@ export class PartMaster {
   @Column({ name: 'IQC_FLAG', length: 1, default: 'Y' })
   iqcYn: string;
 
+  @Column({ name: 'INSPECT_METHOD', length: 20, nullable: true })
+  inspectMethod: string | null; // 검사방법 (FULL/SAMPLE/SKIP)
+
   @Column({ name: 'TACT_TIME', type: 'int', default: 0 })
   tactTime: number;
 

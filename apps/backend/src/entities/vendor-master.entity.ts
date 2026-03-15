@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -10,10 +10,7 @@ import {
 @Entity({ name: 'VENDOR_MASTERS' })
 @Index(['vendorType'])
 export class VendorMaster {
-  @PrimaryGeneratedColumn('uuid', { name: 'ID' })
-  id: string;
-
-  @Column({ name: 'VENDOR_CODE', length: 50, unique: true })
+  @PrimaryColumn({ name: 'VENDOR_CODE', length: 50 })
   vendorCode: string;
 
   @Column({ name: 'VENDOR_NAME', length: 255 })

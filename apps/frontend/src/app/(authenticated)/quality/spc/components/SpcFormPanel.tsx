@@ -36,7 +36,7 @@ const INIT: SpcFormData = {
 
 interface Props {
   editData: {
-    id: number; itemCode: string; processCode: string;
+    id: number; chartNo: string; itemCode: string; processCode: string;
     characteristicName: string; chartType: string; subgroupSize: number;
     usl: number | null; lsl: number | null; target: number | null;
     ucl: number | null; lcl: number | null; cl: number | null;
@@ -93,7 +93,7 @@ export default function SpcFormPanel({ editData, onClose, onSave }: Props) {
         target: form.target ? Number(form.target) : undefined,
       };
       if (isEdit && editData) {
-        await api.patch(`/quality/spc/charts/${editData.id}`, payload);
+        await api.patch(`/quality/spc/charts/${editData.chartNo}`, payload);
       } else {
         await api.post("/quality/spc/charts", payload);
       }

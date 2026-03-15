@@ -27,14 +27,14 @@ import { LabelableArrival, useReceiveLabelColumns } from "./components/useReceiv
 import { useLabelIssue } from "./components/useLabelIssue";
 
 /** 템플릿 정보 */
-interface TemplateInfo { id: string; printMode: string; }
+interface TemplateInfo { templateName: string; category: string; printMode: string; }
 
 function ReceiveLabelPage() {
   const { t } = useTranslation();
   const [arrivals, setArrivals] = useState<LabelableArrival[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showUnlabeledOnly, setShowUnlabeledOnly] = useState(true);
   const [labelDesign, setLabelDesign] = useState<LabelDesign>(MAT_LOT_DEFAULT_DESIGN);
   const [printing, setPrinting] = useState(false);
@@ -61,7 +61,7 @@ function ReceiveLabelPage() {
       const templates = res.data?.data ?? [];
       const tpl = templates.find((tp: { isDefault: boolean }) => tp.isDefault) || templates[0];
       if (tpl) {
-        setTemplate({ id: tpl.id, printMode: tpl.printMode ?? 'BROWSER' });
+        setTemplate({ templateName: tpl.templateName, category: tpl.category, printMode: tpl.printMode ?? 'BROWSER' });
         if (tpl.designData) {
           setLabelDesign(typeof tpl.designData === "string" ? JSON.parse(tpl.designData) : tpl.designData);
         }
@@ -96,7 +96,7 @@ function ReceiveLabelPage() {
   /** 통계 */
   const stats = useMemo(() => {
     const unlabeled = arrivals.filter((a) => !a.labelPrinted);
-    const sel = filteredArrivals.filter((a) => selectedIds.has(a.id));
+    const sel = filteredArrivals.filter((a) => selectedIds.has(`${a.arrivalNo}-${a.seq}`));
     return {
       unlabeledCount: unlabeled.length, totalCount: filteredArrivals.length,
       selectedCount: sel.length, selectedQty: sel.reduce((s, a) => s + a.qty, 0),
@@ -104,18 +104,18 @@ function ReceiveLabelPage() {
   }, [arrivals, filteredArrivals, selectedIds]);
 
   const toggleAll = useCallback((checked: boolean) => {
-    setSelectedIds(checked ? new Set(filteredArrivals.map((a) => a.id)) : new Set());
+    setSelectedIds(checked ? new Set(filteredArrivals.map((a) => `${a.arrivalNo}-${a.seq}`)) : new Set());
   }, [filteredArrivals]);
 
-  const toggleItem = useCallback((id: number) => {
+  const toggleItem = useCallback((key: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
   }, []);
 
-  const allSelected = filteredArrivals.length > 0 && filteredArrivals.every((a) => selectedIds.has(a.id));
+  const allSelected = filteredArrivals.length > 0 && filteredArrivals.every((a) => selectedIds.has(`${a.arrivalNo}-${a.seq}`));
   const columns = useReceiveLabelColumns({ allSelected, selectedIds, toggleAll, toggleItem });
 
   /** 브라우저 인쇄 (matUid 생성 → 자동입고 → 인쇄 → 이력기록 → 새로고침) */
@@ -169,7 +169,7 @@ function ReceiveLabelPage() {
           </Button>
           <PrintActionBar
             selectedCount={stats.selectedCount} selectedQty={stats.selectedQty}
-            templateId={template?.id ?? null} templatePrintMode={template?.printMode ?? 'BROWSER'}
+            templateId={template ? `${template.templateName}::${template.category}` : null} templatePrintMode={template?.printMode ?? 'BROWSER'}
             selectedLotIds={createdUids.map((c) => c.matUid)} onBrowserPrint={handleBrowserPrint}
             printing={printing || issuing}
             onPrintComplete={() => { setSelectedIds(new Set()); clearCreatedUids(); fetchData(); }}

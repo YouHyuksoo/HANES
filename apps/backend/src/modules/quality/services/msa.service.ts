@@ -111,8 +111,8 @@ export class MsaService {
   /**
    * 계측기 단건 조회
    */
-  async findGaugeById(id: number) {
-    const item = await this.gaugeRepo.findOne({ where: { id } });
+  async findGaugeById(gaugeCode: string) {
+    const item = await this.gaugeRepo.findOne({ where: { gaugeCode } });
     if (!item) {
       throw new NotFoundException('계측기를 찾을 수 없습니다.');
     }
@@ -152,8 +152,8 @@ export class MsaService {
   /**
    * 계측기 수정
    */
-  async updateGauge(id: number, dto: UpdateGaugeDto, userId: string) {
-    const item = await this.findGaugeById(id);
+  async updateGauge(gaugeCode: string, dto: UpdateGaugeDto, userId: string) {
+    const item = await this.findGaugeById(gaugeCode);
     Object.assign(item, dto, { updatedBy: userId });
     return this.gaugeRepo.save(item);
   }
@@ -161,11 +161,11 @@ export class MsaService {
   /**
    * 계측기 삭제
    */
-  async deleteGauge(id: number) {
-    const item = await this.findGaugeById(id);
+  async deleteGauge(gaugeCode: string) {
+    const item = await this.findGaugeById(gaugeCode);
 
     const calCount = await this.calRepo.count({
-      where: { gaugeId: item.id },
+      where: { gaugeCode: item.gaugeCode },
     });
     if (calCount > 0) {
       throw new BadRequestException(
@@ -204,7 +204,7 @@ export class MsaService {
 
     if (company) qb.andWhere('c.company = :company', { company });
     if (plant) qb.andWhere('c.plant = :plant', { plant });
-    if (gaugeId) qb.andWhere('c.gaugeId = :gaugeId', { gaugeId });
+    if (gaugeId) qb.andWhere('c.gaugeCode = :gaugeId', { gaugeId });
     if (calibrationType) {
       qb.andWhere('c.calibrationType = :calibrationType', { calibrationType });
     }
@@ -237,15 +237,17 @@ export class MsaService {
   ) {
     // 계측기 존재 여부 확인
     const gauge = await this.gaugeRepo.findOne({
-      where: { id: dto.gaugeId },
+      where: { gaugeCode: dto.gaugeId },
     });
     if (!gauge) {
       throw new NotFoundException('계측기를 찾을 수 없습니다.');
     }
 
     const calibrationNo = await this.generateCalibrationNo(company, plant);
+    const { gaugeId: dtoGaugeCode, ...restDto } = dto;
     const entity = this.calRepo.create({
-      ...dto,
+      ...restDto,
+      gaugeCode: dtoGaugeCode,
       calibrationNo,
       company,
       plant,
@@ -271,8 +273,8 @@ export class MsaService {
   /**
    * 교정 이력 삭제
    */
-  async deleteCalibration(id: number) {
-    const item = await this.calRepo.findOne({ where: { id } });
+  async deleteCalibration(calibrationNo: string) {
+    const item = await this.calRepo.findOne({ where: { calibrationNo } });
     if (!item) {
       throw new NotFoundException('교정 이력을 찾을 수 없습니다.');
     }

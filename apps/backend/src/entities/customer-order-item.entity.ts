@@ -1,16 +1,16 @@
 /**
  * @file customer-order-item.entity.ts
  * @description 고객주문 품목(CustomerOrderItem) 엔티티 - 수주별 품목 내역을 관리한다.
- *              시퀀스 PK 사용, orderId → orderNo, partId → itemCode로 변환됨.
+ *              복합 PK: orderNo + seq
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
+ * 1. orderNo + seq가 복합 PK
  * 2. ORDER_ID로 CustomerOrder(수주)를 참조
  * 3. ITEM_CODE로 ItemMaster(품목)를 참조
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -18,14 +18,13 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'CUSTOMER_ORDER_ITEMS' })
-@Index(['orderNo'])
 @Index(['itemCode'])
 export class CustomerOrderItem {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'ORDER_ID', length: 50 })
+  @PrimaryColumn({ name: 'ORDER_ID', length: 50 })
   orderNo: string;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
+  seq: number;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

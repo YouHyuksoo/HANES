@@ -127,7 +127,7 @@ export class InspectResultController {
 
   @Get(':id')
   @ApiOperation({ summary: '검사실적 상세 조회' })
-  @ApiParam({ name: 'id', description: '검사실적 ID' })
+  @ApiParam({ name: 'id', description: '검사실적 번호 (RESULT_NO)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '검사실적 없음' })
   async findById(@Param('id') id: string) {
@@ -185,7 +185,7 @@ export class InspectResultController {
 
   @Put(':id')
   @ApiOperation({ summary: '검사실적 수정' })
-  @ApiParam({ name: 'id', description: '검사실적 ID' })
+  @ApiParam({ name: 'id', description: '검사실적 번호 (RESULT_NO)' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   @ApiResponse({ status: 404, description: '검사실적 없음' })
   async update(@Param('id') id: string, @Body() dto: UpdateInspectResultDto) {
@@ -196,7 +196,7 @@ export class InspectResultController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '검사실적 삭제' })
-  @ApiParam({ name: 'id', description: '검사실적 ID' })
+  @ApiParam({ name: 'id', description: '검사실적 번호 (RESULT_NO)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
   @ApiResponse({ status: 404, description: '검사실적 없음' })
   async delete(@Param('id') id: string) {

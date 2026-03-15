@@ -1,17 +1,18 @@
 /**
  * @file calibration-log.entity.ts
  * @description 교정 이력 엔티티 — IATF 16949 7.1.5 측정시스템분석(MSA)
+ *              자연키 PK: calibrationNo (교정번호).
  *
  * 초보자 가이드:
- * 1. 계측기(GaugeMaster)에 대한 교정 수행 이력을 기록
+ * 1. calibrationNo가 PK (자연키)
  * 2. calibrationNo 자동채번: CAL-YYYYMMDD-NNN
  * 3. 교정 유형: INTERNAL(사내교정), EXTERNAL(외부교정)
  * 4. 결과: PASS(합격), FAIL(불합격), CONDITIONAL(조건부 합격)
- * 5. gaugeId로 GaugeMaster와 N:1 관계
+ * 5. gaugeCode로 GaugeMaster와 N:1 관계
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -22,21 +23,17 @@ import {
 import { GaugeMaster } from './gauge-master.entity';
 
 @Entity({ name: 'CALIBRATION_LOGS' })
-@Index(['gaugeId'])
+@Index(['gaugeCode'])
 @Index(['company', 'plant', 'calibrationDate'])
-@Index(['company', 'plant', 'calibrationNo'], { unique: true })
 export class CalibrationLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'CALIBRATION_NO', length: 30 })
+  @PrimaryColumn({ name: 'CALIBRATION_NO', length: 30 })
   calibrationNo: string;
 
-  @Column({ name: 'GAUGE_ID', type: 'int' })
-  gaugeId: number;
+  @Column({ name: 'GAUGE_CODE', length: 50 })
+  gaugeCode: string;
 
   @ManyToOne(() => GaugeMaster)
-  @JoinColumn({ name: 'GAUGE_ID' })
+  @JoinColumn({ name: 'GAUGE_CODE', referencedColumnName: 'gaugeCode' })
   gauge: GaugeMaster;
 
   @Column({ name: 'CALIBRATION_DATE', type: 'timestamp' })

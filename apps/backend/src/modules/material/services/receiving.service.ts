@@ -274,6 +274,7 @@ export class ReceivingService {
       const results = [];
       // 같은 배치의 모든 아이템에 동일한 receiveNo 부여
       const receiveNo = await this.numRuleService.nextNumberInTx(queryRunner, 'RECEIVE');
+      let seqCounter = 1;
 
       for (const item of dto.items) {
         const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
@@ -304,8 +305,10 @@ export class ReceivingService {
         }
 
         // 1. MatReceiving 생성 (입고 전용 테이블)
+        const currentSeq = seqCounter++;
         const receiving = queryRunner.manager.create(MatReceiving, {
           receiveNo,
+          seq: currentSeq,
           matUid: item.matUid,
           itemCode: lot.itemCode,
           qty: item.qty,
@@ -330,7 +333,7 @@ export class ReceivingService {
           remark: item.remark,
           workerId: dto.workerId,
           refType: 'RECEIVE',
-          refId: String(receiving.id),
+          refId: `${receiving.receiveNo}-${receiving.seq}`,
           company: lot.company || '40',
           plant: lot.plant || '1000',
         });
@@ -418,8 +421,8 @@ export class ReceivingService {
       const warehouse = item.warehouseCode ? warehouseMap.get(item.warehouseCode) : null;
 
       return {
-        id: item.id,
         receiveNo: item.receiveNo,
+        seq: item.seq,
         transNo: item.receiveNo,
         transDate: item.receiveDate,
         qty: item.qty,

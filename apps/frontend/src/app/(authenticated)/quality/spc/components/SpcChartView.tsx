@@ -8,7 +8,7 @@
  * 1. 선택된 관리도의 측정 데이터를 테이블로 표시
  * 2. Cpk/Ppk 값 상단에 표시, 이탈 여부(outOfControl) 강조
  * 3. 새 측정 데이터 추가 버튼 제공
- * 4. API: GET /quality/spc/charts/chart-data/:id, GET cpk/:id, POST spc-data
+ * 4. API: GET /quality/spc/charts/chart-data/:id, GET cpk/:id, POST data
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -57,8 +57,8 @@ export default function SpcChartView({ chart, onClose }: Props) {
     setLoading(true);
     try {
       const [dataRes, cpkRes] = await Promise.all([
-        api.get(`/quality/spc/charts/chart-data/${chart.id}`),
-        api.get(`/quality/spc/charts/cpk/${chart.id}`),
+        api.get(`/quality/spc/charts/chart-data/${chart.chartNo}`),
+        api.get(`/quality/spc/charts/cpk/${chart.chartNo}`),
       ]);
       setData(dataRes.data?.data ?? dataRes.data ?? []);
       setCpkResult(cpkRes.data ?? null);
@@ -67,7 +67,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [chart.id]);
+  }, [chart.chartNo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -77,7 +77,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
     setAddingSaving(true);
     try {
       const values = newValues.split(",").map(v => Number(v.trim())).filter(v => !isNaN(v));
-      await api.post("/quality/spc/spc-data", { chartId: chart.id, values });
+      await api.post("/quality/spc/data", { chartId: chart.id, values });
       setNewValues("");
       setShowAddForm(false);
       fetchData();
@@ -86,7 +86,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
     } finally {
       setAddingSaving(false);
     }
-  }, [newValues, chart.id, fetchData]);
+  }, [newValues, chart.chartNo, fetchData]);
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<SpcDataRow>[]>(() => [

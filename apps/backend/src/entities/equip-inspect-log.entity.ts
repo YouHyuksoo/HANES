@@ -1,37 +1,30 @@
 /**
  * @file entities/equip-inspect-log.entity.ts
  * @description 설비 점검 이력 엔티티 - 설비 점검 결과를 저장한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              복합키: EQUIP_CODE + INSPECT_TYPE + INSPECT_DATE
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. equipCode: 대상 설비 코드
- * 3. details: CLOB JSON으로 항목별 점검 결과 저장
+ * 1. 복합 PK: equipCode + inspectType + inspectDate
+ * 2. details: CLOB JSON으로 항목별 점검 결과 저장
+ * 3. 하루에 설비당 동일 점검유형은 1건만 가능
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
 @Entity({ name: 'EQUIP_INSPECT_LOGS' })
-@Index(['equipCode'])
-@Index(['inspectType'])
-@Index(['inspectDate'])
 export class EquipInspectLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'EQUIP_CODE', length: 50 })
+  @PrimaryColumn({ name: 'EQUIP_CODE', length: 50 })
   equipCode: string;
 
-  @Column({ name: 'INSPECT_TYPE', length: 50 })
+  @PrimaryColumn({ name: 'INSPECT_TYPE', length: 50 })
   inspectType: string;
 
-  @Column({ name: 'INSPECT_DATE', type: 'date' })
+  @PrimaryColumn({ name: 'INSPECT_DATE', type: 'date' })
   inspectDate: Date;
 
   @Column({ name: 'INSPECTOR_NAME', length: 100, nullable: true })

@@ -1,22 +1,21 @@
 /**
  * @file iqc-part-link.entity.ts
  * @description IQC 품목-거래처-검사그룹 연결 엔티티
- *              시퀀스 PK 사용, partId → itemCode로 변환됨.
+ *              itemCode + partnerId 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
+ * 1. itemCode + partnerId가 복합 PK (자연키)
  * 2. 품목(ITEM_CODE) + 거래처(PARTNER_ID) → 검사그룹(GROUP_ID) 매핑
  * 3. 같은 품목이라도 거래처에 따라 다른 검사그룹 적용 가능
- * 4. PARTNER_ID가 null이면 "기본 검사그룹" (거래처 무관)
+ * 4. PARTNER_ID가 '*'이면 "기본 검사그룹" (거래처 무관)
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  Unique,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -25,19 +24,13 @@ import { PartnerMaster } from './partner-master.entity';
 import { IqcGroup } from './iqc-group.entity';
 
 @Entity({ name: 'IQC_PART_LINKS' })
-@Unique(['itemCode', 'partnerId'])
-@Index(['itemCode'])
-@Index(['partnerId'])
 @Index(['groupId'])
 export class IqcPartLink {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'ITEM_CODE', length: 50 })
+  @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'PARTNER_ID', length: 255, nullable: true })
-  partnerId: string | null;
+  @PrimaryColumn({ name: 'PARTNER_ID', length: 255, default: '*' })
+  partnerId: string;
 
   @Column({ name: 'GROUP_ID' })
   groupId: number;

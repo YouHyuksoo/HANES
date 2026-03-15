@@ -12,11 +12,12 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatIssueService } from './mat-issue.service';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import {
   CreateIssueRequestDto,
   IssueRequestQueryDto,
@@ -34,17 +35,13 @@ export class IssueRequestService {
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly matIssueService: MatIssueService,
+    private readonly seqGenerator: SeqGeneratorService,
     private readonly dataSource: DataSource,
   ) {}
 
-  /** 당일 기준 요청번호 자동 생성 (REQ-YYYYMMDD-NNN) */
-  private async generateRequestNo(): Promise<string> {
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `REQ-${dateStr}-`;
-    const count = await this.requestRepository.count({
-      where: { requestNo: Like(`${prefix}%`) },
-    });
-    return `${prefix}${String(count + 1).padStart(3, '0')}`;
+  /** 통합 채번 서비스를 통한 요청번호 생성 */
+  private async generateRequestNo(qr?: import('typeorm').QueryRunner): Promise<string> {
+    return this.seqGenerator.nextMatReqNo(qr);
   }
 
   /** 품목 목록에 itemCode/itemName 평탄화 */
@@ -66,9 +63,9 @@ export class IssueRequestService {
   }
 
   /** 요청 헤더 조회 + 존재 검증 */
-  private async getRequestOrFail(id: number) {
-    const request = await this.requestRepository.findOne({ where: { id } });
-    if (!request) throw new NotFoundException(`출고요청을 찾을 수 없습니다: ${id}`);
+  private async getRequestOrFail(requestNo: string) {
+    const request = await this.requestRepository.findOne({ where: { requestNo } });
+    if (!request) throw new NotFoundException(`출고요청을 찾을 수 없습니다: ${requestNo}`);
     return request;
   }
 
@@ -78,7 +75,7 @@ export class IssueRequestService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const requestNo = await this.generateRequestNo();
+      const requestNo = await this.generateRequestNo(queryRunner);
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
         jobOrderId: dto.orderNo ?? null,
@@ -89,9 +86,10 @@ export class IssueRequestService {
       });
       const saved = await queryRunner.manager.save(request);
 
-      const items = dto.items.map((item) =>
+      const items = dto.items.map((item, idx) =>
         queryRunner.manager.create(MatIssueRequestItem, {
-          requestId: String(saved.id),
+          requestId: saved.requestNo,
+          seq: idx + 1,
           itemCode: item.itemCode,
           requestQty: item.requestQty,
           issuedQty: 0,
@@ -101,7 +99,7 @@ export class IssueRequestService {
       );
       await queryRunner.manager.save(items);
       await queryRunner.commitTransaction();
-      return this.findById(saved.id);
+      return this.findByRequestNo(saved.requestNo);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -124,7 +122,7 @@ export class IssueRequestService {
 
     const result = await Promise.all(
       data.map(async (req) => {
-        const items = await this.requestItemRepository.find({ where: { requestId: String(req.id) } });
+        const items = await this.requestItemRepository.find({ where: { requestId: req.requestNo } });
         const flatItems = await this.flattenItems(items);
         return {
           ...req,
@@ -147,31 +145,31 @@ export class IssueRequestService {
   }
 
   /** 출고요청 상세 조회 (헤더 + 품목) */
-  async findById(id: number) {
-    const request = await this.getRequestOrFail(id);
-    const items = await this.requestItemRepository.find({ where: { requestId: String(id) } });
+  async findByRequestNo(requestNo: string) {
+    const request = await this.getRequestOrFail(requestNo);
+    const items = await this.requestItemRepository.find({ where: { requestId: requestNo } });
     const flatItems = await this.flattenItems(items);
     return { ...request, items: flatItems };
   }
 
   /** 출고요청 승인 (REQUESTED -> APPROVED) */
-  async approve(id: number) {
-    const request = await this.getRequestOrFail(id);
+  async approve(requestNo: string) {
+    const request = await this.getRequestOrFail(requestNo);
     if (request.status !== 'REQUESTED') {
       throw new BadRequestException(`승인할 수 없는 상태입니다: ${request.status}`);
     }
-    await this.requestRepository.update(id, { status: 'APPROVED', approvedAt: new Date() });
-    return this.findById(id);
+    await this.requestRepository.update({ requestNo }, { status: 'APPROVED', approvedAt: new Date() });
+    return this.findByRequestNo(requestNo);
   }
 
   /** 출고요청 반려 (REQUESTED -> REJECTED) */
-  async reject(id: number, dto: RejectIssueRequestDto) {
-    const request = await this.getRequestOrFail(id);
+  async reject(requestNo: string, dto: RejectIssueRequestDto) {
+    const request = await this.getRequestOrFail(requestNo);
     if (request.status !== 'REQUESTED') {
       throw new BadRequestException(`반려할 수 없는 상태입니다: ${request.status}`);
     }
-    await this.requestRepository.update(id, { status: 'REJECTED', rejectReason: dto.reason });
-    return this.findById(id);
+    await this.requestRepository.update({ requestNo }, { status: 'REJECTED', rejectReason: dto.reason });
+    return this.findByRequestNo(requestNo);
   }
 
   /**
@@ -180,8 +178,8 @@ export class IssueRequestService {
    * - MatIssueService.create()로 실제 출고 수행
    * - 모든 품목 완전 출고 시 COMPLETED 처리
    */
-  async issueFromRequest(id: number, dto: RequestIssueDto) {
-    const request = await this.getRequestOrFail(id);
+  async issueFromRequest(requestNo: string, dto: RequestIssueDto) {
+    const request = await this.getRequestOrFail(requestNo);
     if (request.status !== 'APPROVED') {
       throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED만 가능): ${request.status}`);
     }
@@ -201,31 +199,33 @@ export class IssueRequestService {
 
       // 각 요청 품목의 issuedQty 갱신
       for (const dtoItem of dto.items) {
+        // requestItemId는 seq 번호
+        const reqItemSeq = Number(dtoItem.requestItemId);
         const reqItem = await this.requestItemRepository.findOne({
-          where: { id: Number(dtoItem.requestItemId) },
+          where: { requestId: requestNo, seq: reqItemSeq },
         });
         if (reqItem) {
-          await queryRunner.manager.update(MatIssueRequestItem, reqItem.id, {
+          await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq }, {
             issuedQty: reqItem.issuedQty + dtoItem.issueQty,
           });
         }
       }
 
       // 모든 품목 완전 출고 여부 확인
-      const allItems = await this.requestItemRepository.find({ where: { requestId: String(id) } });
+      const allItems = await this.requestItemRepository.find({ where: { requestId: requestNo } });
       const allCompleted = allItems.every((item) => {
         const addedQty = dto.items
-          .filter((d) => Number(d.requestItemId) === item.id)
+          .filter((d) => Number(d.requestItemId) === item.seq)
           .reduce((sum, d) => sum + d.issueQty, 0);
         return (item.issuedQty + addedQty) >= item.requestQty;
       });
 
       if (allCompleted) {
-        await queryRunner.manager.update(MatIssueRequest, id, { status: 'COMPLETED' });
+        await queryRunner.manager.update(MatIssueRequest, { requestNo }, { status: 'COMPLETED' });
       }
 
       await queryRunner.commitTransaction();
-      return { request: await this.findById(id), issueResult };
+      return { request: await this.findByRequestNo(requestNo), issueResult };
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;

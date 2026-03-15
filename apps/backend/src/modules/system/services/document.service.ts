@@ -120,8 +120,8 @@ export class DocumentService {
   /**
    * 문서 단건 조회
    */
-  async findById(id: number) {
-    const item = await this.docRepo.findOne({ where: { id } });
+  async findById(docNo: string) {
+    const item = await this.docRepo.findOne({ where: { docNo } });
     if (!item) {
       throw new NotFoundException('문서를 찾을 수 없습니다.');
     }
@@ -156,8 +156,8 @@ export class DocumentService {
   /**
    * 문서 수정 (DRAFT 상태에서만 가능)
    */
-  async update(id: number, dto: UpdateDocumentDto, userId: string) {
-    const item = await this.findById(id);
+  async update(docNo: string, dto: UpdateDocumentDto, userId: string) {
+    const item = await this.findById(docNo);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 수정할 수 있습니다.');
     }
@@ -168,8 +168,8 @@ export class DocumentService {
   /**
    * 문서 삭제 (DRAFT 상태에서만 가능)
    */
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async delete(docNo: string) {
+    const item = await this.findById(docNo);
     if (item.status !== 'DRAFT') {
       throw new BadRequestException('초안 상태에서만 삭제할 수 있습니다.');
     }
@@ -183,8 +183,8 @@ export class DocumentService {
   /**
    * 승인 (DRAFT/REVIEW → APPROVED)
    */
-  async approve(id: number, userId: string) {
-    const item = await this.findById(id);
+  async approve(docNo: string, userId: string) {
+    const item = await this.findById(docNo);
     if (!['DRAFT', 'REVIEW'].includes(item.status)) {
       throw new BadRequestException(
         '초안 또는 검토 상태에서만 승인할 수 있습니다.',
@@ -203,8 +203,8 @@ export class DocumentService {
   /**
    * 개정 (APPROVED → 새 DRAFT, revisionNo 증가)
    */
-  async revise(id: number, userId: string) {
-    const item = await this.findById(id);
+  async revise(docNo: string, userId: string) {
+    const item = await this.findById(docNo);
     if (item.status !== 'APPROVED') {
       throw new BadRequestException(
         '승인된 문서만 개정할 수 있습니다.',

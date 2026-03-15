@@ -29,10 +29,10 @@ export class IqcGroupController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get(':id')
+  @Get(':groupCode')
   @ApiOperation({ summary: 'IQC 검사그룹 상세 조회 (항목 포함)' })
-  async findById(@Param('id') id: string) {
-    const data = await this.iqcGroupService.findById(+id);
+  async findByCode(@Param('groupCode') groupCode: string) {
+    const data = await this.iqcGroupService.findByCode(groupCode);
     return ResponseUtil.success(data);
   }
 
@@ -44,17 +44,17 @@ export class IqcGroupController {
     return ResponseUtil.success(data, 'IQC 검사그룹이 생성되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':groupCode')
   @ApiOperation({ summary: 'IQC 검사그룹 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateIqcGroupDto) {
-    const data = await this.iqcGroupService.update(+id, dto);
+  async update(@Param('groupCode') groupCode: string, @Body() dto: UpdateIqcGroupDto) {
+    const data = await this.iqcGroupService.update(groupCode, dto);
     return ResponseUtil.success(data, 'IQC 검사그룹이 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':groupCode')
   @ApiOperation({ summary: 'IQC 검사그룹 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.iqcGroupService.delete(+id);
+  async delete(@Param('groupCode') groupCode: string) {
+    await this.iqcGroupService.delete(groupCode);
     return ResponseUtil.success(null, 'IQC 검사그룹이 삭제되었습니다.');
   }
 }

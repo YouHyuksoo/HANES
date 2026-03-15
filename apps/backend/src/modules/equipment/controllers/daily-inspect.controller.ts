@@ -5,13 +5,15 @@
  * 초보자 가이드:
  * 1. **엔드포인트**: /api/v1/equipment/daily-inspect
  * 2. inspectType을 'DAILY'로 고정하여 일상점검만 처리
+ * 3. 복합키: equipCode + inspectType(DAILY) + inspectDate
  *
  * API 경로:
- * - GET    /equipment/daily-inspect       일상점검 목록 조회
- * - GET    /equipment/daily-inspect/:id   일상점검 상세 조회
- * - POST   /equipment/daily-inspect       일상점검 등록
- * - PUT    /equipment/daily-inspect/:id   일상점검 수정
- * - DELETE /equipment/daily-inspect/:id   일상점검 삭제
+ * - GET    /equipment/daily-inspect                         일상점검 목록 조회
+ * - GET    /equipment/daily-inspect/check                   오늘 점검 완료 여부 확인
+ * - GET    /equipment/daily-inspect/:equipCode/:inspectDate 일상점검 상세 조회
+ * - POST   /equipment/daily-inspect                         일상점검 등록
+ * - PUT    /equipment/daily-inspect/:equipCode/:inspectDate 일상점검 수정
+ * - DELETE /equipment/daily-inspect/:equipCode/:inspectDate 일상점검 삭제
  */
 
 import {
@@ -45,7 +47,7 @@ export class DailyInspectController {
   @ApiOperation({ summary: '일상점검 캘린더 월별 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getCalendarSummary(@Query() query: InspectCalendarQueryDto) {
-    const data = await this.equipInspectService.getCalendarSummary(query.year, query.month, query.lineCode);
+    const data = await this.equipInspectService.getCalendarSummary(query.year, query.month, query.processCode);
     return ResponseUtil.success(data);
   }
 
@@ -53,8 +55,21 @@ export class DailyInspectController {
   @ApiOperation({ summary: '일상점검 캘린더 일별 스케줄' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async getDaySchedule(@Query() query: InspectDayScheduleQueryDto) {
-    const data = await this.equipInspectService.getDaySchedule(query.date, query.lineCode);
+    const data = await this.equipInspectService.getDaySchedule(query.date, query.processCode);
     return ResponseUtil.success(data);
+  }
+
+  @Get('check')
+  @ApiOperation({ summary: '오늘 점검 완료 여부 확인' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async checkInspected(
+    @Query('equipCode') equipCode: string,
+    @Query('inspectDate') inspectDate: string,
+  ) {
+    const alreadyInspected = await this.equipInspectService.checkAlreadyInspected(
+      equipCode, inspectDate, 'DAILY',
+    );
+    return ResponseUtil.success({ alreadyInspected });
   }
 
   @Get()
@@ -65,11 +80,15 @@ export class DailyInspectController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get(':id')
+  @Get(':equipCode/:inspectDate')
   @ApiOperation({ summary: '일상점검 상세 조회' })
-  @ApiParam({ name: 'id', description: '점검 ID' })
-  async findById(@Param('id') id: string) {
-    const data = await this.equipInspectService.findById(+id);
+  @ApiParam({ name: 'equipCode', description: '설비코드' })
+  @ApiParam({ name: 'inspectDate', description: '점검일 (YYYY-MM-DD)' })
+  async findByKey(
+    @Param('equipCode') equipCode: string,
+    @Param('inspectDate') inspectDate: string,
+  ) {
+    const data = await this.equipInspectService.findByKey(equipCode, 'DAILY', inspectDate);
     return ResponseUtil.success(data);
   }
 
@@ -87,19 +106,28 @@ export class DailyInspectController {
     return ResponseUtil.success(data, '일상점검이 등록되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':equipCode/:inspectDate')
   @ApiOperation({ summary: '일상점검 수정' })
-  @ApiParam({ name: 'id', description: '점검 ID' })
-  async update(@Param('id') id: string, @Body() dto: UpdateEquipInspectDto) {
-    const data = await this.equipInspectService.update(+id, dto);
+  @ApiParam({ name: 'equipCode', description: '설비코드' })
+  @ApiParam({ name: 'inspectDate', description: '점검일 (YYYY-MM-DD)' })
+  async update(
+    @Param('equipCode') equipCode: string,
+    @Param('inspectDate') inspectDate: string,
+    @Body() dto: UpdateEquipInspectDto,
+  ) {
+    const data = await this.equipInspectService.update(equipCode, 'DAILY', inspectDate, dto);
     return ResponseUtil.success(data, '일상점검이 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':equipCode/:inspectDate')
   @ApiOperation({ summary: '일상점검 삭제' })
-  @ApiParam({ name: 'id', description: '점검 ID' })
-  async delete(@Param('id') id: string) {
-    await this.equipInspectService.delete(+id);
+  @ApiParam({ name: 'equipCode', description: '설비코드' })
+  @ApiParam({ name: 'inspectDate', description: '점검일 (YYYY-MM-DD)' })
+  async delete(
+    @Param('equipCode') equipCode: string,
+    @Param('inspectDate') inspectDate: string,
+  ) {
+    await this.equipInspectService.deleteByKey(equipCode, 'DAILY', inspectDate);
     return ResponseUtil.success(null, '일상점검이 삭제되었습니다.');
   }
 }

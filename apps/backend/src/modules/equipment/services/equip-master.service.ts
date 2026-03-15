@@ -341,6 +341,13 @@ export class EquipMasterService {
   async assignJobOrder(equipCode: string, dto: AssignJobOrderDto) {
     const equip = await this.findById(equipCode);
 
+    // 작업지시 할당 시 설비 상태 검증 — 비정상 상태면 할당 차단
+    if (dto.orderNo && ['MAINT', 'STOP', 'INTERLOCK'].includes(equip.status)) {
+      throw new ConflictException(
+        `설비 [${equip.equipCode}]가 "${equip.status}" 상태이므로 작업지시를 할당할 수 없습니다.`,
+      );
+    }
+
     await this.equipMasterRepository.update(equipCode, {
       currentJobOrderId: dto.orderNo ?? null,
     });

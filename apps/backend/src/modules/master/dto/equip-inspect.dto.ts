@@ -16,9 +16,9 @@ export class CreateEquipInspectItemDto {
   @IsString()
   equipCode: string;
 
-  @ApiProperty({ description: '점검 유형', enum: ['DAILY', 'PERIODIC'] })
+  @ApiProperty({ description: '점검 유형', enum: ['DAILY', 'PERIODIC', 'PM'] })
   @IsString()
-  @IsIn(['DAILY', 'PERIODIC'])
+  @IsIn(['DAILY', 'PERIODIC', 'PM'])
   inspectType: string;
 
   @ApiProperty({ description: '점검 순서', example: 1 })
@@ -77,7 +77,7 @@ export class EquipInspectItemQueryDto {
   @ApiPropertyOptional({ description: '점검 유형 필터' })
   @IsOptional()
   @IsString()
-  @IsIn(['DAILY', 'PERIODIC'])
+  @IsIn(['DAILY', 'PERIODIC', 'PM'])
   inspectType?: string;
 
   @ApiPropertyOptional()

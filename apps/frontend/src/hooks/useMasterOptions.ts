@@ -235,11 +235,11 @@ export function usePartnerOptions(partnerType?: "SUPPLIER" | "CUSTOMER") {
 }
 
 interface EquipBomRelItem {
-  id: string;
-  bomItemId: string;
+  equipCode: string;
+  bomItemCode: string;
   quantity: number;
   bomItem: {
-    id: string;
+    bomItemCode: string;
     itemCode: string;
     itemName: string;
     itemType: string;

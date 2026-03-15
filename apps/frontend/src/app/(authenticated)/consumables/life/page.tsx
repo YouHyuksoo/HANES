@@ -19,17 +19,14 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface LifeStatus {
-  id: string;
   consumableCode: string;
-  name: string;
+  consumableName: string;
   category: string;
   currentCount: number;
   expectedLife: number;
   warningCount: number;
-  lifePercentage: number;
-  remainingLife: number;
-  status: "NORMAL" | "WARNING" | "REPLACE";
-  lastReplaced: string | null;
+  status: string;
+  lastReplaceAt: string | null;
   location: string;
 }
 
@@ -48,7 +45,7 @@ export default function ConsumableLifePage() {
       if (searchTerm) params.search = searchTerm;
       if (statusFilter) params.status = statusFilter;
       if (categoryFilter) params.category = categoryFilter;
-      const res = await api.get("/consumables/life-status", { params });
+      const res = await api.get("/equipment/consumables", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);
@@ -92,13 +89,13 @@ export default function ConsumableLifePage() {
     },
     { accessorKey: "status", header: t("common.status"), size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => getStatusBadge(getValue() as string) },
     { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 110, meta: { filterType: "text" as const } },
-    { accessorKey: "name", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: "consumableName", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "category", header: t("consumables.life.categoryLabel"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
     { accessorKey: "location", header: t("consumables.life.location"), size: 110, meta: { filterType: "text" as const } },
     {
-      accessorKey: "lifePercentage", header: t("consumables.life.lifeLabel"), size: 100, meta: { filterType: "number" as const },
+      id: "lifePercentage", header: t("consumables.life.lifeLabel"), size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => {
-        const pct = row.original.lifePercentage;
+        const pct = row.original.expectedLife ? Math.round((row.original.currentCount / row.original.expectedLife) * 100) : 0;
         return (
           <div className="flex items-center gap-1.5">
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -111,18 +108,21 @@ export default function ConsumableLifePage() {
     },
     {
       accessorKey: "currentCount", header: t("consumables.life.currentExpected"), size: 110, meta: { filterType: "number" as const },
-      cell: ({ row }) => <span className="text-xs">{row.original.currentCount.toLocaleString()} / {row.original.expectedLife.toLocaleString()}</span>,
+      cell: ({ row }) => <span className="text-xs">{(row.original.currentCount ?? 0).toLocaleString()} / {(row.original.expectedLife ?? 0).toLocaleString()}</span>,
     },
     {
-      accessorKey: "remainingLife", header: t("consumables.life.remaining"), size: 70, meta: { filterType: "number" as const },
-      cell: ({ getValue }) => {
-        const val = getValue() as number;
-        return <span className={`text-xs ${val < 0 ? "text-red-600 font-medium" : "text-text-muted"}`}>{val < 0 ? `+${Math.abs(val).toLocaleString()}` : val.toLocaleString()}</span>;
+      id: "remainingLife", header: t("consumables.life.remaining"), size: 70, meta: { filterType: "none" as const },
+      cell: ({ row }) => {
+        const remaining = (row.original.expectedLife ?? 0) - (row.original.currentCount ?? 0);
+        return <span className={`text-xs ${remaining < 0 ? "text-red-600 font-medium" : "text-text-muted"}`}>{remaining < 0 ? `+${Math.abs(remaining).toLocaleString()}` : remaining.toLocaleString()}</span>;
       },
     },
     {
-      accessorKey: "lastReplaced", header: t("consumables.life.lastReplaced"), size: 90, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => getValue() ? <span className="text-xs text-text-muted">{getValue() as string}</span> : "-",
+      accessorKey: "lastReplaceAt", header: t("consumables.life.lastReplaced"), size: 90, meta: { filterType: "date" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string | null;
+        return v ? <span className="text-xs text-text-muted">{v.split("T")[0]}</span> : "-";
+      },
     },
   ], [t]);
 

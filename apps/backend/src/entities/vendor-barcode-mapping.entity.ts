@@ -1,17 +1,16 @@
 /**
  * @file entities/vendor-barcode-mapping.entity.ts
  * @description 자재 제조사 바코드 매핑 엔티티
- *              SEQUENCE(패턴 B)를 사용한다. partId -> itemCode 변경.
+ *              VENDOR_BARCODE 자연키 PK 사용.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. vendorBarcode: 제조사 바코드 값 (유니크)
- * 3. itemCode: MES 품목코드 (ITEM_MASTERS.ITEM_CODE 참조)
- * 4. matchType: EXACT(정확히), PREFIX(접두사), REGEX(정규식)
+ * 1. vendorBarcode가 자연키 PK (제조사 바코드 값)
+ * 2. itemCode: MES 품목코드 (ITEM_MASTERS.ITEM_CODE 참조)
+ * 3. matchType: EXACT(정확히), PREFIX(접두사), REGEX(정규식)
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -19,15 +18,11 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'VENDOR_BARCODE_MAPPINGS' })
-@Index(['vendorBarcode'], { unique: true })
 @Index(['itemCode'])
 @Index(['vendorCode'])
 export class VendorBarcodeMapping {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
   /** 제조사 바코드 값 (스캔 원본) */
-  @Column({ name: 'VENDOR_BARCODE', length: 200 })
+  @PrimaryColumn({ name: 'VENDOR_BARCODE', length: 200 })
   vendorBarcode: string;
 
   /** MES 품목코드 (ITEM_MASTERS.ITEM_CODE 참조) */

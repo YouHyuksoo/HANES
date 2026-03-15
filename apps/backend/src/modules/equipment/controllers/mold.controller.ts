@@ -30,7 +30,6 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
@@ -78,10 +77,10 @@ export class MoldController {
 
   @Get('molds/:id')
   @ApiOperation({ summary: '금형 단건 조회' })
-  @ApiParam({ name: 'id', description: '금형 ID' })
+  @ApiParam({ name: 'id', description: '금형 코드' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '금형 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.moldService.findById(id);
     return ResponseUtil.success(data);
   }
@@ -107,10 +106,10 @@ export class MoldController {
 
   @Put('molds/:id')
   @ApiOperation({ summary: '금형 수정' })
-  @ApiParam({ name: 'id', description: '금형 ID' })
+  @ApiParam({ name: 'id', description: '금형 코드' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateMoldDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -125,9 +124,9 @@ export class MoldController {
   @Delete('molds/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '금형 삭제', description: '사용 이력이 없는 경우만 가능' })
-  @ApiParam({ name: 'id', description: '금형 ID' })
+  @ApiParam({ name: 'id', description: '금형 코드' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.moldService.delete(id);
     return ResponseUtil.success(null, '금형이 삭제되었습니다.');
   }
@@ -136,9 +135,9 @@ export class MoldController {
 
   @Get('molds/:id/usage')
   @ApiOperation({ summary: '사용 이력 조회', description: '금형별 사용 이력' })
-  @ApiParam({ name: 'id', description: '금형 ID' })
+  @ApiParam({ name: 'id', description: '금형 코드' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getUsageLogs(@Param('id', ParseIntPipe) id: number) {
+  async getUsageLogs(@Param('id') id: string) {
     const data = await this.moldService.getUsageLogs(id);
     return ResponseUtil.success(data);
   }
@@ -146,10 +145,10 @@ export class MoldController {
   @Post('molds/:id/usage')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '사용 이력 등록', description: '타수 자동 누적' })
-  @ApiParam({ name: 'id', description: '금형 ID' })
+  @ApiParam({ name: 'id', description: '금형 코드' })
   @ApiResponse({ status: 201, description: '등록 성공' })
   async addUsage(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: CreateMoldUsageDto,
     @Company() company: string,
     @Plant() plant: string,
@@ -169,10 +168,10 @@ export class MoldController {
 
   @Patch('molds/:id/retire')
   @ApiOperation({ summary: '금형 폐기', description: 'ACTIVE/MAINTENANCE → RETIRED' })
-  @ApiParam({ name: 'id', description: '금형 ID' })
+  @ApiParam({ name: 'id', description: '금형 코드' })
   @ApiResponse({ status: 200, description: '폐기 성공' })
   async retire(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.moldService.retire(

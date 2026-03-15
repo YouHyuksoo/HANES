@@ -16,6 +16,7 @@ import { SubconOrder } from '../../../entities/subcon-order.entity';
 import { SubconDelivery } from '../../../entities/subcon-delivery.entity';
 import { SubconReceive } from '../../../entities/subcon-receive.entity';
 import { VendorMaster } from '../../../entities/vendor-master.entity';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import {
   CreateVendorDto,
   UpdateVendorDto,
@@ -41,6 +42,7 @@ export class OutsourcingService {
     @InjectRepository(VendorMaster)
     private readonly vendorMasterRepository: Repository<VendorMaster>,
     private readonly dataSource: DataSource,
+    private readonly seqGenerator: SeqGeneratorService,
   ) {}
 
   // ============================================================================
@@ -87,17 +89,17 @@ export class OutsourcingService {
     return { data, total, page, limit };
   }
 
-  async findVendorById(id: string) {
+  async findVendorById(vendorCode: string) {
     const vendor = await this.vendorMasterRepository.findOne({
-      where: { id },
+      where: { vendorCode },
     });
 
     if (!vendor) {
-      throw new NotFoundException(`외주처를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`외주처를 찾을 수 없습니다: ${vendorCode}`);
     }
 
     const subconOrders = await this.subconOrderRepository.find({
-      where: { vendorId: id },
+      where: { vendorId: vendorCode },
       order: { createdAt: 'DESC' },
       take: 10,
     });
@@ -118,18 +120,18 @@ export class OutsourcingService {
     return this.vendorMasterRepository.save(vendor);
   }
 
-  async updateVendor(id: string, dto: UpdateVendorDto) {
-    await this.findVendorById(id);
+  async updateVendor(vendorCode: string, dto: UpdateVendorDto) {
+    await this.findVendorById(vendorCode);
 
-    await this.vendorMasterRepository.update(id, dto);
-    return this.findVendorById(id);
+    await this.vendorMasterRepository.update({ vendorCode }, dto);
+    return this.findVendorById(vendorCode);
   }
 
-  async deleteVendor(id: string) {
-    await this.findVendorById(id);
+  async deleteVendor(vendorCode: string) {
+    await this.findVendorById(vendorCode);
 
-    await this.vendorMasterRepository.delete(id);
-    return { id };
+    await this.vendorMasterRepository.delete({ vendorCode });
+    return { vendorCode };
   }
 
   // ============================================================================
@@ -235,14 +237,8 @@ export class OutsourcingService {
   }
 
   async createOrder(dto: CreateSubconOrderDto) {
-    // 발주번호 생성
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await this.subconOrderRepository.count({
-      where: {
-        orderNo: `SCO${today}%`,
-      },
-    });
-    const orderNo = `SCO${today}${String(count + 1).padStart(4, '0')}`;
+    // 통합 채번 서비스로 발주번호 생성
+    const orderNo = await this.seqGenerator.nextSubconNo();
 
     const order = this.subconOrderRepository.create({
       orderNo,

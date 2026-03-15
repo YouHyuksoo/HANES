@@ -10,7 +10,6 @@
 
 /** 생산계획 항목 */
 export interface ProdPlanItem {
-  id: number;
   planNo: string;
   planMonth: string;
   itemCode: string;

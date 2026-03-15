@@ -19,7 +19,7 @@ import api from "@/services/api";
 
 /** 교육 결과 행 데이터 */
 interface TrainingResult {
-  id?: number;
+  planNo: string;
   workerCode: string;
   workerName: string;
   photoUrl?: string | null;
@@ -32,7 +32,7 @@ interface TrainingResult {
 }
 
 interface Props {
-  planId: number;
+  planId: string;
   planNo: string;
   status: string;
   onRefresh: () => void;
@@ -68,12 +68,12 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
     } catch { /* api 인터셉터 */ }
   }, [planId, newWorkerCode, fetchResults, onRefresh]);
 
-  const handleRemove = useCallback(async (resultId: number) => {
-    try { await api.delete(`/system/trainings/results/${resultId}`); fetchResults(); onRefresh(); } catch { /* api 인터셉터 */ }
+  const handleRemove = useCallback(async (planNo: string, workerCode: string) => {
+    try { await api.delete(`/system/trainings/results/${planNo}/${workerCode}`); fetchResults(); onRefresh(); } catch { /* api 인터셉터 */ }
   }, [fetchResults, onRefresh]);
 
-  const handleFieldChange = useCallback(async (resultId: number, field: string, value: string | number | boolean) => {
-    try { await api.patch(`/system/trainings/results/${resultId}`, { [field]: value }); fetchResults(); } catch { /* api 인터셉터 */ }
+  const handleFieldChange = useCallback(async (planNo: string, workerCode: string, field: string, value: string | number | boolean) => {
+    try { await api.patch(`/system/trainings/results/${planNo}/${workerCode}`, { [field]: value }); fetchResults(); } catch { /* api 인터셉터 */ }
   }, [fetchResults]);
 
   return (
@@ -128,10 +128,10 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
               </thead>
               <tbody>
                 {results.map(row => {
-                  const edt = (f: string, v: string | number | boolean) => row.id && handleFieldChange(row.id, f, v);
+                  const edt = (f: string, v: string | number | boolean) => handleFieldChange(row.planNo, row.workerCode, f, v);
                   const inCls = "bg-transparent border-b border-border text-xs px-1 py-0.5 focus:outline-none focus:border-primary text-text";
                   return (
-                    <tr key={row.id} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
+                    <tr key={`${row.planNo}-${row.workerCode}`} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <WorkerAvatar name={row.workerName || row.workerCode} dept={row.dept ?? ""} photoUrl={row.photoUrl} size="md" />
@@ -166,7 +166,7 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
                       </td>
                       {!isReadonly && (
                         <td className="px-3 py-2 text-center">
-                          <Button size="sm" variant="ghost" onClick={() => row.id && handleRemove(row.id)}
+                          <Button size="sm" variant="ghost" onClick={() => handleRemove(row.planNo, row.workerCode)}
                             className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 h-6">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>

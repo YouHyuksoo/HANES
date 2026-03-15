@@ -19,17 +19,20 @@ interface PdaMenuGridProps {
   items: PdaMenuItem[];
   /** 레이아웃 — 'list': 세로 리스트(메인), 'grid': 2열 그리드(서브메뉴) */
   layout?: "list" | "grid";
+  /** 화면 중앙 정렬 여부 (grid 레이아웃 전용) */
+  centered?: boolean;
 }
 
 export default function PdaMenuGrid({
   items,
   layout = "list",
+  centered = false,
 }: PdaMenuGridProps) {
   const router = useRouter();
   const { t } = useTranslation();
 
   if (layout === "grid") {
-    return (
+    const grid = (
       <div className="grid grid-cols-2 gap-3 p-4">
         {items.map((item) => {
           const Icon = item.icon;
@@ -55,6 +58,16 @@ export default function PdaMenuGrid({
         })}
       </div>
     );
+
+    if (centered) {
+      return (
+        <div className="flex-1 flex items-center">
+          <div className="w-full">{grid}</div>
+        </div>
+      );
+    }
+
+    return grid;
   }
 
   // layout === "list"

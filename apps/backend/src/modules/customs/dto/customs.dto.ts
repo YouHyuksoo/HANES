@@ -125,12 +125,14 @@ export class CustomsEntryQueryDto {
 // ============================================================================
 
 export class CreateCustomsLotDto {
-  @ApiProperty({ description: '수입신고 ID' })
+  @ApiProperty({ description: '수입신고번호' })
   @IsString()
-  entryId: string;
+  @MaxLength(50)
+  entryNo: string;
 
   @ApiProperty({ description: '자재 UID' })
   @IsString()
+  @MaxLength(100)
   matUid: string;
 
   @ApiProperty({ description: '품목 코드' })
@@ -160,9 +162,15 @@ export class UpdateCustomsLotDto extends PartialType(CreateCustomsLotDto) {
 // ============================================================================
 
 export class CreateUsageReportDto {
-  @ApiProperty({ description: '보세자재 LOT ID' })
+  @ApiProperty({ description: '보세자재 LOT 수입신고번호' })
   @IsString()
-  customsLotId: string;
+  @MaxLength(50)
+  lotEntryNo: string;
+
+  @ApiProperty({ description: '보세자재 LOT 자재 UID' })
+  @IsString()
+  @MaxLength(100)
+  lotMatUid: string;
 
   @ApiPropertyOptional({ description: '작업지시 ID' })
   @IsOptional()

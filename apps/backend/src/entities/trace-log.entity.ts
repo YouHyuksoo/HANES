@@ -1,17 +1,19 @@
 /**
  * @file entities/trace-log.entity.ts
  * @description 추적 로그 엔티티 - 제품/자재 이동 추적 이력을 관리한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              복합 PK(TRACE_TIME + SEQ) 사용.
+ *              id 컬럼은 self-reference(PARENT_ID) FK 호환을 위해 @Column으로 유지.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
- * 2. 팔레트/박스/자재UID/제품UID/시리얼 등 다양한 추적 대상
- * 3. eventType: 이벤트 유형 (입고, 출고, 이동 등)
- * 4. self-reference: parent/children으로 트리 구조
+ * 1. 복합 PK: traceTime(TRACE_TIME) + seq(SEQ)
+ * 2. id는 self-reference FK(PARENT_ID) 호환용 @Column (자동 생성, 업데이트 불가)
+ * 3. 팔레트/박스/자재UID/제품UID/시리얼 등 다양한 추적 대상
+ * 4. eventType: 이벤트 유형 (입고, 출고, 이동 등)
+ * 5. self-reference: parent/children으로 트리 구조
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -30,11 +32,14 @@ import {
 @Index(['serialNo'])
 @Index(['eventType'])
 export class TraceLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'TRACE_TIME', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @PrimaryColumn({ name: 'TRACE_TIME', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   traceTime: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
+
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
+  id: number;
 
   @Column({ name: 'PALLET_ID', length: 255, nullable: true })
   palletId: string | null;
@@ -73,7 +78,7 @@ export class TraceLog {
   parentId: number | null;
 
   @ManyToOne(() => TraceLog, (trace) => trace.children, { nullable: true })
-  @JoinColumn({ name: 'PARENT_ID' })
+  @JoinColumn({ name: 'PARENT_ID', referencedColumnName: 'id' })
   parent: TraceLog | null;
 
   @OneToMany(() => TraceLog, (trace) => trace.parent)

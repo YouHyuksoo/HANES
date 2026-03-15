@@ -10,7 +10,7 @@
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -21,14 +21,10 @@ import {
 import { PartMaster } from './part-master.entity';
 
 @Entity({ name: 'PPAP_SUBMISSIONS' })
-@Index(['company', 'plant', 'ppapNo'], { unique: true })
 @Index(['company', 'plant', 'itemCode'])
 @Index(['company', 'plant', 'status'])
 export class PpapSubmission {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'PPAP_NO', length: 30 })
+  @PrimaryColumn({ name: 'PPAP_NO', length: 50 })
   ppapNo: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })

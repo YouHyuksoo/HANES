@@ -1,15 +1,16 @@
 /**
  * @file training-result.entity.ts
  * @description 교육훈련 결과 엔티티 — 개인별 교육 참석/평가 기록
+ *              복합 PK: planNo + workerCode
  *
  * 초보자 가이드:
- * 1. TrainingPlan에 연결된 개인별 교육 결과
+ * 1. 복합 PK: planNo(교육계획번호) + workerCode(작업자코드)
  * 2. 평가 점수, 합격 여부, 자격증 번호, 유효기간 관리
  * 3. workerCode로 작업자별 교육 이력 조회 가능
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   ManyToOne,
   JoinColumn,
@@ -19,20 +20,16 @@ import {
 import { TrainingPlan } from './training-plan.entity';
 
 @Entity({ name: 'TRAINING_RESULTS' })
-@Index(['planId'])
 @Index(['workerCode'])
 export class TrainingResult {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'PLAN_ID' })
-  planId: number;
+  @PrimaryColumn({ name: 'PLAN_NO', length: 50 })
+  planNo: string;
 
   @ManyToOne(() => TrainingPlan)
-  @JoinColumn({ name: 'PLAN_ID' })
+  @JoinColumn({ name: 'PLAN_NO', referencedColumnName: 'planNo' })
   plan: TrainingPlan;
 
-  @Column({ name: 'WORKER_CODE', length: 50 })
+  @PrimaryColumn({ name: 'WORKER_CODE', length: 50 })
   workerCode: string;
 
   @Column({ name: 'WORKER_NAME', length: 100 })

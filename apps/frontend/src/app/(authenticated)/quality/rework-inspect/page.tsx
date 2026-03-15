@@ -8,12 +8,12 @@
  * 1. **재검사 대기 목록**: status=INSPECT_PENDING 인 ReworkOrder 조회
  * 2. **우측 패널**: 행 선택 시 InspectFormPanel에서 검사 실적 입력
  * 3. **StatCard**: 재검사대기 건수, 합격 건수, 불합격 건수
- * 4. API: GET /quality/reworks?status=INSPECT_PENDING, POST /quality/rework-inspects
+ * 4. API: GET /quality/reworks?status=INSPECT_PENDING, POST /quality/reworks/inspects
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw, ClipboardCheck, Clock, CheckCircle, XCircle, Search } from "lucide-react";
+import { RefreshCw, ClipboardCheck, Clock, CheckCircle, XCircle, Search, FileSearch, X } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
@@ -22,7 +22,6 @@ import type { InspectTarget } from "./components/InspectFormPanel";
 
 /** 재작업 지시 행 타입 */
 interface ReworkOrder {
-  id: number;
   reworkNo: string;
   itemCode: string;
   itemName: string;
@@ -73,7 +72,6 @@ export default function ReworkInspectPage() {
   /* ── 행 선택 → 패널 열기 ── */
   const openPanel = useCallback((row: ReworkOrder) => {
     setSelectedTarget({
-      id: row.id,
       reworkNo: row.reworkNo,
       itemCode: row.itemCode,
       reworkQty: row.reworkQty,
@@ -89,12 +87,18 @@ export default function ReworkInspectPage() {
 
   /* ── 컬럼 정의 ── */
   const columns = useMemo<ColumnDef<ReworkOrder>[]>(() => [
-    { id: "actions", header: t("common.manage"), size: 100, meta: { align: "center" as const, filterType: "none" as const },
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
-        <Button size="sm" variant="secondary" onClick={() => openPanel(row.original)}>
-          <ClipboardCheck className="w-4 h-4 mr-1" />{t("quality.rework.inspect")}
-        </Button>
-      ) },
+        <button
+          onClick={(e) => { e.stopPropagation(); openPanel(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "reworkNo", header: t("quality.rework.reworkNo"), size: 170, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
     { accessorKey: "itemCode", header: t("quality.rework.itemCode"), size: 120, meta: { filterType: "text" as const } },
@@ -138,9 +142,8 @@ export default function ReworkInspectPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.rework.inspectTitle")}
-            onRowClick={row => openPanel(row as ReworkOrder)}
-            getRowId={row => String((row as ReworkOrder).id)}
-            selectedRowId={selectedTarget ? String(selectedTarget.id) : undefined}
+            getRowId={row => (row as ReworkOrder).reworkNo}
+            selectedRowId={selectedTarget?.reworkNo}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0">
                 <div className="flex-1 min-w-[200px]">

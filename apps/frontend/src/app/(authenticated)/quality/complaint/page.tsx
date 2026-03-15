@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, AlertTriangle, Clock, Search as SearchIcon,
-  Calendar, CheckCircle, Eye, FileText, Link2, X,
+  Calendar, CheckCircle, Eye, FileText, Link2, X, FileSearch,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -20,7 +20,6 @@ import ComplaintFormPanel from "./components/ComplaintFormPanel";
 
 /** 클레임 데이터 타입 */
 interface Complaint {
-  id: number;
   complaintNo: string;
   customerCode: string;
   customerName: string;
@@ -92,8 +91,8 @@ export default function ComplaintPage() {
   }, [data]);
 
   /* -- 상태 전환 API -- */
-  const patchAction = useCallback(async (id: number, endpoint: string, body?: object) => {
-    await api.patch(`/quality/complaints/${id}/${endpoint}`, body ?? {});
+  const patchAction = useCallback(async (complaintNo: string, endpoint: string, body?: object) => {
+    await api.patch(`/quality/complaints/${complaintNo}/${endpoint}`, body ?? {});
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
@@ -103,39 +102,51 @@ export default function ComplaintPage() {
     if (!selectedRow) return;
     setConfirmAction({
       label: t("quality.complaint.investigate"),
-      action: () => patchAction(selectedRow.id, "investigate"),
+      action: () => patchAction(selectedRow.complaintNo, "investigate"),
     });
   };
   const handleRespond = () => {
     if (!selectedRow) return;
     setConfirmAction({
       label: t("quality.complaint.respond"),
-      action: () => patchAction(selectedRow.id, "respond"),
+      action: () => patchAction(selectedRow.complaintNo, "respond"),
     });
   };
   const handleResolve = () => {
     if (!selectedRow) return;
     setConfirmAction({
       label: t("quality.complaint.resolve"),
-      action: () => patchAction(selectedRow.id, "resolve"),
+      action: () => patchAction(selectedRow.complaintNo, "resolve"),
     });
   };
   const handleClose = () => {
     if (!selectedRow) return;
     setConfirmAction({
       label: t("common.close"),
-      action: () => patchAction(selectedRow.id, "close"),
+      action: () => patchAction(selectedRow.complaintNo, "close"),
     });
   };
   const handleLinkCapa = async () => {
     if (!selectedRow || !capaIdInput) return;
-    await patchAction(selectedRow.id, "link-capa", { capaId: Number(capaIdInput) });
+    await patchAction(selectedRow.complaintNo, "link-capa", { capaId: Number(capaIdInput) });
     setIsCapaModalOpen(false);
     setCapaIdInput("");
   };
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<Complaint>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "complaintNo", header: t("quality.complaint.complaintNo"), size: 170,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
@@ -235,19 +246,21 @@ export default function ComplaintPage() {
 
         {/* 액션 버튼 */}
         {actionButtons && (
-          <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
-            <span className="text-sm text-text-muted font-medium">{selectedRow?.complaintNo}</span>
+          <div className="flex items-center gap-3 flex-shrink-0 px-1">
+            <span className="text-xs text-text-muted font-medium">{selectedRow?.complaintNo}</span>
             {actionButtons}
-          </div></CardContent></Card>
+            <button onClick={() => setSelectedRow(null)} className="ml-auto p-1 hover:bg-surface rounded transition-colors" title={t("common.close")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
+          </div>
         )}
 
         {/* DataGrid */}
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.complaint.title")}
-            onRowClick={row => setSelectedRow(row as Complaint)}
-            getRowId={row => String((row as Complaint).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as Complaint).complaintNo}
+            selectedRowId={selectedRow ? String(selectedRow.complaintNo) : undefined}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">

@@ -27,7 +27,6 @@ import MoldUsageList from "./components/MoldUsageList";
 
 /** 금형 마스터 데이터 타입 */
 interface MoldMaster {
-  id: number;
   moldCode: string;
   moldName: string;
   moldType: string;
@@ -204,8 +203,8 @@ export default function MoldMgmtPage() {
             <DataGrid data={data} columns={columns} isLoading={loading}
               enableColumnFilter enableExport exportFileName={t("equipment.mold.title")}
               onRowClick={row => setSelectedRow(row as MoldMaster)}
-              getRowId={row => String((row as MoldMaster).id)}
-              selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+              getRowId={row => (row as MoldMaster).moldCode}
+              selectedRowId={selectedRow ? selectedRow.moldCode : undefined}
               rowClassName={row => getRowClassName(row as MoldMaster)}
               toolbarLeft={
                 <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">

@@ -1,17 +1,16 @@
 /**
  * @file entities/activity-log.entity.ts
  * @description 사용자 활동 로그 엔티티 - 로그인/페이지 접속 기록
- *              SEQUENCE(패턴 B)를 사용한다.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
+ * 1. activityDate + seq: 복합 PK (활동일자 + 일련번호)
  * 2. activityType: LOGIN(로그인), PAGE_ACCESS(페이지 접속)
  * 3. deviceType: PC 또는 PDA 디바이스 구분
  * 4. SYS_CONFIGS의 ENABLE_ACTIVITY_LOG 설정이 'Y'일 때만 기록
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   Index,
@@ -22,8 +21,11 @@ import {
 @Index(['activityType'])
 @Index(['createdAt'])
 export class ActivityLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
+  @PrimaryColumn({ name: 'ACTIVITY_DATE', type: 'date', default: () => 'SYSDATE' })
+  activityDate: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
+  seq: number;
 
   @Column({ name: 'USER_EMAIL', length: 255 })
   userEmail: string;

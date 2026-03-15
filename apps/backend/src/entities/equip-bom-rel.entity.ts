@@ -1,17 +1,16 @@
 /**
  * @file entities/equip-bom-rel.entity.ts
  * @description 설비-BOM 품목 연결 관계 Entity
- *              SEQUENCE(패턴 B)를 사용한다.
- *              equipCode/bomItemCode로 FK 참조.
+ *              equipCode + bomItemCode 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
+ * 1. equipCode + bomItemCode가 복합 PK (자연키)
  * 2. 설비와 BOM 품목의 N:M 관계를 관리
  * 3. 설치일, 수량, 유효기한 등을 관리
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -23,17 +22,12 @@ import { EquipMaster } from './equip-master.entity';
 import { EquipBomItem } from './equip-bom-item.entity';
 
 @Entity({ name: 'EQUIP_BOM_RELS' })
-@Index(['equipCode'])
-@Index(['bomItemCode'])
 @Index(['useYn'])
 export class EquipBomRel {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'EQUIP_CODE', length: 50 })
+  @PrimaryColumn({ name: 'EQUIP_CODE', length: 50 })
   equipCode: string;
 
-  @Column({ name: 'BOM_ITEM_CODE', length: 50 })
+  @PrimaryColumn({ name: 'BOM_ITEM_CODE', length: 50 })
   bomItemCode: string;
 
   @Column({ name: 'QUANTITY', type: 'float', default: 1 })

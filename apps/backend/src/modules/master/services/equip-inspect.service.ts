@@ -1,6 +1,12 @@
 /**
  * @file src/modules/master/services/equip-inspect.service.ts
  * @description 설비점검항목마스터 비즈니스 로직 서비스
+ *              복합키: company + plant + equipCode + inspectType + seq
+ *
+ * 초보자 가이드:
+ * 1. findAll: 목록 조회 (equipCode, inspectType 필터)
+ * 2. create: 항목 생성 (company, plant는 컨트롤러에서 전달)
+ * 3. update/delete: 복합키로 식별
  */
 
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -19,36 +25,23 @@ export class EquipInspectService {
   async findAll(query: EquipInspectItemQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, equipCode, inspectType, search, useYn } = query;
 
-    const queryBuilder = this.equipInspectRepository.createQueryBuilder('item');
+    const qb = this.equipInspectRepository.createQueryBuilder('item');
 
-    if (company) {
-      queryBuilder.andWhere('item.company = :company', { company });
-    }
-    if (plant) {
-      queryBuilder.andWhere('item.plant = :plant', { plant });
-    }
-
-    if (equipCode) {
-      queryBuilder.andWhere('item.equipCode = :equipCode', { equipCode });
-    }
-
-    if (inspectType) {
-      queryBuilder.andWhere('item.inspectType = :inspectType', { inspectType });
-    }
-
-    if (useYn) {
-      queryBuilder.andWhere('item.useYn = :useYn', { useYn });
-    }
-
+    if (company) qb.andWhere('item.company = :company', { company });
+    if (plant) qb.andWhere('item.plant = :plant', { plant });
+    if (equipCode) qb.andWhere('item.equipCode = :equipCode', { equipCode });
+    if (inspectType) qb.andWhere('item.inspectType = :inspectType', { inspectType });
+    if (useYn) qb.andWhere('item.useYn = :useYn', { useYn });
     if (search) {
-      queryBuilder.andWhere(
+      qb.andWhere(
         '(item.itemName LIKE :search OR item.equipCode LIKE :search)',
         { search: `%${search}%` },
       );
     }
 
-    const [data, total] = await queryBuilder
+    const [data, total] = await qb
       .orderBy('item.equipCode', 'ASC')
+      .addOrderBy('item.inspectType', 'ASC')
       .addOrderBy('item.seq', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)
@@ -57,41 +50,37 @@ export class EquipInspectService {
     return { data, total, page, limit };
   }
 
-  async findById(id: number) {
+  async findByKey(company: string, plant: string, equipCode: string, inspectType: string, seq: number) {
     const item = await this.equipInspectRepository.findOne({
-      where: { id },
+      where: { company, plant, equipCode, inspectType, seq },
     });
-
     if (!item) {
-      throw new NotFoundException('설비점검항목을 찾을 수 없습니다.');
+      throw new NotFoundException(`점검항목을 찾을 수 없습니다: ${equipCode}/${inspectType}/${seq}`);
     }
-
     return item;
   }
 
-  async create(dto: CreateEquipInspectItemDto) {
-    const entity = this.equipInspectRepository.create(dto);
-    const saved = await this.equipInspectRepository.save(entity);
-    return saved;
-  }
-
-  async update(id: number, dto: UpdateEquipInspectItemDto) {
-    const item = await this.findById(id);
-
-    const updated = await this.equipInspectRepository.save({
-      ...item,
+  async create(dto: CreateEquipInspectItemDto, company: string, plant: string) {
+    const entity = this.equipInspectRepository.create({
       ...dto,
-      id,
+      company,
+      plant,
     });
-
-    return updated;
+    return this.equipInspectRepository.save(entity);
   }
 
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async update(
+    company: string, plant: string, equipCode: string, inspectType: string, seq: number,
+    dto: UpdateEquipInspectItemDto,
+  ) {
+    const item = await this.findByKey(company, plant, equipCode, inspectType, seq);
+    Object.assign(item, dto);
+    return this.equipInspectRepository.save(item);
+  }
 
+  async delete(company: string, plant: string, equipCode: string, inspectType: string, seq: number) {
+    const item = await this.findByKey(company, plant, equipCode, inspectType, seq);
     await this.equipInspectRepository.remove(item);
-
-    return { id, deleted: true };
+    return { equipCode, inspectType, seq, deleted: true };
   }
 }

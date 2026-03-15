@@ -1,16 +1,16 @@
 /**
  * @file sample-inspect-result.entity.ts
  * @description 반제품 샘플검사 결과 엔티티 - 낱개단위 측정값 저장
- *              시퀀스 PK 사용, jobOrderId → orderNo로 JobOrder 참조.
+ *              복합 PK: orderNo + sampleNo
  *
  * 초보자 가이드:
- * 1. ID는 자동 증가 시퀀스 (number)
+ * 1. 복합 PK: orderNo(작업지시번호) + sampleNo(샘플번호)
  * 2. ORDER_NO로 JobOrder(작업지시)를 참조
  * 3. 각 샘플에 대한 측정값, 상/하한치, 자동 합불 판정
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -21,19 +21,18 @@ import {
 import { JobOrder } from './job-order.entity';
 
 @Entity({ name: 'SAMPLE_INSPECT_RESULTS' })
-@Index(['orderNo'])
 @Index(['inspectDate'])
 @Index(['passYn'])
 export class SampleInspectResult {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'ORDER_NO', length: 50 })
+  @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
   @ManyToOne(() => JobOrder)
   @JoinColumn({ name: 'ORDER_NO' })
   jobOrder: JobOrder;
+
+  @PrimaryColumn({ name: 'SAMPLE_NO', type: 'int' })
+  sampleNo: number;
 
   @Column({ name: 'INSPECT_DATE', type: 'date' })
   inspectDate: Date;
@@ -43,9 +42,6 @@ export class SampleInspectResult {
 
   @Column({ name: 'INSPECT_TYPE', length: 50, nullable: true })
   inspectType: string | null;
-
-  @Column({ name: 'SAMPLE_NO', type: 'int' })
-  sampleNo: number;
 
   @Column({ name: 'MEASURED_VALUE', length: 100, nullable: true })
   measuredValue: string | null;

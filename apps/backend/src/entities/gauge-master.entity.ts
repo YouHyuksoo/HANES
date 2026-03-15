@@ -10,20 +10,15 @@
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
 
 @Entity({ name: 'GAUGE_MASTERS' })
-@Index(['company', 'plant', 'gaugeCode'], { unique: true })
 export class GaugeMaster {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'GAUGE_CODE', length: 50 })
+  @PrimaryColumn({ name: 'GAUGE_CODE', length: 50 })
   gaugeCode: string;
 
   @Column({ name: 'GAUGE_NAME', length: 200 })

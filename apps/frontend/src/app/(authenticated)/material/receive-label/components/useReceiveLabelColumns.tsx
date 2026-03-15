@@ -16,8 +16,8 @@ import { ColumnDef } from '@tanstack/react-table';
 
 /** IQC 합격 입하 건 (API 응답과 일치하는 flat 구조) */
 export interface LabelableArrival {
-  id: number;
   arrivalNo: string;
+  seq: number;
   itemCode: string;
   itemName: string;
   unit: string;
@@ -34,12 +34,12 @@ export interface LabelableArrival {
 interface UseReceiveLabelColumnsParams {
   /** 전체 선택 여부 */
   allSelected: boolean;
-  /** 선택된 arrival id Set */
-  selectedIds: Set<number>;
+  /** 선택된 arrival 키(arrivalNo-seq) Set */
+  selectedIds: Set<string>;
   /** 전체 선택/해제 토글 */
   toggleAll: (checked: boolean) => void;
   /** 개별 선택 토글 */
-  toggleItem: (id: number) => void;
+  toggleItem: (key: string) => void;
 }
 
 /** DataGrid 컬럼 정의 훅 */
@@ -59,11 +59,14 @@ export function useReceiveLabelColumns({
         ),
         size: 40,
         meta: { filterType: 'none' as const },
-        cell: ({ row }) => (
-          <input type="checkbox" checked={selectedIds.has(row.original.id)}
-            onChange={() => toggleItem(row.original.id)}
-            className="w-4 h-4 accent-primary" />
-        ),
+        cell: ({ row }) => {
+          const key = `${row.original.arrivalNo}-${row.original.seq}`;
+          return (
+            <input type="checkbox" checked={selectedIds.has(key)}
+              onChange={() => toggleItem(key)}
+              className="w-4 h-4 accent-primary" />
+          );
+        },
       },
       {
         id: 'arrivalNo', accessorKey: 'arrivalNo',

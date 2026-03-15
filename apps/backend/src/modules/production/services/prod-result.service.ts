@@ -6,9 +6,12 @@
  * 1. **CRUD 메서드**: 생성, 조회, 수정, 삭제 로직 구현
  * 2. **실적 집계**: 작업지시별, 설비별, 작업자별 실적 집계
  * 3. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
+ * 4. **PK**: resultNo(채번 문자열), id(자동증분)는 자식 FK 호환용
  *
- * 실제 DB 스키마 (prod_results 테이블):
- * - jobOrderId로 작업지시와 연결
+ * 실제 DB 스키마 (PROD_RESULTS 테이블):
+ * - RESULT_NO: PK (SeqGenerator 채번)
+ * - ID: 자동증분 (자식 FK 호환)
+ * - ORDER_NO: 작업지시 참조
  * - status: RUNNING, DONE, CANCELED
  */
 
@@ -41,6 +44,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { NumRuleService } from '../../num-rule/num-rule.service';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 
 @Injectable()
 export class ProdResultService {
@@ -69,6 +73,7 @@ export class ProdResultService {
     private readonly autoIssueService: AutoIssueService,
     private readonly productInventoryService: ProductInventoryService,
     private readonly numRuleService: NumRuleService,
+    private readonly seqGenerator: SeqGeneratorService,
   ) {}
 
   /**
@@ -116,6 +121,7 @@ export class ProdResultService {
         order: { createdAt: 'DESC' },
         relations: ['jobOrder', 'equip', 'worker'],
         select: {
+          resultNo: true,
           id: true,
           orderNo: true,
           equipCode: true,
@@ -140,16 +146,16 @@ export class ProdResultService {
   }
 
   /**
-   * 생산실적 단건 조회 (ID)
+   * 생산실적 단건 조회 (resultNo)
    */
-  async findById(id: string) {
+  async findById(resultNo: string) {
     const prodResult = await this.prodResultRepository.findOne({
-      where: { id: +id },
+      where: { resultNo },
       relations: ['jobOrder', 'jobOrder.part', 'equip', 'worker', 'inspectResults', 'defectLogs'],
     });
 
     if (!prodResult) {
-      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${resultNo}`);
     }
 
     // Filter inspectResults (only passYn = 'N') and limit to 10
@@ -165,7 +171,7 @@ export class ProdResultService {
     }
 
     // 자재 투입 이력 조회
-    const matIssues = await this.findMatIssues(id);
+    const matIssues = await this.findMatIssues(String(prodResult.id));
     (prodResult as any).matIssues = matIssues;
 
     return prodResult;
@@ -215,6 +221,7 @@ export class ProdResultService {
       order: { createdAt: 'DESC' },
       relations: ['equip', 'worker'],
       select: {
+        resultNo: true,
         id: true,
         orderNo: true,
         equipCode: true,
@@ -369,9 +376,11 @@ export class ProdResultService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    let savedId: number;
+    let savedResultNo: string;
     try {
+      const resultNo = await this.seqGenerator.getNo('PROD_RESULT', queryRunner);
       const prodResult = queryRunner.manager.create(ProdResult, {
+        resultNo,
         orderNo: dto.orderNo,
         equipCode: dto.equipCode,
         workerId: dto.workerId ?? null,
@@ -387,7 +396,7 @@ export class ProdResultService {
       });
 
       const saved = await queryRunner.manager.save(ProdResult, prodResult);
-      savedId = saved.id;
+      savedResultNo = saved.resultNo;
 
       // BOM 기반 자재 자동차감 (ON_CREATE)
       const totalQty = (dto.goodQty ?? 0) + (dto.defectQty ?? 0);
@@ -409,9 +418,10 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { id: savedId },
+      where: { resultNo: savedResultNo },
       relations: ['jobOrder', 'equip', 'worker'],
       select: {
+        resultNo: true,
         id: true,
         orderNo: true,
         equipCode: true,
@@ -434,8 +444,8 @@ export class ProdResultService {
   /**
    * 생산실적 수정
    */
-  async update(id: string, dto: UpdateProdResultDto) {
-    const prodResult = await this.findById(id);
+  async update(resultNo: string, dto: UpdateProdResultDto) {
+    const prodResult = await this.findById(resultNo);
 
     // DONE 상태에서는 일부 필드만 수정 가능
     if (prodResult.status === 'DONE') {
@@ -457,12 +467,13 @@ export class ProdResultService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.prodResultRepository.update(+id, updateData);
+    await this.prodResultRepository.update(prodResult.resultNo, updateData);
 
     return this.prodResultRepository.findOne({
-      where: { id: +id },
+      where: { resultNo },
       relations: ['jobOrder', 'equip', 'worker'],
       select: {
+        resultNo: true,
         id: true,
         orderNo: true,
         equipCode: true,
@@ -485,19 +496,19 @@ export class ProdResultService {
   /**
    * 생산실적 삭제
    */
-  async delete(id: string) {
-    await this.findById(id); // 존재 확인
+  async delete(resultNo: string) {
+    await this.findById(resultNo); // 존재 확인
 
-    await this.prodResultRepository.delete(+id);
+    await this.prodResultRepository.delete(resultNo);
 
-    return { id };
+    return { resultNo };
   }
 
   /**
    * 생산실적 완료 (트랜잭션: 실적 완료 + 금형 타수 + 설비 해제 원자성 보장)
    */
-  async complete(id: string, dto: CompleteProdResultDto) {
-    const prodResult = await this.findById(id);
+  async complete(resultNo: string, dto: CompleteProdResultDto) {
+    const prodResult = await this.findById(resultNo);
 
     if (prodResult.status !== 'RUNNING') {
       throw new BadRequestException(
@@ -519,7 +530,7 @@ export class ProdResultService {
       if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
       if (dto.remark) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ProdResult, +id, updateData);
+      await queryRunner.manager.update(ProdResult, prodResult.resultNo, updateData);
 
       // 2. 금형 타수 자동 증가 (트랜잭션 내 — 실패 시 전체 롤백)
       if (prodResult.equipCode) {
@@ -565,7 +576,7 @@ export class ProdResultService {
       const autoTotalQty = (dto.goodQty ?? prodResult.goodQty) + (dto.defectQty ?? prodResult.defectQty);
       if (autoTotalQty > 0) {
         const autoResult = await this.autoIssueService.execute(
-          'ON_COMPLETE', +id, prodResult.orderNo, autoTotalQty, queryRunner,
+          'ON_COMPLETE', prodResult.id, prodResult.orderNo, autoTotalQty, queryRunner,
         );
         if (autoResult.warnings.length > 0) {
           this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
@@ -610,9 +621,10 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { id: +id },
+      where: { resultNo },
       relations: ['jobOrder'],
       select: {
+        resultNo: true,
         id: true,
         orderNo: true,
         equipCode: true,
@@ -635,8 +647,8 @@ export class ProdResultService {
   /**
    * 생산실적 취소 (트랜잭션: 실적 취소 + 설비 해제 원자성 보장)
    */
-  async cancel(id: string, remark?: string) {
-    const prodResult = await this.findById(id);
+  async cancel(resultNo: string, remark?: string) {
+    const prodResult = await this.findById(resultNo);
 
     if (prodResult.status === 'CANCELED') {
       throw new BadRequestException(`이미 취소된 실적입니다.`);
@@ -650,7 +662,7 @@ export class ProdResultService {
       const updateData: any = { status: 'CANCELED' };
       if (remark) updateData.remark = remark;
 
-      await queryRunner.manager.update(ProdResult, +id, updateData);
+      await queryRunner.manager.update(ProdResult, prodResult.resultNo, updateData);
 
       // 설비의 현재 작업지시번호 해제
       if (prodResult.equipCode) {
@@ -661,10 +673,10 @@ export class ProdResultService {
       }
 
       // PROD_AUTO 자동차감 역분개
-      await this.reverseAutoIssue(queryRunner, +id);
+      await this.reverseAutoIssue(queryRunner, prodResult.id);
 
       // 공정재고 자동 적재 역분개 — PROD_RESULT 참조 트랜잭션 찾아서 취소
-      await this.reverseProductStock(queryRunner, +id);
+      await this.reverseProductStock(queryRunner, prodResult.id);
 
       await queryRunner.commitTransaction();
     } catch (err) {
@@ -675,7 +687,7 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { id: +id },
+      where: { resultNo },
     });
   }
 
@@ -696,7 +708,7 @@ export class ProdResultService {
 
     for (const issue of issues) {
       // (a) MatIssue → CANCELED
-      await qr.manager.update(MatIssue, { issueNo: issue.issueNo }, {
+      await qr.manager.update(MatIssue, { issueNo: issue.issueNo, seq: issue.seq }, {
         status: 'CANCELED',
       });
 
@@ -772,7 +784,7 @@ export class ProdResultService {
 
     for (const tx of transactions) {
       // (a) 원본 트랜잭션 → CANCELED
-      await qr.manager.update(ProductTransaction, { id: tx.id }, { status: 'CANCELED' });
+      await qr.manager.update(ProductTransaction, { transNo: tx.transNo }, { status: 'CANCELED' });
 
       // (b) 재고 차감 (입고 취소이므로 toWarehouseId에서 감소)
       if (tx.toWarehouseId && tx.qty > 0) {
@@ -804,7 +816,7 @@ export class ProdResultService {
         qty: -tx.qty,
         refType: 'PROD_RESULT_CANCEL',
         refId: String(prodResultId),
-        cancelRefId: String(tx.id),
+        cancelRefId: tx.transNo,
         remark: `생산실적 취소 역분개`,
         status: 'DONE',
         company: tx.company || '40',

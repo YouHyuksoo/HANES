@@ -158,9 +158,10 @@ export class CustomerOrderService {
 
       // 품목 생성
       if (dto.items && dto.items.length > 0) {
-        const items = dto.items.map((item) =>
+        const items = dto.items.map((item, idx) =>
           this.customerOrderItemRepository.create({
             orderNo: savedOrder.orderNo,
+            seq: idx + 1,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,
@@ -197,9 +198,10 @@ export class CustomerOrderService {
       if (dto.items) {
         await queryRunner.manager.delete(CustomerOrderItem, { orderNo });
 
-        const items = dto.items.map((item) =>
+        const items = dto.items.map((item, idx) =>
           this.customerOrderItemRepository.create({
             orderNo,
+            seq: idx + 1,
             itemCode: item.itemCode,
             orderQty: item.orderQty,
             shippedQty: 0,

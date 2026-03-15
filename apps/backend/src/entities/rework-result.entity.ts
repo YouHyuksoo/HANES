@@ -8,22 +8,28 @@
  * 3. IATF 16949: 재작업 처리 결과를 상세 기록
  */
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn,
+  Entity, PrimaryColumn, Column, ManyToOne, JoinColumn,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
 import { ReworkProcess } from './rework-process.entity';
 
 @Entity({ name: 'REWORK_RESULTS' })
-@Index(['company', 'plant', 'reworkProcessId'])
+@Index(['company', 'plant', 'reworkOrderId', 'processCode'])
 export class ReworkResult {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
+  @PrimaryColumn({ name: 'REWORK_ORDER_ID' })
+  reworkOrderId: number;
 
-  @Column({ name: 'REWORK_PROCESS_ID' })
-  reworkProcessId: number;
+  @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
+  processCode: string;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
+  seq: number;
 
   @ManyToOne(() => ReworkProcess)
-  @JoinColumn({ name: 'REWORK_PROCESS_ID' })
+  @JoinColumn([
+    { name: 'REWORK_ORDER_ID', referencedColumnName: 'reworkOrderId' },
+    { name: 'PROCESS_CODE', referencedColumnName: 'processCode' },
+  ])
   reworkProcess: ReworkProcess;
 
   @Column({ name: 'WORKER_CODE', length: 50 })

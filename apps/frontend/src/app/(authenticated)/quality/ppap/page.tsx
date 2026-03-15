@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, FileText, Clock, CheckCircle, Search as SearchIcon,
-  Send, ShieldCheck, XCircle, Undo2, Pencil, Trash2, Eye,
+  Send, ShieldCheck, XCircle, Undo2, Pencil, Trash2, Eye, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -26,7 +26,6 @@ import PpapFormPanel from "./components/PpapFormPanel";
 
 /** PPAP 데이터 타입 */
 interface PpapSubmission {
-  id: number;
   ppapNo: string;
   itemCode: string;
   itemName: string;
@@ -97,21 +96,33 @@ export default function PpapPage() {
   }, [data]);
 
   /* -- 상태 전환 API -- */
-  const patchAction = useCallback(async (id: number, endpoint: string, body?: object) => {
-    await api.patch(`/quality/ppap/${endpoint}/${id}`, body ?? {});
+  const patchAction = useCallback(async (ppapNo: string, endpoint: string, body?: object) => {
+    await api.patch(`/quality/ppap/${endpoint}/${ppapNo}`, body ?? {});
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
 
   /* -- 삭제 API -- */
-  const deleteAction = useCallback(async (id: number) => {
-    await api.delete(`/quality/ppap/${id}`);
+  const deleteAction = useCallback(async (ppapNo: string) => {
+    await api.delete(`/quality/ppap/${ppapNo}`);
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<PpapSubmission>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "ppapNo", header: t("quality.ppap.ppapNo"), size: 160,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
@@ -168,14 +179,14 @@ export default function PpapPage() {
             <Button size="sm" variant="danger"
               onClick={() => setConfirmAction({
                 label: t("common.delete"),
-                action: () => deleteAction(selectedRow.id),
+                action: () => deleteAction(selectedRow.ppapNo),
               })}>
               <Trash2 className="w-4 h-4 mr-1" />{t("common.delete")}
             </Button>
             <Button size="sm"
               onClick={() => setConfirmAction({
                 label: t("quality.ppap.submit"),
-                action: () => patchAction(selectedRow.id, "submit"),
+                action: () => patchAction(selectedRow.ppapNo, "submit"),
               })}>
               <Send className="w-4 h-4 mr-1" />{t("quality.ppap.submit")}
             </Button>
@@ -187,14 +198,14 @@ export default function PpapPage() {
             <Button size="sm" variant="danger"
               onClick={() => setConfirmAction({
                 label: t("common.delete"),
-                action: () => deleteAction(selectedRow.id),
+                action: () => deleteAction(selectedRow.ppapNo),
               })}>
               <Trash2 className="w-4 h-4 mr-1" />{t("common.delete")}
             </Button>
             <Button size="sm"
               onClick={() => setConfirmAction({
                 label: t("quality.ppap.submit"),
-                action: () => patchAction(selectedRow.id, "submit"),
+                action: () => patchAction(selectedRow.ppapNo, "submit"),
               })}>
               <Send className="w-4 h-4 mr-1" />{t("quality.ppap.submit")}
             </Button>
@@ -205,7 +216,7 @@ export default function PpapPage() {
           <>
             <Button size="sm" onClick={() => setConfirmAction({
               label: t("quality.ppap.approve"),
-              action: () => patchAction(selectedRow.id, "approve"),
+              action: () => patchAction(selectedRow.ppapNo, "approve"),
             })}>
               <ShieldCheck className="w-4 h-4 mr-1" />{t("quality.ppap.approve")}
             </Button>
@@ -216,7 +227,7 @@ export default function PpapPage() {
             <Button size="sm" variant="secondary"
               onClick={() => setConfirmAction({
                 label: t("quality.ppap.cancelSubmit"),
-                action: () => patchAction(selectedRow.id, "cancel-submit"),
+                action: () => patchAction(selectedRow.ppapNo, "cancel-submit"),
               })}>
               <Undo2 className="w-4 h-4 mr-1" />{t("quality.ppap.cancelSubmit")}
             </Button>
@@ -227,7 +238,7 @@ export default function PpapPage() {
           <Button size="sm" variant="secondary"
             onClick={() => setConfirmAction({
               label: t("quality.ppap.cancelApprove"),
-              action: () => patchAction(selectedRow.id, "cancel-approve"),
+              action: () => patchAction(selectedRow.ppapNo, "cancel-approve"),
             })}>
             <Undo2 className="w-4 h-4 mr-1" />{t("quality.ppap.cancelApprove")}
           </Button>
@@ -261,6 +272,10 @@ export default function PpapPage() {
           <div className="flex items-center gap-3 flex-shrink-0 px-1">
             <span className="text-xs text-text-muted font-medium">{selectedRow?.ppapNo}</span>
             {actionButtons}
+            <button onClick={() => setSelectedRow(null)}
+              className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+              <X className="w-4 h-4 text-text-muted" />
+            </button>
           </div>
         )}
 
@@ -268,9 +283,8 @@ export default function PpapPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.ppap.title")}
-            onRowClick={row => setSelectedRow(row as PpapSubmission)}
-            getRowId={row => String((row as PpapSubmission).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as PpapSubmission).ppapNo}
+            selectedRowId={selectedRow ? String(selectedRow.ppapNo) : undefined}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">
@@ -300,7 +314,7 @@ export default function PpapPage() {
         {/* 반려 사유 모달 */}
         <ConfirmModal isOpen={showRejectModal} onClose={() => setShowRejectModal(false)}
           onConfirm={async () => {
-            if (selectedRow) await patchAction(selectedRow.id, "reject", { rejectReason });
+            if (selectedRow) await patchAction(selectedRow.ppapNo, "reject", { rejectReason });
             setShowRejectModal(false);
           }}
           title={t("quality.ppap.reject")}

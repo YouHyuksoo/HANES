@@ -11,7 +11,7 @@
 import {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
   Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor, PackageCheck,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler,
 } from "lucide-react";
 
 /** 메뉴 설정 항목 인터페이스 */
@@ -53,6 +53,8 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MST_BOM", labelKey: "menu.master.bom", path: "/master/bom" },
       { code: "MST_PARTNER", labelKey: "menu.master.partner", path: "/master/partner" },
       { code: "MST_PROCESS", labelKey: "menu.master.process", path: "/master/process" },
+      { code: "MST_PROD_LINE", labelKey: "menu.master.prodLine", path: "/master/prod-line" },
+      { code: "MST_ROUTING", labelKey: "menu.master.routing", path: "/master/routing" },
       { code: "MST_WORKER", labelKey: "menu.master.worker", path: "/master/worker" },
       { code: "MST_WORK_INST", labelKey: "menu.master.workInstruction", path: "/master/work-instruction" },
       { code: "MST_WAREHOUSE", labelKey: "menu.master.warehouse", path: "/master/warehouse" },
@@ -68,7 +70,6 @@ export const menuConfig: MenuConfigItem[] = [
     children: [
       { code: "INV_MAT_STOCK", labelKey: "menu.inventory.matStock", path: "/inventory/material-stock" },
       { code: "INV_TRANSACTION", labelKey: "menu.inventory.transaction", path: "/inventory/transaction" },
-      { code: "INV_LOT", labelKey: "menu.inventory.lot", path: "/inventory/lot" },
       { code: "INV_MAT_PHYSICAL_INV", labelKey: "menu.inventory.matPhysicalInv", path: "/inventory/material-physical-inv" },
       { code: "INV_MAT_PHYSICAL_INV_HISTORY", labelKey: "menu.inventory.matPhysicalInvHistory", path: "/inventory/material-physical-inv-history" },
       { code: "INV_ARRIVAL_STOCK", labelKey: "menu.inventory.arrivalStock", path: "/material/arrival-stock" },
@@ -142,6 +143,8 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_INPUT_EQUIP", labelKey: "menu.production.inputEquip", path: "/production/input-equip" },
       { code: "PROD_RESULT_SUMMARY", labelKey: "menu.production.resultSummary", path: "/production/result-summary" },
       { code: "PROD_WIP_STOCK", labelKey: "menu.production.wipStock", path: "/production/wip-stock" },
+      { code: "QC_REWORK", labelKey: "menu.quality.rework", path: "/quality/rework" },
+      { code: "QC_REWORK_HISTORY", labelKey: "menu.quality.reworkHistory", path: "/quality/rework-history" },
     ],
   },
   {
@@ -150,7 +153,8 @@ export const menuConfig: MenuConfigItem[] = [
     icon: ScanLine,
     children: [
       { code: "INSP_RESULT", labelKey: "menu.inspection.result", path: "/inspection/result" },
-      { code: "INSP_EQUIP", labelKey: "menu.inspection.equip", path: "/inspection/equip" },
+      { code: "INSP_HISTORY", labelKey: "menu.inspection.history", path: "/inspection/history" },
+      { code: "INSP_PROTOCOL", labelKey: "menu.inspection.protocol", path: "/inspection/protocol" },
     ],
   },
   {
@@ -162,9 +166,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "QC_IQC", labelKey: "menu.material.iqc", path: "/material/iqc" },
       { code: "QC_IQC_HISTORY", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },
       { code: "QC_DEFECT", labelKey: "menu.quality.defect", path: "/quality/defect" },
-      { code: "QC_REWORK", labelKey: "menu.quality.rework", path: "/quality/rework" },
       { code: "QC_REWORK_INSPECT", labelKey: "menu.quality.reworkInspect", path: "/quality/rework-inspect" },
-      { code: "QC_REWORK_HISTORY", labelKey: "menu.quality.reworkHistory", path: "/quality/rework-history" },
       { code: "QC_INSPECT", labelKey: "menu.quality.inspect", path: "/quality/inspect" },
       { code: "QC_SAMPLE_INSPECT", labelKey: "menu.production.sampleInspect", path: "/production/sample-inspect" },
       { code: "QC_OQC", labelKey: "menu.quality.oqc", path: "/quality/oqc" },
@@ -177,7 +179,6 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "QC_PPAP", labelKey: "menu.quality.ppap", path: "/quality/ppap" },
       { code: "QC_SPC", labelKey: "menu.quality.spc", path: "/quality/spc" },
       { code: "QC_CONTROL_PLAN", labelKey: "menu.quality.controlPlan", path: "/quality/control-plan" },
-      { code: "QC_MSA", labelKey: "menu.quality.msa", path: "/quality/msa" },
       { code: "QC_AUDIT", labelKey: "menu.quality.audit", path: "/quality/audit" },
       { code: "SYS_TRAINING", labelKey: "menu.system.training", path: "/system/training" },
     ],
@@ -187,19 +188,31 @@ export const menuConfig: MenuConfigItem[] = [
     labelKey: "menu.equipment",
     icon: Wrench,
     children: [
+      /* ── 마스터 ── */
       { code: "EQUIP_MASTER", labelKey: "menu.equipment.master", path: "/master/equip" },
-      { code: "EQUIP_PM_PLAN", labelKey: "menu.equipment.pmPlan", path: "/equipment/pm-plan" },
-      { code: "EQUIP_PM", labelKey: "menu.equipment.pm", path: "/equipment/pm" },
-      { code: "EQUIP_PM_CALENDAR", labelKey: "menu.equipment.pmCalendar", path: "/equipment/pm-calendar" },
+      { code: "EQ_MOLD_MGMT", labelKey: "menu.equipment.mold", path: "/equipment/mold-mgmt" },
+      { code: "EQUIP_INSPECT_ITEM_MASTER", labelKey: "menu.equipment.inspectItemMaster", path: "/master/equip-inspect-item" },
+      { code: "EQUIP_INSPECT_ITEM", labelKey: "menu.master.equipInspect", path: "/master/equip-inspect" },
+      /* ── 점검 ── */
       { code: "EQUIP_INSPECT_CALENDAR", labelKey: "menu.equipment.dailyInspectCalendar", path: "/equipment/inspect-calendar" },
-      { code: "EQUIP_PERIODIC_CALENDAR", labelKey: "menu.equipment.periodicInspectCalendar", path: "/equipment/periodic-inspect-calendar" },
       { code: "EQUIP_DAILY", labelKey: "menu.equipment.dailyInspect", path: "/equipment/daily-inspect" },
+      { code: "EQUIP_PERIODIC_CALENDAR", labelKey: "menu.equipment.periodicInspectCalendar", path: "/equipment/periodic-inspect-calendar" },
       { code: "EQUIP_PERIODIC", labelKey: "menu.equipment.periodicInspect", path: "/equipment/periodic-inspect" },
       { code: "EQUIP_HISTORY", labelKey: "menu.equipment.inspectHistory", path: "/equipment/inspect-history" },
-      { code: "EQUIP_MOLD", labelKey: "menu.equipment.mold", path: "/equipment/mold" },
-      { code: "EQ_MOLD_MGMT", labelKey: "menu.equipment.moldMgmt", path: "/equipment/mold-mgmt" },
-      { code: "EQUIP_INSPECT_ITEM", labelKey: "menu.master.equipInspect", path: "/master/equip-inspect" },
-      { code: "GAUGE_MASTER", labelKey: "menu.equipment.gauge", path: "/master/gauge" },
+      /* ── 예방보전 ── */
+      { code: "EQUIP_PM_PLAN", labelKey: "menu.equipment.pmPlan", path: "/equipment/pm-plan" },
+      { code: "EQUIP_PM_CALENDAR", labelKey: "menu.equipment.pmCalendar", path: "/equipment/pm-calendar" },
+      { code: "EQUIP_PM_RESULT", labelKey: "menu.equipment.pmResult", path: "/equipment/pm-result" },
+    ],
+  },
+  {
+    code: "GAUGE_MGMT",
+    labelKey: "menu.gauge",
+    icon: Ruler,
+    children: [
+      { code: "GAUGE_MASTER", labelKey: "menu.gauge.master", path: "/master/gauge" },
+      { code: "GAUGE_CALIBRATION", labelKey: "menu.gauge.calibration", path: "/quality/msa" },
+      { code: "GAUGE_CALIBRATION_HISTORY", labelKey: "menu.gauge.calibrationHistory", path: "/equipment/calibration-history" },
     ],
   },
   {

@@ -1,16 +1,17 @@
 /**
  * @file entities/consumable-log.entity.ts
  * @description 소모품 입출고/이동 로그 엔티티 - 소모품 이력을 관리한다.
- *              SEQUENCE(패턴 B)를 사용한다.
+ *              복합키: TRANS_DATE + SEQ (일자 + 일련번호).
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
+ * 1. 복합 PK: transDate(거래일) + seq(일련번호)
  * 2. consumableCode: 대상 소모품 코드
  * 3. logType: INCOMING(입고), ISSUE(출고), RETURN(반납) 등
+ * 4. id는 레거시 FK 호환을 위해 generated @Column으로 유지
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -21,8 +22,14 @@ import {
 @Index(['consumableCode'])
 @Index(['logType'])
 export class ConsumableLog {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
+
+  @PrimaryColumn({ name: 'TRANS_DATE', type: 'date' })
+  transDate: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
+  seq: number;
 
   @Column({ name: 'CONSUMABLE_CODE', length: 50 })
   consumableCode: string;

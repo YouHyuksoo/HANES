@@ -33,10 +33,10 @@ export class MatIssueController {
     return ResponseUtil.success(data, '스캔 출고가 완료되었습니다.');
   }
 
-  @Get(':id')
+  @Get(':issueNo/:seq')
   @ApiOperation({ summary: '출고 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.matIssueService.findById(Number(id));
+  async findById(@Param('issueNo') issueNo: string, @Param('seq') seq: string) {
+    const data = await this.matIssueService.findById(issueNo, Number(seq));
     return ResponseUtil.success(data);
   }
 
@@ -49,11 +49,11 @@ export class MatIssueController {
     return ResponseUtil.success(data, '자재가 출고되었습니다.');
   }
 
-  @Post(':id/cancel')
+  @Post(':issueNo/:seq/cancel')
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '출고 취소' })
-  async cancel(@Param('id') id: string, @Body('reason') reason?: string) {
-    const data = await this.matIssueService.cancel(Number(id), reason);
+  async cancel(@Param('issueNo') issueNo: string, @Param('seq') seq: string, @Body('reason') reason?: string) {
+    const data = await this.matIssueService.cancel(issueNo, Number(seq), reason);
     return ResponseUtil.success(data, '출고가 취소되었습니다.');
   }
 }

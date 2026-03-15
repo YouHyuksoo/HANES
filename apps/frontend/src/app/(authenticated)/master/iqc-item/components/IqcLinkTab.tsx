@@ -22,9 +22,8 @@ import IqcLinkModal from "./IqcLinkModal";
 import api from "@/services/api";
 
 interface IqcPartLinkRow {
-  id: string;
   itemCode: string;
-  partnerId?: string | null;
+  partnerId: string;
   groupId: string;
   remark?: string | null;
   useYn: string;
@@ -85,7 +84,7 @@ export default function IqcLinkTab() {
         remark: formData.remark || undefined,
       };
       if (editingLink) {
-        await api.put(`/master/iqc-part-links/${editingLink.id}`, body);
+        await api.put(`/master/iqc-part-links/${editingLink.itemCode}/${editingLink.partnerId}`, body);
       } else {
         await api.post("/master/iqc-part-links", body);
       }
@@ -99,7 +98,7 @@ export default function IqcLinkTab() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/iqc-part-links/${deleteTarget.id}`);
+      await api.delete(`/master/iqc-part-links/${deleteTarget.itemCode}/${deleteTarget.partnerId}`);
       fetchLinks();
     } catch (e: any) {
       console.error("Delete failed:", e);

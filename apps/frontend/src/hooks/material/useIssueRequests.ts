@@ -100,15 +100,15 @@ export function useIssueRequests() {
   }), [records]);
 
   // 승인 처리
-  const handleApprove = useCallback(async (id: string) => {
-    await api.patch(`/material/issue-requests/${id}/approve`);
+  const handleApprove = useCallback(async (requestNo: string) => {
+    await api.patch(`/material/issue-requests/${requestNo}/approve`);
     invalidate(['issue-requests']);
     refetch();
   }, [invalidate, refetch]);
 
   // 반려 처리
-  const handleReject = useCallback(async (id: string, reason: string) => {
-    await api.patch(`/material/issue-requests/${id}/reject`, { reason });
+  const handleReject = useCallback(async (requestNo: string, reason: string) => {
+    await api.patch(`/material/issue-requests/${requestNo}/reject`, { reason });
     invalidate(['issue-requests']);
     refetch();
   }, [invalidate, refetch]);

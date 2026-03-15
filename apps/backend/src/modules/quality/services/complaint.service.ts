@@ -125,8 +125,8 @@ export class ComplaintService {
   /**
    * 클레임 단건 조회
    */
-  async findById(id: number) {
-    const item = await this.complaintRepo.findOne({ where: { id } });
+  async findById(complaintNo: string) {
+    const item = await this.complaintRepo.findOne({ where: { complaintNo } });
     if (!item) {
       throw new NotFoundException('고객클레임을 찾을 수 없습니다.');
     }
@@ -160,8 +160,8 @@ export class ComplaintService {
   /**
    * 클레임 수정 (RECEIVED 상태에서만 가능)
    */
-  async update(id: number, dto: UpdateComplaintDto, userId: string) {
-    const item = await this.findById(id);
+  async update(complaintNo: string, dto: UpdateComplaintDto, userId: string) {
+    const item = await this.findById(complaintNo);
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 수정할 수 있습니다.');
     }
@@ -172,8 +172,8 @@ export class ComplaintService {
   /**
    * 클레임 삭제 (RECEIVED 상태에서만 가능)
    */
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async delete(complaintNo: string) {
+    const item = await this.findById(complaintNo);
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 삭제할 수 있습니다.');
     }
@@ -187,8 +187,8 @@ export class ComplaintService {
   /**
    * 조사 시작 (RECEIVED → INVESTIGATING)
    */
-  async investigate(id: number, dto: InvestigateComplaintDto, userId: string) {
-    const item = await this.findById(id);
+  async investigate(complaintNo: string, dto: InvestigateComplaintDto, userId: string) {
+    const item = await this.findById(complaintNo);
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 조사를 시작할 수 있습니다.');
     }
@@ -204,8 +204,8 @@ export class ComplaintService {
   /**
    * 대응 완료 (INVESTIGATING → RESPONDING)
    */
-  async respond(id: number, dto: RespondComplaintDto, userId: string) {
-    const item = await this.findById(id);
+  async respond(complaintNo: string, dto: RespondComplaintDto, userId: string) {
+    const item = await this.findById(complaintNo);
     if (item.status !== 'INVESTIGATING') {
       throw new BadRequestException('조사중 상태에서만 대응할 수 있습니다.');
     }
@@ -221,8 +221,8 @@ export class ComplaintService {
   /**
    * 해결 (RESPONDING → RESOLVED)
    */
-  async resolve(id: number, userId: string) {
-    const item = await this.findById(id);
+  async resolve(complaintNo: string, userId: string) {
+    const item = await this.findById(complaintNo);
     if (item.status !== 'RESPONDING') {
       throw new BadRequestException('대응중 상태에서만 해결할 수 있습니다.');
     }
@@ -236,8 +236,8 @@ export class ComplaintService {
   /**
    * 종료 (RESOLVED → CLOSED)
    */
-  async close(id: number, userId: string) {
-    const item = await this.findById(id);
+  async close(complaintNo: string, userId: string) {
+    const item = await this.findById(complaintNo);
     if (item.status !== 'RESOLVED') {
       throw new BadRequestException('해결 상태에서만 종료할 수 있습니다.');
     }
@@ -250,8 +250,8 @@ export class ComplaintService {
   /**
    * CAPA 연계
    */
-  async linkCapa(id: number, dto: LinkCapaDto, userId: string) {
-    const item = await this.findById(id);
+  async linkCapa(complaintNo: string, dto: LinkCapaDto, userId: string) {
+    const item = await this.findById(complaintNo);
     item.capaId = dto.capaId;
     item.updatedBy = userId;
     this.logger.log(`고객클레임 CAPA 연계: ${item.complaintNo} → CAPA#${dto.capaId}`);

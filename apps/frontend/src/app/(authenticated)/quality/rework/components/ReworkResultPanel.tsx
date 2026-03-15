@@ -7,7 +7,7 @@
  * 초보자 가이드:
  * 1. 공정 서브그리드에서 실적입력 버튼 클릭 시 우측에서 슬라이드 인
  * 2. 작업자, 수량, 작업내역(IATF 필수) 등 입력
- * 3. API: POST /quality/rework-results
+ * 3. API: POST /quality/reworks/results
  */
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,7 +16,7 @@ import { WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 
 export interface ResultTarget {
-  processId: number;
+  reworkOrderId: number;
   processCode: string;
   processName: string;
   seq: number;
@@ -66,8 +66,9 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
     if (!canSubmit) return;
     setSaving(true);
     try {
-      await api.post("/quality/rework-results", {
-        reworkProcessId: target.processId,
+      await api.post("/quality/reworks/results", {
+        reworkOrderId: target.reworkOrderId,
+        processCode: target.processCode,
         workerId: form.workerId,
         resultQty: Number(form.resultQty) || 0,
         goodQty: Number(form.goodQty) || 0,

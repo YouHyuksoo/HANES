@@ -284,7 +284,7 @@ export class ProductInventoryService {
   /** 제품 트랜잭션 취소 (입고취소, 출고취소) */
   async cancelTransaction(dto: CancelTransactionDto) {
     const originalTrans = await this.transactionRepository.findOne({
-      where: { id: +dto.transactionId },
+      where: { transNo: dto.transactionId },
     });
 
     if (!originalTrans) {
@@ -304,7 +304,7 @@ export class ProductInventoryService {
 
     try {
       // 1. 원본 트랜잭션 상태 변경
-      await queryRunner.manager.update(ProductTransaction, +dto.transactionId, { status: 'CANCELED' });
+      await queryRunner.manager.update(ProductTransaction, { transNo: originalTrans.transNo }, { status: 'CANCELED' });
 
       // 2. 취소 트랜잭션 생성 (반대 수량)
       const cancelTrans = this.transactionRepository.create({
@@ -323,7 +323,7 @@ export class ProductInventoryService {
         totalAmount: originalTrans.totalAmount ? -Number(originalTrans.totalAmount) : null,
         refType: originalTrans.refType,
         refId: originalTrans.refId,
-        cancelRefId: String(originalTrans.id),
+        cancelRefId: originalTrans.transNo,
         workerId: dto.workerId,
         issueType: originalTrans.issueType,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,

@@ -17,7 +17,8 @@ import {
   CalendarDays, CheckCircle, XCircle, RefreshCw,
   CalendarPlus, CalendarRange, AlertTriangle,
 } from "lucide-react";
-import { Button, Select, StatCard } from "@/components/ui";
+import { Button, StatCard } from "@/components/ui";
+import { ProcessSelect } from "@/components/shared";
 import InspectCalendar from "./components/InspectCalendar";
 import type { CalendarDaySummary } from "./components/InspectCalendar";
 import DaySchedulePanel from "./components/DaySchedulePanel";
@@ -25,7 +26,6 @@ import type { DayScheduleEquip } from "./components/DaySchedulePanel";
 import InspectExecuteModal from "./components/InspectExecuteModal";
 import api from "@/services/api";
 
-interface LineOption { value: string; label: string; }
 
 export default function InspectCalendarPage() {
   const { t } = useTranslation();
@@ -33,39 +33,19 @@ export default function InspectCalendarPage() {
 
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
-  const [lineCode, setLineCode] = useState("");
+  const [processCode, setProcessCode] = useState("");
   const [calendarData, setCalendarData] = useState<CalendarDaySummary[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(today.toISOString().split("T")[0]);
   const [dayData, setDayData] = useState<DayScheduleEquip[]>([]);
   const [dayLoading, setDayLoading] = useState(false);
   const [modalEquip, setModalEquip] = useState<DayScheduleEquip | null>(null);
-  const [lineOptions, setLineOptions] = useState<LineOption[]>([
-    { value: "", label: t("equipment.inspectCalendar.allLines") },
-  ]);
-
-  /** 라인 목록을 생산라인 마스터에서 동적 조회 */
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get("/master/prod-lines", { params: { limit: 200 } });
-        const lines = res.data?.data ?? [];
-        setLineOptions([
-          { value: "", label: t("equipment.inspectCalendar.allLines") },
-          ...lines.map((l: { lineCode: string; lineName: string }) => ({
-            value: l.lineCode,
-            label: `${l.lineCode} ${l.lineName || ""}`.trim(),
-          })),
-        ]);
-      } catch { /* keep default */ }
-    })();
-  }, [t]);
 
   const fetchCalendar = useCallback(async (y: number, m: number) => {
     setCalendarLoading(true);
     try {
       const params: Record<string, string | number> = { year: y, month: m };
-      if (lineCode) params.lineCode = lineCode;
+      if (processCode) params.processCode = processCode;
       const res = await api.get("/equipment/daily-inspect/calendar", { params });
       setCalendarData(res.data?.data ?? []);
     } catch {
@@ -73,13 +53,13 @@ export default function InspectCalendarPage() {
     } finally {
       setCalendarLoading(false);
     }
-  }, [lineCode]);
+  }, [processCode]);
 
   const fetchDaySchedule = useCallback(async (date: string) => {
     setDayLoading(true);
     try {
       const params: Record<string, string> = { date };
-      if (lineCode) params.lineCode = lineCode;
+      if (processCode) params.processCode = processCode;
       const res = await api.get("/equipment/daily-inspect/calendar/day", { params });
       setDayData(res.data?.data ?? []);
     } catch {
@@ -87,7 +67,7 @@ export default function InspectCalendarPage() {
     } finally {
       setDayLoading(false);
     }
-  }, [lineCode]);
+  }, [processCode]);
 
   // 월 변경 시 자동 로드
   useEffect(() => { fetchCalendar(year, month); }, [year, month, fetchCalendar]);
@@ -163,7 +143,7 @@ export default function InspectCalendarPage() {
   }, [year, month, t]);
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-5 p-6 animate-fade-in">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
@@ -174,8 +154,8 @@ export default function InspectCalendarPage() {
           <p className="text-text-muted mt-1">{t("equipment.inspectCalendar.description")}</p>
         </div>
         <div className="flex gap-2 items-center">
-          <div className="w-28">
-            <Select options={lineOptions} value={lineCode} onChange={setLineCode} fullWidth />
+          <div className="w-36">
+            <ProcessSelect value={processCode} onChange={setProcessCode} labelPrefix={t("common.process", "공정")} fullWidth />
           </div>
           <Button size="sm" onClick={handleCurrentMonth}>
             <CalendarPlus className="w-4 h-4 mr-1" />

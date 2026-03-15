@@ -5,8 +5,8 @@
  * 초보자 가이드:
  * - create(): 즉시 승인(APPROVED) 처리 — 기존 PC 화면용, 재고 즉시 반영
  * - createPending(): 승인 대기(PENDING) 처리 — PDA 요청용, 재고 보류
- * - approve(id): PENDING → APPROVED, 실제 재고 차감/증가 실행
- * - reject(id): PENDING → REJECTED, 재고 변동 없음
+ * - approve(adjDate, seq): PENDING → APPROVED, 실제 재고 차감/증가 실행
+ * - reject(adjDate, seq): PENDING → REJECTED, 재고 변동 없음
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -138,7 +138,8 @@ export class AdjustmentService {
       await queryRunner.commitTransaction();
 
       return {
-        id: invAdjLog.id,
+        adjDate: invAdjLog.adjDate,
+        seq: invAdjLog.seq,
         warehouseCode,
         itemCode: part.itemCode,
         matUid,
@@ -161,12 +162,13 @@ export class AdjustmentService {
   /**
    * 보정 승인 처리
    * - PENDING 상태의 보정 요청을 APPROVED로 변경하고 실제 재고를 반영합니다.
-   * @param id InvAdjLog PK
+   * @param adjDate InvAdjLog 조정일자 PK
+   * @param seq InvAdjLog 일련번호 PK
    * @param approvedBy 승인자 ID
    */
-  async approve(id: number, approvedBy?: string) {
-    const adjLog = await this.invAdjLogRepository.findOne({ where: { id } });
-    if (!adjLog) throw new NotFoundException(`보정 이력을 찾을 수 없습니다: ${id}`);
+  async approve(adjDate: string, seq: number, approvedBy?: string) {
+    const adjLog = await this.invAdjLogRepository.findOne({ where: { adjDate: new Date(adjDate), seq } });
+    if (!adjLog) throw new NotFoundException(`보정 이력을 찾을 수 없습니다: ${adjDate}-${seq}`);
     if (adjLog.adjustStatus !== 'PENDING') {
       throw new BadRequestException(`이미 처리된 보정 요청입니다. 현재 상태: ${adjLog.adjustStatus}`);
     }
@@ -231,7 +233,7 @@ export class AdjustmentService {
         matUid: matUid || null,
         qty: Math.abs(diffQty),
         refType: 'ADJUSTMENT',
-        refId: String(adjLog.id),
+        refId: `${adjDate}-${seq}`,
         remark: reason,
         status: 'DONE',
         createdBy: approvedBy,
@@ -241,7 +243,7 @@ export class AdjustmentService {
       await queryRunner.manager.save(stockTransaction);
 
       // 보정 이력 상태 업데이트
-      await queryRunner.manager.update(InvAdjLog, { id }, {
+      await queryRunner.manager.update(InvAdjLog, { adjDate: new Date(adjDate), seq }, {
         adjustStatus: 'APPROVED',
         approvedBy: approvedBy || null,
         approvedAt: new Date(),
@@ -249,7 +251,7 @@ export class AdjustmentService {
 
       await queryRunner.commitTransaction();
 
-      return { id, adjustStatus: 'APPROVED', approvedBy, approvedAt: new Date() };
+      return { adjDate, seq, adjustStatus: 'APPROVED', approvedBy, approvedAt: new Date() };
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -262,22 +264,23 @@ export class AdjustmentService {
    * 보정 반려 처리
    * - PENDING 상태의 보정 요청을 REJECTED로 변경합니다.
    * - 재고 변동은 일어나지 않습니다.
-   * @param id InvAdjLog PK
+   * @param adjDate InvAdjLog 조정일자 PK
+   * @param seq InvAdjLog 일련번호 PK
    * @param rejectedBy 반려자 ID
    */
-  async reject(id: number, rejectedBy?: string) {
-    const adjLog = await this.invAdjLogRepository.findOne({ where: { id } });
-    if (!adjLog) throw new NotFoundException(`보정 이력을 찾을 수 없습니다: ${id}`);
+  async reject(adjDate: string, seq: number, rejectedBy?: string) {
+    const adjLog = await this.invAdjLogRepository.findOne({ where: { adjDate: new Date(adjDate), seq } });
+    if (!adjLog) throw new NotFoundException(`보정 이력을 찾을 수 없습니다: ${adjDate}-${seq}`);
     if (adjLog.adjustStatus !== 'PENDING') {
       throw new BadRequestException(`이미 처리된 보정 요청입니다. 현재 상태: ${adjLog.adjustStatus}`);
     }
 
-    await this.invAdjLogRepository.update({ id }, {
+    await this.invAdjLogRepository.update({ adjDate: new Date(adjDate), seq }, {
       adjustStatus: 'REJECTED',
       updatedBy: rejectedBy || null,
     });
 
-    return { id, adjustStatus: 'REJECTED', rejectedBy };
+    return { adjDate, seq, adjustStatus: 'REJECTED', rejectedBy };
   }
 
   /**
@@ -383,7 +386,7 @@ export class AdjustmentService {
         matUid: matUid || null,
         qty: Math.abs(diffQty),
         refType: 'ADJUSTMENT',
-        refId: String(invAdjLog.id),
+        refId: `${invAdjLog.adjDate}-${invAdjLog.seq}`,
         remark: reason,
         status: 'DONE',
         createdBy,
@@ -395,7 +398,8 @@ export class AdjustmentService {
       await queryRunner.commitTransaction();
 
       return {
-        id: invAdjLog.id,
+        adjDate: invAdjLog.adjDate,
+        seq: invAdjLog.seq,
         warehouseCode,
         itemCode: part.itemCode,
         matUid,

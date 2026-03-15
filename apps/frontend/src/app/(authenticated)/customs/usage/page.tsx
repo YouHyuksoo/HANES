@@ -18,8 +18,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
 interface UsageReport {
-  id: string;
   reportNo: string;
+  lotEntryNo: string;
+  lotMatUid: string;
   matUid: string;
   itemCode: string;
   itemName: string;
@@ -51,7 +52,7 @@ export default function CustomsUsagePage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [form, setForm] = useState({ matUid: "", usageQty: "", jobOrderNo: "", remark: "" });
+  const [form, setForm] = useState({ lotEntryNo: "", lotMatUid: "", usageQty: "", jobOrderNo: "", remark: "" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -74,7 +75,7 @@ export default function CustomsUsagePage() {
     try {
       await api.post("/customs/usage", form);
       setIsModalOpen(false);
-      setForm({ matUid: "", usageQty: "", jobOrderNo: "", remark: "" });
+      setForm({ lotEntryNo: "", lotMatUid: "", usageQty: "", jobOrderNo: "", remark: "" });
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
@@ -83,18 +84,18 @@ export default function CustomsUsagePage() {
     }
   }, [form, fetchData]);
 
-  const handleReport = useCallback(async (id: string) => {
+  const handleReport = useCallback(async (reportNo: string) => {
     try {
-      await api.put(`/customs/usage/${id}/report`);
+      await api.put(`/customs/usage/${reportNo}`, { status: 'REPORTED' });
       fetchData();
     } catch (e) {
       console.error("Report failed:", e);
     }
   }, [fetchData]);
 
-  const handleConfirm = useCallback(async (id: string) => {
+  const handleConfirm = useCallback(async (reportNo: string) => {
     try {
-      await api.put(`/customs/usage/${id}/confirm`);
+      await api.put(`/customs/usage/${reportNo}`, { status: 'CONFIRMED' });
       fetchData();
     } catch (e) {
       console.error("Confirm failed:", e);
@@ -107,10 +108,10 @@ export default function CustomsUsagePage() {
       cell: ({ row }) => (
         <div className="flex gap-1">
           {row.original.status === "DRAFT" && (
-            <button onClick={() => handleReport(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.report")}><Send className="w-4 h-4 text-primary" /></button>
+            <button onClick={() => handleReport(row.original.reportNo)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.report")}><Send className="w-4 h-4 text-primary" /></button>
           )}
           {row.original.status === "REPORTED" && (
-            <button onClick={() => handleConfirm(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.confirm")}><CheckCircle className="w-4 h-4 text-green-500" /></button>
+            <button onClick={() => handleConfirm(row.original.reportNo)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.confirm")}><CheckCircle className="w-4 h-4 text-green-500" /></button>
           )}
         </div>
       ),
@@ -180,7 +181,8 @@ export default function CustomsUsagePage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t("customs.usage.registerUsage")} size="lg">
         <div className="space-y-4">
-          <Input label={t("customs.stock.matUid")} placeholder="MAT250125-001" value={form.matUid} onChange={(e) => setForm((p) => ({ ...p, matUid: e.target.value }))} fullWidth />
+          <Input label={t("customs.entry.entryNo")} placeholder="IMP20250125001" value={form.lotEntryNo} onChange={(e) => setForm((p) => ({ ...p, lotEntryNo: e.target.value }))} fullWidth />
+          <Input label={t("customs.stock.matUid")} placeholder="MAT250125-001" value={form.lotMatUid} onChange={(e) => setForm((p) => ({ ...p, lotMatUid: e.target.value }))} fullWidth />
           <Input label={t("customs.usage.usageQty")} type="number" placeholder="100" value={form.usageQty} onChange={(e) => setForm((p) => ({ ...p, usageQty: e.target.value }))} fullWidth />
           <Input label={t("customs.usage.jobOrder")} placeholder="JO-2025-001" value={form.jobOrderNo} onChange={(e) => setForm((p) => ({ ...p, jobOrderNo: e.target.value }))} fullWidth />
           <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />

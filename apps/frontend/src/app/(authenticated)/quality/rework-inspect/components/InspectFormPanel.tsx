@@ -7,16 +7,16 @@
  * 초보자 가이드:
  * 1. 재검사 대기 행 선택 시 우측에서 슬라이드 인
  * 2. 검사자(WorkerSelect), 검사방법, 결과(PASS/FAIL/SCRAP), 수량 입력
- * 3. API: POST /quality/rework-inspects
+ * 3. API: POST /quality/reworks/inspects
  */
 import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { WorkerSelect, ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
 export interface InspectTarget {
-  id: number;
   reworkNo: string;
   itemCode: string;
   reworkQty: number;
@@ -55,8 +55,8 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
     if (!form.inspectorCode) return;
     setSaving(true);
     try {
-      await api.post("/quality/rework-inspects", {
-        reworkOrderId: target.id,
+      await api.post("/quality/reworks/inspects", {
+        reworkNo: target.reworkNo,
         inspectorCode: form.inspectorCode,
         inspectMethod: form.inspectMethod,
         inspectResult: form.inspectResult,
@@ -78,7 +78,13 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
     <div className={`w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${animate ? "animate-slide-in-right" : ""}`}>
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
-        <h2 className="text-sm font-bold text-text">{t("quality.rework.inspect")}</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-bold text-text">{t("quality.rework.inspect")}</h2>
+          <button onClick={onClose}
+            className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+            <X className="w-4 h-4 text-text-muted" />
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSubmit} disabled={saving || !form.inspectorCode}>

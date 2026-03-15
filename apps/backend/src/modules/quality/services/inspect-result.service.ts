@@ -23,6 +23,7 @@ import { Repository, IsNull, ILike, Between, MoreThanOrEqual, LessThanOrEqual, A
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { TraceLog } from '../../../entities/trace-log.entity';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import {
   CreateInspectResultDto,
   UpdateInspectResultDto,
@@ -44,6 +45,7 @@ export class InspectResultService {
     private readonly prodResultRepository: Repository<ProdResult>,
     @InjectRepository(TraceLog)
     private readonly traceLogRepository: Repository<TraceLog>,
+    private readonly seqGenerator: SeqGeneratorService,
   ) {}
 
   /**
@@ -95,15 +97,15 @@ export class InspectResultService {
   }
 
   /**
-   * 검사실적 단건 조회
+   * 검사실적 단건 조회 (resultNo 기준)
    */
-  async findById(id: string) {
+  async findById(resultNo: string) {
     const result = await this.inspectResultRepository.findOne({
-      where: { id: +id },
+      where: { resultNo },
     });
 
     if (!result) {
-      throw new NotFoundException(`검사실적을 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`검사실적을 찾을 수 없습니다: ${resultNo}`);
     }
 
     return result;
@@ -146,7 +148,10 @@ export class InspectResultService {
       throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultId}`);
     }
 
+    const resultNo = await this.seqGenerator.getNo('INSPECT_RESULT');
+
     const inspectResult = this.inspectResultRepository.create({
+      resultNo,
       prodResultId: +dto.prodResultId,
       serialNo: dto.serialNo,
       inspectType: dto.inspectType,
@@ -219,7 +224,10 @@ export class InspectResultService {
     }
 
     // 5. 검사 결과 등록
+    const resultNo = await this.seqGenerator.getNo('INSPECT_RESULT');
+
     const inspectResult = this.inspectResultRepository.create({
+      resultNo,
       prodResultId,
       serialNo: dto.barcode,
       inspectType: dto.inspectType ?? 'VISUAL',
@@ -308,7 +316,7 @@ export class InspectResultService {
         productionDate: prodResult.createdAt,
       } : null,
       previousInspects: previousInspects.map(i => ({
-        id: i.id,
+        resultNo: i.resultNo,
         inspectType: i.inspectType,
         inspectScope: i.inspectScope,
         passYn: i.passYn,
@@ -329,10 +337,10 @@ export class InspectResultService {
   }
 
   /**
-   * 검사실적 수정
+   * 검사실적 수정 (resultNo 기준)
    */
-  async update(id: string, dto: UpdateInspectResultDto) {
-    await this.findById(id); // 존재 확인
+  async update(resultNo: string, dto: UpdateInspectResultDto) {
+    await this.findById(resultNo); // 존재 확인
 
     const updateData: any = {};
 
@@ -346,20 +354,20 @@ export class InspectResultService {
     if (dto.inspectAt !== undefined) updateData.inspectAt = new Date(dto.inspectAt);
     if (dto.inspectorId !== undefined) updateData.inspectorId = dto.inspectorId;
 
-    await this.inspectResultRepository.update({ id: +id }, updateData);
+    await this.inspectResultRepository.update({ resultNo }, updateData);
 
-    return this.findById(id);
+    return this.findById(resultNo);
   }
 
   /**
-   * 검사실적 삭제
+   * 검사실적 삭제 (resultNo 기준)
    */
-  async delete(id: string) {
-    await this.findById(id); // 존재 확인
+  async delete(resultNo: string) {
+    await this.findById(resultNo); // 존재 확인
 
-    await this.inspectResultRepository.delete({ id: +id });
+    await this.inspectResultRepository.delete({ resultNo });
 
-    return { id, deleted: true };
+    return { resultNo, deleted: true };
   }
 
   /**

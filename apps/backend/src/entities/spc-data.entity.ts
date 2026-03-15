@@ -1,16 +1,18 @@
 /**
  * @file spc-data.entity.ts
  * @description SPC 측정 데이터 엔티티 — 관리도 데이터 포인트
+ *              복합키: CHART_ID + SAMPLE_DATE + SEQ.
  *
  * 초보자 가이드:
- * 1. SpcChart에 연결된 개별 측정 데이터(서브그룹)
+ * 1. 복합 PK: chartId + sampleDate + seq
  * 2. values: JSON 배열 문자열 (예: "[1.23, 1.25, 1.24, 1.26, 1.22]")
  * 3. mean/range/stdDev: 서브그룹 통계값
  * 4. outOfControl: 관리 이탈 여부 (0=정상, 1=이탈)
+ * 5. id는 레거시 호환을 위해 generated @Column으로 유지
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   ManyToOne,
   JoinColumn,
@@ -20,21 +22,23 @@ import {
 import { SpcChart } from './spc-chart.entity';
 
 @Entity({ name: 'SPC_DATA' })
-@Index(['chartId'])
 @Index(['company', 'plant', 'sampleDate'])
 export class SpcData {
-  @PrimaryGeneratedColumn({ name: 'ID' })
+  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
   id: number;
 
-  @Column({ name: 'CHART_ID' })
+  @PrimaryColumn({ name: 'CHART_ID', type: 'int' })
   chartId: number;
 
   @ManyToOne(() => SpcChart)
   @JoinColumn({ name: 'CHART_ID' })
   chart: SpcChart;
 
-  @Column({ name: 'SAMPLE_DATE', type: 'timestamp' })
+  @PrimaryColumn({ name: 'SAMPLE_DATE', type: 'timestamp' })
   sampleDate: Date;
+
+  @PrimaryColumn({ name: 'SEQ', type: 'int' })
+  seq: number;
 
   @Column({ name: 'SUBGROUP_NO', type: 'int' })
   subgroupNo: number;

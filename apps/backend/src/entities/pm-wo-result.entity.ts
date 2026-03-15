@@ -1,39 +1,33 @@
 /**
  * @file entities/pm-wo-result.entity.ts
- * @description PM Work Order 실행 결과 엔티티 (정규화 테이블)
- *              SEQUENCE(패턴 B)를 사용한다.
+ * @description PM Work Order 실행 결과 엔티티 — 복합 PK(workOrderId + seq)
  *
  * 초보자 가이드:
- * 1. id가 자동증가 PK (SEQUENCE)
+ * 1. 복합 PK: workOrderId + seq (부모 FK + 순번)
  * 2. workOrderId: 부모 WO의 ID (number)
  * 3. 항목 유형: CHECK, REPLACE, CLEAN, ADJUST, LUBRICATE
  * 4. result: PASS / FAIL
  */
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  Index,
 } from 'typeorm';
 import { PmWorkOrder } from './pm-work-order.entity';
 
 @Entity({ name: 'PM_WO_RESULTS' })
-@Index(['workOrderId'])
 export class PmWoResult {
-  @PrimaryGeneratedColumn({ name: 'ID' })
-  id: number;
-
-  @Column({ name: 'WORK_ORDER_ID', type: 'number' })
+  @PrimaryColumn({ name: 'WORK_ORDER_ID', type: 'number' })
   workOrderId: number;
 
   @Column({ name: 'PM_PLAN_ITEM_ID', type: 'number', nullable: true })
   pmPlanItemId: number | null;
 
-  @Column({ name: 'SEQ', type: 'number' })
+  @PrimaryColumn({ name: 'SEQ', type: 'number' })
   seq: number;
 
   @Column({ name: 'ITEM_NAME', length: 200 })

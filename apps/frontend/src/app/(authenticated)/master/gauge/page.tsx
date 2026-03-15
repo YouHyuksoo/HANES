@@ -8,7 +8,7 @@
  * 1. **DataGrid**: 계측기 목록 (코드, 명칭, 유형, 교정주기, 상태 등)
  * 2. **Modal**: 등록/수정 폼 (계측기 정보 + 교정 정보)
  * 3. **ComCodeBadge**: GAUGE_TYPE(유형), GAUGE_STATUS(상태) 코드값 표시
- * 4. API: GET/POST /quality/gauges, PUT/DELETE /quality/gauges/:id
+ * 4. API: GET/POST /quality/msa/gauges, PUT/DELETE /quality/msa/gauges/:id
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -84,7 +84,7 @@ export default function GaugeMasterPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (typeFilter) params.gaugeType = typeFilter;
       if (statusFilter) params.status = statusFilter;
-      const res = await api.get("/quality/gauges", { params });
+      const res = await api.get("/quality/msa/gauges", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);
@@ -142,9 +142,9 @@ export default function GaugeMasterPage() {
         responsiblePerson: form.responsiblePerson || undefined,
       };
       if (editing) {
-        await api.put(`/quality/gauges/${editing.id}`, payload);
+        await api.put(`/quality/msa/gauges/${editing.gaugeCode}`, payload);
       } else {
-        await api.post("/quality/gauges", payload);
+        await api.post("/quality/msa/gauges", payload);
       }
       setModalOpen(false);
       fetchData();
@@ -156,7 +156,7 @@ export default function GaugeMasterPage() {
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/quality/gauges/${deleteTarget.id}`);
+      await api.delete(`/quality/msa/gauges/${deleteTarget.gaugeCode}`);
       fetchData();
     } catch (e: unknown) {
       console.error("Delete failed:", e);

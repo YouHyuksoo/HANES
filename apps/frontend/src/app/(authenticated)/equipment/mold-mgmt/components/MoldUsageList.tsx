@@ -27,7 +27,7 @@ interface UsageRecord {
 }
 
 interface Props {
-  mold: { id: number; moldCode: string; moldName: string };
+  mold: { moldCode: string; moldName: string };
 }
 
 interface UsageForm {
@@ -56,14 +56,14 @@ export default function MoldUsageList({ mold }: Props) {
   const fetchUsage = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/equipment/molds/${mold.id}`);
+      const res = await api.get(`/equipment/molds/${mold.moldCode}`);
       setRecords(res.data?.data?.usageHistory ?? []);
     } catch {
       setRecords([]);
     } finally {
       setLoading(false);
     }
-  }, [mold.id]);
+  }, [mold.moldCode]);
 
   useEffect(() => { fetchUsage(); }, [fetchUsage]);
 
@@ -75,7 +75,7 @@ export default function MoldUsageList({ mold }: Props) {
     setSaving(true);
     try {
       await api.post("/equipment/molds/usage", {
-        moldId: mold.id,
+        moldCode: mold.moldCode,
         usageDate: form.usageDate || undefined,
         shotCount: Number(form.shotCount) || 0,
         orderNo: form.orderNo || undefined,
@@ -89,7 +89,7 @@ export default function MoldUsageList({ mold }: Props) {
     } catch { /* api interceptor */ } finally {
       setSaving(false);
     }
-  }, [form, mold.id, fetchUsage]);
+  }, [form, mold.moldCode, fetchUsage]);
 
   return (
     <Card className="flex-shrink-0 max-h-[280px] overflow-hidden">

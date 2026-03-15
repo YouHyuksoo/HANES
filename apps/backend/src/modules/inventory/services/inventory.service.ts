@@ -350,7 +350,7 @@ export class InventoryService {
    */
   async cancelTransaction(dto: CancelTransactionDto) {
     const originalTrans = await this.stockTransactionRepository.findOne({
-      where: { id: +dto.transactionId },
+      where: { transNo: dto.transactionId },
     });
 
     if (!originalTrans) {
@@ -371,7 +371,7 @@ export class InventoryService {
 
     try {
       // 1. 원본 트랜잭션 상태 변경
-      await queryRunner.manager.update(StockTransaction, +dto.transactionId, { status: 'CANCELED' });
+      await queryRunner.manager.update(StockTransaction, { transNo: originalTrans.transNo }, { status: 'CANCELED' });
 
       // 2. 취소 트랜잭션 생성 (반대 수량)
       const cancelTrans = this.stockTransactionRepository.create({
@@ -387,7 +387,7 @@ export class InventoryService {
         totalAmount: originalTrans.totalAmount ? -Number(originalTrans.totalAmount) : null,
         refType: originalTrans.refType,
         refId: originalTrans.refId,
-        cancelRefId: String(originalTrans.id),
+        cancelRefId: originalTrans.transNo,
         workerId: dto.workerId,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,
         status: 'DONE',
@@ -687,11 +687,11 @@ export class InventoryService {
   }
 
   /**
-   * 트랜잭션 상세 조회 (ID)
+   * 트랜잭션 상세 조회 (transNo)
    */
-  async getTransactionById(id: string) {
+  async getTransactionById(transNo: string) {
     const transaction = await this.stockTransactionRepository.findOne({
-      where: { id: +id },
+      where: { transNo },
     });
 
     if (!transaction) {
@@ -704,8 +704,8 @@ export class InventoryService {
       transaction.toWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.toWarehouseId } }) : null,
       this.partMasterRepository.findOne({ where: { itemCode: transaction.itemCode } }),
       transaction.matUid ? this.lotRepository.findOne({ where: { matUid: transaction.matUid } }) : null,
-      transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { id: +transaction.cancelRefId } }) : null,
-      this.stockTransactionRepository.findOne({ where: { cancelRefId: id } }),
+      transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { transNo: transaction.cancelRefId } }) : null,
+      this.stockTransactionRepository.findOne({ where: { cancelRefId: transNo } }),
     ]);
 
     return {

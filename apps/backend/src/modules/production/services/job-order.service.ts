@@ -22,6 +22,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import {
   CreateJobOrderDto,
   UpdateJobOrderDto,
@@ -52,6 +53,7 @@ export class JobOrderService {
     private readonly prodResultRepository: Repository<ProdResult>,
     @InjectRepository(BomMaster)
     private readonly bomMasterRepository: Repository<BomMaster>,
+    private readonly seqGenerator: SeqGeneratorService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -133,6 +135,11 @@ export class JobOrderService {
 
   /** 작업지시 생성 (트랜잭션 처리, company/plant 포함) */
   async create(dto: CreateJobOrderDto, company?: string, plant?: string) {
+    // orderNo가 없으면 자동 채번
+    if (!dto.orderNo) {
+      dto.orderNo = await this.seqGenerator.nextJobOrderNo();
+    }
+
     const existing = await this.jobOrderRepository.findOne({
       where: { orderNo: dto.orderNo },
     });

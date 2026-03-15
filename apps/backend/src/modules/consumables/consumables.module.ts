@@ -14,7 +14,6 @@ import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../entities/consumable-log.entity';
 import { ConsumableStock } from '../../entities/consumable-stock.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
-import { UidGeneratorService } from '../../shared/uid-generator.service';
 import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
@@ -35,7 +34,6 @@ import { InventoryModule } from '../inventory/inventory.module';
   providers: [
     ConsumablesService,
     ConsumableLabelService,
-    UidGeneratorService,
   ],
   exports: [ConsumablesService],
 })
