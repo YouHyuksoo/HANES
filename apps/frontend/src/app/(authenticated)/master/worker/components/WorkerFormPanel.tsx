@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button, Input, Select } from "@/components/ui";
+import { DepartmentSelect, ComCodeSelect } from "@/components/shared";
 import WorkerPhotoUpload from "@/components/worker/WorkerPhotoUpload";
 import api from "@/services/api";
 import { Worker } from "../types";
@@ -145,10 +146,11 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
               value={form.workerName} onChange={e => setField("workerName", e.target.value)} fullWidth />
             <Input label={t("master.worker.engName", "영문명")}
               value={form.engName} onChange={e => setField("engName", e.target.value)} fullWidth />
-            <Input label={t("master.worker.dept", "부서")}
-              value={form.dept} onChange={e => setField("dept", e.target.value)} fullWidth />
-            <Input label={t("master.worker.position", "직급")}
-              value={form.position} onChange={e => setField("position", e.target.value)} fullWidth />
+            <DepartmentSelect label={t("master.worker.dept", "부서")}
+              value={form.dept} onChange={v => setField("dept", v)} fullWidth />
+            <ComCodeSelect groupCode="JOB_POSITION" includeAll={false}
+              label={t("master.worker.position", "직급")}
+              value={form.position} onChange={v => setField("position", v)} fullWidth />
             <Input label={t("master.worker.phone", "전화번호")}
               value={form.phone} onChange={e => setField("phone", e.target.value)} fullWidth />
             <Input label={t("master.worker.email", "이메일")}

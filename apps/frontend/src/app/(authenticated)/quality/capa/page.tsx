@@ -11,7 +11,7 @@ import {
   Plus, RefreshCw, ClipboardList, Clock, Play, CheckCircle, Search as SearchIcon,
   Calendar, Shield, Eye, FileSearch, Lock, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -239,22 +239,6 @@ export default function CapaPage() {
           <StatCard label={t("quality.capa.statsClosed")} value={stats.closed} icon={CheckCircle} color="green" />
         </div>
 
-        {/* 액션 버튼 */}
-        {actionButtons && (
-          <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
-            <span className="text-sm text-text-muted font-medium">{selectedRow?.capaNo}</span>
-            {actionButtons}
-            <button onClick={() => setSelectedRow(null)} className="ml-auto p-1 hover:bg-surface rounded transition-colors" title={t("common.close")}>
-              <X className="w-4 h-4 text-text-muted" />
-            </button>
-          </div></CardContent></Card>
-        )}
-
-        {/* 조치 항목 목록 */}
-        {selectedRow && (
-          <ActionList capaId={selectedRow.id} capaStatus={selectedRow.status} onUpdate={fetchData} />
-        )}
-
         {/* DataGrid */}
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
@@ -289,6 +273,22 @@ export default function CapaPage() {
         <ConfirmModal isOpen={!!confirmAction} onClose={() => setConfirmAction(null)}
           onConfirm={async () => { await confirmAction?.action(); setConfirmAction(null); }}
           title={confirmAction?.label ?? ""} message={`${confirmAction?.label ?? ""} ${t("common.confirm")}?`} />
+
+        {/* 상세 모달: 액션 버튼 + 조치 항목 */}
+        <Modal isOpen={!!selectedRow} onClose={() => setSelectedRow(null)}
+          title={`${selectedRow?.capaNo ?? ""} ${selectedRow?.title ?? ""}`} size="full">
+          {selectedRow && (
+            <div className="space-y-4">
+              {/* 액션 버튼 */}
+              <div className="flex items-center gap-3 p-3 bg-surface rounded-lg">
+                <ComCodeBadge groupCode="CAPA_STATUS" code={selectedRow.status} />
+                {actionButtons}
+              </div>
+              {/* 조치 항목 목록 */}
+              <ActionList capaId={selectedRow.id} capaStatus={selectedRow.status} onUpdate={fetchData} />
+            </div>
+          )}
+        </Modal>
 
         {/* 텍스트 입력 모달 */}
         <TextInputModal isOpen={!!textAction} title={textAction?.label ?? ""} fieldLabel={textAction?.field ?? ""}

@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, GraduationCap,
-  CheckCircle, RotateCcw, Pencil, Trash2,
+  CheckCircle, RotateCcw, Pencil, Trash2, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -116,6 +116,18 @@ export default function TrainingPage() {
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<TrainingPlan>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
+        >
+          <FileSearch className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     {
       accessorKey: "planNo", header: t("system.training.planNo"), size: 150,
       meta: { filterType: "text" as const },
@@ -245,11 +257,6 @@ export default function TrainingPage() {
               <DataGrid data={data} columns={columns} isLoading={loading}
                 enableColumnFilter enableExport
                 exportFileName={t("system.training.title")}
-                onRowClick={row => {
-                  const r = row as TrainingPlan;
-                  setSelectedRow(r);
-                  if (isPanelOpen) setEditTarget(r);
-                }}
                 getRowId={row => (row as TrainingPlan).planNo}
                 selectedRowId={selectedRow ? String(selectedRow.planNo) : undefined}
                 toolbarLeft={
@@ -267,6 +274,12 @@ export default function TrainingPage() {
           {/* 우측: 교육 결과 목록 */}
           {selectedRow && (
             <div className="w-1/2 min-h-0 overflow-auto">
+              <div className="flex justify-end mb-2">
+                <button onClick={() => setSelectedRow(null)}
+                  className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close", "닫기")}>
+                  <X className="w-4 h-4 text-text-muted" />
+                </button>
+              </div>
               <TrainingResultList planId={selectedRow.planNo} planNo={selectedRow.planNo}
                 status={selectedRow.status} onRefresh={fetchData} />
             </div>

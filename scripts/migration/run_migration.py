@@ -48,7 +48,7 @@ def get_connection(site_config):
     return conn
 
 def parse_sql_file(filepath):
-    """SQL 파일을 '/' 구분자로 블록 분리, SQL*Plus 명령 제거"""
+    """SQL 파일을 파싱. PL/SQL('/' 구분) 또는 DDL(';' 구분) 자동 판별"""
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -57,7 +57,6 @@ def parse_sql_file(filepath):
     filtered_lines = []
     for line in lines:
         stripped = line.strip().upper()
-        # SQL*Plus 전용 명령 스킵
         if stripped.startswith('SET SERVEROUTPUT'):
             continue
         if stripped.startswith('PROMPT '):
@@ -66,26 +65,47 @@ def parse_sql_file(filepath):
 
     content = '\n'.join(filtered_lines)
 
-    # '/'로 블록 분리 (줄 시작에 단독 '/'만 분리자로 인식)
-    blocks = re.split(r'\n/\s*\n', content)
+    # '/'가 블록 분리자로 사용되는지 판별 (PL/SQL 패턴)
+    has_plsql_separator = bool(re.search(r'\n/\s*\n', content))
 
-    result = []
-    for block in blocks:
-        block = block.strip()
-        if not block:
-            continue
-        # 끝에 남은 단독 '/' 제거
-        if block.endswith('\n/'):
-            block = block[:-2].strip()
-        if block == '/':
-            continue
-        # 주석만 있는 블록 스킵
-        non_comment = re.sub(r'--.*$', '', block, flags=re.MULTILINE).strip()
-        if not non_comment:
-            continue
-        result.append(block)
+    if has_plsql_separator:
+        # PL/SQL 모드: '/'로 블록 분리
+        blocks = re.split(r'\n/\s*\n', content)
+        result = []
+        for block in blocks:
+            block = block.strip()
+            if not block:
+                continue
+            if block.endswith('\n/'):
+                block = block[:-2].strip()
+            if block == '/':
+                continue
+            non_comment = re.sub(r'--.*$', '', block, flags=re.MULTILINE).strip()
+            if not non_comment:
+                continue
+            result.append(block)
+        return result
+    else:
+        # DDL 모드: ';'로 문장 분리
+        # 블록 주석 제거
+        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+        # 라인 주석 제거
+        clean_lines = []
+        for line in content.split('\n'):
+            stripped = line.strip()
+            if stripped.startswith('--'):
+                continue
+            if '--' in line:
+                line = line[:line.index('--')]
+            clean_lines.append(line)
+        content = '\n'.join(clean_lines)
 
-    return result
+        result = []
+        for stmt in content.split(';'):
+            stmt = stmt.strip()
+            if stmt and len(stmt) > 5:
+                result.append(stmt)
+        return result
 
 def execute_block(cursor, block, block_num, dry_run=False):
     """단일 PL/SQL 블록 또는 SQL 문 실행"""

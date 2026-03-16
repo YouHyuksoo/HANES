@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { LogIn, UserPlus, Factory, Smartphone } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { Button, Input, Select } from '@/components/ui';
+import { DepartmentSelect } from '@/components/shared';
 import { AxiosError } from 'axios';
 import { api } from '@/services/api';
 import LoginBranding from './components/LoginBranding';
@@ -288,11 +289,10 @@ function LoginPage() {
                   onChange={(e) => setRegEmpNo(e.target.value)}
                   fullWidth
                 />
-                <Input
+                <DepartmentSelect
                   label={t('auth.dept')}
-                  placeholder="생산팀"
                   value={regDept}
-                  onChange={(e) => setRegDept(e.target.value)}
+                  onChange={(v) => setRegDept(v)}
                   fullWidth
                 />
               </div>

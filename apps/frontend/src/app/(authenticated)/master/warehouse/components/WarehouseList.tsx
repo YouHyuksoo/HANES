@@ -67,7 +67,8 @@ export default function WarehouseList({ onHeaderActions }: Props) {
       const params: Record<string, string> = {};
       if (filterType) params.warehouseType = filterType;
       const res = await api.get("/inventory/warehouses", { params });
-      const list = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
+      const raw = res.data?.data;
+      const list = Array.isArray(raw) ? raw : raw?.data ?? [];
       setWarehouses(list);
     } catch {
       setWarehouses([]);

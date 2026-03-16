@@ -7,13 +7,21 @@
  * 초보자 가이드:
  * 1. **editingItem = null**: 추가 모드 → POST /master/routings
  * 2. **editingItem != null**: 수정 모드 → PUT /master/routings/:itemCode/:seq
- * 3. partId는 자동으로 설정 (부모에서 전달)
+ * 3. 공정코드는 공정마스터(GET /master/processes)에서 셀렉트로 선택
+ * 4. 공정유형/설비유형은 ComCode 셀렉트 사용
+ * 5. seq는 추가 모드일 때 기존 라우팅의 마지막 seq + 10으로 자동 설정
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Modal, Input } from "@/components/ui";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import { RoutingItem } from "../types";
+
+interface ProcessOption {
+  processCode: string;
+  processName: string;
+}
 
 interface RoutingFormModalProps {
   isOpen: boolean;
@@ -25,8 +33,11 @@ interface RoutingFormModalProps {
 
 export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem, itemCode }: RoutingFormModalProps) {
   const { t } = useTranslation();
+  const processTypeOptions = useComCodeOptions("PROCESS_TYPE");
+  const equipTypeOptions = useComCodeOptions("EQUIP_TYPE");
+
   const [saving, setSaving] = useState(false);
-  const [seq, setSeq] = useState("1");
+  const [seq, setSeq] = useState("10");
   const [processCode, setProcessCode] = useState("");
   const [processName, setProcessName] = useState("");
   const [processType, setProcessType] = useState("");
@@ -39,8 +50,45 @@ export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem,
   const [crimpWidth, setCrimpWidth] = useState("");
   const [weldCondition, setWeldCondition] = useState("");
 
+  /* 공정마스터 목록 */
+  const [processOptions, setProcessOptions] = useState<ProcessOption[]>([]);
+
+  /** 공정마스터 조회 */
+  const fetchProcesses = useCallback(async () => {
+    try {
+      const res = await api.get("/master/processes", { params: { limit: 5000, useYn: "Y" } });
+      const data = res.data?.data ?? [];
+      setProcessOptions(data.map((p: any) => ({
+        processCode: p.processCode,
+        processName: p.processName,
+      })));
+    } catch {
+      setProcessOptions([]);
+    }
+  }, []);
+
+  /** 기존 라우팅의 마지막 seq 조회 */
+  const fetchNextSeq = useCallback(async () => {
+    if (!itemCode) return;
+    try {
+      const res = await api.get("/master/routings", {
+        params: { itemCode, limit: 5000 },
+      });
+      const data: RoutingItem[] = res.data?.data ?? [];
+      if (data.length > 0) {
+        const maxSeq = Math.max(...data.map((r) => r.seq));
+        setSeq(String(maxSeq + 10));
+      } else {
+        setSeq("10");
+      }
+    } catch {
+      setSeq("10");
+    }
+  }, [itemCode]);
+
   useEffect(() => {
     if (!isOpen) return;
+    fetchProcesses();
     if (editingItem) {
       setSeq(String(editingItem.seq));
       setProcessCode(editingItem.processCode);
@@ -55,11 +103,19 @@ export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem,
       setCrimpWidth(editingItem.crimpWidth != null ? String(editingItem.crimpWidth) : "");
       setWeldCondition(editingItem.weldCondition || "");
     } else {
-      setSeq("1"); setProcessCode(""); setProcessName(""); setProcessType("");
+      fetchNextSeq();
+      setProcessCode(""); setProcessName(""); setProcessType("");
       setEquipType(""); setStdTime(""); setSetupTime(""); setWireLength("");
       setStripLength(""); setCrimpHeight(""); setCrimpWidth(""); setWeldCondition("");
     }
-  }, [isOpen, editingItem]);
+  }, [isOpen, editingItem, fetchProcesses, fetchNextSeq]);
+
+  /** 공정 선택 시 공정명 자동 채움 */
+  const handleProcessSelect = useCallback((code: string) => {
+    setProcessCode(code);
+    const found = processOptions.find((p) => p.processCode === code);
+    if (found) setProcessName(found.processName);
+  }, [processOptions]);
 
   const toNum = (v: string) => v ? Number(v) : undefined;
 
@@ -86,25 +142,81 @@ export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem,
     finally { setSaving(false); }
   };
 
+  const selectCls = "w-full px-3 py-2 text-sm border border-border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-text dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary";
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingItem ? t("master.routing.editRouting") : t("master.routing.addRouting")} size="lg">
       <div className="space-y-4">
         <div className="grid grid-cols-3 gap-4">
-          <Input label={t("master.routing.seq")} type="number" value={seq} onChange={(e) => setSeq(e.target.value)} fullWidth />
-          <Input label={t("master.routing.processCode")} value={processCode} onChange={(e) => setProcessCode(e.target.value)} placeholder="CUT-01" fullWidth />
-          <Input label={t("master.routing.processName")} value={processName} onChange={(e) => setProcessName(e.target.value)} placeholder="전선절단" fullWidth />
+          {/* 순서 */}
+          <Input label={t("master.routing.seq")} type="number" step="10" value={seq} onChange={(e) => setSeq(e.target.value)} fullWidth />
+
+          {/* 공정코드 - 셀렉트 */}
+          <div>
+            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
+              {t("master.routing.processCode")}
+            </label>
+            <select
+              value={processCode}
+              onChange={(e) => handleProcessSelect(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">-- {t("common.select")} --</option>
+              {processOptions.map((p) => (
+                <option key={p.processCode} value={p.processCode}>
+                  [{p.processCode}] {p.processName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 공정명 - 자동 채움, 수정 가능 */}
+          <Input label={t("master.routing.processName")} value={processName} onChange={(e) => setProcessName(e.target.value)} fullWidth />
         </div>
+
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.routing.processType")} value={processType} onChange={(e) => setProcessType(e.target.value)} placeholder="CUT" fullWidth />
-          <Input label={t("master.routing.equipType")} value={equipType} onChange={(e) => setEquipType(e.target.value)} placeholder={t("master.routing.equipTypePlaceholder")} fullWidth />
+          {/* 공정유형 - ComCode 셀렉트 */}
+          <div>
+            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
+              {t("master.routing.processType")}
+            </label>
+            <select
+              value={processType}
+              onChange={(e) => setProcessType(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">-- {t("common.select")} --</option>
+              {processTypeOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 설비유형 - ComCode 셀렉트 */}
+          <div>
+            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
+              {t("master.routing.equipType")}
+            </label>
+            <select
+              value={equipType}
+              onChange={(e) => setEquipType(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">-- {t("common.select")} --</option>
+              {equipTypeOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
+
         <div className="grid grid-cols-2 gap-4">
           <Input label={t("master.routing.stdTimeSec")} type="number" step="0.1" value={stdTime} onChange={(e) => setStdTime(e.target.value)} placeholder="5.5" fullWidth />
           <Input label={t("master.routing.setupTimeSec")} type="number" step="0.1" value={setupTime} onChange={(e) => setSetupTime(e.target.value)} placeholder="10" fullWidth />
         </div>
 
-        <div className="border-t border-border pt-3">
-          <p className="text-xs font-medium text-text-muted mb-3">{t("master.routing.processDetailTitle")}</p>
+        <div className="border-t border-border dark:border-gray-600 pt-3">
+          <p className="text-xs font-medium text-text-muted dark:text-gray-400 mb-3">{t("master.routing.processDetailTitle")}</p>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t("master.routing.wireLength")} type="number" step="0.1" value={wireLength} onChange={(e) => setWireLength(e.target.value)} fullWidth />
             <Input label={t("master.routing.stripLength")} type="number" step="0.1" value={stripLength} onChange={(e) => setStripLength(e.target.value)} fullWidth />

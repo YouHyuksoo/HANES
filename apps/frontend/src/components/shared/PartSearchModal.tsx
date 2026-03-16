@@ -73,7 +73,8 @@ export default function PartSearchModal({
       if (search.trim()) params.search = search.trim();
       if (type) params.itemType = type;
       const res = await api.get("/master/parts", { params });
-      setData(res.data?.data ?? []);
+      const raw = res.data?.data;
+      setData(Array.isArray(raw) ? raw : raw?.data ?? []);
     } catch {
       setData([]);
     } finally {

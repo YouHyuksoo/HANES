@@ -15,6 +15,11 @@ import { useMemo } from "react";
 import { useApiQuery } from "./useApi";
 import type { SelectOption } from "@/components/ui/Select";
 
+interface DepartmentItem {
+  deptCode: string;
+  deptName: string;
+}
+
 interface WarehouseItem {
   warehouseCode: string;
   warehouseName: string;
@@ -62,6 +67,28 @@ interface PaginatedResponse<T> {
   total: number;
   page: number;
   limit: number;
+}
+
+/**
+ * 부서 목록을 SelectOption[]으로 반환
+ */
+export function useDepartmentOptions() {
+  const { data, isLoading } = useApiQuery<PaginatedResponse<DepartmentItem>>(
+    ["departments", "options"],
+    "/system/departments?limit=200&useYn=Y",
+    { staleTime: 5 * 60 * 1000 },
+  );
+
+  const options = useMemo<SelectOption[]>(() => {
+    const raw = data?.data;
+    const list = Array.isArray(raw) ? raw : raw?.data ?? [];
+    return list.map((d) => ({
+      value: d.deptCode,
+      label: d.deptName,
+    }));
+  }, [data]);
+
+  return { options, isLoading };
 }
 
 /**

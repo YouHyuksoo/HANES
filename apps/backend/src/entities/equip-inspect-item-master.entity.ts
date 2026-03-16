@@ -58,6 +58,4 @@ export class EquipInspectItemMaster {
   @UpdateDateColumn({ name: 'UPDATED_AT' })
   updatedAt: Date;
 
-  @Column({ name: 'DELETED_AT', nullable: true })
-  deletedAt: Date | null;
 }

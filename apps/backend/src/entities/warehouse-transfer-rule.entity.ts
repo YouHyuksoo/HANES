@@ -13,7 +13,6 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
 } from 'typeorm';
 
 @Entity({ name: 'WAREHOUSE_TRANSFER_RULES' })
@@ -48,6 +47,4 @@ export class WarehouseTransferRule {
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'DELETED_AT', type: 'timestamp', nullable: true })
-  deletedAt: Date | null;
 }

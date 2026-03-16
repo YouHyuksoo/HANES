@@ -121,7 +121,7 @@ function BomPage() {
                     !typeFilter ? "bg-primary text-white border-primary" : "bg-surface text-text-muted border-border hover:border-primary/50"
                   }`}>{t("common.all")}
                 </button>
-                {partTypeOptions.map((opt) => (
+                {partTypeOptions.filter((opt) => opt.value !== "RAW_MATERIAL").map((opt) => (
                   <button key={opt.value} onClick={() => setTypeFilter(opt.value)}
                     className={`px-2 py-0.5 text-[11px] rounded-full border transition-colors ${
                       typeFilter === opt.value ? "bg-primary text-white border-primary" : "bg-surface text-text-muted border-border hover:border-primary/50"

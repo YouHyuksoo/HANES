@@ -194,7 +194,6 @@ function DepartmentPage() {
               enableExport
               enableColumnFilter
               exportFileName={t("system.department.title")}
-              onRowClick={(row) => { if (isPanelOpen) setEditingDept(row); }}
               toolbarLeft={
                 <Input
                   placeholder={t("system.department.searchPlaceholder")}

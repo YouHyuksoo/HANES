@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   FileText, Plus, RefreshCw, Search as SearchIcon,
-  Clock, CheckCircle, AlertTriangle, Files,
+  Clock, CheckCircle, AlertTriangle, Files, Pencil,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -105,6 +105,18 @@ export default function DocumentPage() {
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<Document>[]>(() => [
+    {
+      id: "actions", header: "", size: 60,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleRowClick(row.original); }}
+          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.edit", "수정")}
+        >
+          <Pencil className="w-4 h-4 text-primary" />
+        </button>
+      ),
+    },
     { accessorKey: "docNo", header: t("system.document.docNo"), size: 150,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
@@ -184,7 +196,6 @@ export default function DocumentPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("system.document.title")}
-              onRowClick={row => handleRowClick(row as Document)}
               getRowId={row => (row as Document).docNo}
               selectedRowId={selectedRow ? String(selectedRow.docNo) : undefined}
               rowClassName={row => {

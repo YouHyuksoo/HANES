@@ -54,6 +54,8 @@ import { VendorBarcodeMappingController } from './controllers/vendor-barcode-map
 import { VendorBarcodeMappingService } from './services/vendor-barcode-mapping.service';
 import { IqcItemPoolController } from './controllers/iqc-item-pool.controller';
 import { IqcItemPoolService } from './services/iqc-item-pool.service';
+import { RoutingGroupController } from './controllers/routing-group.controller';
+import { RoutingGroupService } from './services/routing-group.service';
 
 // TypeORM Entities
 import { PartMaster } from '../../entities/part-master.entity';
@@ -80,6 +82,9 @@ import { EquipBomRel } from '../../entities/equip-bom-rel.entity';
 import { ModelSuffix } from '../../entities/model-suffix.entity';
 import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.entity';
 import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
+import { ProcessQualityCondition } from '../../entities/process-quality-condition.entity';
+import { RoutingGroup } from '../../entities/routing-group.entity';
+import { RoutingProcess } from '../../entities/routing-process.entity';
 
 @Module({
   imports: [
@@ -108,6 +113,9 @@ import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
       EquipBomRel,
       VendorBarcodeMapping,
       IqcItemPool,
+      ProcessQualityCondition,
+      RoutingGroup,
+      RoutingProcess,
     ]),
   ],
   controllers: [
@@ -133,6 +141,7 @@ import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
     DepartmentController,
     VendorBarcodeMappingController,
     IqcItemPoolController,
+    RoutingGroupController,
   ],
   providers: [
     ComCodeService,
@@ -157,6 +166,7 @@ import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
     DepartmentService,
     VendorBarcodeMappingService,
     IqcItemPoolService,
+    RoutingGroupService,
   ],
   exports: [
     ComCodeService,
@@ -181,6 +191,7 @@ import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
     DepartmentService,
     VendorBarcodeMappingService,
     IqcItemPoolService,
+    RoutingGroupService,
   ],
 })
 export class MasterModule {}
