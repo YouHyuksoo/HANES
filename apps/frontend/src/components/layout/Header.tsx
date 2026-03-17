@@ -12,7 +12,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, Bell, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette } from "lucide-react";
+import { Sun, Moon, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette } from "lucide-react";
+import NotificationBell from "@/components/shared/NotificationBell";
 import { useTheme } from "@/hooks/useTheme";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -116,14 +117,8 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
         {/* 바코드 스캐너 연결 상태 */}
         <SerialIndicator />
 
-        {/* 알림 */}
-        <button
-          className="relative p-2 rounded-md hover:bg-background transition-colors"
-          aria-label={t('header.notifications')}
-        >
-          <Bell className="w-5 h-5 text-text-muted" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
-        </button>
+        {/* 알림 (스케줄러 알림 벨) */}
+        <NotificationBell />
 
         {/* 컬러 테마 토글 */}
         <button
