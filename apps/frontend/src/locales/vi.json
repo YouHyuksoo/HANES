@@ -3297,7 +3297,7 @@
       "status": "Trạng thái",
       "calculateLimits": "Tính giới hạn kiểm soát",
       "calculatedLimits": "Giới hạn đã tính",
-      "viewCpk": "Xem Cpk",
+      "viewCpk": "Cpk / Biểu đồ tần suất",
       "addData": "Thêm dữ liệu đo",
       "create": "Đăng ký biểu đồ",
       "sampleDate": "Ngày đo",
@@ -3306,7 +3306,14 @@
       "stdDev": "Độ lệch chuẩn (σ)",
       "cpk": "Cpk",
       "ppk": "Ppk",
-      "outOfControl": "Ngoài kiểm soát"
+      "outOfControl": "Ngoài kiểm soát",
+      "subgroupNo": "Số nhóm con",
+      "xbarChart": "Biểu đồ Xbar (Trung bình)",
+      "rChart": "Biểu đồ R (Phạm vi)",
+      "histogram": "Biểu đồ tần suất",
+      "importData": "Nhập dữ liệu",
+      "noMesData": "Không có dữ liệu đo lường trong khoảng thời gian đã chọn.",
+      "measuredValues": "Giá trị đo"
     },
     "controlPlan": {
       "title": "Kế hoạch kiểm soát",
@@ -4820,6 +4827,26 @@
       "MOUNTED": "Đang lắp",
       "REPAIR": "Đang sửa",
       "SCRAPPED": "Đã hủy"
+    },
+    "SCHED_GROUP": {
+      "INTERFACE": "Giao diện",
+      "RETRY": "Thử lại",
+      "MAINTENANCE": "Bảo trì DB"
+    },
+    "SCHED_EXEC_TYPE": {
+      "SERVICE": "Dịch vụ nội bộ",
+      "PROCEDURE": "Oracle Procedure",
+      "SQL": "SQL",
+      "HTTP": "HTTP API",
+      "SCRIPT": "Script bên ngoài"
+    },
+    "SCHED_STATUS": {
+      "SUCCESS": "Thành công",
+      "FAIL": "Thất bại",
+      "RUNNING": "Đang chạy",
+      "RETRYING": "Đang thử lại",
+      "TIMEOUT": "Hết giờ",
+      "SKIPPED": "Bỏ qua"
     }
   },
   "comCodeGroup": {
@@ -4902,7 +4929,10 @@
     "PM_PRIORITY": "Mức ưu tiên",
     "PO_STATUS": "Trạng thái đơn hàng",
     "CONSUMABLE_LIFE_STATUS": "Trạng thái tuổi thọ vật tư",
-    "CON_STOCK_STATUS": "Trạng thái tồn kho vật tư"
+    "CON_STOCK_STATUS": "Trạng thái tồn kho vật tư",
+    "SCHED_GROUP": "Nhóm công việc lịch trình",
+    "SCHED_EXEC_TYPE": "Loại thực thi lịch trình",
+    "SCHED_STATUS": "Trạng thái thực thi lịch trình"
   },
   "export": {
     "title": "Xuất dữ liệu",
@@ -5202,6 +5232,64 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "Bật ghi nhật ký hoạt động",
     "ENABLE_ACTIVITY_LOG_DESC": "Ghi lại lịch sử đăng nhập và truy cập trang của người dùng."
+  },
+  "scheduler": {
+    "title": "Quản lý lịch trình",
+    "jobs": "Quản lý công việc",
+    "logs": "Lịch sử thực thi",
+    "dashboard": "Bảng điều khiển",
+    "jobCode": "Mã công việc",
+    "jobName": "Tên công việc",
+    "jobGroup": "Nhóm",
+    "execType": "Loại thực thi",
+    "execTarget": "Mục tiêu",
+    "execParams": "Tham số",
+    "cronExpr": "Biểu thức Cron",
+    "cronDesc": "Lịch trình",
+    "isActive": "Kích hoạt",
+    "maxRetry": "Thử lại tối đa",
+    "timeoutSec": "Hết giờ (giây)",
+    "description": "Mô tả",
+    "lastRunAt": "Lần chạy cuối",
+    "nextRunAt": "Lần chạy tiếp",
+    "lastErrorAt": "Lỗi cuối",
+    "runNow": "Chạy ngay",
+    "toggle": "Bật/tắt",
+    "startTime": "Bắt đầu",
+    "endTime": "Kết thúc",
+    "duration": "Thời gian",
+    "affectedRows": "Số dòng",
+    "retryCount": "Thử lại",
+    "resultMsg": "Kết quả",
+    "errorMsg": "Chi tiết lỗi",
+    "todayTotal": "Hôm nay",
+    "todaySuccess": "Thành công",
+    "todayFail": "Thất bại",
+    "successRate": "Tỉ lệ thành công",
+    "trendChart": "Xu hướng 7 ngày",
+    "ratioChart": "Tỉ lệ theo công việc",
+    "recentFails": "Lỗi gần đây",
+    "notification": "Thông báo",
+    "markAllRead": "Đánh dấu đã đọc",
+    "noUnread": "Không có thông báo mới",
+    "confirmDelete": "Xóa công việc này?",
+    "confirmRun": "Chạy công việc này ngay?",
+    "addJob": "Thêm công việc",
+    "editJob": "Sửa công việc",
+    "execTypeService": "Dịch vụ nội bộ",
+    "execTypeProcedure": "Oracle Procedure",
+    "execTypeSql": "SQL",
+    "execTypeHttp": "HTTP API",
+    "execTypeScript": "Script bên ngoài",
+    "serviceMethod": "Dịch vụ.Phương thức",
+    "packageProc": "Package.Procedure",
+    "sqlQuery": "Truy vấn SQL",
+    "httpMethod": "Phương thức HTTP",
+    "httpUrl": "URL",
+    "httpHeaders": "Headers (JSON)",
+    "httpBody": "Body (JSON)",
+    "scriptPath": "Đường dẫn script",
+    "scriptArgs": "Tham số"
   },
   "monthlyPlan": {
     "title": "Kế hoạch sản xuất hàng tháng",

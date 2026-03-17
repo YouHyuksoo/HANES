@@ -3297,7 +3297,7 @@
       "status": "Status",
       "calculateLimits": "Calculate Limits",
       "calculatedLimits": "Calculated Limits",
-      "viewCpk": "View Cpk",
+      "viewCpk": "Cpk / Histogram",
       "addData": "Add Measurement",
       "create": "Create Chart",
       "sampleDate": "Sample Date",
@@ -3306,7 +3306,14 @@
       "stdDev": "Std Dev (σ)",
       "cpk": "Cpk",
       "ppk": "Ppk",
-      "outOfControl": "Out of Control"
+      "outOfControl": "Out of Control",
+      "subgroupNo": "Subgroup No.",
+      "xbarChart": "Xbar Chart (Mean)",
+      "rChart": "R Chart (Range)",
+      "histogram": "Histogram",
+      "importData": "Import Data",
+      "noMesData": "No measurement data found for the selected period.",
+      "measuredValues": "Measured Values"
     },
     "controlPlan": {
       "title": "Control Plan",
@@ -4820,6 +4827,26 @@
       "MOUNTED": "Mounted",
       "REPAIR": "Under Repair",
       "SCRAPPED": "Scrapped"
+    },
+    "SCHED_GROUP": {
+      "INTERFACE": "Interface",
+      "RETRY": "Retry",
+      "MAINTENANCE": "DB Maintenance"
+    },
+    "SCHED_EXEC_TYPE": {
+      "SERVICE": "Internal Service",
+      "PROCEDURE": "Oracle Procedure",
+      "SQL": "SQL Execution",
+      "HTTP": "HTTP API",
+      "SCRIPT": "External Script"
+    },
+    "SCHED_STATUS": {
+      "SUCCESS": "Success",
+      "FAIL": "Failed",
+      "RUNNING": "Running",
+      "RETRYING": "Retrying",
+      "TIMEOUT": "Timeout",
+      "SKIPPED": "Skipped"
     }
   },
   "comCodeGroup": {
@@ -4902,7 +4929,10 @@
     "PM_PRIORITY": "Priority",
     "PO_STATUS": "PO Status",
     "CONSUMABLE_LIFE_STATUS": "Consumable Life Status",
-    "CON_STOCK_STATUS": "Consumable Stock Status"
+    "CON_STOCK_STATUS": "Consumable Stock Status",
+    "SCHED_GROUP": "Scheduler Job Group",
+    "SCHED_EXEC_TYPE": "Scheduler Exec Type",
+    "SCHED_STATUS": "Scheduler Exec Status"
   },
   "export": {
     "title": "Export",
@@ -5202,6 +5232,64 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "Enable Activity Logging",
     "ENABLE_ACTIVITY_LOG_DESC": "Record user login and page access history."
+  },
+  "scheduler": {
+    "title": "Scheduler Management",
+    "jobs": "Job Management",
+    "logs": "Execution History",
+    "dashboard": "Dashboard",
+    "jobCode": "Job Code",
+    "jobName": "Job Name",
+    "jobGroup": "Job Group",
+    "execType": "Exec Type",
+    "execTarget": "Exec Target",
+    "execParams": "Exec Params",
+    "cronExpr": "Cron Expression",
+    "cronDesc": "Schedule",
+    "isActive": "Active",
+    "maxRetry": "Max Retry",
+    "timeoutSec": "Timeout (sec)",
+    "description": "Description",
+    "lastRunAt": "Last Run",
+    "nextRunAt": "Next Run",
+    "lastErrorAt": "Last Error",
+    "runNow": "Run Now",
+    "toggle": "Toggle Active",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "duration": "Duration",
+    "affectedRows": "Rows Affected",
+    "retryCount": "Retries",
+    "resultMsg": "Result",
+    "errorMsg": "Error Detail",
+    "todayTotal": "Today Total",
+    "todaySuccess": "Success",
+    "todayFail": "Failed",
+    "successRate": "Success Rate",
+    "trendChart": "7-Day Trend",
+    "ratioChart": "Job Success/Failure",
+    "recentFails": "Recent Failures",
+    "notification": "Notifications",
+    "markAllRead": "Mark All Read",
+    "noUnread": "No unread notifications",
+    "confirmDelete": "Delete this job?",
+    "confirmRun": "Run this job now?",
+    "addJob": "Add Job",
+    "editJob": "Edit Job",
+    "execTypeService": "Internal Service",
+    "execTypeProcedure": "Oracle Procedure",
+    "execTypeSql": "SQL Execution",
+    "execTypeHttp": "HTTP API",
+    "execTypeScript": "External Script",
+    "serviceMethod": "Service.Method",
+    "packageProc": "Package.Procedure",
+    "sqlQuery": "SQL Query",
+    "httpMethod": "HTTP Method",
+    "httpUrl": "URL",
+    "httpHeaders": "Headers (JSON)",
+    "httpBody": "Body (JSON)",
+    "scriptPath": "Script Path",
+    "scriptArgs": "Arguments"
   },
   "monthlyPlan": {
     "title": "Monthly Production Plan",

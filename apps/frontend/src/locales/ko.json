@@ -3605,7 +3605,7 @@
       "status": "상태",
       "calculateLimits": "관리한계 계산",
       "calculatedLimits": "계산된 관리한계",
-      "viewCpk": "Cpk 조회",
+      "viewCpk": "Cpk / 히스토그램",
       "addData": "측정데이터 추가",
       "create": "관리도 등록",
       "sampleDate": "측정일",
@@ -3614,7 +3614,14 @@
       "stdDev": "표준편차(σ)",
       "cpk": "Cpk",
       "ppk": "Ppk",
-      "outOfControl": "이탈여부"
+      "outOfControl": "이탈여부",
+      "subgroupNo": "서브그룹번호",
+      "xbarChart": "Xbar 관리도 (평균)",
+      "rChart": "R 관리도 (범위)",
+      "histogram": "히스토그램",
+      "importData": "데이터 가져오기",
+      "noMesData": "해당 기간에 가져올 측정 데이터가 없습니다.",
+      "measuredValues": "측정값"
     },
     "controlPlan": {
       "title": "관리계획서",
@@ -4838,6 +4845,26 @@
       "MOUNTED": "장착중",
       "REPAIR": "수리중",
       "SCRAPPED": "폐기"
+    },
+    "SCHED_GROUP": {
+      "INTERFACE": "인터페이스",
+      "RETRY": "재시도",
+      "MAINTENANCE": "DB 유지보수"
+    },
+    "SCHED_EXEC_TYPE": {
+      "SERVICE": "내부 서비스",
+      "PROCEDURE": "Oracle 프로시저",
+      "SQL": "SQL 실행",
+      "HTTP": "HTTP API",
+      "SCRIPT": "외부 스크립트"
+    },
+    "SCHED_STATUS": {
+      "SUCCESS": "성공",
+      "FAIL": "실패",
+      "RUNNING": "실행중",
+      "RETRYING": "재시도중",
+      "TIMEOUT": "타임아웃",
+      "SKIPPED": "스킵"
     }
   },
   "comCodeGroup": {
@@ -4920,7 +4947,10 @@
     "PM_PRIORITY": "우선순위",
     "PO_STATUS": "발주 상태",
     "CONSUMABLE_LIFE_STATUS": "소모품 수명 상태",
-    "CON_STOCK_STATUS": "소모품 재고 상태"
+    "CON_STOCK_STATUS": "소모품 재고 상태",
+    "SCHED_GROUP": "스케줄러 작업 그룹",
+    "SCHED_EXEC_TYPE": "스케줄러 실행 유형",
+    "SCHED_STATUS": "스케줄러 실행 상태"
   },
   "export": {
     "title": "내보내기",
@@ -5220,6 +5250,64 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "활동 로깅 활성화",
     "ENABLE_ACTIVITY_LOG_DESC": "사용자 로그인 및 페이지 접속 기록을 저장합니다."
+  },
+  "scheduler": {
+    "title": "스케줄러 관리",
+    "jobs": "작업 관리",
+    "logs": "실행 이력",
+    "dashboard": "대시보드",
+    "jobCode": "작업코드",
+    "jobName": "작업명",
+    "jobGroup": "작업그룹",
+    "execType": "실행유형",
+    "execTarget": "실행대상",
+    "execParams": "실행파라미터",
+    "cronExpr": "크론표현식",
+    "cronDesc": "실행주기",
+    "isActive": "활성",
+    "maxRetry": "최대재시도",
+    "timeoutSec": "타임아웃(초)",
+    "description": "설명",
+    "lastRunAt": "마지막실행",
+    "nextRunAt": "다음실행",
+    "lastErrorAt": "마지막에러",
+    "runNow": "즉시실행",
+    "toggle": "활성토글",
+    "startTime": "시작시각",
+    "endTime": "종료시각",
+    "duration": "소요시간",
+    "affectedRows": "처리건수",
+    "retryCount": "재시도",
+    "resultMsg": "결과메시지",
+    "errorMsg": "에러상세",
+    "todayTotal": "오늘 실행",
+    "todaySuccess": "성공",
+    "todayFail": "실패",
+    "successRate": "성공률",
+    "trendChart": "7일간 실행 추이",
+    "ratioChart": "작업별 성공/실패",
+    "recentFails": "최근 실패",
+    "notification": "알림",
+    "markAllRead": "모두 읽음",
+    "noUnread": "읽지 않은 알림 없음",
+    "confirmDelete": "이 작업을 삭제하시겠습니까?",
+    "confirmRun": "이 작업을 즉시 실행하시겠습니까?",
+    "addJob": "작업 등록",
+    "editJob": "작업 수정",
+    "execTypeService": "내부 서비스",
+    "execTypeProcedure": "Oracle 프로시저",
+    "execTypeSql": "SQL 실행",
+    "execTypeHttp": "HTTP API",
+    "execTypeScript": "외부 스크립트",
+    "serviceMethod": "서비스.메서드",
+    "packageProc": "패키지.프로시저",
+    "sqlQuery": "SQL 쿼리",
+    "httpMethod": "HTTP 메서드",
+    "httpUrl": "URL",
+    "httpHeaders": "헤더 (JSON)",
+    "httpBody": "Body (JSON)",
+    "scriptPath": "스크립트 경로",
+    "scriptArgs": "실행 인자"
   },
   "monthlyPlan": {
     "title": "월간생산계획",

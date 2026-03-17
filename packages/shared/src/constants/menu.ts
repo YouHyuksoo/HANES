@@ -192,6 +192,16 @@ export const MENU_ITEMS: MenuItem[] = [
       { key: 'master-code', label: '공통코드', icon: 'Tags', path: '/master/code' },
     ],
   },
+  {
+    key: 'system',
+    label: '시스템관리',
+    labelEn: 'System Management',
+    labelVi: 'Quản lý hệ thống',
+    icon: 'Settings',
+    children: [
+      { key: 'system-scheduler', label: '스케줄러 관리', labelEn: 'Scheduler', labelVi: 'Quản lý lịch trình', icon: 'Clock', path: '/system/scheduler' },
+    ],
+  },
 ] as const;
 
 /** 메뉴 키로 메뉴 아이템 찾기 */

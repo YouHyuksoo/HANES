@@ -3297,7 +3297,7 @@
       "status": "状态",
       "calculateLimits": "计算控制限",
       "calculatedLimits": "已计算的控制限",
-      "viewCpk": "查看Cpk",
+      "viewCpk": "Cpk / 直方图",
       "addData": "添加测量数据",
       "create": "注册控制图",
       "sampleDate": "测量日期",
@@ -3306,7 +3306,14 @@
       "stdDev": "标准偏差(σ)",
       "cpk": "Cpk",
       "ppk": "Ppk",
-      "outOfControl": "失控"
+      "outOfControl": "失控",
+      "subgroupNo": "子组编号",
+      "xbarChart": "Xbar 控制图 (均值)",
+      "rChart": "R 控制图 (极差)",
+      "histogram": "直方图",
+      "importData": "导入数据",
+      "noMesData": "所选期间没有可导入的测量数据。",
+      "measuredValues": "测量值"
     },
     "controlPlan": {
       "title": "控制计划",
@@ -4820,6 +4827,26 @@
       "MOUNTED": "安装中",
       "REPAIR": "维修中",
       "SCRAPPED": "报废"
+    },
+    "SCHED_GROUP": {
+      "INTERFACE": "接口",
+      "RETRY": "重试",
+      "MAINTENANCE": "DB维护"
+    },
+    "SCHED_EXEC_TYPE": {
+      "SERVICE": "内部服务",
+      "PROCEDURE": "Oracle存储过程",
+      "SQL": "SQL执行",
+      "HTTP": "HTTP API",
+      "SCRIPT": "外部脚本"
+    },
+    "SCHED_STATUS": {
+      "SUCCESS": "成功",
+      "FAIL": "失败",
+      "RUNNING": "执行中",
+      "RETRYING": "重试中",
+      "TIMEOUT": "超时",
+      "SKIPPED": "跳过"
     }
   },
   "comCodeGroup": {
@@ -4902,7 +4929,10 @@
     "PM_PRIORITY": "优先级",
     "PO_STATUS": "采购订单状态",
     "CONSUMABLE_LIFE_STATUS": "消耗品寿命状态",
-    "CON_STOCK_STATUS": "消耗品库存状态"
+    "CON_STOCK_STATUS": "消耗品库存状态",
+    "SCHED_GROUP": "调度任务组",
+    "SCHED_EXEC_TYPE": "调度执行类型",
+    "SCHED_STATUS": "调度执行状态"
   },
   "export": {
     "title": "导出",
@@ -5202,6 +5232,64 @@
   "sysConfig": {
     "ENABLE_ACTIVITY_LOG": "启用活动日志",
     "ENABLE_ACTIVITY_LOG_DESC": "记录用户登录和页面访问历史。"
+  },
+  "scheduler": {
+    "title": "调度管理",
+    "jobs": "任务管理",
+    "logs": "执行历史",
+    "dashboard": "仪表板",
+    "jobCode": "任务代码",
+    "jobName": "任务名称",
+    "jobGroup": "任务组",
+    "execType": "执行类型",
+    "execTarget": "执行目标",
+    "execParams": "执行参数",
+    "cronExpr": "Cron表达式",
+    "cronDesc": "执行周期",
+    "isActive": "启用",
+    "maxRetry": "最大重试",
+    "timeoutSec": "超时(秒)",
+    "description": "说明",
+    "lastRunAt": "上次执行",
+    "nextRunAt": "下次执行",
+    "lastErrorAt": "上次错误",
+    "runNow": "立即执行",
+    "toggle": "启用切换",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "duration": "耗时",
+    "affectedRows": "处理数",
+    "retryCount": "重试次数",
+    "resultMsg": "结果",
+    "errorMsg": "错误详情",
+    "todayTotal": "今日执行",
+    "todaySuccess": "成功",
+    "todayFail": "失败",
+    "successRate": "成功率",
+    "trendChart": "7天趋势",
+    "ratioChart": "任务成功/失败比",
+    "recentFails": "最近失败",
+    "notification": "通知",
+    "markAllRead": "全部已读",
+    "noUnread": "暂无未读通知",
+    "confirmDelete": "确定删除此任务？",
+    "confirmRun": "确定立即执行此任务？",
+    "addJob": "添加任务",
+    "editJob": "编辑任务",
+    "execTypeService": "内部服务",
+    "execTypeProcedure": "Oracle存储过程",
+    "execTypeSql": "SQL执行",
+    "execTypeHttp": "HTTP API",
+    "execTypeScript": "外部脚本",
+    "serviceMethod": "服务.方法",
+    "packageProc": "包.过程",
+    "sqlQuery": "SQL查询",
+    "httpMethod": "HTTP方法",
+    "httpUrl": "URL",
+    "httpHeaders": "请求头 (JSON)",
+    "httpBody": "请求体 (JSON)",
+    "scriptPath": "脚本路径",
+    "scriptArgs": "执行参数"
   },
   "monthlyPlan": {
     "title": "月度生产计划",
