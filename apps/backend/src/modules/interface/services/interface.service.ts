@@ -463,4 +463,75 @@ export class InterfaceService {
       take: limit,
     });
   }
+
+  // ============================================================================
+  // 스케줄러용 래퍼 메서드
+  // ============================================================================
+
+  /**
+   * 스케줄러용: PENDING 상태 BOM 동기화 로그를 조회 후 재시도
+   * @returns 처리 건수
+   */
+  async scheduledSyncBom(): Promise<{ affectedRows: number }> {
+    try {
+      const pendingLogs = await this.interLogRepository.find({
+        where: { status: 'PENDING', messageType: 'BOM_SYNC' },
+        order: { createdAt: 'ASC' },
+        take: 50,
+      });
+
+      if (!pendingLogs || pendingLogs.length === 0) {
+        return { affectedRows: 0 };
+      }
+
+      let processed = 0;
+      for (const log of pendingLogs) {
+        try {
+          if (log.payload) {
+            const payload = JSON.parse(log.payload);
+            if (payload.items && Array.isArray(payload.items)) {
+              await this.syncBom(payload.items);
+            }
+          }
+          processed++;
+        } catch (error: unknown) {
+          this.logger.warn(
+            `BOM 동기화 재처리 실패 (seq=${log.seq}): ${error instanceof Error ? error.message : '오류'}`,
+          );
+        }
+      }
+
+      return { affectedRows: processed };
+    } catch (error: unknown) {
+      this.logger.error(
+        `scheduledSyncBom 실패: ${error instanceof Error ? error.message : '오류'}`,
+      );
+      return { affectedRows: 0 };
+    }
+  }
+
+  /**
+   * 스케줄러용: 실패 로그를 자동 조회 후 bulkRetry() 호출
+   * @returns 처리 건수
+   */
+  async scheduledBulkRetry(): Promise<{ affectedRows: number }> {
+    try {
+      const failedLogs = await this.getFailedLogs();
+      if (!failedLogs || failedLogs.length === 0) {
+        return { affectedRows: 0 };
+      }
+
+      const keys = failedLogs.map((l) => ({
+        transDate: l.transDate,
+        seq: l.seq,
+      }));
+      const results = await this.bulkRetry(keys);
+      return { affectedRows: Array.isArray(results) ? results.length : 0 };
+    } catch (error: unknown) {
+      this.logger.error(
+        `scheduledBulkRetry 실패: ${error instanceof Error ? error.message : '오류'}`,
+      );
+      return { affectedRows: 0 };
+    }
+  }
 }

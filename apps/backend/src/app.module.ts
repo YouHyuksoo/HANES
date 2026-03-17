@@ -39,6 +39,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { RoleModule } from './modules/role/role.module';
 import { NumRuleModule } from './modules/num-rule/num-rule.module';
 import { SharedModule } from './shared/shared.module';
+import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
 @Module({
   imports: [
@@ -110,6 +111,9 @@ import { SharedModule } from './shared/shared.module';
 
     // 공유 모듈 (UidGeneratorService 등)
     SharedModule,
+
+    // 스케줄러 (정기 작업 실행 + 로그 + 알림)
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
