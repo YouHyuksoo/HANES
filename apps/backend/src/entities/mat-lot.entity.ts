@@ -28,11 +28,9 @@ export class MatLot {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
+  /** 입고 시 발행된 원수량 (수불로 변하지 않는 불변값) */
   @Column({ name: 'INIT_QTY', type: 'int' })
   initQty: number;
-
-  @Column({ name: 'CURRENT_QTY', type: 'int' })
-  currentQty: number;
 
   @Column({ name: 'RECV_DATE', type: 'date', nullable: true })
   recvDate: Date | null;

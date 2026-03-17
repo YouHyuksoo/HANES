@@ -23,7 +23,7 @@ interface SplittableLot {
   matUid: string;
   itemCode?: string;
   itemName?: string;
-  currentQty: number;
+  qty: number;
   unit?: string;
   vendor?: string;
   status: string;
@@ -58,7 +58,7 @@ export default function LotSplitPage() {
 
   const stats = useMemo(() => ({
     total: data.length,
-    totalQty: data.reduce((s, d) => s + d.currentQty, 0),
+    totalQty: data.reduce((s, d) => s + d.qty, 0),
   }), [data]);
 
   const handleSplit = useCallback(async () => {
@@ -109,9 +109,9 @@ export default function LotSplitPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "currentQty", header: t("material.lotSplit.currentQty"), size: 120,
+      accessorKey: "qty", header: t("material.lotSplit.currentQty"), size: 120,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ row }) => <span className="font-semibold">{row.original.currentQty.toLocaleString()} {row.original.unit || ""}</span>,
+      cell: ({ row }) => <span className="font-semibold">{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
       accessorKey: "vendor", header: t("material.lotSplit.vendor"), size: 100,
@@ -161,7 +161,7 @@ export default function LotSplitPage() {
                 <div><span className="text-text-muted">{t("material.col.matUid")}:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
                 <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
                 <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
-                <div><span className="text-text-muted">{t("material.lotSplit.currentQty")}:</span> <span className="font-semibold">{selectedLot.currentQty.toLocaleString()} {selectedLot.unit || ""}</span></div>
+                <div><span className="text-text-muted">{t("material.lotSplit.currentQty")}:</span> <span className="font-semibold">{selectedLot.qty.toLocaleString()} {selectedLot.unit || ""}</span></div>
               </div>
             </div>
             <Input label={t("material.lotSplit.splitQty")} type="number" placeholder="0"
@@ -171,7 +171,7 @@ export default function LotSplitPage() {
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
               <Button onClick={handleSplit}
-                disabled={saving || !splitForm.splitQty || Number(splitForm.splitQty) <= 0 || Number(splitForm.splitQty) >= selectedLot.currentQty}>
+                disabled={saving || !splitForm.splitQty || Number(splitForm.splitQty) <= 0 || Number(splitForm.splitQty) >= selectedLot.qty}>
                 {saving ? t("common.saving") : <><Scissors className="w-4 h-4 mr-1" />{t("material.lotSplit.split")}</>}
               </Button>
             </div>

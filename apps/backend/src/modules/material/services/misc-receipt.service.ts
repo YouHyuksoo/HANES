@@ -194,16 +194,7 @@ export class MiscReceiptService {
         await queryRunner.manager.save(newStock);
       }
 
-      // LOT 수량 업데이트 (matUid가 있는 경우)
-      if (matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: matUid } });
-        if (lot) {
-          await queryRunner.manager.update(MatLot, matUid, {
-            currentQty: lot.currentQty + qty,
-            status: lot.status === 'DEPLETED' ? 'NORMAL' : lot.status,
-          });
-        }
-      }
+      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
       // 기타입고 트랜잭션 생성
       const transaction = queryRunner.manager.create(StockTransaction, {

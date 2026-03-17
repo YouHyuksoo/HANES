@@ -71,7 +71,7 @@ export interface JobOrder {
 export type JobOrderStatus =
   | "WAITING"
   | "RUNNING"
-  | "PAUSED"
+  | "HOLD"
   | "DONE"
   | "CANCELED";
 

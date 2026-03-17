@@ -9,7 +9,7 @@
  * - status: LOT 상태 (NORMAL/HOLD/SCRAPPED/DEPLETED)
  */
 
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -114,7 +114,6 @@ export class MatLotService {
       matUid: dto.matUid,
       itemCode: dto.itemCode,
       initQty: dto.initQty,
-      currentQty: dto.currentQty ?? dto.initQty,
       recvDate: dto.recvDate ? new Date(dto.recvDate) : new Date(),
       expireDate: dto.expireDate ? new Date(dto.expireDate) : null,
       origin: dto.origin,
@@ -160,38 +159,8 @@ export class MatLotService {
   }
 
   async delete(matUid: string) {
-    const lot = await this.findById(matUid);
-    if (lot.currentQty > 0) {
-      throw new BadRequestException('재고가 남아있는 LOT은 삭제할 수 없습니다.');
-    }
+    await this.findById(matUid);
     await this.matLotRepository.delete(matUid);
     return { matUid };
-  }
-
-  async consumeQty(matUid: string, qty: number) {
-    const lot = await this.findById(matUid);
-    if (lot.currentQty < qty) {
-      throw new BadRequestException(`재고 부족: 현재 ${lot.currentQty}, 요청 ${qty}`);
-    }
-
-    const newQty = lot.currentQty - qty;
-    await this.matLotRepository.update(matUid, {
-      currentQty: newQty,
-      status: newQty === 0 ? 'DEPLETED' : lot.status,
-    });
-
-    return this.matLotRepository.findOne({ where: { matUid } });
-  }
-
-  async returnQty(matUid: string, qty: number) {
-    const lot = await this.findById(matUid);
-    const newQty = lot.currentQty + qty;
-
-    await this.matLotRepository.update(matUid, {
-      currentQty: newQty,
-      status: newQty > 0 && lot.status === 'DEPLETED' ? 'NORMAL' : lot.status,
-    });
-
-    return this.matLotRepository.findOne({ where: { matUid } });
   }
 }

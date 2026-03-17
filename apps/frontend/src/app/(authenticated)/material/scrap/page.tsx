@@ -7,7 +7,7 @@
  * 초보자 가이드:
  * 1. **폐기 등록**: LOT/창고/수량/사유 입력 → POST /inventory/scrap
  * 2. **이력 조회**: StockTransaction(transType=SCRAP) 조회
- * 3. **재고 자동 차감**: 폐기 시 Stock.qty 감소, Lot.currentQty 감소
+ * 3. **재고 자동 차감**: 폐기 시 Stock.qty 감소
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";

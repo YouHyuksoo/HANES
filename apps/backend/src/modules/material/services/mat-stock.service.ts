@@ -152,9 +152,8 @@ export class MatStockService {
         itemCode: part?.itemCode ?? null, itemName: part?.itemName ?? null,
         unit: part?.unit ?? null, matUid: lot?.matUid ?? null,
         iqcStatus: lot?.iqcStatus ?? null, lotStatus: lot?.status ?? null,
-        currentQty: lot?.currentQty ?? stock.qty,
       };
-    }).filter((s) => s.iqcStatus === 'PASS' && s.currentQty > 0 && s.lotStatus !== 'HOLD');
+    }).filter((s) => s.iqcStatus === 'PASS' && s.qty > 0 && s.lotStatus !== 'HOLD');
 
     if (search) {
       const s = search.toLowerCase();

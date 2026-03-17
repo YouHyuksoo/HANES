@@ -15,8 +15,10 @@ import { api } from "@/services/api";
 
 /** 실사 세션 정보 */
 export interface PhysicalInvSession {
-  sessionId: number;
+  sessionDate: string;
+  seq: number;
   sessionNo: string;
+  warehouseCode: string | null;
   warehouseName: string;
   countMonth: string;
   status: string;
@@ -93,12 +95,16 @@ export function useMatInventoryCount(): UseMatInventoryCountReturn {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await api.get<PhysicalInvSession>(
-          "/material/physical-inv/session/active",
-        );
+        const { data } = await api.get("/material/physical-inv/session/active");
+        const sessionData = data?.data ?? data;
         if (!cancelled) {
-          setSession(data);
-          setNoActiveInv(false);
+          if (sessionData) {
+            setSession(sessionData);
+            setNoActiveInv(false);
+          } else {
+            setSession(null);
+            setNoActiveInv(true);
+          }
         }
       } catch {
         if (!cancelled) {
@@ -123,10 +129,10 @@ export function useMatInventoryCount(): UseMatInventoryCountReturn {
       setError(null);
       setIsLoadingItems(true);
       try {
-        const { data } = await api.get<CountItem[]>(
-          `/material/physical-inv/session/${session.sessionId}/location/${encodeURIComponent(code)}`,
+        const { data } = await api.get(
+          `/material/physical-inv/session/${session.sessionDate}/${session.seq}/location/${encodeURIComponent(code)}`,
         );
-        setCountItems(data ?? []);
+        setCountItems(data?.data ?? data ?? []);
       } catch (err: unknown) {
         const message =
           (err as { response?: { data?: { message?: string } } })?.response
@@ -147,35 +153,29 @@ export function useMatInventoryCount(): UseMatInventoryCountReturn {
       setError(null);
       try {
         const { data } = await api.post<{
-          itemCode: string;
-          itemName: string;
-          countedQty: number;
-          items: CountItem[];
+          data: { itemCode: string; itemName: string; countedQty: number };
         }>("/material/physical-inv/count", {
-          sessionId: session.sessionId,
+          sessionDate: session.sessionDate,
+          seq: session.seq,
           locationCode,
           barcode,
         });
-        // 서버 응답에서 갱신된 품목 목록 반영
-        if (data.items) {
-          setCountItems(data.items);
-        } else {
-          // 서버가 items 반환 안 하면 로컬에서 낙관적 업데이트
-          setCountItems((prev) =>
-            prev.map((item) =>
-              item.itemCode === data.itemCode
-                ? { ...item, countedQty: data.countedQty }
-                : item,
-            ),
-          );
-        }
+        const result = data?.data ?? data;
+        // 로컬 카운트 업데이트
+        setCountItems((prev) =>
+          prev.map((item) =>
+            item.itemCode === result.itemCode
+              ? { ...item, countedQty: result.countedQty }
+              : item,
+          ),
+        );
         setHistory((prev) => [
           {
             barcode,
-            itemCode: data.itemCode,
-            itemName: data.itemName,
+            itemCode: result.itemCode,
+            itemName: result.itemName,
             locationCode,
-            countedQty: data.countedQty,
+            countedQty: result.countedQty,
             timestamp: new Date().toLocaleTimeString(),
           },
           ...prev,

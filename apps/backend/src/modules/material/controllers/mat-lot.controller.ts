@@ -59,17 +59,4 @@ export class MatLotController {
     return ResponseUtil.success(null, 'LOT이 삭제되었습니다.');
   }
 
-  @Post(':id/consume')
-  @ApiOperation({ summary: 'LOT 재고 차감' })
-  async consume(@Param('id') id: string, @Body('qty') qty: number) {
-    const data = await this.matLotService.consumeQty(id, qty);
-    return ResponseUtil.success(data, '재고가 차감되었습니다.');
-  }
-
-  @Post(':id/return')
-  @ApiOperation({ summary: 'LOT 재고 반납' })
-  async return(@Param('id') id: string, @Body('qty') qty: number) {
-    const data = await this.matLotService.returnQty(id, qty);
-    return ResponseUtil.success(data, '재고가 반납되었습니다.');
-  }
 }

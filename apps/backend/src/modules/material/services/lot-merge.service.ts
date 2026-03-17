@@ -36,7 +36,8 @@ export class LotMergeService {
     const skip = (page - 1) * limit;
 
     const qb = this.matLotRepository.createQueryBuilder('lot')
-      .where('lot.currentQty > 0')
+      .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid')
+      .where('stock.qty > 0')
       .andWhere("lot.status != 'DEPLETED'")
       .andWhere("lot.status != 'HOLD'");
 
@@ -97,12 +98,21 @@ export class LotMergeService {
         throw new BadRequestException('서로 다른 품목의 LOT은 병합할 수 없습니다.');
       }
 
-      // HOLD/DEPLETED 상태 검증
+      // 모든 LOT의 재고 조회 (MatStock 기준)
+      const lotMatUids = lots.map(l => l.matUid);
+      const stocks = await queryRunner.manager.find(MatStock, {
+        where: { matUid: In(lotMatUids) },
+        lock: { mode: 'pessimistic_write' },
+      });
+      const stockMap = new Map(stocks.map(s => [s.matUid, s]));
+
+      // HOLD/DEPLETED/재고없음 상태 검증
       for (const lot of lots) {
         if (lot.status === 'HOLD') {
           throw new BadRequestException(`HOLD 상태인 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
-        if (lot.status === 'DEPLETED' || lot.currentQty <= 0) {
+        const lotStock = stockMap.get(lot.matUid);
+        if (lot.status === 'DEPLETED' || !lotStock || lotStock.qty <= 0) {
           throw new BadRequestException(`재고가 없는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
       }
@@ -116,44 +126,36 @@ export class LotMergeService {
       }
 
       const sources = lots.filter(l => l.matUid !== target.matUid);
-      const totalMergeQty = sources.reduce((sum, l) => sum + l.currentQty, 0);
+
+      // MatStock 기준으로 병합 수량 합산
+      const totalMergeQty = sources.reduce((sum, l) => {
+        const s = stockMap.get(l.matUid);
+        return sum + (s?.qty ?? 0);
+      }, 0);
 
       // 품목 정보
       const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode: target.itemCode } });
 
-      // 대상 LOT에 수량 합산
-      const newTargetQty = target.currentQty + totalMergeQty;
-      await queryRunner.manager.update(MatLot, target.matUid, {
-        currentQty: newTargetQty,
-        initQty: target.initQty + totalMergeQty,
-      });
-
-      // 원본 LOT들 소진 처리
+      // 원본 LOT들 소진 처리 (상태만 변경, currentQty 업데이트 없음)
       for (const src of sources) {
         await queryRunner.manager.update(MatLot, src.matUid, {
-          currentQty: 0,
           status: 'DEPLETED',
         });
       }
 
       // MatStock 동기화 — 대상 재고에 합산, 원본 재고 0으로
-      const targetStock = await queryRunner.manager.findOne(MatStock, {
-        where: { matUid: target.matUid },
-        lock: { mode: 'pessimistic_write' },
-      });
+      const targetStock = stockMap.get(target.matUid);
+      const newTargetQty = (targetStock?.qty ?? 0) + totalMergeQty;
 
       if (targetStock) {
         await queryRunner.manager.update(MatStock,
           { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, matUid: targetStock.matUid },
-          { qty: targetStock.qty + totalMergeQty, availableQty: targetStock.availableQty + totalMergeQty },
+          { qty: newTargetQty, availableQty: targetStock.availableQty + totalMergeQty },
         );
       }
 
       for (const src of sources) {
-        const srcStock = await queryRunner.manager.findOne(MatStock, {
-          where: { matUid: src.matUid },
-          lock: { mode: 'pessimistic_write' },
-        });
+        const srcStock = stockMap.get(src.matUid);
         if (srcStock) {
           await queryRunner.manager.update(MatStock,
             { warehouseCode: srcStock.warehouseCode, itemCode: srcStock.itemCode, matUid: srcStock.matUid },

@@ -28,7 +28,8 @@ export class IqcGroupService {
     const { page = 1, limit = 10, search, inspectMethod, useYn } = query;
 
     const qb = this.groupRepo.createQueryBuilder('g')
-      .leftJoinAndSelect('g.items', 'gi');
+      .leftJoinAndSelect('g.items', 'gi')
+      .leftJoinAndSelect('gi.inspItem', 'pool');
 
     if (company) {
       qb.andWhere('g.company = :company', { company });
@@ -64,7 +65,7 @@ export class IqcGroupService {
   async findByCode(groupCode: string) {
     const group = await this.groupRepo.findOne({
       where: { groupCode },
-      relations: ['items'],
+      relations: ['items', 'items.inspItem'],
     });
 
     if (!group) {

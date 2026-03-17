@@ -136,8 +136,15 @@ export class MatIssueService {
           throw new BadRequestException(`홀드 상태인 LOT은 출고할 수 없습니다: ${lot.matUid}`);
         }
 
-        if (lot.currentQty < item.issueQty) {
-          throw new BadRequestException(`LOT 재고 부족: ${lot.matUid} (현재: ${lot.currentQty}, 요청: ${item.issueQty})`);
+        // MatStock에서 재고 확인
+        const stock = await queryRunner.manager.findOne(MatStock, {
+          where: { matUid: lot.matUid },
+          lock: { mode: 'pessimistic_write' },
+        });
+        const stockQty = stock?.qty ?? 0;
+
+        if (stockQty < item.issueQty) {
+          throw new BadRequestException(`LOT 재고 부족: ${lot.matUid} (현재: ${stockQty}, 요청: ${item.issueQty})`);
         }
 
         // 1. 출고 이력 생성 (issueNo + seq)
@@ -177,24 +184,17 @@ export class MatIssueService {
         });
         await queryRunner.manager.save(stockTx);
 
-        // 3. LOT 재고 차감
-        await queryRunner.manager.update(MatLot, lot.matUid, {
-          currentQty: lot.currentQty - item.issueQty,
-          status: lot.currentQty - item.issueQty === 0 ? 'DEPLETED' : lot.status,
-        });
+        // 3. MatStock 재고 차감
+        if (stock) {
+          const newStockQty = Math.max(0, stock.qty - item.issueQty);
+          await queryRunner.manager.update(MatStock,
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+            { qty: newStockQty, availableQty: Math.max(0, stock.availableQty - item.issueQty) },
+          );
 
-        // 4. 창고 재고 차감 (warehouseCode가 있는 경우)
-        if (warehouseCode) {
-          const stock = await queryRunner.manager.findOne(MatStock, {
-            where: { itemCode: lot.itemCode, warehouseCode, matUid: lot.matUid },
-            lock: { mode: 'pessimistic_write' },
-          });
-
-          if (stock) {
-            await queryRunner.manager.update(MatStock,
-              { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
-              { qty: Math.max(0, stock.qty - item.issueQty), availableQty: Math.max(0, stock.availableQty - item.issueQty) },
-            );
+          // MatStock.qty가 0이면 MatLot 상태를 DEPLETED로 변경
+          if (newStockQty <= 0) {
+            await queryRunner.manager.update(MatLot, lot.matUid, { status: 'DEPLETED' });
           }
         }
 
@@ -232,7 +232,13 @@ export class MatIssueService {
         `홀드 상태인 LOT은 출고할 수 없습니다: ${dto.matUid}`,
       );
     }
-    if (lot.status === 'DEPLETED' || lot.currentQty <= 0) {
+    // MatStock에서 재고 확인
+    const stock = await this.matStockRepository.findOne({
+      where: { matUid: dto.matUid },
+    });
+    const stockQty = stock?.qty ?? 0;
+
+    if (lot.status === 'DEPLETED' || stockQty <= 0) {
       throw new BadRequestException(
         `이미 소진된 LOT입니다: ${dto.matUid}`,
       );
@@ -241,7 +247,7 @@ export class MatIssueService {
     const result = await this.create({
       warehouseCode: dto.warehouseCode,
       issueType: dto.issueType,
-      items: [{ matUid: lot.matUid, issueQty: lot.currentQty }],
+      items: [{ matUid: lot.matUid, issueQty: stockQty }],
       workerId: dto.workerId,
       remark: dto.remark ?? `바코드 스캔 출고: ${dto.matUid}`,
     });
@@ -253,7 +259,7 @@ export class MatIssueService {
     return {
       ...result[0],
       matUid: lot.matUid,
-      issuedQty: lot.currentQty,
+      issuedQty: stockQty,
       itemCode: part?.itemCode,
       itemName: part?.itemName,
       unit: part?.unit,
@@ -307,18 +313,7 @@ export class MatIssueService {
         await queryRunner.manager.update(StockTransaction, { transNo: originalTx.transNo }, { status: 'CANCELED' });
       }
 
-      // 3. LOT 재고 복구
-      if (rawIssue.matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: rawIssue.matUid } });
-        if (lot) {
-          await queryRunner.manager.update(MatLot, lot.matUid, {
-            currentQty: lot.currentQty + rawIssue.issueQty,
-            status: 'NORMAL',
-          });
-        }
-      }
-
-      // 4. 창고 재고 복구 (stock이 있는 경우)
+      // 3. MatStock 재고 복구 + MatLot 상태 복구
       const stock = rawIssue.matUid ? await queryRunner.manager.findOne(MatStock, {
         where: { matUid: rawIssue.matUid },
         lock: { mode: 'pessimistic_write' },
@@ -329,6 +324,11 @@ export class MatIssueService {
           { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
           { qty: stock.qty + rawIssue.issueQty, availableQty: stock.availableQty + rawIssue.issueQty },
         );
+
+        // MatLot 상태를 NORMAL로 복구 (재고가 복구되었으므로)
+        if (rawIssue.matUid) {
+          await queryRunner.manager.update(MatLot, rawIssue.matUid, { status: 'NORMAL' });
+        }
       }
 
       await queryRunner.commitTransaction();

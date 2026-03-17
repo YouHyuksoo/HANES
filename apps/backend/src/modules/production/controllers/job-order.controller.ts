@@ -159,15 +159,26 @@ export class JobOrderController {
     return ResponseUtil.success(data, '작업이 시작되었습니다.');
   }
 
-  @Post(':id/pause')
+  @Post(':id/hold')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '작업 일시정지', description: 'RUNNING -> PAUSED 상태로 변경' })
+  @ApiOperation({ summary: '작업 홀딩', description: 'WAITING/RUNNING -> HOLD 상태로 변경 (실적등록/출하 차단)' })
   @ApiParam({ name: 'id', description: '작업지시 ID' })
-  @ApiResponse({ status: 200, description: '일시정지 성공' })
+  @ApiResponse({ status: 200, description: '홀딩 성공' })
   @ApiResponse({ status: 400, description: '상태 변경 불가' })
-  async pause(@Param('id') id: string) {
-    const data = await this.jobOrderService.pause(id);
-    return ResponseUtil.success(data, '작업이 일시정지되었습니다.');
+  async hold(@Param('id') id: string) {
+    const data = await this.jobOrderService.hold(id);
+    return ResponseUtil.success(data, '작업이 홀딩되었습니다.');
+  }
+
+  @Post(':id/hold-release')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '홀딩 해제', description: 'HOLD -> 이전 상태로 복귀' })
+  @ApiParam({ name: 'id', description: '작업지시 ID' })
+  @ApiResponse({ status: 200, description: '홀딩해제 성공' })
+  @ApiResponse({ status: 400, description: '상태 변경 불가' })
+  async holdRelease(@Param('id') id: string) {
+    const data = await this.jobOrderService.holdRelease(id);
+    return ResponseUtil.success(data, '홀딩이 해제되었습니다.');
   }
 
   @Post(':id/complete')

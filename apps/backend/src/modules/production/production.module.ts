@@ -41,6 +41,8 @@ import { ProductLabelService } from './services/product-label.service';
 import { ProdPlanController } from './controllers/prod-plan.controller';
 import { ProdPlanService } from './services/prod-plan.service';
 import { AutoIssueService } from './services/auto-issue.service';
+import { RepairController } from './controllers/repair.controller';
+import { RepairService } from './services/repair.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SystemModule } from '../system/system.module';
 import { NumRuleModule } from '../num-rule/num-rule.module';
@@ -64,10 +66,14 @@ import { LabelPrintLog } from '../../entities/label-print-log.entity';
 import { ProdPlan } from '../../entities/prod-plan.entity';
 import { MatLot } from '../../entities/mat-lot.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
+import { RepairOrder } from '../../entities/repair-order.entity';
+import { RepairUsedPart } from '../../entities/repair-used-part.entity';
+import { RoutingGroup } from '../../entities/routing-group.entity';
+import { RoutingProcess } from '../../entities/routing-process.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess]),
     InventoryModule,
     SystemModule,
     NumRuleModule,
@@ -79,6 +85,7 @@ import { StockTransaction } from '../../entities/stock-transaction.entity';
     SampleInspectController,
     ProductLabelController,
     ProdPlanController,
+    RepairController,
   ],
   providers: [
     JobOrderService,
@@ -88,6 +95,7 @@ import { StockTransaction } from '../../entities/stock-transaction.entity';
     ProductLabelService,
     ProdPlanService,
     AutoIssueService,
+    RepairService,
   ],
   exports: [
     JobOrderService,
@@ -96,6 +104,7 @@ import { StockTransaction } from '../../entities/stock-transaction.entity';
     SampleInspectService,
     ProdPlanService,
     AutoIssueService,
+    RepairService,
   ],
 })
 export class ProductionModule {}

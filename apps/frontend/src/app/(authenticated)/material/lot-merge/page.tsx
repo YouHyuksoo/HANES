@@ -24,7 +24,7 @@ interface MergeableLot {
   itemCode: string;
   itemName?: string;
   unit?: string;
-  currentQty: number;
+  qty: number;
   status: string;
   expireDate?: string;
   vendor?: string;
@@ -76,7 +76,7 @@ export default function LotMergePage() {
   }, [selectedLots]);
 
   const totalMergeQty = useMemo(
-    () => selectedLots.reduce((sum, l) => sum + l.currentQty, 0),
+    () => selectedLots.reduce((sum, l) => sum + l.qty, 0),
     [selectedLots],
   );
 
@@ -122,7 +122,7 @@ export default function LotMergePage() {
     { accessorKey: "itemName", header: t("common.partName"), size: 140,
       meta: { filterType: "text" as const },
     },
-    { accessorKey: "currentQty", header: t("common.quantity"), size: 90,
+    { accessorKey: "qty", header: t("common.quantity"), size: 90,
       meta: { filterType: "number" as const },
       cell: ({ getValue, row }) => (
         <span className="font-semibold">{(getValue() as number).toLocaleString()} {row.original.unit || "EA"}</span>

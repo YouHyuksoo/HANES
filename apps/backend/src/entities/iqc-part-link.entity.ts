@@ -68,6 +68,6 @@ export class IqcPartLink {
   partner: PartnerMaster;
 
   @ManyToOne(() => IqcGroup, { eager: false })
-  @JoinColumn({ name: 'GROUP_ID' })
+  @JoinColumn({ name: 'GROUP_ID', referencedColumnName: 'id' })
   group: IqcGroup;
 }

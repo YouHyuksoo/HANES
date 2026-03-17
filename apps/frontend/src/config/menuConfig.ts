@@ -52,6 +52,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MST_PART", labelKey: "menu.master.part", path: "/master/part" },
       { code: "MST_BOM", labelKey: "menu.master.bom", path: "/master/bom" },
       { code: "MST_PARTNER", labelKey: "menu.master.partner", path: "/master/partner" },
+      { code: "EQUIP_MASTER", labelKey: "menu.equipment.master", path: "/master/equip" },
       { code: "MST_PROCESS", labelKey: "menu.master.process", path: "/master/process" },
       { code: "MST_PROD_LINE", labelKey: "menu.master.prodLine", path: "/master/prod-line" },
       { code: "MST_ROUTING", labelKey: "menu.master.routing", path: "/master/routing" },
@@ -145,6 +146,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_WIP_STOCK", labelKey: "menu.production.wipStock", path: "/production/wip-stock" },
       { code: "QC_REWORK", labelKey: "menu.quality.rework", path: "/quality/rework" },
       { code: "QC_REWORK_HISTORY", labelKey: "menu.quality.reworkHistory", path: "/quality/rework-history" },
+      { code: "PROD_REPAIR", labelKey: "menu.production.repair", path: "/production/repair" },
     ],
   },
   {
@@ -189,7 +191,6 @@ export const menuConfig: MenuConfigItem[] = [
     icon: Wrench,
     children: [
       /* ── 마스터 ── */
-      { code: "EQUIP_MASTER", labelKey: "menu.equipment.master", path: "/master/equip" },
       { code: "EQ_MOLD_MGMT", labelKey: "menu.equipment.mold", path: "/equipment/mold-mgmt" },
       { code: "EQUIP_INSPECT_ITEM_MASTER", labelKey: "menu.equipment.inspectItemMaster", path: "/master/equip-inspect-item" },
       { code: "EQUIP_INSPECT_ITEM", labelKey: "menu.master.equipInspect", path: "/master/equip-inspect" },

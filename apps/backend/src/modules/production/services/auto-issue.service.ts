@@ -191,17 +191,27 @@ export class AutoIssueService {
   ): Promise<{ matUid: string; itemCode: string; issueQty: number }[]> {
     const issued: { matUid: string; itemCode: string; issueQty: number }[] = [];
 
-    /* FIFO LOT 목록 (PASS & NORMAL & currentQty > 0) */
-    const lots = await qr.manager
+    /* FIFO LOT 목록 (PASS & NORMAL & MatStock.qty > 0) */
+    const lotsWithStock: { lot: MatLot; stockQty: number }[] = [];
+    const candidateLots = await qr.manager
       .createQueryBuilder(MatLot, 'l')
       .where('l.itemCode = :itemCode', { itemCode })
-      .andWhere('l.currentQty > 0')
       .andWhere('l.iqcStatus = :iqc', { iqc: 'PASS' })
       .andWhere('l.status = :st', { st: 'NORMAL' })
       .orderBy('l.createdAt', 'ASC')
       .getMany();
 
-    const totalAvailable = lots.reduce((sum, l) => sum + l.currentQty, 0);
+    for (const lot of candidateLots) {
+      const stocks = await qr.manager.find(MatStock, {
+        where: { matUid: lot.matUid },
+      });
+      const totalStockQty = stocks.reduce((sum, s) => sum + s.qty, 0);
+      if (totalStockQty > 0) {
+        lotsWithStock.push({ lot, stockQty: totalStockQty });
+      }
+    }
+
+    const totalAvailable = lotsWithStock.reduce((sum, ls) => sum + ls.stockQty, 0);
 
     /* 재고 부족 체크 */
     if (totalAvailable < requiredQty) {
@@ -217,10 +227,10 @@ export class AutoIssueService {
 
     let remaining = Math.min(requiredQty, totalAvailable);
 
-    for (const lot of lots) {
+    for (const { lot, stockQty } of lotsWithStock) {
       if (remaining <= 0) break;
 
-      const issueQty = Math.min(remaining, lot.currentQty);
+      const issueQty = Math.min(remaining, stockQty);
       remaining -= issueQty;
 
       /* (a) MatIssue 생성 */
@@ -255,15 +265,17 @@ export class AutoIssueService {
       });
       await qr.manager.save(StockTransaction, txEntity);
 
-      /* (c) MatLot.currentQty 차감 + 상태 갱신 */
-      const newQty = lot.currentQty - issueQty;
-      await qr.manager.update(MatLot, { matUid: lot.matUid }, {
-        currentQty: newQty,
-        ...(newQty <= 0 ? { status: 'DEPLETED' } : {}),
-      });
-
-      /* (d) MatStock 차감 (해당 LOT의 모든 창고 재고) */
+      /* (c) MatStock 차감 (해당 LOT의 모든 창고 재고) */
       await this.deductMatStock(qr, itemCode, lot.matUid, issueQty);
+
+      /* (d) MatStock.qty 합산 → 0이면 MatLot DEPLETED 처리 */
+      const remainingStocks = await qr.manager.find(MatStock, {
+        where: { matUid: lot.matUid },
+      });
+      const remainingStockQty = remainingStocks.reduce((s, st) => s + st.qty, 0);
+      if (remainingStockQty <= 0) {
+        await qr.manager.update(MatLot, { matUid: lot.matUid }, { status: 'DEPLETED' });
+      }
 
       issued.push({ matUid: lot.matUid, itemCode, issueQty });
     }

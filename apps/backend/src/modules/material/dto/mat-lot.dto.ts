@@ -23,12 +23,6 @@ export class CreateMatLotDto {
   @Min(0)
   initQty: number;
 
-  @ApiPropertyOptional({ description: '현재 수량' })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  currentQty?: number;
-
   @ApiPropertyOptional({ description: '입고일' })
   @IsOptional()
   @IsDateString()

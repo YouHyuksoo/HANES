@@ -136,19 +136,20 @@ function BomPage() {
                       <th className="text-left py-1.5 px-2 font-medium">{t("master.part.partNo")}</th>
                       <th className="text-left py-1.5 px-2 font-medium">{t("master.part.partName")}</th>
                       <th className="text-center py-1.5 px-1 font-medium w-12">{t("master.part.partType")}</th>
+                      <th className="text-center py-1.5 px-1 font-medium w-16">{t("master.bom.revision", { defaultValue: "Rev" })}</th>
                       <th className="text-center py-1.5 px-1 font-medium w-12">BOM</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={4} className="py-12 text-center">
+                        <td colSpan={5} className="py-12 text-center">
                           <RefreshCw className="w-6 h-6 text-primary animate-spin mx-auto" />
                         </td>
                       </tr>
                     ) : filteredParents.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-sm text-text-muted">
+                        <td colSpan={5} className="py-8 text-center text-sm text-text-muted">
                           {t("common.noData")}
                         </td>
                       </tr>
@@ -197,6 +198,17 @@ function BomPage() {
                                 ? "bg-white/20 text-white"
                                 : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                             }`}>{parent.itemType}</span>
+                          </td>
+                          <td className="py-1.5 px-1 text-center">
+                            <div className="flex gap-0.5 justify-center flex-wrap">
+                              {(parent.revisions ?? []).map((rev) => (
+                                <span key={rev} className={`px-1.5 py-0.5 text-[10px] rounded-full font-mono ${
+                                  selectedParent?.itemCode === parent.itemCode
+                                    ? "bg-white/20 text-white"
+                                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                }`}>{rev}</span>
+                              ))}
+                            </div>
                           </td>
                           <td className="py-1.5 px-1 text-center">
                             <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${

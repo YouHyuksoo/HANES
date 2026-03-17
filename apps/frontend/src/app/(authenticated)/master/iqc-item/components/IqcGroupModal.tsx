@@ -19,8 +19,8 @@ import api from "@/services/api";
 
 interface PoolItem {
   id: string;
-  itemCode: string;
-  itemName: string;
+  inspItemCode: string;
+  inspItemName: string;
   judgeMethod: "VISUAL" | "MEASURE";
   criteria: string | null;
   lsl: number | null;
@@ -46,7 +46,7 @@ interface Props {
     groupName: string;
     inspectMethod: string;
     sampleQty?: number | null;
-    items?: { itemId: string; seq: number }[];
+    items?: { inspItemId: number; seq: number }[];
   } | null;
 }
 
@@ -63,7 +63,8 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
   const fetchPoolItems = useCallback(async () => {
     try {
       const res = await api.get("/master/iqc-item-pool", { params: { limit: "5000", useYn: "Y" } });
-      setAllItems(res.data?.data ?? []);
+      const items = (res.data?.data ?? []).map((i: any) => ({ ...i, id: String(i.id) }));
+      setAllItems(items);
     } catch {
       setAllItems([]);
     }
@@ -78,7 +79,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
           groupName: editing.groupName,
           inspectMethod: editing.inspectMethod,
           sampleQty: editing.sampleQty?.toString() ?? "",
-          selectedItemIds: editing.items?.sort((a, b) => a.seq - b.seq).map(i => i.itemId) ?? [],
+          selectedItemIds: editing.items?.sort((a, b) => a.seq - b.seq).map(i => String(i.inspItemId)) ?? [],
         });
       } else {
         setForm(EMPTY_FORM);
@@ -102,7 +103,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
     if (!itemSearch) return allItems;
     const s = itemSearch.toLowerCase();
     return allItems.filter(i =>
-      i.itemCode.toLowerCase().includes(s) || i.itemName.toLowerCase().includes(s)
+      i.inspItemCode.toLowerCase().includes(s) || i.inspItemName.toLowerCase().includes(s)
     );
   }, [allItems, itemSearch]);
 
@@ -162,8 +163,8 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
                 {selectedItems.map((item, idx) => (
                   <div key={item.id} className="flex items-center gap-2 text-xs py-1 px-2 bg-primary/5 rounded">
                     <span className="text-text-muted w-5">{idx + 1}</span>
-                    <span className="font-mono text-text-muted">{item.itemCode}</span>
-                    <span className="flex-1 truncate">{item.itemName}</span>
+                    <span className="font-mono text-text-muted">{item.inspItemCode}</span>
+                    <span className="flex-1 truncate">{item.inspItemName}</span>
                   </div>
                 ))}
               </div>
@@ -192,8 +193,8 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
                     className="w-4 h-4 rounded border-border text-primary focus:ring-primary shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-text-muted">{item.itemCode}</span>
-                      <span className="text-sm text-text">{item.itemName}</span>
+                      <span className="font-mono text-xs text-text-muted">{item.inspItemCode}</span>
+                      <span className="text-sm text-text">{item.inspItemName}</span>
                     </div>
                     {item.judgeMethod === "MEASURE" && item.lsl != null && (
                       <span className="text-[11px] font-mono text-text-muted">

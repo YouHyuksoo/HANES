@@ -20,7 +20,7 @@ export interface MatLotAdjustData {
   matUid: string;
   itemCode: string;
   itemName: string;
-  currentQty: number;
+  qty: number;
   unit: string;
   warehouse: string;
 }

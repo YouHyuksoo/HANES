@@ -65,7 +65,7 @@ export function useIqcData() {
         supplierName: lot.vendor || '-',
         itemName: lot.itemName || '',
         matUid: lot.matUid || '',
-        quantity: lot.currentQty ?? 0,
+        quantity: lot.qty ?? 0,
         unit: lot.unit || 'EA',
         status: mapToFrontendStatus(lot.iqcStatus || 'PENDING'),
         inspector: null,

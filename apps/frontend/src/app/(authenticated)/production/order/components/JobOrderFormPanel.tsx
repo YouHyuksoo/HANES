@@ -7,27 +7,32 @@
  * 초보자 가이드:
  * 1. **슬라이드 패널**: 오른쪽에서 슬라이드 인/아웃되는 폼 패널
  * 2. editingOrder=null → 신규 생성, editingOrder 있으면 수정
- * 3. API: POST /production/job-orders (생성), PUT /production/job-orders/:id (수정)
+ * 3. 품목 선택 시 라우팅 자동 조회 → 공정순서 화살표 표시
+ * 4. API: POST /production/job-orders (생성), PUT /production/job-orders/:id (수정)
  */
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
-import { PartSearchModal, LineSelect, ProcessSelect, EquipSelect } from "@/components/shared";
+import { PartSearchModal, LineSelect } from "@/components/shared";
 import api from "@/services/api";
 
 export interface JobOrderFormData {
   orderNo: string;
   itemCode: string;
   lineCode?: string;
-  processCode?: string;
-  equipCode?: string;
   custPoNo?: string | null;
   planQty: number;
   planDate?: string;
   priority: number;
   remark?: string;
+}
+
+interface RoutingInfo {
+  routingCode: string;
+  routingName: string;
+  processes: Array<{ seq: number; processCode: string; processName: string }>;
 }
 
 interface Props {
@@ -43,8 +48,6 @@ const INIT_FORM = {
   planQty: "",
   planDate: "",
   lineCode: "",
-  processCode: "",
-  equipCode: "",
   custPoNo: "",
   priority: "5",
   remark: "",
@@ -56,6 +59,8 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
   const isEdit = !!editingOrder;
   const [saving, setSaving] = useState(false);
   const [partSearchOpen, setPartSearchOpen] = useState(false);
+  const [routingInfo, setRoutingInfo] = useState<RoutingInfo | null>(null);
+  const [routingLoading, setRoutingLoading] = useState(false);
 
   const generateOrderNo = useCallback(() => {
     const d = new Date();
@@ -66,6 +71,20 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
 
   const [form, setForm] = useState({ ...INIT_FORM });
 
+  /** 품목 기반 라우팅 자동 조회 */
+  const fetchRouting = useCallback(async (itemCode: string) => {
+    if (!itemCode) { setRoutingInfo(null); return; }
+    setRoutingLoading(true);
+    try {
+      const res = await api.get(`/master/routing-groups/by-item/${itemCode}`);
+      setRoutingInfo(res.data?.data || null);
+    } catch {
+      setRoutingInfo(null);
+    } finally {
+      setRoutingLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (editingOrder) {
       setForm({
@@ -74,17 +93,17 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
         planQty: String(editingOrder.planQty ?? ""),
         planDate: editingOrder.planDate ? String(editingOrder.planDate).slice(0, 10) : "",
         lineCode: editingOrder.lineCode || "",
-        processCode: editingOrder.processCode || "",
-        equipCode: editingOrder.equipCode || "",
         custPoNo: editingOrder.custPoNo || "",
         priority: String(editingOrder.priority ?? "5"),
         remark: editingOrder.remark || "",
         autoCreateChildren: false,
       });
+      fetchRouting(editingOrder.itemCode);
     } else {
       setForm({ ...INIT_FORM, orderNo: generateOrderNo() });
+      setRoutingInfo(null);
     }
-  }, [editingOrder, generateOrderNo]);
+  }, [editingOrder, generateOrderNo, fetchRouting]);
 
   const setField = (key: string, value: string | boolean) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -100,8 +119,6 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
         planQty: Number(form.planQty),
         planDate: form.planDate || undefined,
         lineCode: form.lineCode || undefined,
-        processCode: form.processCode || undefined,
-        equipCode: form.equipCode || undefined,
         custPoNo: form.custPoNo || undefined,
         priority: Number(form.priority),
         remark: form.remark || undefined,
@@ -169,17 +186,47 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
             </div>
           </div>
 
-          {/* 라인/공정/설비 */}
+          {/* 라우팅 정보 */}
           <div>
-            <h3 className="text-xs font-semibold text-text-muted mb-2">{t("production.order.sectionProcessLineEquip")}</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <ProcessSelect label={t("production.order.process")} value={form.processCode}
-                onChange={v => setField("processCode", v)} fullWidth />
-              <LineSelect label={t("production.order.line")} value={form.lineCode}
-                onChange={v => setField("lineCode", v)} fullWidth />
-              <EquipSelect label={t("production.order.equip")} value={form.equipCode}
-                onChange={v => setField("equipCode", v)} fullWidth />
-            </div>
+            <h3 className="text-xs font-semibold text-text-muted mb-2">
+              {t("production.order.sectionRouting")}
+            </h3>
+            {routingLoading ? (
+              <div className="flex items-center gap-2 text-xs text-text-muted p-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {t("common.loading")}
+              </div>
+            ) : routingInfo ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="font-medium text-text">{routingInfo.routingCode}</span>
+                  <span className="text-text-muted">-</span>
+                  <span className="text-text-muted">{routingInfo.routingName}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1 p-2 bg-surface rounded-lg border border-border">
+                  {routingInfo.processes.map((proc, i) => (
+                    <span key={proc.seq} className="flex items-center gap-1">
+                      <span className="px-2 py-1 rounded bg-primary/10 text-primary text-xs font-medium">
+                        {proc.processName}
+                      </span>
+                      {i < routingInfo.processes.length - 1 && (
+                        <span className="text-text-muted">→</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : form.itemCode ? (
+              <p className="text-xs text-amber-500 dark:text-amber-400 p-2">
+                {t("production.order.noRouting")}
+              </p>
+            ) : null}
+          </div>
+
+          {/* 라인 */}
+          <div>
+            <LineSelect label={t("production.order.line")} value={form.lineCode}
+              onChange={v => setField("lineCode", v)} fullWidth />
           </div>
 
           {/* 비고 */}
@@ -204,7 +251,10 @@ export default function JobOrderFormPanel({ editingOrder, onClose, onSave, anima
       <PartSearchModal
         isOpen={partSearchOpen}
         onClose={() => setPartSearchOpen(false)}
-        onSelect={(part) => setForm(p => ({ ...p, itemCode: part.itemCode }))}
+        onSelect={(part) => {
+          setForm(p => ({ ...p, itemCode: part.itemCode }));
+          fetchRouting(part.itemCode);
+        }}
       />
     </>
   );

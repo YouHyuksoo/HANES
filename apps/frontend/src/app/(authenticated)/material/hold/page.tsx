@@ -25,7 +25,7 @@ interface HoldLot {
   matUid: string;
   itemCode: string;
   itemName: string;
-  currentQty: number;
+  qty: number;
   unit: string;
   status: string;
   vendor: string;
@@ -130,10 +130,10 @@ export default function HoldPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "currentQty", header: t("material.hold.currentQty"), size: 120,
+      accessorKey: "qty", header: t("material.hold.currentQty"), size: 120,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
-        <span className="font-semibold">{row.original.currentQty.toLocaleString()} {row.original.unit || ""}</span>
+        <span className="font-semibold">{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>
       ),
     },
     {
@@ -200,7 +200,7 @@ export default function HoldPage() {
                 <div><span className="text-text-muted">{t("common.matUid")}:</span> <span className="font-mono font-medium">{selectedLot.matUid}</span></div>
                 <div><span className="text-text-muted">{t("common.partCode")}:</span> <span className="font-mono">{selectedLot.itemCode}</span></div>
                 <div><span className="text-text-muted">{t("common.partName")}:</span> {selectedLot.itemName}</div>
-                <div><span className="text-text-muted">{t("material.hold.currentQty")}:</span> <span className="font-medium">{selectedLot.currentQty.toLocaleString()}</span></div>
+                <div><span className="text-text-muted">{t("material.hold.currentQty")}:</span> <span className="font-medium">{selectedLot.qty.toLocaleString()}</span></div>
               </div>
             </div>
             <Input label={t("material.hold.reason")} placeholder={t("material.hold.reasonPlaceholder")}

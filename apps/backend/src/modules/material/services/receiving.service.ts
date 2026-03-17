@@ -59,11 +59,11 @@ export class ReceivingService {
 
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
   async findReceivable(company?: string, plant?: string) {
-    // IQC 합격된 LOT 조회 (currentQty > 0 조건을 DB 레벨에서 처리)
+    // IQC 합격된 LOT 조회 (initQty > 0 조건으로 유효 LOT 필터)
     const qb = this.matLotRepository.createQueryBuilder('lot')
       .where('lot.iqcStatus = :iqcStatus', { iqcStatus: 'PASS' })
       .andWhere('lot.status IN (:...statuses)', { statuses: ['NORMAL', 'HOLD'] })
-      .andWhere('lot.currentQty > 0');
+      .andWhere('lot.initQty > 0');
 
     if (company) qb.andWhere('lot.company = :company', { company });
     if (plant) qb.andWhere('lot.plant = :plant', { plant });
@@ -444,12 +444,12 @@ export class ReceivingService {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    // 입고 대기 LOT 수 (IQC PASS인데 미입고, currentQty > 0 조건을 DB 레벨에서 처리)
+    // 입고 대기 LOT 수 (IQC PASS인데 미입고, initQty > 0 조건으로 유효 LOT 필터)
     const validLots = await this.matLotRepository.createQueryBuilder('lot')
       .select(['lot.matUid', 'lot.initQty'])
       .where('lot.iqcStatus = :iqcStatus', { iqcStatus: 'PASS' })
       .andWhere('lot.status = :status', { status: 'NORMAL' })
-      .andWhere('lot.currentQty > 0')
+      .andWhere('lot.initQty > 0')
       .getMany();
     const matUids = validLots.map((l) => l.matUid);
 

@@ -93,11 +93,7 @@ export class ScrapService {
         throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
       }
 
-      if (lot.currentQty < qty) {
-        throw new BadRequestException(`폐기 수량이 LOT 재고를 초과합니다. 현재: ${lot.currentQty}`);
-      }
-
-      // 재고 확인
+      // 재고 확인 (MatStock 기준)
       const stock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode: lot.itemCode, warehouseCode: warehouseId, matUid },
         lock: { mode: 'pessimistic_write' },
@@ -107,16 +103,17 @@ export class ScrapService {
         throw new BadRequestException(`폐기할 재고가 부족합니다. 현재 재고: ${stock?.qty ?? 0}`);
       }
 
-      // 재고 차감
+      // 재고 차감 (MatStock만 업데이트)
+      const newStockQty = stock.qty - qty;
       await queryRunner.manager.update(MatStock,
         { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
-        { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
+        { qty: newStockQty, availableQty: stock.availableQty - qty },
       );
 
-      // LOT 수량 차감
-      await queryRunner.manager.update(MatLot, lot.matUid, {
-        currentQty: lot.currentQty - qty,
-      });
+      // 재고 0이면 LOT 상태만 DEPLETED로 변경
+      if (newStockQty === 0) {
+        await queryRunner.manager.update(MatLot, lot.matUid, { status: 'DEPLETED' });
+      }
 
       // 폐기 트랜잭션 생성
       const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');

@@ -45,6 +45,10 @@ export class PhysicalInvSession {
   @Column({ name: 'STATUS', length: 20, default: 'IN_PROGRESS' })
   status: PhysicalInvStatus;
 
+  /** 기준년월 (YYYY-MM) — 실사 기준이 되는 연월 */
+  @Column({ name: 'COUNT_MONTH', length: 7 })
+  countMonth: string;
+
   /**
    * 차단 범위 - 창고 코드 (null이면 전체 창고 차단)
    * 특정 창고만 실사 중일 때 해당 창고 코드를 저장

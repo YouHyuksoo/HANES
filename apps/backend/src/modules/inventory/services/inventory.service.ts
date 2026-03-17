@@ -91,7 +91,6 @@ export class InventoryService {
       matUid: dto.matUid,
       itemCode: dto.itemCode,
       initQty: dto.initQty,
-      currentQty: dto.initQty,
       recvDate: dto.recvDate,
       expireDate: dto.expireDate,
       origin: dto.origin,
@@ -148,20 +147,6 @@ export class InventoryService {
   }
 
   /**
-   * LOT 수량 업데이트 (내부 함수)
-   */
-  private async updateLotQty(matUid: string, qtyDelta: number) {
-    const lot = await this.lotRepository.findOne({ where: { matUid: matUid } });
-    if (!lot) return;
-
-    const newQty = lot.currentQty + qtyDelta;
-    await this.lotRepository.update(matUid, {
-      currentQty: Math.max(0, newQty),
-      status: newQty <= 0 ? 'DEPLETED' : lot.status,
-    });
-  }
-
-  /**
    * 입고 처리
    */
   async receiveStock(dto: ReceiveStockDto) {
@@ -214,15 +199,7 @@ export class InventoryService {
         });
       }
 
-      // 3. LOT 수량 업데이트
-      if (dto.matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: dto.matUid } });
-        if (lot) {
-          await queryRunner.manager.update(MatLot, dto.matUid, {
-            currentQty: lot.currentQty + dto.qty,
-          });
-        }
-      }
+      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
       await queryRunner.commitTransaction();
       return savedTransaction;
@@ -304,17 +281,7 @@ export class InventoryService {
         }
       }
 
-      // 5. LOT 수량 업데이트 (이동이 아닌 순수 출고 시)
-      if (dto.matUid && !dto.toWarehouseCode) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: dto.matUid } });
-        if (lot) {
-          const newQty = lot.currentQty - dto.qty;
-          await queryRunner.manager.update(MatLot, dto.matUid, {
-            currentQty: Math.max(0, newQty),
-            status: newQty <= 0 ? 'DEPLETED' : lot.status,
-          });
-        }
-      }
+      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
       await queryRunner.commitTransaction();
       return savedTransaction;
@@ -447,17 +414,7 @@ export class InventoryService {
         }
       }
 
-      // 4. LOT 수량 복구
-      if (originalTrans.matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: originalTrans.matUid } });
-        if (lot) {
-          const newQty = lot.currentQty - originalTrans.qty;
-          await queryRunner.manager.update(MatLot, originalTrans.matUid, {
-            currentQty: Math.max(0, newQty),
-            status: newQty > 0 ? 'NORMAL' : lot.status,
-          });
-        }
-      }
+      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
       await queryRunner.commitTransaction();
       return savedCancelTrans;

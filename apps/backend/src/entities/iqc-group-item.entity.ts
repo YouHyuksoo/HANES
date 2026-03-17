@@ -18,6 +18,7 @@ import {
   Index,
 } from 'typeorm';
 import { IqcGroup } from './iqc-group.entity';
+import { IqcItemPool } from './iqc-item-pool.entity';
 
 @Entity({ name: 'IQC_GROUP_ITEMS' })
 @Index(['groupId'])
@@ -50,6 +51,10 @@ export class IqcGroupItem {
   updatedAt: Date;
 
   @ManyToOne(() => IqcGroup, (group) => group.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'GROUP_ID' })
+  @JoinColumn({ name: 'GROUP_ID', referencedColumnName: 'id' })
   group: IqcGroup;
+
+  @ManyToOne(() => IqcItemPool, { eager: false })
+  @JoinColumn({ name: 'INSP_ITEM_ID', referencedColumnName: 'id' })
+  inspItem: IqcItemPool;
 }

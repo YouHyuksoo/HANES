@@ -23,7 +23,7 @@ interface ShelfLifeItem {
   matUid: string;
   itemCode?: string;
   itemName?: string;
-  currentQty: number;
+  qty: number;
   unit?: string;
   expireDate?: string;
   expiryStatus: string;
@@ -98,9 +98,9 @@ export default function ShelfLifePage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "currentQty", header: t("material.shelfLife.currentQty"), size: 110,
+      accessorKey: "qty", header: t("material.shelfLife.currentQty"), size: 110,
       meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ row }) => <span>{row.original.currentQty.toLocaleString()} {row.original.unit || ""}</span>,
+      cell: ({ row }) => <span>{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
       accessorKey: "vendor", header: t("material.shelfLife.vendor"), size: 100,

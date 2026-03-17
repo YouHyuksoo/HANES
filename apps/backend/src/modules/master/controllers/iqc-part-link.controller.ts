@@ -31,7 +31,7 @@ export class IqcPartLinkController {
   @Get(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 상세 조회' })
   async findByCompositeKey(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string) {
-    const data = await this.iqcPartLinkService.findByCompositeKey(itemCode, partnerId);
+    const data = await this.iqcPartLinkService.findByCompositeKey(itemCode, this.resolvePartnerId(partnerId));
     return ResponseUtil.success(data);
   }
 
@@ -50,14 +50,19 @@ export class IqcPartLinkController {
     @Param('partnerId') partnerId: string,
     @Body() dto: UpdateIqcPartLinkDto,
   ) {
-    const data = await this.iqcPartLinkService.update(itemCode, partnerId, dto);
+    const data = await this.iqcPartLinkService.update(itemCode, this.resolvePartnerId(partnerId), dto);
     return ResponseUtil.success(data, 'IQC 연결이 수정되었습니다.');
   }
 
   @Delete(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 삭제' })
   async delete(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string) {
-    await this.iqcPartLinkService.delete(itemCode, partnerId);
+    await this.iqcPartLinkService.delete(itemCode, this.resolvePartnerId(partnerId));
     return ResponseUtil.success(null, 'IQC 연결이 삭제되었습니다.');
+  }
+
+  /** URL path에서 _default_ → * 변환 (NestJS 와일드카드 충돌 방지) */
+  private resolvePartnerId(partnerId: string): string {
+    return partnerId === '_default_' ? '*' : partnerId;
   }
 }

@@ -92,7 +92,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         );
       } else {
         status = HttpStatus.INTERNAL_SERVER_ERROR;
-        message = '서버 내부 오류가 발생했습니다.';
+        message = exception.message || '서버 내부 오류가 발생했습니다.';
         errorCode = 'INTERNAL_SERVER_ERROR';
 
         this.logger.error(

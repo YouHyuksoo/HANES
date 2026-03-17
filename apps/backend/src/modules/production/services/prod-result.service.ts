@@ -345,6 +345,9 @@ export class ProdResultService {
     if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
       throw new BadRequestException(`완료되거나 취소된 작업지시에는 실적을 등록할 수 없습니다.`);
     }
+    if (jobOrder.status === 'HOLD') {
+      throw new BadRequestException(`홀딩된 작업지시에는 실적을 등록할 수 없습니다.`);
+    }
 
     // 작업지시 수량 초과 체크
     await this.checkJobOrderQtyLimit(dto.orderNo, dto.goodQty ?? 0, dto.defectQty ?? 0);
@@ -694,7 +697,7 @@ export class ProdResultService {
   /**
    * PROD_AUTO 자동차감 역분개
    * - 해당 실적의 PROD_AUTO MatIssue를 모두 찾아 CANCELED 처리
-   * - MatLot.currentQty 복원, MatStock.qty 복원, 역방향 StockTransaction 생성
+   * - MatStock.qty 복원, 역방향 StockTransaction 생성
    */
   private async reverseAutoIssue(
     qr: import('typeorm').QueryRunner,
@@ -712,18 +715,11 @@ export class ProdResultService {
         status: 'CANCELED',
       });
 
-      // (b) MatLot.currentQty 복원 + 상태 복원
+      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
       if (issue.matUid && issue.issueQty > 0) {
         const lot = await qr.manager.findOne(MatLot, {
           where: { matUid: issue.matUid },
         });
-        if (lot) {
-          const restoredQty = lot.currentQty + issue.issueQty;
-          await qr.manager.update(MatLot, { matUid: issue.matUid }, {
-            currentQty: restoredQty,
-            ...(lot.status === 'DEPLETED' ? { status: 'NORMAL' } : {}),
-          });
-        }
 
         // (c) MatStock 복원
         const stocks = await qr.manager.find(MatStock, {

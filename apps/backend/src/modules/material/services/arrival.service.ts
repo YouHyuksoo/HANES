@@ -485,17 +485,7 @@ export class ArrivalService {
         );
       }
 
-      // 4. LOT.currentQty 감소
-      if (original.matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: original.matUid } });
-        if (lot) {
-          const newQty = Math.max(0, lot.currentQty - original.qty);
-          await queryRunner.manager.update(MatLot, lot.matUid, {
-            currentQty: newQty,
-            status: newQty === 0 ? 'DEPLETED' : lot.status,
-          });
-        }
-      }
+      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
       // 5. PO receivedQty 감소 + PO status 재계산
       if (original.refType === 'PO' && original.refId) {

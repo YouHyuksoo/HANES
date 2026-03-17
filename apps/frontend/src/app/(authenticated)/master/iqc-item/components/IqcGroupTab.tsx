@@ -28,7 +28,11 @@ interface IqcGroupRow {
   inspectMethod: string;
   sampleQty?: number | null;
   useYn: string;
-  items?: { itemId: string; seq: number }[];
+  items?: {
+    inspItemId: number;
+    seq: number;
+    inspItem?: { inspItemCode: string; inspItemName: string; judgeMethod: string };
+  }[];
 }
 
 export default function IqcGroupTab() {
@@ -142,7 +146,52 @@ export default function IqcGroupTab() {
       ),
     },
     { accessorKey: "groupCode", header: t("master.iqcGroup.groupCode", "그룹코드"), size: 110, meta: { filterType: "text" as const } },
-    { accessorKey: "groupName", header: t("master.iqcGroup.groupName", "그룹명"), size: 180, meta: { filterType: "text" as const } },
+    { accessorKey: "groupName", header: t("master.iqcGroup.groupName", "그룹명"), size: 160, meta: { filterType: "text" as const } },
+    {
+      id: "itemCount", header: t("master.iqcGroup.itemCount", "항목수"), size: 55,
+      meta: { align: "center" as const, filterType: "number" as const },
+      cell: ({ row }) => (
+        <span className="inline-flex items-center gap-1">
+          <Layers className="w-3.5 h-3.5 text-text-muted" />
+          {row.original.items?.length ?? 0}
+        </span>
+      ),
+    },
+    {
+      id: "itemCodes", header: t("master.iqcItem.inspItemCode", "항목코드"), size: 160,
+      meta: { filterType: "none" as const },
+      cell: ({ row }) => {
+        const items = row.original.items ?? [];
+        if (items.length === 0) return "-";
+        return (
+          <div className="flex flex-wrap gap-1">
+            {items.sort((a, b) => a.seq - b.seq).map((gi) => (
+              <span key={gi.inspItemId} className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface text-text-muted">
+                {gi.inspItem?.inspItemCode ?? gi.inspItemId}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      id: "itemNames", header: t("master.iqcItem.inspItemName", "검사항목"), size: 200,
+      meta: { filterType: "none" as const },
+      cell: ({ row }) => {
+        const items = row.original.items ?? [];
+        if (items.length === 0) return "-";
+        return (
+          <div className="text-xs space-y-0.5">
+            {items.sort((a, b) => a.seq - b.seq).map((gi) => (
+              <div key={gi.inspItemId} className="truncate">
+                <span className="text-text-muted mr-1">{gi.seq}.</span>
+                {gi.inspItem?.inspItemName ?? "-"}
+              </div>
+            ))}
+          </div>
+        );
+      },
+    },
     {
       accessorKey: "inspectMethod", header: t("master.iqcGroup.inspectMethod", "검사형태"), size: 100,
       meta: { filterType: "multi" as const },
@@ -160,16 +209,6 @@ export default function IqcGroupTab() {
       meta: { filterType: "number" as const },
       cell: ({ row }) => row.original.inspectMethod === "SAMPLE" && row.original.sampleQty
         ? `${row.original.sampleQty}${t("common.ea", "개")}` : "-",
-    },
-    {
-      id: "itemCount", header: t("master.iqcGroup.itemCount", "항목수"), size: 80,
-      meta: { filterType: "number" as const },
-      cell: ({ row }) => (
-        <span className="inline-flex items-center gap-1">
-          <Layers className="w-3.5 h-3.5 text-text-muted" />
-          {row.original.items?.length ?? 0}
-        </span>
-      ),
     },
   ], [t, methodLabels, openEdit]);
 

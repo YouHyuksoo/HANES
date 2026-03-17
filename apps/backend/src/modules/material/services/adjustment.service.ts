@@ -209,15 +209,10 @@ export class AdjustmentService {
         stock = await queryRunner.manager.save(newStock);
       }
 
-      // LOT 재고 업데이트 (matUid가 있는 경우)
+      // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
       if (matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid } });
-        if (lot) {
-          const newLotQty = lot.currentQty + diffQty;
-          await queryRunner.manager.update(MatLot, matUid, {
-            currentQty: Math.max(0, newLotQty),
-            status: newLotQty <= 0 ? 'DEPLETED' : lot.status,
-          });
+        if (afterQty <= 0) {
+          await queryRunner.manager.update(MatLot, matUid, { status: 'DEPLETED' });
         }
       }
 
@@ -345,15 +340,10 @@ export class AdjustmentService {
         stock = await queryRunner.manager.save(newStock);
       }
 
-      // LOT 재고도 업데이트 (matUid가 있는 경우)
+      // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
       if (matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: matUid } });
-        if (lot) {
-          const newLotQty = lot.currentQty + diffQty;
-          await queryRunner.manager.update(MatLot, matUid, {
-            currentQty: Math.max(0, newLotQty),
-            status: newLotQty <= 0 ? 'DEPLETED' : lot.status,
-          });
+        if (afterQty <= 0) {
+          await queryRunner.manager.update(MatLot, matUid, { status: 'DEPLETED' });
         }
       }
 

@@ -21,6 +21,7 @@ import {
 } from 'typeorm';
 import { ProdResult } from './prod-result.entity';
 import { PartMaster } from './part-master.entity';
+import { RoutingGroup } from './routing-group.entity';
 
 @Entity({ name: 'JOB_ORDERS' })
 @Index(['status'])
@@ -49,6 +50,14 @@ export class JobOrder {
 
   @Column({ name: 'LINE_CODE', length: 255, nullable: true })
   lineCode: string | null;
+
+  /** 라우팅 코드 - 품목 기반 자동 조회 */
+  @Column({ name: 'ROUTING_CODE', length: 50, nullable: true })
+  routingCode: string | null;
+
+  @ManyToOne(() => RoutingGroup, { nullable: true })
+  @JoinColumn({ name: 'ROUTING_CODE' })
+  routing: RoutingGroup | null;
 
   @Column({ name: 'PLAN_QTY', type: 'int' })
   planQty: number;

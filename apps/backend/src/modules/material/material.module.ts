@@ -45,6 +45,7 @@ import { LabelTemplate } from '../../entities/label-template.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
 import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.entity';
 import { PhysicalInvSession } from '../../entities/physical-inv-session.entity';
+import { PhysicalInvCountDetail } from '../../entities/physical-inv-count-detail.entity';
 import { InventoryFreezeGuard } from '../../common/guards/inventory-freeze.guard';
 
 // 기존 컨트롤러/서비스
@@ -116,6 +117,7 @@ import { ReceiveLabelService } from './services/receive-label.service';
       LabelPrintLog,
       VendorBarcodeMapping,
       PhysicalInvSession,
+      PhysicalInvCountDetail,
     ]),
   ],
   controllers: [

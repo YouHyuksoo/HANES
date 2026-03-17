@@ -76,6 +76,11 @@ export class StartPhysicalInvSessionDto {
   @IsIn(['MATERIAL', 'PRODUCT'])
   invType: 'MATERIAL' | 'PRODUCT';
 
+  @ApiProperty({ description: '기준년월 (YYYY-MM)', example: '2026-03' })
+  @IsString()
+  @MaxLength(7)
+  countMonth: string;
+
   @ApiPropertyOptional({ description: '특정 창고만 실사 (null이면 전체 창고)' })
   @IsOptional()
   @IsString()
@@ -93,6 +98,59 @@ export class StartPhysicalInvSessionDto {
   @IsString()
   @MaxLength(500)
   remark?: string;
+}
+
+/** PDA 자재 스캔 카운트 DTO */
+export class PdaScanCountDto {
+  @ApiProperty({ description: '실사 세션 일자 (YYYY-MM-DD)' })
+  @IsString()
+  sessionDate: string;
+
+  @ApiProperty({ description: '실사 세션 일련번호' })
+  @Type(() => Number)
+  @IsInt()
+  seq: number;
+
+  @ApiProperty({ description: '로케이션 코드' })
+  @IsString()
+  @MaxLength(50)
+  locationCode: string;
+
+  @ApiProperty({ description: '스캔된 바코드 (자재시리얼 = MAT_UID)' })
+  @IsString()
+  barcode: string;
+
+  @ApiPropertyOptional({ description: '스캔한 사용자 ID' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  countedBy?: string;
+}
+
+/** PC 웹 — 기준년월별 실사수량 조회 쿼리 DTO */
+export class PhysicalInvCountQueryDto {
+  @ApiPropertyOptional({ description: '기준년월 (YYYY-MM)' })
+  @IsOptional()
+  @IsString()
+  countMonth?: string;
+
+  @ApiPropertyOptional({ description: '창고코드 필터' })
+  @IsOptional()
+  @IsString()
+  warehouseCode?: string;
+
+  @ApiPropertyOptional({ description: '검색어 (품목코드/품목명)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ default: 5000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10000)
+  limit?: number = 5000;
 }
 
 /** 실사 완료 요청 DTO */

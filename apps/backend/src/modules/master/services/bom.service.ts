@@ -61,7 +61,8 @@ export class BomService {
                 p.UNIT        AS "unit",
                 p.CUSTOMER    AS "customer",
                 p.REMARKS     AS "remark",
-                COUNT(*)      AS "bomCount"
+                COUNT(*)      AS "bomCount",
+                LISTAGG(DISTINCT b.REVISION, ',') WITHIN GROUP (ORDER BY b.REVISION) AS "revisions"
            FROM BOM_MASTERS b
            JOIN ITEM_MASTERS p ON p.ITEM_CODE = b.PARENT_ITEM_CODE
           WHERE b.USE_YN = 'Y' ${dateFilter} ${searchFilter}
@@ -74,6 +75,7 @@ export class BomService {
       return rows.map((r) => ({
         ...r,
         bomCount: parseInt(r.bomCount, 10),
+        revisions: r.revisions ? r.revisions.split(',') : [],
       }));
     } catch (error) {
       console.error('[BomService.findParents] Error:', error);

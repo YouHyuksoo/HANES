@@ -12,6 +12,8 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
+import ErrorDetailModal from "@/components/shared/ErrorDetailModal";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
 import { useComCodes } from "@/hooks/useComCode";
@@ -139,6 +141,16 @@ export function Providers({ children }: ProvidersProps) {
       <ComCodePrefetch />
       <SysConfigPrefetch />
       <LanguageSync />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: { fontSize: "14px", maxWidth: "420px" },
+          success: { iconTheme: { primary: "#22c55e", secondary: "#fff" } },
+          error: { duration: 6000, iconTheme: { primary: "#ef4444", secondary: "#fff" } },
+        }}
+      />
+      <ErrorDetailModal />
       {children}
     </QueryClientProvider>
   );

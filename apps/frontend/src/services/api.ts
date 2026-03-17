@@ -8,6 +8,8 @@
  * 3. **api**: 앱 전체에서 사용하는 axios 인스턴스
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import toast from "react-hot-toast";
+import { useErrorStore } from "@/stores/errorStore";
 
 // Axios 인스턴스 생성
 export const api = axios.create({
@@ -46,32 +48,66 @@ api.interceptors.request.use(
   },
 );
 
-// 응답 인터셉터 - 에러 핸들링
+// 응답 인터셉터 - 성공 메시지 + 에러 핸들링
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const method = response.config.method?.toUpperCase();
+    const msg = response.data?.message;
+    if (msg && method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      toast.success(msg);
+    }
+    return response;
+  },
   (error: AxiosError) => {
     // 네트워크 에러 (백엔드 미실행, ECONNREFUSED 등)
     if (!error.response) {
-      console.warn(
-        `[API] 서버 연결 실패: ${error.config?.url ?? "unknown"} - 백엔드가 실행 중인지 확인하세요.`,
-      );
+      useErrorStore.getState().showError({
+        timestamp: new Date().toLocaleString("ko-KR"),
+        method: error.config?.method?.toUpperCase() || "UNKNOWN",
+        url: error.config?.url || "unknown",
+        status: 0,
+        message: "서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.",
+        responseBody: "네트워크 연결 실패 (ECONNREFUSED)",
+      });
       return Promise.reject(error);
     }
 
-    if (error.response.status === 401) {
+    const status = error.response.status;
+    const data = error.response.data as any;
+    const serverMessage = data?.message || data?.error || "알 수 없는 오류";
+
+    // 401은 로그인 페이지로 리다이렉트 (모달 불필요)
+    if (status === 401) {
       localStorage.removeItem("harness-token");
       if (window.location.pathname !== "/login") {
         window.location.href = "/login";
       }
+      return Promise.reject(error);
     }
 
-    if (error.response.status === 403) {
-      console.error("접근 권한이 없습니다.");
+    // 요청 바디 추출
+    let requestBody: string | undefined;
+    try {
+      if (error.config?.data) {
+        const parsed = typeof error.config.data === "string"
+          ? JSON.parse(error.config.data)
+          : error.config.data;
+        requestBody = JSON.stringify(parsed, null, 2);
+      }
+    } catch {
+      requestBody = String(error.config?.data);
     }
 
-    if (error.response.status >= 500) {
-      console.error("서버 오류가 발생했습니다.");
-    }
+    // 에러 상세 모달 표시
+    useErrorStore.getState().showError({
+      timestamp: new Date().toLocaleString("ko-KR"),
+      method: error.config?.method?.toUpperCase() || "UNKNOWN",
+      url: error.config?.url || "unknown",
+      status,
+      message: serverMessage,
+      responseBody: JSON.stringify(data, null, 2),
+      requestBody,
+    });
 
     return Promise.reject(error);
   },

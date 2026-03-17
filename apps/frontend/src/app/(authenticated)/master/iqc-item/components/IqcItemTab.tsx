@@ -22,8 +22,8 @@ import api from "@/services/api";
 
 interface IqcItemPool {
   id: string;
-  itemCode: string;
-  itemName: string;
+  inspItemCode: string;
+  inspItemName: string;
   judgeMethod: "VISUAL" | "MEASURE";
   criteria: string | null;
   lsl: number | null;
@@ -101,8 +101,8 @@ export default function IqcItemTab() {
     if (!searchText) return data;
     const s = searchText.toLowerCase();
     return data.filter(item =>
-      item.itemCode.toLowerCase().includes(s) ||
-      item.itemName.toLowerCase().includes(s)
+      item.inspItemCode.toLowerCase().includes(s) ||
+      item.inspItemName.toLowerCase().includes(s)
     );
   }, [data, searchText]);
 
@@ -115,8 +115,8 @@ export default function IqcItemTab() {
   const openEdit = (item: IqcItemPool) => {
     setEditing(item);
     setForm({
-      itemCode: item.itemCode,
-      itemName: item.itemName,
+      itemCode: item.inspItemCode,
+      itemName: item.inspItemName,
       judgeMethod: item.judgeMethod,
       criteria: item.criteria ?? "",
       lsl: item.lsl?.toString() ?? "",
@@ -133,8 +133,8 @@ export default function IqcItemTab() {
     setSaving(true);
     try {
       const payload: any = {
-        itemCode: form.itemCode,
-        itemName: form.itemName,
+        inspItemCode: form.itemCode,
+        inspItemName: form.itemName,
         judgeMethod: form.judgeMethod,
         criteria: form.criteria || undefined,
         revision: form.revision ? Number(form.revision) : 1,
@@ -147,7 +147,7 @@ export default function IqcItemTab() {
       }
 
       if (editing) {
-        await api.put(`/master/iqc-item-pool/${editing.itemCode}`, payload);
+        await api.put(`/master/iqc-item-pool/${editing.inspItemCode}`, payload);
       } else {
         await api.post("/master/iqc-item-pool", payload);
       }
@@ -186,12 +186,12 @@ export default function IqcItemTab() {
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-          <button onClick={() => setConfirmModal({ open: true, itemCode: row.original.itemCode })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+          <button onClick={() => setConfirmModal({ open: true, itemCode: row.original.inspItemCode })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
         </div>
       ),
     },
-    { accessorKey: "itemCode", header: t("master.iqcItem.itemCode", "항목코드"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("master.iqcItem.inspectItem"), size: 160, meta: { filterType: "text" as const } },
+    { accessorKey: "inspItemCode", header: t("master.iqcItem.itemCode", "항목코드"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "inspItemName", header: t("master.iqcItem.inspectItem"), size: 160, meta: { filterType: "text" as const } },
     {
       accessorKey: "judgeMethod", header: t("master.iqcItem.judgeMethod", "판정방법"), size: 80,
       meta: { filterType: "multi" as const },

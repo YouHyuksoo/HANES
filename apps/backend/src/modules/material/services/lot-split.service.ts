@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like, In, Not, MoreThan } from 'typeorm';
+import { Repository, DataSource, Like, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -30,26 +30,20 @@ export class LotSplitService {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
-    // 분할 가능한 LOT: 재고가 있고, DEPLETED 상태가 아닌 LOT
-    const where: any = {
-      currentQty: MoreThan(1),
-      status: Not('DEPLETED'),
-      ...(company && { company }),
-      ...(plant && { plant }),
-    };
+    // 분할 가능한 LOT: MatStock.qty > 1 이고 DEPLETED 상태가 아닌 LOT
+    const qb = this.matLotRepository.createQueryBuilder('lot')
+      .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid')
+      .where('stock.qty > 1')
+      .andWhere("lot.status != 'DEPLETED'");
 
-    if (search) {
-      where.matUid = Like(`%${search}%`);
-    }
+    if (company) qb.andWhere('lot.company = :company', { company });
+    if (plant) qb.andWhere('lot.plant = :plant', { plant });
+    if (search) qb.andWhere('UPPER(lot.matUid) LIKE UPPER(:search)', { search: `%${search}%` });
 
     const [data, total] = await Promise.all([
-      this.matLotRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.matLotRepository.count({ where }),
+      qb.orderBy('lot.createdAt', 'DESC')
+        .skip(skip).take(limit).getMany(),
+      qb.getCount(),
     ]);
 
     // part 정보 조회 및 중첩 객체 평면화
@@ -98,16 +92,22 @@ export class LotSplitService {
         throw new NotFoundException(`원본 LOT을 찾을 수 없습니다: ${sourceLotId}`);
       }
 
-      if (sourceLot.currentQty < splitQty) {
-        throw new BadRequestException(`분할 수량이 현재 재고보다 많습니다. 현재: ${sourceLot.currentQty}, 요청: ${splitQty}`);
-      }
-
       if (sourceLot.status === 'HOLD') {
         throw new BadRequestException('HOLD 상태인 LOT은 분할할 수 없습니다.');
       }
 
       if (sourceLot.status === 'DEPLETED') {
         throw new BadRequestException('소진된 LOT은 분할할 수 없습니다.');
+      }
+
+      // 원본 재고 조회 (수량 체크용)
+      const sourceStock = await queryRunner.manager.findOne(MatStock, {
+        where: { matUid: sourceLotId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!sourceStock || sourceStock.qty < splitQty) {
+        throw new BadRequestException(`분할 수량이 현재 재고보다 많습니다. 현재: ${sourceStock?.qty ?? 0}, 요청: ${splitQty}`);
       }
 
       // 품목 정보 조회
@@ -136,19 +136,23 @@ export class LotSplitService {
         throw new BadRequestException(`이미 존재하는 LOT 번호입니다: ${generatedLotNo}`);
       }
 
-      // 원본 LOT 재고 차감
-      const newSourceQty = sourceLot.currentQty - splitQty;
-      await queryRunner.manager.update(MatLot, sourceLotId, {
-        currentQty: newSourceQty,
-        status: newSourceQty === 0 ? 'DEPLETED' : sourceLot.status,
-      });
+      // 원본 재고 차감 (MatStock만 업데이트)
+      const newSourceStockQty = sourceStock.qty - splitQty;
+      await queryRunner.manager.update(MatStock,
+        { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid },
+        { qty: newSourceStockQty, availableQty: newSourceStockQty - sourceStock.reservedQty },
+      );
 
-      // 새 LOT 생성
+      // 원본 LOT 상태만 업데이트 (재고 0이면 DEPLETED)
+      if (newSourceStockQty === 0) {
+        await queryRunner.manager.update(MatLot, sourceLotId, { status: 'DEPLETED' });
+      }
+
+      // 새 LOT 생성 (currentQty 없이 — 재고는 MatStock에서만 관리)
       const newLot = queryRunner.manager.create(MatLot, {
         matUid: generatedLotNo,
         itemCode: sourceLot.itemCode,
         initQty: splitQty,
-        currentQty: splitQty,
         recvDate: new Date(),
         expireDate: sourceLot.expireDate,
         origin: sourceLot.origin,
@@ -162,34 +166,19 @@ export class LotSplitService {
       });
       await queryRunner.manager.save(newLot);
 
-      // 재고 정보도 분할 (원본 LOT의 재고가 있는 경우)
-      const sourceStock = await queryRunner.manager.findOne(MatStock, {
-        where: { matUid: sourceLotId },
-        lock: { mode: 'pessimistic_write' },
+      // 새 재고 생성 (MatStock)
+      const newStock = queryRunner.manager.create(MatStock, {
+        warehouseCode: sourceStock.warehouseCode,
+        locationCode: sourceStock.locationCode,
+        itemCode: sourceStock.itemCode,
+        matUid: newLot.matUid,
+        qty: splitQty,
+        availableQty: splitQty,
+        reservedQty: 0,
+        company: sourceStock.company || '40',
+        plant: sourceStock.plant || '1000',
       });
-
-      if (sourceStock) {
-        // 원본 재고 차감
-        const newSourceStockQty = sourceStock.qty - splitQty;
-        await queryRunner.manager.update(MatStock,
-          { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid },
-          { qty: newSourceStockQty, availableQty: newSourceStockQty - sourceStock.reservedQty },
-        );
-
-        // 새 재고 생성
-        const newStock = queryRunner.manager.create(MatStock, {
-          warehouseCode: sourceStock.warehouseCode,
-          locationCode: sourceStock.locationCode,
-          itemCode: sourceStock.itemCode,
-          matUid: newLot.matUid,
-          qty: splitQty,
-          availableQty: splitQty,
-          reservedQty: 0,
-          company: sourceStock.company || '40',
-          plant: sourceStock.plant || '1000',
-        });
-        await queryRunner.manager.save(newStock);
-      }
+      await queryRunner.manager.save(newStock);
 
       // 수불 트랜잭션 2건 생성 (원본 차감 + 신규 증가)
       const transNo1 = await this.generateTransNo();
@@ -242,7 +231,7 @@ export class LotSplitService {
         splitQty,
         itemCode: part.itemCode,
         itemName: part.itemName,
-        sourceRemainingQty: newSourceQty,
+        sourceRemainingQty: newSourceStockQty,
       };
     } catch (err) {
       await queryRunner.rollbackTransaction();

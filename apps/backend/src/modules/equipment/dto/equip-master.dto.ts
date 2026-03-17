@@ -199,6 +199,11 @@ export class EquipMasterQueryDto {
   @IsString()
   lineCode?: string;
 
+  @ApiPropertyOptional({ description: '공정 코드' })
+  @IsOptional()
+  @IsString()
+  processCode?: string;
+
   @ApiPropertyOptional({ description: '상태', enum: EQUIP_STATUS_VALUES })
   @IsOptional()
   @IsString()

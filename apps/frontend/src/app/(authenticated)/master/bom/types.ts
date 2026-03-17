@@ -19,6 +19,8 @@ export interface ParentPart {
   customer?: string;
   remark?: string;
   bomCount: number;
+  /** 해당 모품목의 BOM 리비전 목록 (예: ['A', 'B']) */
+  revisions: string[];
 }
 
 export interface BomItem {

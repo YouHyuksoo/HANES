@@ -102,7 +102,7 @@ export default function MaterialAdjustmentPage() {
       { label: t("pda.receiving.partName"), value: scannedLot.itemName },
       {
         label: t("pda.adjustment.currentQty"),
-        value: `${scannedLot.currentQty} ${scannedLot.unit}`,
+        value: `${scannedLot.qty} ${scannedLot.unit}`,
       },
     ];
   }, [scannedLot, t]);

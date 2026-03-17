@@ -9,7 +9,7 @@
  */
 
 // ===== 작업지시 상태 =====
-export const JOB_ORDER_STATUS_VALUES = ['WAITING', 'RUNNING', 'PAUSED', 'DONE', 'CANCELED'] as const;
+export const JOB_ORDER_STATUS_VALUES = ['WAITING', 'RUNNING', 'HOLD', 'DONE', 'CANCELED'] as const;
 export type JobOrderStatusValue = typeof JOB_ORDER_STATUS_VALUES[number];
 
 // ===== 작업지시 유형 =====

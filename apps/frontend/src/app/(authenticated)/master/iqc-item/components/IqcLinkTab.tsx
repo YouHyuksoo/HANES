@@ -84,7 +84,8 @@ export default function IqcLinkTab() {
         remark: formData.remark || undefined,
       };
       if (editingLink) {
-        await api.put(`/master/iqc-part-links/${editingLink.itemCode}/${editingLink.partnerId}`, body);
+        const pid = editingLink.partnerId === "*" ? "_default_" : editingLink.partnerId;
+        await api.put(`/master/iqc-part-links/${encodeURIComponent(editingLink.itemCode)}/${pid}`, body);
       } else {
         await api.post("/master/iqc-part-links", body);
       }
@@ -98,7 +99,8 @@ export default function IqcLinkTab() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      await api.delete(`/master/iqc-part-links/${deleteTarget.itemCode}/${deleteTarget.partnerId}`);
+      const pid = deleteTarget.partnerId === "*" ? "_default_" : deleteTarget.partnerId;
+      await api.delete(`/master/iqc-part-links/${encodeURIComponent(deleteTarget.itemCode)}/${pid}`);
       fetchLinks();
     } catch (e: any) {
       console.error("Delete failed:", e);

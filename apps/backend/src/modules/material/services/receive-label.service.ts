@@ -114,7 +114,6 @@ export class ReceiveLabelService {
           matUid,
           itemCode: arrival.itemCode,
           initQty: 1,
-          currentQty: 1,
           recvDate: new Date(),
           poNo: arrival.poNo,
           vendor: arrival.vendorName,

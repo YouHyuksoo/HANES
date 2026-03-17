@@ -101,18 +101,7 @@ export class ReceiptCancelService {
         { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
       );
 
-      // LOT 수량 복원
-      if (matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { matUid: matUid },
-        });
-
-        if (lot) {
-          await queryRunner.manager.update(MatLot, lot.matUid, {
-            currentQty: lot.currentQty - qty,
-          });
-        }
-      }
+      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
       // PO 품목 입고량 감소
       if (originalTransaction.refId && originalTransaction.refType === 'PO') {

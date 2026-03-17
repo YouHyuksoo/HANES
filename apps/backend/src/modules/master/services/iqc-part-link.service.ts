@@ -27,7 +27,9 @@ export class IqcPartLinkService {
     const qb = this.linkRepo.createQueryBuilder('link')
       .leftJoinAndSelect('link.part', 'part')
       .leftJoinAndSelect('link.partner', 'partner')
-      .leftJoinAndSelect('link.group', 'grp');
+      .leftJoinAndSelect('link.group', 'grp')
+      .leftJoinAndSelect('grp.items', 'gi')
+      .leftJoinAndSelect('gi.inspItem', 'pool');
 
     if (company) {
       qb.andWhere('link.company = :company', { company });
@@ -64,7 +66,7 @@ export class IqcPartLinkService {
   async findByCompositeKey(itemCode: string, partnerId: string) {
     const link = await this.linkRepo.findOne({
       where: { itemCode, partnerId },
-      relations: ['part', 'partner', 'group'],
+      relations: ['part', 'partner', 'group', 'group.items', 'group.items.inspItem'],
     });
 
     if (!link) {
@@ -99,19 +101,22 @@ export class IqcPartLinkService {
   }
 
   async update(itemCode: string, partnerId: string, dto: UpdateIqcPartLinkDto) {
-    const link = await this.findByCompositeKey(itemCode, partnerId);
+    // 존재 여부 확인
+    await this.findByCompositeKey(itemCode, partnerId);
 
-    if (dto.groupId !== undefined) link.groupId = dto.groupId;
-    if (dto.remark !== undefined) link.remark = dto.remark || null;
-    if (dto.useYn !== undefined) link.useYn = dto.useYn;
+    // 관계 로딩 없이 직접 UPDATE (partner=null 시 PK 손상 방지)
+    const updateData: Record<string, unknown> = {};
+    if (dto.groupId !== undefined) updateData.groupId = dto.groupId;
+    if (dto.remark !== undefined) updateData.remark = dto.remark || null;
+    if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.linkRepo.save(link);
+    await this.linkRepo.update({ itemCode, partnerId }, updateData);
     return this.findByCompositeKey(itemCode, partnerId);
   }
 
   async delete(itemCode: string, partnerId: string) {
-    const link = await this.findByCompositeKey(itemCode, partnerId);
-    await this.linkRepo.remove(link);
+    await this.findByCompositeKey(itemCode, partnerId);
+    await this.linkRepo.delete({ itemCode, partnerId });
     return { itemCode, partnerId, deleted: true };
   }
 }

@@ -2,18 +2,21 @@
 
 /**
  * @file src/app/(authenticated)/production/order/page.tsx
- * @description 작업지시 관리 페이지 - API 연동, BOM 반제품 자동생성, 트리뷰
+ * @description 작업지시 관리 페이지 - 액션바 기반 상태관리, BOM 반제품 자동생성, 트리뷰
  *
  * 초보자 가이드:
  * 1. **작업지시**: 완제품/반제품 생산 명령 (WAITING → RUNNING → DONE)
- * 2. **트리뷰**: 완제품 기준 하위 반제품 작업지시를 계층형 표시
- * 3. **자동생성**: 완제품 작업지시 생성 시 BOM 기반 반제품 지시 동시 생성
+ * 2. **액션바**: 행 선택 시 상단에 상태별 액션 버튼 표시
+ * 3. **홀딩**: HOLD 상태 시 실적등록/출하 전부 차단
  * 4. **우측 패널**: 생성/수정 폼을 오른쪽 슬라이드 패널로 표시
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown, Edit2, Trash2 } from "lucide-react";
+import {
+  Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown,
+  Edit2, Trash2, Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
+} from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, StatCard, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -28,8 +31,8 @@ interface JobOrderItem {
   itemCode: string;
   part?: { itemCode?: string; itemName?: string; itemType?: string };
   lineCode?: string;
-  processCode?: string;
-  equipCode?: string;
+  routingCode?: string | null;
+  routing?: { routingCode: string; routingName: string } | null;
   custPoNo?: string | null;
   planQty: number;
   goodQty: number;
@@ -55,27 +58,30 @@ function flattenTree(items: JobOrderItem[], depth = 0): (JobOrderItem & { _depth
   return result;
 }
 
+/** 액션 타입 정의 */
+type ActionType = "start" | "complete" | "hold" | "holdRelease" | "cancel";
+
 export default function JobOrderPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<JobOrderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 3);
-    return d.toISOString().slice(0, 10);
-  });
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
+
+  // 행 선택 상태
+  const [selectedRow, setSelectedRow] = useState<JobOrderItem | null>(null);
 
   // 패널 상태
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<JobOrderFormData | null>(null);
   const panelAnimateRef = useRef(true);
 
-  // 삭제 상태
+  // 삭제/액션 확인 모달
   const [deleteTarget, setDeleteTarget] = useState<JobOrderItem | null>(null);
+  const [pendingAction, setPendingAction] = useState<ActionType | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -118,22 +124,56 @@ export default function JobOrderPage() {
     return Math.round((row.goodQty / row.planQty) * 100);
   };
 
-  /** 신규 생성 패널 열기 */
+  // ===== 액션바 로직 =====
+  const canStart = selectedRow?.status === "WAITING";
+  const canComplete = selectedRow?.status === "RUNNING";
+  const canHold = selectedRow?.status === "WAITING" || selectedRow?.status === "RUNNING";
+  const canHoldRelease = selectedRow?.status === "HOLD";
+  const canCancel = selectedRow?.status === "WAITING" || selectedRow?.status === "HOLD";
+
+  const actionEndpoints: Record<ActionType, string> = {
+    start: "start",
+    complete: "complete",
+    hold: "hold",
+    holdRelease: "hold-release",
+    cancel: "cancel",
+  };
+
+  const handleAction = useCallback(async () => {
+    if (!selectedRow || !pendingAction) return;
+    try {
+      await api.post(`/production/job-orders/${selectedRow.orderNo}/${actionEndpoints[pendingAction]}`);
+      setSelectedRow(null);
+      fetchData();
+    } catch {
+      // api 인터셉터에서 처리
+    } finally {
+      setPendingAction(null);
+    }
+  }, [selectedRow, pendingAction, fetchData]);
+
+  const getConfirmMessage = (action: ActionType) => {
+    const key = `production.order.confirm${action.charAt(0).toUpperCase() + action.slice(1)}` as const;
+    return t(key as string);
+  };
+
+  const getConfirmVariant = (action: ActionType): "danger" | "default" => {
+    return action === "cancel" ? "danger" : "default";
+  };
+
+  // ===== 패널 로직 =====
   const handleCreate = () => {
     panelAnimateRef.current = true;
     setEditingOrder(null);
     setIsPanelOpen(true);
   };
 
-  /** 수정 패널 열기 */
   const handleEdit = (row: JobOrderItem) => {
     panelAnimateRef.current = !isPanelOpen;
     setEditingOrder({
       orderNo: row.orderNo,
       itemCode: row.itemCode,
       lineCode: row.lineCode,
-      processCode: row.processCode,
-      equipCode: row.equipCode,
       custPoNo: row.custPoNo,
       planQty: row.planQty,
       planDate: row.planDate,
@@ -143,23 +183,26 @@ export default function JobOrderPage() {
     setIsPanelOpen(true);
   };
 
-  /** 패널 닫기 */
   const handlePanelClose = () => {
     setIsPanelOpen(false);
     setEditingOrder(null);
   };
 
-  /** 삭제 실행 */
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
       await api.delete(`/production/job-orders/${deleteTarget.orderNo}`);
       fetchData();
     } catch {
-      // 에러는 api 인터셉터에서 처리
+      // api 인터셉터에서 처리
     } finally {
       setDeleteTarget(null);
     }
+  };
+
+  /** 행 클릭 시 선택/해제 토글 */
+  const handleRowClick = (row: JobOrderItem & { _depth: number }) => {
+    setSelectedRow(prev => prev?.orderNo === row.orderNo ? null : row);
   };
 
   const columns = useMemo<ColumnDef<JobOrderItem & { _depth: number }>[]>(() => [
@@ -295,6 +338,38 @@ export default function JobOrderPage() {
           </div>
         </div>
 
+        {/* 액션바 */}
+        {selectedRow && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg flex-shrink-0 animate-fade-in">
+            <span className="text-xs font-medium text-text mr-2">
+              {selectedRow.orderNo}
+            </span>
+            <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedRow.status} />
+            <div className="flex-1" />
+            <Button size="sm" variant="secondary" disabled={!canStart}
+              onClick={() => setPendingAction("start")}>
+              <Play className="w-3.5 h-3.5 mr-1" />{t("production.order.actionStart")}
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!canComplete}
+              onClick={() => setPendingAction("complete")}>
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{t("production.order.actionComplete")}
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!canHold}
+              onClick={() => setPendingAction("hold")}>
+              <PauseCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHold")}
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!canHoldRelease}
+              onClick={() => setPendingAction("holdRelease")}>
+              <PlayCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHoldRelease")}
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!canCancel}
+              onClick={() => setPendingAction("cancel")}
+              className={canCancel ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" : ""}>
+              <XCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionCancel")}
+            </Button>
+          </div>
+        )}
+
         <div className="grid grid-cols-4 gap-3 flex-shrink-0">
           <StatCard label={t("production.order.stats.total")} value={stats.total} icon={ClipboardList} color="blue" />
           <StatCard label={t("production.order.stats.waiting")} value={stats.waiting} icon={ClipboardList} color="yellow" />
@@ -304,6 +379,8 @@ export default function JobOrderPage() {
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={displayData} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName="작업지시"
+            onRowClick={handleRowClick}
+            rowClassName={(row: JobOrderItem & { _depth: number }) => row.orderNo === selectedRow?.orderNo ? "bg-primary/5 dark:bg-primary/10" : ""}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
@@ -347,6 +424,17 @@ export default function JobOrderPage() {
         message={t("common.deleteConfirmMessage", { name: deleteTarget?.orderNo })}
         confirmText={t("common.delete")}
         variant="danger"
+      />
+
+      {/* 액션 확인 모달 */}
+      <ConfirmModal
+        isOpen={!!pendingAction}
+        onClose={() => setPendingAction(null)}
+        onConfirm={handleAction}
+        title={pendingAction ? t(`production.order.action${pendingAction.charAt(0).toUpperCase() + pendingAction.slice(1)}`) : ""}
+        message={pendingAction ? getConfirmMessage(pendingAction) : ""}
+        confirmText={t("common.confirm")}
+        variant={pendingAction ? getConfirmVariant(pendingAction) : "default"}
       />
     </div>
   );

@@ -29,7 +29,6 @@ export interface ReceivableLot {
   itemCode: string;
   itemType: string;
   initQty: number;
-  currentQty: number;
   recvDate?: string | null;
   manufactureDate?: string | null;
   expireDate?: string | null;

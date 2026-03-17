@@ -24,7 +24,7 @@ interface MatLotItem {
   itemCode?: string;
   itemName?: string;
   initQty: number;
-  currentQty: number;
+  qty: number;
   unit?: string;
   vendor?: string;
   recvDate?: string;
@@ -143,11 +143,11 @@ export default function MatLotPage() {
       cell: ({ row }) => <span>{row.original.initQty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {
-      accessorKey: "currentQty", header: t("material.lot.columns.currentQty"), size: 100,
+      accessorKey: "qty", header: t("material.lot.columns.currentQty"), size: 100,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => (
-        <span className={row.original.currentQty <= 0 ? "text-text-muted" : "font-semibold"}>
-          {row.original.currentQty.toLocaleString()} {row.original.unit || ""}
+        <span className={row.original.qty <= 0 ? "text-text-muted" : "font-semibold"}>
+          {row.original.qty.toLocaleString()} {row.original.unit || ""}
         </span>
       ),
     },
@@ -242,7 +242,7 @@ export default function MatLotPage() {
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">{t("material.lot.columns.currentQty")}</span>
-                  <span className="font-semibold">{selectedLot.currentQty.toLocaleString()} {selectedLot.unit || ""}</span>
+                  <span className="font-semibold">{selectedLot.qty.toLocaleString()} {selectedLot.unit || ""}</span>
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <span className="text-text-muted">IQC</span>
