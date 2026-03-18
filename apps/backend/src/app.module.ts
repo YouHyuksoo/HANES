@@ -37,7 +37,6 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { SystemModule } from './modules/system/system.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { RoleModule } from './modules/role/role.module';
-import { NumRuleModule } from './modules/num-rule/num-rule.module';
 import { SharedModule } from './shared/shared.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
@@ -106,10 +105,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
     // 역할 관리 (RBAC 역할 정의, 메뉴 권한)
     RoleModule,
 
-    // 채번 서비스 (SELECT FOR UPDATE 기반 번호 생성)
-    NumRuleModule,
-
-    // 공유 모듈 (UidGeneratorService 등)
+    // 공유 모듈 (NumberingService 파사드 + SeqGenerator + NumRule)
     SharedModule,
 
     // 스케줄러 (정기 작업 실행 + 로그 + 알림)

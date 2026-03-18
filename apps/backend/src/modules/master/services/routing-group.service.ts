@@ -96,8 +96,8 @@ export class RoutingGroupService {
     const group = this.groupRepo.create({
       ...dto,
       useYn: dto.useYn ?? 'Y',
-      company: company || '40',
-      plant: plant || '1000',
+      company,
+      plant,
     });
     return this.groupRepo.save(group);
   }
@@ -137,8 +137,8 @@ export class RoutingGroupService {
     const proc = this.processRepo.create({
       ...dto,
       useYn: dto.useYn ?? 'Y',
-      company: company || '40',
-      plant: plant || '1000',
+      company,
+      plant,
     });
     return this.processRepo.save(proc);
   }
@@ -191,8 +191,8 @@ export class RoutingGroupService {
           unit: c.unit,
           equipInterfaceYn: c.equipInterfaceYn ?? 'N',
           useYn: 'Y',
-          company: company || '40',
-          plant: plant || '1000',
+          company,
+          plant,
         }),
       );
       return manager.save(ProcessQualityCondition, entities);

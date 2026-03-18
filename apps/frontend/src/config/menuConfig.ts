@@ -288,6 +288,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "SYS_COMM", labelKey: "menu.system.commConfig", path: "/system/comm-config" },
       { code: "SYS_CONFIG", labelKey: "menu.system.config", path: "/system/config" },
       { code: "SYS_CODE", labelKey: "menu.master.code", path: "/master/code" },
+      { code: "SYS_SCHEDULER", labelKey: "scheduler.title", path: "/system/scheduler" },
     ],
   },
 ];

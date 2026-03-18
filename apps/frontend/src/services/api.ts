@@ -10,6 +10,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
+import { useAuthStore } from "@/stores/authStore";
 
 // Axios 인스턴스 생성
 export const api = axios.create({
@@ -29,16 +30,26 @@ api.interceptors.request.use(
     }
 
     // 선택된 회사코드/사업장코드를 X-Company, X-Plant 헤더에 추가
-    try {
-      const authData = JSON.parse(localStorage.getItem("harness-auth") || "{}");
-      if (authData?.state?.selectedCompany) {
-        config.headers["X-Company"] = authData.state.selectedCompany;
-      }
-      if (authData?.state?.selectedPlant) {
-        config.headers["X-Plant"] = authData.state.selectedPlant;
-      }
-    } catch {
-      // JSON 파싱 실패 시 무시
+    // Zustand store → localStorage fallback (핫리로드 시 hydration 타이밍 보장)
+    const { selectedCompany, selectedPlant } = useAuthStore.getState();
+    if (selectedCompany) {
+      config.headers["X-Company"] = selectedCompany;
+    }
+    if (selectedPlant) {
+      config.headers["X-Plant"] = selectedPlant;
+    }
+
+    // store가 아직 hydration 전이면 localStorage에서 직접 읽기
+    if (!selectedCompany || !selectedPlant) {
+      try {
+        const authData = JSON.parse(localStorage.getItem("harness-auth") || "{}");
+        if (!selectedCompany && authData?.state?.selectedCompany) {
+          config.headers["X-Company"] = authData.state.selectedCompany;
+        }
+        if (!selectedPlant && authData?.state?.selectedPlant) {
+          config.headers["X-Plant"] = authData.state.selectedPlant;
+        }
+      } catch { /* 무시 */ }
     }
 
     return config;

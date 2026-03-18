@@ -77,7 +77,7 @@ export class ConsumableLabelService {
   }
 
   /** conUid 채번 + ConsumableStock(PENDING) 생성 + LabelPrintLog */
-  async createConLabels(dto: CreateConLabelsDto): Promise<ConLabelResultDto[]> {
+  async createConLabels(dto: CreateConLabelsDto, company?: string, plant?: string): Promise<ConLabelResultDto[]> {
     const master = await this.masterRepo.findOne({
       where: { consumableCode: dto.consumableCode },
     });
@@ -116,8 +116,8 @@ export class ConsumableLabelService {
         uidList: JSON.stringify(results.map((r) => r.conUid)),
         labelCount: dto.qty,
         status: 'SUCCESS',
-        company: '40',
-        plant: '1000',
+        company,
+        plant,
       });
       await queryRunner.manager.save(log);
 

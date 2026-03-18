@@ -161,8 +161,8 @@ export class LotSplitService {
         poNo: sourceLot.poNo,
         iqcStatus: sourceLot.iqcStatus,
         status: 'NORMAL',
-        company: sourceLot.company || '40',
-        plant: sourceLot.plant || '1000',
+        company: sourceLot.company,
+        plant: sourceLot.plant,
       });
       await queryRunner.manager.save(newLot);
 
@@ -175,8 +175,8 @@ export class LotSplitService {
         qty: splitQty,
         availableQty: splitQty,
         reservedQty: 0,
-        company: sourceStock.company || '40',
-        plant: sourceStock.plant || '1000',
+        company: sourceStock.company,
+        plant: sourceStock.plant,
       });
       await queryRunner.manager.save(newStock);
 
@@ -200,8 +200,8 @@ export class LotSplitService {
         refId: newLot.matUid,
         remark: splitRemark,
         status: 'DONE',
-        company: sourceLot.company || '40',
-        plant: sourceLot.plant || '1000',
+        company: sourceLot.company,
+        plant: sourceLot.plant,
       });
 
       // 2) 신규 시리얼 증가 (+splitQty)
@@ -217,8 +217,8 @@ export class LotSplitService {
         refId: sourceLotId,
         remark: splitRemark,
         status: 'DONE',
-        company: sourceLot.company || '40',
-        plant: sourceLot.plant || '1000',
+        company: sourceLot.company,
+        plant: sourceLot.plant,
       });
 
       await queryRunner.commitTransaction();

@@ -351,7 +351,10 @@ export class JobOrderService {
     }
     // remark에서 이전 상태 추출
     const prevMatch = jobOrder.remark?.match(/\[HOLD\] 이전상태:(\w+)/);
-    const prevStatus = prevMatch?.[1] || 'WAITING';
+    if (!prevMatch?.[1]) {
+      throw new BadRequestException('홀딩 이전 상태 정보를 찾을 수 없습니다. remark 데이터가 손상되었습니다.');
+    }
+    const prevStatus = prevMatch[1];
     // remark에서 HOLD 접두사 제거
     const originalRemark = jobOrder.remark?.replace(/\[HOLD\] 이전상태:\w+( \| )?/, '') || null;
 

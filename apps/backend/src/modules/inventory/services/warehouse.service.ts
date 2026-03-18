@@ -248,8 +248,6 @@ export class WarehouseService {
             warehouseType: wh.type,
             isDefault: wh.isDefault ? 1 : 0,
             useYn: 'Y',
-            company: '40',
-            plant: '1000',
           }),
         );
         results.push({ code: wh.code, status: 'created', id: wh.code });

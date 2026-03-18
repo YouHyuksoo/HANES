@@ -76,7 +76,7 @@ export class IqcPartLinkService {
     return link;
   }
 
-  async create(dto: CreateIqcPartLinkDto) {
+  async create(dto: CreateIqcPartLinkDto, company?: string, plant?: string) {
     const resolvedPartnerId = dto.partnerId || '*';
 
     const exists = await this.linkRepo.findOne({
@@ -92,8 +92,8 @@ export class IqcPartLinkService {
       groupId: dto.groupId,
       remark: dto.remark || null,
       useYn: dto.useYn ?? 'Y',
-      company: '40',
-      plant: '1000',
+      company,
+      plant,
     });
 
     await this.linkRepo.save(entity);

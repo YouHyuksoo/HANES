@@ -86,8 +86,8 @@ export class AdjustmentService {
    * 즉시 승인 보정 등록 (PC 화면 기본 동작)
    * - adjustStatus = 'APPROVED' 로 저장하고 재고를 즉시 반영합니다.
    */
-  async create(dto: CreateAdjustmentDto) {
-    return this._executeAdjustment(dto, 'APPROVED');
+  async create(dto: CreateAdjustmentDto, company?: string, plant?: string) {
+    return this._executeAdjustment(dto, 'APPROVED', company, plant);
   }
 
   /**
@@ -95,7 +95,7 @@ export class AdjustmentService {
    * - adjustStatus = 'PENDING' 으로 저장하고 재고 변동은 보류합니다.
    * - approve(id) 호출 시 재고가 실제 반영됩니다.
    */
-  async createPending(dto: CreateAdjustmentDto) {
+  async createPending(dto: CreateAdjustmentDto, company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -130,8 +130,8 @@ export class AdjustmentService {
         reason,
         adjustStatus: 'PENDING',
         createdBy,
-        company: '40',
-        plant: '1000',
+        company: stock?.company ?? company,
+        plant: stock?.plant ?? plant,
       });
       await queryRunner.manager.save(invAdjLog);
 
@@ -203,8 +203,8 @@ export class AdjustmentService {
           qty: afterQty,
           availableQty: afterQty,
           reservedQty: 0,
-          company: '40',
-          plant: '1000',
+          company: adjLog.company,
+          plant: adjLog.plant,
         });
         stock = await queryRunner.manager.save(newStock);
       }
@@ -232,8 +232,8 @@ export class AdjustmentService {
         remark: reason,
         status: 'DONE',
         createdBy: approvedBy,
-        company: '40',
-        plant: '1000',
+        company: adjLog.company,
+        plant: adjLog.plant,
       });
       await queryRunner.manager.save(stockTransaction);
 
@@ -282,7 +282,7 @@ export class AdjustmentService {
    * 즉시 승인 보정의 내부 공통 로직
    * - adjustStatus='APPROVED'일 때만 실제 재고 변동이 발생합니다.
    */
-  private async _executeAdjustment(dto: CreateAdjustmentDto, adjustStatus: 'APPROVED') {
+  private async _executeAdjustment(dto: CreateAdjustmentDto, adjustStatus: 'APPROVED', company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -334,8 +334,8 @@ export class AdjustmentService {
           qty: afterQty,
           availableQty: afterQty,
           reservedQty: 0,
-          company: '40',
-          plant: '1000',
+          company,
+          plant,
         });
         stock = await queryRunner.manager.save(newStock);
       }
@@ -359,8 +359,8 @@ export class AdjustmentService {
         reason,
         adjustStatus,
         createdBy,
-        company: '40',
-        plant: '1000',
+        company: stock?.company ?? company,
+        plant: stock?.plant ?? plant,
       });
       await queryRunner.manager.save(invAdjLog);
 
@@ -380,8 +380,8 @@ export class AdjustmentService {
         remark: reason,
         status: 'DONE',
         createdBy,
-        company: '40',
-        plant: '1000',
+        company: stock?.company ?? company,
+        plant: stock?.plant ?? plant,
       });
       await queryRunner.manager.save(stockTransaction);
 

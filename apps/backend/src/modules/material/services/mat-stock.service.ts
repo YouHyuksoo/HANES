@@ -210,7 +210,7 @@ export class MatStockService {
     return { itemCode, totalQty: total, availableQty: available, byWarehouse: flattenedStocks };
   }
 
-  async adjustStock(dto: StockAdjustDto) {
+  async adjustStock(dto: StockAdjustDto, company?: string, plant?: string) {
     const { itemCode, warehouseCode, locationCode, adjustQty, reason, matUid } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -251,8 +251,8 @@ export class MatStockService {
           qty: adjustQty,
           availableQty: adjustQty,
           reservedQty: 0,
-          company: '40',
-          plant: '1000',
+          company,
+          plant,
         });
         stock = await queryRunner.manager.save(newStock);
       }
@@ -267,8 +267,8 @@ export class MatStockService {
         afterQty,
         diffQty: adjustQty,
         reason,
-        company: '40',
-        plant: '1000',
+        company: stock?.company ?? company,
+        plant: stock?.plant ?? plant,
       });
 
       await queryRunner.commitTransaction();
@@ -327,8 +327,8 @@ export class MatStockService {
           qty,
           availableQty: qty,
           reservedQty: 0,
-          company: fromStock.company || '40',
-          plant: fromStock.plant || '1000',
+          company: fromStock.company,
+          plant: fromStock.plant,
         });
         toStock = await queryRunner.manager.save(newStock);
       }

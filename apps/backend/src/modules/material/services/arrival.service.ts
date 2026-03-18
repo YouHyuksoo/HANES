@@ -207,8 +207,8 @@ export class ArrivalService {
           remark: item.remark || dto.remark,
           iqcStatus: 'PENDING',
           status: 'DONE',
-          company: '40',
-          plant: '1000',
+          company: po.company,
+          plant: po.plant,
         });
         await queryRunner.manager.save(arrival);
 
@@ -223,13 +223,13 @@ export class ArrivalService {
           workerId: dto.workerId,
           refType: 'PO',
           refId: item.poItemId,
-          company: '40',
-          plant: '1000',
+          company: po.company,
+          plant: po.plant,
         });
         const savedTx = await queryRunner.manager.save(stockTx);
 
         // 3. Stock upsert (현재고 반영)
-        await this.upsertStock(queryRunner.manager, item.warehouseId, item.itemCode, null, item.receivedQty);
+        await this.upsertStock(queryRunner.manager, item.warehouseId, item.itemCode, null, item.receivedQty, po.company, po.plant);
 
         // 4. PurchaseOrderItem.receivedQty 증가
         const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
@@ -268,7 +268,7 @@ export class ArrivalService {
   }
 
   /** 수동 입하 등록 */
-  async createManualArrival(dto: CreateManualArrivalDto) {
+  async createManualArrival(dto: CreateManualArrivalDto, company?: string, plant?: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -296,6 +296,8 @@ export class ArrivalService {
         remark: dto.remark,
         iqcStatus: 'PENDING',
         status: 'DONE',
+        company,
+        plant,
       });
       await queryRunner.manager.save(arrival);
 
@@ -309,11 +311,13 @@ export class ArrivalService {
         remark: dto.remark,
         workerId: dto.workerId,
         refType: 'MANUAL',
+        company,
+        plant,
       });
       const savedTx = await queryRunner.manager.save(stockTx);
 
       // 3. Stock upsert
-      await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.itemCode, null, dto.qty);
+      await this.upsertStock(queryRunner.manager, dto.warehouseId, dto.itemCode, null, dto.qty, company, plant);
 
       // warehouse 정보 조회 (part는 이미 위에서 조회)
       const warehouse = await this.warehouseRepository.findOne({ where: { warehouseCode: dto.warehouseId } });
@@ -781,7 +785,7 @@ export class ArrivalService {
   }
 
   /** MatStock upsert (현재고 증감) */
-  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number) {
+  private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: matUid || null },
       lock: { mode: 'pessimistic_write' },
@@ -800,8 +804,8 @@ export class ArrivalService {
         matUid,
         qty: qtyDelta,
         availableQty: qtyDelta,
-        company: '40',
-        plant: '1000',
+        company,
+        plant,
       });
       await manager.save(newStock);
     }

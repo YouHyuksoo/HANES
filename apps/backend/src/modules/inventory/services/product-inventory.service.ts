@@ -87,8 +87,8 @@ export class ProductInventoryService {
         workerId: dto.workerId,
         remark: dto.remark,
         status: 'DONE',
-        company: dto.company || '40',
-        plant: dto.plant || '1000',
+        company: dto.company,
+        plant: dto.plant,
       });
 
       const savedTransaction = await queryRunner.manager.save(ProductTransaction, transaction);
@@ -115,8 +115,8 @@ export class ProductInventoryService {
           qty: dto.qty,
           reservedQty: 0,
           availableQty: dto.qty,
-          company: dto.company || '40',
-          plant: dto.plant || '1000',
+          company: dto.company,
+          plant: dto.plant,
         });
       }
 
@@ -156,8 +156,8 @@ export class ProductInventoryService {
       workerId: dto.workerId,
       remark: dto.remark,
       status: 'DONE',
-      company: dto.company || '40',
-      plant: dto.plant || '1000',
+      company: dto.company,
+      plant: dto.plant,
     });
 
     const saved = await qr.manager.save(ProductTransaction, transaction);
@@ -183,8 +183,8 @@ export class ProductInventoryService {
         qty: dto.qty,
         reservedQty: 0,
         availableQty: dto.qty,
-        company: dto.company || '40',
-        plant: dto.plant || '1000',
+        company: dto.company,
+        plant: dto.plant,
       });
     }
 
@@ -230,8 +230,8 @@ export class ProductInventoryService {
         issueType: dto.issueType,
         remark: dto.remark,
         status: 'DONE',
-        company: dto.company || '40',
-        plant: dto.plant || '1000',
+        company: dto.company,
+        plant: dto.plant,
       });
 
       const savedTransaction = await queryRunner.manager.save(ProductTransaction, transaction);
@@ -265,8 +265,8 @@ export class ProductInventoryService {
             qty: dto.qty,
             reservedQty: 0,
             availableQty: dto.qty,
-            company: dto.company || '40',
-            plant: dto.plant || '1000',
+            company: dto.company,
+            plant: dto.plant,
           });
         }
       }
@@ -328,8 +328,8 @@ export class ProductInventoryService {
         issueType: originalTrans.issueType,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,
         status: 'DONE',
-        company: originalTrans.company || '40',
-        plant: originalTrans.plant || '1000',
+        company: originalTrans.company,
+        plant: originalTrans.plant,
       });
 
       const savedCancelTrans = await queryRunner.manager.save(ProductTransaction, cancelTrans);
@@ -382,8 +382,8 @@ export class ProductInventoryService {
             qty: Math.abs(originalTrans.qty),
             reservedQty: 0,
             availableQty: Math.abs(originalTrans.qty),
-            company: originalTrans.company || '40',
-            plant: originalTrans.plant || '1000',
+            company: originalTrans.company,
+            plant: originalTrans.plant,
           });
         }
       }

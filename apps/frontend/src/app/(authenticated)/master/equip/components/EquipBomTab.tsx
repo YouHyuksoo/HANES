@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, Edit2, Trash2, Search, RefreshCw, Link2, Unlink,
-  Package, Droplets, Wrench, ChevronRight, Layers,
+  Wrench, ChevronRight, Layers,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -30,7 +30,6 @@ import api from "@/services/api";
 // 타입 정의
 // ========================================
 
-type ViewMode = "by-equip" | "by-item";
 type ItemFormMode = "item" | "rel" | null;
 
 interface ItemFormState {
@@ -86,8 +85,6 @@ const EMPTY_REL_FORM: RelFormState = {
 
 export default function EquipBomTab() {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<ViewMode>("by-equip");
-  
   // 데이터 상태
   const [equipments, setEquipments] = useState<EquipMaster[]>(seedEquipments);
   const [bomItems, setBomItems] = useState<EquipBomItem[]>(seedEquipBomItems);
@@ -456,52 +453,25 @@ export default function EquipBomTab() {
   // ========================================
 
   return (
-    <div className="space-y-4">
-      {/* 뷰 모드 선택 */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1 border-b border-border">
-          <button
-            onClick={() => setViewMode("by-equip")}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              viewMode === "by-equip"
-                ? "border-primary text-primary"
-                : "border-transparent text-text-muted hover:text-text hover:border-border"
-            }`}
-          >
-            <Link2 className="w-4 h-4" />
-            {t("master.equip.viewByEquip", "설비별 조회")}
-          </button>
-          <button
-            onClick={() => setViewMode("by-item")}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              viewMode === "by-item"
-                ? "border-primary text-primary"
-                : "border-transparent text-text-muted hover:text-text hover:border-border"
-            }`}
-          >
-            <Package className="w-4 h-4" />
-            {t("master.equip.viewByItem", "품목별 조회")}
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchBomItems}>
-            <RefreshCw className="w-4 h-4 mr-1" />
-            {t("common.refresh", "새로고침")}
-          </Button>
-          <Button size="sm" onClick={openItemCreate}>
-            <Plus className="w-4 h-4 mr-1" />
-            {t("master.equip.addBomItem", "BOM 품목 등록")}
-          </Button>
-        </div>
+    <div className="h-full flex flex-col gap-3">
+      {/* 상단 버튼 */}
+      <div className="flex items-center justify-end gap-2 flex-shrink-0">
+        <Button variant="secondary" size="sm" onClick={fetchBomRels}>
+          <RefreshCw className="w-4 h-4 mr-1" />
+          {t("common.refresh", "새로고침")}
+        </Button>
+        <Button size="sm" onClick={openItemCreate}>
+          <Plus className="w-4 h-4 mr-1" />
+          {t("master.equip.addBomItem", "BOM 품목 등록")}
+        </Button>
       </div>
 
-      {viewMode === "by-equip" ? (
-        <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
           {/* 설비 목록 */}
           <div className="col-span-4">
             <Card className="h-[600px] flex flex-col">
-              <CardContent className="flex-1 flex flex-col p-4">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <CardContent className="flex-1 flex flex-col min-h-0 p-4">
+                <h3 className="font-semibold mb-3 flex items-center gap-2 flex-shrink-0">
                   <Wrench className="w-4 h-4" />
                   {t("master.equip.equipList", "설비 목록")}
                 </h3>
@@ -510,10 +480,10 @@ export default function EquipBomTab() {
                   value={equipSearch}
                   onChange={(e) => setEquipSearch(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />}
-                  className="mb-3"
+                  className="mb-3 flex-shrink-0"
                   fullWidth
                 />
-                <div className="flex-1 overflow-auto space-y-1">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
                   {filteredEquipments.map((equip) => (
                     <button
                       key={equip.equipCode}
@@ -575,40 +545,6 @@ export default function EquipBomTab() {
             </Card>
           </div>
         </div>
-      ) : (
-        /* 품목별 조회 */
-        <Card>
-          <CardContent className="p-4">
-            <DataGrid
-              data={filteredBomItems}
-              columns={bomItemColumns}
-              enableExport
-              exportFileName={t("master.equip.bomItems", "설비BOM품목")}
-              toolbarLeft={
-                <div className="flex gap-3 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0">
-                    <Input
-                      placeholder={t("master.equip.searchBomItem", "품목코드/품목명 검색...")}
-                      value={itemSearch}
-                      onChange={(e) => setItemSearch(e.target.value)}
-                      leftIcon={<Search className="w-4 h-4" />}
-                      fullWidth
-                    />
-                  </div>
-                  <div className="w-36 flex-shrink-0">
-                    <Select
-                      options={itemTypeOptions}
-                      value={selectedItemType}
-                      onChange={setSelectedItemType}
-                      fullWidth
-                    />
-                  </div>
-                </div>
-              }
-            />
-          </CardContent>
-        </Card>
-      )}
 
       {/* BOM 품목 모달 */}
       <Modal

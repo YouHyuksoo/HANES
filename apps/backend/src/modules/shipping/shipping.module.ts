@@ -38,7 +38,6 @@ import { ShipReturnController } from './controllers/ship-return.controller';
 import { ShipReturnService } from './services/ship-return.service';
 import { CustomerOrderController } from './controllers/customer-order.controller';
 import { CustomerOrderService } from './services/customer-order.service';
-import { InventoryModule } from '../inventory/inventory.module';
 import { BoxMaster } from '../../entities/box-master.entity';
 import { PalletMaster } from '../../entities/pallet-master.entity';
 import { ShipmentLog } from '../../entities/shipment-log.entity';
@@ -66,7 +65,6 @@ import { MatLot } from '../../entities/mat-lot.entity';
       PartMaster,
       MatLot,
     ]),
-    InventoryModule,
   ],
   controllers: [
     BoxController,

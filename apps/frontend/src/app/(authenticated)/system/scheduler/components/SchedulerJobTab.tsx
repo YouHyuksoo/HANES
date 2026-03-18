@@ -7,19 +7,21 @@
  * 초보자 가이드:
  * 1. **DataGrid**: 작업목록 (jobCode, cronExpr, isActive 토글 등)
  * 2. **ADMIN 전용**: 등록/즉시실행/삭제 버튼 (role 체크)
- * 3. **필터**: jobGroup, execType ComCodeSelect
+ * 3. **필터**: toolbarLeft 영역에 검색+콤보 배치
  * 4. **토글**: PATCH /scheduler/jobs/:jobCode/toggle
  * 5. **행 클릭**: SchedulerJobModal 수정 모드
+ * 6. **표준 레이아웃**: 상단 헤더(좌:타이틀, 우:등록+새로고침) + 선택 액션바 + DataGrid
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
-import { Plus, RefreshCw, Play, Trash2, Search as SearchIcon } from "lucide-react";
+import { Plus, RefreshCw, Play, Trash2, Search as SearchIcon, X, Edit2 } from "lucide-react";
 import {
   Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal,
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import cronstrue from "cronstrue/i18n";
 import api from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
 import SchedulerJobModal from "./SchedulerJobModal";
@@ -120,8 +122,52 @@ export default function SchedulerJobTab() {
   /* 날짜 포맷 */
   const fmtDt = (v: string | null) => v ? v.replace("T", " ").slice(0, 19) : "-";
 
+  /* 선택 행 액션 버튼 */
+  const actionButtons = useMemo(() => {
+    if (!selectedRow || !isAdmin) return null;
+    return (
+      <div className="flex gap-2 flex-wrap">
+        <Button size="sm" variant="secondary" onClick={handleRunNow}>
+          <Play className="w-4 h-4 mr-1" />{t("scheduler.runNow")}
+        </Button>
+        <Button size="sm" variant="danger" onClick={handleDelete}>
+          <Trash2 className="w-4 h-4 mr-1" />{t("common.delete")}
+        </Button>
+      </div>
+    );
+  }, [selectedRow, isAdmin, t, handleRunNow, handleDelete]);
+
   /* 컬럼 정의 */
   const columns = useMemo<ColumnDef<SchedulerJob>[]>(() => [
+    ...(isAdmin ? [{
+      id: "rowActions",
+      header: "",
+      size: 60,
+      meta: { filterType: "none" as const, align: "center" as const },
+      cell: ({ row }: { row: { original: SchedulerJob } }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); setEditTarget(row.original); setModalOpen(true); }}
+            className="p-1 hover:bg-surface rounded">
+            <Edit2 className="w-3.5 h-3.5 text-primary" />
+          </button>
+          <button onClick={(e) => {
+            e.stopPropagation();
+            setSelectedRow(row.original);
+            setConfirmAction({
+              title: t("common.delete"),
+              message: t("scheduler.confirmDelete"),
+              action: async () => {
+                await api.delete(`/scheduler/jobs/${row.original.jobCode}`);
+                setSelectedRow(null);
+                fetchData();
+              },
+            });
+          }} className="p-1 hover:bg-surface rounded">
+            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+          </button>
+        </div>
+      ),
+    }] : []),
     {
       accessorKey: "jobCode", header: t("scheduler.jobCode"), size: 150,
       meta: { filterType: "text" as const },
@@ -143,6 +189,13 @@ export default function SchedulerJobTab() {
           {getValue() as string}
         </code>
       ) },
+    { id: "cronDesc", header: t("scheduler.cronDesc"), size: 160,
+      meta: { filterType: "none" as const },
+      cell: ({ row }) => {
+        try {
+          return <span className="text-xs text-text-muted">{cronstrue.toString(row.original.cronExpr, { locale: "ko" })}</span>;
+        } catch { return <span className="text-xs text-text-muted">-</span>; }
+      } },
     {
       accessorKey: "isActive", header: t("scheduler.isActive"), size: 80,
       meta: { align: "center" as const, filterType: "none" as const },
@@ -174,29 +227,34 @@ export default function SchedulerJobTab() {
   ], [t, isAdmin, handleToggle]);
 
   return (
-    <div className="flex flex-col h-full gap-3">
-      {/* ADMIN 액션 */}
-      {isAdmin && (
-        <div className="flex gap-2 flex-shrink-0">
-          <Button size="sm" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
-            <Plus className="w-4 h-4 mr-1" />{t("scheduler.addJob")}
-          </Button>
-          {selectedRow && (
-            <>
-              <Button size="sm" variant="secondary" onClick={handleRunNow}>
-                <Play className="w-4 h-4 mr-1" />{t("scheduler.runNow")}
-              </Button>
-              <Button size="sm" variant="danger" onClick={handleDelete}>
-                <Trash2 className="w-4 h-4 mr-1" />{t("common.delete")}
-              </Button>
-            </>
-          )}
-          <div className="flex-1" />
-          <Button size="sm" variant="secondary" onClick={fetchData}>
+    <div className="flex-1 flex flex-col overflow-hidden gap-4">
+      {/* 상단 헤더: 좌 타이틀 / 우 등록+새로고침 (표준 패턴) */}
+      <div className="flex justify-between items-center flex-shrink-0">
+        <p className="text-sm text-text-muted">{t("scheduler.jobs")}</p>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             {t("common.refresh")}
           </Button>
+          {isAdmin && (
+            <Button size="sm" onClick={() => { setEditTarget(null); setModalOpen(true); }}>
+              <Plus className="w-4 h-4 mr-1" />{t("common.register")}
+            </Button>
+          )}
         </div>
+      </div>
+
+      {/* 선택 행 액션바 (표준 패턴) */}
+      {actionButtons && (
+        <Card className="flex-shrink-0"><CardContent><div className="flex items-center gap-3">
+          <span className="text-sm text-text-muted font-medium">{selectedRow?.jobCode} — {selectedRow?.jobName}</span>
+          {actionButtons}
+          <div className="flex-1" />
+          <button onClick={() => setSelectedRow(null)}
+            className="p-1 hover:bg-surface rounded transition-colors" title={t("common.close")}>
+            <X className="w-4 h-4 text-text-muted" />
+          </button>
+        </div></CardContent></Card>
       )}
 
       {/* DataGrid */}

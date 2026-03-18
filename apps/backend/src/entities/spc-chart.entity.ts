@@ -75,6 +75,14 @@ export class SpcChart {
   @Column({ name: 'CL', type: 'decimal', precision: 12, scale: 4, nullable: true })
   cl: number;
 
+  /** 데이터 소스 (IQC/PROCESS/OQC/MANUAL) — ComCode SPC_DATA_SRC */
+  @Column({ name: 'DATA_SOURCE', length: 20, default: 'MANUAL' })
+  dataSource: string;
+
+  /** 소스 검사항목명 (원천 데이터에서 매핑할 항목) */
+  @Column({ name: 'SOURCE_INSPECT_ITEM', type: 'nvarchar2', length: 100, nullable: true })
+  sourceInspectItem: string | null;
+
   @Column({ name: 'STATUS', length: 20, default: 'ACTIVE' })
   status: string;
 

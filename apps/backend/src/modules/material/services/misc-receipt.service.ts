@@ -132,7 +132,7 @@ export class MiscReceiptService {
     return { data: flattenedData, total, page, limit };
   }
 
-  async create(dto: CreateMiscReceiptDto) {
+  async create(dto: CreateMiscReceiptDto, company?: string, plant?: string) {
     const { warehouseId, itemCode, matUid, qty, remark, workerId } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -188,8 +188,8 @@ export class MiscReceiptService {
           qty,
           availableQty: qty,
           reservedQty: 0,
-          company: '40',
-          plant: '1000',
+          company,
+          plant,
         });
         await queryRunner.manager.save(newStock);
       }
@@ -209,8 +209,8 @@ export class MiscReceiptService {
         workerId,
         remark,
         status: 'DONE',
-        company: '40',
-        plant: '1000',
+        company: existingStock?.company ?? company,
+        plant: existingStock?.plant ?? plant,
       });
       await queryRunner.manager.save(transaction);
 

@@ -10,12 +10,9 @@ import { CustomsService } from './services/customs.service';
 import { CustomsEntry } from '../../entities/customs-entry.entity';
 import { CustomsLot } from '../../entities/customs-lot.entity';
 import { CustomsUsageReport } from '../../entities/customs-usage-report.entity';
-import { InventoryModule } from '../inventory/inventory.module';
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([CustomsEntry, CustomsLot, CustomsUsageReport]),
-    InventoryModule,
   ],
   controllers: [CustomsController],
   providers: [CustomsService],

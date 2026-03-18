@@ -68,7 +68,7 @@ export class WarehouseLocationService {
       );
     }
 
-    const location = this.locationRepo.create({ ...dto, company: (dto as any).company || '40', plant: (dto as any).plant || '1000' });
+    const location = this.locationRepo.create({ ...dto });
     const saved = await this.locationRepo.save(location);
     return { success: true, data: saved };
   }

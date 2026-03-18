@@ -25,6 +25,7 @@ export interface AuthUser {
   role: string;
   status: string;
   company?: string;
+  plant?: string;
 }
 
 /** PDA 작업자 정보 */
@@ -88,11 +89,18 @@ export const useAuthStore = create<AuthState>()(
 
           localStorage.setItem("harness-token", token);
 
+          const resolvedCompany = company || user.company;
+          const resolvedPlant = plant || user.plant;
+
+          if (!resolvedCompany || !resolvedPlant) {
+            console.error("[Auth] company/plant가 설정되지 않았습니다:", { company: resolvedCompany, plant: resolvedPlant });
+          }
+
           set({
             user,
             token,
-            selectedCompany: company || user.company || "",
-            selectedPlant: plant || "",
+            selectedCompany: resolvedCompany || "",
+            selectedPlant: resolvedPlant || "",
             isAuthenticated: true,
             isLoading: false,
             allowedMenus: allowedMenus || [],
@@ -166,8 +174,18 @@ export const useAuthStore = create<AuthState>()(
           const res = await api.get("/auth/me");
           const responseData = res.data?.data ?? res.data;
           const { allowedMenus, pdaAllowedMenus, ...userData } = responseData;
+          const { selectedCompany, selectedPlant } = get();
+          const resolvedCompany = selectedCompany || userData.company;
+          const resolvedPlant = selectedPlant || userData.plant;
+
+          if (!resolvedCompany || !resolvedPlant) {
+            console.error("[Auth] fetchMe - company/plant가 비어있습니다:", { company: resolvedCompany, plant: resolvedPlant });
+          }
+
           set({
             user: userData,
+            selectedCompany: resolvedCompany || "",
+            selectedPlant: resolvedPlant || "",
             allowedMenus: allowedMenus || [],
             pdaAllowedMenus: pdaAllowedMenus || [],
             isAuthenticated: true,

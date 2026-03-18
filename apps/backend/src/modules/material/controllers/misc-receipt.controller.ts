@@ -27,8 +27,8 @@ export class MiscReceiptController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '기타입고 등록' })
-  async create(@Body() dto: CreateMiscReceiptDto) {
-    const data = await this.miscReceiptService.create(dto);
+  async create(@Body() dto: CreateMiscReceiptDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.miscReceiptService.create(dto, company, plant);
     return ResponseUtil.success(data, '기타입고가 등록되었습니다.');
   }
 }

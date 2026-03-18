@@ -28,11 +28,20 @@ import { ProductInventoryService } from './services/product-inventory.service';
 import { ProductPhysicalInvService } from './services/product-physical-inv.service';
 import { WarehouseLocationService } from './services/warehouse-location.service';
 import { ProductHoldService } from './services/product-hold.service';
+import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
 
 @Module({
   imports: [TypeOrmModule.forFeature([MatStock, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation])],
   controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController, ProductHoldController],
-  providers: [InventoryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService],
-  exports: [InventoryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService],
+  providers: [
+    InventoryService,
+    WarehouseService,
+    ProductInventoryService,
+    ProductPhysicalInvService,
+    WarehouseLocationService,
+    ProductHoldService,
+    { provide: STOCK_MANAGER, useExisting: ProductInventoryService },
+  ],
+  exports: [InventoryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, STOCK_MANAGER],
 })
 export class InventoryModule {}

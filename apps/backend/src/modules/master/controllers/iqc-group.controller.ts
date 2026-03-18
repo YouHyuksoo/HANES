@@ -39,8 +39,8 @@ export class IqcGroupController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'IQC 검사그룹 생성' })
-  async create(@Body() dto: CreateIqcGroupDto) {
-    const data = await this.iqcGroupService.create(dto);
+  async create(@Body() dto: CreateIqcGroupDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcGroupService.create(dto, company, plant);
     return ResponseUtil.success(data, 'IQC 검사그룹이 생성되었습니다.');
   }
 

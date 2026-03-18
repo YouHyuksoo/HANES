@@ -9,25 +9,15 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, IsIn, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
+import { BaseListQueryDto } from '@common/dto/base-query.dto';
 
-export class StockQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
-
+/**
+ * 재고 목록 조회 쿼리 DTO
+ * - BaseListQueryDto에서 page, limit, search, status, fromDate, toDate 상속
+ */
+export class StockQueryDto extends BaseListQueryDto {
   @ApiPropertyOptional({ description: '품목 코드' })
   @IsOptional()
   @IsString()
@@ -42,11 +32,6 @@ export class StockQueryDto {
   @IsOptional()
   @IsString()
   locationCode?: string;
-
-  @ApiPropertyOptional({ description: '검색어 (품목코드/품명)' })
-  @IsOptional()
-  @IsString()
-  search?: string;
 
   @ApiPropertyOptional({ description: '재고 부족만 조회', default: false })
   @IsOptional()

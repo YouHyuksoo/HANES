@@ -316,8 +316,8 @@ export class ReceivingService {
           workerId: dto.workerId,
           remark: item.remark,
           status: 'DONE',
-          company: lot.company || '40',
-          plant: lot.plant || '1000',
+          company: lot.company,
+          plant: lot.plant,
         });
         await queryRunner.manager.save(receiving);
 
@@ -334,8 +334,8 @@ export class ReceivingService {
           workerId: dto.workerId,
           refType: 'RECEIVE',
           refId: `${receiving.receiveNo}-${receiving.seq}`,
-          company: lot.company || '40',
-          plant: lot.plant || '1000',
+          company: lot.company,
+          plant: lot.plant,
         });
 
         const savedTx = await queryRunner.manager.save(stockTx);
@@ -614,8 +614,8 @@ export class ReceivingService {
         matUid,
         qty: qtyDelta,
         availableQty: qtyDelta,
-        company: company || '40',
-        plant: plant || '1000',
+        company,
+        plant,
       });
       await manager.save(newStock);
     }

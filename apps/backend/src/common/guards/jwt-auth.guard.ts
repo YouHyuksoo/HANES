@@ -59,7 +59,7 @@ export class JwtAuthGuard implements CanActivate {
       // DB에서 userId로 사용자 조회
       const user = await this.userRepository.findOne({
         where: { email: token },
-        select: ['email', 'role', 'status', 'company'],
+        select: ['email', 'role', 'status', 'company', 'plant'],
       });
 
       if (!user || user.status !== 'ACTIVE') {
@@ -70,13 +70,20 @@ export class JwtAuthGuard implements CanActivate {
       const companyHeader = request.headers['x-company'] as string | undefined;
       const plantHeader = request.headers['x-plant'] as string | undefined;
 
+      const resolvedCompany = companyHeader || user.company;
+      const resolvedPlant = plantHeader || user.plant;
+
+      if (!resolvedCompany || !resolvedPlant) {
+        throw new UnauthorizedException('회사/사업장 정보가 없습니다. 재로그인 해주세요.');
+      }
+
       // 요청 객체에 사용자 정보 추가
       (request as AuthenticatedRequest).user = {
         id: user.email,
         email: user.email,
         role: user.role,
-        company: companyHeader || user.company || undefined,
-        plant: plantHeader || undefined,
+        company: resolvedCompany,
+        plant: resolvedPlant,
       };
 
       this.logger.debug(`User authenticated: ${user.email}`);

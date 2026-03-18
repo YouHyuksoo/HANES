@@ -21,8 +21,6 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { InventoryModule } from '../inventory/inventory.module';
-import { NumRuleModule } from '../num-rule/num-rule.module';
 import { SystemModule } from '../system/system.module';
 
 // Entities
@@ -94,8 +92,6 @@ import { ReceiveLabelService } from './services/receive-label.service';
 
 @Module({
   imports: [
-    InventoryModule,
-    NumRuleModule,
     SystemModule,
     TypeOrmModule.forFeature([
       MatLot,

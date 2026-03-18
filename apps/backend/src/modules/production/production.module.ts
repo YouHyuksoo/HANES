@@ -45,7 +45,6 @@ import { RepairController } from './controllers/repair.controller';
 import { RepairService } from './services/repair.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SystemModule } from '../system/system.module';
-import { NumRuleModule } from '../num-rule/num-rule.module';
 
 // Entities
 import { JobOrder } from '../../entities/job-order.entity';
@@ -76,7 +75,6 @@ import { RoutingProcess } from '../../entities/routing-process.entity';
     TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess]),
     InventoryModule,
     SystemModule,
-    NumRuleModule,
   ],
   controllers: [
     JobOrderController,

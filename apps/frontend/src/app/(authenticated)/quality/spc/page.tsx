@@ -40,6 +40,8 @@ interface SpcChart {
   ucl: number | null;
   lcl: number | null;
   cl: number | null;
+  dataSource: string;
+  sourceInspectItem: string | null;
   status: string;
   createdAt: string;
 }
@@ -115,8 +117,11 @@ export default function SpcPage() {
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
     { accessorKey: "itemCode", header: t("quality.spc.itemCode"), size: 140,
       meta: { filterType: "text" as const } },
-    { accessorKey: "processCode", header: t("quality.spc.processCode"), size: 130,
+    { accessorKey: "processCode", header: t("quality.spc.processCode"), size: 100,
       meta: { filterType: "text" as const } },
+    { accessorKey: "processName", header: t("master.process.processName"), size: 130,
+      meta: { filterType: "text" as const },
+      cell: ({ getValue }) => (getValue() as string) || "-" },
     { accessorKey: "characteristicName", header: t("quality.spc.characteristicName"), size: 180,
       meta: { filterType: "text" as const } },
     { accessorKey: "chartType", header: t("quality.spc.chartType"), size: 120,
@@ -193,6 +198,7 @@ export default function SpcPage() {
             enableColumnFilter enableExport exportFileName={t("quality.spc.title")}
             getRowId={row => (row as SpcChart).chartNo}
             selectedRowId={selectedRow?.chartNo}
+            onRowClick={(row) => { const r = row as SpcChart; setSelectedRow(r); setChartViewTarget(r); setIsChartViewOpen(true); }}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">

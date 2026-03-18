@@ -95,8 +95,8 @@ export default function IqcItemPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === "perItem") fetchAll();
-  }, [activeTab, fetchAll]);
+    fetchAll();
+  }, [fetchAll]);
 
   /* 품목별 연결그룹수 맵 */
   const linkCountMap = useMemo(() => {
@@ -209,7 +209,7 @@ export default function IqcItemPage() {
 
       {/* 탭 컨텐츠 */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === "perItem" && (
+        <div className={`h-full ${activeTab === "perItem" ? "" : "hidden"}`}>
           <div className="grid grid-cols-12 gap-6 h-full">
             <div className="col-span-4 min-h-0">
               <ItemListPanel
@@ -245,9 +245,13 @@ export default function IqcItemPage() {
               />
             </div>
           </div>
-        )}
-        {activeTab === "items" && <IqcItemTab />}
-        {activeTab === "groups" && <IqcGroupTab />}
+        </div>
+        <div className={`h-full ${activeTab === "items" ? "" : "hidden"}`}>
+          <IqcItemTab />
+        </div>
+        <div className={`h-full ${activeTab === "groups" ? "" : "hidden"}`}>
+          <IqcGroupTab />
+        </div>
       </div>
     </div>
   );

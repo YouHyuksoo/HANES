@@ -299,14 +299,37 @@ export default function SchedulerJobModal({ editData, onClose, onSave }: Props) 
             onChange={(e) => setField("cronExpr", e.target.value)}
             placeholder="0 0 2 * * *" fullWidth />
           {cronDesc && (
-            <p className={`text-[11px] mt-1 ${
+            <p className={`text-[11px] mt-1 font-medium ${
               cronDesc === t("common.invalid", "잘못된 형식")
                 ? "text-red-500 dark:text-red-400"
                 : "text-green-600 dark:text-green-400"
             }`}>
-              {cronDesc}
+              → {cronDesc}
             </p>
           )}
+          <div className="mt-2 p-2.5 bg-background dark:bg-slate-800 rounded-md border border-border">
+            <p className="text-[11px] font-semibold text-text-muted mb-1.5">크론 표현식 가이드 (초 분 시 일 월 요일)</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px] text-text-muted">
+              <button type="button" onClick={() => setField("cronExpr", "0 */5 * * * *")} className="text-left hover:text-primary transition-colors">
+                <code className="text-primary">0 */5 * * * *</code> — 5분마다
+              </button>
+              <button type="button" onClick={() => setField("cronExpr", "0 */10 * * * *")} className="text-left hover:text-primary transition-colors">
+                <code className="text-primary">0 */10 * * * *</code> — 10분마다
+              </button>
+              <button type="button" onClick={() => setField("cronExpr", "0 */30 * * * *")} className="text-left hover:text-primary transition-colors">
+                <code className="text-primary">0 */30 * * * *</code> — 30분마다
+              </button>
+              <button type="button" onClick={() => setField("cronExpr", "0 0 * * * *")} className="text-left hover:text-primary transition-colors">
+                <code className="text-primary">0 0 * * * *</code> — 매시 정각
+              </button>
+              <button type="button" onClick={() => setField("cronExpr", "0 0 2 * * *")} className="text-left hover:text-primary transition-colors">
+                <code className="text-primary">0 0 2 * * *</code> — 매일 새벽 2시
+              </button>
+              <button type="button" onClick={() => setField("cronExpr", "0 0 9,18 * * 1-5")} className="text-left hover:text-primary transition-colors">
+                <code className="text-primary">0 0 9,18 * * 1-5</code> — 평일 9시/18시
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* execType별 동적 폼 */}

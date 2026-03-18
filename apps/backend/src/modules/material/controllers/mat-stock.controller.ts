@@ -46,8 +46,8 @@ export class MatStockController {
 
   @Post('adjust')
   @ApiOperation({ summary: '재고 조정' })
-  async adjust(@Body() dto: StockAdjustDto) {
-    const data = await this.matStockService.adjustStock(dto);
+  async adjust(@Body() dto: StockAdjustDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matStockService.adjustStock(dto, company, plant);
     return ResponseUtil.success(data, '재고가 조정되었습니다.');
   }
 

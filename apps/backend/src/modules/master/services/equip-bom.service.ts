@@ -80,8 +80,8 @@ export class EquipBomService {
     return item;
   }
 
-  async createItem(dto: CreateEquipBomItemDto): Promise<EquipBomItem> {
-    const item = this.bomItemRepo.create({ ...dto, company: '40', plant: '1000' });
+  async createItem(dto: CreateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
+    const item = this.bomItemRepo.create({ ...dto, company, plant });
     return this.bomItemRepo.save(item);
   }
 
@@ -152,7 +152,7 @@ export class EquipBomService {
     });
   }
 
-  async createRel(dto: CreateEquipBomRelDto): Promise<EquipBomRel> {
+  async createRel(dto: CreateEquipBomRelDto, company?: string, plant?: string): Promise<EquipBomRel> {
     const rel = this.bomRelRepo.create({
       equipCode: dto.equipCode,
       bomItemCode: dto.bomItemId,
@@ -161,8 +161,8 @@ export class EquipBomService {
       expireDate: dto.expireDate ? new Date(dto.expireDate) : null,
       remark: dto.remark,
       useYn: dto.useYn,
-      company: '40',
-      plant: '1000',
+      company,
+      plant,
     });
     return this.bomRelRepo.save(rel);
   }

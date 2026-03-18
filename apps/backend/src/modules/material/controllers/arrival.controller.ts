@@ -85,8 +85,8 @@ export class ArrivalController {
   @Post('manual')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '수동 입하 등록' })
-  async createManualArrival(@Body() dto: CreateManualArrivalDto) {
-    const data = await this.arrivalService.createManualArrival(dto);
+  async createManualArrival(@Body() dto: CreateManualArrivalDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.arrivalService.createManualArrival(dto, company, plant);
     return ResponseUtil.success(data, '수동 입하가 등록되었습니다.');
   }
 

@@ -72,8 +72,9 @@ export class AuthService {
 
     this.logger.log(`User logged in: ${user.email}`);
 
-    // 로그인 시 선택한 회사 또는 사용자 기본 회사 사용
+    // 로그인 시 선택한 회사/사업장 또는 사용자 기본값 사용
     const selectedCompany = dto.company || user.company || '';
+    const selectedPlant = user.plant || '';
 
     // 활동 로그 기록 (비동기, 실패해도 로그인에 영향 없음)
     this.activityLogService.logActivity({
@@ -103,6 +104,7 @@ export class AuthService {
         role: user.role,
         status: user.status,
         company: selectedCompany,
+        plant: selectedPlant,
       },
       allowedMenus,
       pdaAllowedMenus,
@@ -162,6 +164,7 @@ export class AuthService {
         'role',
         'status',
         'company',
+        'plant',
         'lastLoginAt',
         'pdaRoleCode',
       ],

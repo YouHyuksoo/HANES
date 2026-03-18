@@ -68,7 +68,7 @@ export class SchedulerLog {
   resultMsg: string | null;
 
   /** 에러 메시지 */
-  @Column({ name: 'ERROR_MSG', type: 'nvarchar2', length: 4000, nullable: true })
+  @Column({ name: 'ERROR_MSG', type: 'nvarchar2', length: 2000, nullable: true })
   errorMsg: string | null;
 
   /** 재시도 횟수 */

@@ -75,7 +75,7 @@ export class IqcGroupService {
     return group;
   }
 
-  async create(dto: CreateIqcGroupDto) {
+  async create(dto: CreateIqcGroupDto, company?: string, plant?: string) {
     const exists = await this.groupRepo.findOne({
       where: { groupCode: dto.groupCode },
     });
@@ -89,8 +89,8 @@ export class IqcGroupService {
       inspectMethod: dto.inspectMethod,
       sampleQty: dto.inspectMethod === 'SAMPLE' ? dto.sampleQty : null,
       useYn: dto.useYn ?? 'Y',
-      company: '40',
-      plant: '1000',
+      company,
+      plant,
     });
 
     const saved = await this.groupRepo.save(group);
@@ -101,8 +101,8 @@ export class IqcGroupService {
           groupId: saved.id,
           inspItemId: Number(i.itemId),
           seq: i.seq,
-          company: '40',
-          plant: '1000',
+          company,
+          plant,
         }),
       );
       await this.groupItemRepo.save(items);

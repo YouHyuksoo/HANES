@@ -160,8 +160,8 @@ export class MatIssueService {
           workerId,
           remark,
           status: 'DONE',
-          company: lot.company || '40',
-          plant: lot.plant || '1000',
+          company: lot.company,
+          plant: lot.plant,
         });
         const savedIssue = await queryRunner.manager.save(issue);
 
@@ -179,8 +179,8 @@ export class MatIssueService {
           refType: 'MAT_ISSUE',
           refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
           status: 'DONE',
-          company: lot.company || '40',
-          plant: lot.plant || '1000',
+          company: lot.company,
+          plant: lot.plant,
         });
         await queryRunner.manager.save(stockTx);
 
@@ -304,8 +304,8 @@ export class MatIssueService {
           refId: refId,
           cancelRefId: originalTx.transNo,
           status: 'DONE',
-          company: originalTx.company || '40',
-          plant: originalTx.plant || '1000',
+          company: originalTx.company,
+          plant: originalTx.plant,
         });
         await queryRunner.manager.save(cancelTx);
 

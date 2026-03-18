@@ -205,8 +205,8 @@ export class ConsumablesController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '입출고 이력 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createLog(@Body() dto: CreateConsumableLogDto) {
-    const data = await this.consumablesService.createLog(dto);
+  async createLog(@Body() dto: CreateConsumableLogDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.createLog(dto, company, plant);
     return ResponseUtil.success(data, '입출고 이력이 등록되었습니다.');
   }
 
@@ -216,8 +216,8 @@ export class ConsumablesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '타수 업데이트' })
   @ApiResponse({ status: 200, description: '업데이트 성공' })
-  async updateShotCount(@Body() dto: UpdateShotCountDto) {
-    const data = await this.consumablesService.updateShotCount(dto);
+  async updateShotCount(@Body() dto: UpdateShotCountDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.updateShotCount(dto, company, plant);
     return ResponseUtil.success(data, '타수가 업데이트되었습니다.');
   }
 
@@ -225,8 +225,8 @@ export class ConsumablesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '타수 리셋 (교체 시)' })
   @ApiResponse({ status: 200, description: '리셋 성공' })
-  async resetShotCount(@Body() dto: ResetShotCountDto) {
-    const data = await this.consumablesService.resetShotCount(dto);
+  async resetShotCount(@Body() dto: ResetShotCountDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.resetShotCount(dto, company, plant);
     return ResponseUtil.success(data, '타수가 리셋되었습니다.');
   }
 }

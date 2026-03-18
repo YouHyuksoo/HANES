@@ -14,8 +14,6 @@ import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../entities/consumable-log.entity';
 import { ConsumableStock } from '../../entities/consumable-stock.entity';
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
-import { InventoryModule } from '../inventory/inventory.module';
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -24,7 +22,6 @@ import { InventoryModule } from '../inventory/inventory.module';
       ConsumableStock,
       LabelPrintLog,
     ]),
-    InventoryModule,
   ],
   controllers: [
     ConsumableLabelController,

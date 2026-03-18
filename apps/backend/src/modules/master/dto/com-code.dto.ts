@@ -19,10 +19,10 @@ import {
   IsOptional,
   IsInt,
   Min,
-  Max,
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { BaseListQueryDto } from '@common/dto/base-query.dto';
 
 /**
  * 공통코드 생성 DTO
@@ -92,32 +92,13 @@ export class UpdateComCodeDto extends PartialType(CreateComCodeDto) {}
 
 /**
  * 공통코드 목록 조회 쿼리 DTO
+ * - BaseListQueryDto에서 page, limit, search, status, fromDate, toDate 상속
  */
-export class ComCodeQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
-
+export class ComCodeQueryDto extends BaseListQueryDto {
   @ApiPropertyOptional({ description: '그룹 코드로 필터링' })
   @IsOptional()
   @IsString()
   groupCode?: string;
-
-  @ApiPropertyOptional({ description: '검색어 (코드명 검색)' })
-  @IsOptional()
-  @IsString()
-  search?: string;
 
   @ApiPropertyOptional({ description: '사용 여부 필터', enum: ['Y', 'N'] })
   @IsOptional()

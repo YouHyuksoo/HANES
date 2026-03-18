@@ -66,8 +66,8 @@ export class EquipBomController {
   @Post('items')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'BOM 품목 생성' })
-  async createItem(@Body() dto: CreateEquipBomItemDto) {
-    const data = await this.equipBomService.createItem(dto);
+  async createItem(@Body() dto: CreateEquipBomItemDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.equipBomService.createItem(dto, company, plant);
     return ResponseUtil.success(data, 'BOM 품목이 생성되었습니다.');
   }
 
@@ -113,8 +113,8 @@ export class EquipBomController {
   @Post('rels')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '설비-BOM 연결 생성' })
-  async createRel(@Body() dto: CreateEquipBomRelDto) {
-    const data = await this.equipBomService.createRel(dto);
+  async createRel(@Body() dto: CreateEquipBomRelDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.equipBomService.createRel(dto, company, plant);
     return ResponseUtil.success(data, '설비-BOM 연결이 생성되었습니다.');
   }
 

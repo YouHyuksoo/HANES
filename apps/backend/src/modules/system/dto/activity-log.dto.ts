@@ -8,7 +8,7 @@
  */
 import { IsString, IsOptional, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '@common/dto/base-query.dto';
 
 export class CreateActivityLogDto {
   @ApiProperty({ description: '활동 유형', example: 'PAGE_ACCESS' })
@@ -33,17 +33,12 @@ export class CreateActivityLogDto {
   deviceType?: string;
 }
 
-export class ActivityLogQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', example: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
-
-  @ApiPropertyOptional({ description: '페이지 당 항목 수', example: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
-
+/**
+ * 활동 로그 조회 쿼리 DTO
+ * - PaginationQueryDto에서 page, limit 상속
+ * - startDate/endDate는 서비스에서 별도 처리하므로 유지
+ */
+export class ActivityLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '사용자 ID 필터' })
   @IsOptional()
   @IsString()

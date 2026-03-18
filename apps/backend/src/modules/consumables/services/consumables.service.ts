@@ -372,7 +372,7 @@ export class ConsumablesService {
   /**
    * 입출고 이력 등록
    */
-  async createLog(dto: CreateConsumableLogDto) {
+  async createLog(dto: CreateConsumableLogDto, company?: string, plant?: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -428,8 +428,8 @@ export class ConsumablesService {
         equipCode: dto.equipCode || null,
         issueReason: dto.issueReason || null,
         returnReason: dto.returnReason || null,
-        company: '40',
-        plant: '1000',
+        company,
+        plant,
       });
 
       const savedLog = await queryRunner.manager.save(ConsumableLog, log);
@@ -475,7 +475,7 @@ export class ConsumablesService {
   /**
    * 타수 업데이트 (사용 횟수 증가)
    */
-  async updateShotCount(dto: UpdateShotCountDto) {
+  async updateShotCount(dto: UpdateShotCountDto, company?: string, plant?: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -518,8 +518,8 @@ export class ConsumablesService {
           qty: dto.addCount,
           equipCode: dto.equipCode,
           remark: `타수 업데이트: +${dto.addCount}`,
-          company: '40',
-          plant: '1000',
+          company,
+          plant,
         });
         await queryRunner.manager.save(ConsumableLog, log);
       }
@@ -545,7 +545,7 @@ export class ConsumablesService {
   /**
    * 타수 리셋 (교체 시)
    */
-  async resetShotCount(dto: ResetShotCountDto) {
+  async resetShotCount(dto: ResetShotCountDto, company?: string, plant?: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -574,8 +574,8 @@ export class ConsumablesService {
         logType: 'REPLACE',
         qty: previousCount,
         remark: dto.remark || '소모품 교체 (타수 리셋)',
-        company: '40',
-        plant: '1000',
+        company,
+        plant,
       });
       await queryRunner.manager.save(ConsumableLog, log);
 

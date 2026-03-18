@@ -244,8 +244,8 @@ export class AutoIssueService {
         issueQty,
         issueType: 'PROD_AUTO',
         status: 'DONE',
-        company: lot.company || '40',
-        plant: lot.plant || '1000',
+        company: lot.company,
+        plant: lot.plant,
       });
       await qr.manager.save(MatIssue, issueEntity);
 
@@ -260,8 +260,8 @@ export class AutoIssueService {
         refType: 'MAT_ISSUE',
         refId: `${issueNo}-1`,
         status: 'DONE',
-        company: lot.company || '40',
-        plant: lot.plant || '1000',
+        company: lot.company,
+        plant: lot.plant,
       });
       await qr.manager.save(StockTransaction, txEntity);
 

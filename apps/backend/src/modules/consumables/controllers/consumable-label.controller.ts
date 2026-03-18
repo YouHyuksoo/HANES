@@ -10,6 +10,7 @@
  * 5. POST /consumables/label/confirm-bulk  다건 입고 확정
  */
 import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ConsumableLabelService } from '../services/consumable-label.service';
 import {
   CreateConLabelsDto,
@@ -30,8 +31,8 @@ export class ConsumableLabelController {
 
   /** conUid 채번 + PENDING 생성 */
   @Post('create')
-  async createLabels(@Body() dto: CreateConLabelsDto) {
-    const data = await this.labelService.createConLabels(dto);
+  async createLabels(@Body() dto: CreateConLabelsDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.createConLabels(dto, company, plant);
     return { data };
   }
 

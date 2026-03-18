@@ -750,8 +750,8 @@ export class ProdResultService {
           refType: 'MAT_ISSUE_CANCEL',
           refId: issue.issueNo,
           status: 'DONE',
-          company: lot?.company || issue.company || '40',
-          plant: lot?.plant || issue.plant || '1000',
+          company: lot?.company || issue.company,
+          plant: lot?.plant || issue.plant,
         });
         await qr.manager.save(StockTransaction, reverseTx);
       }
@@ -815,8 +815,8 @@ export class ProdResultService {
         cancelRefId: tx.transNo,
         remark: `생산실적 취소 역분개`,
         status: 'DONE',
-        company: tx.company || '40',
-        plant: tx.plant || '1000',
+        company: tx.company,
+        plant: tx.plant,
       });
       await qr.manager.save(ProductTransaction, cancelTx);
     }

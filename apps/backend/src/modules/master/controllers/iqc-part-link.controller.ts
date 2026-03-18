@@ -38,8 +38,8 @@ export class IqcPartLinkController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'IQC 연결 생성 (품목+거래처 → 검사그룹)' })
-  async create(@Body() dto: CreateIqcPartLinkDto) {
-    const data = await this.iqcPartLinkService.create(dto);
+  async create(@Body() dto: CreateIqcPartLinkDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcPartLinkService.create(dto, company, plant);
     return ResponseUtil.success(data, 'IQC 연결이 생성되었습니다.');
   }
 

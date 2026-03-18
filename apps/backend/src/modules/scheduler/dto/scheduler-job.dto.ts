@@ -22,6 +22,7 @@ import {
   Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { BaseListQueryDto } from '@common/dto/base-query.dto';
 
 /** 허용되는 실행 유형 */
 const EXEC_TYPES = ['SERVICE', 'PROCEDURE', 'SQL', 'HTTP', 'SCRIPT'] as const;
@@ -93,22 +94,11 @@ export class CreateSchedulerJobDto {
 
 export class UpdateSchedulerJobDto extends PartialType(CreateSchedulerJobDto) {}
 
-export class SchedulerJobFilterDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
-
+/**
+ * 스케줄러 작업 목록 조회 필터 DTO
+ * - BaseListQueryDto에서 page, limit, search, status, fromDate, toDate 상속
+ */
+export class SchedulerJobFilterDto extends BaseListQueryDto {
   @ApiPropertyOptional({ description: '작업 그룹 필터' })
   @IsOptional()
   @IsString()
@@ -125,9 +115,4 @@ export class SchedulerJobFilterDto {
   @IsString()
   @IsIn(['Y', 'N'])
   isActive?: string;
-
-  @ApiPropertyOptional({ description: '검색어 (작업코드/작업명)' })
-  @IsOptional()
-  @IsString()
-  search?: string;
 }
