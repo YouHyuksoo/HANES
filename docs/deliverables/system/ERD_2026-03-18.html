@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HARNESS MES - ERD (Entity Relationship Diagram)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0f172a;color:#e2e8f0;overflow:hidden}
+.header{background:#1e293b;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #334155;position:fixed;top:0;left:0;right:0;z-index:100}
+.header h1{font-size:18px;color:#60a5fa;font-weight:600}
+.header .info{font-size:13px;color:#94a3b8}
+.sidebar{position:fixed;left:0;top:48px;bottom:0;width:220px;background:#1e293b;border-right:1px solid #334155;overflow-y:auto;z-index:90;padding:8px 0}
+.sidebar h3{padding:8px 16px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px}
+.sidebar .domain-btn{display:block;width:100%;text-align:left;padding:8px 16px;background:none;border:none;color:#cbd5e1;font-size:13px;cursor:pointer;transition:all .15s}
+.sidebar .domain-btn:hover{background:#334155}
+.sidebar .domain-btn.active{background:#2563eb;color:#fff;font-weight:600}
+.sidebar .domain-btn .count{float:right;background:#334155;color:#94a3b8;padding:1px 6px;border-radius:8px;font-size:11px}
+.sidebar .domain-btn.active .count{background:rgba(255,255,255,.2);color:#fff}
+.canvas-area{position:fixed;left:220px;top:48px;right:0;bottom:0;overflow:auto;background:#0f172a}
+svg{width:100%;height:100%}
+.entity{cursor:move}
+.entity rect{rx:6;ry:6;stroke-width:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+.entity .header-rect{rx:6;ry:6}
+.entity text{font-family:'Segoe UI',Arial,sans-serif;fill:#e2e8f0}
+.entity .title{font-weight:700;font-size:13px;fill:#fff}
+.entity .subtitle{font-size:10px;fill:rgba(255,255,255,.7)}
+.entity .col-name{font-size:11px;fill:#cbd5e1}
+.entity .col-type{font-size:10px;fill:#64748b}
+.entity .pk-badge{fill:#fbbf24;font-size:9px;font-weight:700}
+.rel-line{stroke:#475569;stroke-width:1.5;fill:none;marker-end:url(#arrowhead)}
+.rel-label{font-size:10px;fill:#64748b;font-family:'Segoe UI',Arial,sans-serif}
+.zoom-controls{position:fixed;bottom:20px;right:20px;display:flex;gap:8px;z-index:100}
+.zoom-controls button{width:36px;height:36px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.zoom-controls button:hover{background:#334155}
+.legend{position:fixed;bottom:20px;left:240px;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px 16px;z-index:100;display:flex;flex-wrap:wrap;gap:10px 16px;font-size:11px;color:#94a3b8;max-width:calc(100% - 300px)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend .dot{width:12px;height:12px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>HARNESS MES - ERD (Entity Relationship Diagram)</h1>
+  <div class="info">총 125개 테이블 / 15개 도메인 / 2026-03-18</div>
+</div>
+
+<div class="sidebar" id="sidebar"></div>
+
+<div class="canvas-area" id="canvasArea">
+  <svg id="erdSvg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#475569"/>
+      </marker>
+    </defs>
+    <g id="erdGroup"></g>
+  </svg>
+</div>
+
+<div class="zoom-controls">
+  <button onclick="zoomIn()">+</button>
+  <button onclick="zoomOut()">−</button>
+  <button onclick="resetView()">⟳</button>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:#2563eb"></span>기준정보</span>
+  <span><span class="dot" style="background:#059669"></span>구매/발주</span>
+  <span><span class="dot" style="background:#16a34a"></span>자재관리</span>
+  <span><span class="dot" style="background:#ea580c"></span>IQC/품질검사</span>
+  <span><span class="dot" style="background:#dc2626"></span>품질관리</span>
+  <span><span class="dot" style="background:#e11d48"></span>SPC</span>
+  <span><span class="dot" style="background:#d97706"></span>생산관리</span>
+  <span><span class="dot" style="background:#ca8a04"></span>제품재고</span>
+  <span><span class="dot" style="background:#0891b2"></span>출하관리</span>
+  <span><span class="dot" style="background:#7c3aed"></span>설비관리</span>
+  <span><span class="dot" style="background:#0d9488"></span>창고/로케이션</span>
+  <span><span class="dot" style="background:#8b5cf6"></span>소모품관리</span>
+  <span><span class="dot" style="background:#0284c7"></span>외주관리</span>
+  <span><span class="dot" style="background:#06b6d4"></span>보세관리</span>
+  <span><span class="dot" style="background:#64748b"></span>시스템</span>
+</div>
+
+<script>
+const COLORS = {
+  '기준정보':'#2563eb','구매/발주':'#059669','자재관리':'#16a34a','IQC/품질검사':'#ea580c','품질관리':'#dc2626',
+  'SPC':'#e11d48','생산관리':'#d97706','제품재고':'#ca8a04','출하관리':'#0891b2','설비관리':'#7c3aed',
+  '창고/로케이션':'#0d9488','소모품관리':'#8b5cf6','외주관리':'#0284c7','보세관리':'#06b6d4','시스템':'#64748b'
+};
+
+const domains = [
+  { id:'master', name:'기준정보', color:'#2563eb', tables:[
+    {n:'ITEM_MASTERS',k:'품목마스터',pk:['ITEM_CODE'],cols:['ITEM_NAME','ITEM_TYPE','UNIT']},
+    {n:'BOM_MASTERS',k:'BOM',pk:['PARENT_CODE','CHILD_CODE','SEQ'],cols:['QTY','LOSS_RATE']},
+    {n:'ROUTING_GROUPS',k:'라우팅그룹',pk:['ROUTING_GROUP_ID'],cols:['ITEM_CODE','GROUP_NAME']},
+    {n:'ROUTING_PROCESSES',k:'라우팅공정',pk:['ROUTING_GROUP_ID','SEQ'],cols:['PROCESS_CODE','EQUIP_TYPE']},
+    {n:'PROCESS_MASTERS',k:'공정마스터',pk:['PROCESS_CODE'],cols:['PROCESS_NAME','PROCESS_TYPE']},
+    {n:'PROCESS_QUALITY_CONDITIONS',k:'품질조건',pk:['PROCESS_CODE','SEQ'],cols:['CONDITION_TYPE','TARGET_VALUE']},
+    {n:'PROCESS_MAPS',k:'공정맵',pk:['MAP_ID'],cols:['PROCESS_CODE','MAP_NAME']},
+    {n:'PROD_LINE_MASTERS',k:'생산라인',pk:['LINE_CODE'],cols:['LINE_NAME','LINE_TYPE']},
+    {n:'PARTNER_MASTERS',k:'거래처',pk:['PARTNER_ID'],cols:['PARTNER_NAME','PARTNER_TYPE']},
+    {n:'VENDOR_MASTERS',k:'공급업체',pk:['VENDOR_ID'],cols:['VENDOR_NAME','VENDOR_TYPE']},
+    {n:'WORKER_MASTERS',k:'작업자',pk:['WORKER_CODE'],cols:['WORKER_NAME','WORKER_TYPE']},
+    {n:'WORK_INSTRUCTIONS',k:'작업지도서',pk:['INSTRUCTION_ID'],cols:['ITEM_CODE','TITLE']},
+    {n:'LABEL_TEMPLATES',k:'라벨템플릿',pk:['TEMPLATE_ID'],cols:['TEMPLATE_NAME','FORMAT']},
+    {n:'MODEL_SUFFIXES',k:'모델접미사',pk:['SUFFIX_ID'],cols:['SUFFIX_CODE','SUFFIX_NAME']},
+    {n:'VENDOR_BARCODE_MAPPINGS',k:'바코드매핑',pk:['MAPPING_ID'],cols:['ITEM_CODE','BARCODE_PATTERN']},
+  ], rels:[
+    {from:'BOM_MASTERS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'ROUTING_GROUPS',to:'ITEM_MASTERS',label:'1:1'},
+    {from:'ROUTING_PROCESSES',to:'ROUTING_GROUPS',label:'N:1'},
+    {from:'ROUTING_PROCESSES',to:'PROCESS_MASTERS',label:'N:1'},
+    {from:'PROCESS_QUALITY_CONDITIONS',to:'PROCESS_MASTERS',label:'N:1'},
+    {from:'PROCESS_MAPS',to:'PROCESS_MASTERS',label:'N:1'},
+    {from:'WORK_INSTRUCTIONS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'VENDOR_BARCODE_MAPPINGS',to:'ITEM_MASTERS',label:'N:1'},
+  ]},
+  { id:'purchasing', name:'구매/발주', color:'#059669', tables:[
+    {n:'PURCHASE_ORDERS',k:'발주',pk:['PO_NO'],cols:['PARTNER_ID','ORDER_DATE','STATUS']},
+    {n:'PURCHASE_ORDER_ITEMS',k:'발주품목',pk:['PO_ID','SEQ'],cols:['ITEM_CODE','ORDER_QTY','RECEIVED_QTY']},
+  ], rels:[
+    {from:'PURCHASE_ORDER_ITEMS',to:'PURCHASE_ORDERS',label:'N:1'},
+    {from:'PURCHASE_ORDERS',to:'PARTNER_MASTERS',label:'N:1'},
+    {from:'PURCHASE_ORDER_ITEMS',to:'ITEM_MASTERS',label:'N:1'},
+  ]},
+  { id:'material', name:'자재관리', color:'#16a34a', tables:[
+    {n:'MAT_ARRIVALS',k:'입하',pk:['ARRIVAL_NO','SEQ'],cols:['ITEM_CODE','QTY','IQC_STATUS']},
+    {n:'MAT_LOTS',k:'자재LOT',pk:['MAT_UID'],cols:['ITEM_CODE','INIT_QTY','STATUS']},
+    {n:'MAT_RECEIVINGS',k:'입고',pk:['RECEIVE_NO','SEQ'],cols:['MAT_UID','QTY','WAREHOUSE_CODE']},
+    {n:'MAT_STOCKS',k:'자재현재고',pk:['WAREHOUSE_CODE','ITEM_CODE','MAT_UID'],cols:['QTY','RESERVED_QTY']},
+    {n:'STOCK_TRANSACTIONS',k:'수불원장',pk:['TRANS_NO'],cols:['TRANS_TYPE','QTY','FROM_WH','TO_WH']},
+    {n:'MAT_ISSUES',k:'자재출고',pk:['ISSUE_NO','SEQ'],cols:['MAT_UID','QTY','ISSUE_TYPE']},
+    {n:'MAT_ISSUE_REQUESTS',k:'출고요청',pk:['REQUEST_NO'],cols:['JOB_ORDER_NO','STATUS']},
+    {n:'MAT_ISSUE_REQUEST_ITEMS',k:'출고요청품목',pk:['REQUEST_NO','SEQ'],cols:['ITEM_CODE','REQ_QTY']},
+    {n:'LABEL_PRINT_LOGS',k:'라벨인쇄이력',pk:['LOG_ID'],cols:['LABEL_TYPE','PRINT_DATE']},
+    {n:'INV_ADJ_LOGS',k:'재고조정이력',pk:['ADJ_NO'],cols:['ADJ_TYPE','ADJ_QTY']},
+  ], rels:[
+    {from:'MAT_ARRIVALS',to:'PURCHASE_ORDERS',label:'N:1'},
+    {from:'MAT_ARRIVALS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'MAT_LOTS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'MAT_RECEIVINGS',to:'MAT_LOTS',label:'N:1'},
+    {from:'MAT_STOCKS',to:'WAREHOUSES',label:'N:1'},
+    {from:'MAT_STOCKS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'STOCK_TRANSACTIONS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'STOCK_TRANSACTIONS',to:'WAREHOUSES',label:'N:1'},
+    {from:'MAT_ISSUES',to:'MAT_LOTS',label:'N:1'},
+    {from:'MAT_ISSUES',to:'JOB_ORDERS',label:'N:1'},
+    {from:'MAT_ISSUE_REQUESTS',to:'JOB_ORDERS',label:'N:1'},
+    {from:'MAT_ISSUE_REQUEST_ITEMS',to:'MAT_ISSUE_REQUESTS',label:'N:1'},
+    {from:'MAT_ISSUE_REQUEST_ITEMS',to:'ITEM_MASTERS',label:'N:1'},
+  ]},
+  { id:'iqc', name:'IQC/품질검사', color:'#ea580c', tables:[
+    {n:'IQC_ITEM_POOL',k:'IQC항목풀',pk:['ITEM_ID'],cols:['ITEM_NAME','INSPECT_TYPE']},
+    {n:'IQC_ITEM_MASTERS',k:'IQC항목마스터',pk:['ITEM_CODE','SEQ'],cols:['SPEC_MIN','SPEC_MAX']},
+    {n:'IQC_GROUPS',k:'IQC그룹',pk:['GROUP_ID'],cols:['GROUP_NAME']},
+    {n:'IQC_GROUP_ITEMS',k:'IQC그룹항목',pk:['GROUP_ID','ITEM_ID'],cols:['SORT_ORDER']},
+    {n:'IQC_PART_LINKS',k:'IQC품목연결',pk:['PART_CODE','GROUP_ID'],cols:['SAMPLING_CNT']},
+    {n:'IQC_LOGS',k:'IQC검사이력',pk:['LOG_ID'],cols:['ITEM_CODE','RESULT','INSPECTOR']},
+    {n:'INSPECT_RESULTS',k:'공정검사결과',pk:['RESULT_ID'],cols:['JOB_ORDER_NO','JUDGE']},
+    {n:'SAMPLE_INSPECT_RESULTS',k:'샘플검사결과',pk:['RESULT_ID'],cols:['JOB_ORDER_NO','SAMPLE_SIZE']},
+    {n:'OQC_REQUESTS',k:'OQC요청',pk:['OQC_NO'],cols:['STATUS','INSPECTOR']},
+    {n:'OQC_REQUEST_BOXES',k:'OQC박스',pk:['OQC_NO','BOX_NO'],cols:['RESULT']},
+  ], rels:[
+    {from:'IQC_ITEM_MASTERS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'IQC_GROUP_ITEMS',to:'IQC_GROUPS',label:'N:1'},
+    {from:'IQC_GROUP_ITEMS',to:'IQC_ITEM_POOL',label:'N:1'},
+    {from:'IQC_PART_LINKS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'IQC_PART_LINKS',to:'IQC_GROUPS',label:'N:1'},
+    {from:'IQC_LOGS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'IQC_LOGS',to:'MAT_LOTS',label:'N:1'},
+    {from:'INSPECT_RESULTS',to:'JOB_ORDERS',label:'N:1'},
+    {from:'SAMPLE_INSPECT_RESULTS',to:'JOB_ORDERS',label:'N:1'},
+    {from:'OQC_REQUEST_BOXES',to:'OQC_REQUESTS',label:'N:1'},
+  ]},
+  { id:'quality', name:'품질관리', color:'#dc2626', tables:[
+    {n:'DEFECT_LOGS',k:'불량이력',pk:['DEFECT_NO'],cols:['ITEM_CODE','DEFECT_TYPE','STATUS']},
+    {n:'REWORK_ORDERS',k:'재작업지시',pk:['REWORK_NO'],cols:['STATUS','REWORK_TYPE']},
+    {n:'REWORK_PROCESSES',k:'재작업공정',pk:['REWORK_NO','SEQ'],cols:['PROCESS_CODE','RESULT']},
+    {n:'REWORK_RESULTS',k:'재작업결과',pk:['RESULT_ID'],cols:['OK_QTY','NG_QTY']},
+    {n:'REWORK_INSPECTS',k:'재작업검사',pk:['INSPECT_ID'],cols:['JUDGE','INSPECTOR']},
+    {n:'CHANGE_ORDERS',k:'변경관리',pk:['CHANGE_NO'],cols:['CHANGE_TYPE','STATUS']},
+    {n:'CUSTOMER_COMPLAINTS',k:'고객불만',pk:['COMPLAINT_NO'],cols:['TITLE','STATUS']},
+    {n:'CAPA_REQUESTS',k:'CAPA요청',pk:['CAPA_NO'],cols:['TITLE','STATUS']},
+    {n:'CAPA_ACTIONS',k:'CAPA조치',pk:['CAPA_NO','SEQ'],cols:['ACTION_TYPE','DUE_DATE']},
+    {n:'FAI_REQUESTS',k:'FAI요청',pk:['FAI_NO'],cols:['ITEM_CODE','STATUS']},
+    {n:'FAI_ITEMS',k:'FAI항목',pk:['FAI_NO','SEQ'],cols:['MEASURE_VALUE','JUDGE']},
+    {n:'PPAP_SUBMISSIONS',k:'PPAP제출',pk:['PPAP_NO'],cols:['ITEM_CODE','STATUS']},
+    {n:'AUDIT_PLANS',k:'감사계획',pk:['AUDIT_NO'],cols:['AUDIT_TYPE','STATUS']},
+    {n:'AUDIT_FINDINGS',k:'감사발견',pk:['AUDIT_NO','SEQ'],cols:['FINDING_TYPE','SEVERITY']},
+    {n:'TRACE_LOGS',k:'추적이력',pk:['TRACE_ID'],cols:['TRACE_TYPE','REF_NO']},
+  ], rels:[
+    {from:'DEFECT_LOGS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'REWORK_ORDERS',to:'DEFECT_LOGS',label:'N:1'},
+    {from:'REWORK_PROCESSES',to:'REWORK_ORDERS',label:'N:1'},
+    {from:'REWORK_RESULTS',to:'REWORK_ORDERS',label:'N:1'},
+    {from:'REWORK_INSPECTS',to:'REWORK_ORDERS',label:'N:1'},
+    {from:'CAPA_ACTIONS',to:'CAPA_REQUESTS',label:'N:1'},
+    {from:'FAI_REQUESTS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'FAI_ITEMS',to:'FAI_REQUESTS',label:'N:1'},
+    {from:'PPAP_SUBMISSIONS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'AUDIT_FINDINGS',to:'AUDIT_PLANS',label:'N:1'},
+  ]},
+  { id:'spc', name:'SPC', color:'#e11d48', tables:[
+    {n:'SPC_CHARTS',k:'SPC차트',pk:['CHART_ID'],cols:['ITEM_CODE','PROCESS_CODE','CHART_TYPE']},
+    {n:'SPC_DATA',k:'SPC데이터',pk:['DATA_ID'],cols:['CHART_ID','VALUE','MEASURE_DATE']},
+    {n:'CONTROL_PLANS',k:'관리계획',pk:['PLAN_ID'],cols:['ITEM_CODE','PLAN_NAME']},
+    {n:'CONTROL_PLAN_ITEMS',k:'관리계획항목',pk:['PLAN_ID','SEQ'],cols:['CONTROL_METHOD','FREQ']},
+  ], rels:[
+    {from:'SPC_CHARTS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'SPC_CHARTS',to:'PROCESS_MASTERS',label:'N:1'},
+    {from:'SPC_DATA',to:'SPC_CHARTS',label:'N:1'},
+    {from:'CONTROL_PLANS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'CONTROL_PLAN_ITEMS',to:'CONTROL_PLANS',label:'N:1'},
+  ]},
+  { id:'production', name:'생산관리', color:'#d97706', tables:[
+    {n:'PROD_PLANS',k:'생산계획',pk:['PLAN_ID'],cols:['ITEM_CODE','PLAN_QTY','STATUS']},
+    {n:'JOB_ORDERS',k:'작업지시',pk:['JOB_ORDER_NO'],cols:['ITEM_CODE','ORDER_QTY','STATUS']},
+    {n:'PROD_RESULTS',k:'생산실적',pk:['RESULT_ID'],cols:['JOB_ORDER_NO','OK_QTY','NG_QTY']},
+    {n:'FG_LABELS',k:'완제품라벨',pk:['SERIAL_NO'],cols:['JOB_ORDER_NO','ITEM_CODE']},
+    {n:'REPAIR_ORDERS',k:'수리지시',pk:['REPAIR_NO'],cols:['STATUS','REPAIR_TYPE']},
+    {n:'REPAIR_LOGS',k:'수리이력',pk:['LOG_ID'],cols:['REPAIR_NO','ACTION_TYPE']},
+    {n:'REPAIR_USED_PARTS',k:'수리사용부품',pk:['REPAIR_NO','SEQ'],cols:['ITEM_CODE','QTY']},
+  ], rels:[
+    {from:'JOB_ORDERS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'JOB_ORDERS',to:'PROD_PLANS',label:'N:1'},
+    {from:'PROD_RESULTS',to:'JOB_ORDERS',label:'N:1'},
+    {from:'PROD_RESULTS',to:'PROCESS_MASTERS',label:'N:1'},
+    {from:'FG_LABELS',to:'JOB_ORDERS',label:'N:1'},
+    {from:'REPAIR_LOGS',to:'REPAIR_ORDERS',label:'N:1'},
+    {from:'REPAIR_USED_PARTS',to:'REPAIR_ORDERS',label:'N:1'},
+  ]},
+  { id:'product-inv', name:'제품재고', color:'#ca8a04', tables:[
+    {n:'PRODUCT_STOCKS',k:'제품현재고',pk:['WAREHOUSE_CODE','ITEM_CODE','SERIAL_NO'],cols:['QTY','STATUS']},
+    {n:'PRODUCT_TRANSACTIONS',k:'제품수불',pk:['TRANS_NO'],cols:['TRANS_TYPE','QTY']},
+    {n:'PHYSICAL_INV_SESSIONS',k:'재고실사세션',pk:['SESSION_ID'],cols:['WAREHOUSE_CODE','STATUS']},
+    {n:'PHYSICAL_INV_COUNT_DETAILS',k:'재고실사상세',pk:['SESSION_ID','SEQ'],cols:['ITEM_CODE','COUNT_QTY']},
+  ], rels:[
+    {from:'PRODUCT_STOCKS',to:'WAREHOUSES',label:'N:1'},
+    {from:'PRODUCT_STOCKS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'PRODUCT_TRANSACTIONS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'PHYSICAL_INV_SESSIONS',to:'WAREHOUSES',label:'N:1'},
+    {from:'PHYSICAL_INV_COUNT_DETAILS',to:'PHYSICAL_INV_SESSIONS',label:'N:1'},
+  ]},
+  { id:'shipping', name:'출하관리', color:'#0891b2', tables:[
+    {n:'CUSTOMER_ORDERS',k:'고객PO',pk:['ORDER_NO'],cols:['PARTNER_ID','ORDER_DATE','STATUS']},
+    {n:'CUSTOMER_ORDER_ITEMS',k:'고객PO품목',pk:['ORDER_NO','SEQ'],cols:['ITEM_CODE','ORDER_QTY']},
+    {n:'SHIPMENT_ORDERS',k:'출하오더',pk:['SHIP_ORDER_NO'],cols:['ORDER_NO','SHIP_DATE','STATUS']},
+    {n:'SHIPMENT_ORDER_ITEMS',k:'출하오더품목',pk:['SHIP_ORDER_NO','SEQ'],cols:['ITEM_CODE','QTY']},
+    {n:'BOX_MASTERS',k:'박스',pk:['BOX_NO'],cols:['ITEM_CODE','QTY','STATUS']},
+    {n:'PALLET_MASTERS',k:'팔렛',pk:['PALLET_NO'],cols:['STATUS']},
+    {n:'SHIPMENT_LOGS',k:'출하이력',pk:['LOG_ID'],cols:['SHIP_ORDER_NO','ACTION']},
+    {n:'SHIPMENT_RETURNS',k:'반품',pk:['RETURN_NO'],cols:['REASON','STATUS']},
+    {n:'SHIPMENT_RETURN_ITEMS',k:'반품품목',pk:['RETURN_NO','SEQ'],cols:['ITEM_CODE','QTY']},
+  ], rels:[
+    {from:'CUSTOMER_ORDERS',to:'PARTNER_MASTERS',label:'N:1'},
+    {from:'CUSTOMER_ORDER_ITEMS',to:'CUSTOMER_ORDERS',label:'N:1'},
+    {from:'CUSTOMER_ORDER_ITEMS',to:'ITEM_MASTERS',label:'N:1'},
+    {from:'SHIPMENT_ORDERS',to:'CUSTOMER_ORDERS',label:'N:1'},
+    {from:'SHIPMENT_ORDER_ITEMS',to:'SHIPMENT_ORDERS',label:'N:1'},
+    {from:'SHIPMENT_LOGS',to:'SHIPMENT_ORDERS',label:'N:1'},
+    {from:'SHIPMENT_RETURN_ITEMS',to:'SHIPMENT_RETURNS',label:'N:1'},
+  ]},
+  { id:'equipment', name:'설비관리', color:'#7c3aed', tables:[
+    {n:'EQUIP_MASTERS',k:'설비마스터',pk:['EQUIP_CODE'],cols:['EQUIP_NAME','EQUIP_TYPE','STATUS']},
+    {n:'EQUIP_BOM_RELS',k:'설비BOM관계',pk:['REL_ID'],cols:['EQUIP_CODE','BOM_TYPE']},
+    {n:'EQUIP_BOM_ITEMS',k:'설비BOM품목',pk:['REL_ID','SEQ'],cols:['ITEM_CODE','QTY']},
+    {n:'EQUIP_INSPECT_ITEM_MASTERS',k:'점검항목마스터',pk:['ITEM_ID'],cols:['ITEM_NAME','CHECK_TYPE']},
+    {n:'EQUIP_INSPECT_LOGS',k:'점검이력',pk:['LOG_ID'],cols:['EQUIP_CODE','CHECK_TYPE','RESULT']},
+    {n:'EQUIP_PROTOCOLS',k:'통전검사프로토콜',pk:['PROTOCOL_ID'],cols:['EQUIP_CODE','PROTOCOL_NAME']},
+    {n:'MOLD_MASTERS',k:'금형마스터',pk:['MOLD_CODE'],cols:['MOLD_NAME','HIT_COUNT','MAX_HIT']},
+    {n:'MOLD_USAGE_LOGS',k:'금형사용이력',pk:['LOG_ID'],cols:['MOLD_CODE','USAGE_DATE']},
+    {n:'PM_PLANS',k:'예방보전계획',pk:['PM_PLAN_ID'],cols:['EQUIP_CODE','PM_TYPE','CYCLE']},
+    {n:'PM_PLAN_ITEMS',k:'PM계획항목',pk:['PM_PLAN_ID','SEQ'],cols:['CHECK_ITEM','STD_VALUE']},
+    {n:'PM_WORK_ORDERS',k:'PM작업지시',pk:['WO_ID'],cols:['PM_PLAN_ID','STATUS']},
+    {n:'PM_WO_RESULTS',k:'PM작업결과',pk:['WO_ID','SEQ'],cols:['RESULT','WORKER_CODE']},
+    {n:'GAUGE_MASTERS',k:'계측기마스터',pk:['GAUGE_CODE'],cols:['GAUGE_TYPE','STATUS','NEXT_CAL_DATE']},
+    {n:'CALIBRATION_LOGS',k:'교정이력',pk:['LOG_ID'],cols:['GAUGE_CODE','CAL_DATE','RESULT']},
+  ], rels:[
+    {from:'EQUIP_BOM_RELS',to:'EQUIP_MASTERS',label:'N:1'},
+    {from:'EQUIP_BOM_ITEMS',to:'EQUIP_BOM_RELS',label:'N:1'},
+    {from:'EQUIP_INSPECT_LOGS',to:'EQUIP_MASTERS',label:'N:1'},
+    {from:'EQUIP_PROTOCOLS',to:'EQUIP_MASTERS',label:'N:1'},
+    {from:'MOLD_USAGE_LOGS',to:'MOLD_MASTERS',label:'N:1'},
+    {from:'PM_PLANS',to:'EQUIP_MASTERS',label:'N:1'},
+    {from:'PM_PLAN_ITEMS',to:'PM_PLANS',label:'N:1'},
+    {from:'PM_WORK_ORDERS',to:'PM_PLANS',label:'N:1'},
+    {from:'PM_WO_RESULTS',to:'PM_WORK_ORDERS',label:'N:1'},
+    {from:'CALIBRATION_LOGS',to:'GAUGE_MASTERS',label:'N:1'},
+  ]},
+  { id:'warehouse', name:'창고/로케이션', color:'#0d9488', tables:[
+    {n:'WAREHOUSES',k:'창고',pk:['WAREHOUSE_CODE'],cols:['WAREHOUSE_NAME','WH_TYPE']},
+    {n:'WAREHOUSE_LOCATIONS',k:'로케이션',pk:['WAREHOUSE_CODE','LOCATION_CODE'],cols:['LOCATION_NAME']},
+    {n:'WAREHOUSE_TRANSFER_RULES',k:'이동규칙',pk:['RULE_ID'],cols:['FROM_WH','TO_WH','RULE_TYPE']},
+  ], rels:[
+    {from:'WAREHOUSE_LOCATIONS',to:'WAREHOUSES',label:'N:1'},
+    {from:'WAREHOUSE_TRANSFER_RULES',to:'WAREHOUSES',label:'N:1'},
+  ]},
+  { id:'consumables', name:'소모품관리', color:'#8b5cf6', tables:[
+    {n:'CONSUMABLE_MASTERS',k:'소모품마스터',pk:['CON_CODE'],cols:['CON_NAME','CON_TYPE']},
+    {n:'CONSUMABLE_STOCKS',k:'소모품재고',pk:['CON_CODE','WAREHOUSE_CODE'],cols:['QTY','SAFETY_QTY']},
+    {n:'CONSUMABLE_LOGS',k:'소모품이력',pk:['LOG_ID'],cols:['CON_CODE','LOG_TYPE','QTY']},
+    {n:'CONSUMABLE_MOUNT_LOGS',k:'소모품장착이력',pk:['LOG_ID'],cols:['CON_CODE','EQUIP_CODE']},
+  ], rels:[
+    {from:'CONSUMABLE_STOCKS',to:'CONSUMABLE_MASTERS',label:'N:1'},
+    {from:'CONSUMABLE_LOGS',to:'CONSUMABLE_MASTERS',label:'N:1'},
+    {from:'CONSUMABLE_MOUNT_LOGS',to:'CONSUMABLE_MASTERS',label:'N:1'},
+    {from:'CONSUMABLE_MOUNT_LOGS',to:'EQUIP_MASTERS',label:'N:1'},
+  ]},
+  { id:'outsourcing', name:'외주관리', color:'#0284c7', tables:[
+    {n:'SUBCON_ORDERS',k:'외주발주',pk:['ORDER_NO'],cols:['VENDOR_ID','ORDER_DATE','STATUS']},
+    {n:'SUBCON_DELIVERIES',k:'외주납품',pk:['DELIVERY_NO'],cols:['ORDER_NO','DELIVERY_DATE']},
+    {n:'SUBCON_RECEIVES',k:'외주입고',pk:['RECEIVE_NO'],cols:['DELIVERY_NO','QTY']},
+  ], rels:[
+    {from:'SUBCON_ORDERS',to:'VENDOR_MASTERS',label:'N:1'},
+    {from:'SUBCON_DELIVERIES',to:'SUBCON_ORDERS',label:'N:1'},
+    {from:'SUBCON_RECEIVES',to:'SUBCON_DELIVERIES',label:'N:1'},
+  ]},
+  { id:'customs', name:'보세관리', color:'#06b6d4', tables:[
+    {n:'CUSTOMS_ENTRIES',k:'보세반입',pk:['ENTRY_NO'],cols:['ENTRY_DATE','STATUS']},
+    {n:'CUSTOMS_LOTS',k:'보세LOT',pk:['LOT_NO'],cols:['ENTRY_NO','ITEM_CODE','QTY']},
+    {n:'CUSTOMS_USAGE_REPORTS',k:'보세사용보고',pk:['REPORT_NO'],cols:['REPORT_DATE','STATUS']},
+  ], rels:[
+    {from:'CUSTOMS_LOTS',to:'CUSTOMS_ENTRIES',label:'N:1'},
+  ]},
+  { id:'system', name:'시스템', color:'#64748b', tables:[
+    {n:'USERS',k:'사용자',pk:['USER_ID'],cols:['USERNAME','EMAIL','ROLE_ID']},
+    {n:'USER_AUTHS',k:'인증이력',pk:['AUTH_ID'],cols:['USER_ID','AUTH_TYPE']},
+    {n:'ROLES',k:'역할',pk:['ROLE_ID'],cols:['ROLE_NAME']},
+    {n:'ROLE_MENU_PERMISSIONS',k:'역할메뉴권한',pk:['ROLE_ID','MENU_CODE'],cols:['ALLOWED']},
+    {n:'PDA_ROLE',k:'PDA역할',pk:['ROLE_ID'],cols:['ROLE_NAME']},
+    {n:'PDA_ROLE_MENU',k:'PDA역할메뉴',pk:['ROLE_ID','MENU_CODE'],cols:['ALLOWED']},
+    {n:'COM_CODES',k:'공통코드',pk:['GROUP_CODE','DETAIL_CODE'],cols:['CODE_NAME','SORT_ORDER']},
+    {n:'COMPANY_MASTERS',k:'회사마스터',pk:['COMPANY_CODE'],cols:['COMPANY_NAME']},
+    {n:'PLANTS',k:'공장',pk:['PLANT_CD'],cols:['PLANT_NAME','COMPANY_CODE']},
+    {n:'DEPARTMENT_MASTERS',k:'부서마스터',pk:['DEPT_CODE'],cols:['DEPT_NAME']},
+    {n:'SYS_CONFIGS',k:'시스템설정',pk:['CONFIG_KEY'],cols:['CONFIG_VALUE']},
+    {n:'COMM_CONFIGS',k:'통신설정',pk:['CONFIG_ID'],cols:['CONFIG_NAME','PROTOCOL']},
+    {n:'DOCUMENT_MASTERS',k:'문서마스터',pk:['DOC_ID'],cols:['DOC_NAME','DOC_TYPE']},
+    {n:'TRAINING_PLANS',k:'교육계획',pk:['PLAN_ID'],cols:['PLAN_NAME','TRAIN_DATE']},
+    {n:'TRAINING_RESULTS',k:'교육결과',pk:['PLAN_ID','USER_ID'],cols:['SCORE','STATUS']},
+    {n:'ACTIVITY_LOGS',k:'활동이력',pk:['LOG_ID'],cols:['USER_ID','ACTION','TARGET']},
+    {n:'NUM_RULE_MASTERS',k:'채번규칙',pk:['RULE_CODE'],cols:['RULE_NAME','PATTERN']},
+    {n:'SEQ_RULES',k:'시퀀스규칙',pk:['RULE_ID'],cols:['RULE_NAME','CURRENT_SEQ']},
+    {n:'INTER_LOGS',k:'연동이력',pk:['LOG_ID'],cols:['INTERFACE_ID','STATUS']},
+    {n:'SCHEDULER_JOBS',k:'스케줄러작업',pk:['JOB_ID'],cols:['JOB_NAME','CRON_EXPR','ENABLED']},
+    {n:'SCHEDULER_LOGS',k:'스케줄러로그',pk:['LOG_ID'],cols:['JOB_ID','STATUS','DURATION']},
+    {n:'SCHEDULER_NOTIFICATIONS',k:'스케줄러알림',pk:['NOTI_ID'],cols:['JOB_ID','NOTI_TYPE']},
+  ], rels:[
+    {from:'USER_AUTHS',to:'USERS',label:'N:1'},
+    {from:'USERS',to:'ROLES',label:'N:1'},
+    {from:'ROLE_MENU_PERMISSIONS',to:'ROLES',label:'N:1'},
+    {from:'PDA_ROLE_MENU',to:'PDA_ROLE',label:'N:1'},
+    {from:'PLANTS',to:'COMPANY_MASTERS',label:'N:1'},
+    {from:'TRAINING_RESULTS',to:'TRAINING_PLANS',label:'N:1'},
+    {from:'ACTIVITY_LOGS',to:'USERS',label:'N:1'},
+    {from:'SCHEDULER_LOGS',to:'SCHEDULER_JOBS',label:'N:1'},
+    {from:'SCHEDULER_NOTIFICATIONS',to:'SCHEDULER_JOBS',label:'N:1'},
+  ]},
+];
+
+// ── State ──
+let currentDomain = 0;
+let scale = 1;
+let panX = 0, panY = 0;
+let dragging = null, dragOff = {x:0,y:0};
+let panning = false, panStart = {x:0,y:0};
+let entityPositions = {};
+
+// ── Sidebar ──
+function renderSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '<h3>도메인</h3>';
+  domains.forEach((d,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'domain-btn' + (i===currentDomain?' active':'');
+    btn.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${d.color};margin-right:8px"></span>${d.name}<span class="count">${d.tables.length}</span>`;
+    btn.onclick = () => { currentDomain=i; renderSidebar(); renderERD(); };
+    sb.appendChild(btn);
+  });
+}
+
+// ── Layout ──
+function layoutEntities(tables) {
+  const cols = Math.ceil(Math.sqrt(tables.length));
+  const colW = 260, rowH = 200, padX = 60, padY = 40;
+  const positions = {};
+  tables.forEach((t,i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    positions[t.n] = { x: padX + col * colW, y: padY + row * rowH };
+  });
+  return positions;
+}
+
+// ── Render ──
+function renderERD() {
+  const dom = domains[currentDomain];
+  const g = document.getElementById('erdGroup');
+  g.innerHTML = '';
+
+  entityPositions = layoutEntities(dom.tables);
+  const W = 220, headerH = 36, rowH = 18, pad = 6;
+
+  // Relations first (behind entities)
+  dom.rels.forEach(rel => {
+    const fromPos = entityPositions[rel.from];
+    const toPos = entityPositions[rel.to];
+    if (!fromPos || !toPos) return;
+
+    const fromTable = dom.tables.find(t=>t.n===rel.from);
+    const toTable = dom.tables.find(t=>t.n===rel.to);
+    if (!fromTable || !toTable) return;
+
+    const fH = headerH + (fromTable.pk.length + fromTable.cols.length) * rowH + pad*2;
+    const tH = headerH + (toTable.pk.length + toTable.cols.length) * rowH + pad*2;
+
+    let x1 = fromPos.x + W/2, y1 = fromPos.y + fH/2;
+    let x2 = toPos.x + W/2, y2 = toPos.y + tH/2;
+
+    // Determine connection points
+    if (Math.abs(x1-x2) > Math.abs(y1-y2)) {
+      if (x1 > x2) { x1 = fromPos.x; x2 = toPos.x + W; }
+      else { x1 = fromPos.x + W; x2 = toPos.x; }
+      y1 = fromPos.y + fH/2;
+      y2 = toPos.y + tH/2;
+    } else {
+      if (y1 > y2) { y1 = fromPos.y; y2 = toPos.y + tH; }
+      else { y1 = fromPos.y + fH; y2 = toPos.y; }
+      x1 = fromPos.x + W/2;
+      x2 = toPos.x + W/2;
+    }
+
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    line.setAttribute('d', d);
+    line.setAttribute('class','rel-line');
+    g.appendChild(line);
+
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', mx);
+    label.setAttribute('y', my - 6);
+    label.setAttribute('text-anchor','middle');
+    label.setAttribute('class','rel-label');
+    label.textContent = rel.label;
+    g.appendChild(label);
+  });
+
+  // Entities
+  dom.tables.forEach(table => {
+    const pos = entityPositions[table.n];
+    const allCols = [...table.pk.map(p=>({name:p,isPk:true})), ...table.cols.map(c=>({name:c,isPk:false}))];
+    const h = headerH + allCols.length * rowH + pad*2;
+
+    const entity = document.createElementNS('http://www.w3.org/2000/svg','g');
+    entity.setAttribute('class','entity');
+    entity.setAttribute('data-table', table.n);
+    entity.setAttribute('transform', `translate(${pos.x},${pos.y})`);
+
+    // Body
+    const body = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    body.setAttribute('width', W);
+    body.setAttribute('height', h);
+    body.setAttribute('fill','#1e293b');
+    body.setAttribute('stroke', dom.color);
+    entity.appendChild(body);
+
+    // Header
+    const hdr = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    hdr.setAttribute('width', W);
+    hdr.setAttribute('height', headerH);
+    hdr.setAttribute('fill', dom.color);
+    hdr.setAttribute('class','header-rect');
+    entity.appendChild(hdr);
+
+    // Title
+    const title = document.createElementNS('http://www.w3.org/2000/svg','text');
+    title.setAttribute('x', W/2);
+    title.setAttribute('y', 15);
+    title.setAttribute('text-anchor','middle');
+    title.setAttribute('class','title');
+    title.textContent = table.k;
+    entity.appendChild(title);
+
+    const subtitle = document.createElementNS('http://www.w3.org/2000/svg','text');
+    subtitle.setAttribute('x', W/2);
+    subtitle.setAttribute('y', 29);
+    subtitle.setAttribute('text-anchor','middle');
+    subtitle.setAttribute('class','subtitle');
+    subtitle.textContent = table.n;
+    entity.appendChild(subtitle);
+
+    // Columns
+    allCols.forEach((col,ci) => {
+      const y = headerH + pad + ci * rowH + 12;
+
+      if (col.isPk) {
+        const badge = document.createElementNS('http://www.w3.org/2000/svg','text');
+        badge.setAttribute('x', 8);
+        badge.setAttribute('y', y);
+        badge.setAttribute('class','pk-badge');
+        badge.textContent = 'PK';
+        entity.appendChild(badge);
+      }
+
+      const name = document.createElementNS('http://www.w3.org/2000/svg','text');
+      name.setAttribute('x', col.isPk ? 28 : 12);
+      name.setAttribute('y', y);
+      name.setAttribute('class','col-name');
+      name.textContent = col.name;
+      entity.appendChild(name);
+    });
+
+    // Drag events
+    entity.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      e.stopPropagation();
+      dragging = table.n;
+      const p = pos;
+      dragOff = { x: e.clientX/scale - p.x + panX, y: e.clientY/scale - p.y + panY };
+    });
+
+    g.appendChild(entity);
+  });
+
+  updateTransform();
+}
+
+function updateTransform() {
+  const g = document.getElementById('erdGroup');
+  g.setAttribute('transform', `translate(${panX},${panY}) scale(${scale})`);
+}
+
+// ── Interaction ──
+const area = document.getElementById('canvasArea');
+area.addEventListener('mousemove', (e) => {
+  if (dragging) {
+    entityPositions[dragging] = {
+      x: e.clientX/scale - dragOff.x + panX*(1/scale-1),
+      y: e.clientY/scale - dragOff.y + panY*(1/scale-1)
+    };
+    renderERD();
+  } else if (panning) {
+    panX += e.clientX - panStart.x;
+    panY += e.clientY - panStart.y;
+    panStart = {x: e.clientX, y: e.clientY};
+    updateTransform();
+  }
+});
+area.addEventListener('mouseup', () => { dragging = null; panning = false; });
+area.addEventListener('mousedown', (e) => {
+  if (!dragging) { panning = true; panStart = {x: e.clientX, y: e.clientY}; }
+});
+area.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.max(0.3, Math.min(3, scale * delta));
+  updateTransform();
+});
+
+function zoomIn() { scale = Math.min(3, scale * 1.2); updateTransform(); }
+function zoomOut() { scale = Math.max(0.3, scale * 0.8); updateTransform(); }
+function resetView() { scale = 1; panX = 0; panY = 0; updateTransform(); }
+
+// ── Init ──
+renderSidebar();
+renderERD();
+</script>
+</body>
+</html>
