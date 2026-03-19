@@ -21,6 +21,7 @@ import { Type } from '@nestjs/common';
 export const ALLOWED_SERVICE_METHODS: string[] = [
   'InterfaceService.scheduledSyncBom',
   'InterfaceService.scheduledBulkRetry',
+  'DbBackupService.runBackup',
 ];
 
 /**

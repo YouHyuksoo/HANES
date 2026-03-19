@@ -11,7 +11,7 @@
  * 6. **exports**: SchedulerNotiService — 헤더 알림 벨에서 사용
  */
 
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SchedulerJob } from '../../entities/scheduler-job.entity';
@@ -37,6 +37,8 @@ import { ProcedureExecutor } from './executors/procedure.executor';
 import { SqlExecutor } from './executors/sql.executor';
 import { HttpExecutor } from './executors/http.executor';
 import { ScriptExecutor } from './executors/script.executor';
+import { DbBackupService } from './services/db-backup.service';
+import { SERVICE_CLASS_MAP } from './config/scheduler-security.config';
 
 @Module({
   imports: [
@@ -59,7 +61,13 @@ import { ScriptExecutor } from './executors/script.executor';
     SqlExecutor,
     HttpExecutor,
     ScriptExecutor,
+    DbBackupService,
   ],
   exports: [SchedulerNotiService],
 })
-export class SchedulerModule {}
+export class SchedulerModule implements OnModuleInit {
+  /** 모듈 초기화 시 SERVICE_CLASS_MAP에 서비스 클래스 등록 */
+  onModuleInit(): void {
+    SERVICE_CLASS_MAP.set('DbBackupService', DbBackupService);
+  }
+}
