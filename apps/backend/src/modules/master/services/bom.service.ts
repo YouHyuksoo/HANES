@@ -6,14 +6,24 @@
  * 1. **findParents**: BOM에 등재된 모품목(부모품목) 목록 조회
  * 2. **findHierarchy**: 부모품목 ID 기준 재귀 트리 구조 조회
  * 3. **CRUD**: 추가/수정/삭제 모두 DB에 반영
+ * 4. **exportToExcel**: BOM 데이터를 xlsx 파일로 내보내기
+ * 5. **uploadFromExcel**: xlsx 파일에서 BOM 데이터를 읽어 일괄 등록
  */
 
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import * as XLSX from 'xlsx';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
+
+/** Excel 업로드 결과 인터페이스 */
+export interface BomUploadResult {
+  inserted: number;
+  skipped: number;
+  errors: { row: number; message: string }[];
+}
 
 @Injectable()
 export class BomService {
@@ -60,14 +70,14 @@ export class BomService {
                 p.SPEC        AS "spec",
                 p.UNIT        AS "unit",
                 p.CUSTOMER    AS "customer",
-                p.REMARKS     AS "remark",
+                p.REMARK     AS "remark",
                 COUNT(*)      AS "bomCount",
                 LISTAGG(DISTINCT b.REVISION, ',') WITHIN GROUP (ORDER BY b.REVISION) AS "revisions"
            FROM BOM_MASTERS b
            JOIN ITEM_MASTERS p ON p.ITEM_CODE = b.PARENT_ITEM_CODE
           WHERE b.USE_YN = 'Y' ${dateFilter} ${searchFilter}
           GROUP BY p.ITEM_CODE, p.ITEM_NAME, p.PART_NO, p.ITEM_TYPE,
-                   p.SPEC, p.UNIT, p.CUSTOMER, p.REMARKS
+                   p.SPEC, p.UNIT, p.CUSTOMER, p.REMARK
           ORDER BY p.ITEM_CODE ASC`,
         params,
       );
@@ -358,5 +368,101 @@ export class BomService {
     const bom = await this.findById(id);
     await this.bomRepository.delete({ parentItemCode: bom.parentItemCode, childItemCode: bom.childItemCode, revision: bom.revision });
     return { id };
+  }
+
+  /** BOM 데이터를 Excel(xlsx) 파일로 내보내기 */
+  async exportToExcel(parentItemCode?: string, company?: string, plant?: string): Promise<Buffer> {
+    const where: any = { useYn: 'Y' };
+    if (parentItemCode) where.parentItemCode = parentItemCode;
+    if (company) where.company = company;
+    if (plant) where.plant = plant;
+
+    const bomList = await this.bomRepository.find({ where, order: { parentItemCode: 'ASC', seq: 'ASC' } });
+    const headers = ['상위품목코드', '하위품목코드', '소요량', '리비전', '순서', 'BOM그룹', '공정코드', '사이드', 'ECO번호', '유효시작일', '유효종료일', '비고'];
+    const fmtDate = (d: Date | null) => (d ? new Date(d).toISOString().slice(0, 10) : '');
+    const rows = bomList.length > 0
+      ? bomList.map((b) => [b.parentItemCode, b.childItemCode, b.qtyPer, b.revision, b.seq, b.bomGrp ?? '', b.processCode ?? '', b.side ?? '', b.ecoNo ?? '', fmtDate(b.validFrom), fmtDate(b.validTo), b.remark ?? ''])
+      : [Array(headers.length).fill('')];
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 14 }, { wch: 14 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'BOM');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
+  /** Excel(xlsx)에서 BOM 일괄 등록 (신규만 INSERT, 기존 PK 스킵) */
+  async uploadFromExcel(buffer: Buffer, company?: string, plant?: string, userId?: string): Promise<BomUploadResult> {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const jsonRows: Record<string, any>[] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    if (jsonRows.length === 0) return { inserted: 0, skipped: 0, errors: [{ row: 2, message: '데이터가 없습니다.' }] };
+
+    /* 1) 품목코드 일괄 존재 확인 */
+    const allItemCodes = new Set<string>();
+    for (const row of jsonRows) {
+      const p = String(row['상위품목코드'] ?? '').trim();
+      const c = String(row['하위품목코드'] ?? '').trim();
+      if (p) allItemCodes.add(p);
+      if (c) allItemCodes.add(c);
+    }
+    const parts = allItemCodes.size > 0
+      ? await this.partRepository.find({ where: { itemCode: In([...allItemCodes]) }, select: ['itemCode'] })
+      : [];
+    const validCodes = new Set(parts.map((p) => p.itemCode));
+
+    /* 2) 기존 BOM PK 일괄 조회 */
+    const pkList = jsonRows
+      .map((r) => ({ p: String(r['상위품목코드'] ?? '').trim(), c: String(r['하위품목코드'] ?? '').trim(), v: String(r['리비전'] ?? 'A').trim() || 'A' }))
+      .filter((pk) => pk.p && pk.c);
+    const existBoms = await this.bomRepository.find({
+      where: pkList.map((pk) => ({ parentItemCode: pk.p, childItemCode: pk.c, revision: pk.v })),
+      select: ['parentItemCode', 'childItemCode', 'revision'],
+    });
+    const existPkSet = new Set(existBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${b.revision}`));
+
+    /* 3) 행별 검증 및 INSERT */
+    const result: BomUploadResult = { inserted: 0, skipped: 0, errors: [] };
+    const done = new Set<string>();
+    const str = (v: any) => String(v ?? '').trim();
+
+    for (let i = 0; i < jsonRows.length; i++) {
+      const row = jsonRows[i];
+      const rowNum = i + 2;
+      const parentCode = str(row['상위품목코드']);
+      const childCode = str(row['하위품목코드']);
+      const qtyRaw = row['소요량'];
+      const revision = str(row['리비전']) || 'A';
+
+      if (!parentCode || !childCode) { result.errors.push({ row: rowNum, message: '상위품목코드, 하위품목코드는 필수입니다.' }); continue; }
+      if (qtyRaw === '' || qtyRaw === null || qtyRaw === undefined || isNaN(Number(qtyRaw))) { result.errors.push({ row: rowNum, message: '소요량이 누락되었거나 숫자가 아닙니다.' }); continue; }
+      if (parentCode === childCode) { result.errors.push({ row: rowNum, message: '상위 품목과 하위 품목이 같을 수 없습니다.' }); continue; }
+      if (!validCodes.has(parentCode)) { result.errors.push({ row: rowNum, message: `상위품목코드 [${parentCode}]가 품목마스터에 없습니다.` }); continue; }
+      if (!validCodes.has(childCode)) { result.errors.push({ row: rowNum, message: `하위품목코드 [${childCode}]가 품목마스터에 없습니다.` }); continue; }
+
+      const pkKey = `${parentCode}::${childCode}::${revision}`;
+      if (existPkSet.has(pkKey) || done.has(pkKey)) { result.skipped++; continue; }
+
+      try {
+        const bom = this.bomRepository.create({
+          parentItemCode: parentCode, childItemCode: childCode, revision,
+          qtyPer: Number(qtyRaw), seq: Number(row['순서'] ?? 0) || 0,
+          bomGrp: str(row['BOM그룹']) || null, processCode: str(row['공정코드']) || null,
+          side: str(row['사이드']) || null, ecoNo: str(row['ECO번호']) || null,
+          validFrom: row['유효시작일'] ? new Date(String(row['유효시작일'])) : null,
+          validTo: row['유효종료일'] ? new Date(String(row['유효종료일'])) : null,
+          remark: str(row['비고']) || null, useYn: 'Y',
+          company: company ?? null, plant: plant ?? null,
+          createdBy: userId ?? null, updatedBy: userId ?? null,
+        });
+        await this.bomRepository.save(bom);
+        done.add(pkKey);
+        result.inserted++;
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        result.errors.push({ row: rowNum, message: `저장 실패: ${msg}` });
+      }
+    }
+    console.log(`[BomService.uploadFromExcel] 완료 — 등록: ${result.inserted}, 스킵: ${result.skipped}, 오류: ${result.errors.length}`);
+    return result;
   }
 }

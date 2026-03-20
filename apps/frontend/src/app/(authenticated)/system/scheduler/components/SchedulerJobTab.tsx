@@ -33,7 +33,7 @@ interface SchedulerJob {
   jobGroup: string;
   execType: string;
   cronExpr: string;
-  isActive: boolean;
+  isActive: string;
   lastRunAt: string | null;
   nextRunAt: string | null;
   lastStatus: string | null;
@@ -203,13 +203,13 @@ export default function SchedulerJobTab() {
         <button
           onClick={(e) => { e.stopPropagation(); if (isAdmin) handleToggle(row.original); }}
           className={`w-10 h-5 rounded-full relative transition-colors ${
-            row.original.isActive
+            row.original.isActive === "Y"
               ? "bg-green-500 dark:bg-green-600"
               : "bg-gray-300 dark:bg-gray-600"
           } ${isAdmin ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
         >
           <span className={`block w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform ${
-            row.original.isActive ? "translate-x-5" : "translate-x-0.5"
+            row.original.isActive === "Y" ? "translate-x-5" : "translate-x-0.5"
           }`} />
         </button>
       ),

@@ -12,10 +12,11 @@
  */
 import { useState, useCallback, useEffect, Fragment } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, ChevronRight, ChevronDown, Package, Boxes, CircleDot, Edit2, Trash2, GitBranch } from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, Package, Boxes, CircleDot, Edit2, Trash2, GitBranch, Download, Upload } from "lucide-react";
 import { Button, ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
 import BomFormModal from "./BomFormModal";
+import BomUploadModal from "./BomUploadModal";
 import { ParentPart, BomTreeItem, RoutingTarget } from "../types";
 
 const partTypeConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
@@ -40,6 +41,7 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBom, setEditingBom] = useState<BomTreeItem | null>(null);
   const [deletingBom, setDeletingBom] = useState<BomTreeItem | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const fetchBomTree = useCallback(async () => {
     if (!selectedParent) { setBomTree([]); return; }
@@ -86,6 +88,18 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
     onViewRouting?.({ itemCode: item.childItemCode || item.itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb });
   }, [onViewRouting]);
 
+  const handleExport = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (selectedParent) params.set("parentItemCode", selectedParent.itemCode);
+    const res = await api.get(`/master/boms/export?${params}`, { responseType: "blob" });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `BOM_${selectedParent?.itemCode || "ALL"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [selectedParent]);
+
   if (!selectedParent) {
     return <div className="flex items-center justify-center h-64 text-text-muted">{t("master.bom.selectParentPrompt")}</div>;
   }
@@ -104,9 +118,17 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
             </button>
           </div>
         </div>
-        <Button size="sm" onClick={() => { setEditingBom(null); setIsModalOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1" />{t("master.bom.addBom")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={handleExport}>
+            <Download className="w-4 h-4 mr-1" />내보내기
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setUploadModalOpen(true)}>
+            <Upload className="w-4 h-4 mr-1" />엑셀 업로드
+          </Button>
+          <Button size="sm" onClick={() => { setEditingBom(null); setIsModalOpen(true); }}>
+            <Plus className="w-4 h-4 mr-1" />{t("master.bom.addBom")}
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
@@ -154,6 +176,12 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
 
       <ConfirmModal isOpen={!!deletingBom} onClose={() => setDeletingBom(null)} onConfirm={handleDelete}
         title={t("common.delete")} message={t("master.bom.deleteConfirm")} variant="danger" />
+
+      <BomUploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onComplete={() => { fetchBomTree(); setUploadModalOpen(false); }}
+      />
     </>
   );
 }

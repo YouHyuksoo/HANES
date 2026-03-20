@@ -15,8 +15,8 @@
 MERGE INTO SCHEDULER_JOBS tgt
 USING (
   SELECT
-    'HANES'                                                          AS COMPANY,
-    'PLANT01'                                                        AS PLANT_CD,
+    '40'                                                             AS COMPANY,
+    'VNHNS'                                                          AS PLANT_CD,
     'DB_BACKUP_SCHEMA'                                               AS JOB_CODE,
     N'Oracle 스키마 백업'                                            AS JOB_NAME,
     'MAINTENANCE'                                                    AS JOB_GROUP,

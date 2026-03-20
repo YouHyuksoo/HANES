@@ -6,14 +6,20 @@
  * 1. **GET /parents**: BOM에 등재된 모품목(부모품목) 목록 + 자품목 수
  * 2. **GET /hierarchy/:parentItemCode**: 부모품목 기준 트리 구조 조회
  * 3. **CRUD**: 추가/수정/삭제 모두 DB에 반영
+ * 4. **GET /export**: BOM 데이터를 xlsx 파일로 다운로드
+ * 5. **POST /upload**: xlsx 파일에서 BOM 데이터를 일괄 업로드
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Res, Req, UseInterceptors, UploadedFile, BadRequestException, UseGuards } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { Response } from 'express';
+import { memoryStorage } from 'multer';
 import { BomService } from '../services/bom.service';
 import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('기준정보 - BOM')
 @Controller('master/boms')
@@ -30,6 +36,58 @@ export class BomController {
   ) {
     const data = await this.bomService.findParents(search, effectiveDate);
     return ResponseUtil.success(data);
+  }
+
+  @Get('export')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'BOM Excel 다운로드' })
+  @ApiQuery({ name: 'parentItemCode', required: false, description: '상위 품목코드 (없으면 전체)' })
+  async exportToExcel(
+    @Query('parentItemCode') parentItemCode: string | undefined,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.bomService.exportToExcel(parentItemCode, company, plant);
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const filename = parentItemCode
+      ? `BOM_${parentItemCode}_${dateStr}.xlsx`
+      : `BOM_ALL_${dateStr}.xlsx`;
+
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length.toString(),
+    });
+    res.end(buffer);
+  }
+
+  @Post('upload')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'BOM Excel 업로드' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req: any, file: Express.Multer.File, cb: (error: Error | null, accept: boolean) => void) => {
+        if (!file.originalname.match(/\.xlsx$/i)) {
+          return cb(new BadRequestException('.xlsx 파일만 업로드 가능합니다.'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadFromExcel(
+    @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    if (!file) throw new BadRequestException('파일이 첨부되지 않았습니다.');
+    const userId = req.user.id;
+    const result = await this.bomService.uploadFromExcel(file.buffer, company, plant, userId);
+    return ResponseUtil.success(result, `등록: ${result.inserted}건, 스킵: ${result.skipped}건, 오류: ${result.errors.length}건`);
   }
 
   @Get('hierarchy/:parentItemCode')
