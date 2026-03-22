@@ -56,6 +56,10 @@ import { IqcItemPoolController } from './controllers/iqc-item-pool.controller';
 import { IqcItemPoolService } from './services/iqc-item-pool.service';
 import { RoutingGroupController } from './controllers/routing-group.controller';
 import { RoutingGroupService } from './services/routing-group.service';
+import { ShiftPatternController } from './controllers/shift-pattern.controller';
+import { ShiftPatternService } from './services/shift-pattern.service';
+import { WorkCalendarController } from './controllers/work-calendar.controller';
+import { WorkCalendarService } from './services/work-calendar.service';
 
 // TypeORM Entities
 import { PartMaster } from '../../entities/part-master.entity';
@@ -85,6 +89,10 @@ import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
 import { ProcessQualityCondition } from '../../entities/process-quality-condition.entity';
 import { RoutingGroup } from '../../entities/routing-group.entity';
 import { RoutingProcess } from '../../entities/routing-process.entity';
+import { User } from '../../entities/user.entity';
+import { ShiftPattern } from '../../entities/shift-pattern.entity';
+import { WorkCalendar } from '../../entities/work-calendar.entity';
+import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
 
 @Module({
   imports: [
@@ -116,6 +124,10 @@ import { RoutingProcess } from '../../entities/routing-process.entity';
       ProcessQualityCondition,
       RoutingGroup,
       RoutingProcess,
+      User,
+      ShiftPattern,
+      WorkCalendar,
+      WorkCalendarDay,
     ]),
   ],
   controllers: [
@@ -142,6 +154,8 @@ import { RoutingProcess } from '../../entities/routing-process.entity';
     VendorBarcodeMappingController,
     IqcItemPoolController,
     RoutingGroupController,
+    ShiftPatternController,
+    WorkCalendarController,
   ],
   providers: [
     ComCodeService,
@@ -167,6 +181,8 @@ import { RoutingProcess } from '../../entities/routing-process.entity';
     VendorBarcodeMappingService,
     IqcItemPoolService,
     RoutingGroupService,
+    ShiftPatternService,
+    WorkCalendarService,
   ],
   exports: [
     ComCodeService,
@@ -192,6 +208,8 @@ import { RoutingProcess } from '../../entities/routing-process.entity';
     VendorBarcodeMappingService,
     IqcItemPoolService,
     RoutingGroupService,
+    ShiftPatternService,
+    WorkCalendarService,
   ],
 })
 export class MasterModule {}
