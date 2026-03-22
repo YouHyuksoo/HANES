@@ -146,7 +146,7 @@ export default function CalendarGrid({
               <span className="text-xs font-medium text-text dark:text-gray-200">{day}</span>
               {info && (
                 <div className="mt-auto">
-                  <ComCodeBadge groupCode="WORK_DAY_TYPE" value={info.dayType} size="xs" />
+                  <ComCodeBadge groupCode="WORK_DAY_TYPE" code={info.dayType} />
                 </div>
               )}
             </button>
