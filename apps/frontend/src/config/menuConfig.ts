@@ -56,6 +56,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MST_PROCESS", labelKey: "menu.master.process", path: "/master/process" },
       { code: "MST_PROD_LINE", labelKey: "menu.master.prodLine", path: "/master/prod-line" },
       { code: "MST_ROUTING", labelKey: "menu.master.routing", path: "/master/routing" },
+      { code: "MST_WORK_CALENDAR", labelKey: "menu.master.workCalendar", path: "/master/work-calendar" },
       { code: "MST_WORKER", labelKey: "menu.master.worker", path: "/master/worker" },
       { code: "MST_WORK_INST", labelKey: "menu.master.workInstruction", path: "/master/work-instruction" },
       { code: "MST_WAREHOUSE", labelKey: "menu.master.warehouse", path: "/master/warehouse" },
@@ -253,6 +254,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "CONS_ISSUING", labelKey: "menu.consumables.issuing", path: "/consumables/issuing" },
       { code: "CONS_STOCK", labelKey: "menu.consumables.stock", path: "/consumables/stock" },
       { code: "CONS_LIFE", labelKey: "menu.consumables.life", path: "/consumables/life" },
+      { code: "CONS_MOUNT", labelKey: "menu.consumables.mount", path: "/consumables/mount" },
     ],
   },
   {
