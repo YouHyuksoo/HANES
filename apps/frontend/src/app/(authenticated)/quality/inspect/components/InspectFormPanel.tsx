@@ -62,7 +62,7 @@ export default function InspectFormPanel({ fgLabel, onClose, onSave, animate = t
     try {
       // 1. 검사결과 등록
       await api.post("/quality/inspect-results", {
-        prodResultId: null,
+        prodResultNo: null,
         inspectType: "VISUAL",
         inspectScope: "FULL",
         passYn,

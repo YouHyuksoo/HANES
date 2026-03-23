@@ -79,7 +79,7 @@ describe('IqcGroupService', () => {
         inspectMethod: 'FULL',
         items: [{ itemId: 1, seq: 1 }],
       } as any;
-      const savedGroup = { id: 100, groupCode: 'IG01', groupName: 'Group1' } as any;
+      const savedGroup = { groupCode: 'IG01', groupName: 'Group1' } as any;
       const fullGroup = { ...savedGroup, items: [] } as any;
 
       mockGroupRepo.findOne
@@ -100,7 +100,7 @@ describe('IqcGroupService', () => {
     it('should create group without items when items array is empty', async () => {
       // Arrange
       const dto = { groupCode: 'IG01', groupName: 'Group1', inspectMethod: 'FULL' } as any;
-      const savedGroup = { id: 100, groupCode: 'IG01' } as any;
+      const savedGroup = { groupCode: 'IG01' } as any;
 
       mockGroupRepo.findOne
         .mockResolvedValueOnce(null)
@@ -118,7 +118,7 @@ describe('IqcGroupService', () => {
     it('should set sampleQty to null when inspectMethod is not SAMPLE', async () => {
       // Arrange
       const dto = { groupCode: 'IG01', groupName: 'Group1', inspectMethod: 'FULL' } as any;
-      const savedGroup = { id: 100, groupCode: 'IG01' } as any;
+      const savedGroup = { groupCode: 'IG01' } as any;
 
       mockGroupRepo.findOne
         .mockResolvedValueOnce(null)
@@ -149,7 +149,7 @@ describe('IqcGroupService', () => {
   describe('update', () => {
     it('should update group and replace items', async () => {
       // Arrange
-      const existing = { id: 100, groupCode: 'IG01', groupName: 'Old', items: [] } as any;
+      const existing = { groupCode: 'IG01', groupName: 'Old', items: [] } as any;
       mockGroupRepo.findOne.mockResolvedValue(existing);
       mockGroupRepo.save.mockResolvedValue(existing);
       mockGroupItemRepo.delete.mockResolvedValue({ affected: 1 } as any);
@@ -163,13 +163,13 @@ describe('IqcGroupService', () => {
       } as any);
 
       // Assert
-      expect(mockGroupItemRepo.delete).toHaveBeenCalledWith({ groupId: 100 });
+      expect(mockGroupItemRepo.delete).toHaveBeenCalledWith({ groupCode: 'IG01' });
       expect(mockGroupItemRepo.save).toHaveBeenCalled();
     });
 
     it('should set sampleQty to null when switching from SAMPLE to other', async () => {
       // Arrange
-      const existing = { id: 100, groupCode: 'IG01', inspectMethod: 'SAMPLE', sampleQty: 5, items: [] } as any;
+      const existing = { groupCode: 'IG01', inspectMethod: 'SAMPLE', sampleQty: 5, items: [] } as any;
       mockGroupRepo.findOne.mockResolvedValue(existing);
       mockGroupRepo.save.mockResolvedValue(existing);
 

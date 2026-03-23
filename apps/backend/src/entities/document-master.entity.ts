@@ -76,9 +76,9 @@ export class DocumentMaster {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

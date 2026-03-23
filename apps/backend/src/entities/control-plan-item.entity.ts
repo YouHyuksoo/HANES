@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. 관리계획서(ControlPlan)의 개별 관리 항목 (공정별 품질특성, 관리방법 등)
- * 2. 복합 PK: controlPlanId + seq (부모 FK + 순번)
+ * 2. 복합 PK: controlPlanId(planNo) + seq (부모 FK + 순번)
  * 3. specialCharClass: CC(Critical), SC(Significant), HI(High Impact) 등 특별특성 분류
  * 4. 각 항목에 규격, 평가방법, 시료수/주기, 관리방법, 이상 시 대응계획 기록
  */
@@ -20,8 +20,8 @@ import { ControlPlan } from './control-plan.entity';
 
 @Entity({ name: 'CONTROL_PLAN_ITEMS' })
 export class ControlPlanItem {
-  @PrimaryColumn({ name: 'CONTROL_PLAN_ID', type: 'int' })
-  controlPlanId: number;
+  @PrimaryColumn({ name: 'CONTROL_PLAN_ID', length: 30 })
+  controlPlanId: string;
 
   @ManyToOne(() => ControlPlan, { nullable: false })
   @JoinColumn({ name: 'CONTROL_PLAN_ID' })
@@ -66,8 +66,8 @@ export class ControlPlanItem {
   @Column({ name: 'REACTION_PLAN', length: 500, nullable: true })
   reactionPlan: string;
 
-  @Column({ name: 'REMARKS', length: 500, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
@@ -78,6 +78,6 @@ export class ControlPlanItem {
   @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 }

@@ -34,7 +34,7 @@ const INIT: CapaFormData = {
 };
 
 interface Props {
-  editData: { id: number; [key: string]: unknown } | null;
+  editData: { capaNo: string; [key: string]: unknown } | null;
   onClose: () => void;
   onSave: () => void;
 }
@@ -83,7 +83,7 @@ export default function CapaFormPanel({ editData, onClose, onSave }: Props) {
         priority: form.priority || undefined,
       };
       if (isEdit && editData) {
-        await api.put(`/quality/capas/${editData.id}`, payload);
+        await api.put(`/quality/capas/${editData.capaNo}`, payload);
       } else {
         await api.post("/quality/capas", payload);
       }

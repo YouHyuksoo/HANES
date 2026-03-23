@@ -68,10 +68,18 @@ export class ConsumableService {
     private readonly dataSource: DataSource,
   ) {}
 
+  /** 로컬 타임존 안전한 YYYY-MM-DD 문자열 */
+  private toLocalDateStr(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  }
+
   /** CONSUMABLE_LOGS 테이블 오늘 날짜 기준 다음 SEQ */
   private async getNextLogSeq(transDate: Date, qr?: QueryRunner): Promise<number> {
     const manager = qr?.manager ?? this.dataSource.manager;
-    const dateStr = transDate.toISOString().slice(0, 10);
+    const dateStr = this.toLocalDateStr(transDate);
     const result = await manager.query(
       `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
       [dateStr],
@@ -82,7 +90,7 @@ export class ConsumableService {
   /** CONSUMABLE_MOUNT_LOGS 테이블 오늘 날짜 기준 다음 SEQ */
   private async getNextMountSeq(mountDate: Date, qr?: QueryRunner): Promise<number> {
     const manager = qr?.manager ?? this.dataSource.manager;
-    const dateStr = mountDate.toISOString().slice(0, 10);
+    const dateStr = this.toLocalDateStr(mountDate);
     const result = await manager.query(
       `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_MOUNT_LOGS" WHERE "MOUNT_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
       [dateStr],
@@ -745,6 +753,35 @@ export class ConsumableService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * 수리 완료 → WAREHOUSE 복귀
+   */
+  async completeRepair(consumableCode: string, dto: SetRepairDto) {
+    const consumable = await this.consumableMasterRepository.findOne({
+      where: { consumableCode },
+    });
+
+    if (!consumable) {
+      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
+    }
+
+    if (consumable.operStatus !== 'REPAIR') {
+      throw new BadRequestException(
+        `수리 상태가 아닌 소모품은 복귀할 수 없습니다. 현재 상태: ${consumable.operStatus}`,
+      );
+    }
+
+    await this.consumableMasterRepository.update(consumableCode, {
+      operStatus: 'WAREHOUSE',
+    });
+
+    this.logger.log(
+      `금형 수리 완료 복귀: ${consumable.consumableCode} → WAREHOUSE`,
+    );
+
+    return this.findById(consumableCode);
   }
 
   /**

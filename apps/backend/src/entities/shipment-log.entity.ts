@@ -2,12 +2,10 @@
  * @file shipment-log.entity.ts
  * @description 출하이력(ShipmentLog) 엔티티 - 출하 실적 정보를 기록한다.
  *              자연키 PK: shipNo (출하번호).
- *              id는 자식 FK(pallet-master.shipmentId 등) 호환을 위해 generated @Column으로 유지.
  *
  * 초보자 가이드:
  * 1. shipNo가 PK (자연키)
- * 2. id는 자동 증가 시퀀스이지만 PK가 아님 (기존 FK 참조 호환용)
- * 3. 차량, 운전기사, 목적지, 수량 등 출하 정보 관리
+ * 2. 차량, 운전기사, 목적지, 수량 등 출하 정보 관리
  */
 import {
   Entity,
@@ -23,9 +21,6 @@ import {
 @Index(['shipDate'])
 @Index(['customer'])
 export class ShipmentLog {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'SHIP_NO', length: 50 })
   shipNo: string;
 
@@ -65,16 +60,16 @@ export class ShipmentLog {
   @Column({ name: 'ERP_SYNC_YN', length: 1, default: 'N' })
   erpSyncYn: string;
 
-  @Column({ name: 'COMPANY', length: 255, nullable: true })
+  @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 255, nullable: true })
+  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -93,7 +93,4 @@ export class ProductStock {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
-
-  @VersionColumn({ name: 'VERSION' })
-  version: number;
 }

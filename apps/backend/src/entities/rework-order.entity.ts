@@ -11,7 +11,6 @@ import {
   Entity, PrimaryColumn, Column, ManyToOne, JoinColumn,
   CreateDateColumn, UpdateDateColumn, Index,
 } from 'typeorm';
-import { DefectLog } from './defect-log.entity';
 import { PartMaster } from './part-master.entity';
 import { ProdLineMaster } from './prod-line-master.entity';
 import { EquipMaster } from './equip-master.entity';
@@ -19,18 +18,11 @@ import { EquipMaster } from './equip-master.entity';
 @Entity({ name: 'REWORK_ORDERS' })
 @Index(['company', 'plant', 'status'])
 export class ReworkOrder {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'REWORK_NO', length: 50 })
   reworkNo: string;
 
-  @Column({ name: 'DEFECT_LOG_ID', nullable: true })
-  defectLogId: number;
-
-  @ManyToOne(() => DefectLog, { nullable: true })
-  @JoinColumn({ name: 'DEFECT_LOG_ID' })
-  defectLog: DefectLog;
+  @Column({ name: 'DEFECT_LOG_ID', length: 50, nullable: true })
+  defectLogId: string | null;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
@@ -42,7 +34,7 @@ export class ReworkOrder {
   @Column({ name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string;
 
-  @Column({ name: 'PRD_UID', length: 80, nullable: true })
+  @Column({ name: 'PRD_UID', length: 50, nullable: true })
   prdUid: string;
 
   @Column({ name: 'REWORK_QTY', type: 'int', default: 0 })
@@ -54,7 +46,7 @@ export class ReworkOrder {
   @Column({ name: 'REWORK_METHOD', length: 500, nullable: true })
   reworkMethod: string;
 
-  @Column({ name: 'STATUS', length: 30, default: 'REGISTERED' })
+  @Column({ name: 'STATUS', length: 20, default: 'REGISTERED' })
   @Index()
   status: string;
 
@@ -111,8 +103,8 @@ export class ReworkOrder {
   @Column({ name: 'ISOLATION_FLAG', type: 'number', default: 1 })
   isolationFlag: number;
 
-  @Column({ name: 'REMARKS', length: 1000, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string;
@@ -129,9 +121,9 @@ export class ReworkOrder {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

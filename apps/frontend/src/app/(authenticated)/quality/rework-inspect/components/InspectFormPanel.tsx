@@ -37,7 +37,7 @@ const INIT = {
   passQty: 0,
   failQty: 0,
   defectDetail: "",
-  remarks: "",
+  remark: "",
 };
 
 export default function InspectFormPanel({ target, onClose, onSave, animate = true }: Props) {
@@ -63,7 +63,7 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
         passQty: Number(form.passQty),
         failQty: Number(form.failQty),
         defectDetail: form.defectDetail,
-        remarks: form.remarks,
+        remark: form.remark,
       });
       onSave();
       onClose();
@@ -143,8 +143,8 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
             value={form.defectDetail} onChange={e => setForm(p => ({ ...p, defectDetail: e.target.value }))} />
         </div>
 
-        <Input label={t("common.remark")} value={form.remarks}
-          onChange={e => setForm(p => ({ ...p, remarks: e.target.value }))} fullWidth />
+        <Input label={t("common.remark")} value={form.remark}
+          onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
       </div>
 
     </div>

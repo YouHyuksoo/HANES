@@ -149,9 +149,13 @@ export class BulkUpdateDaysDto {
 }
 
 export class GenerateCalendarDto {
-  @ApiPropertyOptional({ description: '주말 휴무 적용 여부', default: true })
+  @ApiPropertyOptional({ description: '토요일 근무 여부', default: false })
   @IsOptional() @Type(() => Boolean) @IsBoolean()
-  weekendOff?: boolean;
+  saturdayWork?: boolean;
+
+  @ApiPropertyOptional({ description: '일요일 근무 여부', default: false })
+  @IsOptional() @Type(() => Boolean) @IsBoolean()
+  sundayWork?: boolean;
 
   @ApiPropertyOptional({ description: '공휴일 적용 여부', default: true })
   @IsOptional() @Type(() => Boolean) @IsBoolean()

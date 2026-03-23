@@ -21,7 +21,7 @@ import api from "@/services/api";
 interface PartOption { id: string; itemCode: string; itemName: string; }
 interface PartnerOption { id: string; partnerCode: string; partnerName: string; }
 interface GroupOption {
-  id: string; groupCode: string; groupName: string;
+  groupCode: string; groupName: string;
   inspectMethod: string; sampleQty?: number | null;
   items?: { itemId: string; seq: number }[];
 }
@@ -29,7 +29,7 @@ interface GroupOption {
 interface LinkFormData {
   itemCode: string;
   partnerId: string;
-  groupId: string;
+  groupCode: string;
   remark: string;
 }
 
@@ -39,12 +39,12 @@ interface Props {
   onSave: (data: LinkFormData) => void;
   editing?: {
     itemCode: string; partnerId?: string | null;
-    groupId: string; remark?: string | null;
+    groupCode: string; remark?: string | null;
     part?: { itemCode: string; itemName: string };
   } | null;
 }
 
-const EMPTY_FORM: LinkFormData = { itemCode: "", partnerId: "", groupId: "", remark: "" };
+const EMPTY_FORM: LinkFormData = { itemCode: "", partnerId: "", groupCode: "", remark: "" };
 
 export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props) {
   const { t } = useTranslation();
@@ -96,7 +96,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
         setForm({
           itemCode: editing.itemCode,
           partnerId: editing.partnerId ?? "",
-          groupId: editing.groupId,
+          groupCode: editing.groupCode,
           remark: editing.remark ?? "",
         });
         if (editing.part) {
@@ -118,7 +118,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
   ], [partners, t]);
 
   const groupOptions = useMemo(() =>
-    groups.map(g => ({ value: g.id, label: `${g.groupCode} - ${g.groupName}` })),
+    groups.map(g => ({ value: g.groupCode, label: `${g.groupCode} - ${g.groupName}` })),
   [groups]);
 
   const methodLabels = useMemo<Record<string, string>>(() => ({
@@ -128,10 +128,10 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
   }), [t]);
 
   const selectedGroup = useMemo(() =>
-    groups.find(g => g.id === form.groupId), [groups, form.groupId]);
+    groups.find(g => g.groupCode === form.groupCode), [groups, form.groupCode]);
 
   const handleSubmit = () => {
-    if (!form.itemCode || !form.groupId) return;
+    if (!form.itemCode || !form.groupCode) return;
     onSave(form);
   };
 
@@ -189,7 +189,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
           fullWidth disabled={!!editing} />
 
         <Select label={t("master.iqcLink.selectGroup", "검사그룹")} options={groupOptions}
-          value={form.groupId} onChange={v => setForm(p => ({ ...p, groupId: v }))}
+          value={form.groupCode} onChange={v => setForm(p => ({ ...p, groupCode: v }))}
           placeholder={t("master.iqcLink.selectGroupPlaceholder", "검사그룹을 선택하세요")} fullWidth />
 
         {/* 선택된 그룹 정보 미리보기 */}
@@ -215,7 +215,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
 
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSubmit} disabled={!form.itemCode || !form.groupId}>
+        <Button onClick={handleSubmit} disabled={!form.itemCode || !form.groupCode}>
           {editing ? t("common.edit") : t("common.add")}
         </Button>
       </div>

@@ -3,7 +3,7 @@
  * @description IQC 품목-거래처-검사그룹 연결 DTO
  *
  * 초보자 가이드:
- * 1. **CreateIqcPartLinkDto**: 연결 생성 (품목ID, 거래처ID, 검사그룹ID)
+ * 1. **CreateIqcPartLinkDto**: 연결 생성 (품목코드, 거래처ID, 검사그룹코드)
  * 2. **IqcPartLinkQueryDto**: 목록 조회 필터 (검색, 거래처 필터)
  */
 
@@ -21,10 +21,9 @@ export class CreateIqcPartLinkDto {
   @IsString()
   partnerId?: string;
 
-  @ApiProperty({ description: '검사그룹 ID' })
-  @IsInt()
-  @Type(() => Number)
-  groupId: number;
+  @ApiProperty({ description: '검사그룹 코드' })
+  @IsString()
+  groupCode: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

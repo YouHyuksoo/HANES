@@ -55,7 +55,7 @@ export class InspectResultService {
     const {
       page = 1,
       limit = 20,
-      prodResultId,
+      prodResultNo,
       serialNo,
       inspectType,
       inspectScope,
@@ -68,7 +68,7 @@ export class InspectResultService {
     const where: any = {
       ...(company && { company }),
       ...(plant && { plant }),
-      ...(prodResultId && { prodResultId: +prodResultId }),
+      ...(prodResultNo && { prodResultNo }),
       ...(serialNo && { serialNo: ILike(`%${serialNo}%`) }),
       ...(inspectType && { inspectType }),
       ...(inspectScope && { inspectScope }),
@@ -126,9 +126,9 @@ export class InspectResultService {
   /**
    * 생산실적별 검사 이력 조회
    */
-  async findByProdResultId(prodResultId: string) {
+  async findByProdResultNo(prodResultNo: string) {
     const results = await this.inspectResultRepository.find({
-      where: { prodResultId: +prodResultId },
+      where: { prodResultNo },
       order: { inspectAt: 'ASC' },
     });
 
@@ -141,18 +141,18 @@ export class InspectResultService {
   async create(dto: CreateInspectResultDto, company?: string, plant?: string) {
     // 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { id: +dto.prodResultId },
+      where: { resultNo: dto.prodResultNo },
     });
 
     if (!prodResult) {
-      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultId}`);
+      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultNo}`);
     }
 
     const resultNo = await this.seqGenerator.getNo('INSPECT_RESULT');
 
     const inspectResult = this.inspectResultRepository.create({
       resultNo,
-      prodResultId: +dto.prodResultId,
+      prodResultNo: dto.prodResultNo,
       serialNo: dto.serialNo,
       inspectType: dto.inspectType,
       passYn: dto.passYn ?? 'Y',
@@ -185,42 +185,42 @@ export class InspectResultService {
       throw new NotFoundException(`바코드에 해당하는 제품 정보를 찾을 수 없습니다: ${dto.barcode}`);
     }
 
-    // 2. TraceLog의 eventData에서 prodResultId 추출 (JSON 파싱)
-    let prodResultId: number | null = null;
+    // 2. TraceLog의 eventData에서 prodResultNo 추출 (JSON 파싱)
+    let prodResultNo: string | null = null;
     if (traceLog.eventData) {
       try {
         const eventData = JSON.parse(traceLog.eventData);
-        const rawId = eventData.prodResultId || eventData.productionResultId || null;
-        prodResultId = rawId ? Number(rawId) : null;
+        const rawNo = eventData.prodResultNo || eventData.prodResultNo || eventData.productionResultId || null;
+        prodResultNo = rawNo ? String(rawNo) : null;
       } catch {
         // JSON 파싱 실패 시 무시
       }
     }
 
-    // 3. prodResultId가 없으면 TraceLog의 prdUid나 다른 정보로 추적
-    if (!prodResultId && traceLog.prdUid) {
+    // 3. prodResultNo가 없으면 TraceLog의 prdUid나 다른 정보로 추적
+    if (!prodResultNo && traceLog.prdUid) {
       // prdUid로 생산실적 검색
       const prodResult = await this.prodResultRepository.findOne({
         where: { prdUid: traceLog.prdUid },
         order: { createdAt: 'DESC' },
       });
       if (prodResult) {
-        prodResultId = prodResult.id;
+        prodResultNo = prodResult.resultNo;
       }
     }
 
-    if (!prodResultId) {
+    if (!prodResultNo) {
       throw new NotFoundException(`바코드에 해당하는 생산실적을 찾을 수 없습니다: ${dto.barcode}`);
     }
 
     // 4. 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { id: prodResultId },
+      where: { resultNo: prodResultNo },
       relations: ['jobOrder', 'jobOrder.part'],
     });
 
     if (!prodResult) {
-      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResultId}`);
+      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResultNo}`);
     }
 
     // 5. 검사 결과 등록
@@ -228,7 +228,7 @@ export class InspectResultService {
 
     const inspectResult = this.inspectResultRepository.create({
       resultNo,
-      prodResultId,
+      prodResultNo,
       serialNo: dto.barcode,
       inspectType: dto.inspectType ?? 'VISUAL',
       inspectScope: dto.inspectScope ?? 'FULL',
@@ -244,8 +244,8 @@ export class InspectResultService {
     const saved = await this.inspectResultRepository.save(inspectResult);
 
     return {
-      inspectResultId: saved.id,
-      prodResultId,
+      inspectResultId: saved.resultNo,
+      prodResultNo,
       barcode: dto.barcode,
       passYn: saved.passYn,
       inspectAt: saved.inspectAt,
@@ -273,14 +273,14 @@ export class InspectResultService {
     // TraceLog에서 생산실적 추적
     let prodResult: ProdResult | null = null;
 
-    // eventData에서 prodResultId 추출 시도
+    // eventData에서 prodResultNo 추출 시도
     if (traceLog.eventData) {
       try {
         const eventData = JSON.parse(traceLog.eventData);
-        const rawProdResultId = eventData.prodResultId || eventData.productionResultId;
-        if (rawProdResultId) {
+        const rawProdResultNo = eventData.prodResultNo || eventData.prodResultNo || eventData.productionResultId;
+        if (rawProdResultNo) {
           prodResult = await this.prodResultRepository.findOne({
-            where: { id: Number(rawProdResultId) },
+            where: { resultNo: String(rawProdResultNo) },
             relations: ['jobOrder', 'jobOrder.part'],
           });
         }
@@ -312,7 +312,7 @@ export class InspectResultService {
         itemCode: prodResult.jobOrder?.part?.itemCode,
         itemName: prodResult.jobOrder?.part?.itemName,
         orderNo: prodResult.jobOrder?.orderNo,
-        prodResultId: prodResult.id,
+        prodResultNo: prodResult.resultNo,
         productionDate: prodResult.createdAt,
       } : null,
       previousInspects: previousInspects.map(i => ({

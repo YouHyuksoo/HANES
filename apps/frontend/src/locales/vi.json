@@ -163,6 +163,7 @@
     "master.company": "Quản lý công ty",
     "master.label": "Quản lý nhãn",
     "master.vendorBarcode": "Ánh xạ mã vạch nhà cung cấp",
+    "master.processCapa": "Năng lực công đoạn",
     "matInventory": "Quản lý kho vật tư",
     "productInventory": "Quản lý kho sản phẩm",
     "inventory": "Quản lý kho",
@@ -214,6 +215,7 @@
     "purchasing.poStatus": "Tra cứu tình trạng PO",
     "production": "Quản lý sản xuất",
     "production.monthlyPlan": "Kế hoạch sản xuất hàng tháng",
+    "production.simulation": "Mô phỏng kế hoạch",
     "production.order": "Quản lý lệnh sản xuất",
     "production.result": "Tra cứu kết quả sản xuất",
     "production.progress": "Tra cứu tình trạng lệnh SX",
@@ -274,8 +276,9 @@
     "shipping.order": "Đăng ký lệnh xuất hàng",
     "shipping.history": "Lịch sử xuất hàng",
     "shipping.return": "Đăng ký hàng trả lại",
-    "shipping.customerPo": "Quản lý đơn hàng khách",
-    "shipping.customerPoStatus": "Tra cứu tình trạng đơn hàng KH",
+    "sales": "Quản lý kinh doanh",
+    "sales.customerPo": "Quản lý đơn hàng",
+    "sales.customerPoStatus": "Tra cứu tình trạng đơn hàng",
     "customs": "Quản lý bảo thuế",
     "customs.entry": "Quản lý khai báo nhập khẩu",
     "customs.stock": "Tra cứu tồn kho bảo thuế",
@@ -1126,6 +1129,8 @@
       "deleteCalendarMsg": "Xóa lịch này? Dữ liệu ngày cũng sẽ bị xóa.",
       "selectCalendar": "Chọn lịch từ bảng bên trái.",
       "generateYear": "Tạo năm",
+      "saturdayWork": "Làm thứ Bảy",
+      "sundayWork": "Làm Chủ nhật",
       "sourceCalendar": "Lịch nguồn",
       "year": "Năm",
       "process": "Công đoạn",
@@ -2582,7 +2587,8 @@
       "allStatus": "Tất cả trạng thái",
       "searchPlaceholder": "Tìm mã lệnh, tên sản phẩm...",
       "planDateFrom": "Ngày KH (Từ)",
-      "planDateTo": "Ngày KH (Đến)"
+      "planDateTo": "Ngày KH (Đến)",
+      "shiftFilter": "Ca làm việc"
     },
     "inputManual": {
       "title": "Nhập thực tích (Thủ công)",
@@ -5442,6 +5448,78 @@
       "itemCodeRequired": "Mã SP bắt buộc",
       "itemTypeInvalid": "Chỉ FG/WIP",
       "planQtyRequired": "SL phải ≥ 1"
+    },
+    "autoGenerate": {
+      "button": "Nhập đơn hàng",
+      "title": "Nhập đơn hàng khách hàng",
+      "month": "Tháng mục tiêu",
+      "dueDateStart": "Hạn giao từ",
+      "dueDateEnd": "Hạn giao đến",
+      "orderNo": "Mã đơn hàng",
+      "dueDate": "Hạn giao",
+      "preview": "Xem trước",
+      "execute": "Thực hiện",
+      "workDays": "Ngày làm việc",
+      "demandItems": "Sản phẩm đặt hàng",
+      "existingDrafts": "Bản nháp sẽ xóa",
+      "demandQty": "SL đặt hàng",
+      "monthlyCapa": "CAPA tháng",
+      "capaUtil": "Tỷ lệ sử dụng",
+      "overCapa": "Vượt",
+      "normal": "Bình thường",
+      "bottleneck": "Công đoạn nghẽn",
+      "confirmDelete": "Sẽ xóa {{count}} bản nháp và lập lại. Tiếp tục?",
+      "noDemand": "Không có đơn hàng chưa giao trong kỳ này.",
+      "emptyGuide": "Thiết lập điều kiện rồi nhấn [Xem trước]."
+    }
+  },
+  "simulation": {
+    "title": "Mô phỏng kế hoạch sản xuất",
+    "description": "Mô phỏng lịch sản xuất dựa trên hạn giao, CAPA và lịch làm việc.",
+    "run": "Chạy mô phỏng",
+    "month": "Tháng mục tiêu",
+    "strategy": {
+      "label": "Chiến lược",
+      "dueDate": "Ưu tiên hạn giao",
+      "minSetup": "Giảm thiểu đổi model"
+    },
+    "totalPlans": "Tổng kế hoạch",
+    "onTime": "Đúng hạn",
+    "delayed": "Trễ hạn",
+    "utilization": "Tỷ lệ vận hành",
+    "emptyGuide": "Chọn tháng mục tiêu và chạy mô phỏng.",
+    "planInfo": "Thông tin KH",
+    "schedule": "Lịch hàng ngày",
+    "dueDate": "Hạn giao",
+    "startDate": "Ngày bắt đầu",
+    "endDate": "Dự kiến hoàn thành",
+    "delayDays": "ngày",
+    "legend": {
+      "production": "Sản xuất",
+      "dueMarker": "Hạn giao",
+      "onTime": "Đúng hạn",
+      "delay": "Trễ hạn"
+    }
+  },
+  "processCapa": {
+    "title": "Quản lý năng lực công đoạn",
+    "description": "Quản lý năng lực sản xuất theo công đoạn và sản phẩm.",
+    "addCapa": "Thêm CAPA",
+    "processCode": "Công đoạn",
+    "itemCode": "Sản phẩm",
+    "stdTactTime": "Tact time chuẩn (giây)",
+    "stdUph": "UPH chuẩn",
+    "workerCnt": "Số công nhân",
+    "boardCnt": "Số board/jig",
+    "equipCnt": "Số thiết bị",
+    "setupTime": "Thời gian chuyển đổi (phút)",
+    "balanceEff": "Hiệu suất cân bằng (%)",
+    "dailyCapa": "CAPA ngày",
+    "stats": {
+      "total": "Tổng",
+      "equipBased": "Thiết bị",
+      "workerBased": "Nhân lực",
+      "inactive": "Ngưng"
     }
   }
 }

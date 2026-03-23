@@ -59,8 +59,11 @@ export class FgLabel {
   @Column({ name: 'CUSTOMER_BARCODE', length: 100, nullable: true })
   customerBarcode: string | null;
 
-  @Column({ name: 'INSPECT_RESULT_ID', type: 'int', nullable: true })
-  inspectResultId: number | null;
+  @Column({ name: 'INSPECT_RESULT_ID', length: 30, nullable: true })
+  inspectResultId: string | null;
+
+  @Column({ name: 'INSPECT_PASS_YN', length: 1, nullable: true })
+  inspectPassYn: string | null;
 
   @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;

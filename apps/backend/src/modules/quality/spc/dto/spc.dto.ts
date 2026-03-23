@@ -106,10 +106,9 @@ export class UpdateSpcChartDto extends PartialType(CreateSpcChartDto) {
  * SPC 측정 데이터 입력 DTO
  */
 export class CreateSpcDataDto {
-  @ApiProperty({ description: '관리도 ID' })
-  @Type(() => Number)
-  @IsInt()
-  chartId: number;
+  @ApiProperty({ description: '관리도 번호 (chartNo)' })
+  @IsString()
+  chartId: string;
 
   @ApiProperty({ description: '측정일시 (ISO 8601)' })
   @IsDateString()
@@ -134,7 +133,7 @@ export class CreateSpcDataDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  remarks?: string;
+  remark?: string;
 }
 
 /**

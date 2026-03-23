@@ -24,7 +24,10 @@ import { ProdResult } from '../../../entities/prod-result.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
+import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
+import { FgLabel } from '../../../entities/fg-label.entity';
 import {
   CreateJobOrderDto,
   UpdateJobOrderDto,
@@ -35,7 +38,7 @@ import {
 
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
 const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
-  orderNo: true, itemCode: true, lineCode: true, routingCode: true,
+  orderNo: true, planNo: true, itemCode: true, lineCode: true, routingCode: true,
   planQty: true, planDate: true, priority: true, status: true,
   erpSyncYn: true, goodQty: true, defectQty: true,
   startAt: true, endAt: true, custPoNo: true, remark: true,
@@ -59,7 +62,12 @@ export class JobOrderService {
     private readonly routingGroupRepository: Repository<RoutingGroup>,
     @InjectRepository(RoutingProcess)
     private readonly routingProcessRepository: Repository<RoutingProcess>,
+    @InjectRepository(FgLabel)
+    private readonly fgLabelRepo: Repository<FgLabel>,
+    @InjectRepository(ProdPlan)
+    private readonly prodPlanRepo: Repository<ProdPlan>,
     private readonly seqGenerator: SeqGeneratorService,
+    private readonly sysConfigService: SysConfigService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -322,6 +330,26 @@ export class JobOrderService {
     if (!jobOrder.startAt) updateData.startAt = new Date();
 
     await this.jobOrderRepository.update({ orderNo: id }, updateData);
+
+    // FG 바코드 사전 일괄 발행 (PRE_ISSUE 모드)
+    const fgTiming = await this.sysConfigService.getValue('FG_BARCODE_ISSUE_TIMING');
+    if (fgTiming === 'PRE_ISSUE') {
+      const fgJobOrder = await this.findById(id);
+      for (let i = 0; i < fgJobOrder.planQty; i++) {
+        const fgBarcode = await this.seqGenerator.nextFgBarcode();
+        await this.fgLabelRepo.save({
+          fgBarcode,
+          itemCode: fgJobOrder.itemCode,
+          orderNo: fgJobOrder.orderNo,
+          status: 'PENDING',
+          inspectPassYn: null,
+          company: fgJobOrder.company,
+          plant: fgJobOrder.plant,
+        });
+      }
+      this.logger.log(`PRE_ISSUE: ${fgJobOrder.orderNo} — ${fgJobOrder.planQty}건 바코드 발행`);
+    }
+
     return this.findOneWithSelect(id);
   }
 
@@ -428,6 +456,17 @@ export class JobOrderService {
     const updateData: Partial<JobOrder> = { status: 'CANCELED', endAt: new Date() };
     if (remark) updateData.remark = remark;
     await this.jobOrderRepository.update({ orderNo: id }, updateData);
+
+    // 생산계획 연결된 경우: orderQty 차감
+    if (jobOrder.planNo) {
+      await this.prodPlanRepo
+        .createQueryBuilder()
+        .update(ProdPlan)
+        .set({ orderQty: () => `GREATEST(ORDER_QTY - ${jobOrder.planQty}, 0)` })
+        .where('planNo = :planNo', { planNo: jobOrder.planNo })
+        .execute();
+    }
+
     return this.findOneWithSelect(id);
   }
 

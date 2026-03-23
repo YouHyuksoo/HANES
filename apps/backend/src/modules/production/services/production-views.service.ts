@@ -14,6 +14,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, ILike, In } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
+import { ProdResult } from '../../../entities/prod-result.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -41,7 +42,7 @@ export class ProductionViewsService {
    * 작업지시 진행현황 조회 (대시보드)
    */
   async getProgress(query: ProgressQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 20, status, planDateFrom, planDateTo, search } = query;
+    const { page = 1, limit = 20, status, planDateFrom, planDateTo, search, shift } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.jobOrderRepository
@@ -50,6 +51,16 @@ export class ProductionViewsService {
 
     if (company) queryBuilder.andWhere('jo.company = :company', { company });
     if (plant) queryBuilder.andWhere('jo.plant = :plant', { plant });
+
+    /* shift 필터: 해당 교대의 ProdResult가 존재하는 작업지시만 조회 */
+    if (shift) {
+      queryBuilder.innerJoin(
+        ProdResult,
+        'pr',
+        'pr.ORDER_NO = jo.ORDER_NO AND pr.SHIFT_CODE = :shift',
+        { shift },
+      );
+    }
 
     queryBuilder
       .orderBy('jo.priority', 'ASC')

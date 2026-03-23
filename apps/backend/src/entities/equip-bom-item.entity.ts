@@ -45,7 +45,7 @@ export class EquipBomItem {
   @Column({ name: 'UNIT', length: 20, default: 'EA' })
   unit: string;
 
-  @Column({ name: 'UNIT_PRICE', type: 'float', nullable: true })
+  @Column({ name: 'UNIT_PRICE', type: 'decimal', precision: 12, scale: 2, nullable: true })
   unitPrice: number | null;
 
   @Column({ name: 'REPLACEMENT_CYCLE', type: 'number', nullable: true })
@@ -54,7 +54,7 @@ export class EquipBomItem {
   @Column({ name: 'STOCK_QTY', type: 'float', default: 0 })
   stockQty: number;
 
-  @Column({ name: 'SAFETY_STOCK', type: 'float', default: 0 })
+  @Column({ name: 'SAFETY_STOCK', type: 'int', default: 0 })
   safetyStock: number;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })

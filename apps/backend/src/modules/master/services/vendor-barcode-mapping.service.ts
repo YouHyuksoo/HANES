@@ -81,7 +81,7 @@ export class VendorBarcodeMappingService {
   }
 
   /** 생성 */
-  async create(dto: CreateVendorBarcodeMappingDto) {
+  async create(dto: CreateVendorBarcodeMappingDto, company?: string, plant?: string) {
     const existing = await this.repo.findOne({
       where: { vendorBarcode: dto.vendorBarcode },
     });
@@ -95,6 +95,8 @@ export class VendorBarcodeMappingService {
       ...dto,
       matchType: dto.matchType ?? 'EXACT',
       useYn: dto.useYn ?? 'Y',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.repo.save(mapping);

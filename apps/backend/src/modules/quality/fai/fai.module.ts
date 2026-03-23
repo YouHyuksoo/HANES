@@ -18,12 +18,14 @@ import { FaiController } from './controllers/fai.controller';
 import { FaiService } from './services/fai.service';
 import { FaiRequest } from '../../../entities/fai-request.entity';
 import { FaiItem } from '../../../entities/fai-item.entity';
+import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       FaiRequest,
       FaiItem,
+      User,
     ]),
   ],
   controllers: [FaiController],

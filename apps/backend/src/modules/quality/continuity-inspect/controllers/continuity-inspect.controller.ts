@@ -17,6 +17,9 @@
  * - PUT    /quality/continuity-inspect/protocols/:id       — 프로토콜 수정
  * - DELETE /quality/continuity-inspect/protocols/:id       — 프로토콜 삭제
  * - GET    /quality/continuity-inspect/stats/:orderNo      — 통계
+ * - POST /quality/continuity-inspect/pre-issue            — FG 바코드 사전발행
+ * - GET  /quality/continuity-inspect/pending/:orderNo     — PENDING 라벨 목록
+ * - POST /quality/continuity-inspect/re-inspect/:fgBarcode — 재검사
  * - POST /quality/continuity-inspect/reprint/:fgBarcode  — 라벨 재인쇄
  * - POST /quality/continuity-inspect/void/:fgBarcode     — 라벨 취소
  */
@@ -32,6 +35,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -41,15 +45,19 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { ContinuityInspectService } from '../services/continuity-inspect.service';
 import {
   ContinuityInspectDto,
   AutoInspectDto,
   VoidLabelDto,
+  PreIssueDto,
+  ReInspectDto,
 } from '../dto/continuity-inspect.dto';
 
 @ApiTags('품질관리 - 통전검사')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/continuity-inspect')
 export class ContinuityInspectController {
   constructor(
@@ -217,6 +225,61 @@ export class ContinuityInspectController {
   async deleteProtocol(@Param('protocolId') protocolId: string) {
     await this.continuityInspectService.deleteProtocol(protocolId);
     return ResponseUtil.success(null, '프로토콜이 삭제되었습니다.');
+  }
+
+  // ===== FG 바코드 사전발행 =====
+
+  @Post('pre-issue')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'FG 바코드 사전발행',
+    description: 'PRE_ISSUE 모드: 작업지시 기준으로 PENDING 상태 바코드를 미리 채번',
+  })
+  @ApiResponse({ status: 201, description: '사전발행 성공' })
+  async preIssue(
+    @Body() dto: PreIssueDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.preIssue(dto, company, plant);
+    return ResponseUtil.success(data, `${data.issued}건 사전발행되었습니다.`);
+  }
+
+  // ===== PENDING 라벨 조회 =====
+
+  @Get('pending/:orderNo')
+  @ApiOperation({
+    summary: '작업지시별 PENDING FG 라벨 목록',
+    description: 'ON_PRODUCTION/PRE_ISSUE 모드에서 미검사 바코드 목록 조회',
+  })
+  @ApiParam({ name: 'orderNo', description: '작업지시 번호' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getPendingLabels(@Param('orderNo') orderNo: string) {
+    const data = await this.continuityInspectService.getPendingLabels(orderNo);
+    return ResponseUtil.success(data);
+  }
+
+  // ===== 재검사 =====
+
+  @Post('re-inspect/:fgBarcode')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'FG 바코드 재검사',
+    description: '불합격(inspectPassYn=N) 바코드에 대한 재검사 결과 등록',
+  })
+  @ApiParam({ name: 'fgBarcode', description: 'FG 바코드' })
+  @ApiResponse({ status: 200, description: '재검사 성공' })
+  async reInspect(
+    @Param('fgBarcode') fgBarcode: string,
+    @Body() dto: ReInspectDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.reInspect(fgBarcode, dto, company, plant);
+    const message = dto.passYn === 'Y'
+      ? `재검사 합격 — FG_BARCODE: ${fgBarcode}`
+      : '재검사 불합격 처리되었습니다.';
+    return ResponseUtil.success(data, message);
   }
 
   // ===== 통계 =====

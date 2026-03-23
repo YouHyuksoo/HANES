@@ -15,8 +15,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
   Index,
 } from 'typeorm';
+import { ConsumableStock } from './consumable-stock.entity';
+import { ConsumableLog } from './consumable-log.entity';
 
 @Entity({ name: 'CONSUMABLE_MASTERS' })
 @Index(['category'])
@@ -93,4 +96,10 @@ export class ConsumableMaster {
 
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
+
+  @OneToMany(() => ConsumableStock, (stock) => stock.master)
+  stocks: ConsumableStock[];
+
+  @OneToMany(() => ConsumableLog, (log) => log.master)
+  logs: ConsumableLog[];
 }

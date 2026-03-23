@@ -35,7 +35,7 @@ export class PurchaseOrder {
   @Column({ name: 'DUE_DATE', type: 'date', nullable: true })
   dueDate: Date | null;
 
-  @Column({ name: 'STATUS', length: 50, default: 'DRAFT' })
+  @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
   @Column({ name: 'TOTAL_AMOUNT', type: 'decimal', precision: 14, scale: 2, nullable: true })

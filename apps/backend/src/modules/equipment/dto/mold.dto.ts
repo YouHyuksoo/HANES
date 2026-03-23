@@ -85,11 +85,11 @@ export class CreateMoldDto {
   @IsDateString()
   purchaseDate?: string;
 
-  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
-  remarks?: string;
+  @MaxLength(500)
+  remark?: string;
 }
 
 /**
@@ -133,7 +133,7 @@ export class CreateMoldUsageDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  remarks?: string;
+  remark?: string;
 }
 
 /**

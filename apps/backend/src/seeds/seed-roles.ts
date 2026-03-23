@@ -24,89 +24,15 @@ dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
 // ---------------------------------------------------------------------------
-// 메뉴 코드 하드코딩 (프론트엔드 menuConfig.ts 기준 — 백엔드에서 직접 import 불가)
+// 메뉴 코드 설정 (외부 JSON 파일 기반)
 // ---------------------------------------------------------------------------
+import * as menuConfig from './menu-config.json';
 
 /** 최상위 메뉴 코드 (부모) */
-const TOP_MENU_CODES = [
-  'DASHBOARD',
-  'MONITORING',
-  'MASTER',
-  'INVENTORY',
-  'PRODUCT_INVENTORY',
-  'MATERIAL',
-  'PURCHASING',
-  'PRODUCTION',
-  'INSPECTION',
-  'QUALITY',
-  'EQUIPMENT',
-  'SHIPPING',
-  'CUSTOMS',
-  'CONSUMABLES',
-  'OUTSOURCING',
-  'INTERFACE',
-  'SYSTEM',
-] as const;
+const TOP_MENU_CODES: string[] = menuConfig.topMenuCodes;
 
 /** 하위 메뉴 코드 (부모 그룹별) */
-const CHILD_MENU_CODES: Record<string, string[]> = {
-  MONITORING: ['MON_EQUIP_STATUS'],
-  MASTER: [
-    'MST_PART', 'MST_BOM', 'MST_PARTNER', 'MST_PROCESS',
-    'MST_WORKER', 'MST_WORK_INST', 'MST_WAREHOUSE', 'MST_LABEL',
-    'MST_VENDOR_BARCODE', 'SYS_DOCUMENT',
-  ],
-  INVENTORY: [
-    'INV_MAT_STOCK', 'INV_TRANSACTION', 'INV_LOT',
-    'INV_MAT_PHYSICAL_INV', 'INV_MAT_PHYSICAL_INV_HISTORY',
-    'INV_ARRIVAL_STOCK',
-  ],
-  PRODUCT_INVENTORY: [
-    'INV_PRODUCT_STOCK', 'INV_PRODUCT_PHYSICAL_INV',
-    'INV_PRODUCT_PHYSICAL_INV_HISTORY',
-  ],
-  MATERIAL: [
-    'MAT_ARRIVAL', 'MAT_RECEIVE_LABEL', 'MAT_RECEIVE',
-    'MAT_REQUEST', 'MAT_ISSUE', 'MAT_LOT', 'MAT_LOT_SPLIT',
-    'MAT_LOT_MERGE', 'MAT_SHELF_LIFE', 'MAT_HOLD', 'MAT_SCRAP',
-    'MAT_ADJUSTMENT', 'MAT_MISC_RECEIPT', 'MAT_RECEIPT_CANCEL',
-  ],
-  PURCHASING: ['PUR_PO', 'PUR_PO_STATUS'],
-  PRODUCTION: [
-    'PROD_ORDER', 'PROD_RESULT', 'PROD_PROGRESS',
-    'PROD_INPUT_MANUAL', 'PROD_INPUT_MACHINE', 'PROD_INPUT_INSPECT',
-    'PROD_INPUT_EQUIP', 'PROD_SAMPLE_INSPECT', 'PROD_RESULT_SUMMARY',
-    'PROD_PACK_RESULT', 'PROD_WIP_STOCK',
-  ],
-  INSPECTION: ['INSP_RESULT', 'INSP_EQUIP'],
-  QUALITY: [
-    'QC_IQC', 'QC_IQC_HISTORY', 'QC_DEFECT', 'QC_INSPECT',
-    'QC_TRACE', 'QC_IQC_ITEM', 'QC_OQC', 'QC_OQC_HISTORY',
-    'QC_CHANGE', 'QC_CAPA', 'QC_COMPLAINT', 'QC_FAI', 'QC_PPAP', 'QC_SPC', 'QC_CONTROL_PLAN', 'QC_MSA',
-    'QC_AUDIT', 'SYS_TRAINING',
-  ],
-  EQUIPMENT: [
-    'EQUIP_MASTER', 'EQUIP_PM_PLAN', 'EQUIP_PM', 'EQUIP_PM_CALENDAR',
-    'EQUIP_INSPECT_CALENDAR', 'EQUIP_PERIODIC_CALENDAR',
-    'EQUIP_DAILY', 'EQUIP_PERIODIC', 'EQUIP_HISTORY',
-    'EQUIP_MOLD', 'EQ_MOLD_MGMT', 'EQUIP_INSPECT_ITEM', 'GAUGE_MASTER',
-  ],
-  SHIPPING: [
-    'SHIP_PACK', 'SHIP_PALLET', 'SHIP_CONFIRM', 'SHIP_ORDER',
-    'SHIP_HISTORY', 'SHIP_RETURN', 'SHIP_CUST_PO', 'SHIP_CUST_PO_STATUS',
-  ],
-  CUSTOMS: ['CUST_ENTRY', 'CUST_STOCK', 'CUST_USAGE'],
-  CONSUMABLES: [
-    'CONS_MASTER', 'CONS_RECEIVING', 'CONS_ISSUING',
-    'CONS_STOCK', 'CONS_LIFE',
-  ],
-  OUTSOURCING: ['OUT_VENDOR', 'OUT_ORDER', 'OUT_RECEIVE'],
-  INTERFACE: ['IF_DASHBOARD', 'IF_LOG', 'IF_MANUAL'],
-  SYSTEM: [
-    'SYS_COMPANY', 'SYS_DEPT', 'SYS_USER', 'SYS_ROLE',
-    'SYS_COMM', 'SYS_CONFIG', 'SYS_CODE',
-  ],
-};
+const CHILD_MENU_CODES: Record<string, string[]> = menuConfig.childMenuCodes;
 
 // ---------------------------------------------------------------------------
 // 역할 정의

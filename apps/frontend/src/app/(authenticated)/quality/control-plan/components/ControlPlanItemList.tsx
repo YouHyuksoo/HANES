@@ -5,7 +5,7 @@
  * @description 관리계획서 관리항목 인라인 편집 목록
  *
  * 초보자 가이드:
- * 1. planId를 받아 관리항목 목록을 조회/추가/수정
+ * 1. planNo를 받아 관리항목 목록을 조회/추가/수정
  * 2. 인라인 행 편집: 순번, 공정명, 특성번호, 제품특성, 공정특성, 특별특성 등
  * 3. APPROVED 상태에서는 편집 불가
  */
@@ -33,11 +33,11 @@ const INIT_FORM: FormFields = {
 };
 
 interface Props {
-  planId: number;
+  planNo: string;
   planStatus: string;
 }
 
-export default function ControlPlanItemList({ planId, planStatus }: Props) {
+export default function ControlPlanItemList({ planNo, planStatus }: Props) {
   const { t } = useTranslation();
   const [items, setItems] = useState<PlanItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
@@ -54,12 +54,12 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
 
   const fetchItems = useCallback(async () => {
     try {
-      const res = await api.get(`/quality/control-plans/${planId}`);
+      const res = await api.get(`/quality/control-plans/${planNo}`);
       setItems(res.data?.data?.items ?? []);
     } catch {
       setItems([]);
     }
-  }, [planId]);
+  }, [planNo]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -70,7 +70,7 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
   const handleAdd = async () => {
     if (!form.processName) return;
     try {
-      await api.post(`/quality/control-plans/${planId}/items`, {
+      await api.post(`/quality/control-plans/${planNo}/items`, {
         ...form, seq: items.length + 1,
       });
       setForm(INIT_FORM);
@@ -81,7 +81,7 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
 
   const handleUpdate = async (itemSeq: number) => {
     try {
-      await api.put(`/quality/control-plans/${planId}/items/${itemSeq}`, form);
+      await api.put(`/quality/control-plans/${planNo}/items/${itemSeq}`, form);
       setEditingSeq(null);
       setForm(INIT_FORM);
       fetchItems();
@@ -90,7 +90,7 @@ export default function ControlPlanItemList({ planId, planStatus }: Props) {
 
   const handleDelete = async (itemSeq: number) => {
     try {
-      await api.delete(`/quality/control-plans/${planId}/items/${itemSeq}`);
+      await api.delete(`/quality/control-plans/${planNo}/items/${itemSeq}`);
       fetchItems();
     } catch { /* api 인터셉터 */ }
   };

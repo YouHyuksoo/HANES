@@ -31,11 +31,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { FaiService } from '../services/fai.service';
 import {
@@ -47,6 +47,7 @@ import {
 } from '../dto/fai.dto';
 
 @ApiTags('품질관리 - 초물검사')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/fai')
 export class FaiController {
   constructor(private readonly faiService: FaiService) {}
@@ -77,10 +78,10 @@ export class FaiController {
 
   @Get(':id')
   @ApiOperation({ summary: 'FAI 단건 조회', description: '검사항목(items) 포함' })
-  @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
+  @ApiParam({ name: 'id', description: 'FAI 번호 (faiNo)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: 'FAI 요청 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.faiService.findById(id);
     return ResponseUtil.success(data);
   }
@@ -106,10 +107,10 @@ export class FaiController {
 
   @Put(':id')
   @ApiOperation({ summary: 'FAI 수정' })
-  @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
+  @ApiParam({ name: 'id', description: 'FAI 번호 (faiNo)' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateFaiDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -124,9 +125,9 @@ export class FaiController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'FAI 삭제' })
-  @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
+  @ApiParam({ name: 'id', description: 'FAI 번호 (faiNo)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.faiService.delete(id);
     return ResponseUtil.success(null, '초물검사가 삭제되었습니다.');
   }
@@ -135,10 +136,10 @@ export class FaiController {
 
   @Patch(':id/start')
   @ApiOperation({ summary: '검사 시작', description: 'REQUESTED → SAMPLING' })
-  @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
+  @ApiParam({ name: 'id', description: 'FAI 번호 (faiNo)' })
   @ApiResponse({ status: 200, description: '시작 성공' })
   async start(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.faiService.start(id, req.user?.id ?? 'system');
@@ -147,10 +148,10 @@ export class FaiController {
 
   @Patch(':id/complete')
   @ApiOperation({ summary: '검사 완료', description: '판정 결과 입력 (자동/수동)' })
-  @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
+  @ApiParam({ name: 'id', description: 'FAI 번호 (faiNo)' })
   @ApiResponse({ status: 200, description: '완료 성공' })
   async complete(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: CompleteFaiDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -164,10 +165,10 @@ export class FaiController {
 
   @Patch(':id/approve')
   @ApiOperation({ summary: 'FAI 승인' })
-  @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
+  @ApiParam({ name: 'id', description: 'FAI 번호 (faiNo)' })
   @ApiResponse({ status: 200, description: '승인 성공' })
   async approve(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.faiService.approve(id, req.user?.id ?? 'system');
@@ -179,10 +180,10 @@ export class FaiController {
   @Post(':id/items')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '검사항목 일괄 등록', description: '기존 항목 교체' })
-  @ApiParam({ name: 'id', description: 'FAI 요청 ID' })
+  @ApiParam({ name: 'id', description: 'FAI 번호 (faiNo)' })
   @ApiResponse({ status: 201, description: '등록 성공' })
   async addItems(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() items: FaiItemDto[],
     @Req() req: AuthenticatedRequest,
   ) {

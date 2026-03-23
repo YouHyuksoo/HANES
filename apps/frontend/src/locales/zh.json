@@ -163,6 +163,7 @@
     "master.company": "公司管理",
     "master.label": "标签管理",
     "master.vendorBarcode": "供应商条码映射",
+    "master.processCapa": "工序产能",
     "matInventory": "材料库存管理",
     "productInventory": "产品库存管理",
     "inventory": "库存管理",
@@ -214,6 +215,7 @@
     "purchasing.poStatus": "PO现况查询",
     "production": "生产管理",
     "production.monthlyPlan": "月度生产计划",
+    "production.simulation": "计划模拟",
     "production.order": "作业指示管理",
     "production.result": "生产实绩查询",
     "production.progress": "作业指示现况查询",
@@ -274,8 +276,9 @@
     "shipping.order": "出货指示登记",
     "shipping.history": "出货历史查询",
     "shipping.return": "出货退货登记",
-    "shipping.customerPo": "客户订单管理",
-    "shipping.customerPoStatus": "客户订单现况查询",
+    "sales": "营业管理",
+    "sales.customerPo": "订单管理",
+    "sales.customerPoStatus": "订单现况查询",
     "customs": "保税管理",
     "customs.entry": "进口申报管理",
     "customs.stock": "保税库存查询",
@@ -1126,6 +1129,8 @@
       "deleteCalendarMsg": "是否删除此日历？日期数据也将被删除。",
       "selectCalendar": "请从左侧选择日历。",
       "generateYear": "年度生成",
+      "saturdayWork": "周六上班",
+      "sundayWork": "周日上班",
       "sourceCalendar": "复制源日历",
       "year": "年度",
       "process": "工序",
@@ -2582,7 +2587,8 @@
       "allStatus": "全部状态",
       "searchPlaceholder": "搜索指示编号、品名...",
       "planDateFrom": "计划日(开始)",
-      "planDateTo": "计划日(结束)"
+      "planDateTo": "计划日(结束)",
+      "shiftFilter": "班次"
     },
     "inputManual": {
       "title": "实绩录入 (手工)",
@@ -5442,6 +5448,78 @@
       "itemCodeRequired": "品目代码必填",
       "itemTypeInvalid": "仅限FG/WIP",
       "planQtyRequired": "数量需≥1"
+    },
+    "autoGenerate": {
+      "button": "导入订单",
+      "title": "导入客户订单",
+      "month": "目标月",
+      "dueDateStart": "交期开始",
+      "dueDateEnd": "交期结束",
+      "orderNo": "订单号",
+      "dueDate": "交期",
+      "preview": "预览",
+      "execute": "编排执行",
+      "workDays": "工作天数",
+      "demandItems": "订单品目",
+      "existingDrafts": "待删除草稿",
+      "demandQty": "订单量",
+      "monthlyCapa": "月产能",
+      "capaUtil": "产能利用率",
+      "overCapa": "超额",
+      "normal": "正常",
+      "bottleneck": "瓶颈工序",
+      "confirmDelete": "将删除{{count}}条草稿并重新编排，是否继续？",
+      "noDemand": "该期间无未发货订单。",
+      "emptyGuide": "设置条件后点击[预览]。"
+    }
+  },
+  "simulation": {
+    "title": "生产计划模拟",
+    "description": "基于交期/产能/工作日历模拟生产排程。",
+    "run": "运行模拟",
+    "month": "目标月",
+    "strategy": {
+      "label": "排程策略",
+      "dueDate": "交期优先",
+      "minSetup": "最小换型"
+    },
+    "totalPlans": "总计划",
+    "onTime": "交期达成",
+    "delayed": "延迟",
+    "utilization": "稼动率",
+    "emptyGuide": "选择目标月并运行模拟。",
+    "planInfo": "计划信息",
+    "schedule": "日排程",
+    "dueDate": "交期",
+    "startDate": "开始日",
+    "endDate": "预计完成",
+    "delayDays": "天",
+    "legend": {
+      "production": "生产",
+      "dueMarker": "交期",
+      "onTime": "达成",
+      "delay": "延迟"
+    }
+  },
+  "processCapa": {
+    "title": "工序产能管理",
+    "description": "管理工序×产品的生产能力。",
+    "addCapa": "添加产能",
+    "processCode": "工序",
+    "itemCode": "产品",
+    "stdTactTime": "标准节拍时间(秒)",
+    "stdUph": "标准UPH",
+    "workerCnt": "作业人员数",
+    "boardCnt": "板/夹具数",
+    "equipCnt": "设备数",
+    "setupTime": "换型时间(分)",
+    "balanceEff": "平衡效率(%)",
+    "dailyCapa": "日产能",
+    "stats": {
+      "total": "全部",
+      "equipBased": "设备型",
+      "workerBased": "人力型",
+      "inactive": "停用"
     }
   }
 }

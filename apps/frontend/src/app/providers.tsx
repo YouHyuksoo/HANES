@@ -83,7 +83,7 @@ function AuthInitializer() {
     if (isAuthenticated) {
       fetchMe();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, fetchMe]);
 
   return null;
 }

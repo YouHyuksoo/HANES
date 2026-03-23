@@ -35,8 +35,8 @@ export class WarehouseLocationController {
   }
 
   @Post()
-  create(@Body() dto: CreateWarehouseLocationDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateWarehouseLocationDto, @Company() company: string, @Plant() plant: string) {
+    return this.service.create(dto, company, plant);
   }
 
   @Put(':id')

@@ -25,10 +25,10 @@ import { SchedulerJob } from './scheduler-job.entity';
 @Entity({ name: 'SCHEDULER_LOGS' })
 @Index('IDX_SCHED_LOGS_SEARCH', ['company', 'plantCd', 'startTime', 'status'])
 export class SchedulerLog {
-  @PrimaryColumn({ name: 'COMPANY', type: 'varchar2', length: 20 })
+  @PrimaryColumn({ name: 'COMPANY', type: 'varchar2', length: 50 })
   company: string;
 
-  @PrimaryColumn({ name: 'PLANT_CD', type: 'varchar2', length: 20 })
+  @PrimaryColumn({ name: 'PLANT_CD', type: 'varchar2', length: 50 })
   plantCd: string;
 
   /** PKG_SEQ_GENERATOR로 채번 */

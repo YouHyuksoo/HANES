@@ -184,9 +184,13 @@ export class ConsumableLabelService {
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${y}-${m}-${dd}`;
       const logSeqResult = await queryRunner.manager.query(
         `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "CONSUMABLE_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
-        [today.toISOString().slice(0, 10)],
+        [todayStr],
       );
       const logSeq = logSeqResult[0].nextSeq;
 

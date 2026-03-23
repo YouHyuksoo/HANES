@@ -30,9 +30,8 @@ interface PartItem {
 interface LinkRow {
   itemCode: string;
   partnerId: string;
-  groupId: number;
+  groupCode: string;
   group?: {
-    id: number;
     groupCode: string;
     groupName: string;
     inspectMethod: string;
@@ -111,7 +110,6 @@ export default function IqcItemPage() {
     return links
       .filter((l) => l.itemCode === selectedItemCode && l.group)
       .map((l) => ({
-        groupId: String(l.groupId),
         groupCode: l.group!.groupCode,
         groupName: l.group!.groupName,
         inspectMethod: l.group!.inspectMethod,
@@ -134,13 +132,13 @@ export default function IqcItemPage() {
       if (existing) {
         const pid = existing.partnerId === "*" ? "_default_" : existing.partnerId;
         await api.put(`/master/iqc-part-links/${encodeURIComponent(selectedItemCode)}/${pid}`, {
-          groupId: linkGroupId,
+          groupCode: linkGroupId,
         });
       } else {
         await api.post("/master/iqc-part-links", {
           itemCode: selectedItemCode,
           partnerId: "*",
-          groupId: linkGroupId,
+          groupCode: linkGroupId,
         });
       }
       setLinkModalOpen(false);
@@ -158,7 +156,7 @@ export default function IqcItemPage() {
     if (!selectedItemCode || !unlinkTarget) return;
     try {
       const link = links.find(
-        (l) => l.itemCode === selectedItemCode && String(l.groupId) === unlinkTarget.groupId
+        (l) => l.itemCode === selectedItemCode && l.groupCode === unlinkTarget.groupCode
       );
       if (link) {
         const pid = link.partnerId === "*" ? "_default_" : link.partnerId;
@@ -230,7 +228,7 @@ export default function IqcItemPage() {
                 allGroups={allGroups}
                 linkModalOpen={linkModalOpen}
                 onLinkModalOpen={() => {
-                  setLinkGroupId(linkedGroups[0]?.groupId ?? "");
+                  setLinkGroupId(linkedGroups[0]?.groupCode ?? "");
                   setLinkModalOpen(true);
                 }}
                 onLinkModalClose={() => setLinkModalOpen(false)}

@@ -21,9 +21,11 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { IqcItemPoolService } from '../services/iqc-item-pool.service';
 import {
   CreateIqcItemPoolDto,
@@ -33,6 +35,7 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC검사항목 풀')
+@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-item-pool')
 export class IqcItemPoolController {
   constructor(private readonly service: IqcItemPoolService) {}
@@ -54,8 +57,8 @@ export class IqcItemPoolController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'IQC 검사항목 생성' })
-  async create(@Body() dto: CreateIqcItemPoolDto) {
-    const data = await this.service.create(dto);
+  async create(@Body() dto: CreateIqcItemPoolDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.service.create(dto, company, plant);
     return ResponseUtil.success(data, '검사항목이 생성되었습니다.');
   }
 

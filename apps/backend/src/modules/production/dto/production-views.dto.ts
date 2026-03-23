@@ -59,6 +59,11 @@ export class ProgressQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: '교대 코드 필터 (예: DAY, NIGHT)' })
+  @IsOptional()
+  @IsString()
+  shift?: string;
 }
 
 /**

@@ -58,7 +58,7 @@ export class WarehouseLocationService {
     };
   }
 
-  async create(dto: CreateWarehouseLocationDto) {
+  async create(dto: CreateWarehouseLocationDto, company?: string, plant?: string) {
     const existing = await this.locationRepo.findOne({
       where: { warehouseCode: dto.warehouseCode, locationCode: dto.locationCode },
     });
@@ -68,7 +68,7 @@ export class WarehouseLocationService {
       );
     }
 
-    const location = this.locationRepo.create({ ...dto });
+    const location = this.locationRepo.create({ ...dto, company: company || null, plant: plant || null });
     const saved = await this.locationRepo.save(location);
     return { success: true, data: saved };
   }

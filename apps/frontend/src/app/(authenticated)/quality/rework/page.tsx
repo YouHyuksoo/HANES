@@ -29,27 +29,17 @@ import ReworkResultPanel from "./components/ReworkResultPanel";
 import type { ResultTarget } from "./components/ReworkResultPanel";
 
 /** 재작업 지시 데이터 타입 */
-interface ReworkOrder {
-  reworkNo: string;
-  itemCode: string;
-  itemName: string;
-  reworkQty: number;
-  defectType: string;
-  reworkMethod: string;
+interface ReworkOrder extends ReworkEditData {
   status: string;
-  workerId: string;
-  lineCode: string;
-  equipCode: string;
   resultQty: number;
   passQty: number;
   failQty: number;
-  remarks: string;
   createdAt: string;
 }
 
 /** 재작업 공정 데이터 타입 */
 interface ReworkProcess {
-  reworkOrderId: number;
+  reworkOrderId: string;
   processCode: string;
   processName: string;
   seq: number;
@@ -239,7 +229,7 @@ export default function ReworkPage() {
       <div className="flex gap-2 flex-wrap">
         {s === "REGISTERED" && (
           <>
-            <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow as unknown as ReworkEditData); setIsPanelOpen(true); }}>
+            <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow); setIsPanelOpen(true); }}>
               <Eye className="w-4 h-4 mr-1" />{t("common.edit")}
             </Button>
             <Button size="sm" onClick={handleRequestApproval}>
@@ -253,7 +243,7 @@ export default function ReworkPage() {
         {s === "IN_PROGRESS" && <Button size="sm" onClick={handleComplete}><CheckCircle className="w-4 h-4 mr-1" />{t("quality.rework.complete")}</Button>}
         {(s === "QC_REJECTED" || s === "PROD_REJECTED") && (
           <>
-            <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow as unknown as ReworkEditData); setIsPanelOpen(true); }}>
+            <Button size="sm" variant="secondary" onClick={() => { setEditTarget(selectedRow); setIsPanelOpen(true); }}>
               <Eye className="w-4 h-4 mr-1" />{t("common.edit")}
             </Button>
             <Button size="sm" onClick={handleRequestApproval}>

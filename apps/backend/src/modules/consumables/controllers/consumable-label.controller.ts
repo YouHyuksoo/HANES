@@ -9,7 +9,7 @@
  * 4. POST /consumables/label/confirm       단건 입고 확정 (바코드 스캔)
  * 5. POST /consumables/label/confirm-bulk  다건 입고 확정
  */
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ConsumableLabelService } from '../services/consumable-label.service';
 import {
@@ -18,6 +18,9 @@ import {
   BulkConfirmConReceivingDto,
 } from '../dto/consumable-label.dto';
 
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+
+@UseGuards(JwtAuthGuard)
 @Controller('consumables/label')
 export class ConsumableLabelController {
   constructor(private readonly labelService: ConsumableLabelService) {}

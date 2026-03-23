@@ -57,8 +57,8 @@ export class ShipOrderController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '출하지시 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
-  async create(@Body() dto: CreateShipOrderDto) {
-    const data = await this.shipOrderService.create(dto);
+  async create(@Body() dto: CreateShipOrderDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.create(dto, company, plant);
     return ResponseUtil.success(data, '출하지시가 생성되었습니다.');
   }
 

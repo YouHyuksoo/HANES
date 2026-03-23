@@ -35,10 +35,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { MsaService } from '../services/msa.service';
 import {
@@ -50,6 +51,7 @@ import {
 } from '../dto/msa.dto';
 
 @ApiTags('품질관리 - MSA')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/msa')
 export class MsaController {
   constructor(private readonly msaService: MsaService) {}

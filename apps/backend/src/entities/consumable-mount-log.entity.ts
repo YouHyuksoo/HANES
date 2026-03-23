@@ -8,7 +8,7 @@
  * 2. consumableCode: 금형(소모품) 코드
  * 3. equipCode: 장착 대상 설비 코드
  * 4. action: MOUNT(장착), UNMOUNT(해제)
- * 5. id는 레거시 FK 호환을 위해 generated @Column으로 유지
+ * 5. 복합키(MOUNT_DATE + SEQ)만 사용 — ID 컬럼 불필요
  */
 import {
   Entity,
@@ -22,9 +22,6 @@ import {
 @Index(['consumableCode'])
 @Index(['equipCode'])
 export class ConsumableMountLog {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'MOUNT_DATE', type: 'date' })
   mountDate: Date;
 

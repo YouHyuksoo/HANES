@@ -19,11 +19,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { JobOrder } from '../../../entities/job-order.entity';
+import { RoutingGroup } from '../../../entities/routing-group.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
+import { SeqGeneratorService } from '../../../shared/seq-generator.service';
 import {
   CreateProdPlanDto,
   BulkCreateProdPlanDto,
   UpdateProdPlanDto,
   ProdPlanQueryDto,
+  IssueJobOrderFromPlanDto,
 } from '../dto/prod-plan.dto';
 
 @Injectable()
@@ -35,6 +40,13 @@ export class ProdPlanService {
     private readonly planRepo: Repository<ProdPlan>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(JobOrder)
+    private readonly jobOrderRepo: Repository<JobOrder>,
+    @InjectRepository(RoutingGroup)
+    private readonly routingGroupRepo: Repository<RoutingGroup>,
+    @InjectRepository(BomMaster)
+    private readonly bomMasterRepo: Repository<BomMaster>,
+    private readonly seqGenerator: SeqGeneratorService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -50,8 +62,8 @@ export class ProdPlanService {
     if (company) qb.andWhere('pp.company = :company', { company });
     if (plant) qb.andWhere('pp.plant = :plant', { plant });
     if (planMonth) qb.andWhere('pp.planMonth = :planMonth', { planMonth });
-    if (startDate) qb.andWhere('pp.createdAt >= :startDate', { startDate: `${startDate} 00:00:00` });
-    if (endDate) qb.andWhere('pp.createdAt <= :endDate', { endDate: `${endDate} 23:59:59` });
+    if (startDate) qb.andWhere('pp.planMonth >= :startMonth', { startMonth: startDate.slice(0, 7) });
+    if (endDate) qb.andWhere('pp.planMonth <= :endMonth', { endMonth: endDate.slice(0, 7) });
     if (itemType) qb.andWhere('pp.itemType = :itemType', { itemType });
     if (status) qb.andWhere('pp.status = :status', { status });
     if (search) {
@@ -252,6 +264,131 @@ export class ProdPlanService {
     }
 
     return summary;
+  }
+
+  /**
+   * 생산계획에서 작업지시 발행
+   * - CONFIRMED 상태만 발행 가능
+   * - 잔여수량(planQty - orderQty) 초과 불가
+   * - 트랜잭션으로 JobOrder 생성 + ProdPlan.orderQty 증가 원자성 보장
+   */
+  async issueJobOrder(planNo: string, dto: IssueJobOrderFromPlanDto, company?: string, plant?: string) {
+    const plan = await this.findById(planNo);
+    if (plan.status !== 'CONFIRMED') {
+      throw new BadRequestException('확정(CONFIRMED) 상태의 계획만 작업지시를 발행할 수 있습니다.');
+    }
+
+    const remainQty = plan.planQty - plan.orderQty;
+    if (dto.issueQty > remainQty) {
+      throw new BadRequestException(`발행수량(${dto.issueQty})이 잔여수량(${remainQty})을 초과합니다.`);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const orderNo = await this.seqGenerator.nextJobOrderNo(queryRunner);
+
+      const routingGroup = await this.routingGroupRepo.findOne({
+        where: { itemCode: plan.itemCode, useYn: 'Y' },
+      });
+
+      const jobOrder = queryRunner.manager.create(JobOrder, {
+        orderNo,
+        planNo,
+        itemCode: plan.itemCode,
+        lineCode: dto.lineCode || plan.lineCode || null,
+        routingCode: routingGroup?.routingCode || null,
+        planQty: dto.issueQty,
+        planDate: dto.planDate ? new Date(dto.planDate) : null,
+        priority: dto.priority ?? plan.priority,
+        custPoNo: null,
+        remark: dto.remark || `${plan.planNo}에서 발행`,
+        status: 'WAITING',
+        erpSyncYn: 'N',
+        company: company || null,
+        plant: plant || null,
+      });
+      const saved = await queryRunner.manager.save(jobOrder);
+
+      if (dto.autoCreateChildren) {
+        await this.createChildOrdersFromPlan(queryRunner, saved, company, plant);
+      }
+
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(ProdPlan)
+        .set({ orderQty: () => `ORDER_QTY + ${dto.issueQty}` })
+        .where('planNo = :planNo', { planNo })
+        .execute();
+
+      await queryRunner.commitTransaction();
+
+      return {
+        orderNo: saved.orderNo,
+        planNo,
+        issueQty: dto.issueQty,
+        remainQty: remainQty - dto.issueQty,
+      };
+    } catch (err: unknown) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /** BOM 기반 반제품 자식 작업지시 자동생성 */
+  private async createChildOrdersFromPlan(
+    queryRunner: import('typeorm').QueryRunner,
+    parent: JobOrder,
+    company?: string,
+    plant?: string,
+  ) {
+    const bomItems = await this.bomMasterRepo.find({
+      where: { parentItemCode: parent.itemCode, useYn: 'Y' },
+      order: { seq: 'ASC' },
+    });
+    if (bomItems.length === 0) return;
+
+    const wipParts = await this.partRepo
+      .createQueryBuilder('p')
+      .where('p.itemCode IN (:...ids)', { ids: bomItems.map(b => b.childItemCode) })
+      .andWhere('p.itemType = :type', { type: 'WIP' })
+      .getMany();
+
+    const wipPartIds = new Set(wipParts.map(p => p.itemCode));
+
+    for (let i = 0; i < bomItems.length; i++) {
+      const bom = bomItems[i];
+      if (!wipPartIds.has(bom.childItemCode)) continue;
+
+      const childRouting = await this.routingGroupRepo.findOne({
+        where: { itemCode: bom.childItemCode, useYn: 'Y' },
+      });
+
+      const childOrderNo = await this.seqGenerator.nextJobOrderNo(queryRunner);
+      const childQty = Math.ceil(parent.planQty * Number(bom.qtyPer || 1));
+
+      const child = queryRunner.manager.create(JobOrder, {
+        orderNo: childOrderNo,
+        parentOrderNo: parent.orderNo,
+        planNo: parent.planNo,
+        itemCode: bom.childItemCode,
+        lineCode: parent.lineCode,
+        routingCode: childRouting?.routingCode || null,
+        planQty: childQty,
+        planDate: parent.planDate,
+        priority: parent.priority,
+        status: 'WAITING',
+        erpSyncYn: 'N',
+        company: company || null,
+        plant: plant || null,
+        remark: `${parent.orderNo} 하위 자동생성`,
+      });
+      await queryRunner.manager.save(child);
+    }
   }
 
   /** 단건 조회 (내부) */

@@ -16,8 +16,8 @@ import { ReworkProcess } from './rework-process.entity';
 @Entity({ name: 'REWORK_RESULTS' })
 @Index(['company', 'plant', 'reworkOrderId', 'processCode'])
 export class ReworkResult {
-  @PrimaryColumn({ name: 'REWORK_ORDER_ID' })
-  reworkOrderId: number;
+  @PrimaryColumn({ name: 'REWORK_ORDER_ID', length: 50 })
+  reworkOrderId: string;
 
   @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;
@@ -56,8 +56,8 @@ export class ReworkResult {
   @Column({ name: 'END_AT', type: 'timestamp', nullable: true })
   endAt: Date;
 
-  @Column({ name: 'REMARKS', length: 1000, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
@@ -71,9 +71,9 @@ export class ReworkResult {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

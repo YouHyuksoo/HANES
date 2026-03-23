@@ -7,7 +7,7 @@
  * 초보자 가이드:
  * 1. **사용이력**: 선택된 금형의 타수 이력을 표 형태로 표시
  * 2. **인라인 추가**: 하단 인라인 폼으로 신규 사용이력 등록
- * 3. API: GET /equipment/molds/:id, POST /equipment/molds/usage
+ * 3. API: GET /equipment/molds/:id, POST /equipment/molds/:id/usage
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,13 +17,12 @@ import { EquipSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface UsageRecord {
-  id: number;
   usageDate: string;
   shotCount: number;
   orderNo: string;
   equipCode: string;
   workerCode: string;
-  remarks: string;
+  remark: string;
 }
 
 interface Props {
@@ -36,13 +35,13 @@ interface UsageForm {
   orderNo: string;
   equipCode: string;
   workerCode: string;
-  remarks: string;
+  remark: string;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
 const INIT: UsageForm = {
   usageDate: today(), shotCount: "", orderNo: "",
-  equipCode: "", workerCode: "", remarks: "",
+  equipCode: "", workerCode: "", remark: "",
 };
 
 export default function MoldUsageList({ mold }: Props) {
@@ -74,14 +73,13 @@ export default function MoldUsageList({ mold }: Props) {
     if (!form.shotCount) return;
     setSaving(true);
     try {
-      await api.post("/equipment/molds/usage", {
-        moldCode: mold.moldCode,
+      await api.post(`/equipment/molds/${mold.moldCode}/usage`, {
         usageDate: form.usageDate || undefined,
         shotCount: Number(form.shotCount) || 0,
         orderNo: form.orderNo || undefined,
         equipCode: form.equipCode || undefined,
         workerCode: form.workerCode || undefined,
-        remarks: form.remarks || undefined,
+        remark: form.remark || undefined,
       });
       setForm({ ...INIT, usageDate: today() });
       setShowForm(false);
@@ -125,8 +123,8 @@ export default function MoldUsageList({ mold }: Props) {
               <WorkerSelect label={t("equipment.mold.worker")} value={form.workerCode}
                 onChange={v => setField("workerCode", v)} fullWidth />
             </div>
-            <Input label={t("common.remark")} value={form.remarks}
-              onChange={e => setField("remarks", e.target.value)} className="w-32" />
+            <Input label={t("common.remark")} value={form.remark}
+              onChange={e => setField("remark", e.target.value)} className="w-32" />
             <Button size="sm" onClick={handleAdd} disabled={saving || !form.shotCount}>
               {saving ? t("common.saving") : t("common.save")}
             </Button>
@@ -152,13 +150,13 @@ export default function MoldUsageList({ mold }: Props) {
               ) : records.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-4 text-text-muted">{t("common.noData")}</td></tr>
               ) : records.map(r => (
-                <tr key={r.id} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
+                <tr key={`${r.usageDate}-${r.orderNo}`} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
                   <td className="px-3 py-1.5 text-text">{r.usageDate?.slice(0, 10)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-text">{r.shotCount.toLocaleString()}</td>
                   <td className="px-3 py-1.5 text-text">{r.orderNo || "-"}</td>
                   <td className="px-3 py-1.5 text-text">{r.equipCode || "-"}</td>
                   <td className="px-3 py-1.5 text-text">{r.workerCode || "-"}</td>
-                  <td className="px-3 py-1.5 text-text-muted">{r.remarks || "-"}</td>
+                  <td className="px-3 py-1.5 text-text-muted">{r.remark || "-"}</td>
                 </tr>
               ))}
             </tbody>

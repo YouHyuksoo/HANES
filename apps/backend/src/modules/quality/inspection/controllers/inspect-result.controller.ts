@@ -31,8 +31,10 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -50,6 +52,7 @@ import {
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - 검사실적')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/inspect-results')
 export class InspectResultController {
   constructor(private readonly inspectResultService: InspectResultService) {}
@@ -106,12 +109,12 @@ export class InspectResultController {
     return ResponseUtil.success(data);
   }
 
-  @Get('prod-result/:prodResultId')
+  @Get('prod-result/:prodResultNo')
   @ApiOperation({ summary: '생산실적별 검사 이력', description: '특정 생산실적의 전체 검사 이력' })
-  @ApiParam({ name: 'prodResultId', description: '생산실적 ID' })
+  @ApiParam({ name: 'prodResultNo', description: '생산실적 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByProdResultId(@Param('prodResultId') prodResultId: string) {
-    const data = await this.inspectResultService.findByProdResultId(prodResultId);
+  async findByProdResultNo(@Param('prodResultNo') prodResultNo: string) {
+    const data = await this.inspectResultService.findByProdResultNo(prodResultNo);
     return ResponseUtil.success(data);
   }
 

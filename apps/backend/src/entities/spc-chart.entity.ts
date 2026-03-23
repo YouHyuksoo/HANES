@@ -2,12 +2,10 @@
  * @file spc-chart.entity.ts
  * @description SPC 관리도 엔티티 — IATF 16949 통계적 공정 관리
  *              자연키 PK: chartNo (관리도 번호).
- *              id는 자식 FK(spc-data.chartId) 호환을 위해 generated @Column으로 유지.
  *
  * 초보자 가이드:
  * 1. chartNo가 PK (자연키)
- * 2. id는 자동 증가 시퀀스이지만 PK가 아님 (SpcData.chartId FK 호환용)
- * 3. chartType: XBAR_R, XBAR_S, P, NP, C, U (계량형/계수형)
+ * 2. chartType: XBAR_R, XBAR_S, P, NP, C, U (계량형/계수형)
  * 4. chartNo 자동채번: SPC-YYYYMMDD-NNN
  * 5. USL/LSL: 규격 상한/하한, UCL/LCL/CL: 관리 상한/하한/중심선
  */
@@ -28,9 +26,6 @@ import { ProcessMaster } from './process-master.entity';
 @Index(['company', 'plant', 'itemCode'])
 @Index(['company', 'plant', 'processCode'])
 export class SpcChart {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'CHART_NO', length: 30 })
   chartNo: string;
 
@@ -98,9 +93,9 @@ export class SpcChart {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

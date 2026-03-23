@@ -47,7 +47,7 @@ export class ChangeOrder {
   @Column({ name: 'PRIORITY', length: 20, default: 'MEDIUM' })
   priority: string;
 
-  @Column({ name: 'STATUS', length: 30, default: 'DRAFT' })
+  @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
   @Column({ name: 'REQUESTED_BY', length: 50, nullable: true })
@@ -92,9 +92,9 @@ export class ChangeOrder {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

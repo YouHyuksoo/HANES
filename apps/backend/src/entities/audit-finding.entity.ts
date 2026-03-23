@@ -24,11 +24,11 @@ import { AuditPlan } from './audit-plan.entity';
 @Entity({ name: 'AUDIT_FINDINGS' })
 @Index(['capaId'])
 export class AuditFinding {
-  @PrimaryColumn({ name: 'AUDIT_ID' })
-  auditId: number;
+  @PrimaryColumn({ name: 'AUDIT_ID', length: 30 })
+  auditId: string;
 
   @ManyToOne(() => AuditPlan)
-  @JoinColumn({ name: 'AUDIT_ID' })
+  @JoinColumn({ name: 'AUDIT_ID', referencedColumnName: 'auditNo' })
   audit: AuditPlan;
 
   @PrimaryColumn({ name: 'FINDING_NO', type: 'int' })
@@ -46,8 +46,8 @@ export class AuditFinding {
   @Column({ name: 'EVIDENCE', length: 1000, nullable: true })
   evidence: string;
 
-  @Column({ name: 'CAPA_ID', type: 'int', nullable: true })
-  capaId: number;
+  @Column({ name: 'CAPA_ID', length: 30, nullable: true })
+  capaId: string;
 
   @Column({ name: 'DUE_DATE', type: 'timestamp', nullable: true })
   dueDate: Date;
@@ -58,8 +58,8 @@ export class AuditFinding {
   @Column({ name: 'STATUS', length: 20, default: 'OPEN' })
   status: string;
 
-  @Column({ name: 'REMARKS', length: 500, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
@@ -70,6 +70,6 @@ export class AuditFinding {
   @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 }

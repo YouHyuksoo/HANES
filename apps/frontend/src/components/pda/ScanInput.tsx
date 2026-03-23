@@ -91,12 +91,9 @@ const ScanInput = forwardRef<ScanInputHandle, ScanInputProps>(function ScanInput
       input.setAttribute("inputmode", "none");
       // VirtualKeyboard API 지원 시 강제 숨김
       try {
-        if ("virtualKeyboard" in navigator) {
-          const vk = (navigator as unknown as {
-            virtualKeyboard: { overlaysContent: boolean; hide: () => void };
-          }).virtualKeyboard;
-          vk.overlaysContent = true;
-          vk.hide();
+        if (navigator.virtualKeyboard) {
+          navigator.virtualKeyboard.overlaysContent = true;
+          navigator.virtualKeyboard.hide();
         }
       } catch {
         /* 미지원 환경 무시 */

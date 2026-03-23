@@ -17,11 +17,11 @@ import { ProcessMaster } from './process-master.entity';
 @Entity({ name: 'REWORK_PROCESSES' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkProcess {
-  @PrimaryColumn({ name: 'REWORK_ORDER_ID' })
-  reworkOrderId: number;
+  @PrimaryColumn({ name: 'REWORK_ORDER_ID', length: 50 })
+  reworkOrderId: string;
 
   @ManyToOne(() => ReworkOrder)
-  @JoinColumn({ name: 'REWORK_ORDER_ID' })
+  @JoinColumn({ name: 'REWORK_ORDER_ID', referencedColumnName: 'reworkNo' })
   reworkOrder: ReworkOrder;
 
   @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
@@ -37,7 +37,7 @@ export class ReworkProcess {
   @Column({ name: 'SEQ', type: 'int' })
   seq: number;
 
-  @Column({ name: 'STATUS', length: 30, default: 'WAITING' })
+  @Column({ name: 'STATUS', length: 20, default: 'WAITING' })
   status: string;
 
   @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
@@ -61,8 +61,8 @@ export class ReworkProcess {
   @Column({ name: 'END_AT', type: 'timestamp', nullable: true })
   endAt: Date;
 
-  @Column({ name: 'REMARKS', length: 1000, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
@@ -76,9 +76,9 @@ export class ReworkProcess {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

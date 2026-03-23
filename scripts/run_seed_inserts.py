@@ -1,13 +1,17 @@
 """
 Extracts INSERT statements from seed_material_data.sql and executes them one by one.
 """
+import os
 import subprocess
 import re
 import sys
 
-SQL_FILE = r"C:\Project\HANES\scripts\seed_material_data.sql"
-CONNECTOR = r"C:\Users\hsyou\.claude\skills\oracle-db\scripts\oracle_connector.py"
-SITE = "JSHANES"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SQL_FILE = os.path.join(PROJECT_ROOT, "scripts", "seed_material_data.sql")
+
+# Oracle DB 스킬 경로 (표준 위치)
+SKILL_PATH = os.path.expanduser("~/.claude/skills/oracle-db/scripts/oracle_connector.py")
+SITE = 'JSHANES'
 
 with open(SQL_FILE, "r", encoding="utf-8") as f:
     content = f.read()
@@ -24,7 +28,7 @@ for i, stmt in enumerate(inserts, 1):
     # Clean up newlines for --query
     clean = " ".join(stmt.split())
     result = subprocess.run(
-        ["python", CONNECTOR, "--site", SITE, "--query", clean],
+        ["python", SKILL_PATH, "--site", SITE, "--query", clean],
         capture_output=True, text=True, encoding="utf-8"
     )
     if '"success": true' in result.stdout:

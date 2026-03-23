@@ -1,28 +1,26 @@
 /**
  * @file src/modules/equipment/controllers/consumable.controller.ts
- * @description 소모품(금형/지그/공구) CRUD API 컨트롤러
+ * @description 소모품(금형/지그/공구) 설비 연계 API 컨트롤러
  *
  * 초보자 가이드:
- * 1. **기본 CRUD**: 소모품 마스터 관리
+ * 1. **설비 장착/해제/수리**: 소모품을 설비에 장착·분리·수리 전환
  * 2. **수명 관리**: 사용 횟수 증가, 교체 등록
- * 3. **이력 관리**: 입출고 및 상태 변경 로그
+ * 3. **통계/현황**: 경고 목록, 교체 예정, 캘린더
  *
- * API 경로:
- * - GET    /equipment/consumables                    소모품 목록 조회
- * - GET    /equipment/consumables/:id                소모품 상세 조회
- * - POST   /equipment/consumables                    소모품 생성
- * - PUT    /equipment/consumables/:id                소모품 수정
- * - DELETE /equipment/consumables/:id                소모품 삭제
- * - POST   /equipment/consumables/:id/increase       사용 횟수 증가
- * - POST   /equipment/consumables/:id/replace        교체 등록
- * - GET    /equipment/consumables/category/:category 카테고리별 조회
- * - GET    /equipment/consumables/warnings           경고 상태 목록
- * - GET    /equipment/consumables/schedule           교체 예정 목록
+ * 참고: 소모품 마스터 기본 CRUD는 /consumables 경로(ConsumablesModule)가 정식.
+ * 이 컨트롤러의 CRUD는 설비 모듈 내부 편의용(레거시 호환)으로 유지.
  *
- * 소모품 로그:
- * - GET    /equipment/consumable-logs                로그 목록 조회
- * - POST   /equipment/consumable-logs                로그 생성
- * - GET    /equipment/consumable-logs/consumable/:id 특정 소모품 로그
+ * 주요 API 경로:
+ * - POST   /equipment/consumables/:id/mount            설비 장착
+ * - POST   /equipment/consumables/:id/unmount          설비 해제
+ * - POST   /equipment/consumables/:id/repair           수리 전환
+ * - POST   /equipment/consumables/:id/complete-repair   수리 완료 복귀
+ * - GET    /equipment/consumables/:id/mount-logs       장착/해제 이력
+ * - POST   /equipment/consumables/:id/increase         사용 횟수 증가
+ * - POST   /equipment/consumables/:id/replace          교체 등록
+ * - GET    /equipment/consumables/warnings             경고 상태 목록
+ * - GET    /equipment/consumables/schedule             교체 예정 목록
+ * - GET    /equipment/consumables/calendar             예방보전 캘린더
  */
 
 import {
@@ -38,6 +36,7 @@ import {
   HttpStatus,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -63,8 +62,10 @@ import {
 } from '../dto/consumable.dto';
 import { CONSUMABLE_CATEGORY_VALUES } from '@harness/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('설비관리 - 소모품(금형/지그/공구)')
+@UseGuards(JwtAuthGuard)
 @Controller('equipment/consumables')
 export class ConsumableController {
   constructor(private readonly consumableService: ConsumableService) {}
@@ -168,6 +169,15 @@ export class ConsumableController {
   async setRepairStatus(@Param('id') id: string, @Body() dto: SetRepairDto) {
     const data = await this.consumableService.setRepairStatus(id, dto);
     return ResponseUtil.success(data, '금형이 수리 상태로 전환되었습니다.');
+  }
+
+  @Post(':id/complete-repair')
+  @ApiOperation({ summary: '수리 완료 → 창고 복귀' })
+  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
+  @SwaggerResponse({ status: 200, description: '수리 완료 처리 성공' })
+  async completeRepair(@Param('id') id: string, @Body() dto: SetRepairDto) {
+    const data = await this.consumableService.completeRepair(id, dto);
+    return ResponseUtil.success(data, '수리가 완료되어 창고로 복귀되었습니다.');
   }
 
   @Get(':id/mount-logs')

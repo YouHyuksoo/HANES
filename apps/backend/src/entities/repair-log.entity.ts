@@ -26,8 +26,8 @@ export class RepairLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'DEFECT_LOG_ID', type: 'number' })
-  defectLogId: number;
+  @Column({ name: 'DEFECT_LOG_ID', length: 50 })
+  defectLogId: string;
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
@@ -47,16 +47,16 @@ export class RepairLog {
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 255, nullable: true })
+  @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 255, nullable: true })
+  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -65,6 +65,12 @@ export class CreateJobOrderDto {
   @Max(10)
   priority?: number;
 
+  @ApiPropertyOptional({ description: '생산계획번호', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  planNo?: string;
+
   @ApiPropertyOptional({ description: '상위 작업지시 ID (반제품 자동생성 시)' })
   @IsOptional()
   @IsString()

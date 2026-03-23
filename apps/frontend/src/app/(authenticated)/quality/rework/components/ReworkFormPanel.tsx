@@ -36,12 +36,12 @@ interface ReworkFormData {
   lineCode: string;
   equipCode: string;
   workerId: string;
-  remarks: string;
+  remark: string;
 }
 
 const INIT: ReworkFormData = {
   itemCode: "", itemName: "", reworkQty: "", defectType: "",
-  reworkMethod: "", lineCode: "", equipCode: "", workerId: "", remarks: "",
+  reworkMethod: "", lineCode: "", equipCode: "", workerId: "", remark: "",
 };
 
 export interface ReworkEditData {
@@ -54,7 +54,7 @@ export interface ReworkEditData {
   lineCode: string;
   equipCode: string;
   workerId: string;
-  remarks: string;
+  remark: string;
 }
 
 interface Props {
@@ -90,7 +90,7 @@ export default function ReworkFormPanel({ editData, onClose, onSave, animate = t
         lineCode: editData.lineCode ?? "",
         equipCode: editData.equipCode ?? "",
         workerId: editData.workerId ?? "",
-        remarks: editData.remarks ?? "",
+        remark: editData.remark ?? "",
       });
       // 수정 모드: 품목코드로 라우팅 자동 조회
       if (editData.itemCode) {
@@ -148,7 +148,7 @@ export default function ReworkFormPanel({ editData, onClose, onSave, animate = t
         lineCode: form.lineCode || undefined,
         equipCode: form.equipCode || undefined,
         workerId: form.workerId || undefined,
-        remarks: form.remarks || undefined,
+        remark: form.remark || undefined,
         processItems: routingProcesses
           .filter((_, idx) => selectedProcesses.has(idx))
           .map(p => ({
@@ -317,8 +317,8 @@ export default function ReworkFormPanel({ editData, onClose, onSave, animate = t
         </div>
 
         {/* ── 비고 ── */}
-        <Input label={t("common.remark")} value={form.remarks}
-          onChange={e => setField("remarks", e.target.value)} fullWidth />
+        <Input label={t("common.remark")} value={form.remark}
+          onChange={e => setField("remark", e.target.value)} fullWidth />
       </div>
 
       {/* 품목검색 모달 */}

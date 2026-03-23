@@ -128,7 +128,7 @@ export class CreateTrainingResultDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  remarks?: string;
+  remark?: string;
 }
 
 /**

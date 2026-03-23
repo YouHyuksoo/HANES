@@ -1,0 +1,9326 @@
+{
+  "ACTIVITY_LOGS": {
+    "pk": [
+      "ACTIVITY_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ACTIVITY_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USER_EMAIL",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "USER_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "ACTIVITY_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PAGE_PATH",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PAGE_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "IP_ADDRESS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "USER_AGENT",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "DEVICE_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      }
+    ]
+  },
+  "AUDIT_FINDINGS": {
+    "pk": [
+      "AUDIT_ID",
+      "FINDING_NO"
+    ],
+    "cols": [
+      {
+        "name": "AUDIT_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "FINDING_NO",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CLAUSE_REF",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CATEGORY",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "N"
+      },
+      {
+        "name": "EVIDENCE",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "CAPA_ID",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DUE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CLOSED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "AUDIT_PLANS": {
+    "pk": [
+      "AUDIT_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "AUDIT_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "AUDIT_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "AUDIT_SCOPE",
+        "type": "varchar2",
+        "len": "500",
+        "null": "N"
+      },
+      {
+        "name": "TARGET_DEPT",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "AUDITOR",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "CO_AUDITOR",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "SCHEDULED_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ACTUAL_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "OVERALL_RESULT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "SUMMARY",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "BOM_MASTERS": {
+    "pk": [
+      "PARENT_ITEM_CODE",
+      "CHILD_ITEM_CODE",
+      "REVISION"
+    ],
+    "cols": [
+      {
+        "name": "PARENT_ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CHILD_ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REVISION",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "QTY_PER",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "BOM_GRP",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "OPER",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SIDE",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "ECO_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VALID_FROM",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "VALID_TO",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "BOX_MASTERS": {
+    "pk": [
+      "BOX_NO"
+    ],
+    "cols": [
+      {
+        "name": "BOX_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SERIAL_LIST",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PALLET_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "OQC_STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CLOSE_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "CALIBRATION_LOGS": {
+    "pk": [
+      "CALIBRATION_NO"
+    ],
+    "cols": [
+      {
+        "name": "CALIBRATION_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "GAUGE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CALIBRATION_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CALIBRATION_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "CALIBRATOR",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "CALIBRATION_ORG",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "STANDARD_USED",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "MEASURED_VALUE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "REFERENCE_VALUE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "DEVIATION",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "UNCERTAINTY",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "NEXT_DUE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CERTIFICATE_NO",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "CAPA_ACTIONS": {
+    "pk": [
+      "CAPA_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "CAPA_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ACTION_DESC",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "N"
+      },
+      {
+        "name": "RESPONSIBLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DUE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "COMPLETED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "CAPA_REQUESTS": {
+    "pk": [
+      "CAPA_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CAPA_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "CAPA_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SOURCE_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "Y"
+      },
+      {
+        "name": "SOURCE_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "TITLE",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "ROOT_CAUSE",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "ACTION_PLAN",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "TARGET_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RESPONSIBLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "PRIORITY",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "VERIFICATION_RESULT",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "VERIFIED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VERIFIED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CLOSED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "CHANGE_ORDERS": {
+    "pk": [
+      "CHANGE_NO"
+    ],
+    "cols": [
+      {
+        "name": "CHANGE_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CHANGE_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "TITLE",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "REASON",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "RISK_ASSESSMENT",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "AFFECTED_ITEMS",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "AFFECTED_PROCESSES",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "PRIORITY",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "REQUESTED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REQUESTED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REVIEWER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REVIEWED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REVIEW_COMMENT",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVE_COMMENT",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "EFFECTIVE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "COMPLETION_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "COM_CODES": {
+    "pk": [
+      "GROUP_CODE",
+      "DETAIL_CODE"
+    ],
+    "cols": [
+      {
+        "name": "GROUP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DETAIL_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PARENT_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CODE_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "CODE_DESC",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "SORT_ORDER",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "ATTR1",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "ATTR2",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "ATTR3",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      }
+    ]
+  },
+  "COMM_CONFIGS": {
+    "pk": [
+      "CONFIG_NAME"
+    ],
+    "cols": [
+      {
+        "name": "CONFIG_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "COMM_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "HOST",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PORT",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PORT_NAME",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "BAUD_RATE",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DATA_BITS",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STOP_BITS",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "PARITY",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "FLOW_CONTROL",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_ENDING",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "EXTRA_CONFIG",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "COMPANY_MASTERS": {
+    "pk": [
+      "COMPANY_CODE"
+    ],
+    "cols": [
+      {
+        "name": "COMPANY_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "COMPANY_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "BIZ_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CEO_NAME",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ADDRESS",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "TEL",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "FAX",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EMAIL",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "CONSUMABLE_LOGS": {
+    "pk": [
+      "TRANS_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TRANS_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CONSUMABLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOG_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,2",
+        "null": "Y"
+      },
+      {
+        "name": "INCOMING_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DEPARTMENT",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ISSUE_REASON",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "RETURN_REASON",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "CON_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      }
+    ]
+  },
+  "CONSUMABLE_MASTERS": {
+    "pk": [
+      "CONSUMABLE_CODE"
+    ],
+    "cols": [
+      {
+        "name": "CONSUMABLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "CATEGORY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EXPECTED_LIFE",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CURRENT_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STOCK_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SAFETY_STOCK",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WARNING_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "LOCATION",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "LAST_REPLACE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "NEXT_REPLACE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,2",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "OPER_STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "MOUNTED_EQUIP_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "IMAGE_URL",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "CONSUMABLE_MOUNT_LOGS": {
+    "pk": [
+      "MOUNT_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "MOUNT_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CONSUMABLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ACTION",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "CON_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      }
+    ]
+  },
+  "CONSUMABLE_STOCKS": {
+    "pk": [
+      "CON_UID"
+    ],
+    "cols": [
+      {
+        "name": "CON_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CONSUMABLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "CURRENT_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "MOUNTED_EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "RECV_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "LABEL_PRINTED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,2",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "CONTROL_PLAN_ITEMS": {
+    "pk": [
+      "CONTROL_PLAN_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "CONTROL_PLAN_ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "CHARACTERISTIC_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "Y"
+      },
+      {
+        "name": "PRODUCT_CHARACTERISTIC",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_CHARACTERISTIC",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "SPECIAL_CHAR_CLASS",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "SPECIFICATION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "EVAL_METHOD",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "SAMPLE_SIZE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SAMPLE_FREQ",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "CONTROL_METHOD",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "REACTION_PLAN",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "CONTROL_PLANS": {
+    "pk": [
+      "PLAN_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PLAN_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "REVISION_NO",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REVISION_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PHASE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "APPROVED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "CUSTOMER_COMPLAINTS": {
+    "pk": [
+      "COMPLAINT_NO"
+    ],
+    "cols": [
+      {
+        "name": "COMPLAINT_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "COMPLAINT_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LOT_NO",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "DEFECT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "COMPLAINT_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "URGENCY",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "INVESTIGATION",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "ROOT_CAUSE",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "CONTAINMENT_ACTION",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "CORRECTIVE_ACTION",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PREVENTIVE_ACTION",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "RESPONSE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RESPONSIBLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CAPA_ID",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "COST_AMOUNT",
+        "type": "decimal",
+        "len": "12,2",
+        "null": "Y"
+      },
+      {
+        "name": "RESOLVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "CUSTOMER_ORDER_ITEMS": {
+    "pk": [
+      "ORDER_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ORDER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SHIPPED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "15,2",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "CUSTOMER_ORDERS": {
+    "pk": [
+      "ORDER_NO"
+    ],
+    "cols": [
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "CUSTOMER_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "ORDER_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DUE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TOTAL_AMOUNT",
+        "type": "decimal",
+        "len": "15,2",
+        "null": "Y"
+      },
+      {
+        "name": "CURRENCY",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "CUSTOMS_ENTRIES": {
+    "pk": [
+      "ENTRY_NO"
+    ],
+    "cols": [
+      {
+        "name": "ENTRY_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "BL_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "INVOICE_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DECLARATION_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CLEARANCE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "ORIGIN",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "HS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "TOTAL_AMOUNT",
+        "type": "decimal",
+        "len": "14,2",
+        "null": "Y"
+      },
+      {
+        "name": "CURRENCY",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "CUSTOMS_LOTS": {
+    "pk": [
+      "ENTRY_NO",
+      "MAT_UID"
+    ],
+    "cols": [
+      {
+        "name": "ENTRY_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMAIN_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      }
+    ]
+  },
+  "CUSTOMS_USAGE_REPORTS": {
+    "pk": [
+      "REPORT_NO"
+    ],
+    "cols": [
+      {
+        "name": "REPORT_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOT_ENTRY_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOT_MAT_UID",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "36",
+        "null": "Y"
+      },
+      {
+        "name": "USAGE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USAGE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REPORT_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "DEFECT_LOGS": {
+    "pk": [
+      "OCCUR_TIME",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "OCCUR_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROD_RESULT_ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CAUSE",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "IMAGE_URL",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "DEPARTMENT_MASTERS": {
+    "pk": [
+      "DEPT_CODE"
+    ],
+    "cols": [
+      {
+        "name": "DEPT_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DEPT_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "PARENT_DEPT_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SORT_ORDER",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "MANAGER_NAME",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "DOCUMENT_MASTERS": {
+    "pk": [
+      "DOC_NO"
+    ],
+    "cols": [
+      {
+        "name": "DOC_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DOC_TITLE",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "DOC_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "CATEGORY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REVISION_NO",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REVISION_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "FILE_PATH",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "FILE_SIZE",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RETENTION_PERIOD",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "EXPIRES_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "EQUIP_BOM_ITEMS": {
+    "pk": [
+      "BOM_ITEM_CODE"
+    ],
+    "cols": [
+      {
+        "name": "BOM_ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "BOM_ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SPEC",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "MAKER",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "float",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REPLACEMENT_CYCLE",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STOCK_QTY",
+        "type": "float",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SAFETY_STOCK",
+        "type": "float",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "EQUIP_BOM_RELS": {
+    "pk": [
+      "EQUIP_CODE",
+      "BOM_ITEM_CODE"
+    ],
+    "cols": [
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "BOM_ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "QUANTITY",
+        "type": "float",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSTALL_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "EXPIRE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "EQUIP_INSPECT_ITEM_MASTERS": {
+    "pk": [
+      "EQUIP_CODE",
+      "INSPECT_TYPE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "36",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "CRITERIA",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "CYCLE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "EQUIP_INSPECT_LOGS": {
+    "pk": [
+      "EQUIP_CODE",
+      "INSPECT_TYPE",
+      "INSPECT_DATE"
+    ],
+    "cols": [
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECTOR_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "OVERALL_RESULT",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DETAILS",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "EQUIP_MASTERS": {
+    "pk": [
+      "EQUIP_CODE"
+    ],
+    "cols": [
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "EQUIP_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "EQUIP_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "MODEL_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "MAKER",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "IP_ADDRESS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PORT",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "COMM_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "COMM_CONFIG",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "INSTALL_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "CURRENT_JOB_ORDER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "EQUIP_PROTOCOLS": {
+    "pk": [
+      "PROTOCOL_ID"
+    ],
+    "cols": [
+      {
+        "name": "PROTOCOL_ID",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROTOCOL_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "COMM_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "DELIMITER",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "RESULT_INDEX",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PASS_VALUE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "FAIL_VALUE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "ERROR_INDEX",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DATA_START_CHAR",
+        "type": "varchar2",
+        "len": "5",
+        "null": "Y"
+      },
+      {
+        "name": "DATA_END_CHAR",
+        "type": "varchar2",
+        "len": "5",
+        "null": "Y"
+      },
+      {
+        "name": "SAMPLE_DATA",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "FAI_ITEMS": {
+    "pk": [
+      "FAI_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "FAI_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_ITEM",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "SPEC_MIN",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "SPEC_MAX",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "MEASURED_VALUE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "FAI_REQUESTS": {
+    "pk": [
+      "FAI_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "FAI_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "TRIGGER_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "TRIGGER_REF",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SAMPLE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECTOR_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVAL_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "FG_LABELS": {
+    "pk": [
+      "FG_BARCODE"
+    ],
+    "cols": [
+      {
+        "name": "FG_BARCODE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ISSUED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REPRINT_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "VOID_REASON",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "REPLACED_BY",
+        "type": "varchar2",
+        "len": "30",
+        "null": "Y"
+      },
+      {
+        "name": "CUSTOMER_BARCODE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_RESULT_ID",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "GAUGE_MASTERS": {
+    "pk": [
+      "GAUGE_CODE"
+    ],
+    "cols": [
+      {
+        "name": "GAUGE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "GAUGE_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "GAUGE_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MANUFACTURER",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "MODEL",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "SERIAL_NO",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "RESOLUTION",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "MEASURE_RANGE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "CALIBRATION_CYCLE",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "LAST_CALIBRATION_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "NEXT_CALIBRATION_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "RESPONSIBLE_PERSON",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "INSPECT_RESULTS": {
+    "pk": [
+      "RESULT_NO"
+    ],
+    "cols": [
+      {
+        "name": "RESULT_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROD_RESULT_ID",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "SERIAL_NO",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_SCOPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "PASS_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "ERROR_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ERROR_DETAIL",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_DATA",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "FG_BARCODE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECTOR_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      }
+    ]
+  },
+  "INTER_LOGS": {
+    "pk": [
+      "TRANS_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TRANS_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DIRECTION",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MESSAGE_TYPE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "INTERFACE_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PAYLOAD",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ERROR_MSG",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "RETRY_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEND_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RECV_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "INV_ADJ_LOGS": {
+    "pk": [
+      "ADJ_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ADJ_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ADJ_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "BEFORE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "AFTER_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DIFF_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ADJUST_STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REASON",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "IQC_GROUP_ITEMS": {
+    "pk": [
+      "GROUP_ID",
+      "INSP_ITEM_ID"
+    ],
+    "cols": [
+      {
+        "name": "GROUP_ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSP_ITEM_ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      }
+    ]
+  },
+  "IQC_GROUPS": {
+    "pk": [
+      "GROUP_CODE"
+    ],
+    "cols": [
+      {
+        "name": "GROUP_CODE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "GROUP_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_METHOD",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SAMPLE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "IQC_ITEM_MASTERS": {
+    "pk": [
+      "ITEM_CODE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_ITEM",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "SPEC",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "LSL",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "Y"
+      },
+      {
+        "name": "USL",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "IS_SHELF_LIFE",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RETEST_CYCLE",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "IQC_ITEM_POOL": {
+    "pk": [
+      "INSP_ITEM_CODE"
+    ],
+    "cols": [
+      {
+        "name": "INSP_ITEM_CODE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSP_ITEM_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "JUDGE_METHOD",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "CRITERIA",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "LSL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "USL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "REVISION",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "EFFECTIVE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "IQC_LOGS": {
+    "pk": [
+      "INSPECT_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "INSPECT_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ARRIVAL_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DETAILS",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECTOR_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "IQC_PART_LINKS": {
+    "pk": [
+      "ITEM_CODE",
+      "PARTNER_ID"
+    ],
+    "cols": [
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PARTNER_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "GROUP_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "JOB_ORDERS": {
+    "pk": [
+      "ORDER_NO"
+    ],
+    "cols": [
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PARENT_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "ROUTING_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PLAN_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "GOOD_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PLAN_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "START_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "END_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PRIORITY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CUST_PO_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "ERP_SYNC_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "LABEL_PRINT_LOGS": {
+    "pk": [
+      "PRINTED_AT",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "PRINTED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TEMPLATE_ID",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CATEGORY",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "PRINT_MODE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "PRINTER_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "UID_LIST",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "LABEL_COUNT",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "ERROR_MSG",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "LABEL_TEMPLATES": {
+    "pk": [
+      "TEMPLATE_NAME",
+      "CATEGORY"
+    ],
+    "cols": [
+      {
+        "name": "TEMPLATE_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "CATEGORY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DESIGN_DATA",
+        "type": "clob",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "IS_DEFAULT",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "ZPL_CODE",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PRINT_MODE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "PRINTER_ID",
+        "type": "varchar2",
+        "len": "36",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "MAT_ARRIVALS": {
+    "pk": [
+      "ARRIVAL_NO",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ARRIVAL_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INVOICE_NO",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "PO_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PO_ITEM_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PO_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "VENDOR_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ARRIVAL_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ARRIVAL_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "IQC_STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SUP_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "MAT_ISSUE_REQUEST_ITEMS": {
+    "pk": [
+      "REQUEST_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "REQUEST_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REQUEST_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ISSUED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "UNIT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "MAT_ISSUE_REQUESTS": {
+    "pk": [
+      "REQUEST_NO"
+    ],
+    "cols": [
+      {
+        "name": "REQUEST_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REQUEST_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REQUESTER",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "APPROVER",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REJECT_REASON",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "ISSUE_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "MAT_ISSUES": {
+    "pk": [
+      "ISSUE_NO",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ISSUE_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROD_RESULT_ID",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ISSUE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ISSUE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ISSUE_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "MAT_LOTS": {
+    "pk": [
+      "MAT_UID"
+    ],
+    "cols": [
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "INIT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RECV_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "MANUFACTURE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "EXPIRE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "ORIGIN",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "INVOICE_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PO_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "IQC_STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "MAT_RECEIVINGS": {
+    "pk": [
+      "RECEIVE_NO",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "RECEIVE_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "RECEIVE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "MAT_STOCKS": {
+    "pk": [
+      "WAREHOUSE_CODE",
+      "ITEM_CODE",
+      "MAT_UID"
+    ],
+    "cols": [
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RESERVED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "AVAILABLE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "LAST_COUNT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "MODEL_SUFFIXES": {
+    "pk": [
+      "MODEL_CODE",
+      "SUFFIX_CODE"
+    ],
+    "cols": [
+      {
+        "name": "MODEL_CODE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "SUFFIX_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SUFFIX_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "MOLD_MASTERS": {
+    "pk": [
+      "MOLD_CODE"
+    ],
+    "cols": [
+      {
+        "name": "MOLD_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MOLD_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "MOLD_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CAVITY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "GUARANTEED_SHOTS",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CURRENT_SHOTS",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "LAST_MAINTENANCE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "NEXT_MAINTENANCE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "MAINTENANCE_CYCLE",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "MAKER",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "PURCHASE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "MOLD_USAGE_LOGS": {
+    "pk": [
+      "USAGE_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "USAGE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "MOLD_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SHOT_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "NUM_RULE_MASTERS": {
+    "pk": [
+      "RULE_TYPE"
+    ],
+    "cols": [
+      {
+        "name": "RULE_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "RULE_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "PATTERN",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "PREFIX",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "SUFFIX",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "SEQ_LENGTH",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CURRENT_SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RESET_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "LAST_RESET",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "OQC_REQUEST_BOXES": {
+    "pk": [
+      "OQC_REQUEST_ID",
+      "BOX_NO"
+    ],
+    "cols": [
+      {
+        "name": "OQC_REQUEST_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "BOX_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "IS_SAMPLE",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "OQC_REQUESTS": {
+    "pk": [
+      "REQUEST_NO"
+    ],
+    "cols": [
+      {
+        "name": "REQUEST_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "REQUEST_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TOTAL_BOX_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TOTAL_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SAMPLE_SIZE",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DETAILS",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECTOR_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "PALLET_MASTERS": {
+    "pk": [
+      "PALLET_NO"
+    ],
+    "cols": [
+      {
+        "name": "PALLET_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "BOX_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TOTAL_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CLOSE_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "SHIPMENT_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      }
+    ]
+  },
+  "ITEM_MASTERS": {
+    "pk": [
+      "ITEM_CODE"
+    ],
+    "cols": [
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "PART_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CUST_PART_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PRODUCT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SPEC",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "REV",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "DRAW_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CUSTOMER",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LEAD_TIME",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SAFETY_STOCK",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "LOT_UNIT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "BOX_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "IQC_FLAG",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_METHOD",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "TACT_TIME",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "EXPIRY_DATE",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TOLERANCE_RATE",
+        "type": "decimal",
+        "len": "5,2",
+        "null": "N"
+      },
+      {
+        "name": "IS_SPLITTABLE",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "SAMPLE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PACK_UNIT",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STORAGE_LOCATION",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PARTNER_MASTERS": {
+    "pk": [
+      "PARTNER_CODE"
+    ],
+    "cols": [
+      {
+        "name": "PARTNER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PARTNER_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "PARTNER_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "BIZ_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CEO_NAME",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ADDRESS",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "TEL",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "FAX",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EMAIL",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "CONTACT_PERSON",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PDA_ROLE_MENU": {
+    "pk": [
+      "PDA_ROLE_CODE",
+      "MENU_CODE"
+    ],
+    "cols": [
+      {
+        "name": "PDA_ROLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MENU_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "IS_ACTIVE",
+        "type": "char",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PDA_ROLE": {
+    "pk": [
+      "CODE"
+    ],
+    "cols": [
+      {
+        "name": "CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "IS_ACTIVE",
+        "type": "char",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PHYSICAL_INV_COUNT_DETAILS": {
+    "pk": [
+      "SESSION_DATE",
+      "SEQ",
+      "WAREHOUSE_CODE",
+      "ITEM_CODE",
+      "MAT_UID"
+    ],
+    "cols": [
+      {
+        "name": "SESSION_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SYSTEM_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "COUNTED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "COUNTED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "PHYSICAL_INV_SESSIONS": {
+    "pk": [
+      "SESSION_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "SESSION_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INV_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "COUNT_MONTH",
+        "type": "varchar2",
+        "len": "7",
+        "null": "N"
+      },
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STARTED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "COMPLETED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "COMPLETED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "PLANTS": {
+    "pk": [
+      "PLANT_CODE",
+      "SHOP_CODE",
+      "LINE_CODE",
+      "CELL_CODE"
+    ],
+    "cols": [
+      {
+        "name": "PLANT_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SHOP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CELL_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PLANT_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "PLANT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SORT_ORDER",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PM_PLAN_ITEMS": {
+    "pk": [
+      "PM_PLAN_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "PM_PLAN_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "CRITERIA",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "SPARE_PART_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SPARE_PART_QTY",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ESTIMATED_MINUTES",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PM_PLANS": {
+    "pk": [
+      "PLAN_CODE"
+    ],
+    "cols": [
+      {
+        "name": "PLAN_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PLAN_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "PM_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "CYCLE_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "CYCLE_VALUE",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CYCLE_UNIT",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "SEASON_MONTH",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "ESTIMATED_TIME",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "LAST_EXECUTED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "NEXT_DUE_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PM_WO_RESULTS": {
+    "pk": [
+      "WORK_ORDER_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "WORK_ORDER_ID",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PM_PLAN_ITEM_ID",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "SEQ",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "CRITERIA",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      }
+    ]
+  },
+  "PM_WORK_ORDERS": {
+    "pk": [
+      "WORK_ORDER_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORK_ORDER_NO",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "PM_PLAN_ID",
+        "type": "raw",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "WO_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SCHEDULED_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DUE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STARTED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "COMPLETED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "PRIORITY",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "ASSIGNED_WORKER_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "OVERALL_RESULT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "DETAILS",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      }
+    ]
+  },
+  "PPAP_SUBMISSIONS": {
+    "pk": [
+      "PPAP_NO"
+    ],
+    "cols": [
+      {
+        "name": "PPAP_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "CUSTOMER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CUSTOMER_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "PPAP_LEVEL",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REASON",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SUBMITTED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "APPROVED_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REJECTED_REASON",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "DESIGN_RECORDS",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ECN_DOCUMENTS",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER_APPROVAL",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DFMEA",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_FLOW_DIAGRAM",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PFMEA",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CONTROL_PLAN",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "MSA_STUDIES",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DIMENSIONAL_RESULTS",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "MATERIAL_TEST_RESULTS",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INITIAL_PROCESS_STUDIES",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "QUALIFIED_LAB_DOC",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "APPEARANCE_APPROVAL",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SAMPLE_PRODUCT",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "MASTER_SAMPLE",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CHECKING_AIDS",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER_SPECIFIC_REQ",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PART_SUBMISSION_WARRANT",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "PROCESS_MAPS": {
+    "pk": [
+      "ITEM_CODE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_TYPE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_TYPE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "STD_TIME",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "Y"
+      },
+      {
+        "name": "SETUP_TIME",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "Y"
+      },
+      {
+        "name": "WIRE_LENGTH",
+        "type": "decimal",
+        "len": "10,2",
+        "null": "Y"
+      },
+      {
+        "name": "STRIP_LENGTH",
+        "type": "decimal",
+        "len": "10,2",
+        "null": "Y"
+      },
+      {
+        "name": "CRIMP_HEIGHT",
+        "type": "decimal",
+        "len": "10,3",
+        "null": "Y"
+      },
+      {
+        "name": "CRIMP_WIDTH",
+        "type": "decimal",
+        "len": "10,3",
+        "null": "Y"
+      },
+      {
+        "name": "WELD_CONDITION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_PARAMS",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PROCESS_MASTERS": {
+    "pk": [
+      "PROCESS_CODE"
+    ],
+    "cols": [
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_TYPE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CATEGORY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SORT_ORDER",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PROCESS_QUALITY_CONDITIONS": {
+    "pk": [
+      "ROUTING_CODE",
+      "SEQ",
+      "CONDITION_SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ROUTING_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CONDITION_SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CONDITION_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "MIN_VALUE",
+        "type": "decimal",
+        "len": "10,2",
+        "null": "Y"
+      },
+      {
+        "name": "MAX_VALUE",
+        "type": "decimal",
+        "len": "10,2",
+        "null": "Y"
+      },
+      {
+        "name": "UNIT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_INTERFACE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PROD_LINE_MASTERS": {
+    "pk": [
+      "LINE_CODE"
+    ],
+    "cols": [
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LINE_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "WH_LOC",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "ERP_CODE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "OPER",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_TYPE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "PROD_PLANS": {
+    "pk": [
+      "PLAN_NO"
+    ],
+    "cols": [
+      {
+        "name": "PLAN_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PLAN_MONTH",
+        "type": "varchar2",
+        "len": "7",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_TYPE",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "PLAN_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PRIORITY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "PROD_RESULTS": {
+    "pk": [
+      "RESULT_NO"
+    ],
+    "cols": [
+      {
+        "name": "RESULT_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PRD_UID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "GOOD_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "START_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "END_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "CYCLE_TIME",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "PRODUCT_STOCKS": {
+    "pk": [
+      "WAREHOUSE_CODE",
+      "ITEM_CODE",
+      "PRD_UID"
+    ],
+    "cols": [
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PRD_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_TYPE",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RESERVED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "AVAILABLE_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "HOLD_REASON",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "HOLD_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "HOLD_BY",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LAST_COUNT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "PRODUCT_TRANSACTIONS": {
+    "pk": [
+      "TRANS_NO"
+    ],
+    "cols": [
+      {
+        "name": "TRANS_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TRANS_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TRANS_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "FROM_WAREHOUSE_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "TO_WAREHOUSE_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_TYPE",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "PRD_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "TOTAL_AMOUNT",
+        "type": "decimal",
+        "len": "14,2",
+        "null": "Y"
+      },
+      {
+        "name": "REF_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REF_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CANCEL_REF_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ISSUE_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "PURCHASE_ORDER_ITEMS": {
+    "pk": [
+      "PO_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "PO_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RECEIVED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "PURCHASE_ORDERS": {
+    "pk": [
+      "PO_NO"
+    ],
+    "cols": [
+      {
+        "name": "PO_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PARTNER_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PARTNER_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "ORDER_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DUE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TOTAL_AMOUNT",
+        "type": "decimal",
+        "len": "14,2",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "REPAIR_LOGS": {
+    "pk": [
+      "REPAIR_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "REPAIR_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_LOG_ID",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REPAIR_ACTION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "MATERIAL_USED",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "REPAIR_TIME",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RESULT",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "REPAIR_ORDERS": {
+    "pk": [
+      "REPAIR_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "REPAIR_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "FG_BARCODE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PRD_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SOURCE_PROCESS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "RETURN_PROCESS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REPAIR_RESULT",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "GENUINE_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DEFECT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DEFECT_CAUSE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DEFECT_POSITION",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DISPOSITION",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "RECEIVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "COMPLETED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "REPAIR_USED_PARTS": {
+    "pk": [
+      "REPAIR_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "REPAIR_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "PRD_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "REWORK_INSPECTS": {
+    "pk": [
+      "REWORK_ORDER_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "REWORK_ORDER_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECTOR_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_METHOD",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "INSPECT_RESULT",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "PASS_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "FAIL_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_DETAIL",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "IMAGE_URL",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "REWORK_ORDERS": {
+    "pk": [
+      "REWORK_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REWORK_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_LOG_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "PRD_UID",
+        "type": "varchar2",
+        "len": "80",
+        "null": "Y"
+      },
+      {
+        "name": "REWORK_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REWORK_METHOD",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "QC_APPROVER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QC_APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "QC_REJECT_REASON",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PROD_APPROVER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROD_APPROVED_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PROD_REJECT_REASON",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "START_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "END_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RESULT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PASS_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "FAIL_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ISOLATION_FLAG",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "IMAGE_URL",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "REWORK_PROCESSES": {
+    "pk": [
+      "REWORK_ORDER_ID",
+      "PROCESS_CODE"
+    ],
+    "cols": [
+      {
+        "name": "REWORK_ORDER_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PLAN_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RESULT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "START_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "END_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "REWORK_RESULTS": {
+    "pk": [
+      "REWORK_ORDER_ID",
+      "PROCESS_CODE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "REWORK_ORDER_ID",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "RESULT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "GOOD_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORK_DETAIL",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "N"
+      },
+      {
+        "name": "WORK_TIME_MIN",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "START_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "END_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "1000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "ROLE_MENU_PERMISSIONS": {
+    "pk": [
+      "ROLE_CODE",
+      "MENU_CODE"
+    ],
+    "cols": [
+      {
+        "name": "ROLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MENU_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CAN_ACCESS",
+        "type": "char",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "ROLES": {
+    "pk": [
+      "CODE"
+    ],
+    "cols": [
+      {
+        "name": "CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "IS_SYSTEM",
+        "type": "char",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "SORT_ORDER",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      }
+    ]
+  },
+  "ROUTING_GROUPS": {
+    "pk": [
+      "ROUTING_CODE"
+    ],
+    "cols": [
+      {
+        "name": "ROUTING_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ROUTING_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "ROUTING_PROCESSES": {
+    "pk": [
+      "ROUTING_CODE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ROUTING_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "STD_TIME",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "Y"
+      },
+      {
+        "name": "SETUP_TIME",
+        "type": "decimal",
+        "len": "10,4",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "SAMPLE_INSPECT_RESULTS": {
+    "pk": [
+      "ORDER_NO",
+      "SAMPLE_NO"
+    ],
+    "cols": [
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SAMPLE_NO",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECTOR_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "MEASURED_VALUE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "SPEC_UPPER",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SPEC_LOWER",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PASS_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SCHEDULER_JOBS": {
+    "pk": [
+      "JOB_CODE"
+    ],
+    "cols": [
+      {
+        "name": "JOB_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "JOB_NAME",
+        "type": "nvarchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "JOB_GROUP",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "EXEC_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "EXEC_TARGET",
+        "type": "nvarchar2",
+        "len": "500",
+        "null": "N"
+      },
+      {
+        "name": "EXEC_PARAMS",
+        "type": "nvarchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "CRON_EXPR",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "IS_ACTIVE",
+        "type": "char",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "MAX_RETRY",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TIMEOUT_SEC",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "nvarchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "LAST_RUN_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "LAST_STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "Y"
+      },
+      {
+        "name": "LAST_ERROR_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "NEXT_RUN_AT",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "SCHEDULER_LOGS": {
+    "pk": [
+      "LOG_ID"
+    ],
+    "cols": [
+      {
+        "name": "LOG_ID",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "JOB_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "START_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "END_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DURATION_MS",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "RESULT_MSG",
+        "type": "nvarchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "ERROR_MSG",
+        "type": "nvarchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "RETRY_COUNT",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "AFFECTED_ROWS",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "SCHEDULER_NOTIFICATIONS": {
+    "pk": [
+      "NOTI_ID"
+    ],
+    "cols": [
+      {
+        "name": "NOTI_ID",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "JOB_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "USER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "NOTI_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "MESSAGE",
+        "type": "nvarchar2",
+        "len": "500",
+        "null": "N"
+      },
+      {
+        "name": "IS_READ",
+        "type": "char",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "SEQ_RULES": {
+    "pk": [
+      "DOC_TYPE"
+    ],
+    "cols": [
+      {
+        "name": "DOC_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "PREFIX",
+        "type": "varchar2",
+        "len": "10",
+        "null": "N"
+      },
+      {
+        "name": "SEQ_NAME",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "PAD_LENGTH",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DATE_FORMAT",
+        "type": "varchar2",
+        "len": "10",
+        "null": "Y"
+      },
+      {
+        "name": "SEPARATOR",
+        "type": "varchar2",
+        "len": "2",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "SHIPMENT_LOGS": {
+    "pk": [
+      "SHIP_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SHIP_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SHIP_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "SHIP_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "VEHICLE_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DRIVER_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "DESTINATION",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "CUSTOMER",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "PALLET_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "BOX_COUNT",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "TOTAL_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "ERP_SYNC_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "SHIPMENT_ORDER_ITEMS": {
+    "pk": [
+      "SHIP_ORDER_ID",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "SHIP_ORDER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ORDER_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SHIPPED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SHIPMENT_ORDERS": {
+    "pk": [
+      "SHIP_ORDER_NO"
+    ],
+    "cols": [
+      {
+        "name": "SHIP_ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CUSTOMER_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "CUSTOMER_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "DUE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "SHIP_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SHIPMENT_RETURN_ITEMS": {
+    "pk": [
+      "RETURN_NO",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "RETURN_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "RETURN_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DISPOSAL_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SHIPMENT_RETURNS": {
+    "pk": [
+      "RETURN_NO"
+    ],
+    "cols": [
+      {
+        "name": "RETURN_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "SHIPMENT_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "RETURN_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "RETURN_REASON",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SPC_CHARTS": {
+    "pk": [
+      "CHART_NO"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CHART_NO",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CHARACTERISTIC_NAME",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "CHART_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "SUBGROUP_SIZE",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "LSL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "TARGET",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "UCL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "LCL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "CL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "DATA_SOURCE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "SOURCE_INSPECT_ITEM",
+        "type": "nvarchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "SPC_DATA": {
+    "pk": [
+      "CHART_ID",
+      "SAMPLE_DATE",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CHART_ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SAMPLE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SUBGROUP_NO",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "VALUES",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "N"
+      },
+      {
+        "name": "MEAN",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "N"
+      },
+      {
+        "name": "RANGE_VAL",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "N"
+      },
+      {
+        "name": "STD_DEV",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "CPK",
+        "type": "decimal",
+        "len": "8,4",
+        "null": "Y"
+      },
+      {
+        "name": "PPK",
+        "type": "decimal",
+        "len": "8,4",
+        "null": "Y"
+      },
+      {
+        "name": "OUT_OF_CONTROL",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "STOCK_TRANSACTIONS": {
+    "pk": [
+      "TRANS_NO"
+    ],
+    "cols": [
+      {
+        "name": "TRANS_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TRANS_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TRANS_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "FROM_WAREHOUSE_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "TO_WAREHOUSE_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "TOTAL_AMOUNT",
+        "type": "decimal",
+        "len": "14,2",
+        "null": "Y"
+      },
+      {
+        "name": "REF_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REF_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CANCEL_REF_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "SUBCON_DELIVERIES": {
+    "pk": [
+      "DELIVERY_NO"
+    ],
+    "cols": [
+      {
+        "name": "ORDER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "DELIVERY_NO",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DELIVERY_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SUBCON_ORDERS": {
+    "pk": [
+      "ORDER_NO"
+    ],
+    "cols": [
+      {
+        "name": "ORDER_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "VENDOR_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "ORDER_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DELIVERED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RECEIVED_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "UNIT_PRICE",
+        "type": "decimal",
+        "len": "12,4",
+        "null": "Y"
+      },
+      {
+        "name": "ORDER_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DUE_DATE",
+        "type": "date",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SUBCON_RECEIVES": {
+    "pk": [
+      "RECEIVE_NO"
+    ],
+    "cols": [
+      {
+        "name": "ORDER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "RECEIVE_NO",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "GOOD_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "DEFECT_QTY",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "RECEIVE_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "INSPECT_RESULT",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "SYS_CONFIGS": {
+    "pk": [
+      "CONFIG_KEY"
+    ],
+    "cols": [
+      {
+        "name": "CONFIG_KEY",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "CONFIG_GROUP",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "CONFIG_VALUE",
+        "type": "varchar2",
+        "len": "500",
+        "null": "N"
+      },
+      {
+        "name": "CONFIG_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "LABEL",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "OPTIONS",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "SORT_ORDER",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "IS_ACTIVE",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "TRACE_LOGS": {
+    "pk": [
+      "TRACE_TIME",
+      "SEQ"
+    ],
+    "cols": [
+      {
+        "name": "TRACE_TIME",
+        "type": "timestamp",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "SEQ",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "ID",
+        "type": "int",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "PALLET_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "BOX_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "MAT_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PRD_UID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "MAT_LOT_ID",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "EQUIP_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "WORKER_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "SERIAL_NO",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "EVENT_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EVENT_DATA",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PARENT_ID",
+        "type": "number",
+        "len": "-",
+        "null": "Y"
+      }
+    ]
+  },
+  "TRAINING_PLANS": {
+    "pk": [
+      "PLAN_NO"
+    ],
+    "cols": [
+      {
+        "name": "PLAN_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TITLE",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "TRAINING_TYPE",
+        "type": "varchar2",
+        "len": "30",
+        "null": "N"
+      },
+      {
+        "name": "TARGET_ROLE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "INSTRUCTOR",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "SCHEDULED_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "DURATION",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "MAX_PARTICIPANTS",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "DESCRIPTION",
+        "type": "varchar2",
+        "len": "2000",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "TRAINING_RESULTS": {
+    "pk": [
+      "PLAN_NO",
+      "WORKER_CODE"
+    ],
+    "cols": [
+      {
+        "name": "PLAN_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "ATTEND_DATE",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "SCORE",
+        "type": "int",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PASSED",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CERTIFICATE_NO",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "VALID_UNTIL",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARKS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "PLANT",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      }
+    ]
+  },
+  "USER_AUTHS": {
+    "pk": [
+      "USER_EMAIL",
+      "MENU_CODE"
+    ],
+    "cols": [
+      {
+        "name": "USER_EMAIL",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "MENU_CODE",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "CAN_READ",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CAN_WRITE",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CAN_DELETE",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "CAN_EXPORT",
+        "type": "varchar2",
+        "len": "-",
+        "null": "N"
+      }
+    ]
+  },
+  "USERS": {
+    "pk": [
+      "EMAIL"
+    ],
+    "cols": [
+      {
+        "name": "EMAIL",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "PASSWORD",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "EMP_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "DEPT",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "ROLE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "STATUS",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PHOTO_URL",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "LAST_LOGIN",
+        "type": "timestamp",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "PDA_ROLE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      }
+    ]
+  },
+  "VENDOR_BARCODE_MAPPINGS": {
+    "pk": [
+      "VENDOR_BARCODE"
+    ],
+    "cols": [
+      {
+        "name": "VENDOR_BARCODE",
+        "type": "varchar2",
+        "len": "200",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ITEM_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "MAPPING_RULE",
+        "type": "varchar2",
+        "len": "200",
+        "null": "Y"
+      },
+      {
+        "name": "MATCH_TYPE",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "VENDOR_MASTERS": {
+    "pk": [
+      "VENDOR_CODE"
+    ],
+    "cols": [
+      {
+        "name": "VENDOR_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "VENDOR_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "BIZ_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "CEO_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "ADDRESS",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "TEL",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "FAX",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "EMAIL",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "CONTACT_PERSON",
+        "type": "varchar2",
+        "len": "100",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "WAREHOUSE_LOCATIONS": {
+    "pk": [
+      "WAREHOUSE_CODE",
+      "LOCATION_CODE"
+    ],
+    "cols": [
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "LOCATION_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "ZONE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "ROW_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "COL_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LEVEL_NO",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "WAREHOUSE_TRANSFER_RULES": {
+    "pk": [
+      "FROM_WAREHOUSE_ID",
+      "TO_WAREHOUSE_ID"
+    ],
+    "cols": [
+      {
+        "name": "FROM_WAREHOUSE_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "TO_WAREHOUSE_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "ALLOW_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      }
+    ]
+  },
+  "WAREHOUSES": {
+    "pk": [
+      "WAREHOUSE_CODE"
+    ],
+    "cols": [
+      {
+        "name": "WAREHOUSE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "WAREHOUSE_NAME",
+        "type": "varchar2",
+        "len": "100",
+        "null": "N"
+      },
+      {
+        "name": "WAREHOUSE_TYPE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PLANT_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "LINE_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "VENDOR_ID",
+        "type": "varchar2",
+        "len": "50",
+        "null": "Y"
+      },
+      {
+        "name": "IS_DEFAULT",
+        "type": "number",
+        "len": "-",
+        "null": "N"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "WORK_INSTRUCTIONS": {
+    "pk": [
+      "ITEM_CODE",
+      "PROCESS_CODE",
+      "REVISION"
+    ],
+    "cols": [
+      {
+        "name": "ITEM_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "PROCESS_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "REVISION",
+        "type": "varchar2",
+        "len": "20",
+        "null": "N"
+      },
+      {
+        "name": "TITLE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "CONTENT",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "IMAGE_URL",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  },
+  "WORKER_MASTERS": {
+    "pk": [
+      "WORKER_CODE"
+    ],
+    "cols": [
+      {
+        "name": "WORKER_CODE",
+        "type": "varchar2",
+        "len": "50",
+        "null": "N"
+      },
+      {
+        "name": "WORKER_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "N"
+      },
+      {
+        "name": "ENG_NAME",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "DEPT",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "POSITION",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PHONE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "EMAIL",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "HIRE_DATE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "QUIT_DATE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "QR_CODE",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PHOTO_URL",
+        "type": "varchar2",
+        "len": "255",
+        "null": "Y"
+      },
+      {
+        "name": "PROCESS_IDS",
+        "type": "clob",
+        "len": "-",
+        "null": "Y"
+      },
+      {
+        "name": "REMARK",
+        "type": "varchar2",
+        "len": "500",
+        "null": "Y"
+      },
+      {
+        "name": "USE_YN",
+        "type": "varchar2",
+        "len": "1",
+        "null": "N"
+      }
+    ]
+  }
+}

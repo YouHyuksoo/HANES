@@ -8,7 +8,7 @@
  * 1. editData=null -> 신규 등록, editData 있으면 수정
  * 2. 품목(PartSearchModal), 공정(ProcessSelect), 특성명, 관리도유형, 부분군크기 등 입력
  * 3. USL/LSL/Target 입력, UCL/LCL/CL은 계산 결과로 읽기전용 표시
- * 4. API: POST /quality/spc/charts, PUT /quality/spc/charts/:id
+ * 4. API: POST /quality/spc/charts, PUT /quality/spc/charts/:chartNo
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -39,7 +39,7 @@ const INIT: SpcFormData = {
 
 interface Props {
   editData: {
-    id: number; chartNo: string; itemCode: string; processCode: string;
+    chartNo: string; itemCode: string; processCode: string;
     characteristicName: string; chartType: string; subgroupSize: number;
     usl: number | null; lsl: number | null; target: number | null;
     ucl: number | null; lcl: number | null; cl: number | null;

@@ -62,6 +62,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MST_WAREHOUSE", labelKey: "menu.master.warehouse", path: "/master/warehouse" },
       { code: "MST_LABEL", labelKey: "menu.master.label", path: "/master/label" },
       { code: "MST_VENDOR_BARCODE", labelKey: "menu.master.vendorBarcode", path: "/master/vendor-barcode" },
+      { code: "MST_PROCESS_CAPA", labelKey: "menu.master.processCapa", path: "/master/process-capa" },
       { code: "SYS_DOCUMENT", labelKey: "menu.system.document", path: "/system/document" },
     ],
   },
@@ -136,6 +137,7 @@ export const menuConfig: MenuConfigItem[] = [
     icon: Factory,
     children: [
       { code: "PROD_MONTHLY_PLAN", labelKey: "menu.production.monthlyPlan", path: "/production/monthly-plan" },
+      { code: "PROD_SIMULATION", labelKey: "menu.production.simulation", path: "/production/simulation" },
       { code: "PROD_ORDER", labelKey: "menu.production.order", path: "/production/order" },
       { code: "PROD_RESULT", labelKey: "menu.production.result", path: "/production/result" },
       { code: "PROD_PROGRESS", labelKey: "menu.production.progress", path: "/production/progress" },
@@ -229,8 +231,15 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "SHIP_ORDER", labelKey: "menu.shipping.order", path: "/shipping/order" },
       { code: "SHIP_HISTORY", labelKey: "menu.shipping.history", path: "/shipping/history" },
       { code: "SHIP_RETURN", labelKey: "menu.shipping.return", path: "/shipping/return" },
-      { code: "SHIP_CUST_PO", labelKey: "menu.shipping.customerPo", path: "/shipping/customer-po" },
-      { code: "SHIP_CUST_PO_STATUS", labelKey: "menu.shipping.customerPoStatus", path: "/shipping/customer-po-status" },
+    ],
+  },
+  {
+    code: "SALES",
+    labelKey: "menu.sales",
+    icon: ShoppingCart,
+    children: [
+      { code: "SALES_CUST_PO", labelKey: "menu.sales.customerPo", path: "/sales/customer-po" },
+      { code: "SALES_CUST_PO_STATUS", labelKey: "menu.sales.customerPoStatus", path: "/sales/customer-po-status" },
     ],
   },
   {

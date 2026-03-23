@@ -109,8 +109,8 @@ export class BoxController {
   @ApiOperation({ summary: '박스 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
   @ApiResponse({ status: 409, description: '중복 박스번호' })
-  async create(@Body() dto: CreateBoxDto) {
-    const data = await this.boxService.create(dto);
+  async create(@Body() dto: CreateBoxDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.create(dto, company, plant);
     return ResponseUtil.success(data, '박스가 생성되었습니다.');
   }
 

@@ -330,11 +330,11 @@ export class PmPlanService {
   }
 
   /** WO 실행 */
-  async executeWorkOrder(id: number, dto: ExecutePmWorkOrderDto) {
+  async executeWorkOrder(workOrderNo: string, dto: ExecutePmWorkOrderDto) {
     const wo = await this.pmWorkOrderRepo.findOne({
-      where: { id },
+      where: { workOrderNo },
     });
-    if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${id}`);
+    if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${workOrderNo}`);
 
     if (wo.status === 'COMPLETED' || wo.status === 'CANCELLED') {
       throw new BadRequestException(`이미 ${wo.status} 상태입니다.`);
@@ -352,7 +352,7 @@ export class PmPlanService {
     if (dto.items?.length) {
       const results = dto.items.map((item) =>
         this.pmWoResultRepo.create({
-          workOrderId: wo.id,
+          workOrderNo: wo.workOrderNo,
           pmPlanItemId: item.itemId ?? null,
           seq: item.seq,
           itemName: item.itemName,
@@ -385,11 +385,11 @@ export class PmPlanService {
   }
 
   /** WO 취소 */
-  async cancelWorkOrder(id: number) {
+  async cancelWorkOrder(workOrderNo: string) {
     const wo = await this.pmWorkOrderRepo.findOne({
-      where: { id },
+      where: { workOrderNo },
     });
-    if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${id}`);
+    if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${workOrderNo}`);
 
     if (wo.status === 'COMPLETED') {
       throw new BadRequestException('완료된 WO는 취소할 수 없습니다.');
@@ -538,18 +538,18 @@ export class PmPlanService {
       : [];
     const equipMap = new Map(equips.map((e) => [e.equipCode, e]));
 
-    const woIds = workOrders.map((wo) => wo.id);
-    const allResults = woIds.length > 0
+    const woNos = workOrders.map((wo) => wo.workOrderNo);
+    const allResults = woNos.length > 0
       ? await this.pmWoResultRepo.find({
-          where: { workOrderId: In(woIds) },
+          where: { workOrderNo: In(woNos) },
           order: { seq: 'ASC' },
         })
       : [];
-    const resultsMap = new Map<number, PmWoResult[]>();
+    const resultsMap = new Map<string, PmWoResult[]>();
     for (const r of allResults) {
-      const list = resultsMap.get(r.workOrderId) || [];
+      const list = resultsMap.get(r.workOrderNo) || [];
       list.push(r);
-      resultsMap.set(r.workOrderId, list);
+      resultsMap.set(r.workOrderNo, list);
     }
 
     const result = await Promise.all(
@@ -581,7 +581,7 @@ export class PmPlanService {
             equipType: equip?.equipType || null,
           },
           planItems,
-          results: resultsMap.get(wo.id) || [],
+          results: resultsMap.get(wo.workOrderNo) || [],
         };
       }),
     );

@@ -33,7 +33,6 @@ const INIT: AuditFormData = {
 
 /** 수정 시 전달되는 심사 데이터 */
 interface AuditEditData {
-  id: number;
   auditNo: string;
   auditType: string;
   auditScope: string;
@@ -94,7 +93,7 @@ export default function AuditFormPanel({ isOpen, editData, onClose, onSave }: Pr
         summary: form.summary || undefined,
       };
       if (isEdit && editData) {
-        await api.patch(`/quality/audits/${editData.id}`, payload);
+        await api.patch(`/quality/audits/${editData.auditNo}`, payload);
       } else {
         await api.post("/quality/audits", payload);
       }

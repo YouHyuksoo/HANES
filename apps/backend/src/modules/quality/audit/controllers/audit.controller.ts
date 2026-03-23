@@ -32,10 +32,11 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { AuditService } from '../services/audit.service';
 import {
@@ -46,6 +47,7 @@ import {
 } from '../dto/audit.dto';
 
 @ApiTags('Internal Audit')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/audits')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
@@ -69,7 +71,7 @@ export class AuditController {
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '심사 계획 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.auditService.findById(id);
     return ResponseUtil.success(data);
   }
@@ -98,7 +100,7 @@ export class AuditController {
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateAuditPlanDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -115,7 +117,7 @@ export class AuditController {
   @ApiOperation({ summary: '심사 계획 삭제', description: 'PLANNED 상태에서만 가능' })
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.auditService.delete(id);
     return ResponseUtil.success(null, '심사 계획이 삭제되었습니다.');
   }
@@ -127,7 +129,7 @@ export class AuditController {
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '완료 성공' })
   async complete(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body('overallResult') overallResult: string,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -144,7 +146,7 @@ export class AuditController {
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '종결 성공' })
   async close(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.auditService.close(
@@ -160,7 +162,7 @@ export class AuditController {
   @ApiOperation({ summary: '발견사항 목록', description: '심사별 발견사항 조회' })
   @ApiParam({ name: 'id', description: '심사 계획 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getFindings(@Param('id', ParseIntPipe) id: number) {
+  async getFindings(@Param('id') id: string) {
     const data = await this.auditService.getFindings(id);
     return ResponseUtil.success(data);
   }
@@ -190,9 +192,9 @@ export class AuditController {
   @ApiParam({ name: 'findingNo', description: '발견사항 번호' })
   @ApiResponse({ status: 200, description: '연결 성공' })
   async linkCapa(
-    @Param('auditId', ParseIntPipe) auditId: number,
+    @Param('auditId') auditId: string,
     @Param('findingNo', ParseIntPipe) findingNo: number,
-    @Body('capaId') capaId: number,
+    @Body('capaId') capaId: string,
   ) {
     const data = await this.auditService.linkCapa(auditId, findingNo, capaId);
     return ResponseUtil.success(data, 'CAPA가 연결되었습니다.');

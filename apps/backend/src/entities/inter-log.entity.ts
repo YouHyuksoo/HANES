@@ -8,7 +8,6 @@
  * 2. direction: INBOUND(수신) / OUTBOUND(송신)
  * 3. status: PENDING, SUCCESS, FAILED
  * 4. payload: 연동 데이터 (CLOB)
- * 5. id는 레거시 FK 호환을 위해 generated @Column으로 유지
  */
 import {
   Entity,
@@ -24,9 +23,6 @@ import {
 @Index(['status'])
 @Index(['interfaceId'])
 export class InterLog {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'TRANS_DATE', type: 'date' })
   transDate: Date;
 
@@ -45,7 +41,7 @@ export class InterLog {
   @Column({ name: 'PAYLOAD', type: 'clob', nullable: true })
   payload: string | null;
 
-  @Column({ name: 'STATUS', length: 50, default: 'PENDING' })
+  @Column({ name: 'STATUS', length: 20, default: 'PENDING' })
   status: string;
 
   @Column({ name: 'ERROR_MSG', length: 500, nullable: true })

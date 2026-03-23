@@ -163,6 +163,7 @@
     "master.company": "회사관리",
     "master.label": "라벨관리",
     "master.vendorBarcode": "제조사 바코드 매핑",
+    "master.processCapa": "공정 CAPA",
     "matInventory": "자재재고관리",
     "productInventory": "제품재고관리",
     "inventory": "재고관리",
@@ -215,6 +216,7 @@
     "purchasing.poStatus": "PO현황조회",
     "production": "생산관리",
     "production.monthlyPlan": "월간생산계획",
+    "production.simulation": "생산계획 시뮬레이션",
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
     "production.progress": "작업지시현황조회",
@@ -275,8 +277,9 @@
     "shipping.order": "출하지시등록",
     "shipping.history": "출하이력조회",
     "shipping.return": "출하반품등록",
-    "shipping.customerPo": "고객발주관리",
-    "shipping.customerPoStatus": "고객발주현황조회",
+    "sales": "영업관리",
+    "sales.customerPo": "수주관리",
+    "sales.customerPoStatus": "수주현황조회",
     "customs": "보세관리",
     "customs.entry": "수입신고관리",
     "customs.stock": "보세재고조회",
@@ -1429,6 +1432,8 @@
       "deleteCalendarMsg": "이 캘린더를 삭제하시겠습니까? 일자 데이터도 함께 삭제됩니다.",
       "selectCalendar": "좌측에서 캘린더를 선택하세요.",
       "generateYear": "연간 생성",
+      "saturdayWork": "토요일 근무",
+      "sundayWork": "일요일 근무",
       "sourceCalendar": "복사 원본 캘린더",
       "year": "연도",
       "process": "공정",
@@ -1622,7 +1627,7 @@
       "attachment": "첨부파일",
       "dropFile": "파일을 드래그하거나 클릭하여 업로드",
       "fileTypes": "이미지(JPG, PNG), PDF, 문서 (최대 10MB)",
-      "preview": "미리보기",
+      "preview": "조회",
       "openNewTab": "새 탭에서 열기",
       "clickToDownload": "클릭하여 다운로드",
       "noContent": "등록된 내용이 없습니다."
@@ -1670,7 +1675,7 @@
       "labelSize": "라벨 크기",
       "showName": "명칭 표시",
       "showSub": "부가정보 표시",
-      "preview": "미리보기",
+      "preview": "조회",
       "printSelected": "선택 출력",
       "printAll": "일괄 출력",
       "selectItems": "출력할 항목을 선택하세요",
@@ -2888,7 +2893,8 @@
       "allStatus": "전체 상태",
       "searchPlaceholder": "지시번호, 품목명 검색...",
       "planDateFrom": "계획일(시작)",
-      "planDateTo": "계획일(종료)"
+      "planDateTo": "계획일(종료)",
+      "shiftFilter": "교대"
     },
     "inputManual": {
       "title": "실적입력 (수작업)",
@@ -5460,6 +5466,78 @@
       "itemCodeRequired": "품목코드 필수",
       "itemTypeInvalid": "FG/WIP만 가능",
       "planQtyRequired": "수량 1 이상"
+    },
+    "autoGenerate": {
+      "button": "수주 가져오기",
+      "title": "수주 가져오기",
+      "month": "대상월",
+      "dueDateStart": "납기 시작일",
+      "dueDateEnd": "납기 종료일",
+      "orderNo": "수주번호",
+      "dueDate": "납기일",
+      "preview": "조회",
+      "execute": "가져오기",
+      "workDays": "작업일수",
+      "demandItems": "수주 품목",
+      "existingDrafts": "기존 DRAFT 삭제",
+      "demandQty": "수주량",
+      "monthlyCapa": "월간 CAPA",
+      "capaUtil": "CAPA 활용률",
+      "overCapa": "초과",
+      "normal": "정상",
+      "bottleneck": "병목 공정",
+      "confirmDelete": "선택한 수주를 생산계획으로 가져옵니다. 진행하시겠습니까?",
+      "noDemand": "해당 기간에 미출하 수주가 없습니다.",
+      "emptyGuide": "조건을 설정한 후 [조회]를 클릭하세요."
+    }
+  },
+  "simulation": {
+    "title": "생산계획 시뮬레이션",
+    "description": "납기/CAPA/월력 기반 생산 스케줄을 시뮬레이션합니다.",
+    "run": "시뮬레이션 실행",
+    "month": "대상월",
+    "strategy": {
+      "label": "편성 전략",
+      "dueDate": "납기 우선",
+      "minSetup": "모델체인지 최소화"
+    },
+    "totalPlans": "총 계획",
+    "onTime": "납기 준수",
+    "delayed": "지연",
+    "utilization": "가동률",
+    "emptyGuide": "대상월을 선택하고 시뮬레이션을 실행하세요.",
+    "planInfo": "계획정보",
+    "schedule": "일자별 스케줄",
+    "dueDate": "납기",
+    "startDate": "시작일",
+    "endDate": "완료예정",
+    "delayDays": "일",
+    "legend": {
+      "production": "생산",
+      "dueMarker": "납기",
+      "onTime": "준수",
+      "delay": "지연"
+    }
+  },
+  "processCapa": {
+    "title": "공정 CAPA 관리",
+    "description": "공정×제품별 생산능력을 관리합니다.",
+    "addCapa": "CAPA 추가",
+    "processCode": "공정",
+    "itemCode": "품목",
+    "stdTactTime": "표준 택트타임(초)",
+    "stdUph": "표준 UPH",
+    "workerCnt": "작업자 수",
+    "boardCnt": "보드/지그 수",
+    "equipCnt": "설비 대수",
+    "setupTime": "전환시간(분)",
+    "balanceEff": "밸런싱 효율(%)",
+    "dailyCapa": "일일 CAPA",
+    "stats": {
+      "total": "전체",
+      "equipBased": "설비종속",
+      "workerBased": "인력종속",
+      "inactive": "비활성"
     }
   }
 }

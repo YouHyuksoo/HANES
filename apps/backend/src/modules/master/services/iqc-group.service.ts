@@ -98,8 +98,8 @@ export class IqcGroupService {
     if (dto.items?.length) {
       const items = dto.items.map(i =>
         this.groupItemRepo.create({
-          groupId: saved.id,
-          inspItemId: Number(i.itemId),
+          groupCode: saved.groupCode,
+          inspItemCode: String(i.itemId),
           seq: i.seq,
           company,
           plant,
@@ -126,13 +126,13 @@ export class IqcGroupService {
     await this.groupRepo.save(group);
 
     if (dto.items !== undefined) {
-      await this.groupItemRepo.delete({ groupId: group.id });
+      await this.groupItemRepo.delete({ groupCode: group.groupCode });
 
       if (dto.items.length) {
         const items = dto.items.map(i =>
           this.groupItemRepo.create({
-            groupId: group.id,
-            inspItemId: Number(i.itemId),
+            groupCode: group.groupCode,
+            inspItemCode: String(i.itemId),
             seq: i.seq,
           }),
         );

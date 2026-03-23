@@ -18,12 +18,14 @@ import { AuditController } from './controllers/audit.controller';
 import { AuditService } from './services/audit.service';
 import { AuditPlan } from '../../../entities/audit-plan.entity';
 import { AuditFinding } from '../../../entities/audit-finding.entity';
+import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       AuditPlan,
       AuditFinding,
+      User,
     ]),
   ],
   controllers: [AuditController],

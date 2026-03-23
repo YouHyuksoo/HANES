@@ -22,8 +22,7 @@ import api from "@/services/api";
 
 interface InspectHistoryRow {
   resultNo: string;
-  id: number;
-  prodResultId: number | null;
+  prodResultNo: string | null;
   inspectType: string;
   inspectScope: string | null;
   passYn: string;

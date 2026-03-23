@@ -47,7 +47,7 @@ export class CustomsEntry {
   @Column({ name: 'CURRENCY', length: 10, default: 'USD' })
   currency: string;
 
-  @Column({ name: 'STATUS', length: 50, default: 'PENDING' })
+  @Column({ name: 'STATUS', length: 20, default: 'PENDING' })
   status: string;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })

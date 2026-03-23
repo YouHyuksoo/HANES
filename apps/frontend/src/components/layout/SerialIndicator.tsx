@@ -37,8 +37,7 @@ export default function SerialIndicator() {
   }, [fetchConfigs, autoConnect]);
 
   /* Web Serial API 미지원 브라우저면 아이콘 숨김 */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (typeof navigator === "undefined" || !(navigator as any).serial) {
+  if (typeof navigator === "undefined" || !navigator.serial) {
     return null;
   }
 

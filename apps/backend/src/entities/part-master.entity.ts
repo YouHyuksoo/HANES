@@ -92,7 +92,7 @@ export class PartMaster {
   @Column({ name: 'STORAGE_LOCATION', length: 100, nullable: true })
   storageLocation: string | null;
 
-  @Column({ name: 'REMARKS', length: 500, nullable: true })
+  @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })

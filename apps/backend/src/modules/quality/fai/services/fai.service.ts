@@ -122,13 +122,13 @@ export class FaiService {
   /**
    * FAI 단건 조회 (검사항목 포함)
    */
-  async findById(id: number) {
-    const fai = await this.faiRepo.findOne({ where: { id } });
+  async findById(faiNo: string) {
+    const fai = await this.faiRepo.findOne({ where: { faiNo } });
     if (!fai) {
       throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
     }
     const items = await this.itemRepo.find({
-      where: { faiId: id },
+      where: { faiId: faiNo },
       order: { seq: 'ASC' },
     });
     return { ...fai, items };
@@ -158,7 +158,7 @@ export class FaiService {
     const saved = await this.faiRepo.save(entity) as FaiRequest;
 
     if (items && items.length > 0) {
-      await this.saveItems(saved.id, items);
+      await this.saveItems(saved.faiNo, items);
     }
 
     this.logger.log(`초물검사 등록: ${faiNo} (itemCode: ${dto.itemCode})`);
@@ -168,8 +168,8 @@ export class FaiService {
   /**
    * FAI 요청 수정 (REQUESTED 상태에서만 가능)
    */
-  async update(id: number, dto: UpdateFaiDto, userId: string) {
-    const fai = await this.faiRepo.findOne({ where: { id } });
+  async update(faiNo: string, dto: UpdateFaiDto, userId: string) {
+    const fai = await this.faiRepo.findOne({ where: { faiNo } });
     if (!fai) throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
     if (fai.status !== 'REQUESTED') {
       throw new BadRequestException('요청 상태에서만 수정할 수 있습니다.');
@@ -182,13 +182,13 @@ export class FaiService {
   /**
    * FAI 요청 삭제 (REQUESTED 상태에서만 가능)
    */
-  async delete(id: number) {
-    const fai = await this.faiRepo.findOne({ where: { id } });
+  async delete(faiNo: string) {
+    const fai = await this.faiRepo.findOne({ where: { faiNo } });
     if (!fai) throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
     if (fai.status !== 'REQUESTED') {
       throw new BadRequestException('요청 상태에서만 삭제할 수 있습니다.');
     }
-    await this.itemRepo.delete({ faiId: id });
+    await this.itemRepo.delete({ faiId: faiNo });
     await this.faiRepo.remove(fai);
   }
 
@@ -199,8 +199,8 @@ export class FaiService {
   /**
    * 검사 시작 (REQUESTED → SAMPLING)
    */
-  async start(id: number, userId: string) {
-    const fai = await this.faiRepo.findOne({ where: { id } });
+  async start(faiNo: string, userId: string) {
+    const fai = await this.faiRepo.findOne({ where: { faiNo } });
     if (!fai) throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
     if (fai.status !== 'REQUESTED') {
       throw new BadRequestException('요청 상태에서만 검사를 시작할 수 있습니다.');
@@ -216,15 +216,15 @@ export class FaiService {
    * items 전체 OK이면 PASS, NG가 하나라도 있으면 FAIL.
    * dto.result로 CONDITIONAL(조건부 합격) 수동 지정 가능.
    */
-  async complete(id: number, dto: CompleteFaiDto, userId: string) {
-    const fai = await this.faiRepo.findOne({ where: { id } });
+  async complete(faiNo: string, dto: CompleteFaiDto, userId: string) {
+    const fai = await this.faiRepo.findOne({ where: { faiNo } });
     if (!fai) throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
     if (!['SAMPLING', 'INSPECTING'].includes(fai.status)) {
       throw new BadRequestException('샘플링 또는 검사중 상태에서만 완료할 수 있습니다.');
     }
 
     // 자동 판정: items 기반
-    const items = await this.itemRepo.find({ where: { faiId: id } });
+    const items = await this.itemRepo.find({ where: { faiId: faiNo } });
     let autoResult = dto.result;
     if (items.length > 0 && dto.result !== 'CONDITIONAL') {
       const hasNg = items.some((item) => item.result === 'NG');
@@ -234,7 +234,7 @@ export class FaiService {
     fai.status = autoResult;
     fai.result = autoResult;
     fai.inspectDate = new Date();
-    fai.remarks = dto.remarks ?? fai.remarks;
+    fai.remark = dto.remark ?? fai.remark;
     fai.updatedBy = userId;
 
     this.logger.log(`초물검사 완료: ${fai.faiNo}, 판정=${autoResult}`);
@@ -244,8 +244,8 @@ export class FaiService {
   /**
    * 승인 (PASS/FAIL/CONDITIONAL 상태에서)
    */
-  async approve(id: number, userId: string) {
-    const fai = await this.faiRepo.findOne({ where: { id } });
+  async approve(faiNo: string, userId: string) {
+    const fai = await this.faiRepo.findOne({ where: { faiNo } });
     if (!fai) throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
     if (!['PASS', 'FAIL', 'CONDITIONAL'].includes(fai.status)) {
       throw new BadRequestException('판정 완료 상태에서만 승인할 수 있습니다.');
@@ -263,12 +263,12 @@ export class FaiService {
   /**
    * 검사항목 일괄 등록 (기존 항목 삭제 후 재등록)
    */
-  async addItems(faiId: number, items: FaiItemDto[], userId?: string) {
-    const fai = await this.faiRepo.findOne({ where: { id: faiId } });
+  async addItems(faiNo: string, items: FaiItemDto[], userId?: string) {
+    const fai = await this.faiRepo.findOne({ where: { faiNo } });
     if (!fai) throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
 
-    await this.itemRepo.delete({ faiId });
-    const saved = await this.saveItems(faiId, items);
+    await this.itemRepo.delete({ faiId: faiNo });
+    const saved = await this.saveItems(faiNo, items);
 
     // REQUESTED → INSPECTING 자동 전이
     if (fai.status === 'REQUESTED' || fai.status === 'SAMPLING') {
@@ -283,7 +283,7 @@ export class FaiService {
   /**
    * 검사항목 저장 헬퍼
    */
-  private async saveItems(faiId: number, items: FaiItemDto[]) {
+  private async saveItems(faiId: string, items: FaiItemDto[]) {
     const entities = items.map((item) =>
       this.itemRepo.create({
         faiId,
@@ -294,7 +294,7 @@ export class FaiService {
         measuredValue: item.measuredValue ?? null,
         unit: item.unit ?? null,
         result: item.result ?? null,
-        remarks: item.remarks ?? null,
+        remark: item.remark ?? null,
       }),
     );
     return this.itemRepo.save(entities);

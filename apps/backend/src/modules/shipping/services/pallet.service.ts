@@ -122,7 +122,7 @@ export class PalletService {
   /**
    * 팔레트 생성
    */
-  async create(dto: CreatePalletDto) {
+  async create(dto: CreatePalletDto, company?: string, plant?: string) {
     // 중복 체크
     const existing = await this.palletRepository.findOne({
       where: { palletNo: dto.palletNo },
@@ -137,6 +137,8 @@ export class PalletService {
       boxCount: 0,
       totalQty: 0,
       status: 'OPEN',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.palletRepository.save(pallet);
@@ -218,6 +220,15 @@ export class PalletService {
     const invalidBoxes = boxes.filter(b => b.status !== 'CLOSED');
     if (invalidBoxes.length > 0) {
       throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${invalidBoxes.map(b => b.boxNo).join(', ')}`);
+    }
+
+    // OQC 상태 검증: oqcStatus가 FAIL/PENDING이면 적재 불가 (null은 OQC 미대상으로 허용)
+    const oqcBlockedBoxes = boxes.filter(b => b.oqcStatus && b.oqcStatus !== 'PASS');
+    if (oqcBlockedBoxes.length > 0) {
+      const blockList = oqcBlockedBoxes.map(b => `${b.boxNo}(${b.oqcStatus})`).join(', ');
+      throw new BadRequestException(
+        `OQC 미완료/불합격 박스는 팔레트에 적재할 수 없습니다: ${blockList}`,
+      );
     }
 
     // 이미 다른 팔레트에 할당된 박스 확인

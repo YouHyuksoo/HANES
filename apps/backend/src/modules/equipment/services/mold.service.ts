@@ -23,7 +23,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { MoldMaster } from '../../../entities/mold-master.entity';
 import { MoldUsageLog } from '../../../entities/mold-usage-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -45,7 +45,21 @@ export class MoldService {
     private readonly usageRepo: Repository<MoldUsageLog>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepo: Repository<EquipMaster>,
+    private readonly dataSource: DataSource,
   ) {}
+
+  /**
+   * 날짜별 MoldUsageLog SEQ 채번
+   */
+  private async getNextUsageSeq(usageDate: Date, qr?: import('typeorm').QueryRunner): Promise<number> {
+    const repo = qr ? qr.manager.getRepository(MoldUsageLog) : this.usageRepo;
+    const result = await repo
+      .createQueryBuilder('u')
+      .select('NVL(MAX(u.seq), 0)', 'maxSeq')
+      .where('u.usageDate = :usageDate', { usageDate })
+      .getRawOne();
+    return (result?.maxSeq ?? 0) + 1;
+  }
 
   // =============================================
   // CRUD
@@ -147,7 +161,7 @@ export class MoldService {
   // =============================================
 
   /**
-   * 사용 이력 등록 + currentShots 누적
+   * 사용 이력 등록 + currentShots 누적 (트랜잭션 보장)
    */
   async addUsage(
     moldCode: string,
@@ -163,40 +177,59 @@ export class MoldService {
       );
     }
 
-    // 사용 이력 저장
-    const usage = this.usageRepo.create({
-      ...dto,
-      moldCode,
-      company,
-      plant,
-      createdBy: userId,
-    });
-    const saved = await this.usageRepo.save(usage);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // currentShots 누적
-    mold.currentShots += dto.shotCount;
-    mold.updatedBy = userId;
-    await this.moldRepo.save(mold);
+    try {
+      // SEQ 채번
+      const usageDate = dto.usageDate ? new Date(dto.usageDate) : new Date();
+      const seq = await this.getNextUsageSeq(usageDate, queryRunner);
 
-    // 보증 타수 초과 시 사용 설비 인터락 처리
-    if (mold.guaranteedShots && mold.currentShots >= mold.guaranteedShots && dto.equipCode) {
-      try {
-        await this.equipMasterRepo.update(
-          { equipCode: dto.equipCode },
-          { status: 'INTERLOCK' },
-        );
-        this.logger.warn(
-          `금형 보증타수 초과로 설비 인터락: ${dto.equipCode} ← ${mold.moldCode} (${mold.currentShots}/${mold.guaranteedShots})`,
-        );
-      } catch (err) {
-        this.logger.error(`설비 인터락 설정 실패: ${dto.equipCode}`, err);
+      // 사용 이력 저장
+      const usage = queryRunner.manager.create(MoldUsageLog, {
+        ...dto,
+        usageDate,
+        seq,
+        moldCode,
+        company,
+        plant,
+        createdBy: userId,
+      });
+      const saved = await queryRunner.manager.save(MoldUsageLog, usage);
+
+      // currentShots 누적
+      mold.currentShots += dto.shotCount;
+      mold.updatedBy = userId;
+      await queryRunner.manager.save(MoldMaster, mold);
+
+      // 보증 타수 초과 시 사용 설비 인터락 처리
+      if (mold.guaranteedShots && mold.currentShots >= mold.guaranteedShots && dto.equipCode) {
+        try {
+          await queryRunner.manager.update(EquipMaster,
+            { equipCode: dto.equipCode },
+            { status: 'INTERLOCK' },
+          );
+          this.logger.warn(
+            `금형 보증타수 초과로 설비 인터락: ${dto.equipCode} ← ${mold.moldCode} (${mold.currentShots}/${mold.guaranteedShots})`,
+          );
+        } catch (err: unknown) {
+          this.logger.error(`설비 인터락 설정 실패: ${dto.equipCode}`, err);
+        }
       }
-    }
 
-    this.logger.log(
-      `금형 사용 등록: ${mold.moldCode}, shots=${dto.shotCount}, total=${mold.currentShots}`,
-    );
-    return saved;
+      await queryRunner.commitTransaction();
+
+      this.logger.log(
+        `금형 사용 등록: ${mold.moldCode}, shots=${dto.shotCount}, total=${mold.currentShots}`,
+      );
+      return saved;
+    } catch (err: unknown) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**

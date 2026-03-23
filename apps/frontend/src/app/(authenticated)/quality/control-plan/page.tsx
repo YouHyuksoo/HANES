@@ -8,7 +8,7 @@
  * 1. **DataGrid**: 관리계획서 목록 (페이지네이션, 필터)
  * 2. **우측 패널**: 등록/수정(ControlPlanFormPanel) 슬라이드 패널
  * 3. **액션 버튼**: 승인(APPROVE), 개정(REVISE)
- * 4. API: GET/POST /quality/control-plans, PUT/DELETE /:id
+ * 4. API: GET/POST /quality/control-plans, PUT/DELETE /:planNo
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,7 +26,6 @@ import ControlPlanFormPanel from "./components/ControlPlanFormPanel";
 /** 관리계획서 데이터 타입 */
 interface ControlPlan {
   [key: string]: unknown;
-  id: number;
   planNo: string;
   itemCode: string;
   itemName: string;
@@ -79,15 +78,15 @@ export default function ControlPlanPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   /* -- 승인 API -- */
-  const handleApprove = useCallback(async (id: number) => {
-    await api.patch(`/quality/control-plans/approve/${id}`);
+  const handleApprove = useCallback(async (planNo: string) => {
+    await api.patch(`/quality/control-plans/approve/${planNo}`);
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
 
   /* -- 개정 API -- */
-  const handleRevise = useCallback(async (id: number) => {
-    await api.post(`/quality/control-plans/revise/${id}`);
+  const handleRevise = useCallback(async (planNo: string) => {
+    await api.post(`/quality/control-plans/revise/${planNo}`);
     fetchData();
     setSelectedRow(null);
   }, [fetchData]);
@@ -134,26 +133,25 @@ export default function ControlPlanPage() {
     const s = selectedRow.status;
     return (
       <div className="flex gap-2 flex-wrap">
+        {/* 모든 상태에서 상세보기 가능 */}
+        <Button size="sm" variant="secondary"
+          onClick={() => { setEditTarget(selectedRow); setIsPanelOpen(true); }}>
+          <FileSearch className="w-4 h-4 mr-1" />{s === "DRAFT" ? t("common.edit") : t("common.detail", "상세")}
+        </Button>
         {s === "DRAFT" && (
-          <>
-            <Button size="sm" variant="secondary"
-              onClick={() => { setEditTarget(selectedRow); setIsPanelOpen(true); }}>
-              {t("common.edit")}
-            </Button>
-            <Button size="sm"
-              onClick={() => setConfirmAction({
-                label: t("quality.controlPlan.approve"),
-                action: () => handleApprove(selectedRow.id),
-              })}>
-              <ShieldCheck className="w-4 h-4 mr-1" />{t("quality.controlPlan.approve")}
-            </Button>
-          </>
+          <Button size="sm"
+            onClick={() => setConfirmAction({
+              label: t("quality.controlPlan.approve"),
+              action: () => handleApprove(selectedRow.planNo),
+            })}>
+            <ShieldCheck className="w-4 h-4 mr-1" />{t("quality.controlPlan.approve")}
+          </Button>
         )}
         {s === "APPROVED" && (
           <Button size="sm" variant="secondary"
             onClick={() => setConfirmAction({
               label: t("quality.controlPlan.revise"),
-              action: () => handleRevise(selectedRow.id),
+              action: () => handleRevise(selectedRow.planNo),
             })}>
             <FileEdit className="w-4 h-4 mr-1" />{t("quality.controlPlan.revise")}
           </Button>
@@ -200,8 +198,8 @@ export default function ControlPlanPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.controlPlan.title")}
-            getRowId={row => String((row as ControlPlan).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as ControlPlan).planNo}
+            selectedRowId={selectedRow?.planNo}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">

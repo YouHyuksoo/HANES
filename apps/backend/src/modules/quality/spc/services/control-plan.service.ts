@@ -129,15 +129,15 @@ export class ControlPlanService {
   /**
    * 관리계획서 단건 조회 (항목 포함)
    */
-  async findById(id: number) {
-    const plan = await this.planRepo.findOne({ where: { id } });
+  async findById(planNo: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
 
     const items = await this.itemRepo
       .createQueryBuilder('i')
-      .where('i.controlPlanId = :id', { id })
+      .where('i.controlPlanId = :planNo', { planNo })
       .orderBy('i.seq', 'ASC')
       .getMany();
 
@@ -169,18 +169,18 @@ export class ControlPlanService {
     const saved = await this.planRepo.save(entity);
 
     if (items?.length) {
-      await this.saveItems(saved.id, items, company, plant, userId);
+      await this.saveItems(saved.planNo, items, company, plant, userId);
     }
 
     this.logger.log(`관리계획서 등록: ${planNo}`);
-    return this.findById(saved.id);
+    return this.findById(saved.planNo);
   }
 
   /**
    * 관리계획서 수정 (DRAFT 상태에서만 가능)
    */
-  async update(id: number, dto: UpdateControlPlanDto, userId: string) {
-    const plan = await this.planRepo.findOne({ where: { id } });
+  async update(planNo: string, dto: UpdateControlPlanDto, userId: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
@@ -197,22 +197,22 @@ export class ControlPlanService {
         .createQueryBuilder()
         .delete()
         .from(ControlPlanItem)
-        .where('controlPlanId = :id', { id })
+        .where('controlPlanId = :planNo', { planNo })
         .execute();
 
       if (items?.length) {
-        await this.saveItems(id, items, plan.company, plan.plant, userId);
+        await this.saveItems(planNo, items, plan.company, plan.plant, userId);
       }
     }
 
-    return this.findById(id);
+    return this.findById(planNo);
   }
 
   /**
    * 관리계획서 삭제 (DRAFT 상태에서만 가능)
    */
-  async delete(id: number) {
-    const plan = await this.planRepo.findOne({ where: { id } });
+  async delete(planNo: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
@@ -224,7 +224,7 @@ export class ControlPlanService {
       .createQueryBuilder()
       .delete()
       .from(ControlPlanItem)
-      .where('controlPlanId = :id', { id })
+      .where('controlPlanId = :planNo', { planNo })
       .execute();
 
     await this.planRepo.remove(plan);
@@ -237,8 +237,8 @@ export class ControlPlanService {
   /**
    * 승인 (DRAFT/REVIEW → APPROVED)
    */
-  async approve(id: number, userId: string) {
-    const plan = await this.planRepo.findOne({ where: { id } });
+  async approve(planNo: string, userId: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
@@ -259,8 +259,8 @@ export class ControlPlanService {
   /**
    * 개정 (기존 OBSOLETE, 새 버전 생성)
    */
-  async revise(id: number, userId: string) {
-    const plan = await this.planRepo.findOne({ where: { id } });
+  async revise(planNo: string, userId: string) {
+    const plan = await this.planRepo.findOne({ where: { planNo } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
     }
@@ -273,7 +273,7 @@ export class ControlPlanService {
     // 기존 항목 복사용 조회
     const oldItems = await this.itemRepo
       .createQueryBuilder('i')
-      .where('i.controlPlanId = :id', { id })
+      .where('i.controlPlanId = :planNo', { planNo })
       .orderBy('i.seq', 'ASC')
       .getMany();
 
@@ -292,7 +292,7 @@ export class ControlPlanService {
       revisionDate: new Date(),
       phase: plan.phase,
       status: 'DRAFT',
-      remarks: plan.remarks,
+      remark: plan.remark,
       company: plan.company,
       plant: plan.plant,
       createdBy: userId,
@@ -304,7 +304,7 @@ export class ControlPlanService {
     if (oldItems.length) {
       const newItems = oldItems.map((item) =>
         this.itemRepo.create({
-          controlPlanId: saved.id,
+          controlPlanId: saved.planNo,
           seq: item.seq,
           processCode: item.processCode,
           processName: item.processName,
@@ -318,7 +318,7 @@ export class ControlPlanService {
           sampleFreq: item.sampleFreq,
           controlMethod: item.controlMethod,
           reactionPlan: item.reactionPlan,
-          remarks: item.remarks,
+          remark: item.remark,
           company: plan.company,
           plant: plan.plant,
           createdBy: userId,
@@ -330,7 +330,7 @@ export class ControlPlanService {
     this.logger.log(
       `관리계획서 개정: ${plan.planNo} → ${newPlanNo} (Rev.${saved.revisionNo})`,
     );
-    return this.findById(saved.id);
+    return this.findById(saved.planNo);
   }
 
   // =============================================
@@ -360,7 +360,7 @@ export class ControlPlanService {
 
     const items = await this.itemRepo
       .createQueryBuilder('i')
-      .where('i.controlPlanId = :id', { id: plan.id })
+      .where('i.controlPlanId = :planNo', { planNo: plan.planNo })
       .orderBy('i.seq', 'ASC')
       .getMany();
 
@@ -375,7 +375,7 @@ export class ControlPlanService {
    * 관리 항목 일괄 저장
    */
   private async saveItems(
-    controlPlanId: number,
+    controlPlanId: string,
     items: CreateControlPlanItemDto[],
     company: string,
     plant: string,

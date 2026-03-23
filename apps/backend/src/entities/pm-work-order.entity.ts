@@ -4,7 +4,7 @@
  *              SEQUENCE(패턴 B)를 사용한다.
  *
  * 초보자 가이드:
- * 1. PK: workOrderNo (자연키), id는 FK 호환용 자동증가 컬럼으로 유지
+ * 1. PK: workOrderNo (자연키)
  * 2. workOrderNo: 채번된 WO 번호
  * 3. WO 유형: PLANNED(계획), EMERGENCY(긴급), BREAKDOWN(고장)
  * 4. 상태 흐름: PLANNED -> IN_PROGRESS -> COMPLETED / CANCELLED / OVERDUE
@@ -25,9 +25,6 @@ import { PmWoResult } from './pm-wo-result.entity';
 @Index(['status'])
 @Index(['scheduledDate'])
 export class PmWorkOrder {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'WORK_ORDER_NO', length: 20 })
   workOrderNo: string;
 

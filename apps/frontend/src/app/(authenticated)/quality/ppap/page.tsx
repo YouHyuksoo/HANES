@@ -35,7 +35,7 @@ interface PpapSubmission {
   reason: string;
   status: string;
   completionRate: number;
-  remarks: string;
+  remark: string;
   submittedAt: string;
   approvedAt: string;
   rejectedAt: string;

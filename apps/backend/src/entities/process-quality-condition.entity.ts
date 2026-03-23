@@ -48,16 +48,16 @@ export class ProcessQualityCondition {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 255 })
+  @Column({ name: 'COMPANY', length: 50 })
   company: string;
 
-  @Column({ name: 'PLANT_CD', length: 255 })
+  @Column({ name: 'PLANT_CD', length: 50 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

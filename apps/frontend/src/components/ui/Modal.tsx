@@ -189,7 +189,7 @@ export function ConfirmModal({
         </>
       }
     >
-      <p className="text-text">{message}</p>
+      <div className="text-text">{message}</div>
     </Modal>
   );
 }

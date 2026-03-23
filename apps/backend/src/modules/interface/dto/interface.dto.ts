@@ -82,7 +82,7 @@ export class CreateInterLogDto {
   @ApiPropertyOptional({ description: '전문 내용 (JSON)' })
   @IsOptional()
   @IsObject()
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
 }
 
 export class RetryInterLogDto {

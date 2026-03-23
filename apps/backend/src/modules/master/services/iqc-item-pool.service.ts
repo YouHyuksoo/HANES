@@ -71,7 +71,7 @@ export class IqcItemPoolService {
     return item;
   }
 
-  async create(dto: CreateIqcItemPoolDto) {
+  async create(dto: CreateIqcItemPoolDto, company?: string, plant?: string) {
     const existing = await this.repo.findOne({
       where: { inspItemCode: dto.inspItemCode },
     });
@@ -79,7 +79,11 @@ export class IqcItemPoolService {
       throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.inspItemCode}`);
     }
 
-    const entity = this.repo.create(dto);
+    const entity = this.repo.create({
+      ...dto,
+      company: company || null,
+      plant: plant || null,
+    });
     return this.repo.save(entity);
   }
 

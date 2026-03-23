@@ -50,8 +50,8 @@ export class TrainingResult {
   @Column({ name: 'VALID_UNTIL', type: 'timestamp', nullable: true })
   validUntil: Date;
 
-  @Column({ name: 'REMARKS', length: 500, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
@@ -62,6 +62,6 @@ export class TrainingResult {
   @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 }

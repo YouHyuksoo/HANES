@@ -9,14 +9,16 @@
  * 4. **DELETE /master/iqc-part-links/:itemCode/:partnerId**: 연결 삭제
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { IqcPartLinkService } from '../services/iqc-part-link.service';
 import { CreateIqcPartLinkDto, UpdateIqcPartLinkDto, IqcPartLinkQueryDto } from '../dto/iqc-part-link.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC연결관리')
+@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-part-links')
 export class IqcPartLinkController {
   constructor(private readonly iqcPartLinkService: IqcPartLinkService) {}

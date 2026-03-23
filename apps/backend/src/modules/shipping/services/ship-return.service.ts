@@ -138,7 +138,7 @@ export class ShipReturnService {
   }
 
   /** 반품 생성 */
-  async create(dto: CreateShipReturnDto) {
+  async create(dto: CreateShipReturnDto, company?: string, plant?: string) {
     const existing = await this.shipReturnRepository.findOne({
       where: { returnNo: dto.returnNo },
     });
@@ -156,6 +156,8 @@ export class ShipReturnService {
         returnReason: dto.returnReason,
         remark: dto.remark,
         status: 'DRAFT',
+        company: company || null,
+        plant: plant || null,
       });
 
       const savedReturn = await queryRunner.manager.save(shipReturn);

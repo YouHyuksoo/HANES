@@ -8,7 +8,7 @@
  * 1. **WO 기본정보**: WO번호, 설비, 예정일, 작업자 선택
  * 2. **항목별 결과**: Plan Items 기반 PASS/FAIL 라디오
  * 3. **종합결과**: FAIL 1건이면 전체 FAIL (자동)
- * 4. **저장**: POST /equipment/pm-work-orders/:id/execute
+ * 4. **저장**: POST /equipment/pm-work-orders/:workOrderNo/execute
  */
 
 import { useState, useMemo, useCallback } from "react";
@@ -98,7 +98,7 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
     if (!workOrder || !canSave) return;
     setSaving(true);
     try {
-      await api.post(`/equipment/pm-work-orders/${workOrder.id}/execute`, {
+      await api.post(`/equipment/pm-work-orders/${workOrder.workOrderNo}/execute`, {
         assignedWorkerId: selectedWorkerId,
         overallResult: overallResult || "PASS",
         items: items.map((i) => ({

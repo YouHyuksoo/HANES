@@ -182,7 +182,7 @@ export class InterfaceService {
       direction: 'IN',
       messageType: 'JOB_ORDER',
       interfaceId: dto.erpOrderNo,
-      payload: dto as any,
+      payload: dto as unknown as Record<string, unknown>,
     });
 
     try {
@@ -226,7 +226,7 @@ export class InterfaceService {
     const log = await this.createLog({
       direction: 'IN',
       messageType: 'BOM_SYNC',
-      payload: { items: dtos } as any,
+      payload: { items: dtos } as unknown as Record<string, unknown>,
     });
 
     try {
@@ -292,7 +292,7 @@ export class InterfaceService {
     const log = await this.createLog({
       direction: 'IN',
       messageType: 'PART_SYNC',
-      payload: { items: dtos } as any,
+      payload: { items: dtos } as unknown as Record<string, unknown>,
     });
 
     try {

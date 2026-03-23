@@ -24,19 +24,19 @@ interface MoldEditData {
   itemCode: string; cavity: number; currentShots: number; guaranteedShots: number;
   maintenanceCycle: number; status: string; lastMaintenanceDate: string | null;
   nextMaintenanceDate: string | null; location: string; maker: string;
-  purchaseDate: string | null; remarks: string;
+  purchaseDate: string | null; remark: string;
 }
 
 interface FormState {
   moldCode: string; moldName: string; moldType: string; itemCode: string;
   cavity: string; guaranteedShots: string; maintenanceCycle: string;
-  location: string; maker: string; purchaseDate: string; remarks: string;
+  location: string; maker: string; purchaseDate: string; remark: string;
 }
 
 const INIT: FormState = {
   moldCode: "", moldName: "", moldType: "", itemCode: "",
   cavity: "", guaranteedShots: "", maintenanceCycle: "",
-  location: "", maker: "", purchaseDate: "", remarks: "",
+  location: "", maker: "", purchaseDate: "", remark: "",
 };
 
 interface Props { editData: MoldEditData | null; onClose: () => void; onSave: () => void; }
@@ -57,7 +57,7 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
         cavity: String(editData.cavity ?? ""), guaranteedShots: String(editData.guaranteedShots ?? ""),
         maintenanceCycle: String(editData.maintenanceCycle ?? ""),
         location: editData.location ?? "", maker: editData.maker ?? "",
-        purchaseDate: editData.purchaseDate?.slice(0, 10) ?? "", remarks: editData.remarks ?? "",
+        purchaseDate: editData.purchaseDate?.slice(0, 10) ?? "", remark: editData.remark ?? "",
       });
     } else { setForm(INIT); }
   }, [editData]);
@@ -74,7 +74,7 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
         cavity: Number(form.cavity) || 0, guaranteedShots: Number(form.guaranteedShots) || 0,
         maintenanceCycle: Number(form.maintenanceCycle) || 0,
         location: form.location || undefined, maker: form.maker || undefined,
-        purchaseDate: form.purchaseDate || undefined, remarks: form.remarks || undefined,
+        purchaseDate: form.purchaseDate || undefined, remark: form.remark || undefined,
       };
       if (isEdit && editData) await api.put(`/equipment/molds/${editData.moldCode}`, payload);
       else await api.post("/equipment/molds", payload);
@@ -145,8 +145,8 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
         </div>
         <Input label={t("equipment.mold.purchaseDate")} type="date" value={form.purchaseDate}
           onChange={e => sf("purchaseDate", e.target.value)} fullWidth />
-        <Input label={t("common.remark")} value={form.remarks}
-          onChange={e => sf("remarks", e.target.value)} fullWidth />
+        <Input label={t("common.remark")} value={form.remark}
+          onChange={e => sf("remark", e.target.value)} fullWidth />
         {/* 읽기전용 현황 (수정모드) */}
         {isEdit && editData && (
           <div className="border-t border-border pt-4 space-y-3">

@@ -19,7 +19,7 @@ import api from "@/services/api";
 
 /** 발견사항 데이터 타입 */
 interface Finding {
-  auditId: number;
+  auditId: string;
   findingNo: number;
   clauseRef: string;
   category: string;
@@ -27,8 +27,8 @@ interface Finding {
   evidence: string;
   dueDate: string;
   status: string;
-  capaId: number | null;
-  remarks: string;
+  capaId: string | null;
+  remark: string;
 }
 
 /** 신규 발견사항 입력 데이터 */
@@ -38,16 +38,16 @@ interface NewFinding {
   description: string;
   evidence: string;
   dueDate: string;
-  remarks: string;
+  remark: string;
 }
 
 const INIT_NEW: NewFinding = {
   clauseRef: "", category: "", description: "",
-  evidence: "", dueDate: "", remarks: "",
+  evidence: "", dueDate: "", remark: "",
 };
 
 interface Props {
-  auditId: number;
+  auditId: string;
   auditNo: string;
 }
 
@@ -63,9 +63,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
   const fetchFindings = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get("/quality/audits/findings", {
-        params: { auditId, limit: 500 },
-      });
+      const res = await api.get(`/quality/audits/${auditId}/findings`);
       setFindings(res.data?.data ?? []);
     } catch {
       setFindings([]);
@@ -83,14 +81,14 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
     if (!newFinding.category || !newFinding.description) return;
     setSaving(true);
     try {
-      await api.post("/quality/audits/findings", {
+      await api.post("/quality/audit-findings", {
         auditId,
         clauseRef: newFinding.clauseRef || undefined,
         category: newFinding.category,
         description: newFinding.description,
         evidence: newFinding.evidence || undefined,
         dueDate: newFinding.dueDate || undefined,
-        remarks: newFinding.remarks || undefined,
+        remark: newFinding.remark || undefined,
       });
       setNewFinding(INIT_NEW);
       setShowAddForm(false);
@@ -104,9 +102,9 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
 
   /** 발견사항 삭제 */
   const handleDelete = useCallback(
-    async (findingAuditId: number, findingNo: number) => {
+    async (findingAuditId: string, findingNo: number) => {
       try {
-        await api.delete(`/quality/audits/findings/${findingAuditId}/${findingNo}`);
+        await api.delete(`/quality/audit-findings/${findingAuditId}/${findingNo}`);
         fetchFindings();
       } catch {
         // api 인터셉터에서 처리
@@ -117,9 +115,9 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
 
   /** CAPA 연결 */
   const handleLinkCapa = useCallback(
-    async (findingAuditId: number, findingNo: number) => {
+    async (findingAuditId: string, findingNo: number) => {
       try {
-        await api.patch(`/quality/audits/findings/${findingAuditId}/${findingNo}/link-capa`);
+        await api.patch(`/quality/audit-findings/${findingAuditId}/${findingNo}/link-capa`);
         fetchFindings();
       } catch {
         // api 인터셉터에서 처리

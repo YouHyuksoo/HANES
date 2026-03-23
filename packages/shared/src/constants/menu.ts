@@ -88,6 +88,7 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: 'Factory',
     children: [
       { key: 'production-order', label: '작업지시', icon: 'ClipboardList', path: '/production/order' },
+      { key: 'production-simulation', label: '생산계획 시뮬레이션', icon: 'GanttChartSquare', path: '/production/simulation' },
       { key: 'production-work', label: '생산실적', icon: 'FileBarChart', path: '/production/work' },
       { key: 'production-monitor', label: '현황모니터', icon: 'Monitor', path: '/production/monitor' },
     ],
@@ -128,6 +129,7 @@ export const MENU_ITEMS: MenuItem[] = [
       { key: 'consumables-issuing', label: '출고관리', icon: 'PackageMinus', path: '/consumables/issuing' },
       { key: 'consumables-stock', label: '재고현황', icon: 'Boxes', path: '/consumables/stock' },
       { key: 'consumables-life', label: '수명현황', icon: 'Activity', path: '/consumables/life' },
+      { key: 'consumables-mount', label: '장착관리', icon: 'Settings2', path: '/consumables/mount' },
     ],
   },
   {

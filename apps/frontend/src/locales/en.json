@@ -163,6 +163,7 @@
     "master.company": "Company Mgmt",
     "master.label": "Label Mgmt",
     "master.vendorBarcode": "Vendor Barcode Mapping",
+    "master.processCapa": "Process CAPA",
     "matInventory": "Material Inventory",
     "productInventory": "Product Inventory",
     "inventory": "Inventory",
@@ -214,6 +215,7 @@
     "purchasing.poStatus": "PO Status Inquiry",
     "production": "Production",
     "production.monthlyPlan": "Monthly Plan",
+    "production.simulation": "Plan Simulation",
     "production.order": "Work Order Mgmt",
     "production.result": "Production Result Inquiry",
     "production.progress": "Order Progress Inquiry",
@@ -274,8 +276,9 @@
     "shipping.order": "Shipment Order",
     "shipping.history": "Shipment History",
     "shipping.return": "Shipment Return",
-    "shipping.customerPo": "Customer PO",
-    "shipping.customerPoStatus": "Customer PO Status Inquiry",
+    "sales": "Sales",
+    "sales.customerPo": "Customer Orders",
+    "sales.customerPoStatus": "Order Status Inquiry",
     "customs": "Bonded",
     "customs.entry": "Import Entry Mgmt",
     "customs.stock": "Bonded Stock Inquiry",
@@ -1126,6 +1129,8 @@
       "deleteCalendarMsg": "Delete this calendar? Day data will also be deleted.",
       "selectCalendar": "Select a calendar from the left panel.",
       "generateYear": "Generate Year",
+      "saturdayWork": "Saturday Work",
+      "sundayWork": "Sunday Work",
       "sourceCalendar": "Source Calendar",
       "year": "Year",
       "process": "Process",
@@ -2582,7 +2587,8 @@
       "allStatus": "All Status",
       "searchPlaceholder": "Search order no, part name...",
       "planDateFrom": "Plan Date (From)",
-      "planDateTo": "Plan Date (To)"
+      "planDateTo": "Plan Date (To)",
+      "shiftFilter": "Shift"
     },
     "inputManual": {
       "title": "Input (Manual)",
@@ -5442,6 +5448,78 @@
       "itemCodeRequired": "Item code required",
       "itemTypeInvalid": "FG/WIP only",
       "planQtyRequired": "Qty must be ≥ 1"
+    },
+    "autoGenerate": {
+      "button": "Import Orders",
+      "title": "Import Customer Orders",
+      "month": "Target Month",
+      "dueDateStart": "Due Date From",
+      "dueDateEnd": "Due Date To",
+      "orderNo": "Order No.",
+      "dueDate": "Due Date",
+      "preview": "Preview",
+      "execute": "Generate",
+      "workDays": "Work Days",
+      "demandItems": "Demand Items",
+      "existingDrafts": "Existing DRAFTs to Delete",
+      "demandQty": "Demand Qty",
+      "monthlyCapa": "Monthly CAPA",
+      "capaUtil": "CAPA Utilization",
+      "overCapa": "Over",
+      "normal": "Normal",
+      "bottleneck": "Bottleneck",
+      "confirmDelete": "{{count}} existing DRAFT plans will be deleted and regenerated. Proceed?",
+      "noDemand": "No outstanding orders for this period.",
+      "emptyGuide": "Set conditions and click [Preview]."
+    }
+  },
+  "simulation": {
+    "title": "Production Plan Simulation",
+    "description": "Simulate production schedule based on due dates, CAPA, and work calendar.",
+    "run": "Run Simulation",
+    "month": "Target Month",
+    "strategy": {
+      "label": "Strategy",
+      "dueDate": "Due Date Priority",
+      "minSetup": "Minimize Model Change"
+    },
+    "totalPlans": "Total Plans",
+    "onTime": "On Time",
+    "delayed": "Delayed",
+    "utilization": "Utilization",
+    "emptyGuide": "Select a target month and run the simulation.",
+    "planInfo": "Plan Info",
+    "schedule": "Daily Schedule",
+    "dueDate": "Due Date",
+    "startDate": "Start Date",
+    "endDate": "Est. Completion",
+    "delayDays": "d",
+    "legend": {
+      "production": "Production",
+      "dueMarker": "Due Date",
+      "onTime": "On Time",
+      "delay": "Delayed"
+    }
+  },
+  "processCapa": {
+    "title": "Process CAPA Management",
+    "description": "Manage production capacity by process and product.",
+    "addCapa": "Add CAPA",
+    "processCode": "Process",
+    "itemCode": "Item",
+    "stdTactTime": "Std. Tact Time (sec)",
+    "stdUph": "Std. UPH",
+    "workerCnt": "Workers",
+    "boardCnt": "Board/Jig Count",
+    "equipCnt": "Equipment Count",
+    "setupTime": "Setup Time (min)",
+    "balanceEff": "Balance Efficiency (%)",
+    "dailyCapa": "Daily CAPA",
+    "stats": {
+      "total": "Total",
+      "equipBased": "Equipment-based",
+      "workerBased": "Worker-based",
+      "inactive": "Inactive"
     }
   }
 }

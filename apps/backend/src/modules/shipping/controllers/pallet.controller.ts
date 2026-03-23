@@ -130,8 +130,8 @@ export class PalletController {
   @ApiOperation({ summary: '팔레트 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
   @ApiResponse({ status: 409, description: '중복 팔레트번호' })
-  async create(@Body() dto: CreatePalletDto) {
-    const data = await this.palletService.create(dto);
+  async create(@Body() dto: CreatePalletDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.create(dto, company, plant);
     return ResponseUtil.success(data, '팔레트가 생성되었습니다.');
   }
 

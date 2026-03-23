@@ -1,0 +1,85 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+.turbo/
+out/
+
+# Lock files
+pnpm-lock.yaml
+
+# Logs
+logs/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Git internals
+.git/
+
+# Generated / binary docs (docx, xlsx, html deliverables)
+docs/deliverables/**/*.docx
+docs/deliverables/**/*.xlsx
+docs/deliverables/**/*.html
+docs/diagrams/
+docs/unpacked/
+docs/workspace/
+docs/datagrid-design.html
+docs/erd-playground.html
+docs/hanes-code-map.html
+docs/production-code-map.html
+docs/HANES_MES_GLOSSARY.docx
+docs/05-*.docx
+docs/06-*.docx
+docs/07-*.docx
+
+# Root-level one-off files (not source code)
+repomix-hanes-mes.md
+repomix-hanes-mes-clean.md
+repomix.config.json
+harness.xlsx
+architecture-analysis-report.md
+optimization-report.md
+implementation_plan.md
+task.md
+kill-node.bat
+nul
+msg_detail.json
+msg_result.json
+
+# Scripts: SQL seeds, Python one-offs, generated JSON
+scripts/**/*.sql
+scripts/**/*.py
+scripts/__pycache__/
+scripts/entity-columns.json
+scripts/srs-reqs.json
+
+# Document generation scripts (not app code)
+scripts/gen-*.js
+scripts/extract-*.js
+
+# PWA generated files
+apps/frontend/public/sw.js
+apps/frontend/public/workbox-*.js
+
+# Uploads
+apps/backend/uploads/
+
+# Other tools
+.playwright-mcp/
+.kombai/
+agent-harness/
+
+# Misc
+*.tsbuildinfo

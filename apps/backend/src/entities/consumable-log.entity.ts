@@ -15,16 +15,16 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
   Index,
 } from 'typeorm';
+import { ConsumableMaster } from './consumable-master.entity';
 
 @Entity({ name: 'CONSUMABLE_LOGS' })
 @Index(['consumableCode'])
 @Index(['logType'])
 export class ConsumableLog {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'TRANS_DATE', type: 'date' })
   transDate: Date;
 
@@ -33,6 +33,10 @@ export class ConsumableLog {
 
   @Column({ name: 'CONSUMABLE_CODE', length: 50 })
   consumableCode: string;
+
+  @ManyToOne(() => ConsumableMaster, (master) => master.logs)
+  @JoinColumn({ name: 'CONSUMABLE_CODE', referencedColumnName: 'consumableCode' })
+  master: ConsumableMaster;
 
   @Column({ name: 'LOG_TYPE', length: 50 })
   logType: string;

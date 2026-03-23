@@ -74,10 +74,9 @@ export class ReworkProcessItemDto {
  * 재작업 실적 등록 DTO
  */
 export class CreateReworkResultDto {
-  @ApiProperty({ description: '재작업 지시 ID (REWORK_ORDER_ID)' })
-  @Type(() => Number)
-  @IsNumber()
-  reworkOrderId: number;
+  @ApiProperty({ description: '재작업번호 (REWORK_ORDER_ID = REWORK_NO)' })
+  @IsString()
+  reworkOrderId: string;
 
   @ApiProperty({ description: '공정 코드', maxLength: 50 })
   @IsString()
@@ -118,22 +117,22 @@ export class CreateReworkResultDto {
   @IsInt()
   workTimeMin?: number;
 
-  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
-  remarks?: string;
+  @MaxLength(500)
+  remark?: string;
 }
 
 /**
  * 재작업 지시 생성 DTO
  */
 export class CreateReworkOrderDto {
-  @ApiPropertyOptional({ description: '연결된 불량로그 ID' })
+  @ApiPropertyOptional({ description: '연결된 불량로그 ID', maxLength: 50 })
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  defectLogId?: number;
+  @IsString()
+  @MaxLength(50)
+  defectLogId?: string;
 
   @ApiProperty({ description: '품목 코드', example: 'PART-001', maxLength: 50 })
   @IsString()
@@ -191,11 +190,11 @@ export class CreateReworkOrderDto {
   @MaxLength(50)
   equipCode?: string;
 
-  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
-  remarks?: string;
+  @MaxLength(500)
+  remark?: string;
 
   @ApiPropertyOptional({ description: '재작업 공정 목록', type: [ReworkProcessItemDto] })
   @IsOptional()
@@ -288,11 +287,11 @@ export class CompleteReworkDto {
   @Min(0)
   resultQty: number;
 
-  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
-  remarks?: string;
+  @MaxLength(500)
+  remark?: string;
 }
 
 /**
@@ -341,9 +340,9 @@ export class CreateReworkInspectDto {
   @MaxLength(1000)
   defectDetail?: string;
 
-  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
-  remarks?: string;
+  @MaxLength(500)
+  remark?: string;
 }

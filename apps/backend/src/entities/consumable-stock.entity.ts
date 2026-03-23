@@ -15,8 +15,11 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
   Index,
 } from 'typeorm';
+import { ConsumableMaster } from './consumable-master.entity';
 
 @Entity({ name: 'CONSUMABLE_STOCKS' })
 @Index(['consumableCode'])
@@ -27,6 +30,10 @@ export class ConsumableStock {
 
   @Column({ name: 'CONSUMABLE_CODE', length: 50 })
   consumableCode: string;
+
+  @ManyToOne(() => ConsumableMaster, (master) => master.stocks)
+  @JoinColumn({ name: 'CONSUMABLE_CODE', referencedColumnName: 'consumableCode' })
+  master: ConsumableMaster;
 
   @Column({ name: 'STATUS', length: 20, default: 'PENDING' })
   status: string;

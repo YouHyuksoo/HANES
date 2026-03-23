@@ -41,7 +41,7 @@ interface MoldMaster {
   location: string;
   maker: string;
   purchaseDate: string | null;
-  remarks: string;
+  remark: string;
 }
 
 export default function MoldMgmtPage() {

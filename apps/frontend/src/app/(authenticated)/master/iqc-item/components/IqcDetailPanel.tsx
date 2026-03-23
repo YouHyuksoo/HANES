@@ -33,7 +33,6 @@ interface GroupItem {
 
 /** 연결된 그룹 정보 (IQC_PART_LINKS → group join) */
 export interface LinkedGroupInfo {
-  groupId: string;
   groupCode: string;
   groupName: string;
   inspectMethod: string;
@@ -144,7 +143,7 @@ export default function IqcDetailPanel({
           <div className="space-y-6">
             {linkedGroups.map((group) => (
               <GroupSection
-                key={group.groupId}
+                key={group.groupCode}
                 group={group}
                 methodLabels={methodLabels}
                 onUnlink={() => onUnlinkRequest(group)}

@@ -108,7 +108,7 @@ export function useSerialTest(config: CommConfig | null, options?: UseSerialTest
     if (!config) return;
     setError(null);
 
-    const serial = (navigator as any).serial;
+    const serial = navigator.serial;
     if (!serial) {
       setError(
         "Web Serial API 미지원 브라우저입니다. Chrome/Edge를 사용하세요.",

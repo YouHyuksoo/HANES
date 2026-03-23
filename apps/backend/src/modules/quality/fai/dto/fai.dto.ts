@@ -75,7 +75,7 @@ export class FaiItemDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  remarks?: string;
+  remark?: string;
 }
 
 /**
@@ -124,11 +124,11 @@ export class CreateFaiDto {
   @MaxLength(50)
   inspectorCode?: string;
 
-  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
-  remarks?: string;
+  @MaxLength(500)
+  remark?: string;
 
   @ApiPropertyOptional({ description: '검사항목 목록', type: [FaiItemDto] })
   @IsOptional()
@@ -199,9 +199,9 @@ export class CompleteFaiDto {
   @IsIn(['PASS', 'FAIL', 'CONDITIONAL'])
   result: string;
 
-  @ApiPropertyOptional({ description: '비고', maxLength: 1000 })
+  @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()
-  @MaxLength(1000)
-  remarks?: string;
+  @MaxLength(500)
+  remark?: string;
 }

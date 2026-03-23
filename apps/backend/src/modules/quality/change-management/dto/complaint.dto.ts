@@ -205,7 +205,7 @@ export class RespondComplaintDto {
  */
 export class LinkCapaDto {
   @ApiProperty({ description: '연계할 CAPA ID' })
-  @Type(() => Number)
-  @IsNumber()
-  capaId: number;
+  @IsString()
+  @MaxLength(30)
+  capaId: string;
 }

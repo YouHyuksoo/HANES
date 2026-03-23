@@ -55,7 +55,7 @@ export class ProductLabelService {
   /** prdUid 채번 + ProdResult 업데이트 + 라벨 인쇄 로그 */
   async createPrdLabels(dto: CreatePrdLabelsDto): Promise<PrdLabelResultDto[]> {
     const prodResult = await this.prodResultRepo.findOne({
-      where: { id: dto.sourceId },
+      where: { resultNo: String(dto.sourceId) },
       relations: ['jobOrder'],
     });
     if (!prodResult) throw new NotFoundException('생산실적을 찾을 수 없습니다.');
@@ -113,7 +113,7 @@ export class ProductLabelService {
       const itemCode = r.jobOrder?.itemCode ?? '';
       const part = r.jobOrder?.part;
       return {
-        id: r.id,
+        id: r.resultNo,
         orderNo: r.orderNo,
         itemCode,
         itemName: part?.itemName ?? '',

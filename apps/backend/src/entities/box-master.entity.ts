@@ -37,7 +37,7 @@ export class BoxMaster {
   @Column({ name: 'PALLET_NO', length: 50, nullable: true })
   palletNo: string | null;
 
-  @Column({ name: 'STATUS', length: 50, default: 'OPEN' })
+  @Column({ name: 'STATUS', length: 20, default: 'OPEN' })
   status: string;
 
   @Column({ name: 'OQC_STATUS', length: 50, nullable: true })
@@ -46,16 +46,16 @@ export class BoxMaster {
   @Column({ name: 'CLOSE_TIME', type: 'timestamp', nullable: true })
   closeAt: Date | null;
 
-  @Column({ name: 'COMPANY', length: 255, nullable: true })
+  @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 255, nullable: true })
+  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

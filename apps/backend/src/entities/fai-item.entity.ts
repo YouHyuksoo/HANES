@@ -16,11 +16,11 @@ import { FaiRequest } from './fai-request.entity';
 
 @Entity({ name: 'FAI_ITEMS' })
 export class FaiItem {
-  @PrimaryColumn({ name: 'FAI_ID' })
-  faiId: number;
+  @PrimaryColumn({ name: 'FAI_ID', length: 30 })
+  faiId: string;
 
   @ManyToOne(() => FaiRequest, { nullable: false })
-  @JoinColumn({ name: 'FAI_ID' })
+  @JoinColumn({ name: 'FAI_ID', referencedColumnName: 'faiNo' })
   faiRequest: FaiRequest;
 
   @PrimaryColumn({ name: 'SEQ', type: 'int' })
@@ -44,12 +44,12 @@ export class FaiItem {
   @Column({ name: 'RESULT', length: 10, nullable: true })
   result: string;
 
-  @Column({ name: 'REMARKS', length: 500, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

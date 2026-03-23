@@ -16,7 +16,7 @@ import { Download, X } from "lucide-react";
 
 export default function PwaInstallPrompt() {
   const { t } = useTranslation();
-  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function PwaInstallPrompt() {
 
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowBanner(true);
     };
 
@@ -37,8 +37,8 @@ export default function PwaInstallPrompt() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
-    (deferredPrompt as any).prompt();
-    const result = await (deferredPrompt as any).userChoice;
+    await deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
     if (result.outcome === "accepted") {
       setShowBanner(false);
     }

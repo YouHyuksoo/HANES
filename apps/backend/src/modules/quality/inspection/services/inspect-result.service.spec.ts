@@ -57,12 +57,12 @@ describe('InspectResultService', () => {
       const saved = { resultNo: 'IR-001', passYn: 'Y' } as any;
       mockInspectRepo.create.mockReturnValue(saved);
       mockInspectRepo.save.mockResolvedValue(saved);
-      const r = await target.create({ prodResultId: '1', passYn: 'Y' } as any);
+      const r = await target.create({ prodResultNo: '1', passYn: 'Y' } as any);
       expect(r.passYn).toBe('Y');
     });
     it('should throw when prodResult not found', async () => {
       mockProdResultRepo.findOne.mockResolvedValue(null);
-      await expect(target.create({ prodResultId: '999' } as any)).rejects.toThrow(NotFoundException);
+      await expect(target.create({ prodResultNo: '999' } as any)).rejects.toThrow(NotFoundException);
     });
   });
 

@@ -53,7 +53,7 @@ export class CustomsLot {
   @Column({ name: 'UNIT_PRICE', type: 'decimal', precision: 12, scale: 4, nullable: true })
   unitPrice: number | null;
 
-  @Column({ name: 'STATUS', length: 50, default: 'BONDED' })
+  @Column({ name: 'STATUS', length: 20, default: 'BONDED' })
   status: string;
 
   @Column({ name: 'COMPANY', length: 50, nullable: true })

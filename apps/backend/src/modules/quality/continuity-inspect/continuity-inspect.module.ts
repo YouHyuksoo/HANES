@@ -23,7 +23,9 @@ import { InspectResult } from '../../../entities/inspect-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../entities/equip-protocol.entity';
+import { User } from '../../../entities/user.entity';
 import { SharedModule } from '../../../shared/shared.module';
+import { SystemModule } from '../../system/system.module';
 
 @Module({
   imports: [
@@ -32,8 +34,10 @@ import { SharedModule } from '../../../shared/shared.module';
       FgLabel,
       JobOrder,
       EquipProtocol,
+      User,
     ]),
     SharedModule,
+    SystemModule,
   ],
   controllers: [ContinuityInspectController],
   providers: [ContinuityInspectService],

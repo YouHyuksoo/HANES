@@ -31,10 +31,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { SpcService } from '../services/spc.service';
 import {
@@ -45,6 +46,7 @@ import {
 } from '../dto/spc.dto';
 
 @ApiTags('SPC')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/spc')
 export class SpcController {
   constructor(private readonly spcService: SpcService) {}

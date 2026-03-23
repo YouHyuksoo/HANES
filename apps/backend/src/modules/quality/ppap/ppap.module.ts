@@ -16,11 +16,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PpapController } from './controllers/ppap.controller';
 import { PpapService } from './services/ppap.service';
 import { PpapSubmission } from '../../../entities/ppap-submission.entity';
+import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       PpapSubmission,
+      User,
     ]),
   ],
   controllers: [PpapController],

@@ -46,7 +46,7 @@ interface Props {
     groupName: string;
     inspectMethod: string;
     sampleQty?: number | null;
-    items?: { inspItemId: number; seq: number }[];
+    items?: { inspItemCode: string; seq: number }[];
   } | null;
 }
 
@@ -79,7 +79,7 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
           groupName: editing.groupName,
           inspectMethod: editing.inspectMethod,
           sampleQty: editing.sampleQty?.toString() ?? "",
-          selectedItemIds: editing.items?.sort((a, b) => a.seq - b.seq).map(i => String(i.inspItemId)) ?? [],
+          selectedItemIds: editing.items?.sort((a, b) => a.seq - b.seq).map(i => String(i.inspItemCode)) ?? [],
         });
       } else {
         setForm(EMPTY_FORM);

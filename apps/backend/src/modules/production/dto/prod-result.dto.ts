@@ -93,6 +93,12 @@ export class CreateProdResultDto {
   @IsString()
   @MaxLength(500)
   remark?: string;
+
+  @ApiPropertyOptional({ description: '교대 코드 (미지정 시 자동판별)', maxLength: 20 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  shiftCode?: string;
 }
 
 /**
@@ -161,6 +167,11 @@ export class ProdResultQueryDto {
   @IsString()
   @IsIn([...PROD_RESULT_STATUS_VALUES])
   status?: ProdResultStatus;
+
+  @ApiPropertyOptional({ description: '교대 코드 필터' })
+  @IsOptional()
+  @IsString()
+  shiftCode?: string;
 
   @ApiPropertyOptional({ description: '시작 시간 (ISO 8601)' })
   @IsOptional()

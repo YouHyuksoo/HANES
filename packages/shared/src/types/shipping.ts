@@ -27,7 +27,7 @@ export interface BoxMaster {
   operatorName: string;
   jobOrderId?: string;
   jobOrderNo?: string;
-  prodResultId?: string;
+  prodResultNo?: string;
   palletId?: string;           // 적재된 팔레트 ID
   palletNo?: string;
   oqcStatus?: QualityJudgment;

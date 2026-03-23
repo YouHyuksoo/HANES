@@ -6,7 +6,7 @@
  * 1. GET /consumables/stocks           인스턴스 목록 (conUid별)
  * 2. GET /consumables/stocks/:conUid   특정 인스턴스 상세
  */
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
@@ -53,7 +53,7 @@ export class ConsumableStockController {
   @Get(':conUid')
   async detail(@Param('conUid') conUid: string) {
     const stock = await this.stockRepo.findOne({ where: { conUid } });
-    if (!stock) return { data: null };
+    if (!stock) throw new NotFoundException(`소모품 인스턴스를 찾을 수 없습니다: ${conUid}`);
 
     const master = await this.masterRepo.findOne({
       where: { consumableCode: stock.consumableCode },

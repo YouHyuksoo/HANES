@@ -17,11 +17,11 @@ import { CAPARequest } from './capa-request.entity';
 
 @Entity({ name: 'CAPA_ACTIONS' })
 export class CAPAAction {
-  @PrimaryColumn({ name: 'CAPA_ID' })
-  capaId: number;
+  @PrimaryColumn({ name: 'CAPA_ID', length: 30 })
+  capaId: string;
 
   @ManyToOne(() => CAPARequest, { nullable: false })
-  @JoinColumn({ name: 'CAPA_ID' })
+  @JoinColumn({ name: 'CAPA_ID', referencedColumnName: 'capaNo' })
   capaRequest: CAPARequest;
 
   @PrimaryColumn({ name: 'SEQ', type: 'int' })
@@ -45,9 +45,9 @@ export class CAPAAction {
   @Column({ name: 'COMPLETED_AT', type: 'timestamp', nullable: true })
   completedAt: Date;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

@@ -12,7 +12,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Calendar, RefreshCw, Plus, Trash2 } from "lucide-react";
+import { Calendar, RefreshCw, Plus, Trash2, Copy, CalendarPlus } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
 import CalendarGrid from "./components/CalendarGrid";
@@ -64,6 +64,10 @@ export default function WorkCalendarPage() {
   const [editingDay, setEditingDay] = useState<{ date: string; data: WorkCalendarDay | null } | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [topAction, setTopAction] = useState<"generate" | "copy" | null>(null);
+  const [copySource, setCopySource] = useState("");
+  const [genSatWork, setGenSatWork] = useState(false);
+  const [genSunWork, setGenSunWork] = useState(false);
 
   /* ── API 호출 ── */
   const fetchCalendars = useCallback(async () => {
@@ -107,10 +111,12 @@ export default function WorkCalendarPage() {
     catch { /* interceptor */ }
   }, [selectedId, fetchDetail, fetchCalendars]);
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (satWork: boolean, sunWork: boolean) => {
     if (!selectedId) return;
-    try { await api.post(`/master/work-calendars/${selectedId}/generate`); await fetchDays(selectedId, currentMonth); }
-    catch { /* interceptor */ }
+    try {
+      await api.post(`/master/work-calendars/${selectedId}/generate`, { saturdayWork: satWork, sundayWork: sunWork });
+      await fetchDays(selectedId, currentMonth);
+    } catch { /* interceptor */ }
   }, [selectedId, currentMonth, fetchDays]);
 
   const handleCopyFrom = useCallback(async (sourceId: string) => {
@@ -174,6 +180,16 @@ export default function WorkCalendarPage() {
           <Button variant="secondary" size="sm" onClick={() => { fetchCalendars(); fetchShiftPatterns(); }}>
             <RefreshCw className="w-4 h-4 mr-1" />{t("common.refresh")}
           </Button>
+          {activeTab === "calendar" && selectedId && calendarDetail?.status !== "CONFIRMED" && (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setTopAction("generate")}>
+                <CalendarPlus className="w-4 h-4 mr-1" />{t("master.workCalendar.generateYear")}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => { setCopySource(""); setTopAction("copy"); }}>
+                <Copy className="w-4 h-4 mr-1" />{t("master.workCalendar.copyFrom")}
+              </Button>
+            </>
+          )}
           {activeTab === "calendar" && (
             <Button size="sm" onClick={() => setIsAddOpen(true)}>
               <Plus className="w-4 h-4 mr-1" />{t("common.add")}
@@ -199,7 +215,7 @@ export default function WorkCalendarPage() {
       {activeTab === "calendar" ? (
         <div className="grid grid-cols-12 gap-4 min-h-0 flex-1">
           {/* 좌측: 캘린더 목록 */}
-          <div className="col-span-4 flex flex-col min-h-0">
+          <div className="col-span-3 flex flex-col min-h-0">
             <Card padding="none" className="flex-1 flex flex-col min-h-0">
               <CardContent className="flex-1 flex flex-col min-h-0 p-3">
                 <div className="flex gap-2 mb-3 shrink-0">
@@ -212,8 +228,9 @@ export default function WorkCalendarPage() {
                   ) : filtered.length === 0 ? (
                     <p className="text-center text-text-muted dark:text-gray-400 text-sm py-8">{t("common.noData")}</p>
                   ) : filtered.map((cal) => (
-                    <button key={cal.calendarId} onClick={() => setSelectedId(cal.calendarId)}
-                      className={`w-full text-left rounded-lg px-3 py-2.5 transition-colors border
+                    <div key={cal.calendarId} onClick={() => setSelectedId(cal.calendarId)}
+                      role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setSelectedId(cal.calendarId)}
+                      className={`w-full text-left rounded-lg px-3 py-2.5 transition-colors border cursor-pointer
                         ${selectedId === cal.calendarId
                           ? "bg-primary/10 dark:bg-primary/20 border-primary text-primary"
                           : "bg-white dark:bg-slate-800 border-border dark:border-gray-700 hover:border-primary/50"}`}>
@@ -238,7 +255,7 @@ export default function WorkCalendarPage() {
                       <p className="text-xs text-text-muted dark:text-gray-400 mt-0.5 truncate">
                         {cal.processName ?? t("master.workCalendar.allProcesses")}
                       </p>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </CardContent>
@@ -246,11 +263,10 @@ export default function WorkCalendarPage() {
           </div>
 
           {/* 우측: 폼 + 그리드 */}
-          <div className="col-span-8 flex flex-col min-h-0 gap-4">
+          <div className="col-span-9 flex flex-col min-h-0 gap-4">
             <div className="shrink-0">
               <CalendarFormPanel calendar={calendarDetail} processes={processes}
-                calendars={calendars.map((c) => ({ calendarId: c.calendarId, calendarYear: c.calendarYear }))}
-                onSave={handleSave} onGenerate={handleGenerate} onCopyFrom={handleCopyFrom}
+                onSave={handleSave}
                 onConfirm={handleConfirm} onUnconfirm={handleUnconfirm} />
             </div>
             {calendarDetail && (
@@ -277,6 +293,41 @@ export default function WorkCalendarPage() {
         onSave={handleAddCalendar} processes={processes} />
       <ConfirmModal isOpen={deleteTarget !== null} onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete} title={t("common.delete")} message={t("master.workCalendar.deleteCalendarMsg")} />
+      <ConfirmModal isOpen={topAction === "generate"} onClose={() => setTopAction(null)}
+        onConfirm={() => { handleGenerate(genSatWork, genSunWork); setTopAction(null); }}
+        title={t("master.workCalendar.generateYear")}
+        message={
+          <div>
+            <p className="mb-3">{t("master.workCalendar.confirmMsg.generate")}</p>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-text dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={genSatWork} onChange={(e) => setGenSatWork(e.target.checked)}
+                  className="rounded border-border dark:border-gray-600" />
+                {t("master.workCalendar.saturdayWork")}
+              </label>
+              <label className="flex items-center gap-2 text-sm text-text dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={genSunWork} onChange={(e) => setGenSunWork(e.target.checked)}
+                  className="rounded border-border dark:border-gray-600" />
+                {t("master.workCalendar.sundayWork")}
+              </label>
+            </div>
+          </div>
+        } />
+      <ConfirmModal isOpen={topAction === "copy"} onClose={() => setTopAction(null)}
+        onConfirm={() => { if (copySource) { handleCopyFrom(copySource); setTopAction(null); } }}
+        title={t("master.workCalendar.copyFrom")}
+        message={
+          <div>
+            <p className="mb-2">{t("master.workCalendar.confirmMsg.copy")}</p>
+            <select value={copySource} onChange={(e) => setCopySource(e.target.value)}
+              className="w-full rounded border border-border dark:border-gray-600 bg-white dark:bg-slate-900 text-text dark:text-gray-200 px-2 py-1.5 text-sm">
+              <option value="">-- {t("common.select")} --</option>
+              {calendars.filter((c) => c.calendarId !== selectedId).map((c) => (
+                <option key={c.calendarId} value={c.calendarId}>{c.calendarId} ({c.calendarYear})</option>
+              ))}
+            </select>
+          </div>
+        } />
     </div>
   );
 }

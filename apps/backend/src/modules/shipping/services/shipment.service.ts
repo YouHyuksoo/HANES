@@ -27,6 +27,10 @@ import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And, 
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
+import { ProductStock } from '../../../entities/product-stock.entity';
+import { ProductTransaction } from '../../../entities/product-transaction.entity';
+import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import {
   CreateShipmentDto,
   UpdateShipmentDto,
@@ -50,7 +54,10 @@ export class ShipmentService {
     private readonly palletRepository: Repository<PalletMaster>,
     @InjectRepository(BoxMaster)
     private readonly boxRepository: Repository<BoxMaster>,
+    @InjectRepository(FgLabel)
+    private readonly fgLabelRepository: Repository<FgLabel>,
     private readonly dataSource: DataSource,
+    private readonly productInventoryService: ProductInventoryService,
   ) {}
 
   /**
@@ -124,7 +131,7 @@ export class ShipmentService {
   /**
    * 출하 생성
    */
-  async create(dto: CreateShipmentDto) {
+  async create(dto: CreateShipmentDto, company?: string, plant?: string) {
     // 중복 체크
     const existing = await this.shipmentRepository.findOne({
       where: { shipNo: dto.shipNo },
@@ -147,6 +154,8 @@ export class ShipmentService {
       totalQty: 0,
       status: 'PREPARING',
       erpSyncYn: 'N',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.shipmentRepository.save(shipment);
@@ -234,6 +243,24 @@ export class ShipmentService {
     const assignedPallets = pallets.filter(p => p.shipmentId && p.shipmentId !== id);
     if (assignedPallets.length > 0) {
       throw new BadRequestException(`이미 다른 출하에 할당된 팔레트가 있습니다: ${assignedPallets.map(p => p.palletNo).join(', ')}`);
+    }
+
+    // OQC 검증: 팔레트 내 박스 중 oqcStatus가 FAIL/PENDING이면 적재 차단 (null은 허용)
+    const palletNos = pallets.map(p => p.palletNo);
+    if (palletNos.length > 0) {
+      const oqcBlockedBoxes = await this.boxRepository
+        .createQueryBuilder('box')
+        .where('box.palletNo IN (:...palletNos)', { palletNos })
+        .andWhere('box.oqcStatus IN (:...blockedStatuses)', { blockedStatuses: ['FAIL', 'PENDING'] })
+        .select(['box.boxNo', 'box.oqcStatus', 'box.palletNo'])
+        .getMany();
+
+      if (oqcBlockedBoxes.length > 0) {
+        const blockList = oqcBlockedBoxes.map(b => `${b.boxNo}(${b.oqcStatus})`).join(', ');
+        throw new BadRequestException(
+          `OQC 미완료/불합격 박스가 포함된 팔레트는 출하에 적재할 수 없습니다: ${blockList}`,
+        );
+      }
     }
 
     // 트랜잭션으로 팔레트 적재 및 출하 집계 업데이트
@@ -399,9 +426,9 @@ export class ShipmentService {
     if (palletIds.length > 0) {
       const failedBoxes = await this.boxRepository
         .createQueryBuilder('box')
-        .where('box.palletId IN (:...palletIds)', { palletIds })
+        .where('box.palletNo IN (:...palletIds)', { palletIds })
         .andWhere('box.oqcStatus IN (:...blockedStatuses)', { blockedStatuses: ['FAIL', 'PENDING'] })
-        .select(['box.id', 'box.boxNo', 'box.oqcStatus'])
+        .select(['box.boxNo', 'box.oqcStatus'])
         .getMany();
 
       if (failedBoxes.length > 0) {
@@ -412,29 +439,56 @@ export class ShipmentService {
       }
     }
 
+    // 박스 목록 조회 (품목별 수량 집계 + FG 라벨 상태 업데이트용)
+    let allBoxes: BoxMaster[] = [];
+    if (palletIds.length > 0) {
+      allBoxes = await this.boxRepository.find({
+        where: { palletNo: In(palletIds) },
+        select: ['boxNo', 'itemCode', 'qty', 'serialList'],
+      });
+    }
+
+    // 품목별 출고 수량 집계
+    const itemQtyMap = new Map<string, number>();
+    const allFgBarcodes: string[] = [];
+
+    for (const box of allBoxes) {
+      const qty = box.qty || 0;
+      if (box.itemCode && qty > 0) {
+        itemQtyMap.set(box.itemCode, (itemQtyMap.get(box.itemCode) || 0) + qty);
+      }
+      // serialList에서 FG 바코드 수집
+      if (box.serialList) {
+        try {
+          const serials: string[] = JSON.parse(box.serialList);
+          allFgBarcodes.push(...serials);
+        } catch { /* serialList 파싱 실패 시 무시 */ }
+      }
+    }
+
     // 트랜잭션으로 출하 상태 및 팔레트/박스 상태 업데이트
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 팔레트 상태 업데이트
+      // 1. 팔레트 상태 업데이트
       await queryRunner.manager.update(
         PalletMaster,
         { shipmentId: id },
         { status: 'SHIPPED' }
       );
 
-      // 박스 상태 업데이트
+      // 2. 박스 상태 업데이트
       if (palletIds.length > 0) {
         await queryRunner.manager.update(
           BoxMaster,
-          { palletId: In(palletIds) },
+          { palletNo: In(palletIds) },
           { status: 'SHIPPED' }
         );
       }
 
-      // 출하 상태 업데이트
+      // 3. 출하 상태 업데이트
       await queryRunner.manager.update(
         ShipmentLog,
         { shipNo: typeof id === 'string' ? id : String(id) },
@@ -444,15 +498,62 @@ export class ShipmentService {
         }
       );
 
-      await queryRunner.commitTransaction();
+      // 4. FG_LABEL 상태 → SHIPPED 일괄 업데이트
+      if (allFgBarcodes.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < allFgBarcodes.length; i += batchSize) {
+          const batch = allFgBarcodes.slice(i, i + batchSize);
+          await queryRunner.manager.update(
+            FgLabel,
+            { fgBarcode: In(batch) },
+            { status: 'SHIPPED' },
+          );
+        }
+      }
 
-      return this.findById(id);
-    } catch (err) {
+      await queryRunner.commitTransaction();
+    } catch (err: unknown) {
       await queryRunner.rollbackTransaction();
       throw err;
     } finally {
       await queryRunner.release();
     }
+
+    // 5. 품목별 제품재고 차감 (PRODUCT_STOCK - FG_OUT)
+    //    실제 재고가 있는 창고를 조회하여 차감 (하드코딩 방지)
+    for (const [itemCode, qty] of itemQtyMap.entries()) {
+      try {
+        const stock = await this.dataSource.getRepository(ProductStock).findOne({
+          where: { itemCode, availableQty: MoreThanOrEqual(qty) },
+          order: { availableQty: 'DESC' },
+        });
+
+        if (!stock) {
+          this.logger.warn(`출하 ${id} 품목 ${itemCode} 재고 부족 — 차감 생략`);
+          continue;
+        }
+
+        await this.productInventoryService.issueStock({
+          warehouseId: stock.warehouseCode,
+          itemCode,
+          itemType: 'FG',
+          prdUid: stock.prdUid || undefined,
+          qty,
+          transType: 'FG_OUT',
+          refType: 'SHIPMENT',
+          refId: id,
+          remark: `출하 ${id} 제품 출고`,
+          company: shipment.company,
+          plant: shipment.plant,
+        });
+      } catch (err: unknown) {
+        this.logger.warn(
+          `출하 ${id} 품목 ${itemCode} 재고 차감 실패: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    return this.findById(id);
   }
 
   /**
@@ -523,6 +624,120 @@ export class ShipmentService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * 출하 역분개 (SHIPPED -> LOADED): 재고 복구 + FG_LABEL 상태 복원
+   * 출하 완료 후 취소가 필요한 경우 사용
+   */
+  async reverseShipment(id: string, remark?: string) {
+    const shipment = await this.findById(id);
+
+    if (shipment.status !== 'SHIPPED') {
+      throw new BadRequestException(
+        `현재 상태(${shipment.status})에서는 출하 역분개할 수 없습니다. SHIPPED 상태여야 합니다.`,
+      );
+    }
+
+    // 팔레트/박스 조회
+    const pallets = await this.palletRepository.find({
+      where: { shipmentId: id },
+      select: ['palletNo'],
+    });
+    const palletIds = pallets.map(p => p.palletNo);
+
+    // 박스에서 FG 바코드 수집
+    let allBoxes: BoxMaster[] = [];
+    const allFgBarcodes: string[] = [];
+    if (palletIds.length > 0) {
+      allBoxes = await this.boxRepository.find({
+        where: { palletNo: In(palletIds) },
+        select: ['boxNo', 'itemCode', 'qty', 'serialList'],
+      });
+      for (const box of allBoxes) {
+        if (box.serialList) {
+          try {
+            const serials: string[] = JSON.parse(box.serialList);
+            allFgBarcodes.push(...serials);
+          } catch { /* 파싱 실패 무시 */ }
+        }
+      }
+    }
+
+    // 1. 상태 복원 트랜잭션
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 팔레트 상태 → LOADED
+      await queryRunner.manager.update(
+        PalletMaster,
+        { shipmentId: id },
+        { status: 'LOADED' },
+      );
+
+      // 박스 상태 → CLOSED
+      if (palletIds.length > 0) {
+        await queryRunner.manager.update(
+          BoxMaster,
+          { palletNo: In(palletIds) },
+          { status: 'CLOSED' },
+        );
+      }
+
+      // 출하 상태 → LOADED
+      await queryRunner.manager.update(
+        ShipmentLog,
+        { shipNo: typeof id === 'string' ? id : String(id) },
+        {
+          status: 'LOADED',
+          shipAt: null,
+          remark: remark || `출하 역분개 처리`,
+        },
+      );
+
+      // FG_LABEL 상태 → PACKED 복원 (SHIPPED → PACKED)
+      if (allFgBarcodes.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < allFgBarcodes.length; i += batchSize) {
+          const batch = allFgBarcodes.slice(i, i + batchSize);
+          await queryRunner.manager.update(
+            FgLabel,
+            { fgBarcode: In(batch), status: 'SHIPPED' },
+            { status: 'PACKED' },
+          );
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (err: unknown) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+
+    // 2. 제품 재고 역분개 (FG_OUT → FG_OUT_CANCEL)
+    //    해당 출하의 PRODUCT_TRANSACTION을 찾아서 cancelTransaction 호출
+    const shipmentTransactions = await this.dataSource.getRepository(ProductTransaction).find({
+      where: { refType: 'SHIPMENT', refId: id, status: 'DONE' },
+    });
+
+    for (const trans of shipmentTransactions) {
+      try {
+        await this.productInventoryService.cancelTransaction({
+          transactionId: trans.transNo,
+          remark: remark || `출하 ${id} 역분개`,
+        });
+      } catch (err: unknown) {
+        this.logger.warn(
+          `출하 ${id} 트랜잭션 ${trans.transNo} 역분개 실패: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    return this.findById(id);
   }
 
   /**
@@ -757,7 +972,7 @@ export class ShipmentService {
     // 품목별 수량 집계
     const boxesWithParts = await this.boxRepository
       .createQueryBuilder('box')
-      .innerJoin(PalletMaster, 'pallet', 'box.palletId = pallet.id')
+      .innerJoin(PalletMaster, 'pallet', 'box.palletNo = pallet.palletNo')
       .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
       .select(['box.itemCode', 'box.qty'])
       .getMany();

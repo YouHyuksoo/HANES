@@ -16,11 +16,13 @@ import {
   IsInt,
   IsIn,
   IsArray,
+  IsDateString,
   ValidateNested,
   Min,
   Max,
   MaxLength,
   Matches,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -186,4 +188,124 @@ export class ProdPlanQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+}
+
+/**
+ * 생산계획에서 작업지시 발행 DTO
+ * - CONFIRMED 상태의 계획에서만 발행 가능
+ * - issueQty는 잔여수량(planQty - orderQty) 이하여야 함
+ */
+export class IssueJobOrderFromPlanDto {
+  @ApiProperty({ description: '발행수량', minimum: 1 })
+  @IsInt()
+  @Min(1)
+  issueQty: number;
+
+  @ApiPropertyOptional({ description: '계획일 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  planDate?: string;
+
+  @ApiPropertyOptional({ description: '라인코드' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  lineCode?: string;
+
+  @ApiPropertyOptional({ description: '우선순위', default: 5 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  priority?: number;
+
+  @ApiPropertyOptional({ description: 'BOM 반제품 자동생성' })
+  @IsOptional()
+  @IsBoolean()
+  autoCreateChildren?: boolean;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+}
+
+/* ─────────────────────────────────────────────────────────
+ *  자동 편성 (MPS) 관련 DTO / 인터페이스
+ * ───────────────────────────────────────────────────────── */
+
+/** 선택된 수주 항목 */
+export class SelectedItemDto {
+  @IsString()
+  itemCode: string;
+
+  @IsString()
+  customerId: string;
+
+  @IsInt()
+  @Min(1)
+  planQty: number;
+}
+
+/** 자동 편성 요청 DTO */
+export class AutoGeneratePlanDto {
+  @ApiProperty({ description: '대상월 (YYYY-MM)', example: '2026-04' })
+  @IsString()
+  @Matches(/^\d{4}-\d{2}$/, { message: 'month는 YYYY-MM 형식이어야 합니다.' })
+  month: string;
+
+  @ApiPropertyOptional({ description: '납기 시작일 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ description: '납기 종료일 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @ApiPropertyOptional({ description: '고객 필터' })
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @ApiPropertyOptional({ description: '월력 ID' })
+  @IsOptional()
+  @IsString()
+  calendarId?: string;
+
+  @ApiPropertyOptional({ description: '선택된 수주 항목 (미지정 시 전체)' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SelectedItemDto)
+  selectedItems?: SelectedItemDto[];
+}
+
+/** 수주 조회 결과 아이템 */
+export interface AutoPlanPreviewItem {
+  itemCode: string;
+  itemName: string;
+  customerId: string;
+  customerName: string;
+  orderNo: string;
+  dueDate: string;
+  demandQty: number;
+  planQty: number;
+}
+
+/** 수주 조회 응답 */
+export interface AutoPlanPreview {
+  items: AutoPlanPreviewItem[];
+  workDays: number;
+  existingDraftCount: number;
+  warnings: string[];
+}
+
+/** 자동 편성 실행 응답 */
+export interface AutoPlanResult {
+  created: number;
+  deletedDrafts: number;
+  warnings: string[];
 }

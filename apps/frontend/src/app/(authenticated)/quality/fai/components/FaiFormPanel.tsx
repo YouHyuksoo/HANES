@@ -25,7 +25,7 @@ interface FaiFormData {
   lineCode: string;
   sampleQty: string;
   inspectorCode: string;
-  remarks: string;
+  remark: string;
 }
 
 const INIT: FaiFormData = {
@@ -36,12 +36,12 @@ const INIT: FaiFormData = {
   lineCode: "",
   sampleQty: "1",
   inspectorCode: "",
-  remarks: "",
+  remark: "",
 };
 
 interface Props {
   editData: {
-    id: number;
+    faiNo: string;
     triggerType: string;
     triggerRef: string;
     itemCode: string;
@@ -49,7 +49,7 @@ interface Props {
     lineCode: string;
     sampleQty: number;
     inspectorCode: string;
-    remarks: string;
+    remark: string;
   } | null;
   onClose: () => void;
   onSave: () => void;
@@ -71,7 +71,7 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
         lineCode: editData.lineCode ?? "",
         sampleQty: String(editData.sampleQty ?? 1),
         inspectorCode: editData.inspectorCode ?? "",
-        remarks: editData.remarks ?? "",
+        remark: editData.remark ?? "",
       });
     } else {
       setForm(INIT);
@@ -94,10 +94,10 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
         lineCode: form.lineCode || undefined,
         sampleQty: Number(form.sampleQty) || 1,
         inspectorCode: form.inspectorCode || undefined,
-        remarks: form.remarks || undefined,
+        remark: form.remark || undefined,
       };
       if (isEdit && editData) {
-        await api.put(`/quality/fai/${editData.id}`, payload);
+        await api.put(`/quality/fai/${editData.faiNo}`, payload);
       } else {
         await api.post("/quality/fai", payload);
       }
@@ -152,8 +152,8 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
         <LineSelect label={t("production.line", "라인")} value={form.lineCode}
           onChange={(v) => setField("lineCode", v)} fullWidth />
 
-        <Input label={t("common.remark")} value={form.remarks}
-          onChange={(e) => setField("remarks", e.target.value)} fullWidth />
+        <Input label={t("common.remark")} value={form.remark}
+          onChange={(e) => setField("remark", e.target.value)} fullWidth />
       </div>
     </div>
   );

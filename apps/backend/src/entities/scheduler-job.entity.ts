@@ -22,10 +22,10 @@ import {
 
 @Entity({ name: 'SCHEDULER_JOBS' })
 export class SchedulerJob {
-  @PrimaryColumn({ name: 'COMPANY', type: 'varchar2', length: 20 })
+  @PrimaryColumn({ name: 'COMPANY', type: 'varchar2', length: 50 })
   company: string;
 
-  @PrimaryColumn({ name: 'PLANT_CD', type: 'varchar2', length: 20 })
+  @PrimaryColumn({ name: 'PLANT_CD', type: 'varchar2', length: 50 })
   plantCd: string;
 
   @PrimaryColumn({ name: 'JOB_CODE', type: 'varchar2', length: 50 })
@@ -55,7 +55,7 @@ export class SchedulerJob {
   cronExpr: string;
 
   /** 활성 여부 ('Y' / 'N') */
-  @Column({ name: 'IS_ACTIVE', type: 'char', length: 1, default: "'N'" })
+  @Column({ name: 'IS_ACTIVE', length: 1, default: "'N'" })
   isActive: string;
 
   /** 최대 재시도 횟수 */

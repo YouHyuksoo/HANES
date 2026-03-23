@@ -17,7 +17,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { SampleInspectService } from '../services/sample-inspect.service';
@@ -28,6 +30,7 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('생산관리 - 반제품 샘플검사')
+@UseGuards(JwtAuthGuard)
 @Controller('production/sample-inspect-input')
 export class SampleInspectController {
   constructor(private readonly sampleInspectService: SampleInspectService) {}

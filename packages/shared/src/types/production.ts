@@ -95,7 +95,7 @@ export interface ProdResult {
 /** 공정별 생산실적 상세 */
 export interface ProdResultDetail {
   id: string;
-  prodResultId: string;
+  prodResultNo: string;
   seq: number;
   materialLotNo: string;
   materialItemCode: string;
@@ -122,7 +122,7 @@ export interface ProcessMap {
 /** 절단 공정 실적 */
 export interface CuttingResult {
   id: string;
-  prodResultId: string;
+  prodResultNo: string;
   wireItemCode: string;
   wireItemName: string;
   wireLotNo: string;
@@ -138,7 +138,7 @@ export interface CuttingResult {
 /** 압착 공정 실적 */
 export interface CrimpingResult {
   id: string;
-  prodResultId: string;
+  prodResultNo: string;
   terminalItemCode: string;
   terminalItemName: string;
   terminalLotNo: string;
@@ -153,7 +153,7 @@ export interface CrimpingResult {
 /** 조립 공정 실적 */
 export interface AssemblyResult {
   id: string;
-  prodResultId: string;
+  prodResultNo: string;
   housingItemCode?: string;
   housingItemName?: string;
   housingLotNo?: string;
@@ -165,7 +165,7 @@ export interface AssemblyResult {
 /** 검사 공정 실적 */
 export interface InspectionResult {
   id: string;
-  prodResultId: string;
+  prodResultNo: string;
   inspectionType: string;
   testVoltage?: number;
   testCurrent?: number;
@@ -179,7 +179,7 @@ export interface InspectionResult {
 export interface WorkMaterialInput {
   id: string;
   jobOrderId: string;
-  prodResultId?: string;
+  prodResultNo?: string;
   materialItemCode: string;
   materialItemName: string;
   materialLotNo: string;

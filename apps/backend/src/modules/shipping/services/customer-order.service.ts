@@ -131,7 +131,7 @@ export class CustomerOrderService {
   }
 
   /** 고객발주 생성 */
-  async create(dto: CreateCustomerOrderDto) {
+  async create(dto: CreateCustomerOrderDto, company?: string, plant?: string) {
     const existing = await this.customerOrderRepository.findOne({
       where: { orderNo: dto.orderNo },
     });
@@ -152,6 +152,8 @@ export class CustomerOrderService {
         currency: dto.currency,
         remark: dto.remark,
         status: 'RECEIVED',
+        company: company || null,
+        plant: plant || null,
       });
 
       const savedOrder = await queryRunner.manager.save(order);

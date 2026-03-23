@@ -35,8 +35,10 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -55,6 +57,7 @@ import {
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - 불량로그')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/defect-logs')
 export class DefectLogController {
   constructor(private readonly defectLogService: DefectLogService) {}
@@ -108,12 +111,12 @@ export class DefectLogController {
 
   // ===== 생산실적별 조회 =====
 
-  @Get('prod-result/:prodResultId')
+  @Get('prod-result/:prodResultNo')
   @ApiOperation({ summary: '생산실적별 불량 목록', description: '특정 생산실적의 불량 목록' })
-  @ApiParam({ name: 'prodResultId', description: '생산실적 ID' })
+  @ApiParam({ name: 'prodResultNo', description: '생산실적 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByProdResultId(@Param('prodResultId') prodResultId: string) {
-    const data = await this.defectLogService.findByProdResultId(prodResultId);
+  async findByProdResultNo(@Param('prodResultNo') prodResultNo: string) {
+    const data = await this.defectLogService.findByProdResultNo(prodResultNo);
     return ResponseUtil.success(data);
   }
 

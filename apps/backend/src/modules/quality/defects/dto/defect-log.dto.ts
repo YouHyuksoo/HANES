@@ -34,9 +34,9 @@ import { DEFECT_LOG_STATUS_VALUES, REPAIR_RESULT_VALUES } from '@harness/shared'
  * 불량로그 생성 DTO
  */
 export class CreateDefectLogDto {
-  @ApiProperty({ description: '생산실적 ID', example: 'clx1234567890' })
+  @ApiProperty({ description: '생산실적 번호 (RESULT_NO)', example: 'PR260316-00001' })
   @IsString()
-  prodResultId: string;
+  prodResultNo: string;
 
   @ApiProperty({ description: '불량 코드', example: 'DEF001', maxLength: 50 })
   @IsString()
@@ -126,10 +126,10 @@ export class DefectLogQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '생산실적 ID로 필터링' })
+  @ApiPropertyOptional({ description: '생산실적 번호로 필터링' })
   @IsOptional()
   @IsString()
-  prodResultId?: string;
+  prodResultNo?: string;
 
   @ApiPropertyOptional({ description: '불량 코드로 필터링' })
   @IsOptional()

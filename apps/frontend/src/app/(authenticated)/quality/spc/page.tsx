@@ -27,7 +27,6 @@ import SpcChartView from "./components/SpcChartView";
 
 /** SPC 관리도 데이터 타입 */
 interface SpcChart {
-  id: number;
   chartNo: string;
   itemCode: string;
   processCode: string;

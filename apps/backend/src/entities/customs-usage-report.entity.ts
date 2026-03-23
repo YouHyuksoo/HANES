@@ -43,7 +43,7 @@ export class CustomsUsageReport {
   @Column({ name: 'REPORT_DATE', type: 'timestamp', nullable: true })
   reportDate: Date | null;
 
-  @Column({ name: 'STATUS', length: 50, default: 'DRAFT' })
+  @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
   @Column({ name: 'WORKER_ID', length: 50, nullable: true })

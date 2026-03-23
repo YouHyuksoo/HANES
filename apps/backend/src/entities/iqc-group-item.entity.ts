@@ -1,10 +1,10 @@
 /**
  * @file iqc-group-item.entity.ts
  * @description IQC 검사그룹-항목 매핑 엔티티 - 그룹에 포함된 검사항목과 순서
- *              groupId + inspItemId 복합 PK를 사용한다.
+ *              groupCode + inspItemCode 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. groupId + inspItemId가 복합 PK (자연키)
+ * 1. groupCode + inspItemCode가 복합 PK (자연키)
  * 2. SEQ로 검사 순서 관리
  */
 import {
@@ -21,13 +21,13 @@ import { IqcGroup } from './iqc-group.entity';
 import { IqcItemPool } from './iqc-item-pool.entity';
 
 @Entity({ name: 'IQC_GROUP_ITEMS' })
-@Index(['groupId'])
+@Index(['groupCode'])
 export class IqcGroupItem {
-  @PrimaryColumn({ name: 'GROUP_ID', type: 'int' })
-  groupId: number;
+  @PrimaryColumn({ name: 'GROUP_CODE', length: 20 })
+  groupCode: string;
 
-  @PrimaryColumn({ name: 'INSP_ITEM_ID', type: 'int' })
-  inspItemId: number;
+  @PrimaryColumn({ name: 'INSP_ITEM_CODE', length: 20 })
+  inspItemCode: string;
 
   @Column({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
@@ -51,10 +51,10 @@ export class IqcGroupItem {
   updatedAt: Date;
 
   @ManyToOne(() => IqcGroup, (group) => group.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'GROUP_ID', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'GROUP_CODE', referencedColumnName: 'groupCode' })
   group: IqcGroup;
 
   @ManyToOne(() => IqcItemPool, { eager: false })
-  @JoinColumn({ name: 'INSP_ITEM_ID', referencedColumnName: 'id' })
+  @JoinColumn({ name: 'INSP_ITEM_CODE', referencedColumnName: 'inspItemCode' })
   inspItem: IqcItemPool;
 }

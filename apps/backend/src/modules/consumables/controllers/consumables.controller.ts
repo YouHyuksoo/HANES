@@ -30,6 +30,7 @@ import {
   HttpStatus,
   UploadedFile,
   UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -54,8 +55,10 @@ import {
   ResetShotCountDto,
 } from '../dto/consumables.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('소모품관리')
+@UseGuards(JwtAuthGuard)
 @Controller('consumables')
 export class ConsumablesController {
   constructor(private readonly consumablesService: ConsumablesService) {}
@@ -208,6 +211,24 @@ export class ConsumablesController {
   async createLog(@Body() dto: CreateConsumableLogDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.consumablesService.createLog(dto, company, plant);
     return ResponseUtil.success(data, '입출고 이력이 등록되었습니다.');
+  }
+
+  @Post('receiving')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '입고/입고반품 등록', description: 'logType: IN 또는 IN_RETURN' })
+  @ApiResponse({ status: 201, description: '등록 성공' })
+  async createReceiving(@Body() dto: CreateConsumableLogDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.createLog(dto, company, plant);
+    return ResponseUtil.success(data, '입고 이력이 등록되었습니다.');
+  }
+
+  @Post('issuing')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '출고/출고반품 등록', description: 'logType: OUT 또는 OUT_RETURN' })
+  @ApiResponse({ status: 201, description: '등록 성공' })
+  async createIssuing(@Body() dto: CreateConsumableLogDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.createLog(dto, company, plant);
+    return ResponseUtil.success(data, '출고 이력이 등록되었습니다.');
   }
 
   // ===== 타수 관리 =====

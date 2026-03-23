@@ -62,7 +62,7 @@ export class SpcService {
   ) {}
 
   /** chartId + sampleDate 기준 다음 SEQ 번호 조회 */
-  private async getNextDataSeq(chartId: number, sampleDate: Date): Promise<number> {
+  private async getNextDataSeq(chartId: string, sampleDate: Date): Promise<number> {
     const result = await this.dataSource.query(
       `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "SPC_DATA" WHERE "CHART_ID" = :1 AND "SAMPLE_DATE" = :2`,
       [chartId, sampleDate],
@@ -142,17 +142,6 @@ export class SpcService {
   }
 
   /**
-   * 관리도 단건 조회 (id, SpcData FK 호환용)
-   */
-  private async findChartByIdNum(id: number) {
-    const item = await this.chartRepo.findOne({ where: { id } });
-    if (!item) {
-      throw new NotFoundException('SPC 관리도를 찾을 수 없습니다.');
-    }
-    return item;
-  }
-
-  /**
    * 관리도 등록 (chartNo 자동채번)
    */
   async createChart(
@@ -205,7 +194,7 @@ export class SpcService {
     plant: string,
     userId: string,
   ) {
-    const chart = await this.findChartByIdNum(dto.chartId);
+    const chart = await this.findChartById(dto.chartId);
     const vals = dto.values;
 
     if (vals.length !== chart.subgroupSize) {
@@ -237,7 +226,7 @@ export class SpcService {
       range: parseFloat(range.toFixed(4)),
       stdDev: parseFloat(stdDev.toFixed(4)),
       outOfControl,
-      remarks: dto.remarks,
+      remark: dto.remark,
       company,
       plant,
       createdBy: userId,
@@ -258,7 +247,7 @@ export class SpcService {
   async calculateControlLimits(chartNo: string, userId: string) {
     const chart = await this.findChartById(chartNo);
     const dataList = await this.dataRepo.find({
-      where: { chartId: chart.id },
+      where: { chartId: chart.chartNo },
       order: { subgroupNo: 'ASC' },
     });
 
@@ -307,7 +296,7 @@ export class SpcService {
     }
 
     const dataList = await this.dataRepo.find({
-      where: { chartId: chart.id },
+      where: { chartId: chart.chartNo },
       order: { subgroupNo: 'ASC' },
     });
 
@@ -359,7 +348,7 @@ export class SpcService {
 
     const qb = this.dataRepo
       .createQueryBuilder('d')
-      .where('d.chartId = :chartId', { chartId: chart.id });
+      .where('d.chartId = :chartId', { chartId: chart.chartNo });
 
     if (company) qb.andWhere('d.company = :company', { company });
     if (plant) qb.andWhere('d.plant = :plant', { plant });
@@ -375,7 +364,6 @@ export class SpcService {
 
     return {
       chart: {
-        id: chart.id,
         chartNo: chart.chartNo,
         characteristicName: chart.characteristicName,
         chartType: chart.chartType,

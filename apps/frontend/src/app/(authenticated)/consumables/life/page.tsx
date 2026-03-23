@@ -45,7 +45,7 @@ export default function ConsumableLifePage() {
       if (searchTerm) params.search = searchTerm;
       if (statusFilter) params.status = statusFilter;
       if (categoryFilter) params.category = categoryFilter;
-      const res = await api.get("/equipment/consumables", { params });
+      const res = await api.get("/consumables/life-status", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);

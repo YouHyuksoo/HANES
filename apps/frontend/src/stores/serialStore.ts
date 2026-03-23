@@ -98,8 +98,7 @@ function configToProtocol(cfg: SerialConfig): SerialProtocol {
 }
 
 /** 포트 열기 공통 로직 (이미 열린 포트도 처리) */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function openPort(port: any, protocol: SerialProtocol, set: (partial: Partial<SerialState>) => void) {
+async function openPort(port: SerialPort, protocol: SerialProtocol, set: (partial: Partial<SerialState>) => void) {
   /* 기존 reader/port 내부 상태 정리 (HMR 등으로 모듈이 다시 로드된 경우 대비) */
   if (_reader) {
     try { await _reader.cancel(); } catch { /* noop */ }
@@ -112,10 +111,10 @@ async function openPort(port: any, protocol: SerialProtocol, set: (partial: Part
   if (!port.readable) {
     await port.open({
       baudRate: protocol.baudRate,
-      dataBits: protocol.dataBits,
-      stopBits: protocol.stopBits,
-      parity: protocol.parity,
-      flowControl: protocol.flowControl,
+      dataBits: protocol.dataBits as 7 | 8,
+      stopBits: protocol.stopBits as 1 | 2,
+      parity: protocol.parity as ParityType,
+      flowControl: protocol.flowControl as FlowControlType,
     });
   }
 
@@ -139,8 +138,7 @@ async function openPort(port: any, protocol: SerialProtocol, set: (partial: Part
 }
 
 /** 수신 루프 — 포트에서 데이터를 계속 읽으며 리스너에 브로드캐스트 */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function readLoop(port: any, set: (partial: Partial<SerialState>) => void) {
+async function readLoop(port: SerialPort, set: (partial: Partial<SerialState>) => void) {
   while (port.readable && _reading) {
     const reader = port.readable.getReader();
     _reader = reader;
@@ -266,8 +264,7 @@ export const useSerialStore = create<SerialState>()((set, get) => ({
   connect: async () => {
     if (get().connected) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const serial = (navigator as any).serial;
+    const serial = navigator.serial;
     if (!serial) {
       set({ error: "Web Serial API를 지원하지 않는 브라우저입니다. Chrome/Edge를 사용하세요." });
       return;
@@ -279,10 +276,8 @@ export const useSerialStore = create<SerialState>()((set, get) => ({
       const cfg = configs.find((c) => c.id === selectedConfigId);
       const protocol = cfg ? configToProtocol(cfg) : DEFAULTS;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const grantedPorts: any[] = await serial.getPorts();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let port: any;
+      const grantedPorts: SerialPort[] = await serial.getPorts();
+      let port: SerialPort;
 
       if (grantedPorts.length === 1) {
         port = grantedPorts[0];
@@ -300,13 +295,11 @@ export const useSerialStore = create<SerialState>()((set, get) => ({
   autoConnect: async () => {
     if (get().connected) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const serial = (navigator as any).serial;
+    const serial = navigator.serial;
     if (!serial) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const grantedPorts: any[] = await serial.getPorts();
+      const grantedPorts: SerialPort[] = await serial.getPorts();
       if (grantedPorts.length !== 1) return;
 
       /* 설정 목록이 아직 로드 안 됐으면 먼저 로드 */

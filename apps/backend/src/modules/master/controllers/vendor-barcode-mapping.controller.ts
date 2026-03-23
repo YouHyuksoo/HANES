@@ -59,8 +59,8 @@ export class VendorBarcodeMappingController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '매핑 생성' })
-  async create(@Body() dto: CreateVendorBarcodeMappingDto) {
-    const data = await this.service.create(dto);
+  async create(@Body() dto: CreateVendorBarcodeMappingDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.service.create(dto, company, plant);
     return ResponseUtil.success(data, '바코드 매핑이 생성되었습니다.');
   }
 

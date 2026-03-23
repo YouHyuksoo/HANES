@@ -8,7 +8,7 @@
  * 3. **QueryDto**: 목록 조회 시 필터링/페이지네이션 옵션
  *
  * 실제 DB 스키마 (inspect_results 테이블):
- * - prodResultId: 생산실적 ID (외래키)
+ * - prodResultNo: 생산실적 번호 (외래키, RESULT_NO 참조)
  * - serialNo: 개별 제품 시리얼 번호 (선택)
  * - inspectType: 검사 유형 (CONTINUITY, VISUAL, DIMENSION)
  * - passYn: 합격 여부 ('Y'/'N')
@@ -32,9 +32,9 @@ import { Type } from 'class-transformer';
  * 검사실적 생성 DTO
  */
 export class CreateInspectResultDto {
-  @ApiProperty({ description: '생산실적 ID', example: 'clx1234567890' })
+  @ApiProperty({ description: '생산실적 번호 (RESULT_NO)', example: 'PR260316-00001' })
   @IsString()
-  prodResultId: string;
+  prodResultNo: string;
 
   @ApiPropertyOptional({ description: '시리얼 번호', maxLength: 100 })
   @IsOptional()
@@ -122,10 +122,10 @@ export class InspectResultQueryDto {
   @Max(10000)
   limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '생산실적 ID로 필터링' })
+  @ApiPropertyOptional({ description: '생산실적 번호로 필터링' })
   @IsOptional()
   @IsString()
-  prodResultId?: string;
+  prodResultNo?: string;
 
   @ApiPropertyOptional({ description: '시리얼 번호로 검색' })
   @IsOptional()
@@ -248,11 +248,11 @@ export class BarcodeInspectDto {
  * 바코드 스캔 검사 결과 응답 DTO
  */
 export class BarcodeInspectResponseDto {
-  @ApiProperty({ description: '검사실적 ID' })
-  inspectResultId: number;
+  @ApiProperty({ description: '검사실적 번호 (resultNo)' })
+  inspectResultId: string;
 
-  @ApiProperty({ description: '생산실적 ID' })
-  prodResultId: number;
+  @ApiProperty({ description: '생산실적 번호' })
+  prodResultNo: string;
 
   @ApiProperty({ description: '제품 바코드' })
   barcode: string;

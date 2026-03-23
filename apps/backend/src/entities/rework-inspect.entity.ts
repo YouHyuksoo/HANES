@@ -16,14 +16,14 @@ import { ReworkOrder } from './rework-order.entity';
 @Entity({ name: 'REWORK_INSPECTS' })
 @Index(['company', 'plant', 'reworkOrderId'])
 export class ReworkInspect {
-  @PrimaryColumn({ name: 'REWORK_ORDER_ID' })
-  reworkOrderId: number;
+  @PrimaryColumn({ name: 'REWORK_ORDER_ID', length: 50 })
+  reworkOrderId: string;
 
   @PrimaryColumn({ name: 'SEQ', type: 'int' })
   seq: number;
 
   @ManyToOne(() => ReworkOrder)
-  @JoinColumn({ name: 'REWORK_ORDER_ID' })
+  @JoinColumn({ name: 'REWORK_ORDER_ID', referencedColumnName: 'reworkNo' })
   reworkOrder: ReworkOrder;
 
   @Column({ name: 'INSPECTOR_CODE', length: 50 })
@@ -47,8 +47,8 @@ export class ReworkInspect {
   @Column({ name: 'DEFECT_DETAIL', length: 1000, nullable: true })
   defectDetail: string;
 
-  @Column({ name: 'REMARKS', length: 1000, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string;
@@ -65,9 +65,9 @@ export class ReworkInspect {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

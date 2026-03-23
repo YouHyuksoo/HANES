@@ -24,10 +24,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, ILike, DataSource } from 'typeorm';
+import { In } from 'typeorm';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
 import {
   CreateBoxDto,
   UpdateBoxDto,
@@ -50,6 +52,8 @@ export class BoxService {
     private readonly partRepository: Repository<PartMaster>,
     @InjectRepository(MatLot)
     private readonly lotRepository: Repository<MatLot>,
+    @InjectRepository(FgLabel)
+    private readonly fgLabelRepository: Repository<FgLabel>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -139,7 +143,7 @@ export class BoxService {
   /**
    * 박스 생성
    */
-  async create(dto: CreateBoxDto) {
+  async create(dto: CreateBoxDto, company?: string, plant?: string) {
     // 중복 체크
     const existing = await this.boxRepository.findOne({
       where: { boxNo: dto.boxNo },
@@ -164,6 +168,8 @@ export class BoxService {
       qty: dto.qty,
       serialList: dto.serialList ? JSON.stringify(dto.serialList) : null,
       status: 'OPEN',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.boxRepository.save(box);
@@ -328,6 +334,25 @@ export class BoxService {
       }
     );
 
+    // FG_LABEL 상태 → PACKED 일괄 업데이트
+    if (box.serialList) {
+      try {
+        const fgBarcodes: string[] = JSON.parse(box.serialList);
+        if (fgBarcodes.length > 0) {
+          const batchSize = 500;
+          for (let i = 0; i < fgBarcodes.length; i += batchSize) {
+            const batch = fgBarcodes.slice(i, i + batchSize);
+            await this.fgLabelRepository.update(
+              { fgBarcode: In(batch) },
+              { status: 'PACKED' },
+            );
+          }
+        }
+      } catch {
+        this.logger.warn(`박스 ${id} serialList 파싱 실패 — FG_LABEL 상태 업데이트 생략`);
+      }
+    }
+
     return this.findById(id);
   }
 
@@ -353,6 +378,25 @@ export class BoxService {
         closeAt: null,
       }
     );
+
+    // FG_LABEL 상태 → VISUAL_PASS 복원 (PACKED 상태인 것만)
+    if (box.serialList) {
+      try {
+        const fgBarcodes: string[] = JSON.parse(box.serialList);
+        if (fgBarcodes.length > 0) {
+          const batchSize = 500;
+          for (let i = 0; i < fgBarcodes.length; i += batchSize) {
+            const batch = fgBarcodes.slice(i, i + batchSize);
+            await this.fgLabelRepository.update(
+              { fgBarcode: In(batch), status: 'PACKED' },
+              { status: 'VISUAL_PASS' },
+            );
+          }
+        }
+      } catch {
+        this.logger.warn(`박스 ${id} serialList 파싱 실패 — FG_LABEL 상태 복원 생략`);
+      }
+    }
 
     return this.findById(id);
   }

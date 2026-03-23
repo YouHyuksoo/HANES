@@ -32,10 +32,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { ChangeOrderService } from '../services/change-order.service';
 import {
@@ -46,6 +47,7 @@ import {
 } from '../dto/change-order.dto';
 
 @ApiTags('품질관리 - 변경점관리')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/changes')
 export class ChangeOrderController {
   constructor(private readonly changeOrderService: ChangeOrderService) {}

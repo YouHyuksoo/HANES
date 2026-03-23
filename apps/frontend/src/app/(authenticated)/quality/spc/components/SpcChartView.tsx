@@ -8,7 +8,7 @@
  * 1. 선택된 관리도의 측정 데이터를 테이블로 표시
  * 2. Cpk/Ppk 값 상단에 표시, 이탈 여부(outOfControl) 강조
  * 3. 새 측정 데이터 추가 버튼 제공
- * 4. API: GET /quality/spc/charts/chart-data/:id, GET cpk/:id, POST data
+ * 4. API: GET /quality/spc/charts/chart-data/:chartNo, GET cpk/:chartNo, POST data
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,7 +22,6 @@ import SpcHistogram from "./SpcHistogram";
 
 /** 측정 데이터 행 */
 interface SpcDataRow {
-  id: number;
   sampleDate: string;
   subgroupNo: number;
   values?: string;
@@ -41,7 +40,7 @@ interface CpkResult {
 
 interface Props {
   chart: {
-    id: number; chartNo: string; characteristicName: string;
+    chartNo: string; characteristicName: string;
     ucl?: number | null; lcl?: number | null; cl?: number | null;
     usl?: number | null; lsl?: number | null; target?: number | null;
     dataSource?: string;
@@ -132,7 +131,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
       for (let i = 0; i < importData.length; i++) {
         const m = importData[i];
         await api.post("/quality/spc/data", {
-          chartId: chart.id,
+          chartNo: chart.chartNo,
           sampleDate: m.date,
           subgroupNo: baseNo + i,
           values: m.values,
@@ -143,7 +142,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
       fetchData();
     } catch { /* 에러 모달에서 처리 */ }
     finally { setImportLoading(false); }
-  }, [importData, data, chart.id, fetchData]);
+  }, [importData, data, chart.chartNo, fetchData]);
 
   /* -- 측정 데이터 추가 -- */
   const handleAddData = useCallback(async () => {
@@ -152,7 +151,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
     try {
       const values: number[] = newValues.split(",").map(v => Number(v.trim())).filter(v => !isNaN(v));
       await api.post("/quality/spc/data", {
-        chartId: chart.id,
+        chartNo: chart.chartNo,
         sampleDate: newSampleDate,
         subgroupNo: newSubgroupNo,
         values,
@@ -165,7 +164,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
     } finally {
       setAddingSaving(false);
     }
-  }, [newValues, newSampleDate, newSubgroupNo, chart.id, fetchData]);
+  }, [newValues, newSampleDate, newSubgroupNo, chart.chartNo, fetchData]);
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<SpcDataRow>[]>(() => [
@@ -363,7 +362,7 @@ export default function SpcChartView({ chart, onClose }: Props) {
         {/* 데이터 테이블 */}
         <div className="p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
-            getRowId={row => String((row as SpcDataRow).id)} />
+            getRowId={row => String((row as SpcDataRow).subgroupNo)} />
         </div>
       </div>
     </div>

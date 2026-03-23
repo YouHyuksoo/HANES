@@ -45,10 +45,11 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { ReworkService } from '../services/rework.service';
 import { ReworkProcessService } from '../services/rework-process.service';
@@ -63,6 +64,7 @@ import {
 } from '../dto/rework.dto';
 
 @ApiTags('품질관리 - 재작업')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/reworks')
 export class ReworkController {
   constructor(
@@ -240,7 +242,7 @@ export class ReworkController {
   @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   async findProcesses(@Param('id') reworkNo: string) {
     const order = await this.reworkService.findById(reworkNo);
-    const data = await this.reworkProcessService.findProcesses(order.id);
+    const data = await this.reworkProcessService.findProcesses(order.reworkNo);
     return ResponseUtil.success(data);
   }
 
@@ -249,7 +251,7 @@ export class ReworkController {
   @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
   @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
   async startProcess(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId') orderId: string,
     @Param('processCode') processCode: string,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -262,7 +264,7 @@ export class ReworkController {
   @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
   @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
   async completeProcess(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId') orderId: string,
     @Param('processCode') processCode: string,
     @Body() body: { resultQty: number },
     @Req() req: AuthenticatedRequest,
@@ -276,7 +278,7 @@ export class ReworkController {
   @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
   @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
   async skipProcess(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId') orderId: string,
     @Param('processCode') processCode: string,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -289,7 +291,7 @@ export class ReworkController {
   @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
   @ApiParam({ name: 'processCode', description: '공정 코드 (PROCESS_CODE)' })
   async findResults(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId') orderId: string,
     @Param('processCode') processCode: string,
   ) {
     const data = await this.reworkProcessService.findResults(orderId, processCode);
@@ -315,7 +317,7 @@ export class ReworkController {
   @ApiOperation({ summary: '재검사 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findInspects(
-    @Query('reworkOrderId') reworkOrderId: number,
+    @Query('reworkOrderId') reworkOrderId: string,
     @Company() company: string,
     @Plant() plant: string,
   ) {
@@ -334,7 +336,7 @@ export class ReworkController {
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '재검사 없음' })
   async findInspectById(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId') orderId: string,
     @Param('seq', ParseIntPipe) seq: number,
   ) {
     const data = await this.reworkService.findInspectById(orderId, seq);

@@ -1,13 +1,12 @@
 /**
  * @file prod-result.entity.ts
  * @description 생산실적(ProdResult) 엔티티 - 작업지시별 생산 결과를 기록한다.
- *              PK는 RESULT_NO(채번), ID는 자동증분 서브키(자식 FK 호환용).
+ *              PK는 RESULT_NO(채번).
  *
  * 초보자 가이드:
  * 1. RESULT_NO가 PK (SeqGenerator로 채번, 예: PR260316-00001)
- * 2. ID는 자동증분 — 자식 엔티티(InspectResult, DefectLog, MatIssue)가 참조
- * 3. ORDER_NO로 JobOrder(작업지시)를 참조
- * 4. EQUIP_CODE로 EquipMaster, WORKER_ID로 WorkerMaster 참조
+ * 2. ORDER_NO로 JobOrder(작업지시)를 참조
+ * 3. EQUIP_CODE로 EquipMaster, WORKER_ID로 WorkerMaster 참조
  */
 import {
   Entity,
@@ -32,13 +31,10 @@ import { MatIssue } from './mat-issue.entity';
 @Index(['equipCode'])
 @Index(['workerId'])
 @Index(['status'])
+@Index(['shiftCode'])
 export class ProdResult {
   @PrimaryColumn({ name: 'RESULT_NO', length: 30 })
   resultNo: string;
-
-  /** 자동증분 ID — 자식 엔티티(InspectResult, DefectLog, MatIssue)의 FK 호환용 */
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
 
   @Column({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
@@ -61,7 +57,7 @@ export class ProdResult {
   @JoinColumn({ name: 'WORKER_ID', referencedColumnName: 'workerCode' })
   worker: WorkerMaster | null;
 
-  @Column({ name: 'PRD_UID', length: 255, nullable: true })
+  @Column({ name: 'PRD_UID', length: 50, nullable: true })
   prdUid: string | null;
 
   @Column({ name: 'PROCESS_CODE', length: 255, nullable: true })
@@ -82,22 +78,25 @@ export class ProdResult {
   @Column({ name: 'CYCLE_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
   cycleTime: number | null;
 
-  @Column({ name: 'STATUS', length: 50, default: 'RUNNING' })
+  @Column({ name: 'STATUS', length: 20, default: 'RUNNING' })
   status: string;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 255, nullable: true })
+  @Column({ name: 'SHIFT_CODE', length: 20, nullable: true })
+  shiftCode: string | null;
+
+  @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 255, nullable: true })
+  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

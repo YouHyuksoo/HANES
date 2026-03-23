@@ -58,6 +58,8 @@ import { RoutingGroupController } from './controllers/routing-group.controller';
 import { RoutingGroupService } from './services/routing-group.service';
 import { ShiftPatternController } from './controllers/shift-pattern.controller';
 import { ShiftPatternService } from './services/shift-pattern.service';
+import { ProcessCapaController } from './controllers/process-capa.controller';
+import { ProcessCapaService } from './services/process-capa.service';
 import { WorkCalendarController } from './controllers/work-calendar.controller';
 import { WorkCalendarService } from './services/work-calendar.service';
 
@@ -91,6 +93,7 @@ import { RoutingGroup } from '../../entities/routing-group.entity';
 import { RoutingProcess } from '../../entities/routing-process.entity';
 import { User } from '../../entities/user.entity';
 import { ShiftPattern } from '../../entities/shift-pattern.entity';
+import { ProcessCapa } from '../../entities/process-capa.entity';
 import { WorkCalendar } from '../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
 
@@ -128,6 +131,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       ShiftPattern,
       WorkCalendar,
       WorkCalendarDay,
+      ProcessCapa,
     ]),
   ],
   controllers: [
@@ -156,6 +160,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     RoutingGroupController,
     ShiftPatternController,
     WorkCalendarController,
+    ProcessCapaController,
   ],
   providers: [
     ComCodeService,
@@ -183,6 +188,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     RoutingGroupService,
     ShiftPatternService,
     WorkCalendarService,
+    ProcessCapaService,
   ],
   exports: [
     ComCodeService,
@@ -210,6 +216,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     RoutingGroupService,
     ShiftPatternService,
     WorkCalendarService,
+    ProcessCapaService,
   ],
 })
 export class MasterModule {}

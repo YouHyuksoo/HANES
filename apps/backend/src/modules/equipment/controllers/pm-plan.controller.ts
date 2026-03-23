@@ -12,8 +12,8 @@
  * - GET /equipment/pm-work-orders/calendar — 캘린더 월별 요약
  * - GET /equipment/pm-work-orders/calendar/day — 일별 상세
  * - POST /equipment/pm-work-orders/generate — WO 일괄생성
- * - POST /equipment/pm-work-orders/:id/execute — WO 실행
- * - PATCH /equipment/pm-work-orders/:id/cancel — WO 취소
+ * - POST /equipment/pm-work-orders/:workOrderNo/execute — WO 실행
+ * - PATCH /equipment/pm-work-orders/:workOrderNo/cancel — WO 취소
  */
 
 import {
@@ -144,17 +144,17 @@ export class PmWorkOrderController {
   @Post(':id/execute')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'WO 실행' })
-  @ApiParam({ name: 'id', description: 'WO ID' })
+  @ApiParam({ name: 'id', description: 'WO 번호 (workOrderNo)' })
   async execute(@Param('id') id: string, @Body() dto: ExecutePmWorkOrderDto) {
-    const data = await this.pmPlanService.executeWorkOrder(+id, dto);
+    const data = await this.pmPlanService.executeWorkOrder(id, dto);
     return ResponseUtil.success(data, 'Work Order가 완료되었습니다.');
   }
 
   @Patch(':id/cancel')
   @ApiOperation({ summary: 'WO 취소' })
-  @ApiParam({ name: 'id', description: 'WO ID' })
+  @ApiParam({ name: 'id', description: 'WO 번호 (workOrderNo)' })
   async cancel(@Param('id') id: string) {
-    const data = await this.pmPlanService.cancelWorkOrder(+id);
+    const data = await this.pmPlanService.cancelWorkOrder(id);
     return ResponseUtil.success(data, 'Work Order가 취소되었습니다.');
   }
 }

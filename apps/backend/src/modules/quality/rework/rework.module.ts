@@ -24,6 +24,7 @@ import { ReworkProcess } from '../../../entities/rework-process.entity';
 import { ReworkResult } from '../../../entities/rework-result.entity';
 import { ReworkInspect } from '../../../entities/rework-inspect.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
+import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DefectLog } from '../../../entities/defect-log.entity';
       ReworkResult,
       ReworkInspect,
       DefectLog,
+      User,
     ]),
   ],
   controllers: [ReworkController],

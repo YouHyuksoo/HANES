@@ -75,10 +75,9 @@ export class UpdateAuditPlanDto extends PartialType(CreateAuditPlanDto) {}
  * 발견사항 등록 DTO
  */
 export class CreateAuditFindingDto {
-  @ApiProperty({ description: '심사 ID' })
-  @Type(() => Number)
-  @IsInt()
-  auditId: number;
+  @ApiProperty({ description: '심사번호 (auditNo)' })
+  @IsString()
+  auditId: string;
 
   @ApiPropertyOptional({ description: '조항 참조 (예: 8.7.1)', maxLength: 50 })
   @IsOptional()
@@ -113,7 +112,7 @@ export class CreateAuditFindingDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  remarks?: string;
+  remark?: string;
 }
 
 /**

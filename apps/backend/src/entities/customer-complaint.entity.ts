@@ -46,7 +46,7 @@ export class CustomerComplaint {
   @Column({ name: 'URGENCY', length: 20, default: 'MEDIUM' })
   urgency: string;
 
-  @Column({ name: 'STATUS', length: 30, default: 'RECEIVED' })
+  @Column({ name: 'STATUS', length: 20, default: 'RECEIVED' })
   status: string;
 
   @Column({ name: 'INVESTIGATION', length: 2000, nullable: true })
@@ -70,8 +70,8 @@ export class CustomerComplaint {
   @Column({ name: 'RESPONSIBLE_CODE', length: 50, nullable: true })
   responsibleCode: string;
 
-  @Column({ name: 'CAPA_ID', type: 'int', nullable: true })
-  capaId: number;
+  @Column({ name: 'CAPA_ID', length: 30, nullable: true })
+  capaId: string | null;
 
   @Column({ name: 'COST_AMOUNT', type: 'decimal', precision: 12, scale: 2, nullable: true })
   costAmount: number;
@@ -91,9 +91,9 @@ export class CustomerComplaint {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

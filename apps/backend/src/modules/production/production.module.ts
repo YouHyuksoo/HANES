@@ -40,9 +40,13 @@ import { ProductLabelController } from './controllers/product-label.controller';
 import { ProductLabelService } from './services/product-label.service';
 import { ProdPlanController } from './controllers/prod-plan.controller';
 import { ProdPlanService } from './services/prod-plan.service';
+import { AutoPlanService } from './services/auto-plan.service';
 import { AutoIssueService } from './services/auto-issue.service';
 import { RepairController } from './controllers/repair.controller';
+import { SimulationController } from './controllers/simulation.controller';
 import { RepairService } from './services/repair.service';
+import { SimulationService } from './services/simulation.service';
+import { SimulationDataService } from './services/simulation-data.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SystemModule } from '../system/system.module';
 
@@ -69,10 +73,17 @@ import { RepairOrder } from '../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../entities/repair-used-part.entity';
 import { RoutingGroup } from '../../entities/routing-group.entity';
 import { RoutingProcess } from '../../entities/routing-process.entity';
+import { FgLabel } from '../../entities/fg-label.entity';
+import { CustomerOrder } from '../../entities/customer-order.entity';
+import { CustomerOrderItem } from '../../entities/customer-order-item.entity';
+import { ShiftPattern } from '../../entities/shift-pattern.entity';
+import { ProcessCapa } from '../../entities/process-capa.entity';
+import { WorkCalendar } from '../../entities/work-calendar.entity';
+import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay]),
     InventoryModule,
     SystemModule,
   ],
@@ -82,6 +93,7 @@ import { RoutingProcess } from '../../entities/routing-process.entity';
     ProductionViewsController,
     SampleInspectController,
     ProductLabelController,
+    SimulationController,
     ProdPlanController,
     RepairController,
   ],
@@ -92,8 +104,11 @@ import { RoutingProcess } from '../../entities/routing-process.entity';
     SampleInspectService,
     ProductLabelService,
     ProdPlanService,
+    AutoPlanService,
     AutoIssueService,
     RepairService,
+    SimulationService,
+    SimulationDataService,
   ],
   exports: [
     JobOrderService,

@@ -68,26 +68,21 @@ export default function InputManualPage() {
   const { rawData: linesData } = useLineOptions();
   const { rawData: processesData } = useProcessOptions();
 
-  // 설비 목록 로드 (라인 + 공정 필터)
+  // 설비 목록 로드 (공정 기준, 라인은 보조 필터)
   useEffect(() => {
-    if (!selectedLine || !selectedProcess) {
+    if (!selectedProcess) {
       setEquips([]);
       return;
     }
     const params: Record<string, string> = {
-      lineCode: selectedLine.lineCode,
+      processCode: selectedProcess.processCode,
       limit: '200',
     };
+    if (selectedLine) params.lineCode = selectedLine.lineCode;
     api.get('/equipment/equips', { params })
-      .then(res => {
-        const all = res.data?.data ?? [];
-        const filtered = all.filter((e: any) =>
-          e.processCode === selectedProcess!.processCode
-        );
-        setEquips(filtered.length > 0 ? filtered : all);
-      })
+      .then(res => setEquips(res.data?.data ?? []))
       .catch(() => setEquips([]));
-  }, [selectedLine, selectedProcess]);
+  }, [selectedProcess, selectedLine]);
 
   // 실적 데이터 조회
   const fetchData = useCallback(async () => {
@@ -197,7 +192,7 @@ export default function InputManualPage() {
     setTimeout(() => matUidRef.current?.focus(), 100);
   }, [selectedEquip, selectedJobOrder, selectedWorker]);
 
-  const allSelected = !!(selectedLine && selectedProcess && selectedEquip && selectedJobOrder && selectedWorker);
+  const allSelected = !!(selectedProcess && selectedEquip && selectedJobOrder && selectedWorker);
   const hasAnySelection = !!(selectedLine || selectedProcess || selectedEquip || selectedJobOrder || selectedWorker);
 
   const columns = useMemo<ColumnDef<ManualResult>[]>(() => [
@@ -248,20 +243,20 @@ export default function InputManualPage() {
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                <LineSelect
-                  value={selectedLine?.lineCode ?? ''}
-                  onChange={handleLineChange}
-                  placeholder={t('production.inputManual.clickToSelectLine')}
-                  fullWidth
-                />
-              </div>
-              <div className="flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                 <ProcessSelect
                   value={selectedProcess?.processCode ?? ''}
                   onChange={handleProcessChange}
                   placeholder={t('production.inputManual.clickToSelectProcess')}
+                  fullWidth
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <LineSelect
+                  value={selectedLine?.lineCode ?? ''}
+                  onChange={handleLineChange}
+                  placeholder={t('production.inputManual.clickToSelectLine')}
                   fullWidth
                 />
               </div>
@@ -272,7 +267,7 @@ export default function InputManualPage() {
                   value={selectedEquip?.id ?? ''}
                   onChange={handleEquipChange}
                   placeholder={t('production.inputManual.clickToSelectEquip')}
-                  disabled={!selectedLine || !selectedProcess}
+                  disabled={!selectedProcess}
                   fullWidth
                 />
               </div>
@@ -410,8 +405,8 @@ export default function InputManualPage() {
         <div className="space-y-4">
           {/* 선택 정보 요약 */}
           <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-text-muted">{t('production.inputManual.selectedLine')}:</span> <span className="font-medium">{selectedLine?.lineName}</span></div>
             <div><span className="text-text-muted">{t('production.inputManual.selectedProcess')}:</span> <span className="font-medium">{selectedProcess?.processName}</span></div>
+            <div><span className="text-text-muted">{t('production.inputManual.selectedLine')}:</span> <span className="font-medium">{selectedLine?.lineName}</span></div>
             <div><span className="text-text-muted">{t('production.inputManual.selectedEquip')}:</span> <span className="font-medium">{selectedEquip?.equipName}</span></div>
             <div><span className="text-text-muted">{t('production.inputManual.workOrder')}:</span> <span className="font-mono font-medium text-primary">{selectedJobOrder?.orderNo}</span></div>
             <div><span className="text-text-muted">{t('production.inputManual.worker')}:</span> <span className="font-medium">{selectedWorker?.workerName}</span></div>

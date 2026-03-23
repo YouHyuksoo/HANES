@@ -58,7 +58,7 @@ export class DefectLogService {
     const {
       page = 1,
       limit = 20,
-      prodResultId,
+      prodResultNo,
       defectCode,
       status,
       startDate,
@@ -70,7 +70,7 @@ export class DefectLogService {
     const where: any = {
       ...(company && { company }),
       ...(plant && { plant }),
-      ...(prodResultId && { prodResultId: +prodResultId }),
+      ...(prodResultNo && { prodResultNo }),
       ...(defectCode && { defectCode }),
       ...(status && { status }),
       ...(startDate || endDate
@@ -119,7 +119,7 @@ export class DefectLogService {
    */
   async findById(id: string) {
     const defect = await this.defectLogRepository.findOne({
-      where: { id: +id },
+      where: { seq: +id },
     });
 
     if (!defect) {
@@ -132,9 +132,9 @@ export class DefectLogService {
   /**
    * 생산실적별 불량 목록 조회
    */
-  async findByProdResultId(prodResultId: string) {
+  async findByProdResultNo(prodResultNo: string) {
     const defects = await this.defectLogRepository.find({
-      where: { prodResultId: +prodResultId },
+      where: { prodResultNo },
       order: { occurAt: 'DESC' },
     });
 
@@ -147,16 +147,16 @@ export class DefectLogService {
   async create(dto: CreateDefectLogDto, company?: string, plant?: string) {
     // 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { id: +dto.prodResultId },
+      where: { resultNo: dto.prodResultNo },
     });
 
     if (!prodResult) {
-      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultId}`);
+      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultNo}`);
     }
 
     // 불량 등록 및 생산실적 불량수량 증가를 트랜잭션으로 처리
     const defectLog = this.defectLogRepository.create({
-      prodResultId: +dto.prodResultId,
+      prodResultNo: dto.prodResultNo,
       defectCode: dto.defectCode,
       defectName: dto.defectName,
       qty: dto.qty ?? 1,
@@ -172,7 +172,7 @@ export class DefectLogService {
 
     // 생산실적의 불량수량 증가
     await this.prodResultRepository.update(
-      { id: +dto.prodResultId },
+      { resultNo: dto.prodResultNo },
       { defectQty: prodResult.defectQty + (dto.qty ?? 1) }
     );
 
@@ -202,7 +202,7 @@ export class DefectLogService {
       );
 
       await this.prodResultRepository.update(
-        { id: existing.prodResultId },
+        { resultNo: existing.prodResultNo },
         { defectQty: () => `DEFECT_QTY + ${qtyDiff}` }
       );
     } else {
@@ -230,7 +230,7 @@ export class DefectLogService {
     await this.defectLogRepository.delete({ occurAt: existing.occurAt, seq: existing.seq });
 
     await this.prodResultRepository.update(
-      { id: existing.prodResultId },
+      { resultNo: existing.prodResultNo },
       { defectQty: () => `DEFECT_QTY - ${existing.qty}` }
     );
 
@@ -291,7 +291,7 @@ export class DefectLogService {
     // 이미 REPAIR/REWORK 상태일 수 있음
 
     const repairLog = this.repairLogRepository.create({
-      defectLogId: +dto.defectLogId,
+      defectLogId: dto.defectLogId,
       workerId: dto.workerId,
       repairAction: dto.repairAction,
       materialUsed: dto.materialUsed,
@@ -336,7 +336,7 @@ export class DefectLogService {
     await this.findById(defectLogId); // 존재 확인
 
     return this.repairLogRepository.find({
-      where: { defectLogId: +defectLogId },
+      where: { defectLogId },
       order: { createdAt: 'DESC' },
     });
   }

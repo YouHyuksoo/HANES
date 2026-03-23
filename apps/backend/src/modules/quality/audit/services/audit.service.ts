@@ -123,8 +123,8 @@ export class AuditService {
   /**
    * 심사 계획 단건 조회
    */
-  async findById(id: number) {
-    const item = await this.auditRepo.findOne({ where: { id } });
+  async findById(auditNo: string) {
+    const item = await this.auditRepo.findOne({ where: { auditNo } });
     if (!item) {
       throw new NotFoundException('심사 계획을 찾을 수 없습니다.');
     }
@@ -158,8 +158,8 @@ export class AuditService {
   /**
    * 심사 계획 수정 (PLANNED 상태에서만 가능)
    */
-  async update(id: number, dto: UpdateAuditPlanDto, userId: string) {
-    const item = await this.findById(id);
+  async update(auditNo: string, dto: UpdateAuditPlanDto, userId: string) {
+    const item = await this.findById(auditNo);
     if (item.status !== 'PLANNED') {
       throw new BadRequestException('계획 상태에서만 수정할 수 있습니다.');
     }
@@ -170,8 +170,8 @@ export class AuditService {
   /**
    * 심사 계획 삭제 (PLANNED 상태에서만 가능)
    */
-  async delete(id: number) {
-    const item = await this.findById(id);
+  async delete(auditNo: string) {
+    const item = await this.findById(auditNo);
     if (item.status !== 'PLANNED') {
       throw new BadRequestException('계획 상태에서만 삭제할 수 있습니다.');
     }
@@ -186,11 +186,11 @@ export class AuditService {
    * 완료 (IN_PROGRESS → COMPLETED)
    */
   async complete(
-    id: number,
+    auditNo: string,
     overallResult: string,
     userId: string,
   ) {
-    const item = await this.findById(id);
+    const item = await this.findById(auditNo);
     if (!['PLANNED', 'IN_PROGRESS'].includes(item.status)) {
       throw new BadRequestException(
         '계획 또는 진행중 상태에서만 완료할 수 있습니다.',
@@ -208,8 +208,8 @@ export class AuditService {
   /**
    * 종결 (COMPLETED → CLOSED)
    */
-  async close(id: number, userId: string) {
-    const item = await this.findById(id);
+  async close(auditNo: string, userId: string) {
+    const item = await this.findById(auditNo);
     if (item.status !== 'COMPLETED') {
       throw new BadRequestException('완료 상태에서만 종결할 수 있습니다.');
     }
@@ -262,7 +262,7 @@ export class AuditService {
   /**
    * 심사별 발견사항 조회
    */
-  async getFindings(auditId: number) {
+  async getFindings(auditId: string) {
     return this.findingRepo.find({
       where: { auditId },
       order: { findingNo: 'ASC' },
@@ -272,7 +272,7 @@ export class AuditService {
   /**
    * 발견사항에 CAPA 연결
    */
-  async linkCapa(auditId: number, findingNo: number, capaId: number) {
+  async linkCapa(auditId: string, findingNo: number, capaId: string) {
     const finding = await this.findingRepo.findOne({
       where: { auditId, findingNo },
     });

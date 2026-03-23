@@ -15,6 +15,11 @@ import { useMemo } from "react";
 import { useApiQuery } from "./useApi";
 import type { SelectOption } from "@/components/ui/Select";
 
+/** API 응답 래퍼 타입 */
+interface ApiResponse<T> {
+  data: T;
+}
+
 interface DepartmentItem {
   deptCode: string;
   deptName: string;
@@ -174,8 +179,9 @@ export function useLineOptions() {
   );
 
   const rawData = useMemo<LineItem[]>(() => {
-    const list = (data?.data as any)?.data ?? data?.data ?? [];
-    return list as LineItem[];
+    const response = data?.data as unknown as ApiResponse<LineItem[]> | LineItem[] | undefined;
+    const list = Array.isArray(response) ? response : response?.data ?? [];
+    return list;
   }, [data]);
 
   const options = useMemo<SelectOption[]>(() =>
@@ -199,8 +205,9 @@ export function useProcessOptions() {
   );
 
   const rawData = useMemo<ProcessItem[]>(() => {
-    const list = (data?.data as any)?.data ?? data?.data ?? [];
-    return list as ProcessItem[];
+    const response = data?.data as unknown as ApiResponse<ProcessItem[]> | ProcessItem[] | undefined;
+    const list = Array.isArray(response) ? response : response?.data ?? [];
+    return list;
   }, [data]);
 
   const options = useMemo<SelectOption[]>(() =>
@@ -286,8 +293,9 @@ export function useEquipBomOptions(equipCode: string | null) {
   );
 
   const options = useMemo<SelectOption[]>(() => {
-    const list = (data?.data as any)?.data ?? data?.data ?? [];
-    return (list as EquipBomRelItem[]).map((rel) => ({
+    const response = data?.data as unknown as ApiResponse<EquipBomRelItem[]> | EquipBomRelItem[] | undefined;
+    const list = Array.isArray(response) ? response : response?.data ?? [];
+    return list.map((rel) => ({
       value: rel.bomItem.itemCode,
       label: `${rel.bomItem.itemCode} - ${rel.bomItem.itemName}`,
     }));

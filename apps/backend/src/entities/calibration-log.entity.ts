@@ -96,8 +96,8 @@ export class CalibrationLog {
   @Column({ name: 'CERTIFICATE_NO', length: 100, nullable: true })
   certificateNo: string;
 
-  @Column({ name: 'REMARKS', length: 1000, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
@@ -108,9 +108,9 @@ export class CalibrationLog {
   @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

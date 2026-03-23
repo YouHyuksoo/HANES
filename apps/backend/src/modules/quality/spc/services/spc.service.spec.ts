@@ -48,8 +48,8 @@ describe('SpcService', () => {
 
   describe('createData', () => {
     it('should throw when subgroup size mismatch', async () => {
-      mockChartRepo.findOne.mockResolvedValue({ id: 1, subgroupSize: 5 } as any);
-      await expect(target.createData({ chartId: 1, values: [1, 2], sampleDate: '2026-01-01' } as any, 'CO', 'P01', 'user'))
+      mockChartRepo.findOne.mockResolvedValue({ chartNo: 'SPC-001', subgroupSize: 5 } as any);
+      await expect(target.createData({ chartId: 'SPC-001', values: [1, 2], sampleDate: '2026-01-01' } as any, 'CO', 'P01', 'user'))
         .rejects.toThrow(BadRequestException);
     });
   });

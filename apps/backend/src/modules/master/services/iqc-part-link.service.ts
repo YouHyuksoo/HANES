@@ -89,7 +89,7 @@ export class IqcPartLinkService {
     const entity = this.linkRepo.create({
       itemCode: dto.itemCode,
       partnerId: resolvedPartnerId,
-      groupId: dto.groupId,
+      groupCode: dto.groupCode,
       remark: dto.remark || null,
       useYn: dto.useYn ?? 'Y',
       company,
@@ -106,7 +106,7 @@ export class IqcPartLinkService {
 
     // 관계 로딩 없이 직접 UPDATE (partner=null 시 PK 손상 방지)
     const updateData: Record<string, unknown> = {};
-    if (dto.groupId !== undefined) updateData.groupId = dto.groupId;
+    if (dto.groupCode !== undefined) updateData.groupCode = dto.groupCode;
     if (dto.remark !== undefined) updateData.remark = dto.remark || null;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 

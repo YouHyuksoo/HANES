@@ -1,8 +1,15 @@
 /**
- * @file src/pages/consumables/issuing/hooks/useIssuingData.ts
+ * @file src/hooks/consumables/useIssuingData.ts
  * @description 출고관리 데이터 훅 - API 연동 및 상태 관리
+ *
+ * 초보자 가이드:
+ * 1. GET /consumables/logs?logTypeGroup=ISSUING 로 출고/반품 이력 조회
+ * 2. 검색어/유형 필터링은 FE에서 처리
+ * 3. 통계 카드 데이터는 오늘 날짜 기준으로 계산
  */
 import { useState, useMemo, useCallback } from 'react';
+import { api } from '@/services/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export interface IssuingLog {
   id: string;
@@ -20,37 +27,26 @@ export interface IssuingLog {
   createdAt: string;
 }
 
-/** mock 데이터 (API 연결 전) */
-const mockData: IssuingLog[] = [
-  {
-    id: '1', consumableId: 'c1', consumableCode: 'MOLD-001', consumableName: '압착금형 A타입',
-    logType: 'OUT', qty: 1, department: '생산1팀', lineId: 'LINE-A', equipCode: 'EQ-001',
-    issueReason: 'PRODUCTION', returnReason: null, remark: '압착라인 A 투입', createdAt: '2025-01-27 09:00',
-  },
-  {
-    id: '2', consumableId: 'c3', consumableCode: 'JIG-001', consumableName: '조립지그 001',
-    logType: 'OUT', qty: 2, department: '생산2팀', lineId: 'LINE-B', equipCode: null,
-    issueReason: 'REPAIR', returnReason: null, remark: '수리용 출고', createdAt: '2025-01-27 11:00',
-  },
-  {
-    id: '3', consumableId: 'c1', consumableCode: 'MOLD-001', consumableName: '압착금형 A타입',
-    logType: 'OUT_RETURN', qty: 1, department: null, lineId: null, equipCode: null,
-    issueReason: null, returnReason: '작업 종료 반납', remark: '정상 반납', createdAt: '2025-01-27 18:00',
-  },
-];
-
 export function useIssuingData() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const queryClient = useQueryClient();
 
-  const data = mockData;
-  const isLoading = false;
+  const { data = [], isLoading } = useQuery<IssuingLog[]>({
+    queryKey: ['consumables', 'issuing-logs'],
+    queryFn: async () => {
+      const res = await api.get('/consumables/logs', {
+        params: { logTypeGroup: 'ISSUING', limit: 5000 },
+      });
+      return res.data?.data ?? [];
+    },
+  });
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
       const matchSearch = !searchTerm ||
-        item.consumableCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.consumableName.toLowerCase().includes(searchTerm.toLowerCase());
+        item.consumableCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.consumableName?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchType = !typeFilter || item.logType === typeFilter;
       return matchSearch && matchType;
     });
@@ -58,7 +54,7 @@ export function useIssuingData() {
 
   const todayStats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    const todayData = data.filter((d) => d.createdAt.startsWith(today));
+    const todayData = data.filter((d) => d.createdAt?.startsWith(today));
     return {
       outCount: todayData.filter((d) => d.logType === 'OUT').length,
       returnCount: todayData.filter((d) => d.logType === 'OUT_RETURN').length,
@@ -68,8 +64,8 @@ export function useIssuingData() {
   }, [data]);
 
   const refresh = useCallback(() => {
-    // TODO: invalidate query
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['consumables', 'issuing-logs'] });
+  }, [queryClient]);
 
   return {
     data: filteredData,

@@ -14,10 +14,16 @@
   P2006 (#0500) 포장 라인     — 라벨프린터, 잉크젯마커, 포장기
   NONE         공용설비       — 공기압축기, 집진기
 """
+import os
+import sys
 import oracledb
 import uuid
 
-conn = oracledb.connect(user='test', password='test123', dsn='10.1.10.35:1527/JSHNSMES')
+# Oracle DB 스킬 커넥터 사용
+sys.path.insert(0, os.path.expanduser('~/.claude/skills/oracle-db/scripts'))
+from oracle_connector import get_connection
+
+conn = get_connection('JSHANES')
 cur = conn.cursor()
 
 # (equipCode, equipName, equipType, modelName, maker, lineCode, ipAddress, port, commType, installDate, status)

@@ -24,10 +24,10 @@ import FaiFormPanel from "./components/FaiFormPanel";
 import FaiItemList from "./components/FaiItemList";
 
 interface FaiRequest {
-  id: number; faiNo: string; triggerType: string; triggerRef: string;
+  faiNo: string; triggerType: string; triggerRef: string;
   itemCode: string; orderNo: string; lineCode: string; sampleQty: number;
   inspectorCode: string; status: string; inspectDate: string;
-  result: string; remarks: string; approvalCode: string;
+  result: string; remark: string; approvalCode: string;
   approvedAt: string; createdAt: string;
 }
 
@@ -70,22 +70,22 @@ export default function FaiPage() {
     fail: data.filter(d => ["FAIL", "CONDITIONAL"].includes(d.status)).length,
   }), [data]);
 
-  const patchAction = useCallback(async (id: number, ep: string, body?: object) => {
+  const patchAction = useCallback(async (id: string, ep: string, body?: object) => {
     await api.patch(`/quality/fai/${id}/${ep}`, body ?? {});
     fetchData(); setSelectedRow(null);
   }, [fetchData]);
 
   const handleStart = () => {
     if (!selectedRow) return;
-    setConfirmAction({ label: t("quality.fai.start"), action: () => patchAction(selectedRow.id, "start") });
+    setConfirmAction({ label: t("quality.fai.start"), action: () => patchAction(selectedRow.faiNo, "start") });
   };
   const handleComplete = (result: string) => {
     if (!selectedRow) return;
-    setConfirmAction({ label: t("quality.fai.complete"), action: () => patchAction(selectedRow.id, "complete", { result }) });
+    setConfirmAction({ label: t("quality.fai.complete"), action: () => patchAction(selectedRow.faiNo, "complete", { result }) });
   };
   const handleApprove = () => {
     if (!selectedRow) return;
-    setConfirmAction({ label: t("quality.fai.approve"), action: () => patchAction(selectedRow.id, "approve") });
+    setConfirmAction({ label: t("quality.fai.approve"), action: () => patchAction(selectedRow.faiNo, "approve") });
   };
 
   const columns = useMemo<ColumnDef<FaiRequest>[]>(() => [
@@ -191,8 +191,8 @@ export default function FaiPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.fai.title")}
-            getRowId={row => String((row as FaiRequest).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as FaiRequest).faiNo}
+            selectedRowId={selectedRow ? selectedRow.faiNo : undefined}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">
@@ -217,7 +217,7 @@ export default function FaiPage() {
 
         {/* 검사항목 상세 */}
         {selectedRow && (
-          <FaiItemList faiId={selectedRow.id} faiNo={selectedRow.faiNo}
+          <FaiItemList faiId={selectedRow.faiNo} faiNo={selectedRow.faiNo}
             editable={["SAMPLING", "INSPECTING"].includes(selectedRow.status)} />
         )}
 

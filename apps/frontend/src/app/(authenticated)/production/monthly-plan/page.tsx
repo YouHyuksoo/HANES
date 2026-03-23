@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, CalendarRange, Plus, Upload, Edit2, Trash2 } from "lucide-react";
+import { Search, RefreshCw, CalendarRange, Plus, Upload, Edit2, Trash2, Wand2 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal, StatCard } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -22,6 +22,8 @@ import { ProdPlanItem, ProdPlanSummary } from "./components/types";
 import { usePlanColumns } from "./components/PlanColumns";
 import PlanFormPanel from "./components/PlanFormPanel";
 import ExcelUploadModal from "./components/ExcelUploadModal";
+import IssueJobOrderModal from "./components/IssueJobOrderModal";
+import AutoGenerateModal from "./components/AutoGenerateModal";
 
 export default function MonthlyPlanPage() {
   const { t } = useTranslation();
@@ -32,13 +34,21 @@ export default function MonthlyPlanPage() {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [itemTypeFilter, setItemTypeFilter] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-01-01`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-12-31`;
+  });
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<ProdPlanItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProdPlanItem | null>(null);
   const [showExcel, setShowExcel] = useState(false);
+  const [showAutoGen, setShowAutoGen] = useState(false);
+  const [issueTarget, setIssueTarget] = useState<ProdPlanItem | null>(null);
   const panelAnimateRef = useRef(true);
 
   const statusOptions = useMemo(() => [
@@ -64,7 +74,8 @@ export default function MonthlyPlanPage() {
 
       const res = await api.get("/production/prod-plans", { params });
       setData(res.data?.data ?? []);
-    } catch {
+    } catch (err: unknown) {
+      console.error("[MonthlyPlan] fetchData error:", err);
       setData([]);
     } finally {
       setLoading(false);
@@ -113,7 +124,11 @@ export default function MonthlyPlanPage() {
     finally { setDeleteTarget(null); }
   }, [deleteTarget, fetchData]);
 
-  const columns = usePlanColumns({ onConfirm: handleConfirm, onUnconfirm: handleUnconfirm });
+  const columns = usePlanColumns({
+    onConfirm: handleConfirm,
+    onUnconfirm: handleUnconfirm,
+    onIssue: (item) => setIssueTarget(item),
+  });
 
   const allColumns = useMemo(() => [
     {
@@ -165,6 +180,9 @@ export default function MonthlyPlanPage() {
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setShowExcel(true)}>
               <Upload className="w-4 h-4 mr-1" />{t("monthlyPlan.excelUpload")}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowAutoGen(true)}>
+              <Wand2 className="w-4 h-4 mr-1" />{t("monthlyPlan.autoGenerate.button")}
             </Button>
             <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPlan(null); setIsPanelOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" />{t("monthlyPlan.addPlan")}
@@ -233,6 +251,19 @@ export default function MonthlyPlanPage() {
         onClose={() => setShowExcel(false)}
         onUploaded={fetchData}
         planMonth={startDate?.slice(0, 7) || new Date().toISOString().slice(0, 7)}
+      />
+
+      <AutoGenerateModal
+        isOpen={showAutoGen}
+        onClose={() => setShowAutoGen(false)}
+        onSuccess={() => { setShowAutoGen(false); fetchData(); }}
+      />
+
+      <IssueJobOrderModal
+        isOpen={!!issueTarget}
+        onClose={() => setIssueTarget(null)}
+        onSuccess={() => { setIssueTarget(null); fetchData(); }}
+        plan={issueTarget}
       />
 
       <ConfirmModal

@@ -9,7 +9,8 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsInt, IsIn, Min, MaxLength } from 'class-validator';
 
 /**
  * 통전검사 결과 등록 DTO
@@ -58,6 +59,12 @@ export class ContinuityInspectDto {
   @IsString()
   @MaxLength(500)
   errorDetail?: string;
+
+  @ApiPropertyOptional({ description: 'FG 바코드 (ON_PRODUCTION/PRE_ISSUE 모드에서 스캔값)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  fgBarcode?: string;
 }
 
 /**
@@ -114,6 +121,42 @@ export class AutoInspectDto {
   @IsString()
   @MaxLength(50)
   lineCode?: string;
+}
+
+/**
+ * FG 바코드 사전발행 DTO
+ */
+export class PreIssueDto {
+  @ApiProperty({ description: '작업지시번호' })
+  @IsString()
+  orderNo: string;
+
+  @ApiPropertyOptional({ description: '발행 수량 (미지정 시 planQty-기발행수)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  qty?: number;
+}
+
+/**
+ * 재검사 DTO
+ */
+export class ReInspectDto {
+  @ApiProperty({ description: '재검사 결과', enum: ['Y', 'N'] })
+  @IsString()
+  @IsIn(['Y', 'N'])
+  passYn: string;
+
+  @ApiPropertyOptional({ description: '불량코드' })
+  @IsOptional()
+  @IsString()
+  errorCode?: string;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  remark?: string;
 }
 
 /**

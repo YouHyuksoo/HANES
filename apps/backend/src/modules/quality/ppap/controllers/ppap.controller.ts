@@ -32,10 +32,11 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { PpapService } from '../services/ppap.service';
 import {
@@ -45,6 +46,7 @@ import {
 } from '../dto/ppap.dto';
 
 @ApiTags('품질관리 - PPAP')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/ppap')
 export class PpapController {
   constructor(private readonly ppapService: PpapService) {}

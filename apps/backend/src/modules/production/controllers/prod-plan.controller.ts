@@ -30,7 +30,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -39,19 +41,26 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ProdPlanService } from '../services/prod-plan.service';
+import { AutoPlanService } from '../services/auto-plan.service';
 import {
   CreateProdPlanDto,
   BulkCreateProdPlanDto,
   UpdateProdPlanDto,
   ProdPlanQueryDto,
+  IssueJobOrderFromPlanDto,
+  AutoGeneratePlanDto,
 } from '../dto/prod-plan.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('생산관리 - 월간생산계획')
+@UseGuards(JwtAuthGuard)
 @Controller('production/prod-plans')
 export class ProdPlanController {
-  constructor(private readonly prodPlanService: ProdPlanService) {}
+  constructor(
+    private readonly prodPlanService: ProdPlanService,
+    private readonly autoPlanService: AutoPlanService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '생산계획 목록 조회', description: '필터링 및 페이지네이션 지원' })
@@ -86,6 +95,32 @@ export class ProdPlanController {
   async bulkCreate(@Body() dto: BulkCreateProdPlanDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.prodPlanService.bulkCreate(dto, company, plant);
     return ResponseUtil.success(data, `${data.count}건의 생산계획이 등록되었습니다.`);
+  }
+
+  @Post('auto-generate/preview')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '수주 조회', description: '미출하 수주 목록 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async searchOrders(
+    @Body() dto: AutoGeneratePlanDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.autoPlanService.search(dto, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Post('auto-generate')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '수주 가져오기', description: '선택된 수주를 생산계획으로 추가' })
+  @ApiResponse({ status: 201, description: '생성 성공' })
+  async importOrders(
+    @Body() dto: AutoGeneratePlanDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.autoPlanService.importOrders(dto, company, plant);
+    return ResponseUtil.success(data, `${data.created}건의 생산계획이 추가되었습니다.`);
   }
 
   @Put(':id')
@@ -135,6 +170,21 @@ export class ProdPlanController {
   async unconfirm(@Param('id') id: string) {
     const data = await this.prodPlanService.unconfirm(id);
     return ResponseUtil.success(data, '생산계획 확정이 취소되었습니다.');
+  }
+
+  @Post(':id/issue-job-order')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '작업지시 발행', description: 'CONFIRMED 상태의 계획에서 작업지시를 발행합니다.' })
+  @ApiParam({ name: 'id', description: '계획번호' })
+  @ApiResponse({ status: 201, description: '발행 성공' })
+  async issueJobOrder(
+    @Param('id') planNo: string,
+    @Body() dto: IssueJobOrderFromPlanDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.prodPlanService.issueJobOrder(planNo, dto, company, plant);
+    return ResponseUtil.success(data, '작업지시가 발행되었습니다.');
   }
 
   @Post(':id/close')

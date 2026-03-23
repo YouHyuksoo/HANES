@@ -9,7 +9,7 @@
  * 2. **필터**: 날짜, 불량유형, 상태로 필터링
  * 3. **불량 등록**: 모달을 통해 새 불량 등록
  * 4. **상태 변경**: 수리대기 -> 수리중 -> 완료/폐기
- * 5. API: GET/POST/PUT /quality/defects
+ * 5. API: GET/POST/PUT /quality/defect-logs
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -72,7 +72,7 @@ export default function DefectPage() {
       if (statusFilter) params.status = statusFilter;
       if (dateFrom) params.dateFrom = dateFrom;
       if (dateTo) params.dateTo = dateTo;
-      const res = await api.get("/quality/defects", { params });
+      const res = await api.get("/quality/defect-logs", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);
@@ -86,7 +86,7 @@ export default function DefectPage() {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await api.post("/quality/defects", form);
+      await api.post("/quality/defect-logs", form);
       setIsModalOpen(false);
       setForm({ workOrderNo: "", defectCode: "", quantity: "", itemNo: "", equipmentNo: "", operator: "", remark: "" });
       fetchData();
@@ -100,7 +100,7 @@ export default function DefectPage() {
   const handleStatusChange = useCallback(async (newStatus: DefectStatus) => {
     if (!selectedDefect) return;
     try {
-      await api.put(`/quality/defects/${selectedDefect.id}/status`, { status: newStatus });
+      await api.put(`/quality/defect-logs/${selectedDefect.id}/status`, { status: newStatus });
       fetchData();
     } catch (e) {
       console.error("Status change failed:", e);

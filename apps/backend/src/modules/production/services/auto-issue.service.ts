@@ -64,14 +64,14 @@ export class AutoIssueService {
   /**
    * BOM 기반 자재 자동차감 실행
    * @param timing  호출 시점 ('ON_CREATE' | 'ON_COMPLETE')
-   * @param prodResultId  생산실적 ID
+   * @param prodResultNo  생산실적 번호 (PK)
    * @param orderNo  작업지시 번호
    * @param qty  실적 수량 (goodQty + defectQty)
    * @param externalQR  외부 트랜잭션 QueryRunner (선택)
    */
   async execute(
     timing: IssueTiming,
-    prodResultId: number,
+    prodResultNo: string,
     orderNo: string,
     qty: number,
     externalQR?: QueryRunner,
@@ -124,7 +124,7 @@ export class AutoIssueService {
 
         const childResult = await this.issueFifo(
           qr, bom.childItemCode, requiredQty, orderNo,
-          prodResultId, stockCheckPolicy, result.warnings,
+          prodResultNo, stockCheckPolicy, result.warnings,
         );
         result.issued.push(...childResult);
       }
@@ -185,7 +185,7 @@ export class AutoIssueService {
     itemCode: string,
     requiredQty: number,
     orderNo: string,
-    prodResultId: number,
+    prodResultNo: string,
     stockCheckPolicy: string,
     warnings: string[],
   ): Promise<{ matUid: string; itemCode: string; issueQty: number }[]> {
@@ -239,7 +239,7 @@ export class AutoIssueService {
         issueNo,
         seq: 1,
         orderNo,
-        prodResultId,
+        prodResultNo,
         matUid: lot.matUid,
         issueQty,
         issueType: 'PROD_AUTO',

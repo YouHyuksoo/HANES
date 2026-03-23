@@ -43,8 +43,8 @@ export class Warehouse {
   @Column({ name: 'VENDOR_ID', length: 50, nullable: true })
   vendorId: string | null;
 
-  @Column({ name: 'IS_DEFAULT', type: 'number', default: 0 })
-  isDefault: number;
+  @Column({ name: 'IS_DEFAULT', length: 1, default: "'N'" })
+  isDefault: string;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;

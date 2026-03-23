@@ -110,7 +110,7 @@ export class ReceivingService {
     }
 
     // 기본 창고(양품창고) 조회 - 입고 시 기본 선택값
-    const defaultWarehouse = await this.warehouseRepository.findOne({ where: { isDefault: 1 } });
+    const defaultWarehouse = await this.warehouseRepository.findOne({ where: { isDefault: 'Y' } });
 
     // 창고 정보 조회 (warehouseCode 기준)
     const warehouseCodes = [...new Set(arrivalWhByItemCode.values())].filter(Boolean);
@@ -429,7 +429,7 @@ export class ReceivingService {
         status: item.status,
         remark: item.remark,
         part: part ? { itemCode: part.itemCode, itemName: part.itemName, unit: part.unit } : null,
-        lot: lot ? { matUid: lot.matUid, poNo: (lot as any).poNo || null } : null,
+        lot: lot ? { matUid: lot.matUid, poNo: lot.poNo } : null,
         toWarehouse: warehouse ? { warehouseName: warehouse.warehouseName } : null,
       };
     });
@@ -505,7 +505,7 @@ export class ReceivingService {
    * 로직:
    * 1. IQC_AUTO_RECEIVE 설정 확인
    * 2. 각 LOT의 기입고 여부 확인 (재발행 판별)
-   * 3. 기본 창고(isDefault=1) 조회
+   * 3. 기본 창고(isDefault='Y') 조회
    * 4. 미입고 LOT만 createBulkReceive()로 입고 처리
    */
   async autoReceive(matUids: string[], workerId?: string) {
@@ -517,7 +517,7 @@ export class ReceivingService {
 
     // 2. 기본 창고 조회
     const defaultWarehouse = await this.warehouseRepository.findOne({
-      where: { isDefault: 1 },
+      where: { isDefault: 'Y' },
     });
     if (!defaultWarehouse) {
       return {

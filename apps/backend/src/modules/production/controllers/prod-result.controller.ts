@@ -33,7 +33,9 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import {
   ApiTags,
@@ -53,6 +55,7 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('생산관리 - 생산실적')
+@UseGuards(JwtAuthGuard)
 @Controller('production/prod-results')
 export class ProdResultController {
   constructor(private readonly prodResultService: ProdResultService) {}

@@ -35,10 +35,11 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { CapaService } from '../services/capa.service';
 import {
@@ -52,6 +53,7 @@ import {
 } from '../dto/capa.dto';
 
 @ApiTags('품질관리 - CAPA')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/capas')
 export class CapaController {
   constructor(private readonly capaService: CapaService) {}
@@ -85,7 +87,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: 'CAPA 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id') id: string) {
     const data = await this.capaService.findById(id);
     return ResponseUtil.success(data);
   }
@@ -111,7 +113,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateCapaDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -124,7 +126,7 @@ export class CapaController {
   @ApiOperation({ summary: 'CAPA 삭제', description: 'OPEN 상태에서만 가능' })
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
+  async delete(@Param('id') id: string) {
     await this.capaService.delete(id);
     return ResponseUtil.success(null, 'CAPA가 삭제되었습니다.');
   }
@@ -136,7 +138,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '분석 등록 성공' })
   async analyze(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: AnalyzeCapaDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -149,7 +151,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '계획 등록 성공' })
   async plan(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: PlanCapaDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -162,7 +164,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '조치 시작 성공' })
   async start(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.capaService.start(id, req.user?.id ?? 'system');
@@ -174,7 +176,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '검증 등록 성공' })
   async verify(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: VerifyCapaDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -187,7 +189,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 200, description: '종료 성공' })
   async close(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.capaService.close(id, req.user?.id ?? 'system');
@@ -202,7 +204,7 @@ export class CapaController {
   @ApiParam({ name: 'id', description: 'CAPA ID' })
   @ApiResponse({ status: 201, description: '추가 성공' })
   async addAction(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: CAPAActionItemDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -216,7 +218,7 @@ export class CapaController {
   @ApiParam({ name: 'seq', description: '조치항목 순번' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async updateAction(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: Partial<CAPAActionItemDto>,
     @Req() req: AuthenticatedRequest,

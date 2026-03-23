@@ -10,14 +10,16 @@
  * 5. **DELETE /master/iqc-groups/:id**: 검사그룹 삭제
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { IqcGroupService } from '../services/iqc-group.service';
 import { CreateIqcGroupDto, UpdateIqcGroupDto, IqcGroupQueryDto } from '../dto/iqc-group.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC검사그룹')
+@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-groups')
 export class IqcGroupController {
   constructor(private readonly iqcGroupService: IqcGroupService) {}

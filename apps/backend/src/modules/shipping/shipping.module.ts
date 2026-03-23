@@ -49,9 +49,12 @@ import { CustomerOrder } from '../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../entities/customer-order-item.entity';
 import { PartMaster } from '../../entities/part-master.entity';
 import { MatLot } from '../../entities/mat-lot.entity';
+import { FgLabel } from '../../entities/fg-label.entity';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
   imports: [
+    InventoryModule,
     TypeOrmModule.forFeature([
       BoxMaster,
       PalletMaster,
@@ -64,6 +67,7 @@ import { MatLot } from '../../entities/mat-lot.entity';
       CustomerOrderItem,
       PartMaster,
       MatLot,
+      FgLabel,
     ]),
   ],
   controllers: [

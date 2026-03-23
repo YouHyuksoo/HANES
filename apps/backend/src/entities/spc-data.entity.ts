@@ -8,7 +8,6 @@
  * 2. values: JSON 배열 문자열 (예: "[1.23, 1.25, 1.24, 1.26, 1.22]")
  * 3. mean/range/stdDev: 서브그룹 통계값
  * 4. outOfControl: 관리 이탈 여부 (0=정상, 1=이탈)
- * 5. id는 레거시 호환을 위해 generated @Column으로 유지
  */
 import {
   Entity,
@@ -24,11 +23,8 @@ import { SpcChart } from './spc-chart.entity';
 @Entity({ name: 'SPC_DATA' })
 @Index(['company', 'plant', 'sampleDate'])
 export class SpcData {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
-  @PrimaryColumn({ name: 'CHART_ID', type: 'int' })
-  chartId: number;
+  @PrimaryColumn({ name: 'CHART_ID', length: 30 })
+  chartId: string;
 
   @ManyToOne(() => SpcChart)
   @JoinColumn({ name: 'CHART_ID' })
@@ -64,8 +60,8 @@ export class SpcData {
   @Column({ name: 'OUT_OF_CONTROL', type: 'number', default: 0 })
   outOfControl: number;
 
-  @Column({ name: 'REMARKS', length: 500, nullable: true })
-  remarks: string;
+  @Column({ name: 'REMARK', length: 500, nullable: true })
+  remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
@@ -76,6 +72,6 @@ export class SpcData {
   @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 }

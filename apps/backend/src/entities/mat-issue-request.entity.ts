@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * - 자재 출고를 요청하는 헤더 테이블
- * - REQUEST_NO 자연키 PK 사용. ID는 자식 FK 참조용으로 유지.
+ * - REQUEST_NO 자연키 PK 사용.
  * - 상태 흐름: REQUESTED -> APPROVED -> COMPLETED (또는 REJECTED)
  * - 요청 품목은 MatIssueRequestItem 엔티티에서 관리
  */
@@ -25,9 +25,6 @@ import {
 export class MatIssueRequest {
   @PrimaryColumn({ name: 'REQUEST_NO', length: 50 })
   requestNo: string;
-
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
 
   @Column({ name: 'ORDER_NO', length: 50, nullable: true })
   jobOrderId: string | null;

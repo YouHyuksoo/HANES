@@ -6,7 +6,7 @@
  *
  * 초보자 가이드:
  * 1. editData=null -> 신규 등록, editData 있으면 수정
- * 2. 품목코드(PartSearchModal), 단계(phase), 비고(remarks) 입력
+ * 2. 품목코드(PartSearchModal), 단계(phase), 비고(remark) 입력
  * 3. 하단에 ControlPlanItemList로 관리항목 편집
  * 4. api.post/put /quality/control-plans
  */
@@ -24,15 +24,15 @@ interface FormData {
   itemCode: string;
   itemName: string;
   phase: string;
-  remarks: string;
+  remark: string;
 }
 
-const INIT: FormData = { itemCode: "", itemName: "", phase: "PROTOTYPE", remarks: "" };
+const INIT: FormData = { itemCode: "", itemName: "", phase: "PROTOTYPE", remark: "" };
 
 interface Props {
   isOpen: boolean;
   editData: {
-    id: number;
+    planNo: string;
     itemCode: string;
     itemName: string;
     phase: string;
@@ -57,7 +57,7 @@ export default function ControlPlanFormPanel({ isOpen, editData, onClose, onSave
         itemCode: editData.itemCode ?? "",
         itemName: editData.itemName ?? "",
         phase: editData.phase ?? "PROTOTYPE",
-        remarks: (editData.remarks as string) ?? "",
+        remark: (editData.remark as string) ?? "",
       });
     } else {
       setForm(INIT);
@@ -81,10 +81,10 @@ export default function ControlPlanFormPanel({ isOpen, editData, onClose, onSave
         itemCode: form.itemCode,
         itemName: form.itemName || undefined,
         phase: form.phase,
-        remarks: form.remarks || undefined,
+        remark: form.remark || undefined,
       };
       if (isEdit && editData) {
-        await api.put(`/quality/control-plans/${editData.id}`, payload);
+        await api.put(`/quality/control-plans/${editData.planNo}`, payload);
       } else {
         await api.post("/quality/control-plans", payload);
       }
@@ -102,10 +102,12 @@ export default function ControlPlanFormPanel({ isOpen, editData, onClose, onSave
       title={isEdit ? `${t("common.edit")} - ${t("quality.controlPlan.title")}` : t("quality.controlPlan.create")}
       footer={
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode}>
-            {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
-          </Button>
+          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.close", "닫기")}</Button>
+          {(!isEdit || editData?.status === "DRAFT") && (
+            <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode}>
+              {saving ? t("common.saving") : (isEdit ? t("common.edit") : t("common.add"))}
+            </Button>
+          )}
         </div>
       }>
       <div className="space-y-4 text-xs">
@@ -138,20 +140,20 @@ export default function ControlPlanFormPanel({ isOpen, editData, onClose, onSave
                 value={editData.status ?? ""} readOnly fullWidth />
             </div>
           ) : (
-            <Input label={t("common.remark")} value={form.remarks}
-              onChange={e => setField("remarks", e.target.value)} fullWidth />
+            <Input label={t("common.remark")} value={form.remark}
+              onChange={e => setField("remark", e.target.value)} fullWidth />
           )}
         </div>
 
         {/* 비고 (수정 모드) */}
         {isEdit && (
-          <Input label={t("common.remark")} value={form.remarks}
-            onChange={e => setField("remarks", e.target.value)} fullWidth />
+          <Input label={t("common.remark")} value={form.remark}
+            onChange={e => setField("remark", e.target.value)} fullWidth />
         )}
 
-        {/* 관리항목 목록 (수정 모드에서만) */}
+        {/* 관리항목 목록 (수정/상세보기 모드) */}
         {isEdit && editData && (
-          <ControlPlanItemList planId={editData.id} planStatus={editData.status} />
+          <ControlPlanItemList planNo={editData.planNo} planStatus={editData.status} />
         )}
       </div>
 

@@ -30,10 +30,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { MoldService } from '../services/mold.service';
 import {
@@ -44,6 +45,7 @@ import {
 } from '../dto/mold.dto';
 
 @ApiTags('Mold Management')
+@UseGuards(JwtAuthGuard)
 @Controller('equipment')
 export class MoldController {
   constructor(private readonly moldService: MoldService) {}

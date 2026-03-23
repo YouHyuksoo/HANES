@@ -12,11 +12,17 @@
   JIG  — 지그 (검사 치구, 조립 치구)
   TOOL — 공구 (블레이드, 혼, 프린트헤드 등)
 """
+import os
+import sys
 import oracledb
 import uuid
 from datetime import datetime, timedelta
 
-conn = oracledb.connect(user='test', password='test123', dsn='10.1.10.35:1527/JSHNSMES')
+# Oracle DB 스킬 커넥터 사용
+sys.path.insert(0, os.path.expanduser('~/.claude/skills/oracle-db/scripts'))
+from oracle_connector import get_connection
+
+conn = get_connection('JSHANES')
 cur = conn.cursor()
 
 # =============================================

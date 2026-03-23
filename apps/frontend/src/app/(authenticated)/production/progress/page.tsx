@@ -42,8 +42,21 @@ export default function ProgressPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [shiftFilter, setShiftFilter] = useState('');
+  const [shiftOptions, setShiftOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [planDateFrom, setPlanDateFrom] = useState(getToday());
   const [planDateTo, setPlanDateTo] = useState(getToday());
+
+  /** 교대 옵션 조회 */
+  useEffect(() => {
+    api.get('/master/shift-patterns').then((res) => {
+      const patterns = res.data?.data ?? [];
+      setShiftOptions(patterns.map((p: { shiftCode: string; shiftName: string; startTime: string; endTime: string }) => ({
+        value: p.shiftCode,
+        label: `${p.shiftName} (${p.startTime}~${p.endTime})`,
+      })));
+    }).catch(() => { /* 교대 마스터 미등록 시 무시 */ });
+  }, []);
 
   const comCodeStatusOptions = useComCodeOptions('JOB_ORDER_STATUS');
   const statusOptions = useMemo(() => [
@@ -56,6 +69,7 @@ export default function ProgressPage() {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (shiftFilter) params.shift = shiftFilter;
       if (planDateFrom) params.planDateFrom = planDateFrom;
       if (planDateTo) params.planDateTo = planDateTo;
       const res = await api.get('/production/job-orders', { params });
@@ -65,7 +79,7 @@ export default function ProgressPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, planDateFrom, planDateTo]);
+  }, [searchText, statusFilter, shiftFilter, planDateFrom, planDateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -141,6 +155,9 @@ export default function ProgressPage() {
               </div>
               <div className="w-36 flex-shrink-0">
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+              </div>
+              <div className="w-44 flex-shrink-0">
+                <Select options={[{ value: '', label: t('common.all') }, ...shiftOptions]} value={shiftFilter} onChange={setShiftFilter} fullWidth />
               </div>
             </div>
           } />

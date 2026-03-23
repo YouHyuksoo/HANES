@@ -30,7 +30,7 @@ export class RepairOrder {
   @PrimaryColumn({ name: 'SEQ', type: 'int' })
   seq: number;
 
-  @Column({ name: 'STATUS', length: 50, default: 'RECEIVED' })
+  @Column({ name: 'STATUS', length: 20, default: 'RECEIVED' })
   status: string;
 
   @Column({ name: 'FG_BARCODE', length: 100, nullable: true })

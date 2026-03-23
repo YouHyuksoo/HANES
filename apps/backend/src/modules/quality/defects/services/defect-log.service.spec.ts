@@ -29,7 +29,7 @@ describe('DefectLogService', () => {
       id: 1,
       occurAt: new Date('2026-03-18'),
       seq: 1,
-      prodResultId: 100,
+      prodResultNo: 'PR260318-00001',
       defectCode: 'DEF001',
       defectName: '외관불량',
       qty: 2,
@@ -46,7 +46,7 @@ describe('DefectLogService', () => {
   /** 테스트용 생산실적 팩토리 */
   const createProdResult = (overrides: Partial<ProdResult> = {}): ProdResult =>
     ({
-      id: 100,
+      resultNo: 'PR260318-00001',
       defectQty: 5,
       ...overrides,
     }) as ProdResult;
@@ -147,7 +147,7 @@ describe('DefectLogService', () => {
       // Arrange
       const prodResult = createProdResult({ defectQty: 3 });
       const dto = {
-        prodResultId: '100',
+        prodResultNo: 'PR260318-00001',
         defectCode: 'DEF002',
         defectName: '치수불량',
         qty: 2,
@@ -165,7 +165,7 @@ describe('DefectLogService', () => {
       // Assert
       expect(result.defectCode).toBe('DEF002');
       expect(mockProdResultRepo.update).toHaveBeenCalledWith(
-        { id: 100 },
+        { resultNo: 'PR260318-00001' },
         { defectQty: 5 }, // 3 + 2
       );
     });
@@ -179,7 +179,7 @@ describe('DefectLogService', () => {
       mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      await target.create({ prodResultId: '100', defectCode: 'DEF001' } as any);
+      await target.create({ prodResultNo: 'PR260318-00001', defectCode: 'DEF001' } as any);
 
       // Assert
       expect(mockDefectLogRepo.create).toHaveBeenCalledWith(
@@ -193,7 +193,7 @@ describe('DefectLogService', () => {
 
       // Act & Assert
       await expect(
-        target.create({ prodResultId: '999', defectCode: 'DEF001' } as any),
+        target.create({ prodResultNo: '999', defectCode: 'DEF001' } as any),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -216,7 +216,7 @@ describe('DefectLogService', () => {
       expect(result).toEqual({ id: '1', deleted: true });
       expect(mockDefectLogRepo.delete).toHaveBeenCalledTimes(1);
       expect(mockProdResultRepo.update).toHaveBeenCalledWith(
-        { id: 100 },
+        { resultNo: 'PR260318-00001' },
         expect.objectContaining({ defectQty: expect.any(Function) }),
       );
     });

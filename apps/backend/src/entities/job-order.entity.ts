@@ -22,6 +22,7 @@ import {
 import { ProdResult } from './prod-result.entity';
 import { PartMaster } from './part-master.entity';
 import { RoutingGroup } from './routing-group.entity';
+import { ProdPlan } from './prod-plan.entity';
 
 @Entity({ name: 'JOB_ORDERS' })
 @Index(['status'])
@@ -40,6 +41,13 @@ export class JobOrder {
 
   @OneToMany(() => JobOrder, (jo) => jo.parent)
   children: JobOrder[];
+
+  @Column({ name: 'PLAN_NO', length: 50, nullable: true })
+  planNo: string | null;
+
+  @ManyToOne(() => ProdPlan, { nullable: true })
+  @JoinColumn({ name: 'PLAN_NO' })
+  prodPlan: ProdPlan | null;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
@@ -80,7 +88,7 @@ export class JobOrder {
   @Column({ name: 'PRIORITY', type: 'int', default: 5 })
   priority: number;
 
-  @Column({ name: 'STATUS', length: 50, default: 'WAITING' })
+  @Column({ name: 'STATUS', length: 20, default: 'WAITING' })
   status: string;
 
   @Column({ name: 'CUST_PO_NO', length: 50, nullable: true })
@@ -92,16 +100,16 @@ export class JobOrder {
   @Column({ name: 'ERP_SYNC_YN', length: 1, default: 'N' })
   erpSyncYn: string;
 
-  @Column({ name: 'COMPANY', length: 255, nullable: true })
+  @Column({ name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 255, nullable: true })
+  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 255, nullable: true })
+  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 255, nullable: true })
+  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

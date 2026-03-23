@@ -29,7 +29,7 @@ interface IqcGroupRow {
   sampleQty?: number | null;
   useYn: string;
   items?: {
-    inspItemId: number;
+    inspItemCode: string;
     seq: number;
     inspItem?: { inspItemCode: string; inspItemName: string; judgeMethod: string };
   }[];
@@ -166,8 +166,8 @@ export default function IqcGroupTab() {
         return (
           <div className="flex flex-wrap gap-1">
             {items.sort((a, b) => a.seq - b.seq).map((gi) => (
-              <span key={gi.inspItemId} className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface text-text-muted">
-                {gi.inspItem?.inspItemCode ?? gi.inspItemId}
+              <span key={gi.inspItemCode} className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-surface text-text-muted">
+                {gi.inspItem?.inspItemCode ?? gi.inspItemCode}
               </span>
             ))}
           </div>
@@ -183,7 +183,7 @@ export default function IqcGroupTab() {
         return (
           <div className="text-xs space-y-0.5">
             {items.sort((a, b) => a.seq - b.seq).map((gi) => (
-              <div key={gi.inspItemId} className="truncate">
+              <div key={gi.inspItemCode} className="truncate">
                 <span className="text-text-muted mr-1">{gi.seq}.</span>
                 {gi.inspItem?.inspItemName ?? "-"}
               </div>

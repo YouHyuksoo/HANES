@@ -64,7 +64,7 @@ export interface DefectLog {
   processName: string;
   jobOrderId?: string;
   jobOrderNo?: string;
-  prodResultId?: string;
+  prodResultNo?: string;
   itemCode: string;
   itemName: string;
   lotNo?: string;
@@ -198,7 +198,7 @@ export interface ElectricalTestResult {
   id: string;
   testNo: string;
   testDate: string;
-  prodResultId?: string;
+  prodResultNo?: string;
   jobOrderId?: string;
   itemCode: string;
   itemName: string;

@@ -185,7 +185,8 @@ export class WorkCalendarService {
     this.ensureNotConfirmed(calendar);
 
     const year = parseInt(calendar.calendarYear, 10);
-    const weekendOff = dto.weekendOff ?? true;
+    const saturdayWork = dto.saturdayWork ?? false;
+    const sundayWork = dto.sundayWork ?? false;
     const applyHolidays = dto.applyHolidays ?? true;
 
     /** 기본 교대 패턴의 총 근무 시간(분) 계산 */
@@ -220,9 +221,11 @@ export class WorkCalendarService {
       let offReason: string | null = null;
       let workMin = defaultWorkMinutes;
 
-      if (weekendOff && (dow === 0 || dow === 6)) {
+      const isSaturday = dow === 6;
+      const isSunday = dow === 0;
+      if ((isSaturday && !saturdayWork) || (isSunday && !sundayWork)) {
         dayType = 'OFF';
-        offReason = 'REGULAR';
+        offReason = 'WEEKEND';
         workMin = 0;
       } else if (holidaySet.has(dateStr)) {
         dayType = 'OFF';

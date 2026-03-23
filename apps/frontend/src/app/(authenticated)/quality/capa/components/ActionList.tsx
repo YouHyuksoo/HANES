@@ -16,7 +16,6 @@ import { Card, CardContent, Button, Input, ComCodeBadge } from "@/components/ui"
 import api from "@/services/api";
 
 interface ActionItem {
-  id: number;
   seq: number;
   actionDesc: string;
   responsibleCode: string;
@@ -27,7 +26,7 @@ interface ActionItem {
 }
 
 interface Props {
-  capaId: number;
+  capaId: string;
   capaStatus: string;
   onUpdate: () => void;
 }
@@ -85,7 +84,7 @@ export default function ActionList({ capaId, capaStatus, onUpdate }: Props) {
   };
 
   const startEdit = (item: ActionItem) => {
-    setEditingId(item.id);
+    setEditingId(item.seq);
     setForm({
       actionDesc: item.actionDesc ?? "",
       responsibleCode: item.responsibleCode ?? "",
@@ -122,8 +121,8 @@ export default function ActionList({ capaId, capaStatus, onUpdate }: Props) {
             </thead>
             <tbody>
               {actions.map(item => (
-                <tr key={item.id} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
-                  {editingId === item.id ? (
+                <tr key={item.seq} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
+                  {editingId === item.seq ? (
                     <>
                       <td className="px-3 py-2 text-text-muted">{item.seq}</td>
                       <td className="px-3 py-2"><Input value={form.actionDesc} onChange={e => setForm(p => ({ ...p, actionDesc: e.target.value }))} fullWidth className="text-xs" /></td>
@@ -140,7 +139,7 @@ export default function ActionList({ capaId, capaStatus, onUpdate }: Props) {
                       <td className="px-3 py-2"><Input value={form.result} onChange={e => setForm(p => ({ ...p, result: e.target.value }))} fullWidth className="text-xs" /></td>
                       <td className="px-3 py-2 text-center">
                         <div className="flex gap-1 justify-center">
-                          <Button size="sm" variant="primary" onClick={() => handleUpdate(item.id)} className="px-1.5 py-0.5 h-6"><Save className="w-3 h-3" /></Button>
+                          <Button size="sm" variant="primary" onClick={() => handleUpdate(item.seq)} className="px-1.5 py-0.5 h-6"><Save className="w-3 h-3" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="px-1.5 py-0.5 h-6"><X className="w-3 h-3" /></Button>
                         </div>
                       </td>

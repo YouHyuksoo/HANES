@@ -1,0 +1,223 @@
+/**
+ * @file src/modules/production/services/simulation-data.service.ts
+ * @description 시뮬레이션용 데이터 로딩 서비스 - DB에서 월력/CAPA/납기/고객명을 조회한다.
+ *
+ * 초보자 가이드:
+ * 1. SimulationService에서 사용하는 데이터 조회 로직을 분리한 헬퍼 서비스
+ * 2. loadWorkDays: 월력에서 작업일 목록 추출
+ * 3. loadBottleneckCapa: 품목별 병목 CAPA (MIN(dailyCapa))
+ * 4. loadDueDates: 수주에서 납기일 매칭
+ * 5. loadCustomerNames: 고객ID → 고객명 매핑
+ */
+
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ProdPlan } from '../../../entities/prod-plan.entity';
+import { ProcessCapa } from '../../../entities/process-capa.entity';
+import { WorkCalendar } from '../../../entities/work-calendar.entity';
+import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
+import { CustomerOrder } from '../../../entities/customer-order.entity';
+import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
+
+@Injectable()
+export class SimulationDataService {
+  private readonly logger = new Logger(SimulationDataService.name);
+
+  constructor(
+    @InjectRepository(ProcessCapa)
+    private readonly capaRepo: Repository<ProcessCapa>,
+    @InjectRepository(WorkCalendar)
+    private readonly calRepo: Repository<WorkCalendar>,
+    @InjectRepository(WorkCalendarDay)
+    private readonly dayRepo: Repository<WorkCalendarDay>,
+    @InjectRepository(CustomerOrder)
+    private readonly orderRepo: Repository<CustomerOrder>,
+    @InjectRepository(CustomerOrderItem)
+    private readonly orderItemRepo: Repository<CustomerOrderItem>,
+  ) {}
+
+  /**
+   * 월력에서 해당 월의 작업일 목록을 조회한다.
+   * processCd가 null인 공장 공통 월력을 우선 사용한다.
+   */
+  async loadWorkDays(
+    month: string,
+    company: string,
+    plant: string,
+  ): Promise<string[]> {
+    const year = month.substring(0, 4);
+
+    const calendar = await this.calRepo
+      .createQueryBuilder('c')
+      .where('c.company = :company', { company })
+      .andWhere('c.plant = :plant', { plant })
+      .andWhere('c.calendarYear = :year', { year })
+      .andWhere('c.status = :status', { status: 'ACTIVE' })
+      .andWhere('c.processCd IS NULL')
+      .getOne();
+
+    if (!calendar) {
+      this.logger.warn(
+        `ACTIVE 상태 공통 월력 없음: ${year}/${company}/${plant}`,
+      );
+      return [];
+    }
+
+    const days = await this.dayRepo
+      .createQueryBuilder('d')
+      .where('d.calendarId = :calId', { calId: calendar.calendarId })
+      .andWhere('d.dayType = :dayType', { dayType: 'WORK' })
+      .andWhere("TO_CHAR(d.workDate, 'YYYY-MM') = :month", { month })
+      .orderBy('d.workDate', 'ASC')
+      .getMany();
+
+    return days.map((d) => {
+      const raw = d.workDate;
+      const dt = typeof raw === 'object' && raw !== null
+        ? (raw as Date)
+        : new Date(String(raw));
+      return dt.toISOString().substring(0, 10);
+    });
+  }
+
+  /**
+   * 품목별 병목 CAPA를 조회한다 (MIN(dailyCapa) 기준).
+   * CAPA 정보가 없는 품목은 기본 CAPA(9999)를 할당한다.
+   */
+  async loadBottleneckCapa(
+    itemCodes: string[],
+    company: string,
+    plant: string,
+  ): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (itemCodes.length === 0) return map;
+
+    const rows: Array<{ itemCode: string; minCapa: number }> =
+      await this.capaRepo
+        .createQueryBuilder('c')
+        .select('c.itemCode', 'itemCode')
+        .addSelect('MIN(c.dailyCapa)', 'minCapa')
+        .where('c.company = :company', { company })
+        .andWhere('c.plant = :plant', { plant })
+        .andWhere('c.useYn = :yn', { yn: 'Y' })
+        .andWhere('c.itemCode IN (:...codes)', { codes: itemCodes })
+        .groupBy('c.itemCode')
+        .getRawMany();
+
+    for (const row of rows) {
+      map.set(row.itemCode, Number(row.minCapa) || 0);
+    }
+
+    const DEFAULT_CAPA = 9999;
+    for (const code of itemCodes) {
+      if (!map.has(code)) {
+        this.logger.warn(`CAPA 미등록 품목, 기본값 사용: ${code}`);
+        map.set(code, DEFAULT_CAPA);
+      }
+    }
+
+    return map;
+  }
+
+  /**
+   * 계획별 납기일을 수주 데이터에서 조회한다.
+   * plan.customer + plan.itemCode로 CustomerOrder/CustomerOrderItem을 매칭하여
+   * 해당 월에 가장 빠른 납기일(MIN(DUE_DATE))을 반환한다.
+   */
+  async loadDueDates(
+    plans: ProdPlan[],
+    month: string,
+    company: string,
+    plant: string,
+  ): Promise<Map<string, string | null>> {
+    const map = new Map<string, string | null>();
+
+    // 고유한 (customer, itemCode) 쌍 수집
+    const pairs: Array<{ customer: string; itemCode: string }> = [];
+    for (const p of plans) {
+      if (p.customer) {
+        const exists = pairs.some(
+          (x) => x.customer === p.customer && x.itemCode === p.itemCode,
+        );
+        if (!exists) {
+          pairs.push({ customer: p.customer, itemCode: p.itemCode });
+        }
+      }
+    }
+
+    if (pairs.length === 0) {
+      plans.forEach((p) => map.set(p.planNo, null));
+      return map;
+    }
+
+    // 각 (customer, itemCode) 쌍에 대해 납기일 조회
+    const dueDateByKey = new Map<string, string>();
+    for (const pair of pairs) {
+      const result: Array<{ dueDate: string }> = await this.orderRepo
+        .createQueryBuilder('co')
+        .innerJoin(CustomerOrderItem, 'ci', 'co.orderNo = ci.orderNo')
+        .select('MIN(co.dueDate)', 'dueDate')
+        .where('co.customerId = :customerId', { customerId: pair.customer })
+        .andWhere('ci.itemCode = :itemCode', { itemCode: pair.itemCode })
+        .andWhere("TO_CHAR(co.dueDate, 'YYYY-MM') = :month", { month })
+        .andWhere('co.company = :company', { company })
+        .andWhere('co.plant = :plant', { plant })
+        .getRawMany();
+
+      if (result[0]?.dueDate) {
+        const rawDue = result[0].dueDate;
+        const dt = typeof rawDue === 'object' && rawDue !== null
+          ? (rawDue as unknown as Date)
+          : new Date(String(rawDue));
+        dueDateByKey.set(
+          `${pair.customer}|${pair.itemCode}`,
+          dt.toISOString().substring(0, 10),
+        );
+      }
+    }
+
+    // 계획별로 매핑
+    for (const p of plans) {
+      const key = `${p.customer ?? ''}|${p.itemCode}`;
+      map.set(p.planNo, dueDateByKey.get(key) ?? null);
+    }
+
+    return map;
+  }
+
+  /**
+   * 고객ID -> 고객명 매핑을 조회한다.
+   */
+  async loadCustomerNames(
+    plans: ProdPlan[],
+    company: string,
+    plant: string,
+  ): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    const customerIds = [
+      ...new Set(plans.map((p) => p.customer).filter(Boolean)),
+    ] as string[];
+
+    if (customerIds.length === 0) return map;
+
+    const rows: Array<{ customerId: string; customerName: string }> =
+      await this.orderRepo
+        .createQueryBuilder('co')
+        .select('co.customerId', 'customerId')
+        .addSelect('MAX(co.customerName)', 'customerName')
+        .where('co.company = :company', { company })
+        .andWhere('co.plant = :plant', { plant })
+        .andWhere('co.customerId IN (:...ids)', { ids: customerIds })
+        .groupBy('co.customerId')
+        .getRawMany();
+
+    for (const row of rows) {
+      if (row.customerId) {
+        map.set(row.customerId, row.customerName ?? row.customerId);
+      }
+    }
+
+    return map;
+  }
+}

@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, Like } from 'typeorm';
+import { Repository, DataSource, In, Like, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -202,7 +202,7 @@ export class LotMergeService {
     const today = new Date();
     const prefix = `MRG${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
     const lastTrans = await this.stockTransactionRepository.findOne({
-      where: { transNo: Like(`${prefix}%`) } as any,
+      where: { transNo: Like(`${prefix}%`) } as FindOptionsWhere<StockTransaction>,
       order: { transNo: 'DESC' },
     });
     let seq = 1;

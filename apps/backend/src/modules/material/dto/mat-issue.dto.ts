@@ -29,10 +29,10 @@ export class CreateMatIssueDto {
   @IsString()
   orderNo?: string;
 
-  @ApiPropertyOptional({ description: '생산실적 ID (자재 투입 연결)' })
+  @ApiPropertyOptional({ description: '생산실적 번호 (자재 투입 연결)' })
   @IsOptional()
   @IsString()
-  prodResultId?: string;
+  prodResultNo?: string;
 
   @ApiPropertyOptional({ description: '출고 창고 코드' })
   @IsOptional()

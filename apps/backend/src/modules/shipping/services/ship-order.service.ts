@@ -129,7 +129,7 @@ export class ShipOrderService {
   }
 
   /** 출하지시 생성 */
-  async create(dto: CreateShipOrderDto) {
+  async create(dto: CreateShipOrderDto, company?: string, plant?: string) {
     const existing = await this.shipOrderRepository.findOne({
       where: { shipOrderNo: dto.shipOrderNo },
     });
@@ -148,6 +148,8 @@ export class ShipOrderService {
         shipDate: dto.shipDate ? new Date(dto.shipDate) : null,
         remark: dto.remark,
         status: 'DRAFT',
+        company: company || null,
+        plant: plant || null,
       });
 
       const savedOrder = await queryRunner.manager.save(order);

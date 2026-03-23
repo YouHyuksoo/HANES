@@ -13,15 +13,18 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import {
   Search, RefreshCw, ClipboardList, Plus, ChevronRight, ChevronDown,
   Edit2, Trash2, Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
+  Barcode,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge, StatCard, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge, StatCard, ConfirmModal, Modal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
 import JobOrderFormPanel from "./components/JobOrderFormPanel";
 import type { JobOrderFormData } from "./components/JobOrderFormPanel";
 
@@ -82,6 +85,13 @@ export default function JobOrderPage() {
   // 삭제/액션 확인 모달
   const [deleteTarget, setDeleteTarget] = useState<JobOrderItem | null>(null);
   const [pendingAction, setPendingAction] = useState<ActionType | null>(null);
+
+  // 사전발행 모달
+  const issueTiming = useSysConfigStore((s) => s.getConfig("FG_BARCODE_ISSUE_TIMING")) ?? "ON_INSPECT";
+  const isPreIssue = issueTiming === "PRE_ISSUE";
+  const [preIssueOpen, setPreIssueOpen] = useState(false);
+  const [preIssueQty, setPreIssueQty] = useState(0);
+  const [preIssueLoading, setPreIssueLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -159,6 +169,28 @@ export default function JobOrderPage() {
 
   const getConfirmVariant = (action: ActionType): "danger" | "default" => {
     return action === "cancel" ? "danger" : "default";
+  };
+
+  /** 사전발행 모달 열기 */
+  const handleOpenPreIssue = () => {
+    if (!selectedRow) return;
+    setPreIssueQty(selectedRow.planQty);
+    setPreIssueOpen(true);
+  };
+
+  /** 사전발행 실행 */
+  const handlePreIssue = async () => {
+    if (!selectedRow || preIssueQty <= 0) return;
+    setPreIssueLoading(true);
+    try {
+      await api.post("/quality/continuity-inspect/pre-issue", {
+        orderNo: selectedRow.orderNo,
+        qty: preIssueQty,
+      });
+      toast.success(t("production.order.preIssueSuccess", { count: preIssueQty }));
+      setPreIssueOpen(false);
+    } catch { /* api 인터셉터에서 처리 */ }
+    finally { setPreIssueLoading(false); }
   };
 
   // ===== 패널 로직 =====
@@ -367,6 +399,11 @@ export default function JobOrderPage() {
               className={canCancel ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" : ""}>
               <XCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionCancel")}
             </Button>
+            {isPreIssue && (
+              <Button size="sm" variant="secondary" onClick={handleOpenPreIssue}>
+                <Barcode className="w-3.5 h-3.5 mr-1" />{t("production.order.preIssueBtn")}
+              </Button>
+            )}
           </div>
         )}
 
@@ -436,6 +473,33 @@ export default function JobOrderPage() {
         confirmText={t("common.confirm")}
         variant={pendingAction ? getConfirmVariant(pendingAction) : "default"}
       />
+
+      {/* 바코드 사전발행 모달 */}
+      <Modal isOpen={preIssueOpen} onClose={() => setPreIssueOpen(false)}
+        title={t("production.order.preIssueBtn")} size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setPreIssueOpen(false)} disabled={preIssueLoading}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="primary" onClick={handlePreIssue}
+              isLoading={preIssueLoading} disabled={preIssueQty <= 0}>
+              {t("common.confirm")}
+            </Button>
+          </>
+        }>
+        <div className="space-y-3">
+          <p className="text-sm text-text-muted">
+            {selectedRow?.orderNo} - {selectedRow?.itemCode}
+          </p>
+          <label className="block text-sm font-medium text-text">
+            {t("production.order.preIssueQty")}
+          </label>
+          <Input type="number" value={preIssueQty}
+            onChange={(e) => setPreIssueQty(Number(e.target.value))}
+            min={1} fullWidth />
+        </div>
+      </Modal>
     </div>
   );
 }

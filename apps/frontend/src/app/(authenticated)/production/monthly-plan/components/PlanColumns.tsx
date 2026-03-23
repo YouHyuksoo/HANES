@@ -14,14 +14,16 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
+import { Send } from "lucide-react";
 import { ProdPlanItem } from "./types";
 
 interface UsePlanColumnsParams {
   onConfirm?: (item: ProdPlanItem) => void;
   onUnconfirm?: (item: ProdPlanItem) => void;
+  onIssue?: (item: ProdPlanItem) => void;
 }
 
-export function usePlanColumns({ onConfirm, onUnconfirm }: UsePlanColumnsParams = {}) {
+export function usePlanColumns({ onConfirm, onUnconfirm, onIssue }: UsePlanColumnsParams = {}) {
   const { t } = useTranslation();
 
   return useMemo<ColumnDef<ProdPlanItem>[]>(() => [
@@ -37,7 +39,7 @@ export function usePlanColumns({ onConfirm, onUnconfirm }: UsePlanColumnsParams 
     {
       id: "actions",
       header: t("common.actions"),
-      size: 80,
+      size: 220,
       meta: { filterType: "none" as const, align: "center" as const },
       cell: ({ row }) => {
         const item = row.original;
@@ -45,20 +47,36 @@ export function usePlanColumns({ onConfirm, onUnconfirm }: UsePlanColumnsParams 
           return (
             <button
               onClick={(e) => { e.stopPropagation(); onConfirm(item); }}
-              className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+              className="px-3 py-1 text-xs font-medium rounded-md border border-green-300 bg-white text-green-700 hover:bg-green-50 shadow-sm transition dark:border-green-600 dark:bg-slate-800 dark:text-green-400 dark:hover:bg-slate-700"
             >
               {t("monthlyPlan.confirm")}
             </button>
           );
         }
-        if (item.status === "CONFIRMED" && onUnconfirm) {
+        if (item.status === "CONFIRMED") {
+          const remain = item.planQty - item.orderQty;
           return (
-            <button
-              onClick={(e) => { e.stopPropagation(); onUnconfirm(item); }}
-              className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-            >
-              {t("monthlyPlan.unconfirm")}
-            </button>
+            <div className="flex gap-2">
+              {onIssue && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onIssue(item); }}
+                  disabled={remain <= 0}
+                  title={remain <= 0 ? t("monthlyPlan.noRemainQty") : t("monthlyPlan.issueJobOrder")}
+                  className="px-3 py-1 text-xs font-medium rounded-md border border-blue-400 bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 dark:bg-blue-700 dark:hover:bg-blue-600"
+                >
+                  <Send className="w-3 h-3" />
+                  {t("monthlyPlan.issueJobOrder")}
+                </button>
+              )}
+              {onUnconfirm && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onUnconfirm(item); }}
+                  className="px-3 py-1 text-xs font-medium rounded-md border border-red-300 bg-white text-red-600 hover:bg-red-50 shadow-sm transition dark:border-red-600 dark:bg-slate-800 dark:text-red-400 dark:hover:bg-slate-700"
+                >
+                  {t("monthlyPlan.unconfirm")}
+                </button>
+              )}
+            </div>
           );
         }
         return null;
@@ -162,5 +180,5 @@ export function usePlanColumns({ onConfirm, onUnconfirm }: UsePlanColumnsParams 
         <ComCodeBadge groupCode="PROD_PLAN_STATUS" code={getValue() as string} />
       ),
     },
-  ], [t, onConfirm, onUnconfirm]);
+  ], [t, onConfirm, onUnconfirm, onIssue]);
 }

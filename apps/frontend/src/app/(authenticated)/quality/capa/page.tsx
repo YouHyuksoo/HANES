@@ -21,7 +21,7 @@ import TextInputModal from "./components/TextInputModal";
 
 interface CapaRequest {
   [key: string]: unknown;
-  id: number; capaNo: string; capaType: string; sourceType: string;
+  capaNo: string; capaType: string; sourceType: string;
   title: string; description: string; rootCause: string; actionPlan: string;
   targetDate: string; responsibleCode: string; status: string; priority: string;
   verificationResult: string; itemCode: string; lineCode: string; createdAt: string;
@@ -86,7 +86,7 @@ export default function CapaPage() {
   }, [data]);
 
   /* -- 상태 전환 API -- */
-  const patchAction = useCallback(async (id: number, endpoint: string, body?: object) => {
+  const patchAction = useCallback(async (id: string, endpoint: string, body?: object) => {
     await api.patch(`/quality/capas/${id}/${endpoint}`, body ?? {});
     fetchData();
     setSelectedRow(null);
@@ -99,7 +99,7 @@ export default function CapaPage() {
     setTextAction({
       label: t("quality.capa.analyze"),
       field: t("quality.capa.rootCause"),
-      action: async (val) => patchAction(selectedRow.id, "analyze", { rootCause: val }),
+      action: async (val) => patchAction(selectedRow.capaNo, "analyze", { rootCause: val }),
     });
   };
   const handlePlan = () => {
@@ -108,14 +108,14 @@ export default function CapaPage() {
     setTextAction({
       label: t("quality.capa.plan"),
       field: t("quality.capa.actionPlan"),
-      action: async (val) => patchAction(selectedRow.id, "plan", { actionPlan: val }),
+      action: async (val) => patchAction(selectedRow.capaNo, "plan", { actionPlan: val }),
     });
   };
   const handleStart = () => {
     if (!selectedRow) return;
     setConfirmAction({
       label: t("quality.capa.start"),
-      action: () => patchAction(selectedRow.id, "start"),
+      action: () => patchAction(selectedRow.capaNo, "start"),
     });
   };
   const handleVerify = () => {
@@ -124,14 +124,14 @@ export default function CapaPage() {
     setTextAction({
       label: t("quality.capa.verify"),
       field: t("quality.capa.verificationResult"),
-      action: async (val) => patchAction(selectedRow.id, "verify", { verificationResult: val }),
+      action: async (val) => patchAction(selectedRow.capaNo, "verify", { verificationResult: val }),
     });
   };
   const handleClose = () => {
     if (!selectedRow) return;
     setConfirmAction({
       label: t("quality.capa.close"),
-      action: () => patchAction(selectedRow.id, "close"),
+      action: () => patchAction(selectedRow.capaNo, "close"),
     });
   };
 
@@ -243,8 +243,8 @@ export default function CapaPage() {
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading}
             enableColumnFilter enableExport exportFileName={t("quality.capa.pageTitle")}
-            getRowId={row => String((row as CapaRequest).id)}
-            selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+            getRowId={row => (row as CapaRequest).capaNo}
+            selectedRowId={selectedRow ? String(selectedRow.capaNo) : undefined}
             toolbarLeft={
               <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                 <div className="flex-1 min-w-[180px]">
@@ -285,7 +285,7 @@ export default function CapaPage() {
                 {actionButtons}
               </div>
               {/* 조치 항목 목록 */}
-              <ActionList capaId={selectedRow.id} capaStatus={selectedRow.status} onUpdate={fetchData} />
+              <ActionList capaId={selectedRow.capaNo} capaStatus={selectedRow.status} onUpdate={fetchData} />
             </div>
           )}
         </Modal>

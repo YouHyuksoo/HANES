@@ -8,6 +8,13 @@
  * 3. **api**: 앱 전체에서 사용하는 axios 인스턴스
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+
+/** API 에러 응답 타입 */
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+}
 import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -84,7 +91,7 @@ api.interceptors.response.use(
     }
 
     const status = error.response.status;
-    const data = error.response.data as any;
+    const data = error.response.data as ApiErrorResponse;
     const serverMessage = data?.message || data?.error || "알 수 없는 오류";
 
     // 401은 로그인 페이지로 리다이렉트 (모달 불필요)

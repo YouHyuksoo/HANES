@@ -29,8 +29,10 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { OqcService } from '../services/oqc.service';
 import {
@@ -42,6 +44,7 @@ import {
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 
 @ApiTags('품질관리 - OQC(출하검사)')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/oqc')
 export class OqcController {
   constructor(private readonly oqcService: OqcService) {}

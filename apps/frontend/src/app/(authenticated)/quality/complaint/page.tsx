@@ -32,7 +32,7 @@ interface Complaint {
   urgency: string;
   status: string;
   responsibleCode: string;
-  capaId: number | null;
+  capaId: string | null;
   costAmount: number | null;
   createdAt: string;
 }

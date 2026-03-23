@@ -19,6 +19,7 @@ import { DefectLogService } from './services/defect-log.service';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { RepairLog } from '../../../entities/repair-log.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
+import { User } from '../../../entities/user.entity';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ProdResult } from '../../../entities/prod-result.entity';
       DefectLog,
       RepairLog,
       ProdResult,
+      User,
     ]),
   ],
   controllers: [DefectLogController],

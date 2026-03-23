@@ -57,8 +57,8 @@ export class ShipReturnController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '반품 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
-  async create(@Body() dto: CreateShipReturnDto) {
-    const data = await this.shipReturnService.create(dto);
+  async create(@Body() dto: CreateShipReturnDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipReturnService.create(dto, company, plant);
     return ResponseUtil.success(data, '반품이 생성되었습니다.');
   }
 

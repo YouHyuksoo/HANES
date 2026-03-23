@@ -23,7 +23,7 @@ import { SchedulerJob } from './scheduler-job.entity';
 
 @Entity({ name: 'SCHEDULER_NOTIFICATIONS' })
 export class SchedulerNotification {
-  @PrimaryColumn({ name: 'COMPANY', type: 'varchar2', length: 20 })
+  @PrimaryColumn({ name: 'COMPANY', type: 'varchar2', length: 50 })
   company: string;
 
   @PrimaryColumn({ name: 'NOTI_ID', type: 'number' })
@@ -32,7 +32,7 @@ export class SchedulerNotification {
   @Column({ name: 'JOB_CODE', type: 'varchar2', length: 50 })
   jobCode: string;
 
-  @Column({ name: 'PLANT_CD', type: 'varchar2', length: 20 })
+  @Column({ name: 'PLANT_CD', type: 'varchar2', length: 50 })
   plantCd: string;
 
   /** 스케줄러 작업 (복합 FK) */

@@ -71,8 +71,7 @@ export default function PpapElementChecklist({
     const init: Record<string, boolean> = {};
     ELEMENT_KEYS.forEach(key => { init[key] = elements[key] ?? false; });
     onChange(init);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ppapLevel]);
+  }, [ppapLevel, readonly, elements, onChange]);
 
   /* 완료율 계산 */
   const calcRate = useMemo(() => {

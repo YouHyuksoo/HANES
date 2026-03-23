@@ -12,14 +12,14 @@ import api from "@/services/api";
 
 interface FaiItem {
   seq: number; inspectItem: string; specMin: number | null; specMax: number | null;
-  measuredValue: number | null; unit: string; result: string; remarks: string;
+  measuredValue: number | null; unit: string; result: string; remark: string;
 }
 
-interface Props { faiId: number; faiNo: string; editable: boolean; }
+interface Props { faiId: string; faiNo: string; editable: boolean; }
 
 const emptyItem = (seq: number): FaiItem => ({
   seq, inspectItem: "", specMin: null, specMax: null,
-  measuredValue: null, unit: "", result: "", remarks: "",
+  measuredValue: null, unit: "", result: "", remark: "",
 });
 
 /** measuredValue가 specMin~specMax 범위인지 판정 */

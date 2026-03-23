@@ -106,7 +106,7 @@ export class MatIssueService {
   }
 
   async create(dto: CreateMatIssueDto) {
-    const { orderNo, prodResultId, warehouseCode, issueType, items, remark, workerId } = dto;
+    const { orderNo, prodResultNo, warehouseCode, issueType, items, remark, workerId } = dto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -153,7 +153,7 @@ export class MatIssueService {
           issueNo,
           seq: currentSeq,
           orderNo,
-          prodResultId: prodResultId ? Number(prodResultId) : null,
+          prodResultNo: prodResultNo || null,
           matUid: item.matUid,
           issueQty: item.issueQty,
           issueType,

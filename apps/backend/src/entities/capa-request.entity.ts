@@ -6,7 +6,7 @@
  * 1. 부적합(불량, 클레임, 감사, 재작업) 발생 시 근본 원인 분석 및 시정/예방 조치 관리
  * 2. CORRECTIVE(시정): 발생한 문제의 재발 방지 / PREVENTIVE(예방): 잠재 문제의 사전 차단
  * 3. 상태 흐름: OPEN → ANALYZING → ACTION_PLANNED → IN_PROGRESS → VERIFYING → CLOSED
- * 4. PK: capaNo (자연키), id는 FK 호환용 자동증가 컬럼으로 유지
+ * 4. PK: capaNo (자연키)
  */
 import {
   Entity, PrimaryColumn, Column,
@@ -16,9 +16,6 @@ import {
 @Entity({ name: 'CAPA_REQUESTS' })
 @Index(['company', 'plant', 'status'])
 export class CAPARequest {
-  @Column({ name: 'ID', type: 'int', generated: true, insert: false, update: false })
-  id: number;
-
   @PrimaryColumn({ name: 'CAPA_NO', length: 30 })
   capaNo: string;
 
@@ -49,7 +46,7 @@ export class CAPARequest {
   @Column({ name: 'RESPONSIBLE_CODE', length: 50, nullable: true })
   responsibleCode: string;
 
-  @Column({ name: 'STATUS', length: 30, default: 'OPEN' })
+  @Column({ name: 'STATUS', length: 20, default: 'OPEN' })
   status: string;
 
   @Column({ name: 'PRIORITY', length: 20, nullable: true })
@@ -85,9 +82,9 @@ export class CAPARequest {
   @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
-  @CreateDateColumn({ name: 'CREATED_AT' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'UPDATED_AT' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 }

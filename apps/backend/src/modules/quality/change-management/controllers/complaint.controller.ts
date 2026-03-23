@@ -32,10 +32,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { ComplaintService } from '../services/complaint.service';
 import {
@@ -48,6 +49,7 @@ import {
 } from '../dto/complaint.dto';
 
 @ApiTags('품질관리 - 고객클레임')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/complaints')
 export class ComplaintController {
   constructor(private readonly complaintService: ComplaintService) {}

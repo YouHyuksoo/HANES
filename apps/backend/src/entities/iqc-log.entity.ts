@@ -47,7 +47,7 @@ export class IqcLog {
   @Column({ name: 'INSPECTOR_NAME', length: 100, nullable: true })
   inspectorName: string | null;
 
-  @Column({ name: 'STATUS', length: 50, default: 'DONE' })
+  @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
   @Column({ name: 'REMARK', length: 500, nullable: true })

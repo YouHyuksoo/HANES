@@ -16,7 +16,7 @@ import { WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 
 export interface ResultTarget {
-  reworkOrderId: number;
+  reworkOrderId: string;
   processCode: string;
   processName: string;
   seq: number;
@@ -38,7 +38,7 @@ interface ResultForm {
   defectQty: string;
   workDetail: string;
   workTimeMin: string;
-  remarks: string;
+  remark: string;
 }
 
 const INIT: ResultForm = {
@@ -48,7 +48,7 @@ const INIT: ResultForm = {
   defectQty: "",
   workDetail: "",
   workTimeMin: "",
-  remarks: "",
+  remark: "",
 };
 
 export default function ReworkResultPanel({ target, onClose, onSave, animate = true }: Props) {
@@ -75,7 +75,7 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
         defectQty: Number(form.defectQty) || 0,
         workDetail: form.workDetail,
         workTimeMin: Number(form.workTimeMin) || 0,
-        remarks: form.remarks || undefined,
+        remark: form.remark || undefined,
       });
       onSave();
       onClose();
@@ -180,8 +180,8 @@ export default function ReworkResultPanel({ target, onClose, onSave, animate = t
         {/* 비고 */}
         <Input
           label={t("common.remark")}
-          value={form.remarks}
-          onChange={e => setField("remarks", e.target.value)}
+          value={form.remark}
+          onChange={e => setField("remark", e.target.value)}
           fullWidth
         />
       </div>

@@ -61,8 +61,8 @@ export class CustomerOrderController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '고객발주 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
-  async create(@Body() dto: CreateCustomerOrderDto) {
-    const data = await this.customerOrderService.create(dto);
+  async create(@Body() dto: CreateCustomerOrderDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customerOrderService.create(dto, company, plant);
     return ResponseUtil.success(data, '고객발주가 등록되었습니다.');
   }
 

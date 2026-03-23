@@ -19,9 +19,9 @@ import PpapElementChecklist from "./PpapElementChecklist";
 /** 폼 데이터 타입 */
 interface PpapFormData {
   itemCode: string; itemName: string; customerCode: string;
-  customerName: string; ppapLevel: number; reason: string; remarks: string;
+  customerName: string; ppapLevel: number; reason: string; remark: string;
 }
-const INIT: PpapFormData = { itemCode: "", itemName: "", customerCode: "", customerName: "", ppapLevel: 3, reason: "", remarks: "" };
+const INIT: PpapFormData = { itemCode: "", itemName: "", customerCode: "", customerName: "", ppapLevel: 3, reason: "", remark: "" };
 
 interface Props {
   isOpen: boolean;
@@ -34,7 +34,7 @@ interface Props {
     ppapLevel: number;
     reason: string;
     status: string;
-    remarks: string;
+    remark: string;
     submittedAt: string;
     approvedAt: string;
     completionRate: number;
@@ -60,7 +60,7 @@ export default function PpapFormPanel({ isOpen, editData, onClose, onSave }: Pro
         customerName: editData.customerName ?? "",
         ppapLevel: editData.ppapLevel ?? 3,
         reason: editData.reason ?? "",
-        remarks: editData.remarks ?? "",
+        remark: editData.remark ?? "",
       });
     } else {
       setForm(INIT);
@@ -157,8 +157,8 @@ export default function PpapFormPanel({ isOpen, editData, onClose, onSave }: Pro
 
         {/* 비고 */}
         <div>
-          <label className="block text-xs font-medium text-text mb-1">{t("common.remarks")}</label>
-          <textarea value={form.remarks} onChange={e => setField("remarks", e.target.value)}
+          <label className="block text-xs font-medium text-text mb-1">{t("common.remark")}</label>
+          <textarea value={form.remark} onChange={e => setField("remark", e.target.value)}
             disabled={isReadonly}
             className="w-full rounded-md border border-border bg-white dark:bg-slate-900 text-text px-3 py-2 text-xs min-h-[60px] focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50" />
         </div>

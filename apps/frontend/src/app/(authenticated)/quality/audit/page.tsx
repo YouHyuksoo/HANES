@@ -27,7 +27,7 @@ import AuditFindingList from "./components/AuditFindingList";
 
 /** 내부심사 데이터 타입 */
 interface Audit {
-  id: number; auditNo: string; auditType: string; auditScope: string;
+  auditNo: string; auditType: string; auditScope: string;
   targetDept: string; auditor: string; coAuditor: string;
   scheduledDate: string; actualDate: string; status: string;
   overallResult: string; summary: string; createdAt: string;
@@ -72,7 +72,7 @@ export default function AuditPage() {
     setConfirmAction({
       label,
       action: async () => {
-        await api.patch(`/quality/audits/${endpoint}/${selectedRow.id}`);
+        await api.patch(`/quality/audits/${endpoint}/${selectedRow.auditNo}`);
         fetchData();
         setSelectedRow(null);
       },
@@ -166,7 +166,7 @@ export default function AuditPage() {
     setConfirmAction({
       label: t("common.delete"),
       action: async () => {
-        await api.delete(`/quality/audits/${selectedRow.id}`);
+        await api.delete(`/quality/audits/${selectedRow.auditNo}`);
         fetchData();
         setSelectedRow(null);
       },
@@ -273,8 +273,8 @@ export default function AuditPage() {
                 enableColumnFilter
                 enableExport
                 exportFileName={t("quality.audit.title")}
-                getRowId={(row) => String((row as Audit).id)}
-                selectedRowId={selectedRow ? String(selectedRow.id) : undefined}
+                getRowId={(row) => (row as Audit).auditNo}
+                selectedRowId={selectedRow ? String(selectedRow.auditNo) : undefined}
                 toolbarLeft={
                   <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                     <ComCodeSelect
@@ -298,7 +298,7 @@ export default function AuditPage() {
           {/* 우측: 발견사항 목록 */}
           {selectedRow && (
             <div className="w-1/2 min-h-0 overflow-auto">
-              <AuditFindingList auditId={selectedRow.id} auditNo={selectedRow.auditNo} />
+              <AuditFindingList auditId={selectedRow.auditNo} auditNo={selectedRow.auditNo} />
             </div>
           )}
         </div>

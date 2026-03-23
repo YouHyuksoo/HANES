@@ -69,7 +69,7 @@ describe('IqcPartLinkService', () => {
   describe('create', () => {
     it('should create a new link', async () => {
       // Arrange
-      const dto = { itemCode: 'ITEM01', partnerId: 'P01', groupId: 1 } as any;
+      const dto = { itemCode: 'ITEM01', partnerId: 'P01', groupCode: 'IG01' } as any;
       const created = { ...dto, useYn: 'Y' } as IqcPartLink;
       mockRepo.findOne
         .mockResolvedValueOnce(null) // existence check
@@ -86,8 +86,8 @@ describe('IqcPartLinkService', () => {
 
     it('should use "*" as default partnerId when not provided', async () => {
       // Arrange
-      const dto = { itemCode: 'ITEM01', partnerId: '', groupId: 1 } as any;
-      const created = { itemCode: 'ITEM01', partnerId: '*', groupId: 1 } as IqcPartLink;
+      const dto = { itemCode: 'ITEM01', partnerId: '', groupCode: 'IG01' } as any;
+      const created = { itemCode: 'ITEM01', partnerId: '*', groupCode: 'IG01' } as IqcPartLink;
       mockRepo.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(created);
@@ -122,12 +122,12 @@ describe('IqcPartLinkService', () => {
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('ITEM01', 'P01', { groupId: 2 } as any);
+      const result = await target.update('ITEM01', 'P01', { groupCode: 'IG02' } as any);
 
       // Assert
       expect(mockRepo.update).toHaveBeenCalledWith(
         { itemCode: 'ITEM01', partnerId: 'P01' },
-        expect.objectContaining({ groupId: 2 }),
+        expect.objectContaining({ groupCode: 'IG02' }),
       );
     });
   });

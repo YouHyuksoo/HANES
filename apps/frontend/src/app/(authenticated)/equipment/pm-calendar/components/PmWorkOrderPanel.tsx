@@ -25,7 +25,6 @@ export interface WoResultItem {
 }
 
 export interface WoScheduleItem {
-  id: string;
   workOrderNo: string;
   pmPlanId: string | null;
   equipId: string;
@@ -119,7 +118,7 @@ export default function PmWorkOrderPanel({ date, data, loading, onExecute, onVie
 
             return (
               <div
-                key={wo.id}
+                key={wo.workOrderNo}
                 className={`border rounded-lg p-3 transition-colors ${STATUS_COLORS[wo.status] || "border-gray-200 dark:border-gray-700"}`}
               >
                 <div className="flex items-center justify-between mb-2">

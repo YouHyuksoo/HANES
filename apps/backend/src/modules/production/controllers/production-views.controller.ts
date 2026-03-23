@@ -9,7 +9,8 @@
  * 4. **반제품/제품재고**: GET /production/wip-stock
  */
 
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ProductionViewsService } from '../services/production-views.service';
@@ -22,6 +23,7 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('생산관리 - 조회')
+@UseGuards(JwtAuthGuard)
 @Controller('production')
 export class ProductionViewsController {
   constructor(private readonly viewsService: ProductionViewsService) {}

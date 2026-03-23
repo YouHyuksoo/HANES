@@ -20,6 +20,7 @@
  * - POST   /:id/mark-shipped    : 출하 처리
  * - POST   /:id/mark-delivered  : 배송완료 처리
  * - POST   /:id/cancel          : 출하 취소
+ * - POST   /:id/reverse         : 출하 역분개 (SHIPPED→LOADED, 재고 복구)
  * - PUT    /:id/erp-sync        : ERP 동기화 플래그 변경
  * - GET    /erp/unsynced        : ERP 미동기화 목록
  * - GET    /:id/summary         : 출하 요약
@@ -161,8 +162,8 @@ export class ShipmentController {
   @ApiOperation({ summary: '출하 생성' })
   @ApiResponse({ status: 201, description: '생성 성공' })
   @ApiResponse({ status: 409, description: '중복 출하번호' })
-  async create(@Body() dto: CreateShipmentDto) {
-    const data = await this.shipmentService.create(dto);
+  async create(@Body() dto: CreateShipmentDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipmentService.create(dto, company, plant);
     return ResponseUtil.success(data, '출하가 생성되었습니다.');
   }
 
@@ -260,6 +261,18 @@ export class ShipmentController {
   async cancel(@Param('id') id: string, @Body('remark') remark?: string) {
     const data = await this.shipmentService.cancel(id, remark);
     return ResponseUtil.success(data, '출하가 취소되었습니다.');
+  }
+
+  @Post(':id/reverse')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '출하 역분개', description: 'SHIPPED → LOADED 상태로 복원, 제품 재고 복구 + FG_LABEL 상태 PACKED 복원' })
+  @ApiParam({ name: 'id', description: '출하 ID' })
+  @ApiBody({ schema: { type: 'object', properties: { remark: { type: 'string', description: '역분개 사유' } } } })
+  @ApiResponse({ status: 200, description: '역분개 성공' })
+  @ApiResponse({ status: 400, description: '상태 변경 불가' })
+  async reverseShipment(@Param('id') id: string, @Body('remark') remark?: string) {
+    const data = await this.shipmentService.reverseShipment(id, remark);
+    return ResponseUtil.success(data, '출하가 역분개되었습니다.');
   }
 
   @Put(':id/status')

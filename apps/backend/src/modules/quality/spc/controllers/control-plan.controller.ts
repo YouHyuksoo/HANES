@@ -5,12 +5,12 @@
  * 초보자 가이드:
  * 1. **관리계획서 API**: /api/v1/quality/control-plans
  *    - GET    /control-plans             : 목록 조회 (페이지네이션)
- *    - GET    /control-plans/:id         : 단건 조회 (항목 포함)
- *    - POST   /control-plans             : 등록 (DRAFT)
- *    - PUT    /control-plans/:id         : 수정 (DRAFT만)
- *    - DELETE /control-plans/:id         : 삭제 (DRAFT만)
- *    - PATCH  /control-plans/approve/:id : 승인 (DRAFT/REVIEW → APPROVED)
- *    - POST   /control-plans/revise/:id  : 개정 (APPROVED → 새 버전 DRAFT)
+ *    - GET    /control-plans/:planNo         : 단건 조회 (항목 포함)
+ *    - POST   /control-plans                : 등록 (DRAFT)
+ *    - PUT    /control-plans/:planNo        : 수정 (DRAFT만)
+ *    - DELETE /control-plans/:planNo        : 삭제 (DRAFT만)
+ *    - PATCH  /control-plans/approve/:planNo: 승인 (DRAFT/REVIEW → APPROVED)
+ *    - POST   /control-plans/revise/:planNo : 개정 (APPROVED → 새 버전 DRAFT)
  *    - GET    /control-plans/by-item/:itemCode : 품목별 유효 관리계획서
  *
  * 2. **인증**: @Company(), @Plant() 데코레이터로 테넌시 정보, req.user.id로 사용자 ID 추출
@@ -29,11 +29,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { ControlPlanService } from '../services/control-plan.service';
 import {
@@ -43,6 +43,7 @@ import {
 } from '../dto/control-plan.dto';
 
 @ApiTags('품질관리 - 관리계획서')
+@UseGuards(JwtAuthGuard)
 @Controller('quality/control-plans')
 export class ControlPlanController {
   constructor(private readonly controlPlanService: ControlPlanService) {}
@@ -95,13 +96,13 @@ export class ControlPlanController {
     );
   }
 
-  @Get(':id')
+  @Get(':planNo')
   @ApiOperation({ summary: '관리계획서 단건 조회', description: '항목 포함' })
-  @ApiParam({ name: 'id', description: '관리계획서 ID' })
+  @ApiParam({ name: 'planNo', description: '관리계획번호' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '관리계획서 없음' })
-  async findById(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.controlPlanService.findById(id);
+  async findById(@Param('planNo') planNo: string) {
+    const data = await this.controlPlanService.findById(planNo);
     return ResponseUtil.success(data);
   }
 
@@ -127,70 +128,70 @@ export class ControlPlanController {
     return ResponseUtil.success(data, '관리계획서가 등록되었습니다.');
   }
 
-  @Put(':id')
+  @Put(':planNo')
   @ApiOperation({ summary: '관리계획서 수정', description: 'DRAFT 상태에서만 가능' })
-  @ApiParam({ name: 'id', description: '관리계획서 ID' })
+  @ApiParam({ name: 'planNo', description: '관리계획번호' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('planNo') planNo: string,
     @Body() dto: UpdateControlPlanDto,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.controlPlanService.update(
-      id,
+      planNo,
       dto,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '관리계획서가 수정되었습니다.');
   }
 
-  @Delete(':id')
+  @Delete(':planNo')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '관리계획서 삭제',
     description: 'DRAFT 상태에서만 가능',
   })
-  @ApiParam({ name: 'id', description: '관리계획서 ID' })
+  @ApiParam({ name: 'planNo', description: '관리계획번호' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id', ParseIntPipe) id: number) {
-    await this.controlPlanService.delete(id);
+  async delete(@Param('planNo') planNo: string) {
+    await this.controlPlanService.delete(planNo);
     return ResponseUtil.success(null, '관리계획서가 삭제되었습니다.');
   }
 
   // ===== 상태 전이 =====
 
-  @Patch('approve/:id')
+  @Patch('approve/:planNo')
   @ApiOperation({
     summary: '관리계획서 승인',
     description: 'DRAFT/REVIEW → APPROVED',
   })
-  @ApiParam({ name: 'id', description: '관리계획서 ID' })
+  @ApiParam({ name: 'planNo', description: '관리계획번호' })
   @ApiResponse({ status: 200, description: '승인 성공' })
   async approve(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('planNo') planNo: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.controlPlanService.approve(
-      id,
+      planNo,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '관리계획서가 승인되었습니다.');
   }
 
-  @Post('revise/:id')
+  @Post('revise/:planNo')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: '관리계획서 개정',
     description: '기존 OBSOLETE, 새 버전 DRAFT 생성',
   })
-  @ApiParam({ name: 'id', description: '관리계획서 ID' })
+  @ApiParam({ name: 'planNo', description: '관리계획번호' })
   @ApiResponse({ status: 201, description: '개정 성공' })
   async revise(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('planNo') planNo: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.controlPlanService.revise(
-      id,
+      planNo,
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '관리계획서가 개정되었습니다.');

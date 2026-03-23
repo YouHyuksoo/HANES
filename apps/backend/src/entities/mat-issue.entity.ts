@@ -6,7 +6,7 @@
  * - issueType: 출고 유형 (PRODUCTION, MANUAL, SCRAP 등)
  * - 복합 PK: issueNo + seq (같은 출고번호의 여러 자재 행)
  * - matUid: 출고 자재시리얼, orderNo: 작업지시 참조
- * - prodResultId: 생산실적 ID (number, 자재 투입 이력 연결)
+ * - prodResultNo: 생산실적 번호 (string, 자재 투입 이력 연결)
  */
 import {
   Entity,
@@ -34,11 +34,11 @@ export class MatIssue {
   @Column({ name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
-  @Column({ name: 'PROD_RESULT_ID', type: 'int', nullable: true })
-  prodResultId: number | null;
+  @Column({ name: 'PROD_RESULT_NO', length: 50, nullable: true })
+  prodResultNo: string | null;
 
   @ManyToOne(() => ProdResult, { nullable: true })
-  @JoinColumn({ name: 'PROD_RESULT_ID' })
+  @JoinColumn({ name: 'PROD_RESULT_NO', referencedColumnName: 'resultNo' })
   prodResult: ProdResult | null;
 
   @Column({ name: 'MAT_UID', length: 50 })

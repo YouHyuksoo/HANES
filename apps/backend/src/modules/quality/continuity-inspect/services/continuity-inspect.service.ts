@@ -27,9 +27,12 @@ import { FgLabel } from '../../../../entities/fg-label.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
+import { SysConfigService } from '../../../system/services/sys-config.service';
 import {
   ContinuityInspectDto,
   AutoInspectDto,
+  PreIssueDto,
+  ReInspectDto,
 } from '../dto/continuity-inspect.dto';
 
 @Injectable()
@@ -46,6 +49,7 @@ export class ContinuityInspectService {
     @InjectRepository(EquipProtocol)
     private readonly equipProtocolRepo: Repository<EquipProtocol>,
     private readonly seqGenerator: SeqGeneratorService,
+    private readonly sysConfigService: SysConfigService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -158,14 +162,18 @@ export class ContinuityInspectService {
 
   /**
    * 통전검사 결과 등록 (트랜잭션)
-   * - PASS: InspectResult + FG_BARCODE 채번 + FG_LABELS + JobOrder.goodQty++
-   * - FAIL: InspectResult + JobOrder.defectQty++
+   * - ON_INSPECT 모드: PASS → InspectResult + FG_BARCODE 채번 + FG_LABELS 등록
+   * - ON_PRODUCTION/PRE_ISSUE 모드: PASS → dto.fgBarcode로 PENDING 라벨 조회 → ISSUED 전환
+   * - FAIL: InspectResult 등록 + JobOrder.defectQty++
    */
   async inspect(
     dto: ContinuityInspectDto,
     company?: string,
     plant?: string,
   ): Promise<{ inspectResult: InspectResult; fgBarcode: string | null }> {
+    /** 0. 바코드 발행 타이밍 조회 */
+    const timing = (await this.sysConfigService.getValue('FG_BARCODE_ISSUE_TIMING')) ?? 'ON_INSPECT';
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -186,7 +194,7 @@ export class ContinuityInspectService {
 
       const inspectResult = queryRunner.manager.create(InspectResult, {
         resultNo: inspectResultNo,
-        prodResultId: null,
+        prodResultNo: null,
         inspectType: 'CONTINUITY',
         inspectScope: 'FULL',
         passYn: dto.passYn,
@@ -205,29 +213,58 @@ export class ContinuityInspectService {
       let fgBarcode: string | null = null;
 
       if (dto.passYn === 'Y') {
-        /** 3a. PASS: FG_BARCODE 채번 */
-        fgBarcode = await this.seqGenerator.nextFgBarcode(queryRunner);
+        if (timing === 'ON_INSPECT') {
+          /** ON_INSPECT: 기존 로직 — 합격 시 바코드 채번 + FG_LABELS 신규 등록 */
+          fgBarcode = await this.seqGenerator.nextFgBarcode(queryRunner);
 
-        /** 3b. InspectResult에 FG_BARCODE 연결 */
-        savedInspect.fgBarcode = fgBarcode;
-        await queryRunner.manager.save(InspectResult, savedInspect);
+          savedInspect.fgBarcode = fgBarcode;
+          await queryRunner.manager.save(InspectResult, savedInspect);
 
-        /** 3c. FG_LABELS 등록 */
-        const fgLabel = queryRunner.manager.create(FgLabel, {
-          fgBarcode,
-          itemCode: dto.itemCode,
-          orderNo: dto.orderNo,
-          equipCode: dto.equipCode ?? null,
-          workerId: dto.workerId ?? null,
-          lineCode: dto.lineCode ?? null,
-          status: 'ISSUED',
-          inspectResultId: savedInspect.id,
-          company: company ?? jobOrder.company,
-          plant: plant ?? jobOrder.plant,
-        });
-        await queryRunner.manager.save(FgLabel, fgLabel);
+          const fgLabel = queryRunner.manager.create(FgLabel, {
+            fgBarcode,
+            itemCode: dto.itemCode,
+            orderNo: dto.orderNo,
+            equipCode: dto.equipCode ?? null,
+            workerId: dto.workerId ?? null,
+            lineCode: dto.lineCode ?? null,
+            status: 'ISSUED',
+            inspectResultId: savedInspect.resultNo,
+            inspectPassYn: 'Y',
+            company: company ?? jobOrder.company,
+            plant: plant ?? jobOrder.plant,
+          });
+          await queryRunner.manager.save(FgLabel, fgLabel);
+        } else {
+          /** ON_PRODUCTION / PRE_ISSUE: 스캔한 바코드로 PENDING 라벨 → ISSUED 전환 */
+          if (!dto.fgBarcode) {
+            throw new BadRequestException(
+              `${timing} 모드에서는 fgBarcode(스캔값)가 필수입니다.`,
+            );
+          }
+          fgBarcode = dto.fgBarcode;
 
-        /** 3c. JobOrder.goodQty += 1 */
+          const pendingLabel = await queryRunner.manager.findOne(FgLabel, {
+            where: { fgBarcode: dto.fgBarcode, status: 'PENDING' },
+          });
+          if (!pendingLabel) {
+            throw new NotFoundException(
+              `PENDING 상태의 FG 라벨을 찾을 수 없습니다: ${dto.fgBarcode}`,
+            );
+          }
+
+          pendingLabel.status = 'ISSUED';
+          pendingLabel.inspectResultId = savedInspect.resultNo;
+          pendingLabel.inspectPassYn = 'Y';
+          pendingLabel.workerId = dto.workerId ?? pendingLabel.workerId;
+          pendingLabel.equipCode = dto.equipCode ?? pendingLabel.equipCode;
+          pendingLabel.lineCode = dto.lineCode ?? pendingLabel.lineCode;
+          await queryRunner.manager.save(FgLabel, pendingLabel);
+
+          savedInspect.fgBarcode = fgBarcode;
+          await queryRunner.manager.save(InspectResult, savedInspect);
+        }
+
+        /** JobOrder.goodQty += 1 */
         await queryRunner.manager.increment(
           JobOrder,
           { orderNo: dto.orderNo },
@@ -235,7 +272,20 @@ export class ContinuityInspectService {
           1,
         );
       } else {
-        /** 4. FAIL: JobOrder.defectQty += 1 */
+        /** FAIL 처리 */
+        if (timing !== 'ON_INSPECT' && dto.fgBarcode) {
+          /** ON_PRODUCTION/PRE_ISSUE: 스캔된 PENDING 라벨에 불합격 기록 */
+          const pendingLabel = await queryRunner.manager.findOne(FgLabel, {
+            where: { fgBarcode: dto.fgBarcode, status: 'PENDING' },
+          });
+          if (pendingLabel) {
+            pendingLabel.inspectResultId = savedInspect.resultNo;
+            pendingLabel.inspectPassYn = 'N';
+            await queryRunner.manager.save(FgLabel, pendingLabel);
+          }
+        }
+
+        /** JobOrder.defectQty += 1 */
         await queryRunner.manager.increment(
           JobOrder,
           { orderNo: dto.orderNo },
@@ -246,11 +296,163 @@ export class ContinuityInspectService {
 
       await queryRunner.commitTransaction();
       this.logger.log(
-        `통전검사 완료: orderNo=${dto.orderNo}, pass=${dto.passYn}, fgBarcode=${fgBarcode}`,
+        `통전검사 완료: orderNo=${dto.orderNo}, pass=${dto.passYn}, fgBarcode=${fgBarcode}, timing=${timing}`,
       );
 
       return { inspectResult: savedInspect, fgBarcode };
-    } catch (error) {
+    } catch (error: unknown) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * FG 바코드 사전발행 (PRE_ISSUE 모드)
+   * 작업지시의 planQty에서 기발행수를 뺀 만큼 PENDING 상태 바코드를 생성한다.
+   */
+  async preIssue(
+    dto: PreIssueDto,
+    company?: string,
+    plant?: string,
+  ): Promise<{ issued: number; barcodes: string[] }> {
+    const jobOrder = await this.jobOrderRepo.findOne({
+      where: { orderNo: dto.orderNo },
+    });
+    if (!jobOrder) {
+      throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${dto.orderNo}`);
+    }
+
+    const alreadyIssued = await this.fgLabelRepo.count({
+      where: { orderNo: dto.orderNo },
+    });
+    const remaining = jobOrder.planQty - alreadyIssued;
+
+    if (remaining <= 0) {
+      throw new BadRequestException(
+        `발행 가능 수량이 없습니다. (planQty=${jobOrder.planQty}, 기발행=${alreadyIssued})`,
+      );
+    }
+
+    const qty = dto.qty ? Math.min(dto.qty, remaining) : remaining;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const barcodes: string[] = [];
+      for (let i = 0; i < qty; i++) {
+        const fgBarcode = await this.seqGenerator.nextFgBarcode(queryRunner);
+        const fgLabel = queryRunner.manager.create(FgLabel, {
+          fgBarcode,
+          itemCode: jobOrder.itemCode,
+          orderNo: dto.orderNo,
+          status: 'PENDING',
+          inspectPassYn: null,
+          company: company ?? jobOrder.company,
+          plant: plant ?? jobOrder.plant,
+        });
+        await queryRunner.manager.save(FgLabel, fgLabel);
+        barcodes.push(fgBarcode);
+      }
+
+      await queryRunner.commitTransaction();
+      this.logger.log(
+        `FG 바코드 사전발행: orderNo=${dto.orderNo}, qty=${qty}`,
+      );
+      return { issued: qty, barcodes };
+    } catch (error: unknown) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * 작업지시별 PENDING 상태 FG 라벨 목록 조회
+   */
+  async getPendingLabels(orderNo: string) {
+    return this.fgLabelRepo.find({
+      where: { orderNo, status: 'PENDING' },
+      order: { issuedAt: 'ASC' },
+    });
+  }
+
+  /**
+   * 재검사 — FAIL(inspectPassYn='N') 바코드 대상으로 재검사 결과 등록
+   * PASS 전환 시 JobOrder.goodQty++, defectQty--
+   */
+  async reInspect(
+    fgBarcode: string,
+    dto: ReInspectDto,
+    company?: string,
+    plant?: string,
+  ): Promise<{ inspectResult: InspectResult; fgLabel: FgLabel }> {
+    const label = await this.fgLabelRepo.findOne({ where: { fgBarcode } });
+    if (!label) {
+      throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
+    }
+    if (label.inspectPassYn !== 'N') {
+      throw new BadRequestException(
+        '불합격(inspectPassYn=N) 바코드만 재검사할 수 있습니다.',
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      /** 새 InspectResult 생성 */
+      const inspectResultNo = await this.seqGenerator.getNo('INSPECT_RESULT', queryRunner);
+      const inspectResult = queryRunner.manager.create(InspectResult, {
+        resultNo: inspectResultNo,
+        prodResultNo: null,
+        inspectType: 'CONTINUITY',
+        inspectScope: 'RE_INSPECT',
+        passYn: dto.passYn,
+        errorCode: dto.errorCode ?? null,
+        errorDetail: dto.remark ?? null,
+        fgBarcode,
+        inspectAt: new Date(),
+        company: company ?? label.company,
+        plant: plant ?? label.plant,
+      });
+      const savedInspect = await queryRunner.manager.save(InspectResult, inspectResult);
+
+      /** FgLabel 업데이트 */
+      label.inspectPassYn = dto.passYn;
+      label.inspectResultId = savedInspect.resultNo;
+      if (dto.passYn === 'Y') {
+        label.status = 'ISSUED';
+      }
+      const savedLabel = await queryRunner.manager.save(FgLabel, label);
+
+      /** PASS 전환 시 JobOrder 수량 보정 */
+      if (dto.passYn === 'Y' && label.orderNo) {
+        await queryRunner.manager.increment(
+          JobOrder,
+          { orderNo: label.orderNo },
+          'goodQty',
+          1,
+        );
+        await queryRunner.manager.decrement(
+          JobOrder,
+          { orderNo: label.orderNo },
+          'defectQty',
+          1,
+        );
+      }
+
+      await queryRunner.commitTransaction();
+      this.logger.log(
+        `재검사 완료: fgBarcode=${fgBarcode}, passYn=${dto.passYn}`,
+      );
+      return { inspectResult: savedInspect, fgLabel: savedLabel };
+    } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {

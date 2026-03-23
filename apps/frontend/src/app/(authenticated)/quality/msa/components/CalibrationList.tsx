@@ -21,7 +21,6 @@ import api from "@/services/api";
 
 /** 교정 로그 타입 */
 interface CalibrationLog {
-  id: number;
   calibrationNo: string;
   calibrationDate: string;
   calibrationType: string;

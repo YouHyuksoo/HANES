@@ -142,7 +142,7 @@ export class ReworkService {
       throw new NotFoundException('재작업 지시를 찾을 수 없습니다.');
     }
     const processes = await this.processRepo.find({
-      where: { reworkOrderId: item.id },
+      where: { reworkOrderId: item.reworkNo },
       order: { seq: 'ASC' },
     });
     return { ...item, processes };
@@ -175,7 +175,7 @@ export class ReworkService {
     if (dto.processItems && dto.processItems.length > 0) {
       const processEntities = dto.processItems.map((pi) =>
         this.processRepo.create({
-          reworkOrderId: saved.id,
+          reworkOrderId: saved.reworkNo,
           processCode: pi.processCode,
           processName: pi.processName,
           seq: pi.seq,
@@ -193,12 +193,12 @@ export class ReworkService {
       await this.processRepo.save(processEntities);
     }
 
-    // 불량 이력 상태 연동 (복합 PK 기준 업데이트)
+    // 불량 이력 상태 연동 — defectLogId 형식: "occurAt|seq"
     if (dto.defectLogId) {
-      const defect = await this.defectLogRepo.findOne({ where: { id: dto.defectLogId } });
-      if (defect) {
+      const [occurAtStr, seqStr] = dto.defectLogId.split('|');
+      if (occurAtStr && seqStr) {
         await this.defectLogRepo.update(
-          { occurAt: defect.occurAt, seq: defect.seq },
+          { occurAt: new Date(occurAtStr), seq: Number(seqStr) },
           { status: 'REWORK' },
         );
       }
@@ -334,7 +334,7 @@ export class ReworkService {
     }
 
     // 공정 실적 합산
-    const processes = await this.processRepo.find({ where: { reworkOrderId: order.id } });
+    const processes = await this.processRepo.find({ where: { reworkOrderId: order.reworkNo } });
     let totalResultQty = dto.resultQty;
     if (processes.length > 0) {
       totalResultQty = processes
@@ -346,7 +346,7 @@ export class ReworkService {
       status: 'INSPECT_PENDING',
       endAt: new Date(),
       resultQty: totalResultQty,
-      remarks: dto.remarks ?? order.remarks,
+      remark: dto.remark ?? order.remark,
       updatedBy: userId,
     });
     return this.findById(reworkNo);
@@ -381,7 +381,7 @@ export class ReworkService {
    * 재검사 목록 조회
    */
   async findInspects(
-    reworkOrderId?: number,
+    reworkOrderId?: string,
     company?: string,
     plant?: string,
   ) {
@@ -420,11 +420,11 @@ export class ReworkService {
 
     // seq 자동채번: 해당 reworkOrderId의 검사 건수 + 1
     const existingCount = await this.inspectRepo.count({
-      where: { reworkOrderId: order.id },
+      where: { reworkOrderId: order.reworkNo },
     });
 
     const inspect = this.inspectRepo.create({
-      reworkOrderId: order.id,
+      reworkOrderId: order.reworkNo,
       seq: existingCount + 1,
       inspectorCode: dto.inspectorCode,
       inspectMethod: dto.inspectMethod,
@@ -432,7 +432,7 @@ export class ReworkService {
       passQty: dto.passQty,
       failQty: dto.failQty,
       defectDetail: dto.defectDetail,
-      remarks: dto.remarks,
+      remark: dto.remark,
       inspectAt: new Date(),
       company,
       plant,
@@ -458,12 +458,17 @@ export class ReworkService {
           : dto.inspectResult === 'SCRAP'
             ? 'SCRAP'
             : 'REWORK';
-      const defect = await this.defectLogRepo.findOne({ where: { id: order.defectLogId } });
-      if (defect) {
-        await this.defectLogRepo.update(
-          { occurAt: defect.occurAt, seq: defect.seq },
-          { status: defectStatus },
-        );
+      const reworkOrder = await this.reworkRepo.findOne({
+        where: { reworkNo: dto.reworkNo },
+      });
+      if (reworkOrder?.defectLogId) {
+        const [occurAtStr, seqStr] = reworkOrder.defectLogId.split('|');
+        if (occurAtStr && seqStr) {
+          await this.defectLogRepo.update(
+            { occurAt: new Date(occurAtStr), seq: Number(seqStr) },
+            { status: defectStatus },
+          );
+        }
       }
     }
 
@@ -476,7 +481,7 @@ export class ReworkService {
   /**
    * 재검사 단건 조회 (복합키: reworkOrderId + seq)
    */
-  async findInspectById(reworkOrderId: number, seq: number) {
+  async findInspectById(reworkOrderId: string, seq: number) {
     const item = await this.inspectRepo.findOne({
       where: { reworkOrderId, seq },
       relations: ['reworkOrder'],

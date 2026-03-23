@@ -9,14 +9,16 @@
  * 4. **DELETE /master/iqc-items/:itemCode/:seq**: 검사항목 삭제
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { IqcItemService } from '../services/iqc-item.service';
 import { CreateIqcItemDto, UpdateIqcItemDto, IqcItemQueryDto } from '../dto/iqc-item.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('기준정보 - IQC검사항목')
+@UseGuards(JwtAuthGuard)
 @Controller('master/iqc-items')
 export class IqcItemController {
   constructor(private readonly iqcItemService: IqcItemService) {}

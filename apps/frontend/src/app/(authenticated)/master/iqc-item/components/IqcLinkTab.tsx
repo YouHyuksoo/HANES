@@ -24,7 +24,7 @@ import api from "@/services/api";
 interface IqcPartLinkRow {
   itemCode: string;
   partnerId: string;
-  groupId: string;
+  groupCode: string;
   remark?: string | null;
   useYn: string;
   part?: { itemCode: string; itemName: string };
@@ -74,13 +74,13 @@ export default function IqcLinkTab() {
   }, []);
 
   const handleSave = useCallback(async (formData: {
-    itemCode: string; partnerId: string; groupId: string; remark: string;
+    itemCode: string; partnerId: string; groupCode: string; remark: string;
   }) => {
     try {
       const body = {
         itemCode: formData.itemCode,
         partnerId: formData.partnerId || undefined,
-        groupId: formData.groupId,
+        groupCode: formData.groupCode,
         remark: formData.remark || undefined,
       };
       if (editingLink) {
