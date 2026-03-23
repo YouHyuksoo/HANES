@@ -28,6 +28,9 @@ interface SimPlanResult {
   endDate: string;
   onTime: boolean;
   delayDays: number;
+  requiredDays: number;
+  bottleneckProcess: string;
+  dailyCapa: number;
 }
 
 interface SimDayItem {
@@ -43,27 +46,55 @@ interface SimDaySchedule {
   items: SimDayItem[];
 }
 
+interface SimSummary {
+  totalPlans: number;
+  onTimeCount: number;
+  delayCount: number;
+  totalQty: number;
+  workDays: number;
+  utilizationRate: number;
+  requiredHours: number;
+  availableHours: number;
+}
+
 export interface GanttChartProps {
   plans: SimPlanResult[];
   schedule: SimDaySchedule[];
+  selectedPlanNo?: string | null;
+  summary?: SimSummary | null;
 }
 
 /* ── 바 색상 함수 ── */
 const BAR_COLORS = [
-  "bg-blue-400 dark:bg-blue-600",
-  "bg-green-400 dark:bg-green-600",
-  "bg-purple-400 dark:bg-purple-600",
-  "bg-orange-400 dark:bg-orange-600",
-  "bg-cyan-400 dark:bg-cyan-600",
-  "bg-teal-400 dark:bg-teal-600",
+  "bg-blue-400 dark:bg-blue-500",
+  "bg-emerald-400 dark:bg-emerald-500",
+  "bg-violet-400 dark:bg-violet-500",
+  "bg-amber-400 dark:bg-amber-500",
+  "bg-cyan-400 dark:bg-cyan-500",
+  "bg-pink-400 dark:bg-pink-500",
+  "bg-lime-400 dark:bg-lime-500",
+  "bg-indigo-400 dark:bg-indigo-500",
+  "bg-rose-400 dark:bg-rose-500",
+  "bg-teal-400 dark:bg-teal-500",
+  "bg-sky-400 dark:bg-sky-500",
+  "bg-fuchsia-400 dark:bg-fuchsia-500",
 ];
 
-function getBarColor(plan: SimPlanResult): string {
-  if (!plan.onTime) return "bg-red-400 dark:bg-red-600";
-  const hash = plan.itemCode
-    .split("")
-    .reduce((a, c) => a + c.charCodeAt(0), 0);
-  return BAR_COLORS[hash % BAR_COLORS.length];
+/** 좌측 색상 표시용 dot 색상 */
+const DOT_COLORS = [
+  "bg-blue-400", "bg-emerald-400", "bg-violet-400", "bg-amber-400",
+  "bg-cyan-400", "bg-pink-400", "bg-lime-400", "bg-indigo-400",
+  "bg-rose-400", "bg-teal-400", "bg-sky-400", "bg-fuchsia-400",
+];
+
+/** 오더별 고유 색상 (planNo 인덱스 기반) */
+function getBarColor(plan: SimPlanResult, planIndex: number): string {
+  if (!plan.onTime) {
+    if (plan.delayDays >= 7) return "bg-red-600 dark:bg-red-700";
+    if (plan.delayDays >= 3) return "bg-red-400 dark:bg-red-500";
+    return "bg-orange-400 dark:bg-orange-500";
+  }
+  return BAR_COLORS[planIndex % BAR_COLORS.length];
 }
 
 /* ── 주말 체크 ── */
@@ -72,7 +103,7 @@ function isWeekend(dayOfWeek: string): boolean {
     || dayOfWeek === "Sat" || dayOfWeek === "Sun";
 }
 
-export default function GanttChart({ plans, schedule }: GanttChartProps) {
+export default function GanttChart({ plans, schedule, selectedPlanNo, summary }: GanttChartProps) {
   const { t } = useTranslation();
 
   if (!plans.length || !schedule.length) return null;
@@ -80,63 +111,84 @@ export default function GanttChart({ plans, schedule }: GanttChartProps) {
   return (
     <div className="flex flex-col gap-3">
       {/* 범례 */}
-      <div className="flex items-center gap-4 text-xs text-text-muted px-1">
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm bg-blue-400 dark:bg-blue-600" />
-          {t("simulation.legend.production")}
+      <div className="flex items-center gap-5 text-xs px-2 py-2 bg-surface dark:bg-slate-800 rounded-lg border border-border">
+        <span className="font-medium text-text mr-1">{t("simulation.legend.production")}:</span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-3 rounded-sm bg-blue-400 dark:bg-blue-600" />
+          <span className="text-text">{t("simulation.legend.onTime")}</span>
         </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-0.5 bg-red-500" />
-          {t("simulation.legend.dueMarker")}
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-3 rounded-sm bg-orange-400 dark:bg-orange-500" />
+          <span className="text-text">1~2{t("simulation.delayDays")} {t("simulation.legend.delay")}</span>
         </span>
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-3 rounded-sm bg-red-400 dark:bg-red-500" />
+          <span className="text-text">3~6{t("simulation.delayDays")} {t("simulation.legend.delay")}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-3 rounded-sm bg-red-600 dark:bg-red-700" />
+          <span className="text-text">7{t("simulation.delayDays")}+ {t("simulation.legend.delay")}</span>
+        </span>
+        <span className="border-l border-border pl-4 flex items-center gap-1.5">
+          <span className="inline-block w-4 h-0.5 bg-red-500" />
+          <span className="text-text">{t("simulation.legend.dueMarker")}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-          {t("simulation.legend.onTime")}
+          <span className="text-text">{t("simulation.legend.onTime")}</span>
         </span>
-        <span className="flex items-center gap-1">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-          {t("simulation.legend.delay")}
-        </span>
+        {summary && (
+          <span className="border-l border-border pl-4 flex items-center gap-3 text-text-muted">
+            <span>{t("simulation.totalPlans")} <b className="text-text">{summary.totalPlans}</b></span>
+            <span>{t("simulation.onTime")} <b className="text-green-600 dark:text-green-400">{summary.onTimeCount}</b></span>
+            <span>{t("simulation.delayed")} <b className="text-red-600 dark:text-red-400">{summary.delayCount}</b></span>
+            <span>{t("simulation.manHours")} <b className="text-blue-600 dark:text-blue-400">{summary.requiredHours}h</b>/<b className="text-green-600 dark:text-green-400">{summary.availableHours}h</b>
+              <span className={`ml-1 font-bold ${summary.requiredHours > summary.availableHours ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                ({summary.requiredHours > summary.availableHours ? `${Math.round(summary.requiredHours - summary.availableHours)}h↑` : `${Math.round(summary.availableHours - summary.requiredHours)}h↓`})
+              </span>
+            </span>
+          </span>
+        )}
       </div>
 
       {/* 차트 본체 */}
       <div className="flex border border-border rounded-lg overflow-hidden
                       bg-white dark:bg-slate-900">
         {/* 좌측 고정: 계획 정보 */}
-        <div className="w-72 flex-shrink-0 border-r border-border">
+        <div className="w-96 flex-shrink-0 border-r border-border">
           {/* 헤더 */}
           <div
             className="h-12 border-b border-border bg-surface dark:bg-slate-800
                         px-3 flex items-center text-xs font-medium text-text gap-3"
           >
             <span className="flex-1">{t("simulation.planInfo")}</span>
-            <span className="w-16 text-right">{t("monthlyPlan.planQty")}</span>
-            <span className="w-10 text-center">{t("simulation.dueDate")}</span>
           </div>
           {/* 행 */}
-          {plans.map((plan) => (
+          {plans.map((plan, planIdx) => (
             <div
               key={plan.planNo}
-              className="h-14 border-b border-border px-3 flex flex-col
-                         justify-center text-xs gap-0.5"
+              className={`h-10 border-b border-border px-3 flex flex-col justify-center text-xs gap-0.5 transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}
             >
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="font-medium text-text truncate">
                   {plan.itemName}
                 </span>
-                <span className="text-text-muted truncate text-[10px]">
-                  {plan.customerName}
+                <span className="px-1 py-0.5 text-[9px] rounded bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
+                  {plan.bottleneckProcess} {plan.dailyCapa.toLocaleString()}/일
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-text">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-mono text-text-muted text-[10px]">
+                  {plan.planNo}
+                </span>
+                <span className="text-text font-medium">
                   {plan.planQty.toLocaleString()}
                 </span>
-                <span className="text-text-muted">
-                  {plan.dueDate?.slice(5) ?? "-"}
+                <span className="text-text-muted text-[10px]">
+                  {plan.requiredDays}{t("simulation.delayDays")}소요
                 </span>
                 <span className="text-text-muted">
-                  ~{plan.endDate.slice(5)}
+                  완료~{plan.endDate.slice(5)}
                 </span>
                 {plan.onTime ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
@@ -158,7 +210,7 @@ export default function GanttChart({ plans, schedule }: GanttChartProps) {
             {schedule.map((day) => (
               <div
                 key={day.date}
-                className={`w-10 flex-shrink-0 text-center text-[10px] leading-tight
+                className={`w-8 flex-shrink-0 text-center text-[10px] leading-tight
                   flex flex-col justify-center
                   border-r border-border/50
                   ${isWeekend(day.dayOfWeek) ? "bg-red-50 dark:bg-red-900/10 text-red-500 dark:text-red-400" : "text-text"}`}
@@ -170,8 +222,8 @@ export default function GanttChart({ plans, schedule }: GanttChartProps) {
           </div>
 
           {/* 바 영역 */}
-          {plans.map((plan) => (
-            <div key={plan.planNo} className="h-14 border-b border-border flex">
+          {plans.map((plan, planIdx) => (
+            <div key={plan.planNo} className={`h-10 border-b border-border flex transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}>
               {schedule.map((day) => {
                 const item = day.items.find((i) => i.planNo === plan.planNo);
                 const isDueDate = plan.dueDate === day.date;
@@ -180,18 +232,18 @@ export default function GanttChart({ plans, schedule }: GanttChartProps) {
                 return (
                   <div
                     key={day.date}
-                    className={`w-10 flex-shrink-0 relative border-r border-border/10
+                    className={`w-8 flex-shrink-0 relative border-r border-border/10
                       ${isWeekend(day.dayOfWeek) ? "bg-red-50/50 dark:bg-red-900/5" : ""}`}
                   >
                     {item && (
                       <div
-                        className={`absolute inset-x-0.5 top-1 bottom-1 rounded-sm
-                          ${getBarColor(plan)} flex items-center justify-center`}
-                        title={`${plan.itemCode}: ${item.qty.toLocaleString()} (${item.cumQty.toLocaleString()})`}
+                        className={`absolute inset-x-0.5 top-0.5 bottom-0.5 rounded-sm
+                          ${getBarColor(plan, planIdx)} flex items-center justify-center overflow-hidden`}
+                        title={`${plan.itemCode}: ${item.qty.toLocaleString()} (누적 ${item.cumQty.toLocaleString()})`}
                       >
-                        {isEnd && (
-                          <CheckCircle2 className="w-3 h-3 text-white/80" />
-                        )}
+                        <span className="text-[8px] text-white/90 font-medium leading-none">
+                          {item.qty >= 1000 ? `${Math.round(item.qty / 1000)}k` : item.qty}
+                        </span>
                       </div>
                     )}
                     {isDueDate && (

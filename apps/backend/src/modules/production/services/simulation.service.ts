@@ -21,6 +21,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
+import { SimulationResultEntity } from '../../../entities/simulation-result.entity';
 import { SimulationDataService } from './simulation-data.service';
 import {
   SimulationResult,
@@ -40,6 +41,8 @@ export class SimulationService {
   constructor(
     @InjectRepository(ProdPlan)
     private readonly planRepo: Repository<ProdPlan>,
+    @InjectRepository(SimulationResultEntity)
+    private readonly simResultRepo: Repository<SimulationResultEntity>,
     private readonly dataService: SimulationDataService,
   ) {}
 
@@ -54,6 +57,7 @@ export class SimulationService {
     company: string,
     plant: string,
     strategy: 'DUE_DATE' | 'MIN_SETUP' = 'DUE_DATE',
+    planOrder?: string[],
   ): Promise<SimulationResult> {
     // 1. 해당 월 생산계획 조회
     const plans = await this.planRepo.find({
@@ -73,13 +77,10 @@ export class SimulationService {
       return this.emptyResult();
     }
 
-    // 3. 품목별 병목 CAPA 조회
+    // 3. 품목별 병목 CAPA + 공정명 조회
     const itemCodes = [...new Set(plans.map((p) => p.itemCode))];
-    const bottleneckMap = await this.dataService.loadBottleneckCapa(
-      itemCodes,
-      company,
-      plant,
-    );
+    const { capaMap: bottleneckMap, processMap: bottleneckProcessMap } =
+      await this.dataService.loadBottleneckCapa(itemCodes, company, plant);
 
     // 4. 수주에서 납기일 조회
     const dueDateMap = await this.dataService.loadDueDates(
@@ -96,19 +97,66 @@ export class SimulationService {
       plant,
     );
 
-    // 6. 전략에 따라 정렬
-    const sortedPlans = strategy === 'MIN_SETUP'
-      ? this.sortByMinSetup(plans, dueDateMap)
-      : this.sortPlansByDueDate(plans, dueDateMap);
+    // 6. 정렬: 사용자 지정 순서 > 전략
+    let sortedPlans: ProdPlan[];
+    if (planOrder && planOrder.length > 0) {
+      const orderMap = new Map(planOrder.map((no, idx) => [no, idx]));
+      sortedPlans = [...plans].sort((a, b) =>
+        (orderMap.get(a.planNo) ?? 999) - (orderMap.get(b.planNo) ?? 999),
+      );
+    } else {
+      sortedPlans = strategy === 'MIN_SETUP'
+        ? this.sortByMinSetup(plans, dueDateMap)
+        : this.sortPlansByDueDate(plans, dueDateMap);
+    }
 
     // 7. 스케줄링 실행
-    return this.runScheduling(
+    const result = this.runScheduling(
       sortedPlans,
       workDays,
       bottleneckMap,
+      bottleneckProcessMap,
       dueDateMap,
       customerNameMap,
     );
+
+    return result;
+  }
+
+  /** 마지막 시뮬레이션 결과 조회 */
+  async getLatest(
+    month: string,
+    company: string,
+    plant: string,
+  ): Promise<SimulationResult | null> {
+    const row = await this.simResultRepo.findOne({
+      where: { simMonth: month, company, plant },
+      order: { createdAt: 'DESC' },
+    });
+    if (!row) return null;
+    try { return JSON.parse(row.resultJson) as SimulationResult; }
+    catch { return null; }
+  }
+
+  /** 시뮬레이션 결과를 DB에 저장 */
+  async saveResult(
+    month: string,
+    strategy: string,
+    result: SimulationResult,
+    company: string,
+    plant: string,
+  ): Promise<void> {
+    const now = new Date();
+    const simId = `SIM-${month.replace('-', '')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+    const entity = this.simResultRepo.create({
+      simId,
+      simMonth: month,
+      strategy,
+      resultJson: JSON.stringify(result),
+      company,
+      plant,
+    });
+    await this.simResultRepo.save(entity);
   }
 
   /**
@@ -160,6 +208,7 @@ export class SimulationService {
     plans: ProdPlan[],
     workDays: string[],
     bottleneckMap: Map<string, number>,
+    bottleneckProcessMap: Map<string, string>,
     dueDateMap: Map<string, string | null>,
     customerNameMap: Map<string, string>,
   ): SimulationResult {
@@ -213,6 +262,9 @@ export class SimulationService {
           ? this.calcDaysDiff(dueDate, endDate)
           : 0;
 
+      // 소요일수 = 계획수량 / 일일CAPA (올림)
+      const requiredDays = Math.ceil(plan.planQty / itemCapa);
+
       planResults.push({
         planNo: plan.planNo,
         itemCode: plan.itemCode,
@@ -226,11 +278,14 @@ export class SimulationService {
         endDate: endDate ?? '',
         onTime,
         delayDays,
+        requiredDays,
+        bottleneckProcess: bottleneckProcessMap.get(plan.itemCode) ?? '-',
+        dailyCapa: itemCapa,
       });
     }
 
     const schedule = this.buildSchedule(workDays, dayScheduleMap);
-    const summary = this.buildSummary(planResults, workDays, schedule);
+    const summary = this.buildSummary(planResults, workDays, schedule, bottleneckMap);
 
     return { plans: planResults, schedule, summary };
   }
@@ -259,12 +314,24 @@ export class SimulationService {
     planResults: SimPlanResult[],
     workDays: string[],
     schedule: SimDaySchedule[],
+    bottleneckMap: Map<string, number>,
   ): SimSummary {
     const usedDayCount = schedule.length;
     const utilizationRate =
       workDays.length > 0
         ? Math.round((usedDayCount / workDays.length) * 100 * 10) / 10
         : 0;
+
+    // 소요공수: 품목별 (계획수량 / 일일CAPA) × 8시간
+    let requiredHours = 0;
+    for (const p of planResults) {
+      const dailyCapa = bottleneckMap.get(p.itemCode) ?? 1;
+      requiredHours += (p.planQty / dailyCapa) * 8;
+    }
+    requiredHours = Math.round(requiredHours * 10) / 10;
+
+    // 보유공수: 작업일수 × 8시간
+    const availableHours = workDays.length * 8;
 
     return {
       totalPlans: planResults.length,
@@ -273,6 +340,8 @@ export class SimulationService {
       totalQty: planResults.reduce((s, p) => s + p.planQty, 0),
       workDays: workDays.length,
       utilizationRate,
+      requiredHours,
+      availableHours,
     };
   }
 
@@ -301,6 +370,8 @@ export class SimulationService {
         totalQty: 0,
         workDays: 0,
         utilizationRate: 0,
+        requiredHours: 0,
+        availableHours: 0,
       },
     };
   }

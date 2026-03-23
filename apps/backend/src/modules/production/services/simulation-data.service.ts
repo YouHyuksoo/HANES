@@ -89,9 +89,10 @@ export class SimulationDataService {
     itemCodes: string[],
     company: string,
     plant: string,
-  ): Promise<Map<string, number>> {
-    const map = new Map<string, number>();
-    if (itemCodes.length === 0) return map;
+  ): Promise<{ capaMap: Map<string, number>; processMap: Map<string, string> }> {
+    const capaMap = new Map<string, number>();
+    const processMap = new Map<string, string>();
+    if (itemCodes.length === 0) return { capaMap, processMap };
 
     const rows: Array<{ itemCode: string; minCapa: number }> =
       await this.capaRepo
@@ -106,18 +107,26 @@ export class SimulationDataService {
         .getRawMany();
 
     for (const row of rows) {
-      map.set(row.itemCode, Number(row.minCapa) || 0);
+      const dailyCapa = Number(row.minCapa) || 0;
+      capaMap.set(row.itemCode, dailyCapa);
+
+      // 병목 공정명 조회
+      const detail = await this.capaRepo.findOne({
+        where: { company, plant, itemCode: row.itemCode, dailyCapa, useYn: 'Y' },
+      });
+      if (detail) processMap.set(row.itemCode, detail.processCode);
     }
 
     const DEFAULT_CAPA = 9999;
     for (const code of itemCodes) {
-      if (!map.has(code)) {
+      if (!capaMap.has(code)) {
         this.logger.warn(`CAPA 미등록 품목, 기본값 사용: ${code}`);
-        map.set(code, DEFAULT_CAPA);
+        capaMap.set(code, DEFAULT_CAPA);
+        processMap.set(code, '-');
       }
     }
 
-    return map;
+    return { capaMap, processMap };
   }
 
   /**

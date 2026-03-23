@@ -12,8 +12,10 @@
 
 import {
   Controller,
+  Get,
   Post,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -53,7 +55,7 @@ export class SimulationController {
   })
   @ApiResponse({ status: 200, description: '시뮬레이션 성공' })
   async simulate(
-    @Body() body: { month: string; strategy?: 'DUE_DATE' | 'MIN_SETUP' },
+    @Body() body: { month: string; strategy?: 'DUE_DATE' | 'MIN_SETUP'; planOrder?: string[] },
     @Company() company: string,
     @Plant() plant: string,
   ) {
@@ -62,7 +64,39 @@ export class SimulationController {
       company,
       plant,
       body.strategy || 'DUE_DATE',
+      body.planOrder,
     );
+    return ResponseUtil.success(data);
+  }
+
+  @Post('simulate/save')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '시뮬레이션 결과 저장' })
+  @ApiResponse({ status: 201, description: '저장 성공' })
+  async save(
+    @Body() body: { month: string; strategy?: string; result: Record<string, unknown> },
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.simulationService.saveResult(
+      body.month,
+      body.strategy || 'DUE_DATE',
+      body.result as never,
+      company,
+      plant,
+    );
+    return ResponseUtil.success(null, '시뮬레이션 결과가 저장되었습니다.');
+  }
+
+  @Get('simulate/latest')
+  @ApiOperation({ summary: '마지막 시뮬레이션 결과 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async getLatest(
+    @Query('month') month: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.simulationService.getLatest(month, company, plant);
     return ResponseUtil.success(data);
   }
 }

@@ -23,6 +23,9 @@ export interface SimPlanResult {
   endDate: string;
   onTime: boolean;
   delayDays: number;
+  requiredDays: number;
+  bottleneckProcess: string;
+  dailyCapa: number;
 }
 
 /** 일자별 품목 배정 항목 */
@@ -48,6 +51,8 @@ export interface SimSummary {
   totalQty: number;
   workDays: number;
   utilizationRate: number;
+  requiredHours: number;
+  availableHours: number;
 }
 
 /** 시뮬레이션 최종 응답 */
