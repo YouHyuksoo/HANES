@@ -30,7 +30,7 @@ export class SubconOrder {
   @Column({ name: 'ITEM_CODE', length: 255 })
   partCode: string;
 
-  @Column({ name: 'ITEM_NAME', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 255, nullable: true })
   partName: string | null;
 
   @Column({ name: 'ORDER_QTY', type: 'int' })
@@ -57,19 +57,19 @@ export class SubconOrder {
   @Column({ name: 'STATUS', length: 20, default: 'ORDERED' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

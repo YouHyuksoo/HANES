@@ -62,7 +62,7 @@ export class SimulationHeader {
   @Column({ name: 'PLANT_CD', length: 50 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
@@ -101,7 +101,7 @@ export class SimulationPlan {
   @Column({ name: 'PLAN_QTY', type: 'number', default: 0 })
   planQty: number;
 
-  @Column({ name: 'DUE_DATE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'DUE_DATE', length: 10, nullable: true })
   dueDate: string | null;
 
   @Column({ name: 'PRIORITY', type: 'number', default: 5 })

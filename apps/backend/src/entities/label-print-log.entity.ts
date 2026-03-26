@@ -38,7 +38,7 @@ export class LabelPrintLog {
   @Column({ name: 'PRINT_MODE', length: 20 })
   printMode: string;
 
-  @Column({ name: 'PRINTER_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRINTER_NAME', length: 100, nullable: true })
   printerName: string | null;
 
   @Column({ name: 'UID_LIST', type: 'clob', nullable: true })
@@ -47,19 +47,19 @@ export class LabelPrintLog {
   @Column({ name: 'LABEL_COUNT', type: 'number', default: 0 })
   labelCount: number;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'SUCCESS' })
   status: string;
 
-  @Column({ name: 'ERROR_MSG', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'ERROR_MSG', length: 500, nullable: true })
   errorMsg: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -31,7 +31,7 @@ export class CustomsUsageReport {
   @Column({ name: 'LOT_MAT_UID', length: 100 })
   lotMatUid: string;
 
-  @Column({ name: 'ORDER_NO', length: 36, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 36, nullable: true })
   jobOrderId: string | null;
 
   @Column({ name: 'USAGE_QTY', type: 'int' })
@@ -46,22 +46,22 @@ export class CustomsUsageReport {
   @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

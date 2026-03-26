@@ -55,28 +55,28 @@ export class PmWorkOrder {
   @Column({ name: 'PRIORITY', length: 10, default: 'MEDIUM' })
   priority: string;
 
-  @Column({ name: 'ASSIGNED_WORKER_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'ASSIGNED_WORKER_ID', length: 255, nullable: true })
   assignedWorkerCode: string | null;
 
-  @Column({ name: 'OVERALL_RESULT', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'OVERALL_RESULT', length: 20, nullable: true })
   overallResult: string | null;
 
   @Column({ name: 'DETAILS', type: 'clob', nullable: true })
   details: string | null;
 
-  @Column({ name: 'REMARK', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 1000, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

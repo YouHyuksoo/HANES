@@ -36,19 +36,19 @@ export class PalletMaster {
   @Column({ name: 'CLOSE_TIME', type: 'timestamp', nullable: true })
   closeAt: Date | null;
 
-  @Column({ name: 'SHIPMENT_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'SHIPMENT_ID', length: 255, nullable: true })
   shipmentId: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

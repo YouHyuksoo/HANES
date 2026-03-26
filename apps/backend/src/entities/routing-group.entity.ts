@@ -24,10 +24,10 @@ export class RoutingGroup {
   @Column({ name: 'ROUTING_NAME', length: 200 })
   routingName: string;
 
-  @Column({ name: 'ITEM_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_CODE', length: 50, nullable: true })
   itemCode: string | null;
 
-  @Column({ name: 'DESCRIPTION', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 500, nullable: true })
   description: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
@@ -39,10 +39,10 @@ export class RoutingGroup {
   @Column({ name: 'PLANT_CD', length: 50 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

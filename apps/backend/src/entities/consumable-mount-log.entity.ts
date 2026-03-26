@@ -37,19 +37,19 @@ export class ConsumableMountLog {
   @Column({ name: 'ACTION', length: 20 })
   action: string;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CON_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CON_UID', length: 50, nullable: true })
   conUid: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

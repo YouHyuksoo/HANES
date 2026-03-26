@@ -23,22 +23,22 @@ export class SeqRule {
   @Column({ name: 'PAD_LENGTH', type: 'int', default: 5 })
   padLength: number;
 
-  @Column({ name: 'DATE_FORMAT', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'DATE_FORMAT', length: 10, nullable: true })
   dateFormat: string | null;
 
   @Column({ name: 'SEPARATOR', length: 2, default: '' })
   separator: string;
 
-  @Column({ name: 'DESCRIPTION', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 100, nullable: true })
   description: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

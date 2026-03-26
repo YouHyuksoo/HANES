@@ -27,37 +27,37 @@ export class CompanyMaster {
   @Column({ name: 'COMPANY_NAME', length: 100 })
   companyName: string;
 
-  @Column({ name: 'BIZ_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'BIZ_NO', length: 50, nullable: true })
   bizNo: string | null;
 
-  @Column({ name: 'CEO_NAME', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CEO_NAME', length: 50, nullable: true })
   ceoName: string | null;
 
-  @Column({ name: 'ADDRESS', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'ADDRESS', length: 255, nullable: true })
   address: string | null;
 
-  @Column({ name: 'TEL', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'TEL', length: 50, nullable: true })
   tel: string | null;
 
-  @Column({ name: 'FAX', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'FAX', length: 50, nullable: true })
   fax: string | null;
 
-  @Column({ name: 'EMAIL', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'EMAIL', length: 100, nullable: true })
   email: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

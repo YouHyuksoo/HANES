@@ -33,10 +33,10 @@ export class ProcessMap {
   @Column({ name: 'PROCESS_NAME', length: 255 })
   processName: string;
 
-  @Column({ name: 'PROCESS_TYPE', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_TYPE', length: 255, nullable: true })
   processType: string | null;
 
-  @Column({ name: 'EQUIP_TYPE', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_TYPE', length: 255, nullable: true })
   equipType: string | null;
 
   @Column({ name: 'STD_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
@@ -57,25 +57,25 @@ export class ProcessMap {
   @Column({ name: 'CRIMP_WIDTH', type: 'decimal', precision: 10, scale: 3, nullable: true })
   crimpWidth: number | null;
 
-  @Column({ name: 'WELD_CONDITION', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'WELD_CONDITION', length: 500, nullable: true })
   weldCondition: string | null;
 
-  @Column({ name: 'PROCESS_PARAMS', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_PARAMS', length: 2000, nullable: true })
   processParams: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

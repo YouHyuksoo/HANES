@@ -39,25 +39,25 @@ export class ProductTransaction {
   @Column({ name: 'TRANS_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   transDate: Date;
 
-  @Column({ name: 'FROM_WAREHOUSE_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'FROM_WAREHOUSE_ID', length: 50, nullable: true })
   fromWarehouseId: string | null;
 
-  @Column({ name: 'TO_WAREHOUSE_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'TO_WAREHOUSE_ID', length: 50, nullable: true })
   toWarehouseId: string | null;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'ITEM_TYPE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_TYPE', length: 10, nullable: true })
   itemType: string | null;
 
-  @Column({ name: 'PRD_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRD_UID', length: 50, nullable: true })
   prdUid: string | null;
 
-  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
-  @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
 
   @Column({ name: 'QTY', type: 'int' })
@@ -69,37 +69,37 @@ export class ProductTransaction {
   @Column({ name: 'TOTAL_AMOUNT', type: 'decimal', precision: 14, scale: 2, nullable: true })
   totalAmount: number | null;
 
-  @Column({ name: 'REF_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'REF_TYPE', length: 50, nullable: true })
   refType: string | null;
 
-  @Column({ name: 'REF_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'REF_ID', length: 50, nullable: true })
   refId: string | null;
 
-  @Column({ name: 'CANCEL_REF_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CANCEL_REF_ID', length: 50, nullable: true })
   cancelRefId: string | null;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
-  @Column({ name: 'ISSUE_TYPE', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'ISSUE_TYPE', length: 20, nullable: true })
   issueType: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

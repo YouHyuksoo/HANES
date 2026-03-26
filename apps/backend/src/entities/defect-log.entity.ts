@@ -30,7 +30,7 @@ export class DefectLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'PROD_RESULT_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROD_RESULT_NO', length: 50, nullable: true })
   prodResultNo: string | null;
 
   @ManyToOne(() => ProdResult, (prodResult) => prodResult.defectLogs)
@@ -40,7 +40,7 @@ export class DefectLog {
   @Column({ name: 'DEFECT_CODE', length: 50 })
   defectCode: string;
 
-  @Column({ name: 'DEFECT_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEFECT_NAME', length: 100, nullable: true })
   defectName: string | null;
 
   @Column({ name: 'QTY', type: 'int', default: 1 })
@@ -49,22 +49,22 @@ export class DefectLog {
   @Column({ name: 'STATUS', length: 50, default: 'WAIT' })
   status: string;
 
-  @Column({ name: 'CAUSE', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'CAUSE', length: 500, nullable: true })
   cause: string | null;
 
-  @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

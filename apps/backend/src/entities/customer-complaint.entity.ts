@@ -70,7 +70,7 @@ export class CustomerComplaint {
   @Column({ name: 'RESPONSIBLE_CODE', length: 50, nullable: true })
   responsibleCode: string;
 
-  @Column({ name: 'CAPA_ID', length: 30, nullable: true })
+  @Column({ type: 'varchar2', name: 'CAPA_ID', length: 30, nullable: true })
   capaId: string | null;
 
   @Column({ name: 'COST_AMOUNT', type: 'decimal', precision: 12, scale: 2, nullable: true })

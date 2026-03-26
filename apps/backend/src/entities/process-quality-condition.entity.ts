@@ -30,7 +30,7 @@ export class ProcessQualityCondition {
   @PrimaryColumn({ name: 'CONDITION_SEQ', type: 'int' })
   conditionSeq: number;
 
-  @Column({ name: 'CONDITION_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CONDITION_CODE', length: 50, nullable: true })
   conditionCode: string | null;
 
   @Column({ name: 'MIN_VALUE', type: 'decimal', precision: 10, scale: 2, nullable: true })
@@ -39,7 +39,7 @@ export class ProcessQualityCondition {
   @Column({ name: 'MAX_VALUE', type: 'decimal', precision: 10, scale: 2, nullable: true })
   maxValue: number | null;
 
-  @Column({ name: 'UNIT', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
   unit: string | null;
 
   @Column({ name: 'EQUIP_INTERFACE_YN', length: 1, default: 'N' })
@@ -54,10 +54,10 @@ export class ProcessQualityCondition {
   @Column({ name: 'PLANT_CD', length: 50 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

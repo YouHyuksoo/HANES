@@ -30,7 +30,7 @@ export class PdaRole {
   name: string;
 
   /** 역할 설명 */
-  @Column({ name: 'DESCRIPTION', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 500, nullable: true })
   description: string | null;
 
   /** 활성 여부 — Oracle char(1), Y/N 저장 */
@@ -47,19 +47,19 @@ export class PdaRole {
   isActive: boolean;
 
   /** 회사 코드 (다중 사업장 지원) */
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
   /** 공장 코드 (다중 사업장 지원) */
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
   /** 생성자 */
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
   /** 수정자 */
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   /** 생성일시 */

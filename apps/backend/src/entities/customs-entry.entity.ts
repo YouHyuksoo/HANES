@@ -23,10 +23,10 @@ export class CustomsEntry {
   @PrimaryColumn({ name: 'ENTRY_NO', length: 50 })
   entryNo: string;
 
-  @Column({ name: 'BL_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'BL_NO', length: 50, nullable: true })
   blNo: string | null;
 
-  @Column({ name: 'INVOICE_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'INVOICE_NO', length: 50, nullable: true })
   invoiceNo: string | null;
 
   @Column({ name: 'DECLARATION_DATE', type: 'date', nullable: true })
@@ -35,10 +35,10 @@ export class CustomsEntry {
   @Column({ name: 'CLEARANCE_DATE', type: 'date', nullable: true })
   clearanceDate: Date | null;
 
-  @Column({ name: 'ORIGIN', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORIGIN', length: 100, nullable: true })
   origin: string | null;
 
-  @Column({ name: 'HS_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'HS_CODE', length: 50, nullable: true })
   hsCode: string | null;
 
   @Column({ name: 'TOTAL_AMOUNT', type: 'decimal', precision: 14, scale: 2, nullable: true })
@@ -50,19 +50,19 @@ export class CustomsEntry {
   @Column({ name: 'STATUS', length: 20, default: 'PENDING' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

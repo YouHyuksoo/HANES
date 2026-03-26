@@ -31,16 +31,16 @@ export class Warehouse {
   @Column({ name: 'WAREHOUSE_TYPE', length: 50 })
   warehouseType: string;
 
-  @Column({ name: 'PLANT_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CODE', length: 50, nullable: true })
   plantCode: string | null;
 
-  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string | null;
 
-  @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
 
-  @Column({ name: 'VENDOR_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'VENDOR_ID', length: 50, nullable: true })
   vendorId: string | null;
 
   @Column({ name: 'IS_DEFAULT', length: 1, default: "'N'" })
@@ -49,16 +49,16 @@ export class Warehouse {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

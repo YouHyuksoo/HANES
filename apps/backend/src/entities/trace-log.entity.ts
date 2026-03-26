@@ -36,34 +36,34 @@ export class TraceLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'PALLET_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'PALLET_ID', length: 255, nullable: true })
   palletId: string | null;
 
-  @Column({ name: 'BOX_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'BOX_ID', length: 255, nullable: true })
   boxId: string | null;
 
-  @Column({ name: 'MAT_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'MAT_UID', length: 50, nullable: true })
   matUid: string | null;
 
-  @Column({ name: 'PRD_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRD_UID', length: 50, nullable: true })
   prdUid: string | null;
 
-  @Column({ name: 'MAT_LOT_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'MAT_LOT_ID', length: 255, nullable: true })
   matLotId: string | null;
 
-  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
-  @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
 
-  @Column({ name: 'SERIAL_NO', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'SERIAL_NO', length: 255, nullable: true })
   serialNo: string | null;
 
-  @Column({ name: 'EVENT_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EVENT_TYPE', length: 50, nullable: true })
   eventType: string | null;
 
   @Column({ name: 'EVENT_DATA', type: 'clob', nullable: true })
@@ -72,16 +72,16 @@ export class TraceLog {
   @Column({ name: 'PARENT_ID', type: 'int', nullable: true })
   parentId: number | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

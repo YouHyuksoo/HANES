@@ -38,16 +38,16 @@ export class BomMaster {
   @Column({ name: 'SEQ', type: 'int', default: 0 })
   seq: number;
 
-  @Column({ name: 'BOM_GRP', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'BOM_GRP', length: 50, nullable: true })
   bomGrp: string | null;
 
-  @Column({ name: 'OPER', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'OPER', length: 50, nullable: true })
   processCode: string | null;
 
-  @Column({ name: 'SIDE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'SIDE', length: 10, nullable: true })
   side: string | null;
 
-  @Column({ name: 'ECO_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ECO_NO', length: 50, nullable: true })
   ecoNo: string | null;
 
   @Column({ name: 'VALID_FROM', type: 'date', nullable: true })
@@ -56,22 +56,22 @@ export class BomMaster {
   @Column({ name: 'VALID_TO', type: 'date', nullable: true })
   validTo: Date | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

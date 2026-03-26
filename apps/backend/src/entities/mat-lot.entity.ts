@@ -41,7 +41,7 @@ export class MatLot {
   @Column({ name: 'EXPIRE_DATE', type: 'date', nullable: true })
   expireDate: Date | null;
 
-  @Column({ name: 'ORIGIN', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORIGIN', length: 50, nullable: true })
   origin: string | null;
 
   @Column({ name: 'VENDOR', length: 50 })
@@ -50,7 +50,7 @@ export class MatLot {
   @Column({ name: 'INVOICE_NO', length: 50 })
   invoiceNo: string;
 
-  @Column({ name: 'PO_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PO_NO', length: 50, nullable: true })
   poNo: string | null;
 
   @Column({ name: 'IQC_STATUS', length: 20, default: 'PENDING' })
@@ -59,16 +59,16 @@ export class MatLot {
   @Column({ name: 'STATUS', length: 20, default: 'NORMAL' })
   status: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

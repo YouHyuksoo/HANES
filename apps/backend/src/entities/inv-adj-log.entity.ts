@@ -37,7 +37,7 @@ export class InvAdjLog {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'MAT_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'MAT_UID', length: 50, nullable: true })
   matUid: string | null;
 
   @Column({ name: 'ADJ_TYPE', length: 50 })
@@ -55,25 +55,25 @@ export class InvAdjLog {
   @Column({ name: 'ADJUST_STATUS', length: 20, default: 'APPROVED' })
   adjustStatus: string;
 
-  @Column({ name: 'REASON', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REASON', length: 500, nullable: true })
   reason: string | null;
 
-  @Column({ name: 'APPROVED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'APPROVED_BY', length: 50, nullable: true })
   approvedBy: string | null;
 
   @Column({ name: 'APPROVED_AT', type: 'timestamp', nullable: true })
   approvedAt: Date | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

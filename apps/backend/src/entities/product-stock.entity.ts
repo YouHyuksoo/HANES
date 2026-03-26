@@ -36,20 +36,20 @@ export class ProductStock {
   @PrimaryColumn({ name: 'PRD_UID', length: 50 })
   prdUid: string;
 
-  @Column({ name: 'LOCATION_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LOCATION_CODE', length: 50, nullable: true })
   locationCode: string | null;
 
   @Column({ name: 'ITEM_TYPE', length: 10 })
   itemType: string;
 
-  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
   @ManyToOne(() => JobOrder, { nullable: true })
   @JoinColumn({ name: 'ORDER_NO', referencedColumnName: 'orderNo' })
   jobOrder: JobOrder;
 
-  @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
 
   @Column({ name: 'QTY', type: 'int', default: 0 })
@@ -64,28 +64,28 @@ export class ProductStock {
   @Column({ name: 'STATUS', length: 20, default: 'NORMAL' })
   status: string;
 
-  @Column({ name: 'HOLD_REASON', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'HOLD_REASON', length: 500, nullable: true })
   holdReason: string | null;
 
   @Column({ name: 'HOLD_AT', type: 'timestamp', nullable: true })
   holdAt: Date | null;
 
-  @Column({ name: 'HOLD_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'HOLD_BY', length: 50, nullable: true })
   holdBy: string | null;
 
   @Column({ name: 'LAST_COUNT', type: 'timestamp', nullable: true })
   lastCountAt: Date | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

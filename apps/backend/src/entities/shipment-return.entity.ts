@@ -23,31 +23,31 @@ export class ShipmentReturn {
   @PrimaryColumn({ name: 'RETURN_NO', length: 50 })
   returnNo: string;
 
-  @Column({ name: 'SHIPMENT_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'SHIPMENT_ID', length: 255, nullable: true })
   shipmentId: string | null;
 
   @Column({ name: 'RETURN_DATE', type: 'date', nullable: true })
   returnDate: Date | null;
 
-  @Column({ name: 'RETURN_REASON', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'RETURN_REASON', length: 500, nullable: true })
   returnReason: string | null;
 
   @Column({ name: 'STATUS', length: 50, default: 'DRAFT' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

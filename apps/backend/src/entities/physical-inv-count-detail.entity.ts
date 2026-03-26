@@ -47,7 +47,7 @@ export class PhysicalInvCountDetail {
   matUid: string;
 
   /** PDA 스캔 로케이션 코드 */
-  @Column({ name: 'LOCATION_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LOCATION_CODE', length: 50, nullable: true })
   locationCode: string | null;
 
   /** 실사 시점 시스템(장부) 수량 스냅샷 */
@@ -59,11 +59,11 @@ export class PhysicalInvCountDetail {
   countedQty: number;
 
   /** 스캔한 사용자 ID */
-  @Column({ name: 'COUNTED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COUNTED_BY', length: 50, nullable: true })
   countedBy: string | null;
 
   /** 비고 */
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

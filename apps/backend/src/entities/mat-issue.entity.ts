@@ -31,10 +31,10 @@ export class MatIssue {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
-  @Column({ name: 'PROD_RESULT_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROD_RESULT_NO', length: 50, nullable: true })
   prodResultNo: string | null;
 
   @ManyToOne(() => ProdResult, { nullable: true })
@@ -53,25 +53,25 @@ export class MatIssue {
   @Column({ name: 'ISSUE_TYPE', length: 20 })
   issueType: string;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

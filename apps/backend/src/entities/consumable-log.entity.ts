@@ -44,22 +44,22 @@ export class ConsumableLog {
   @Column({ name: 'QTY', type: 'int', default: 1 })
   qty: number;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
@@ -68,33 +68,33 @@ export class ConsumableLog {
   @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt: Date;
 
-  @Column({ name: 'VENDOR_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'VENDOR_CODE', length: 50, nullable: true })
   vendorCode: string | null;
 
-  @Column({ name: 'VENDOR_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'VENDOR_NAME', length: 100, nullable: true })
   vendorName: string | null;
 
   @Column({ name: 'UNIT_PRICE', type: 'decimal', precision: 12, scale: 2, nullable: true })
   unitPrice: number | null;
 
-  @Column({ name: 'INCOMING_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'INCOMING_TYPE', length: 50, nullable: true })
   incomingType: string | null;
 
-  @Column({ name: 'DEPARTMENT', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEPARTMENT', length: 50, nullable: true })
   department: string | null;
 
-  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string | null;
 
-  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
-  @Column({ name: 'ISSUE_REASON', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'ISSUE_REASON', length: 200, nullable: true })
   issueReason: string | null;
 
-  @Column({ name: 'RETURN_REASON', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'RETURN_REASON', length: 200, nullable: true })
   returnReason: string | null;
 
-  @Column({ name: 'CON_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CON_UID', length: 50, nullable: true })
   conUid: string | null;
 }

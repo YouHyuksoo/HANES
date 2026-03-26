@@ -32,10 +32,10 @@ export class RoutingProcess {
   @Column({ name: 'PROCESS_NAME', length: 200 })
   processName: string;
 
-  @Column({ name: 'PROCESS_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_TYPE', length: 50, nullable: true })
   processType: string | null;
 
-  @Column({ name: 'EQUIP_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_TYPE', length: 50, nullable: true })
   equipType: string | null;
 
   @Column({ name: 'STD_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
@@ -53,10 +53,10 @@ export class RoutingProcess {
   @Column({ name: 'PLANT_CD', length: 50 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -26,16 +26,16 @@ export class CommConfig {
   @Column({ name: 'COMM_TYPE', length: 50 })
   commType: string;
 
-  @Column({ name: 'DESCRIPTION', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 500, nullable: true })
   description: string | null;
 
-  @Column({ name: 'HOST', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'HOST', length: 255, nullable: true })
   host: string | null;
 
   @Column({ name: 'PORT', type: 'int', nullable: true })
   port: number | null;
 
-  @Column({ name: 'PORT_NAME', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PORT_NAME', length: 50, nullable: true })
   portName: string | null;
 
   @Column({ name: 'BAUD_RATE', type: 'int', nullable: true })
@@ -44,16 +44,16 @@ export class CommConfig {
   @Column({ name: 'DATA_BITS', type: 'int', nullable: true })
   dataBits: number | null;
 
-  @Column({ name: 'STOP_BITS', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'STOP_BITS', length: 10, nullable: true })
   stopBits: string | null;
 
-  @Column({ name: 'PARITY', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'PARITY', length: 10, nullable: true })
   parity: string | null;
 
-  @Column({ name: 'FLOW_CONTROL', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'FLOW_CONTROL', length: 20, nullable: true })
   flowControl: string | null;
 
-  @Column({ name: 'LINE_ENDING', length: 10, nullable: true, default: 'NONE' })
+  @Column({ type: 'varchar2', name: 'LINE_ENDING', length: 10, nullable: true, default: 'NONE' })
   lineEnding: string | null;
 
   @Column({ name: 'EXTRA_CONFIG', type: 'clob', nullable: true })
@@ -62,16 +62,16 @@ export class CommConfig {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

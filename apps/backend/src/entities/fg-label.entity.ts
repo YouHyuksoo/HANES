@@ -29,16 +29,16 @@ export class FgLabel {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
-  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
-  @Column({ name: 'WORKER_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
 
-  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string | null;
 
   @Column({ name: 'ISSUED_AT', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
@@ -50,31 +50,31 @@ export class FgLabel {
   @Column({ name: 'REPRINT_COUNT', type: 'int', default: 0 })
   reprintCount: number;
 
-  @Column({ name: 'VOID_REASON', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'VOID_REASON', length: 200, nullable: true })
   voidReason: string | null;
 
-  @Column({ name: 'REPLACED_BY', length: 30, nullable: true })
+  @Column({ type: 'varchar2', name: 'REPLACED_BY', length: 30, nullable: true })
   replacedBy: string | null;
 
-  @Column({ name: 'CUSTOMER_BARCODE', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER_BARCODE', length: 100, nullable: true })
   customerBarcode: string | null;
 
-  @Column({ name: 'INSPECT_RESULT_ID', length: 30, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECT_RESULT_ID', length: 30, nullable: true })
   inspectResultId: string | null;
 
-  @Column({ name: 'INSPECT_PASS_YN', length: 1, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECT_PASS_YN', length: 1, nullable: true })
   inspectPassYn: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

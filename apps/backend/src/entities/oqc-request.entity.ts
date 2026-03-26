@@ -31,7 +31,7 @@ export class OqcRequest {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'CUSTOMER', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER', length: 100, nullable: true })
   customer: string | null;
 
   @Column({ name: 'REQUEST_DATE', type: 'date' })
@@ -49,31 +49,31 @@ export class OqcRequest {
   @Column({ name: 'STATUS', length: 20, default: 'PENDING' })
   status: string;
 
-  @Column({ name: 'RESULT', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'RESULT', length: 50, nullable: true })
   result: string | null;
 
   @Column({ name: 'DETAILS', type: 'clob', nullable: true })
   details: string | null;
 
-  @Column({ name: 'INSPECTOR_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECTOR_NAME', length: 100, nullable: true })
   inspectorName: string | null;
 
   @Column({ name: 'INSPECT_DATE', type: 'timestamp', nullable: true })
   inspectDate: Date | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

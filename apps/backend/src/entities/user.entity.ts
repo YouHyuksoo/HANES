@@ -27,13 +27,13 @@ export class User {
   @Column({ name: 'PASSWORD', length: 255, default: 'admin123' })
   password: string;
 
-  @Column({ name: 'NAME', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'NAME', length: 255, nullable: true })
   name: string | null;
 
-  @Column({ name: 'EMP_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EMP_NO', length: 50, nullable: true })
   empNo: string | null;
 
-  @Column({ name: 'DEPT', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEPT', length: 255, nullable: true })
   dept: string | null;
 
   @Column({ name: 'ROLE', length: 50, default: 'OPERATOR' })
@@ -42,26 +42,26 @@ export class User {
   @Column({ name: 'STATUS', length: 50, default: 'ACTIVE' })
   status: string;
 
-  @Column({ name: 'PHOTO_URL', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'PHOTO_URL', length: 500, nullable: true })
   photoUrl: string | null;
 
   @Column({ name: 'LAST_LOGIN', type: 'timestamp', nullable: true })
   lastLoginAt: Date | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
   /** PDA 역할 코드 (FK → PDA_ROLE.CODE, nullable) */
-  @Column({ name: 'PDA_ROLE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PDA_ROLE_CODE', length: 50, nullable: true })
   pdaRoleCode: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

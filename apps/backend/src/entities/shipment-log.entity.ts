@@ -30,16 +30,16 @@ export class ShipmentLog {
   @Column({ name: 'SHIP_TIME', type: 'timestamp', nullable: true })
   shipAt: Date | null;
 
-  @Column({ name: 'VEHICLE_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'VEHICLE_NO', length: 50, nullable: true })
   vehicleNo: string | null;
 
-  @Column({ name: 'DRIVER_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'DRIVER_NAME', length: 100, nullable: true })
   driverName: string | null;
 
-  @Column({ name: 'DESTINATION', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESTINATION', length: 255, nullable: true })
   destination: string | null;
 
-  @Column({ name: 'CUSTOMER', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER', length: 100, nullable: true })
   customer: string | null;
 
   @Column({ name: 'PALLET_COUNT', type: 'int', default: 0 })
@@ -54,22 +54,22 @@ export class ShipmentLog {
   @Column({ name: 'STATUS', length: 50, default: 'PREPARING' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'ERP_SYNC_YN', length: 1, default: 'N' })
   erpSyncYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

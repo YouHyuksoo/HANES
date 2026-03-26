@@ -27,7 +27,7 @@ export class IqcItemMaster {
   @Column({ name: 'INSPECT_ITEM', length: 255 })
   inspectItem: string;
 
-  @Column({ name: 'SPEC', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'SPEC', length: 255, nullable: true })
   spec: string | null;
 
   @Column({ name: 'LSL', type: 'decimal', precision: 10, scale: 4, nullable: true })
@@ -36,7 +36,7 @@ export class IqcItemMaster {
   @Column({ name: 'USL', type: 'decimal', precision: 10, scale: 4, nullable: true })
   usl: number | null;
 
-  @Column({ name: 'UNIT', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
   unit: string | null;
 
   @Column({ name: 'IS_SHELF_LIFE', default: false })
@@ -48,16 +48,16 @@ export class IqcItemMaster {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -31,7 +31,7 @@ export class ConsumableMaster {
   @Column({ name: 'NAME', length: 100 })
   consumableName: string;
 
-  @Column({ name: 'CATEGORY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CATEGORY', length: 50, nullable: true })
   category: string | null;
 
   @Column({ name: 'EXPECTED_LIFE', type: 'int', nullable: true })
@@ -49,7 +49,7 @@ export class ConsumableMaster {
   @Column({ name: 'WARNING_COUNT', type: 'int', nullable: true })
   warningCount: number | null;
 
-  @Column({ name: 'LOCATION', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'LOCATION', length: 100, nullable: true })
   location: string | null;
 
   @Column({ name: 'LAST_REPLACE', type: 'timestamp', nullable: true })
@@ -61,7 +61,7 @@ export class ConsumableMaster {
   @Column({ name: 'UNIT_PRICE', type: 'decimal', precision: 12, scale: 2, nullable: true })
   unitPrice: number | null;
 
-  @Column({ name: 'VENDOR', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'VENDOR', length: 50, nullable: true })
   vendor: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'NORMAL' })
@@ -70,25 +70,25 @@ export class ConsumableMaster {
   @Column({ name: 'OPER_STATUS', length: 20, default: 'WAREHOUSE' })
   operStatus: string;
 
-  @Column({ name: 'MOUNTED_EQUIP_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'MOUNTED_EQUIP_ID', length: 50, nullable: true })
   mountedEquipCode: string | null;
 
-  @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

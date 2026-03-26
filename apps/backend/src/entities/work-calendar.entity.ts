@@ -34,31 +34,31 @@ export class WorkCalendar {
   @Column({ name: 'CALENDAR_YEAR', length: 4 })
   calendarYear: string;
 
-  @Column({ name: 'PROCESS_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CD', length: 50, nullable: true })
   processCd: string | null;
 
   @Column({ name: 'DEFAULT_SHIFT_COUNT', type: 'number', precision: 1, default: 1 })
   defaultShiftCount: number;
 
-  @Column({ name: 'DEFAULT_SHIFTS', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEFAULT_SHIFTS', length: 100, nullable: true })
   defaultShifts: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

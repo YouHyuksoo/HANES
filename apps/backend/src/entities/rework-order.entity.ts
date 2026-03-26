@@ -21,7 +21,7 @@ export class ReworkOrder {
   @PrimaryColumn({ name: 'REWORK_NO', length: 50 })
   reworkNo: string;
 
-  @Column({ name: 'DEFECT_LOG_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEFECT_LOG_ID', length: 50, nullable: true })
   defectLogId: string | null;
 
   @Column({ name: 'ITEM_CODE', length: 50 })

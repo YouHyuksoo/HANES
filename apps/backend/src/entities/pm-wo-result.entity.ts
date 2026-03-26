@@ -36,13 +36,13 @@ export class PmWoResult {
   @Column({ name: 'ITEM_TYPE', length: 20, default: 'CHECK' })
   itemType: string;
 
-  @Column({ name: 'CRITERIA', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'CRITERIA', length: 500, nullable: true })
   criteria: string | null;
 
   @Column({ name: 'RESULT', length: 20 })
   result: string;
 
-  @Column({ name: 'REMARK', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 1000, nullable: true })
   remark: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -26,52 +26,52 @@ export class WorkerMaster {
   @Column({ name: 'WORKER_NAME', length: 255 })
   workerName: string;
 
-  @Column({ name: 'ENG_NAME', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'ENG_NAME', length: 255, nullable: true })
   engName: string | null;
 
-  @Column({ name: 'DEPT', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEPT', length: 255, nullable: true })
   dept: string | null;
 
-  @Column({ name: 'POSITION', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'POSITION', length: 255, nullable: true })
   position: string | null;
 
-  @Column({ name: 'PHONE', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'PHONE', length: 255, nullable: true })
   phone: string | null;
 
-  @Column({ name: 'EMAIL', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'EMAIL', length: 255, nullable: true })
   email: string | null;
 
-  @Column({ name: 'HIRE_DATE', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'HIRE_DATE', length: 255, nullable: true })
   hireDate: string | null;
 
-  @Column({ name: 'QUIT_DATE', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'QUIT_DATE', length: 255, nullable: true })
   quitDate: string | null;
 
-  @Column({ name: 'QR_CODE', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'QR_CODE', length: 255, nullable: true })
   qrCode: string | null;
 
-  @Column({ name: 'PHOTO_URL', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'PHOTO_URL', length: 255, nullable: true })
   photoUrl: string | null;
 
   @Column({ name: 'PROCESS_IDS', type: 'clob', nullable: true })
   processIds: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

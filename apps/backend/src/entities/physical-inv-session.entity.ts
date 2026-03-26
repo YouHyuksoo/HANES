@@ -53,25 +53,25 @@ export class PhysicalInvSession {
    * 차단 범위 - 창고 코드 (null이면 전체 창고 차단)
    * 특정 창고만 실사 중일 때 해당 창고 코드를 저장
    */
-  @Column({ name: 'WAREHOUSE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WAREHOUSE_CODE', length: 50, nullable: true })
   warehouseCode: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'STARTED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'STARTED_BY', length: 50, nullable: true })
   startedBy: string | null;
 
-  @Column({ name: 'COMPLETED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPLETED_BY', length: 50, nullable: true })
   completedBy: string | null;
 
   @Column({ name: 'COMPLETED_AT', type: 'timestamp', nullable: true })
   completedAt: Date | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

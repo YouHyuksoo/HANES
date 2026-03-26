@@ -31,13 +31,13 @@ export class WorkCalendarDay {
   @Column({ name: 'DAY_TYPE', length: 20, default: 'WORK' })
   dayType: string;
 
-  @Column({ name: 'OFF_REASON', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'OFF_REASON', length: 20, nullable: true })
   offReason: string | null;
 
   @Column({ name: 'SHIFT_COUNT', type: 'number', precision: 1, default: 1 })
   shiftCount: number;
 
-  @Column({ name: 'SHIFTS', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'SHIFTS', length: 100, nullable: true })
   shifts: string | null;
 
   @Column({ name: 'WORK_MINUTES', type: 'number', precision: 5, default: 0 })
@@ -46,19 +46,19 @@ export class WorkCalendarDay {
   @Column({ name: 'OT_MINUTES', type: 'number', precision: 5, default: 0 })
   otMinutes: number;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

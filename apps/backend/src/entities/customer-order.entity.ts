@@ -24,10 +24,10 @@ export class CustomerOrder {
   @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
-  @Column({ name: 'CUSTOMER_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER_ID', length: 255, nullable: true })
   customerId: string | null;
 
-  @Column({ name: 'CUSTOMER_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER_NAME', length: 100, nullable: true })
   customerName: string | null;
 
   @Column({ name: 'ORDER_DATE', type: 'date', default: () => 'CURRENT_DATE' })
@@ -45,19 +45,19 @@ export class CustomerOrder {
   @Column({ name: 'CURRENCY', length: 10, default: 'KRW' })
   currency: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

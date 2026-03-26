@@ -26,25 +26,25 @@ export class RepairUsedPart {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'ITEM_NAME', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string | null;
 
-  @Column({ name: 'PRD_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRD_UID', length: 50, nullable: true })
   prdUid: string | null;
 
   @Column({ name: 'QTY', type: 'int', default: 1 })
   qty: number;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

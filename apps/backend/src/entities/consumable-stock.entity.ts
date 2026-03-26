@@ -41,10 +41,10 @@ export class ConsumableStock {
   @Column({ name: 'CURRENT_COUNT', type: 'int', default: 0 })
   currentCount: number;
 
-  @Column({ name: 'LOCATION', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'LOCATION', length: 100, nullable: true })
   location: string | null;
 
-  @Column({ name: 'MOUNTED_EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'MOUNTED_EQUIP_CODE', length: 50, nullable: true })
   mountedEquipCode: string | null;
 
   @Column({ name: 'RECV_DATE', type: 'timestamp', nullable: true })
@@ -53,28 +53,28 @@ export class ConsumableStock {
   @Column({ name: 'LABEL_PRINTED_AT', type: 'timestamp', nullable: true })
   labelPrintedAt: Date | null;
 
-  @Column({ name: 'VENDOR_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'VENDOR_CODE', length: 50, nullable: true })
   vendorCode: string | null;
 
-  @Column({ name: 'VENDOR_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'VENDOR_NAME', length: 100, nullable: true })
   vendorName: string | null;
 
   @Column({ name: 'UNIT_PRICE', type: 'decimal', precision: 12, scale: 2, nullable: true })
   unitPrice: number | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plantCd: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

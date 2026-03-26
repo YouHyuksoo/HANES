@@ -27,34 +27,34 @@ export class WarehouseLocation {
   @Column({ name: 'LOCATION_NAME', length: 100 })
   locationName: string;
 
-  @Column({ name: 'ZONE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ZONE', length: 50, nullable: true })
   zone: string | null;
 
-  @Column({ name: 'ROW_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ROW_NO', length: 50, nullable: true })
   rowNo: string | null;
 
-  @Column({ name: 'COL_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COL_NO', length: 50, nullable: true })
   colNo: string | null;
 
-  @Column({ name: 'LEVEL_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LEVEL_NO', length: 50, nullable: true })
   levelNo: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

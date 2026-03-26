@@ -23,10 +23,10 @@ export class PurchaseOrder {
   @PrimaryColumn({ name: 'PO_NO', length: 50 })
   poNo: string;
 
-  @Column({ name: 'PARTNER_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'PARTNER_ID', length: 255, nullable: true })
   partnerId: string | null;
 
-  @Column({ name: 'PARTNER_NAME', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'PARTNER_NAME', length: 255, nullable: true })
   partnerName: string | null;
 
   @Column({ name: 'ORDER_DATE', type: 'date', nullable: true })
@@ -41,19 +41,19 @@ export class PurchaseOrder {
   @Column({ name: 'TOTAL_AMOUNT', type: 'decimal', precision: 14, scale: 2, nullable: true })
   totalAmount: number | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

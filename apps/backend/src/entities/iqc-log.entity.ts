@@ -29,7 +29,7 @@ export class IqcLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ name: 'ARRIVAL_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 50, nullable: true })
   arrivalNo: string | null;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
@@ -44,25 +44,25 @@ export class IqcLog {
   @Column({ name: 'DETAILS', type: 'clob', nullable: true })
   details: string | null;
 
-  @Column({ name: 'INSPECTOR_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECTOR_NAME', length: 100, nullable: true })
   inspectorName: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

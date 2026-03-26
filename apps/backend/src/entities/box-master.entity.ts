@@ -34,28 +34,28 @@ export class BoxMaster {
   @Column({ name: 'SERIAL_LIST', type: 'clob', nullable: true })
   serialList: string | null;
 
-  @Column({ name: 'PALLET_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PALLET_NO', length: 50, nullable: true })
   palletNo: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'OPEN' })
   status: string;
 
-  @Column({ name: 'OQC_STATUS', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'OQC_STATUS', length: 50, nullable: true })
   oqcStatus: string | null;
 
   @Column({ name: 'CLOSE_TIME', type: 'timestamp', nullable: true })
   closeAt: Date | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

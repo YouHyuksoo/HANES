@@ -28,7 +28,7 @@ export class IqcItemPool {
   @Column({ name: 'JUDGE_METHOD', length: 20 })
   judgeMethod: string;
 
-  @Column({ name: 'CRITERIA', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'CRITERIA', length: 255, nullable: true })
   criteria: string | null;
 
   @Column({ name: 'LSL', type: 'decimal', precision: 12, scale: 4, nullable: true })
@@ -37,7 +37,7 @@ export class IqcItemPool {
   @Column({ name: 'USL', type: 'decimal', precision: 12, scale: 4, nullable: true })
   usl: number | null;
 
-  @Column({ name: 'UNIT', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
   unit: string | null;
 
   @Column({ name: 'REVISION', type: 'int', default: 1 })
@@ -49,19 +49,19 @@ export class IqcItemPool {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

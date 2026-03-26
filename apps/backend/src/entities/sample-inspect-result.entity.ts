@@ -40,34 +40,34 @@ export class SampleInspectResult {
   @Column({ name: 'INSPECTOR_NAME', length: 100 })
   inspectorName: string;
 
-  @Column({ name: 'INSPECT_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECT_TYPE', length: 50, nullable: true })
   inspectType: string | null;
 
-  @Column({ name: 'MEASURED_VALUE', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'MEASURED_VALUE', length: 100, nullable: true })
   measuredValue: string | null;
 
-  @Column({ name: 'SPEC_UPPER', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'SPEC_UPPER', length: 50, nullable: true })
   specUpper: string | null;
 
-  @Column({ name: 'SPEC_LOWER', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'SPEC_LOWER', length: 50, nullable: true })
   specLower: string | null;
 
   @Column({ name: 'PASS_YN', length: 1, default: 'Y' })
   passYn: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

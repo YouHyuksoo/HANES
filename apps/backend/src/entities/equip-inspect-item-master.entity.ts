@@ -37,19 +37,19 @@ export class EquipInspectItemMaster {
   @Column({ name: 'ITEM_NAME', length: 200 })
   itemName: string;
 
-  @Column({ name: 'CRITERIA', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'CRITERIA', length: 500, nullable: true })
   criteria: string | null;
 
-  @Column({ name: 'CYCLE', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'CYCLE', length: 20, nullable: true })
   cycle: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

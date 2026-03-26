@@ -32,7 +32,7 @@ export class JobOrder {
   @PrimaryColumn({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
-  @Column({ name: 'PARENT_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PARENT_ID', length: 50, nullable: true })
   parentOrderNo: string | null;
 
   @ManyToOne(() => JobOrder, (jo) => jo.children, { nullable: true })
@@ -42,7 +42,7 @@ export class JobOrder {
   @OneToMany(() => JobOrder, (jo) => jo.parent)
   children: JobOrder[];
 
-  @Column({ name: 'PLAN_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLAN_NO', length: 50, nullable: true })
   planNo: string | null;
 
   @ManyToOne(() => ProdPlan, { nullable: true })
@@ -56,11 +56,11 @@ export class JobOrder {
   @JoinColumn({ name: 'ITEM_CODE' })
   part: PartMaster | null;
 
-  @Column({ name: 'LINE_CODE', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'LINE_CODE', length: 255, nullable: true })
   lineCode: string | null;
 
   /** 라우팅 코드 - 품목 기반 자동 조회 */
-  @Column({ name: 'ROUTING_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ROUTING_CODE', length: 50, nullable: true })
   routingCode: string | null;
 
   @ManyToOne(() => RoutingGroup, { nullable: true })
@@ -91,25 +91,25 @@ export class JobOrder {
   @Column({ name: 'STATUS', length: 20, default: 'WAITING' })
   status: string;
 
-  @Column({ name: 'CUST_PO_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUST_PO_NO', length: 50, nullable: true })
   custPoNo: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'ERP_SYNC_YN', length: 1, default: 'N' })
   erpSyncYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

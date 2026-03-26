@@ -30,33 +30,33 @@ export class ActivityLog {
   @Column({ name: 'USER_EMAIL', length: 255 })
   userEmail: string;
 
-  @Column({ name: 'USER_NAME', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'USER_NAME', length: 255, nullable: true })
   userName: string | null;
 
   /** LOGIN | PAGE_ACCESS */
   @Column({ name: 'ACTIVITY_TYPE', length: 50 })
   activityType: string;
 
-  @Column({ name: 'PAGE_PATH', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'PAGE_PATH', length: 500, nullable: true })
   pagePath: string | null;
 
-  @Column({ name: 'PAGE_NAME', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'PAGE_NAME', length: 200, nullable: true })
   pageName: string | null;
 
-  @Column({ name: 'IP_ADDRESS', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'IP_ADDRESS', length: 50, nullable: true })
   ipAddress: string | null;
 
-  @Column({ name: 'USER_AGENT', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'USER_AGENT', length: 500, nullable: true })
   userAgent: string | null;
 
   /** PC | PDA */
-  @Column({ name: 'DEVICE_TYPE', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEVICE_TYPE', length: 20, nullable: true })
   deviceType: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

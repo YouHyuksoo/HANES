@@ -25,7 +25,7 @@ export class SubconDelivery {
   @PrimaryColumn({ name: 'DELIVERY_NO', length: 255 })
   deliveryNo: string;
 
-  @Column({ name: 'MAT_UID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'MAT_UID', length: 50, nullable: true })
   matUid: string | null;
 
   @Column({ name: 'QTY', type: 'int' })
@@ -34,25 +34,25 @@ export class SubconDelivery {
   @Column({ name: 'DELIVERY_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   deliveredAt: Date;
 
-  @Column({ name: 'WORKER_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_ID', length: 255, nullable: true })
   workerId: string | null;
 
   @Column({ name: 'STATUS', length: 50, default: 'DONE' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

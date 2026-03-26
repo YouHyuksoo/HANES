@@ -26,31 +26,31 @@ export class PartMaster {
   @Column({ name: 'PART_NO', type: 'varchar2', length: 50, nullable: true })
   itemNo: string | null;
 
-  @Column({ name: 'CUST_PART_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUST_PART_NO', length: 50, nullable: true })
   custPartNo: string | null;
 
   @Column({ name: 'ITEM_TYPE', length: 50 })
   itemType: string;
 
-  @Column({ name: 'PRODUCT_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRODUCT_TYPE', length: 50, nullable: true })
   productType: string | null;
 
-  @Column({ name: 'SPEC', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'SPEC', length: 255, nullable: true })
   spec: string | null;
 
-  @Column({ name: 'REV', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'REV', length: 20, nullable: true })
   rev: string | null;
 
   @Column({ name: 'UNIT', length: 20, default: 'EA' })
   unit: string;
 
-  @Column({ name: 'DRAW_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'DRAW_NO', length: 50, nullable: true })
   drawNo: string | null;
 
-  @Column({ name: 'CUSTOMER', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER', length: 50, nullable: true })
   customer: string | null;
 
-  @Column({ name: 'VENDOR', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'VENDOR', length: 50, nullable: true })
   vendor: string | null;
 
   @Column({ name: 'LEAD_TIME', type: 'int', default: 0 })
@@ -68,7 +68,7 @@ export class PartMaster {
   @Column({ name: 'IQC_FLAG', length: 1, default: 'Y' })
   iqcYn: string;
 
-  @Column({ name: 'INSPECT_METHOD', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECT_METHOD', length: 20, nullable: true })
   inspectMethod: string | null; // 검사방법 (FULL/SAMPLE/SKIP)
 
   @Column({ name: 'TACT_TIME', type: 'int', default: 0 })
@@ -86,28 +86,28 @@ export class PartMaster {
   @Column({ name: 'SAMPLE_QTY', type: 'int', nullable: true })
   sampleQty: number | null; // 샘플검사 수량
 
-  @Column({ name: 'PACK_UNIT', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PACK_UNIT', length: 50, nullable: true })
   packUnit: string | null;
 
-  @Column({ name: 'STORAGE_LOCATION', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'STORAGE_LOCATION', length: 100, nullable: true })
   storageLocation: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

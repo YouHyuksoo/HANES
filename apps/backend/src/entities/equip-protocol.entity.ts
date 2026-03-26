@@ -22,7 +22,7 @@ export class EquipProtocol {
   @PrimaryColumn({ name: 'PROTOCOL_ID', length: 30 })
   protocolId: string;
 
-  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
   @Column({ name: 'PROTOCOL_NAME', length: 100 })
@@ -46,25 +46,25 @@ export class EquipProtocol {
   @Column({ name: 'ERROR_INDEX', type: 'int', nullable: true })
   errorIndex: number | null;
 
-  @Column({ name: 'DATA_START_CHAR', length: 5, nullable: true })
+  @Column({ type: 'varchar2', name: 'DATA_START_CHAR', length: 5, nullable: true })
   dataStartChar: string | null;
 
-  @Column({ name: 'DATA_END_CHAR', length: 5, nullable: true })
+  @Column({ type: 'varchar2', name: 'DATA_END_CHAR', length: 5, nullable: true })
   dataEndChar: string | null;
 
-  @Column({ name: 'SAMPLE_DATA', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'SAMPLE_DATA', length: 500, nullable: true })
   sampleData: string | null;
 
-  @Column({ name: 'DESCRIPTION', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 200, nullable: true })
   description: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

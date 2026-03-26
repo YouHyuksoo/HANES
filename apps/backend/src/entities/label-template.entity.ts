@@ -34,7 +34,7 @@ export class LabelTemplate {
   @Column({ name: 'IS_DEFAULT', default: false })
   isDefault: boolean;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'ZPL_CODE', type: 'clob', nullable: true })
@@ -43,22 +43,22 @@ export class LabelTemplate {
   @Column({ name: 'PRINT_MODE', length: 20, default: 'BROWSER' })
   printMode: string;
 
-  @Column({ name: 'PRINTER_ID', length: 36, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRINTER_ID', length: 36, nullable: true })
   printerId: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -24,31 +24,31 @@ export class DepartmentMaster {
   @Column({ name: 'DEPT_NAME', length: 100 })
   deptName: string;
 
-  @Column({ name: 'PARENT_DEPT_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PARENT_DEPT_CODE', length: 50, nullable: true })
   parentDeptCode: string | null;
 
   @Column({ name: 'SORT_ORDER', type: 'int', default: 0 })
   sortOrder: number;
 
-  @Column({ name: 'MANAGER_NAME', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'MANAGER_NAME', length: 50, nullable: true })
   managerName: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

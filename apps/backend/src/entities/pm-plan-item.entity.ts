@@ -33,13 +33,13 @@ export class PmPlanItem {
   @Column({ name: 'ITEM_TYPE', length: 20, default: 'CHECK' })
   itemType: string;
 
-  @Column({ name: 'DESCRIPTION', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 500, nullable: true })
   description: string | null;
 
-  @Column({ name: 'CRITERIA', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'CRITERIA', length: 500, nullable: true })
   criteria: string | null;
 
-  @Column({ name: 'SPARE_PART_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'SPARE_PART_CODE', length: 50, nullable: true })
   sparePartCode: string | null;
 
   @Column({ name: 'SPARE_PART_QTY', type: 'number', default: 0 })
