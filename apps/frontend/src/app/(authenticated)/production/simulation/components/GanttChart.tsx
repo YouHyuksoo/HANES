@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. **좌측 고정 패널**: 계획 품목명/고객/수량/납기 등 요약 정보
  * 2. **우측 스크롤 영역**: 날짜별 생산 바 + 납기 마커(빨간 세로선)
- * 3. **바 색상**: 지연=빨강, 정상=itemCode 해시 기반 색상 구분
+ * 3. **바 색상**: 공정코드 기반 - 모든 오더에서 같은 공정은 같은 색
  * 4. Tailwind CSS만으로 구현 (외부 차트 라이브러리 없음)
  */
 
@@ -19,6 +19,7 @@ interface SimPlanResult {
   planNo: string;
   itemCode: string;
   itemName: string;
+  itemType: string;
   customer: string;
   customerName: string;
   planQty: number;
@@ -36,6 +37,8 @@ interface SimPlanResult {
 interface SimDayItem {
   planNo: string;
   itemCode: string;
+  processCode: string;
+  processName: string;
   qty: number;
   cumQty: number;
 }
@@ -64,37 +67,33 @@ export interface GanttChartProps {
   summary?: SimSummary | null;
 }
 
-/* ── 바 색상 함수 ── */
-const BAR_COLORS = [
-  "bg-blue-400 dark:bg-blue-500",
-  "bg-emerald-400 dark:bg-emerald-500",
-  "bg-violet-400 dark:bg-violet-500",
-  "bg-amber-400 dark:bg-amber-500",
-  "bg-cyan-400 dark:bg-cyan-500",
-  "bg-pink-400 dark:bg-pink-500",
-  "bg-lime-400 dark:bg-lime-500",
-  "bg-indigo-400 dark:bg-indigo-500",
-  "bg-rose-400 dark:bg-rose-500",
-  "bg-teal-400 dark:bg-teal-500",
-  "bg-sky-400 dark:bg-sky-500",
-  "bg-fuchsia-400 dark:bg-fuchsia-500",
-];
+/* ── 공정별 색상 매핑 ── */
+const PROCESS_COLORS: Record<string, string> = {
+  "PRC-CUT": "bg-gray-400 dark:bg-gray-500",
+  "PRC-STRIP": "bg-gray-300 dark:bg-gray-400",
+  "PRC-CRIMP": "bg-yellow-400 dark:bg-yellow-500",
+  "PRC-PRESUB": "bg-green-400 dark:bg-green-500",
+  "PRC-ASSY": "bg-blue-400 dark:bg-blue-500",
+  "PRC-TAPE": "bg-purple-400 dark:bg-purple-500",
+  "PRC-TEST": "bg-cyan-400 dark:bg-cyan-500",
+  "PRC-PACK": "bg-pink-400 dark:bg-pink-500",
+};
 
-/** 좌측 색상 표시용 dot 색상 */
-const DOT_COLORS = [
-  "bg-blue-400", "bg-emerald-400", "bg-violet-400", "bg-amber-400",
-  "bg-cyan-400", "bg-pink-400", "bg-lime-400", "bg-indigo-400",
-  "bg-rose-400", "bg-teal-400", "bg-sky-400", "bg-fuchsia-400",
-];
+/** 공정코드 → 한국어명 */
+const PROCESS_NAMES: Record<string, string> = {
+  "PRC-CUT": "절단",
+  "PRC-STRIP": "탈피",
+  "PRC-CRIMP": "압착",
+  "PRC-PRESUB": "선조립",
+  "PRC-ASSY": "조립",
+  "PRC-TAPE": "테이핑",
+  "PRC-TEST": "검사",
+  "PRC-PACK": "포장",
+};
 
-/** 오더별 고유 색상 (planNo 인덱스 기반) */
-function getBarColor(plan: SimPlanResult, planIndex: number): string {
-  if (!plan.onTime) {
-    if (plan.delayDays >= 7) return "bg-red-600 dark:bg-red-700";
-    if (plan.delayDays >= 3) return "bg-red-400 dark:bg-red-500";
-    return "bg-orange-400 dark:bg-orange-500";
-  }
-  return BAR_COLORS[planIndex % BAR_COLORS.length];
+/** 공정코드로 바 색상을 결정 (미등록 공정은 slate 폴백) */
+function getProcessColor(processCode: string): string {
+  return PROCESS_COLORS[processCode] ?? "bg-slate-400 dark:bg-slate-500";
 }
 
 /* ── 주말 체크 ── */
@@ -110,26 +109,16 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 범례 */}
-      <div className="flex items-center gap-5 text-xs px-2 py-2 bg-surface dark:bg-slate-800 rounded-lg border border-border">
-        <span className="font-medium text-text mr-1">{t("simulation.legend.production")}:</span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-3 rounded-sm bg-blue-400 dark:bg-blue-600" />
-          <span className="text-text">{t("simulation.legend.onTime")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-3 rounded-sm bg-orange-400 dark:bg-orange-500" />
-          <span className="text-text">1~2{t("simulation.delayDays")} {t("simulation.legend.delay")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-3 rounded-sm bg-red-400 dark:bg-red-500" />
-          <span className="text-text">3~6{t("simulation.delayDays")} {t("simulation.legend.delay")}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-3 rounded-sm bg-red-600 dark:bg-red-700" />
-          <span className="text-text">7{t("simulation.delayDays")}+ {t("simulation.legend.delay")}</span>
-        </span>
-        <span className="border-l border-border pl-4 flex items-center gap-1.5">
+      {/* 범례: 공정별 색상 + 납기 마커 + 요약 */}
+      <div className="flex items-center gap-4 text-xs px-2 py-2 bg-surface dark:bg-slate-800 rounded-lg border border-border flex-wrap">
+        <span className="font-medium text-text mr-1">{t("simulation.legend.process", "공정")}:</span>
+        {Object.entries(PROCESS_COLORS).map(([code, color]) => (
+          <span key={code} className="flex items-center gap-1">
+            <span className={`inline-block w-3 h-3 rounded-sm ${color}`} />
+            <span className="text-text">{PROCESS_NAMES[code] ?? code}</span>
+          </span>
+        ))}
+        <span className="border-l border-border pl-3 flex items-center gap-1.5">
           <span className="inline-block w-4 h-0.5 bg-red-500" />
           <span className="text-text">{t("simulation.legend.dueMarker")}</span>
         </span>
@@ -138,7 +127,7 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
           <span className="text-text">{t("simulation.legend.onTime")}</span>
         </span>
         {summary && (
-          <span className="border-l border-border pl-4 flex items-center gap-3 text-text-muted">
+          <span className="border-l border-border pl-3 flex items-center gap-3 text-text-muted">
             <span>{t("simulation.totalPlans")} <b className="text-text">{summary.totalPlans}</b></span>
             <span>{t("simulation.onTime")} <b className="text-green-600 dark:text-green-400">{summary.onTimeCount}</b></span>
             <span>{t("simulation.delayed")} <b className="text-red-600 dark:text-red-400">{summary.delayCount}</b></span>
@@ -154,53 +143,67 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
       {/* 차트 본체 */}
       <div className="flex border border-border rounded-lg overflow-hidden
                       bg-white dark:bg-slate-900">
-        {/* 좌측 고정: 계획 정보 */}
-        <div className="w-96 flex-shrink-0 border-r border-border">
-          {/* 헤더 */}
-          <div
-            className="h-12 border-b border-border bg-surface dark:bg-slate-800
-                        px-3 flex items-center text-xs font-medium text-text gap-3"
-          >
-            <span className="flex-1">{t("simulation.planInfo")}</span>
-          </div>
-          {/* 행 */}
-          {plans.map((plan, planIdx) => (
-            <div
-              key={plan.planNo}
-              className={`h-10 border-b border-border px-3 flex flex-col justify-center text-xs gap-0.5 transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}
-            >
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="font-medium text-text truncate">
-                  {plan.itemName}
-                </span>
-                <span className="px-1 py-0.5 text-[9px] rounded bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 flex-shrink-0">
-                  {plan.bottleneckProcess} {plan.dailyCapa.toLocaleString()}/일
-                </span>
+        {/* 좌측 고정: 계획정보 + 설비 + 결과 */}
+        <div className="flex flex-shrink-0 border-r border-border">
+          {/* 계획정보 컬럼 */}
+          <div className="w-64 border-r border-border/50">
+            <div className="h-12 border-b border-border bg-surface dark:bg-slate-800 px-3 flex items-center text-xs font-medium text-text">
+              {t("simulation.planInfo")}
+            </div>
+            {plans.map((plan) => (
+              <div key={plan.planNo}
+                className={`h-10 border-b border-border px-3 flex flex-col justify-center text-xs gap-0.5 transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className={`px-1 text-[8px] rounded-sm flex-shrink-0 ${plan.itemType === 'FINISHED' || plan.itemType === 'FG' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'}`}>
+                    {plan.itemType === 'FINISHED' || plan.itemType === 'FG' ? 'FG' : 'WIP'}
+                  </span>
+                  <span className="font-medium text-text truncate">{plan.itemName}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+                  <span className="font-mono">{plan.planNo}</span>
+                  <span className="font-medium text-text">{plan.planQty.toLocaleString()}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-mono text-text-muted text-[10px]">
-                  {plan.planNo}
-                </span>
-                <span className="text-text font-medium">
-                  {plan.planQty.toLocaleString()}
-                </span>
-                <span className="text-text-muted text-[10px]">
-                  {plan.requiredDays}{t("simulation.delayDays")}소요
-                </span>
-                <span className="text-text-muted">
-                  완료~{plan.endDate.slice(5)}
-                </span>
+            ))}
+          </div>
+          {/* 설비/공정 컬럼 */}
+          <div className="w-32">
+            <div className="h-12 border-b border-border bg-surface dark:bg-slate-800 px-2 flex items-center text-xs font-medium text-text">
+              공정/CAPA
+            </div>
+            {plans.map((plan) => (
+              <div key={plan.planNo}
+                className={`h-10 border-b border-border px-2 flex flex-col justify-center text-xs gap-0.5 transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}>
+                <span className="text-[10px] font-medium text-text">{plan.bottleneckProcess}</span>
+                <div className="flex items-center gap-1 text-[10px] text-text-muted">
+                  <span>{plan.dailyCapa.toLocaleString()}/일</span>
+                  <span>{plan.requiredDays}일소요</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* 결과 컬럼 */}
+          <div className="w-24 border-l border-border/50">
+            <div className="h-12 border-b border-border bg-surface dark:bg-slate-800 px-2 flex items-center text-xs font-medium text-text">
+              결과
+            </div>
+            {plans.map((plan) => (
+              <div key={plan.planNo}
+                className={`h-10 border-b border-border px-2 flex items-center text-xs transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}>
                 {plan.onTime ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                  <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    ~{plan.endDate.slice(5)}
+                  </span>
                 ) : (
-                  <span className="flex items-center gap-0.5 text-red-600 dark:text-red-400 flex-shrink-0">
+                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>+{plan.delayDays}{t("simulation.delayDays")}</span>
+                    +{plan.delayDays}{t("simulation.delayDays")}
                   </span>
                 )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* 우측 스크롤: 날짜별 바 */}
@@ -222,12 +225,14 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
           </div>
 
           {/* 바 영역 */}
-          {plans.map((plan, planIdx) => (
+          {plans.map((plan) => (
             <div key={plan.planNo} className={`h-10 border-b border-border flex transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}>
               {schedule.map((day) => {
-                const item = day.items.find((i) => i.planNo === plan.planNo);
+                const items = day.items.filter((i) => i.planNo === plan.planNo);
+                const mainItem = items.length > 0
+                  ? items.reduce((max, cur) => cur.qty > max.qty ? cur : max, items[0])
+                  : null;
                 const isDueDate = plan.dueDate === day.date;
-                const isEnd = plan.endDate === day.date && item;
 
                 return (
                   <div
@@ -235,14 +240,15 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
                     className={`w-8 flex-shrink-0 relative border-r border-border/10
                       ${isWeekend(day.dayOfWeek) ? "bg-red-50/50 dark:bg-red-900/5" : ""}`}
                   >
-                    {item && (
+                    {mainItem && (
                       <div
                         className={`absolute inset-x-0.5 top-0.5 bottom-0.5 rounded-sm
-                          ${getBarColor(plan, planIdx)} flex items-center justify-center overflow-hidden`}
-                        title={`${plan.itemCode}: ${item.qty.toLocaleString()} (누적 ${item.cumQty.toLocaleString()})`}
+                          ${getProcessColor(mainItem.processCode)}
+                          flex items-center justify-center overflow-hidden`}
+                        title={`${mainItem.processName}: ${mainItem.qty.toLocaleString()}`}
                       >
                         <span className="text-[8px] text-white/90 font-medium leading-none">
-                          {item.qty >= 1000 ? `${Math.round(item.qty / 1000)}k` : item.qty}
+                          {mainItem.qty >= 1000 ? `${Math.round(mainItem.qty / 1000)}k` : mainItem.qty}
                         </span>
                       </div>
                     )}

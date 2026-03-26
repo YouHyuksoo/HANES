@@ -5492,6 +5492,7 @@
     "available": "可用",
     "shortage": "不足",
     "surplus": "富余",
+    "options": { "shift": "班次", "shift1": "一班", "shift2": "二班", "shift3": "三班", "includeOt": "含加班", "applySetup": "换型时间", "deductStock": "扣减库存" },
     "planOrder": "生产顺序",
     "emptyGuide": "选择目标月并运行模拟。",
     "planInfo": "计划信息",
@@ -5502,6 +5503,7 @@
     "delayDays": "天",
     "legend": {
       "production": "生产",
+      "process": "工序",
       "dueMarker": "交期",
       "onTime": "达成",
       "delay": "延迟"

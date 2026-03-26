@@ -21,18 +21,32 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
-import { SimulationResultEntity } from '../../../entities/simulation-result.entity';
-import { SimulationDataService } from './simulation-data.service';
+import { SimulationHeader, SimulationPlan, SimulationSchedule } from '../../../entities/simulation-result.entity';
+import { SimulationDataService, ProcessCapaInfo } from './simulation-data.service';
+import {
+  buildSchedule,
+  buildSummary,
+  calcDaysDiff,
+  emptyResult,
+  sortPlansByDueDate,
+  sortByMinSetup,
+} from './simulation-helper';
 import {
   SimulationResult,
   SimPlanResult,
   SimDayItem,
-  SimDaySchedule,
-  SimSummary,
 } from '../dto/simulation.dto';
 
 /** re-export for consumers */
 export type { SimulationResult } from '../dto/simulation.dto';
+
+/** 시뮬레이션 옵션 */
+export interface SimulationOptions {
+  shiftCount: number;   // 교대 수 (1/2/3)
+  includeOt: boolean;   // 잔업 포함
+  applySetup: boolean;  // 셋업시간 반영
+  deductStock: boolean; // 재고 차감
+}
 
 @Injectable()
 export class SimulationService {
@@ -41,8 +55,12 @@ export class SimulationService {
   constructor(
     @InjectRepository(ProdPlan)
     private readonly planRepo: Repository<ProdPlan>,
-    @InjectRepository(SimulationResultEntity)
-    private readonly simResultRepo: Repository<SimulationResultEntity>,
+    @InjectRepository(SimulationHeader)
+    private readonly headerRepo: Repository<SimulationHeader>,
+    @InjectRepository(SimulationPlan)
+    private readonly simPlanRepo: Repository<SimulationPlan>,
+    @InjectRepository(SimulationSchedule)
+    private readonly simScheduleRepo: Repository<SimulationSchedule>,
     private readonly dataService: SimulationDataService,
   ) {}
 
@@ -58,6 +76,7 @@ export class SimulationService {
     plant: string,
     strategy: 'DUE_DATE' | 'MIN_SETUP' = 'DUE_DATE',
     planOrder?: string[],
+    options: SimulationOptions = { shiftCount: 1, includeOt: false, applySetup: true, deductStock: false },
   ): Promise<SimulationResult> {
     // 1. 해당 월 생산계획 조회
     const plans = await this.planRepo.find({
@@ -67,20 +86,21 @@ export class SimulationService {
     });
 
     if (plans.length === 0) {
-      return this.emptyResult();
+      return emptyResult();
     }
 
     // 2. 작업일 목록 조회
     const workDays = await this.dataService.loadWorkDays(month, company, plant);
     if (workDays.length === 0) {
       this.logger.warn(`월력에 작업일이 없습니다: ${month}`);
-      return this.emptyResult();
+      return emptyResult();
     }
 
-    // 3. 품목별 병목 CAPA + 공정명 조회
+    // 3. 품목별 CAPA 조회 (병목 + 전체 공정)
     const itemCodes = [...new Set(plans.map((p) => p.itemCode))];
     const { capaMap: bottleneckMap, processMap: bottleneckProcessMap } =
       await this.dataService.loadBottleneckCapa(itemCodes, company, plant);
+    const allProcessCapa = await this.dataService.loadAllProcessCapa(itemCodes, company, plant);
 
     // 4. 수주에서 납기일 조회
     const dueDateMap = await this.dataService.loadDueDates(
@@ -106,273 +126,279 @@ export class SimulationService {
       );
     } else {
       sortedPlans = strategy === 'MIN_SETUP'
-        ? this.sortByMinSetup(plans, dueDateMap)
-        : this.sortPlansByDueDate(plans, dueDateMap);
+        ? sortByMinSetup(plans, dueDateMap)
+        : sortPlansByDueDate(plans, dueDateMap);
     }
 
-    // 7. 스케줄링 실행
+    // 7. 스케줄링 실행 (전체 공정 순서 기반)
     const result = this.runScheduling(
       sortedPlans,
       workDays,
       bottleneckMap,
       bottleneckProcessMap,
+      allProcessCapa,
       dueDateMap,
       customerNameMap,
+      options,
     );
 
     return result;
   }
 
-  /** 마지막 시뮬레이션 결과 조회 */
+  /** 마지막 시뮬레이션 결과 조회 (정규화 테이블에서 복원) */
   async getLatest(
     month: string,
     company: string,
     plant: string,
   ): Promise<SimulationResult | null> {
-    const row = await this.simResultRepo.findOne({
+    const header = await this.headerRepo.findOne({
       where: { simMonth: month, company, plant },
       order: { createdAt: 'DESC' },
     });
-    if (!row) return null;
-    try { return JSON.parse(row.resultJson) as SimulationResult; }
-    catch { return null; }
+    if (!header) return null;
+
+    const planRows = await this.simPlanRepo.find({
+      where: { simId: header.simId },
+    });
+    const plans: SimPlanResult[] = planRows.map(r => ({
+      planNo: r.planNo, itemCode: r.itemCode, itemName: r.itemName,
+      itemType: r.itemType, customer: r.customer, customerName: r.customerName,
+      planQty: r.planQty, dueDate: r.dueDate, priority: r.priority,
+      startDate: r.startDate, endDate: r.endDate,
+      onTime: r.onTime === 'Y', delayDays: r.delayDays,
+      requiredDays: r.requiredDays, bottleneckProcess: r.bottleneckProcess,
+      dailyCapa: r.dailyCapa,
+    }));
+
+    // 저장된 결과에는 상세 스케줄 없음 — 다시 시뮬레이션 실행하면 생성됨
+    return {
+      plans, schedule: [],
+      summary: {
+        totalPlans: header.totalPlans, onTimeCount: header.onTimeCount,
+        delayCount: header.delayCount, totalQty: header.totalQty,
+        workDays: header.workDays, utilizationRate: header.utilizationRate,
+        requiredHours: header.requiredHours, availableHours: header.availableHours,
+      },
+    };
   }
 
-  /** 시뮬레이션 결과를 DB에 저장 */
+  /** 시뮬레이션 결과를 정규화 테이블에 저장 */
   async saveResult(
     month: string,
     strategy: string,
     result: SimulationResult,
     company: string,
     plant: string,
+    options?: SimulationOptions,
   ): Promise<void> {
     const now = new Date();
     const simId = `SIM-${month.replace('-', '')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
-    const entity = this.simResultRepo.create({
-      simId,
-      simMonth: month,
-      strategy,
-      resultJson: JSON.stringify(result),
-      company,
-      plant,
+    const s = result.summary;
+
+    // 1. 헤더 저장
+    await this.headerRepo.save(this.headerRepo.create({
+      simId, simMonth: month, strategy,
+      shiftCount: options?.shiftCount ?? 1,
+      includeOt: options?.includeOt ? 'Y' : 'N',
+      applySetup: options?.applySetup !== false ? 'Y' : 'N',
+      deductStock: options?.deductStock ? 'Y' : 'N',
+      totalPlans: s.totalPlans, onTimeCount: s.onTimeCount, delayCount: s.delayCount,
+      totalQty: s.totalQty, workDays: s.workDays, utilizationRate: s.utilizationRate,
+      requiredHours: s.requiredHours, availableHours: s.availableHours,
+      company, plant,
+    }));
+
+    // 2. 계획 일괄 저장
+    const planEntities = result.plans.map(p => this.simPlanRepo.create({
+      simId, planNo: p.planNo, itemCode: p.itemCode, itemName: p.itemName,
+      itemType: p.itemType, customer: p.customer, customerName: p.customerName,
+      planQty: p.planQty, dueDate: p.dueDate, priority: p.priority,
+      startDate: p.startDate, endDate: p.endDate,
+      onTime: p.onTime ? 'Y' : 'N', delayDays: p.delayDays,
+      requiredDays: p.requiredDays, bottleneckProcess: p.bottleneckProcess,
+      dailyCapa: p.dailyCapa,
+    }));
+    await this.simPlanRepo.insert(planEntities);
+
+    // 3. 스케줄 저장 (계획×공정별 시작/종료/수량 집계)
+    const procSummary = new Map<string, { processName: string; startDate: string; endDate: string; totalQty: number }>();
+    for (const day of result.schedule) {
+      for (const item of day.items) {
+        const key = `${item.planNo}|${item.processCode}`;
+        const existing = procSummary.get(key);
+        if (!existing) {
+          procSummary.set(key, { processName: item.processName, startDate: day.date, endDate: day.date, totalQty: item.qty });
+        } else {
+          existing.endDate = day.date;
+          existing.totalQty += item.qty;
+        }
+      }
+    }
+    const schedEntities = Array.from(procSummary.entries()).map(([key, val]) => {
+      const [planNo, processCode] = key.split('|');
+      return this.simScheduleRepo.create({
+        simId, planNo, processCode,
+        processName: val.processName, startDate: val.startDate,
+        endDate: val.endDate, totalQty: val.totalQty,
+      });
     });
-    await this.simResultRepo.save(entity);
+    if (schedEntities.length > 0) {
+      await this.simScheduleRepo.insert(schedEntities);
+    }
   }
 
   /**
-   * 납기순 -> 우선순위순으로 계획을 정렬한다.
-   * 납기가 없는 계획은 뒤로 밀린다.
-   */
-  private sortPlansByDueDate(
-    plans: ProdPlan[],
-    dueDateMap: Map<string, string | null>,
-  ): ProdPlan[] {
-    return [...plans].sort((a, b) => {
-      const da = dueDateMap.get(a.planNo);
-      const db = dueDateMap.get(b.planNo);
-
-      if (!da && db) return 1;
-      if (da && !db) return -1;
-      if (da && db && da !== db) return da.localeCompare(db);
-
-      return (a.priority ?? 5) - (b.priority ?? 5);
-    });
-  }
-
-  /**
-   * 모델체인지 최소화 정렬: 같은 품목끼리 몰아서 배치한다.
-   * 품목 그룹 내에서는 납기순 → 우선순위순.
-   */
-  private sortByMinSetup(
-    plans: ProdPlan[],
-    dueDateMap: Map<string, string | null>,
-  ): ProdPlan[] {
-    return [...plans].sort((a, b) => {
-      // 1차: 품목코드 그룹핑
-      if (a.itemCode !== b.itemCode) return a.itemCode.localeCompare(b.itemCode);
-      // 2차: 같은 품목 내에서 납기순
-      const da = dueDateMap.get(a.planNo);
-      const db = dueDateMap.get(b.planNo);
-      if (!da && db) return 1;
-      if (da && !db) return -1;
-      if (da && db && da !== db) return da.localeCompare(db);
-      // 3차: 우선순위
-      return (a.priority ?? 5) - (b.priority ?? 5);
-    });
-  }
-
-  /**
-   * 스케줄링 실행: 각 계획의 수량을 작업일에 배분한다.
+   * 역산 스케줄링 + 정방향 배분 알고리즘.
+   * 1) 역산: 납기에서 마지막 공정 → 첫 공정 순으로 이상적 시작일 계산
+   * 2) 정산: 첫 공정 → 마지막 공정 순으로 실제 CAPA 소진하며 배분
+   * 3) 셋업: 같은 공정에서 품목 전환 시 setupTime/480 × dailyCapa만큼 CAPA 차감
    */
   private runScheduling(
     plans: ProdPlan[],
     workDays: string[],
     bottleneckMap: Map<string, number>,
     bottleneckProcessMap: Map<string, string>,
+    allProcessCapa: Map<string, ProcessCapaInfo[]>,
     dueDateMap: Map<string, string | null>,
     customerNameMap: Map<string, string>,
+    options: SimulationOptions,
   ): SimulationResult {
-    const dailyUsed = new Map<string, Map<string, number>>();
+    // 교대/잔업에 따른 CAPA 배율 계산
+    const OT_MINUTES = 180;
+    const BASE_MINUTES = 480;
+    const shiftMultiplier = options.shiftCount;
+    const otMultiplier = options.includeOt ? (BASE_MINUTES + OT_MINUTES) / BASE_MINUTES : 1;
+    const capaMultiplier = shiftMultiplier * otMultiplier;
+
+    /** day → processCode → usedQty */
+    const dailyProcessUsed = new Map<string, Map<string, number>>();
+    /** day → processCode → 마지막 품목코드 (셋업 판정용) */
+    const dailyProcessLastItem = new Map<string, Map<string, string>>();
     const dayScheduleMap = new Map<string, SimDayItem[]>();
+
     for (const day of workDays) {
-      dailyUsed.set(day, new Map());
+      dailyProcessUsed.set(day, new Map());
+      dailyProcessLastItem.set(day, new Map());
       dayScheduleMap.set(day, []);
     }
 
     const planCumQty = new Map<string, number>();
     const planResults: SimPlanResult[] = [];
+    const MINUTES_PER_DAY = BASE_MINUTES * shiftMultiplier + (options.includeOt ? OT_MINUTES : 0);
 
     for (const plan of plans) {
-      let remainQty = plan.planQty;
-      const itemCapa = bottleneckMap.get(plan.itemCode) ?? 9999;
-      let startDate: string | null = null;
-      let endDate: string | null = null;
-      planCumQty.set(plan.planNo, 0);
+      const processes = allProcessCapa.get(plan.itemCode) ?? [];
+      let planStartDate: string | null = null;
+      let planEndDate: string | null = null;
 
-      for (const day of workDays) {
-        if (remainQty <= 0) break;
+      // ── 역산: 납기에서 각 공정별 이상적 시작 인덱스 계산 ──
+      const dueDate = dueDateMap.get(plan.planNo) ?? null;
+      const dueDateIdx = dueDate
+        ? workDays.findIndex((d) => d >= dueDate)
+        : workDays.length - 1;
+      const effectiveDueIdx = dueDateIdx >= 0 ? dueDateIdx : workDays.length - 1;
 
-        const usedMap = dailyUsed.get(day)!;
-        const usedToday = usedMap.get(plan.itemCode) ?? 0;
-        const availableToday = Math.max(0, itemCapa - usedToday);
-        if (availableToday <= 0) continue;
-
-        const todayQty = Math.min(remainQty, availableToday);
-        usedMap.set(plan.itemCode, usedToday + todayQty);
-        remainQty -= todayQty;
-
-        const cum = (planCumQty.get(plan.planNo) ?? 0) + todayQty;
-        planCumQty.set(plan.planNo, cum);
-
-        dayScheduleMap.get(day)!.push({
-          planNo: plan.planNo,
-          itemCode: plan.itemCode,
-          qty: todayQty,
-          cumQty: cum,
-        });
-
-        if (!startDate) startDate = day;
-        endDate = day;
+      let idealStartIdx = effectiveDueIdx;
+      const processIdealStart = new Map<string, number>();
+      for (let pi = processes.length - 1; pi >= 0; pi--) {
+        const p = processes[pi];
+        const daysNeeded = Math.ceil(plan.planQty / Math.floor(p.dailyCapa * capaMultiplier));
+        idealStartIdx = Math.max(0, idealStartIdx - daysNeeded);
+        processIdealStart.set(p.processCode, idealStartIdx);
       }
 
-      const dueDate = dueDateMap.get(plan.planNo) ?? null;
-      const onTime = dueDate && endDate ? endDate <= dueDate : true;
+      // ── 정산: 역산 결과 기반으로 정방향 배분 ──
+      let prevProcessEndIdx = idealStartIdx;
+
+      for (const proc of processes) {
+        let remainQty = plan.planQty;
+        const idealStart = processIdealStart.get(proc.processCode) ?? 0;
+        const startIdx = Math.max(prevProcessEndIdx, idealStart);
+
+        for (let dayIdx = startIdx; dayIdx < workDays.length; dayIdx++) {
+          if (remainQty <= 0) break;
+          const day = workDays[dayIdx];
+
+          const usedMap = dailyProcessUsed.get(day)!;
+          const lastItemMap = dailyProcessLastItem.get(day)!;
+          const usedToday = usedMap.get(proc.processCode) ?? 0;
+          const adjustedCapa = Math.floor(proc.dailyCapa * capaMultiplier);
+          let available = adjustedCapa - usedToday;
+
+          // 셋업시간 반영 (옵션)
+          if (options.applySetup) {
+            const lastItem = lastItemMap.get(proc.processCode);
+            if (lastItem && lastItem !== plan.itemCode && proc.setupTime > 0) {
+              const setupCost = Math.ceil(
+                (proc.setupTime / MINUTES_PER_DAY) * adjustedCapa,
+              );
+              available -= setupCost;
+            }
+          }
+
+          if (available <= 0) continue;
+
+          const todayQty = Math.min(remainQty, available);
+          usedMap.set(proc.processCode, usedToday + todayQty);
+          lastItemMap.set(proc.processCode, plan.itemCode);
+          remainQty -= todayQty;
+
+          // 모든 공정을 스케줄에 기록
+          const cumKey = `${plan.planNo}::${proc.processCode}`;
+          const prevCum = planCumQty.get(cumKey) ?? 0;
+          const cum = prevCum + todayQty;
+          planCumQty.set(cumKey, cum);
+          dayScheduleMap.get(day)!.push({
+            planNo: plan.planNo,
+            itemCode: plan.itemCode,
+            processCode: proc.processCode,
+            processName: proc.processName,
+            qty: todayQty,
+            cumQty: cum,
+          });
+
+          if (!planStartDate) planStartDate = day;
+          planEndDate = day;
+          prevProcessEndIdx = dayIdx;
+        }
+      }
+
+      const onTime = dueDate && planEndDate ? planEndDate <= dueDate : true;
       const delayDays =
-        !onTime && dueDate && endDate
-          ? this.calcDaysDiff(dueDate, endDate)
+        !onTime && dueDate && planEndDate
+          ? calcDaysDiff(dueDate, planEndDate)
           : 0;
 
-      // 소요일수 = 계획수량 / 일일CAPA (올림)
-      const requiredDays = Math.ceil(plan.planQty / itemCapa);
+      const bottleneckCapa = bottleneckMap.get(plan.itemCode) ?? 9999;
+      let totalRequiredDays = 0;
+      for (const proc of processes) {
+        totalRequiredDays += Math.ceil(plan.planQty / proc.dailyCapa);
+      }
 
       planResults.push({
         planNo: plan.planNo,
         itemCode: plan.itemCode,
         itemName: plan.part?.itemName ?? plan.itemCode,
+        itemType: plan.itemType ?? 'FG',
         customer: plan.customer ?? '',
         customerName: customerNameMap.get(plan.customer ?? '') ?? '',
         planQty: plan.planQty,
         dueDate,
         priority: plan.priority,
-        startDate: startDate ?? '',
-        endDate: endDate ?? '',
+        startDate: planStartDate ?? '',
+        endDate: planEndDate ?? '',
         onTime,
         delayDays,
-        requiredDays,
+        requiredDays: totalRequiredDays,
         bottleneckProcess: bottleneckProcessMap.get(plan.itemCode) ?? '-',
-        dailyCapa: itemCapa,
+        dailyCapa: bottleneckCapa,
       });
     }
 
-    const schedule = this.buildSchedule(workDays, dayScheduleMap);
-    const summary = this.buildSummary(planResults, workDays, schedule, bottleneckMap);
+    const schedule = buildSchedule(workDays, dayScheduleMap);
+    const summary = buildSummary(planResults, workDays, schedule, bottleneckMap);
 
     return { plans: planResults, schedule, summary };
   }
 
-  /** 일자별 스케줄 배열을 구성한다 (빈 날 제외) */
-  private buildSchedule(
-    workDays: string[],
-    dayScheduleMap: Map<string, SimDayItem[]>,
-  ): SimDaySchedule[] {
-    const schedule: SimDaySchedule[] = [];
-    for (const day of workDays) {
-      const items = dayScheduleMap.get(day)!;
-      if (items.length > 0) {
-        schedule.push({
-          date: day,
-          dayOfWeek: this.getDayOfWeek(day),
-          items,
-        });
-      }
-    }
-    return schedule;
-  }
-
-  /** 시뮬레이션 요약을 생성한다 */
-  private buildSummary(
-    planResults: SimPlanResult[],
-    workDays: string[],
-    schedule: SimDaySchedule[],
-    bottleneckMap: Map<string, number>,
-  ): SimSummary {
-    const usedDayCount = schedule.length;
-    const utilizationRate =
-      workDays.length > 0
-        ? Math.round((usedDayCount / workDays.length) * 100 * 10) / 10
-        : 0;
-
-    // 소요공수: 품목별 (계획수량 / 일일CAPA) × 8시간
-    let requiredHours = 0;
-    for (const p of planResults) {
-      const dailyCapa = bottleneckMap.get(p.itemCode) ?? 1;
-      requiredHours += (p.planQty / dailyCapa) * 8;
-    }
-    requiredHours = Math.round(requiredHours * 10) / 10;
-
-    // 보유공수: 작업일수 × 8시간
-    const availableHours = workDays.length * 8;
-
-    return {
-      totalPlans: planResults.length,
-      onTimeCount: planResults.filter((p) => p.onTime).length,
-      delayCount: planResults.filter((p) => !p.onTime).length,
-      totalQty: planResults.reduce((s, p) => s + p.planQty, 0),
-      workDays: workDays.length,
-      utilizationRate,
-      requiredHours,
-      availableHours,
-    };
-  }
-
-  /** 두 날짜 사이의 일수 차이 (endDate - dueDate) */
-  private calcDaysDiff(dueDate: string, endDate: string): number {
-    const d1 = new Date(dueDate);
-    const d2 = new Date(endDate);
-    return Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
-  }
-
-  /** 날짜 문자열에서 요일명을 반환한다 */
-  private getDayOfWeek(dateStr: string): string {
-    const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
-    return DAYS[new Date(dateStr).getDay()];
-  }
-
-  /** 빈 결과를 반환한다 */
-  private emptyResult(): SimulationResult {
-    return {
-      plans: [],
-      schedule: [],
-      summary: {
-        totalPlans: 0,
-        onTimeCount: 0,
-        delayCount: 0,
-        totalQty: 0,
-        workDays: 0,
-        utilizationRate: 0,
-        requiredHours: 0,
-        availableHours: 0,
-      },
-    };
-  }
 }

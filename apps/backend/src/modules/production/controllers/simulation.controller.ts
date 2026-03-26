@@ -55,7 +55,15 @@ export class SimulationController {
   })
   @ApiResponse({ status: 200, description: '시뮬레이션 성공' })
   async simulate(
-    @Body() body: { month: string; strategy?: 'DUE_DATE' | 'MIN_SETUP'; planOrder?: string[] },
+    @Body() body: {
+      month: string;
+      strategy?: 'DUE_DATE' | 'MIN_SETUP';
+      planOrder?: string[];
+      shiftCount?: number;
+      includeOt?: boolean;
+      applySetup?: boolean;
+      deductStock?: boolean;
+    },
     @Company() company: string,
     @Plant() plant: string,
   ) {
@@ -65,6 +73,12 @@ export class SimulationController {
       plant,
       body.strategy || 'DUE_DATE',
       body.planOrder,
+      {
+        shiftCount: body.shiftCount ?? 1,
+        includeOt: body.includeOt ?? false,
+        applySetup: body.applySetup ?? true,
+        deductStock: body.deductStock ?? false,
+      },
     );
     return ResponseUtil.success(data);
   }
@@ -74,7 +88,10 @@ export class SimulationController {
   @ApiOperation({ summary: '시뮬레이션 결과 저장' })
   @ApiResponse({ status: 201, description: '저장 성공' })
   async save(
-    @Body() body: { month: string; strategy?: string; result: Record<string, unknown> },
+    @Body() body: {
+      month: string; strategy?: string; result: Record<string, unknown>;
+      shiftCount?: number; includeOt?: boolean; applySetup?: boolean; deductStock?: boolean;
+    },
     @Company() company: string,
     @Plant() plant: string,
   ) {
@@ -84,6 +101,12 @@ export class SimulationController {
       body.result as never,
       company,
       plant,
+      {
+        shiftCount: body.shiftCount ?? 1,
+        includeOt: body.includeOt ?? false,
+        applySetup: body.applySetup ?? true,
+        deductStock: body.deductStock ?? false,
+      },
     );
     return ResponseUtil.success(null, '시뮬레이션 결과가 저장되었습니다.');
   }

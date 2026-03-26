@@ -5510,6 +5510,15 @@
     "available": "보유",
     "shortage": "부족",
     "surplus": "여유",
+    "options": {
+      "shift": "교대",
+      "shift1": "1교대",
+      "shift2": "2교대",
+      "shift3": "3교대",
+      "includeOt": "잔업 포함",
+      "applySetup": "셋업시간 반영",
+      "deductStock": "재고 차감"
+    },
     "planOrder": "생산 순서",
     "emptyGuide": "대상월을 선택하고 시뮬레이션을 실행하세요.",
     "planInfo": "계획정보",
@@ -5520,6 +5529,7 @@
     "delayDays": "일",
     "legend": {
       "production": "생산",
+      "process": "공정",
       "dueMarker": "납기",
       "onTime": "준수",
       "delay": "지연"

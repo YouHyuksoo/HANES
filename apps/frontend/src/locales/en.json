@@ -5492,6 +5492,7 @@
     "available": "Available",
     "shortage": "short",
     "surplus": "surplus",
+    "options": { "shift": "Shift", "shift1": "1 Shift", "shift2": "2 Shifts", "shift3": "3 Shifts", "includeOt": "Include OT", "applySetup": "Apply Setup Time", "deductStock": "Deduct Stock" },
     "planOrder": "Production Order",
     "emptyGuide": "Select a target month and run the simulation.",
     "planInfo": "Plan Info",
@@ -5502,6 +5503,7 @@
     "delayDays": "d",
     "legend": {
       "production": "Production",
+      "process": "Process",
       "dueMarker": "Due Date",
       "onTime": "On Time",
       "delay": "Delayed"

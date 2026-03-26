@@ -5492,6 +5492,7 @@
     "available": "Có sẵn",
     "shortage": "thiếu",
     "surplus": "dư",
+    "options": { "shift": "Ca", "shift1": "1 ca", "shift2": "2 ca", "shift3": "3 ca", "includeOt": "Tăng ca", "applySetup": "Thời gian đổi model", "deductStock": "Trừ tồn kho" },
     "planOrder": "Thứ tự sản xuất",
     "emptyGuide": "Chọn tháng mục tiêu và chạy mô phỏng.",
     "planInfo": "Thông tin KH",
@@ -5502,6 +5503,7 @@
     "delayDays": "ngày",
     "legend": {
       "production": "Sản xuất",
+      "process": "Công đoạn",
       "dueMarker": "Hạn giao",
       "onTime": "Đúng hạn",
       "delay": "Trễ hạn"

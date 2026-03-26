@@ -24,6 +24,7 @@ interface SimPlanResult {
   planNo: string;
   itemCode: string;
   itemName: string;
+  itemType: string;
   customer: string;
   customerName: string;
   planQty: number;
@@ -41,6 +42,8 @@ interface SimPlanResult {
 interface SimDayItem {
   planNo: string;
   itemCode: string;
+  processCode: string;
+  processName: string;
   qty: number;
   cumQty: number;
 }
@@ -78,6 +81,10 @@ export default function SimulationPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [strategy, setStrategy] = useState("DUE_DATE");
+  const [shiftCount, setShiftCount] = useState("1");
+  const [includeOt, setIncludeOt] = useState(false);
+  const [applySetup, setApplySetup] = useState(true);
+  const [deductStock, setDeductStock] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [selectedPlanNo, setSelectedPlanNo] = useState<string | null>(null);
@@ -139,7 +146,10 @@ export default function SimulationPage() {
     setLoading(true);
     try {
       const order = planOrder.length > 0 ? planOrder.map(p => p.planNo) : undefined;
-      const res = await api.post("/production/prod-plans/simulate", { month, strategy, planOrder: order });
+      const res = await api.post("/production/prod-plans/simulate", {
+        month, strategy, planOrder: order,
+        shiftCount: Number(shiftCount), includeOt, applySetup, deductStock,
+      });
       const data = res.data?.data ?? null;
       // Gantt 결과를 좌측 순서 패널과 동일한 순서로 정렬
       if (data && order) {
@@ -160,14 +170,23 @@ export default function SimulationPage() {
     } finally {
       setLoading(false);
     }
-  }, [month, strategy]);
+  }, [month, strategy, shiftCount, includeOt, applySetup, deductStock]);
+
+  const shiftOptions = [
+    { value: "1", label: t("simulation.options.shift1") },
+    { value: "2", label: t("simulation.options.shift2") },
+    { value: "3", label: t("simulation.options.shift3") },
+  ];
 
   const [saving, setSaving] = useState(false);
   const handleSave = useCallback(async () => {
     if (!result) return;
     setSaving(true);
     try {
-      await api.post("/production/prod-plans/simulate/save", { month, strategy, result });
+      await api.post("/production/prod-plans/simulate/save", {
+        month, strategy, result,
+        shiftCount: Number(shiftCount), includeOt, applySetup, deductStock,
+      });
     } catch { /* api interceptor */ }
     finally { setSaving(false); }
   }, [month, strategy, result]);
@@ -219,7 +238,28 @@ export default function SimulationPage() {
         </div>
       </div>
 
-      {/* 요약은 GanttChart 범례에 통합 */}
+      {/* 옵션 바 */}
+      <div className="flex items-center gap-4 px-3 py-2 bg-surface dark:bg-slate-800 rounded-lg border border-border text-xs flex-shrink-0 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-text">{t("simulation.options.shift")}:</span>
+          <Select options={shiftOptions} value={shiftCount} onChange={setShiftCount} />
+        </div>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" checked={includeOt} onChange={e => setIncludeOt(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary" />
+          <span className="text-text">{t("simulation.options.includeOt")}</span>
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" checked={applySetup} onChange={e => setApplySetup(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary" />
+          <span className="text-text">{t("simulation.options.applySetup")}</span>
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" checked={deductStock} onChange={e => setDeductStock(e.target.checked)}
+            className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary" />
+          <span className="text-text">{t("simulation.options.deductStock")}</span>
+        </label>
+      </div>
 
       {/* 메인 영역: 순서 패널 + Gantt */}
       <div className="flex flex-1 min-h-0 gap-3">

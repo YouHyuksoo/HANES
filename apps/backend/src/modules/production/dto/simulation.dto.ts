@@ -14,6 +14,7 @@ export interface SimPlanResult {
   planNo: string;
   itemCode: string;
   itemName: string;
+  itemType: string;
   customer: string;
   customerName: string;
   planQty: number;
@@ -32,6 +33,8 @@ export interface SimPlanResult {
 export interface SimDayItem {
   planNo: string;
   itemCode: string;
+  processCode: string;
+  processName: string;
   qty: number;
   cumQty: number;
 }

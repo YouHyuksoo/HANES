@@ -54,6 +54,7 @@ import { SystemModule } from '../system/system.module';
 import { JobOrder } from '../../entities/job-order.entity';
 import { ProdResult } from '../../entities/prod-result.entity';
 import { PartMaster } from '../../entities/part-master.entity';
+import { ProcessMaster } from '../../entities/process-master.entity';
 import { EquipMaster } from '../../entities/equip-master.entity';
 import { EquipBomRel } from '../../entities/equip-bom-rel.entity';
 import { EquipBomItem } from '../../entities/equip-bom-item.entity';
@@ -80,11 +81,12 @@ import { ShiftPattern } from '../../entities/shift-pattern.entity';
 import { ProcessCapa } from '../../entities/process-capa.entity';
 import { WorkCalendar } from '../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
-import { SimulationResultEntity } from '../../entities/simulation-result.entity';
+import { SimulationHeader, SimulationPlan, SimulationSchedule } from '../../entities/simulation-result.entity';
+import { ProductStock } from '../../entities/product-stock.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationResultEntity]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock]),
     InventoryModule,
     SystemModule,
   ],

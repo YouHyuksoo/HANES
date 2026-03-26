@@ -12,13 +12,24 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { ProcessCapa } from '../../../entities/process-capa.entity';
+import { ProcessMaster } from '../../../entities/process-master.entity';
+import { ProductStock } from '../../../entities/product-stock.entity';
 import { WorkCalendar } from '../../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
+
+/** 공정별 CAPA 정보 (setupTime 포함) */
+export interface ProcessCapaInfo {
+  processCode: string;
+  processName: string;
+  dailyCapa: number;
+  setupTime: number;
+  sortOrder: number;
+}
 
 @Injectable()
 export class SimulationDataService {
@@ -27,6 +38,10 @@ export class SimulationDataService {
   constructor(
     @InjectRepository(ProcessCapa)
     private readonly capaRepo: Repository<ProcessCapa>,
+    @InjectRepository(ProcessMaster)
+    private readonly processRepo: Repository<ProcessMaster>,
+    @InjectRepository(ProductStock)
+    private readonly stockRepo: Repository<ProductStock>,
     @InjectRepository(WorkCalendar)
     private readonly calRepo: Repository<WorkCalendar>,
     @InjectRepository(WorkCalendarDay)
@@ -110,11 +125,17 @@ export class SimulationDataService {
       const dailyCapa = Number(row.minCapa) || 0;
       capaMap.set(row.itemCode, dailyCapa);
 
-      // 병목 공정명 조회
+      // 병목 공정코드 조회
       const detail = await this.capaRepo.findOne({
         where: { company, plant, itemCode: row.itemCode, dailyCapa, useYn: 'Y' },
       });
-      if (detail) processMap.set(row.itemCode, detail.processCode);
+      if (detail) {
+        // 공정명 직접 조회
+        const proc = await this.processRepo.findOne({
+          where: { processCode: detail.processCode },
+        });
+        processMap.set(row.itemCode, proc?.processName ?? detail.processCode);
+      }
     }
 
     const DEFAULT_CAPA = 9999;
@@ -127,6 +148,44 @@ export class SimulationDataService {
     }
 
     return { capaMap, processMap };
+  }
+
+  /**
+   * 품목별 전체 공정 CAPA를 순서대로 반환한다.
+   * 라우팅 순서(sortOrder) 기준 정렬.
+   */
+  async loadAllProcessCapa(
+    itemCodes: string[],
+    company: string,
+    plant: string,
+  ): Promise<Map<string, ProcessCapaInfo[]>> {
+    const result = new Map<string, ProcessCapaInfo[]>();
+    if (itemCodes.length === 0) return result;
+
+    for (const itemCode of itemCodes) {
+      const capas = await this.capaRepo.find({
+        where: { company, plant, itemCode, useYn: 'Y' },
+        relations: ['process'],
+        order: { processCode: 'ASC' },
+      });
+
+      // ProcessMaster의 sortOrder로 정렬, setupTime 포함
+      const processes: ProcessCapaInfo[] = [];
+      for (const c of capas) {
+        const proc = await this.processRepo.findOne({ where: { processCode: c.processCode } });
+        processes.push({
+          processCode: c.processCode,
+          processName: proc?.processName ?? c.processCode,
+          dailyCapa: c.dailyCapa,
+          setupTime: Number(c.setupTime) || 0,
+          sortOrder: proc?.sortOrder ?? 999,
+        });
+      }
+      processes.sort((a, b) => a.sortOrder - b.sortOrder);
+      result.set(itemCode, processes);
+    }
+
+    return result;
   }
 
   /**
@@ -190,6 +249,38 @@ export class SimulationDataService {
     for (const p of plans) {
       const key = `${p.customer ?? ''}|${p.itemCode}`;
       map.set(p.planNo, dueDateByKey.get(key) ?? null);
+    }
+
+    return map;
+  }
+
+  /**
+   * 반제품(WIP) 가용재고를 품목별로 합산 조회한다.
+   * PRODUCT_STOCKS 테이블에서 itemType='WIP', status='NORMAL'인 availableQty를 합산한다.
+   */
+  async loadWipStock(
+    itemCodes: string[],
+    company: string,
+    plant: string,
+  ): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (itemCodes.length === 0) return map;
+
+    const rows: Array<{ itemCode: string; totalAvail: string }> =
+      await this.stockRepo
+        .createQueryBuilder('s')
+        .select('s.itemCode', 'itemCode')
+        .addSelect('SUM(s.availableQty)', 'totalAvail')
+        .where('s.company = :company', { company })
+        .andWhere('s.plant = :plant', { plant })
+        .andWhere('s.itemType = :type', { type: 'WIP' })
+        .andWhere('s.status = :status', { status: 'NORMAL' })
+        .andWhere('s.itemCode IN (:...codes)', { codes: itemCodes })
+        .groupBy('s.itemCode')
+        .getRawMany();
+
+    for (const row of rows) {
+      map.set(row.itemCode, Number(row.totalAvail) || 0);
     }
 
     return map;
