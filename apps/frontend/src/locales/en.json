@@ -2843,6 +2843,8 @@
       "boxType": "Box Type",
       "packer": "Packer",
       "remark": "Remark",
+      "palletNo": "Pallet No",
+      "closedBox": "Closed Box",
       "searchPlaceholder": "Search box no, LOT no, part name..."
     },
     "wipStock": {

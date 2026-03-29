@@ -2843,7 +2843,9 @@
       "packQty": "SL đóng gói",
       "boxType": "Loại thùng",
       "packer": "Nhân viên đóng gói",
-      "remark": "Ghi chú"
+      "remark": "Ghi chú",
+      "palletNo": "Số pallet",
+      "closedBox": "Thùng đã đóng"
     },
     "wipStock": {
       "title": "Tồn kho bán thành phẩm/Thành phẩm",

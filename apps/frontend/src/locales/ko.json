@@ -3149,6 +3149,8 @@
       "boxType": "박스유형",
       "packer": "포장자",
       "remark": "비고",
+      "palletNo": "팔레트번호",
+      "closedBox": "마감 박스",
       "searchPlaceholder": "박스번호, LOT번호, 품목명 검색..."
     },
     "wipStock": {

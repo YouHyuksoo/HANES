@@ -178,7 +178,10 @@
       "Bash(/c/Python314/python -c \"import json,sys;[print\\(r\\) for r in json.load\\(sys.stdin\\).get\\(''''data'''',[]\\)]\")",
       "Read(//c/Users/hsyou/scripts/**)",
       "Read(//c/Users/hsyou/**)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(grep -rn \"type: ''''varchar2''''\" apps/backend/src/entities/)",
+      "Bash(grep -rn \"type: ''''number''''\" apps/backend/src/entities/)",
+      "Bash(grep -rn \"type: ''''timestamp''''\" apps/backend/src/entities/)"
     ]
   }
 }

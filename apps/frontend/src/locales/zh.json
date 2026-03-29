@@ -2843,7 +2843,9 @@
       "packQty": "包装数量",
       "boxType": "箱型",
       "packer": "包装员",
-      "remark": "备注"
+      "remark": "备注",
+      "palletNo": "托盘号",
+      "closedBox": "已关闭箱"
     },
     "wipStock": {
       "title": "半成品/成品库存",

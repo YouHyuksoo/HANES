@@ -16,9 +16,9 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, Search, Wrench, AlertTriangle,
-  CheckCircle, XCircle, Calendar,
+  CheckCircle, XCircle, Calendar, Edit2, Trash2,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -58,6 +58,7 @@ export default function MoldMgmtPage() {
   /* -- 패널 -- */
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<MoldMaster | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MoldMaster | null>(null);
 
   /* -- 데이터 조회 -- */
   const fetchData = useCallback(async () => {
@@ -77,6 +78,20 @@ export default function MoldMgmtPage() {
   }, [searchText, typeFilter, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* -- 삭제 -- */
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/equipment/molds/${deleteTarget.moldCode}`);
+      if (selectedRow?.moldCode === deleteTarget.moldCode) setSelectedRow(null);
+      fetchData();
+    } catch {
+      // api interceptor
+    } finally {
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, selectedRow, fetchData]);
 
   /* -- 통계 -- */
   const stats = useMemo(() => {
@@ -123,6 +138,21 @@ export default function MoldMgmtPage() {
 
   /* -- 컬럼 정의 -- */
   const columns = useMemo<ColumnDef<MoldMaster>[]>(() => [
+    { id: "actions", header: t("common.actions"), size: 80,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <button onClick={(e) => { e.stopPropagation(); setEditTarget(row.original); setIsPanelOpen(true); }}
+            className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
+            <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }}
+            className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
+      ),
+    },
     { accessorKey: "moldCode", header: t("equipment.mold.moldCode"), size: 130,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
@@ -234,11 +264,20 @@ export default function MoldMgmtPage() {
       {/* 우측 슬라이드 패널 */}
       {isPanelOpen && (
         <MoldFormPanel
-          editData={editTarget ?? (selectedRow && isPanelOpen ? selectedRow : null)}
+          editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData}
         />
       )}
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        title={t("common.delete")}
+        message={`${deleteTarget?.moldCode} - ${deleteTarget?.moldName}\n${t("common.deleteConfirm")}`}
+      />
     </div>
   );
 }

@@ -8,13 +8,11 @@
 
 ## 데이터베이스
 
-- **Oracle DB 사용** — Supabase/PostgreSQL 아님. DDL 실행은 반드시 `oracle-db` 스킬 사용
+- **Oracle DB 사용** — DDL 실행은 반드시 `oracle-db` 스킬 사용
 - 컬럼 타입 변경(예: NVARCHAR2) **사용자 승인 없이 절대 금지**
 - 스키마 변경(DDL) 실행 전 반드시 사용자 확인
 - DDL/DML 실행 시 `--site` 파라미터 명시 (기본: JSHANES). 타임아웃 시 **다른 사이트로 자동 전환 금지**
 - DB INSERT/시드 SQL 작성 시 **실제 테이블 스키마(`user_tab_columns`) 먼저 조회** — 엔티티 기준 추정 금지
-- Supabase 연결 실패 시 → [docs/supabase-connection.md](docs/supabase-connection.md) 참조
-- Pooler 주소는 **절대 추정 금지**, Dashboard에서 직접 복사
 
 ## 테스트 & 검증
 
@@ -63,9 +61,3 @@
 - 큰 아키텍처 가정 전 **먼저 확인** 요청
 - 수정 요청 시 **해당 부분만 수정** — 새로운 가정으로 재구현 금지
 
-## NotebookLM
-
-- 지식 베이스: `66443db6-3c90-4b35-9c71-542716c7b1e2`
-- 디버깅: `51b44d0d-3265-4493-9b68-862c2863ee5b`
-- 보안: `e49ed7a9-fc4e-4c10-93af-86e0611c1316`
-- 상세 설정 → [docs/notebooklm-setup.md](docs/notebooklm-setup.md) 참조

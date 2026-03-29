@@ -16,7 +16,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, Ruler, Edit2, Trash2,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -72,8 +72,9 @@ export default function GaugeMasterPage() {
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState<Gauge | null>(null);
+  const [selectedRow, setSelectedRow] = useState<Gauge | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<Gauge | null>(null);
 
@@ -95,11 +96,11 @@ export default function GaugeMasterPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  /* -- 등록/수정 모달 -- */
+  /* -- 등록/수정 패널 -- */
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
-    setModalOpen(true);
+    setPanelOpen(true);
   };
 
   const openEdit = (gauge: Gauge) => {
@@ -120,7 +121,7 @@ export default function GaugeMasterPage() {
       location: gauge.location ?? "",
       responsiblePerson: gauge.responsiblePerson ?? "",
     });
-    setModalOpen(true);
+    setPanelOpen(true);
   };
 
   const handleSave = async () => {
@@ -146,7 +147,8 @@ export default function GaugeMasterPage() {
       } else {
         await api.post("/quality/msa/gauges", payload);
       }
-      setModalOpen(false);
+      setPanelOpen(false);
+      setEditing(null);
       fetchData();
     } catch (e: unknown) {
       console.error("Save failed:", e);
@@ -235,112 +237,130 @@ export default function GaugeMasterPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      {/* 헤더 */}
-      <div className="flex justify-between items-center flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Ruler className="w-7 h-7 text-primary" />
-            {t("master.gauge.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("master.gauge.subtitle")}</p>
+    <div className="flex h-full">
+      {/* 메인 영역 */}
+      <div className="flex-1 flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+        {/* 헤더 */}
+        <div className="flex justify-between items-center flex-shrink-0">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Ruler className="w-7 h-7 text-primary" />
+              {t("master.gauge.title")}
+            </h1>
+            <p className="text-text-muted mt-1">{t("master.gauge.subtitle")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchData}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+              {t("common.refresh")}
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1" />{t("common.add")}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-            {t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" />{t("common.add")}
-          </Button>
-        </div>
+
+        {/* DataGrid */}
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-4">
+            <DataGrid data={data} columns={columns} isLoading={loading}
+              enableColumnFilter enableExport
+              exportFileName={t("master.gauge.title")}
+              onRowClick={(row) => {
+                const gauge = row as Gauge;
+                setSelectedRow(gauge);
+                if (panelOpen) openEdit(gauge);
+              }}
+              getRowId={(row) => (row as Gauge).gaugeCode}
+              selectedRowId={selectedRow?.gaugeCode}
+              toolbarLeft={
+                <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
+                  <ComCodeSelect groupCode="GAUGE_TYPE" value={typeFilter}
+                    onChange={setTypeFilter}
+                    labelPrefix={t("master.gauge.gaugeType")} />
+                  <ComCodeSelect groupCode="GAUGE_STATUS" value={statusFilter}
+                    onChange={setStatusFilter}
+                    labelPrefix={t("common.status")} />
+                </div>
+              }
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* DataGrid */}
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
-        <CardContent className="h-full p-4">
-          <DataGrid data={data} columns={columns} isLoading={loading}
-            enableColumnFilter enableExport
-            exportFileName={t("master.gauge.title")}
-            toolbarLeft={
-              <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
-                <ComCodeSelect groupCode="GAUGE_TYPE" value={typeFilter}
-                  onChange={setTypeFilter}
-                  labelPrefix={t("master.gauge.gaugeType")} />
-                <ComCodeSelect groupCode="GAUGE_STATUS" value={statusFilter}
-                  onChange={setStatusFilter}
-                  labelPrefix={t("common.status")} />
-              </div>
-            }
-          />
-        </CardContent>
-      </Card>
-
-      {/* 등록/수정 모달 */}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} size="lg"
-        title={editing ? t("common.edit") : t("common.add")}>
-        <div className="space-y-4 text-xs">
-          <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.gauge.gaugeCode")} value={form.gaugeCode}
-              onChange={e => setField("gaugeCode", e.target.value)}
-              disabled={!!editing} fullWidth />
-            <Input label={t("master.gauge.gaugeName")} value={form.gaugeName}
-              onChange={e => setField("gaugeName", e.target.value)} fullWidth />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <ComCodeSelect groupCode="GAUGE_TYPE" includeAll={false}
-              label={t("master.gauge.gaugeType")} value={form.gaugeType}
-              onChange={v => setField("gaugeType", v)} fullWidth />
-            <ComCodeSelect groupCode="GAUGE_STATUS" includeAll={false}
-              label={t("common.status")} value={form.status}
-              onChange={v => setField("status", v)} fullWidth />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.gauge.manufacturer")} value={form.manufacturer}
-              onChange={e => setField("manufacturer", e.target.value)} fullWidth />
-            <Input label={t("master.gauge.model")} value={form.model}
-              onChange={e => setField("model", e.target.value)} fullWidth />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.gauge.serialNo")} value={form.serialNo}
-              onChange={e => setField("serialNo", e.target.value)} fullWidth />
-            <Input label={t("master.gauge.measureRange")} value={form.measureRange}
-              onChange={e => setField("measureRange", e.target.value)}
-              placeholder="0~150mm" fullWidth />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.gauge.resolution")} value={form.resolution}
-              onChange={e => setField("resolution", e.target.value)}
-              placeholder="0.01" type="number" fullWidth />
-            <Input label={t("master.gauge.calibrationCycle")} value={form.calibrationCycle}
-              onChange={e => setField("calibrationCycle", e.target.value)}
-              type="number" fullWidth />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.gauge.lastCalibrationDate")} type="date"
-              value={form.lastCalibrationDate}
-              onChange={e => setField("lastCalibrationDate", e.target.value)} fullWidth />
-            <Input label={t("master.gauge.nextCalibrationDate")} type="date"
-              value={form.nextCalibrationDate}
-              onChange={e => setField("nextCalibrationDate", e.target.value)} fullWidth />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.gauge.location")} value={form.location}
-              onChange={e => setField("location", e.target.value)} fullWidth />
-            <Input label={t("master.gauge.responsiblePerson")} value={form.responsiblePerson}
-              onChange={e => setField("responsiblePerson", e.target.value)} fullWidth />
-          </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={handleSave}
-              disabled={!form.gaugeCode || !form.gaugeName || !form.gaugeType}>
+      {/* 우측 슬라이드 패널 */}
+      {panelOpen && (
+        <div className="w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
+          {/* 패널 헤더 */}
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+            <h2 className="text-sm font-bold text-text">
               {editing ? t("common.edit") : t("common.add")}
-            </Button>
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => { setPanelOpen(false); setEditing(null); }}>
+                {t("common.cancel")}
+              </Button>
+              <Button size="sm" onClick={handleSave}
+                disabled={!form.gaugeCode || !form.gaugeName || !form.gaugeType}>
+                {t("common.save")}
+              </Button>
+            </div>
+          </div>
+          {/* 패널 본문 */}
+          <div className="flex-1 overflow-y-auto min-h-0 px-5 py-3 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={t("master.gauge.gaugeCode")} value={form.gaugeCode}
+                onChange={e => setField("gaugeCode", e.target.value)}
+                disabled={!!editing} fullWidth />
+              <Input label={t("master.gauge.gaugeName")} value={form.gaugeName}
+                onChange={e => setField("gaugeName", e.target.value)} fullWidth />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <ComCodeSelect groupCode="GAUGE_TYPE" includeAll={false}
+                label={t("master.gauge.gaugeType")} value={form.gaugeType}
+                onChange={v => setField("gaugeType", v)} fullWidth />
+              <ComCodeSelect groupCode="GAUGE_STATUS" includeAll={false}
+                label={t("common.status")} value={form.status}
+                onChange={v => setField("status", v)} fullWidth />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={t("master.gauge.manufacturer")} value={form.manufacturer}
+                onChange={e => setField("manufacturer", e.target.value)} fullWidth />
+              <Input label={t("master.gauge.model")} value={form.model}
+                onChange={e => setField("model", e.target.value)} fullWidth />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={t("master.gauge.serialNo")} value={form.serialNo}
+                onChange={e => setField("serialNo", e.target.value)} fullWidth />
+              <Input label={t("master.gauge.measureRange")} value={form.measureRange}
+                onChange={e => setField("measureRange", e.target.value)}
+                placeholder="0~150mm" fullWidth />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={t("master.gauge.resolution")} value={form.resolution}
+                onChange={e => setField("resolution", e.target.value)}
+                placeholder="0.01" type="number" fullWidth />
+              <Input label={t("master.gauge.calibrationCycle")} value={form.calibrationCycle}
+                onChange={e => setField("calibrationCycle", e.target.value)}
+                type="number" fullWidth />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={t("master.gauge.lastCalibrationDate")} type="date"
+                value={form.lastCalibrationDate}
+                onChange={e => setField("lastCalibrationDate", e.target.value)} fullWidth />
+              <Input label={t("master.gauge.nextCalibrationDate")} type="date"
+                value={form.nextCalibrationDate}
+                onChange={e => setField("nextCalibrationDate", e.target.value)} fullWidth />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={t("master.gauge.location")} value={form.location}
+                onChange={e => setField("location", e.target.value)} fullWidth />
+              <Input label={t("master.gauge.responsiblePerson")} value={form.responsiblePerson}
+                onChange={e => setField("responsiblePerson", e.target.value)} fullWidth />
+            </div>
           </div>
         </div>
-      </Modal>
+      )}
 
       {/* 삭제 확인 */}
       <ConfirmModal isOpen={!!deleteTarget}

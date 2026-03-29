@@ -11,24 +11,23 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, BoxIcon, Package, Layers, Truck } from 'lucide-react';
+import { Search, RefreshCw, BoxIcon, Package, Layers, CheckCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, StatCard } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import api from '@/services/api';
 
 interface PackResult {
-  id: string;
   boxNo: string;
-  prdUid: string;
   itemCode: string;
   itemName: string;
   packQty: number;
-  boxType: string;
-  packDate: string;
+  status: string;
+  palletNo: string;
+  oqcStatus: string;
   packer: string;
-  destination: string;
-  remark: string;
+  packDate: string;
+  closeTime: string;
 }
 
 export default function PackResultPage() {
@@ -44,9 +43,9 @@ export default function PackResultPage() {
     try {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
-      if (startDate) params.packDateFrom = startDate;
-      if (endDate) params.packDateTo = endDate;
-      const res = await api.get('/production/pack-results', { params });
+      if (startDate) params.dateFrom = startDate;
+      if (endDate) params.dateTo = endDate;
+      const res = await api.get('/production/pack-result', { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);
@@ -59,21 +58,33 @@ export default function PackResultPage() {
 
   const stats = useMemo(() => ({
     totalBox: data.length,
-    totalQty: data.reduce((s, r) => s + r.packQty, 0),
-    destinations: new Set(data.map(d => d.destination)).size,
+    totalQty: data.reduce((s, r) => s + (r.packQty ?? 0), 0),
+    closedBox: data.filter(d => d.status === 'CLOSED').length,
   }), [data]);
 
   const columns = useMemo<ColumnDef<PackResult>[]>(() => [
-    { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 100, meta: { filterType: 'date' as const } },
-    { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170, meta: { filterType: 'text' as const } },
-    { accessorKey: 'prdUid', header: t('production.packResult.prdUid'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'itemCode', header: t('common.partCode'), size: 100, meta: { filterType: 'text' as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'itemName', header: t('common.partName'), size: 130, meta: { filterType: 'text' as const } },
-    { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90, meta: { filterType: 'number' as const }, cell: ({ getValue }) => (getValue() as number).toLocaleString() },
-    { accessorKey: 'boxType', header: t('production.packResult.boxType'), size: 80, meta: { filterType: 'text' as const } },
-    { accessorKey: 'packer', header: t('production.packResult.packer'), size: 80, meta: { filterType: 'text' as const } },
-    { accessorKey: 'destination', header: t('production.packResult.destination'), size: 140, meta: { filterType: 'text' as const } },
-    { accessorKey: 'remark', header: t('production.packResult.remark'), size: 100, meta: { filterType: 'text' as const } },
+    { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 120,
+      meta: { filterType: 'date' as const },
+      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? '-' },
+    { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
+    { accessorKey: 'itemCode', header: t('common.partCode'), size: 120,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
+    { accessorKey: 'itemName', header: t('common.partName'), size: 160,
+      meta: { filterType: 'text' as const } },
+    { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90,
+      meta: { filterType: 'number' as const },
+      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number)?.toLocaleString()}</span> },
+    { accessorKey: 'status', header: t('common.status'), size: 90,
+      meta: { filterType: 'multi' as const } },
+    { accessorKey: 'palletNo', header: t('production.packResult.palletNo'), size: 130,
+      meta: { filterType: 'text' as const } },
+    { accessorKey: 'oqcStatus', header: 'OQC', size: 90,
+      meta: { filterType: 'multi' as const } },
+    { accessorKey: 'packer', header: t('production.packResult.packer'), size: 90,
+      meta: { filterType: 'text' as const } },
   ], [t]);
 
   return (
@@ -93,7 +104,7 @@ export default function PackResultPage() {
       <div className="grid grid-cols-3 gap-4 flex-shrink-0">
         <StatCard label={t('production.packResult.totalBox')} value={stats.totalBox} icon={Package} color="blue" />
         <StatCard label={t('production.packResult.totalPackQty')} value={stats.totalQty} icon={Layers} color="green" />
-        <StatCard label={t('production.packResult.destination')} value={`${stats.destinations}${t('production.packResult.places')}`} icon={Truck} color="purple" />
+        <StatCard label={t('production.packResult.closedBox')} value={stats.closedBox} icon={CheckCircle} color="purple" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
