@@ -9,7 +9,7 @@
  * 2. **송수신 현황**: Inbound/Outbound 건수 카드
  * 3. **일별 추이**: BarChart로 최근 7일 전송 추이
  * 4. **최근 로그**: 최근 인터페이스 로그 리스트
- * 5. API: GET /interface/dashboard/stats, GET /interface/dashboard/chart, GET /interface/logs
+ * 5. API: GET /interface/summary, GET /interface/logs
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -66,14 +66,25 @@ export default function InterfaceDashboardPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, chartRes, logsRes] = await Promise.all([
-        api.get("/interface/dashboard/stats"),
-        api.get("/interface/dashboard/chart"),
-        api.get("/interface/logs", { params: { limit: "5", sort: "createdAt:desc" } }),
+      const [summaryRes, logsRes] = await Promise.all([
+        api.get("/interface/summary"),
+        api.get("/interface/logs", { params: { limit: 5 } }),
       ]);
-      setStats(statsRes.data?.data ?? { total: 0, today: 0, success: 0, failed: 0, pending: 0, inbound: 0, outbound: 0 });
-      setChartData(chartRes.data?.data ?? []);
-      setRecentLogs(logsRes.data?.data ?? []);
+      const s = summaryRes.data?.data ?? {};
+      const inCount = (s.byDirection ?? []).find((d: { direction: string; count: number }) => d.direction === "IN")?.count ?? 0;
+      const outCount = (s.byDirection ?? []).find((d: { direction: string; count: number }) => d.direction === "OUT")?.count ?? 0;
+      setStats({
+        total: s.total ?? 0,
+        today: s.todayCount ?? 0,
+        success: (s.total ?? 0) - (s.failed ?? 0) - (s.pending ?? 0),
+        failed: s.failed ?? 0,
+        pending: s.pending ?? 0,
+        inbound: inCount,
+        outbound: outCount,
+      });
+      setChartData((s.byType ?? []).map((t: { messageType: string; count: number }) => ({ label: t.messageType, value: t.count })));
+      const logData = logsRes.data?.data ?? [];
+      setRecentLogs(Array.isArray(logData) ? logData : []);
     } catch {
       /* keep current state */
     } finally {
