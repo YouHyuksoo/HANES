@@ -59,6 +59,11 @@ export class InterLogQueryDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @ApiPropertyOptional({ description: '정렬 (예: createdAt:desc)' })
+  @IsOptional()
+  @IsString()
+  sort?: string;
 }
 
 // ============================================================================
