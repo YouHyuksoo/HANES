@@ -28,14 +28,14 @@ export class InspectResult {
   @PrimaryColumn({ name: 'RESULT_NO', length: 30 })
   resultNo: string;
 
-  @Column({ type: 'varchar2', name: 'PROD_RESULT_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROD_RESULT_ID', length: 36, nullable: true })
   prodResultNo: string | null;
 
   @ManyToOne(() => ProdResult, (prodResult) => prodResult.inspectResults)
-  @JoinColumn({ name: 'PROD_RESULT_NO', referencedColumnName: 'resultNo' })
+  @JoinColumn({ name: 'PROD_RESULT_ID', referencedColumnName: 'resultNo' })
   prodResult: ProdResult;
 
-  @Column({ type: 'varchar2', name: 'SERIAL_NO', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'SERIAL_NO', length: 50, nullable: true })
   serialNo: string | null;
 
   @Column({ type: 'varchar2', name: 'INSPECT_TYPE', length: 50, nullable: true })
@@ -62,7 +62,7 @@ export class InspectResult {
   @Column({ name: 'INSPECT_TIME', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   inspectAt: Date;
 
-  @Column({ type: 'varchar2', name: 'INSPECTOR_ID', length: 255, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECTOR_ID', length: 36, nullable: true })
   inspectorId: string | null;
 
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
