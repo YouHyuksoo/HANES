@@ -320,7 +320,9 @@
     "searchPlaceholder": "Tìm kiếm (Ctrl+K)",
     "switchToLight": "Chuyển sang chế độ sáng",
     "switchToDark": "Chuyển sang chế độ tối",
-    "colorTheme": "Chuyển đổi chủ đề màu"
+    "colorTheme": "Chuyển đổi chủ đề màu",
+    "collapseSidebar": "Thu gọn thanh bên",
+    "expandSidebar": "Mở rộng thanh bên"
   },
   "auth": {
     "login": "Đăng nhập",

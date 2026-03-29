@@ -322,7 +322,9 @@
     "searchPlaceholder": "검색 (Ctrl+K)",
     "switchToLight": "라이트 모드로 전환",
     "switchToDark": "다크 모드로 전환",
-    "colorTheme": "컬러 테마 전환"
+    "colorTheme": "컬러 테마 전환",
+    "collapseSidebar": "사이드바 접기",
+    "expandSidebar": "사이드바 펼치기"
   },
   "auth": {
     "login": "로그인",

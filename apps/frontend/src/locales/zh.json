@@ -320,7 +320,9 @@
     "searchPlaceholder": "搜索 (Ctrl+K)",
     "switchToLight": "切换到亮色模式",
     "switchToDark": "切换到暗色模式",
-    "colorTheme": "切换颜色主题"
+    "colorTheme": "切换颜色主题",
+    "collapseSidebar": "折叠侧边栏",
+    "expandSidebar": "展开侧边栏"
   },
   "auth": {
     "login": "登录",

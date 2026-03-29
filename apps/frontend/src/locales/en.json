@@ -320,7 +320,9 @@
     "searchPlaceholder": "Search (Ctrl+K)",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
-    "colorTheme": "Toggle color theme"
+    "colorTheme": "Toggle color theme",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "auth": {
     "login": "Login",
