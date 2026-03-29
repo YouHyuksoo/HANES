@@ -45,3 +45,4 @@ apps/backend/uploads
 # Misc
 *.tsbuildinfo
 nul
+.gstack/
