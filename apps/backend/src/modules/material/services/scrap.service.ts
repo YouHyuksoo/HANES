@@ -9,9 +9,11 @@ import { Repository, DataSource, Between, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateScrapDto, ScrapQueryDto } from '../dto/scrap.dto';
 import { NumRuleService } from '../../num-rule/num-rule.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
 export class ScrapService {
@@ -24,8 +26,11 @@ export class ScrapService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
     private readonly numRuleService: NumRuleService,
+    private readonly sysConfigService: SysConfigService,
   ) {}
   async findAll(query: ScrapQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
@@ -79,6 +84,17 @@ export class ScrapService {
 
   async create(dto: CreateScrapDto) {
     const { matUid, warehouseId, qty, reason, workerId } = dto;
+
+    // G10: 불출된 자재(FLOOR 창고)는 반납 후에만 폐기 가능
+    const warehouse = await this.warehouseRepository.findOne({ where: { warehouseCode: warehouseId } });
+    if (warehouse && warehouse.warehouseType === 'FLOOR') {
+      const returnMode = await this.sysConfigService.getValue('RETURN_MODE');
+      if (returnMode === 'RETURN') {
+        throw new BadRequestException('불출된 자재는 반납 후 폐기해야 합니다.');
+      }
+      // CANCEL 모드(베트남): 불출취소 후 폐기 허용 — 별도 체크 없음
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();

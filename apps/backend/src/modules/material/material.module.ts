@@ -90,6 +90,12 @@ import { LabelPrintService } from './services/label-print.service';
 import { ReceiveLabelController } from './controllers/receive-label.controller';
 import { ReceiveLabelService } from './services/receive-label.service';
 
+// Phase 2: THN Gap
+import { MatOutRequest } from '../../entities/mat-out-request.entity';
+import { ShelfLifeReInspect } from '../../entities/shelf-life-reinspect.entity';
+import { MatOutRequestService } from './services/mat-out-request.service';
+import { ShelfLifeReInspectService } from './services/shelf-life-reinspect.service';
+
 @Module({
   imports: [
     SystemModule,
@@ -114,6 +120,8 @@ import { ReceiveLabelService } from './services/receive-label.service';
       VendorBarcodeMapping,
       PhysicalInvSession,
       PhysicalInvCountDetail,
+      MatOutRequest,
+      ShelfLifeReInspect,
     ]),
   ],
   controllers: [
@@ -160,6 +168,8 @@ import { ReceiveLabelService } from './services/receive-label.service';
     IssueRequestService,
     LabelPrintService,
     ReceiveLabelService,
+    MatOutRequestService,
+    ShelfLifeReInspectService,
   ],
   exports: [
     MatLotService,

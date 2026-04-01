@@ -98,6 +98,12 @@ export class LotMergeService {
         throw new BadRequestException('서로 다른 품목의 LOT은 병합할 수 없습니다.');
       }
 
+      // Minor: 최초 시리얼(origin) 동일 여부 검증 — THN 문서 요구사항
+      const origins = new Set(lots.map(l => (l as any).originMatUid || l.matUid));
+      if (origins.size > 1) {
+        throw new BadRequestException('최초 시리얼이 다른 LOT은 병합할 수 없습니다.');
+      }
+
       // 모든 LOT의 재고 조회 (MatStock 기준)
       const lotMatUids = lots.map(l => l.matUid);
       const stocks = await queryRunner.manager.find(MatStock, {

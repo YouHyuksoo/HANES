@@ -7,6 +7,7 @@
  * - requestId + seq 복합 PK
  * - itemCode로 품목 마스터(ITEM_MASTERS)와 연결
  * - requestQty: 요청 수량, issuedQty: 실제 출고된 수량
+ * - G7: bomReqQty(BOM 소요량), prevIssueQty(기불출량), floorStockQty(현장재고)
  */
 
 import {
@@ -38,6 +39,18 @@ export class MatIssueRequestItem {
 
   @Column({ name: 'UNIT', length: 20 })
   unit: string;
+
+  /** G7: BOM 소요량 (= BOM * 생산수량) */
+  @Column({ name: 'BOM_REQ_QTY', type: 'number', precision: 12, scale: 3, nullable: true })
+  bomReqQty: number | null;
+
+  /** G7: 기 불출수량 */
+  @Column({ name: 'PREV_ISSUE_QTY', type: 'number', precision: 12, scale: 3, nullable: true })
+  prevIssueQty: number | null;
+
+  /** G7: 현장재고 */
+  @Column({ name: 'FLOOR_STOCK_QTY', type: 'number', precision: 12, scale: 3, nullable: true })
+  floorStockQty: number | null;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

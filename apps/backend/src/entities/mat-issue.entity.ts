@@ -7,6 +7,7 @@
  * - 복합 PK: issueNo + seq (같은 출고번호의 여러 자재 행)
  * - matUid: 출고 자재시리얼, orderNo: 작업지시 참조
  * - prodResultNo: 생산실적 번호 (string, 자재 투입 이력 연결)
+ * - G8: issuerId/issuerName, receiverId/receiverName — 불출자/수령인 바코드 스캔
  */
 import {
   Entity,
@@ -55,6 +56,22 @@ export class MatIssue {
 
   @Column({ type: 'varchar2', name: 'WORKER_ID', length: 50, nullable: true })
   workerId: string | null;
+
+  /** G8: 불출자 사번 (바코드 스캔) */
+  @Column({ type: 'varchar2', name: 'ISSUER_ID', length: 20, nullable: true })
+  issuerId: string | null;
+
+  /** G8: 불출자 이름 */
+  @Column({ type: 'varchar2', name: 'ISSUER_NAME', length: 50, nullable: true })
+  issuerName: string | null;
+
+  /** G8: 수령인 사번 (바코드 스캔) */
+  @Column({ type: 'varchar2', name: 'RECEIVER_ID', length: 20, nullable: true })
+  receiverId: string | null;
+
+  /** G8: 수령인 이름 */
+  @Column({ type: 'varchar2', name: 'RECEIVER_NAME', length: 50, nullable: true })
+  receiverName: string | null;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

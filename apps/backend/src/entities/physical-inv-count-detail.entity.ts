@@ -62,6 +62,10 @@ export class PhysicalInvCountDetail {
   @Column({ type: 'varchar2', name: 'COUNTED_BY', length: 50, nullable: true })
   countedBy: string | null;
 
+  /** 실사 시 확인된 실제 로케이션 (위치 보정용) */
+  @Column({ type: 'varchar2', name: 'ACTUAL_LOCATION', length: 50, nullable: true })
+  actualLocation: string | null;
+
   /** 비고 */
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
