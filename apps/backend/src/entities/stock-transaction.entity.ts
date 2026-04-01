@@ -76,6 +76,14 @@ export class StockTransaction {
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;
 
+  /** G9: 승인자 ID (기타출고 승인 워크플로우) */
+  @Column({ type: 'varchar2', name: 'APPROVER_ID', length: 20, nullable: true })
+  approverId: string | null;
+
+  /** G9: 승인 일시 */
+  @Column({ type: 'timestamp', name: 'APPROVED_AT', nullable: true })
+  approvedAt: Date | null;
+
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
