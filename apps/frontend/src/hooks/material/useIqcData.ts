@@ -107,23 +107,45 @@ export function useIqcData() {
     setIsIqcModalOpen(true);
   };
 
-  const handleIqcSubmit = useCallback(async (details?: any[], overrideResult?: string) => {
+  const handleIqcSubmit = useCallback(async (
+    details?: any[],
+    overrideResult?: string,
+    extra?: { inspectClass?: string; destructSampleQty?: number; certFile?: File },
+  ) => {
     const finalResult = overrideResult || resultForm.result;
     if (!selectedItem || !finalResult) return;
     try {
       const result = finalResult === 'PASSED' ? 'PASS' : 'FAIL';
-      await api.post('/material/iqc-history', {
+      const res = await api.post('/material/iqc-history', {
         matUid: selectedItem.id,
         result,
         inspectorName: resultForm.inspector || undefined,
         remark: resultForm.remark || undefined,
         details: details ? JSON.stringify(details) : undefined,
+        inspectClass: extra?.inspectClass || undefined,
+        destructSampleQty: extra?.destructSampleQty || undefined,
       });
+
+      // G4: 검사성적서 파일 업로드 (결과 등록 후)
+      if (extra?.certFile && res.data?.data) {
+        const logData = res.data.data;
+        const formData = new FormData();
+        formData.append('file', extra.certFile);
+        const inspectDate = logData.inspectDate
+          ? new Date(logData.inspectDate).toISOString()
+          : new Date().toISOString();
+        await api.post(
+          `/material/iqc-history/${encodeURIComponent(inspectDate)}/${logData.seq}/upload-cert`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
+      }
+
       setIsIqcModalOpen(false);
       setSelectedItem(null);
       setResultForm(INITIAL_RESULT_FORM);
       fetchData();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('IQC submit failed:', e);
     }
   }, [selectedItem, resultForm, fetchData]);

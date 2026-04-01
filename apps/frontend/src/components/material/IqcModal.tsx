@@ -9,10 +9,11 @@
  * 2. 각 항목별로 측정값(계측값) 입력 → LSL/USL 기준 자동 판정
  * 3. 전체 판정은 모든 항목 합격 시 합격, 하나라도 불합격이면 불합격
  * 4. 검사 상세 데이터는 details(JSON)로 저장
+ * 5. G4: 검사분류(전수/선별/무검사), 파괴검사 시료수량, 검사성적서 파일 업로드
  */
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload } from "lucide-react";
 import { Button, Input, Modal, Select } from "@/components/ui";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import api from "@/services/api";
@@ -43,7 +44,7 @@ interface IqcModalProps {
   selectedItem: IqcItem | null;
   form: IqcResultForm;
   setForm: React.Dispatch<React.SetStateAction<IqcResultForm>>;
-  onSubmit: (details?: MeasurementRow[], overrideResult?: string) => void;
+  onSubmit: (details?: MeasurementRow[], overrideResult?: string, extra?: { inspectClass?: string; destructSampleQty?: number; certFile?: File }) => void;
 }
 
 function judgeValue(value: string, lsl: number | null, usl: number | null): "PASS" | "FAIL" | "" {
@@ -60,6 +61,18 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const [inspectItems, setInspectItems] = useState<IqcInspectItem[]>([]);
   const [measurements, setMeasurements] = useState<MeasurementRow[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+
+  // G4: 검사분류, 파괴검사 시료, 검사성적서 파일
+  const [inspectClass, setInspectClass] = useState("FULL");
+  const [destructSampleQty, setDestructSampleQty] = useState("");
+  const [certFile, setCertFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const inspectClassOptions = useMemo(() => [
+    { value: "FULL", label: t("material.iqc.inspectClassFull", "전수검사") },
+    { value: "SAMPLE", label: t("material.iqc.inspectClassSample", "선별검사") },
+    { value: "NONE", label: t("material.iqc.inspectClassNone", "무검사") },
+  ], [t]);
 
   const resultOptions = useMemo(() => [
     { value: "", label: t("material.iqc.resultSelect") },
@@ -121,12 +134,18 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     return hasFail ? "FAILED" : "PASSED";
   }, [measurements, form.result]);
 
+  const buildExtra = useCallback(() => ({
+    inspectClass,
+    destructSampleQty: destructSampleQty ? parseInt(destructSampleQty, 10) : undefined,
+    certFile: certFile ?? undefined,
+  }), [inspectClass, destructSampleQty, certFile]);
+
   const handleSubmitWithDetails = useCallback(() => {
     const finalResult = overallJudge || form.result;
     if (!finalResult) return;
     setForm((prev) => ({ ...prev, result: finalResult as IqcResultForm["result"] }));
-    onSubmit(measurements.length > 0 ? measurements : undefined, finalResult);
-  }, [overallJudge, form.result, measurements, setForm, onSubmit]);
+    onSubmit(measurements.length > 0 ? measurements : undefined, finalResult, buildExtra());
+  }, [overallJudge, form.result, measurements, setForm, onSubmit, buildExtra]);
 
   if (!selectedItem) return null;
 
@@ -234,14 +253,55 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
           />
         </div>
 
+        {/* G4: 검사분류 / 파괴검사 시료 / 검사성적서 */}
+        <div className="grid grid-cols-3 gap-4">
+          <Select
+            label={t("material.iqc.inspectClassLabel", "검사분류")}
+            options={inspectClassOptions}
+            value={inspectClass}
+            onChange={setInspectClass}
+            fullWidth
+          />
+          <Input
+            label={t("material.iqc.destructSampleQty", "파괴검사 시료수량")}
+            type="number"
+            min={0}
+            placeholder="0"
+            value={destructSampleQty}
+            onChange={(e) => setDestructSampleQty(e.target.value)}
+            fullWidth
+          />
+          <div>
+            <label className="block text-sm font-medium text-text-muted mb-1">
+              {t("material.iqc.certFile", "검사성적서")}
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls"
+              className="hidden"
+              onChange={(e) => setCertFile(e.target.files?.[0] ?? null)}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full"
+            >
+              <Upload className="w-4 h-4 mr-1" />
+              {certFile ? certFile.name : t("material.iqc.uploadCert", "파일 선택")}
+            </Button>
+          </div>
+        </div>
+
         {/* 버튼 */}
         <div className="flex gap-2 pt-4 border-t border-border">
           {!hasInspectItems && (
             <>
-              <Button className="flex-1" variant="secondary" onClick={() => { setForm((prev) => ({ ...prev, result: "FAILED" })); onSubmit(); }}>
+              <Button className="flex-1" variant="secondary" onClick={() => { setForm((prev) => ({ ...prev, result: "FAILED" })); onSubmit(undefined, "FAILED", buildExtra()); }}>
                 <XCircle className="w-4 h-4 mr-1 text-red-500" /> {t("material.iqc.failed")}
               </Button>
-              <Button className="flex-1" onClick={() => { setForm((prev) => ({ ...prev, result: "PASSED" })); onSubmit(); }}>
+              <Button className="flex-1" onClick={() => { setForm((prev) => ({ ...prev, result: "PASSED" })); onSubmit(undefined, "PASSED", buildExtra()); }}>
                 <CheckCircle className="w-4 h-4 mr-1" /> {t("material.iqc.passed")}
               </Button>
             </>

@@ -1578,7 +1578,14 @@
       "overallJudge": "综合判定",
       "noInspectItems": "该品目没有登记的IQC检查项目，请手动判定合否。",
       "submitFailed": "登记为不合格",
-      "submitPassed": "登记为合格"
+      "submitPassed": "登记为合格",
+      "inspectClassLabel": "检查分类",
+      "inspectClassFull": "全数检查",
+      "inspectClassSample": "抽样检查",
+      "inspectClassNone": "免检",
+      "destructSampleQty": "破坏性检查样品数量",
+      "certFile": "检查成绩书",
+      "uploadCert": "选择文件"
     },
     "receive": {
       "title": "物料入库管理",

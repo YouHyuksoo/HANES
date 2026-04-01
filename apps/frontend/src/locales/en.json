@@ -1578,7 +1578,14 @@
       "overallJudge": "Overall Judgment",
       "noInspectItems": "No IQC inspection items registered for this part. Please judge manually.",
       "submitFailed": "Submit as Fail",
-      "submitPassed": "Submit as Pass"
+      "submitPassed": "Submit as Pass",
+      "inspectClassLabel": "Inspection Class",
+      "inspectClassFull": "Full Inspection",
+      "inspectClassSample": "Sample Inspection",
+      "inspectClassNone": "No Inspection",
+      "destructSampleQty": "Destructive Sample Qty",
+      "certFile": "Inspection Certificate",
+      "uploadCert": "Select File"
     },
     "receive": {
       "title": "Material Receiving",

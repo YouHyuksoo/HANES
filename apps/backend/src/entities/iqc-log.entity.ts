@@ -7,6 +7,9 @@
  * 1. 복합 PK: inspectDate(INSPECT_DATE) + seq(SEQ)
  * 2. ITEM_CODE로 ItemMaster(품목)를 참조
  * 3. 검사유형(INITIAL/RETEST), 결과(PASS/FAIL) 관리
+ * 4. inspectClass: 검사분류 (FULL=전수, SAMPLE=선별, NONE=무검사)
+ * 5. destructSampleQty: 파괴검사 시료 수량
+ * 6. certFilePath: 검사성적서 파일 경로
  */
 import {
   Entity,
@@ -46,6 +49,18 @@ export class IqcLog {
 
   @Column({ type: 'varchar2', name: 'INSPECTOR_NAME', length: 100, nullable: true })
   inspectorName: string | null;
+
+  /** 검사분류: FULL(전수), SAMPLE(선별), NONE(무검사) */
+  @Column({ type: 'varchar2', name: 'INSPECT_CLASS', length: 10, nullable: true, default: null })
+  inspectClass: string | null;
+
+  /** 파괴검사 시료 수량 */
+  @Column({ name: 'DESTRUCT_SAMPLE_QTY', type: 'int', nullable: true, default: null })
+  destructSampleQty: number | null;
+
+  /** 검사성적서 파일 경로 */
+  @Column({ type: 'varchar2', name: 'CERT_FILE_PATH', length: 500, nullable: true, default: null })
+  certFilePath: string | null;
 
   @Column({ name: 'STATUS', length: 20, default: 'DONE' })
   status: string;

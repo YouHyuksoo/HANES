@@ -1884,7 +1884,14 @@
       "overallJudge": "종합판정",
       "noInspectItems": "이 품목에 등록된 IQC 검사항목이 없습니다. 수동으로 합불 판정해주세요.",
       "submitFailed": "불합격 등록",
-      "submitPassed": "합격 등록"
+      "submitPassed": "합격 등록",
+      "inspectClassLabel": "검사분류",
+      "inspectClassFull": "전수검사",
+      "inspectClassSample": "선별검사",
+      "inspectClassNone": "무검사",
+      "destructSampleQty": "파괴검사 시료수량",
+      "certFile": "검사성적서",
+      "uploadCert": "파일 선택"
     },
     "receive": {
       "title": "자재입고관리",

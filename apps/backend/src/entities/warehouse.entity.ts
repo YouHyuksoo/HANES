@@ -5,8 +5,9 @@
  *
  * 초보자 가이드:
  * 1. warehouseCode가 PK (UUID 대신 자연키)
- * 2. warehouseType: MAT(원자재), PROD(제품), WIP(재공) 등
- * 3. isDefault: 기본 창고 여부
+ * 2. warehouseType: MAT(원자재), PROD(제품), WIP(재공), DEFECT(불용) 등
+ * 3. warehouseGroup: 동일 그룹 내 이동은 즉시, 다른 그룹 이동은 매니저 승인 필요
+ * 4. isDefault: 기본 창고 여부
  */
 import {
   Entity,
@@ -30,6 +31,10 @@ export class Warehouse {
 
   @Column({ name: 'WAREHOUSE_TYPE', length: 50 })
   warehouseType: string;
+
+  /** 창고 그룹 (동일 그룹 내 이동: 즉시 / 다른 그룹 이동: 매니저 승인) */
+  @Column({ type: 'varchar2', name: 'WAREHOUSE_GROUP', length: 20, nullable: true, default: null })
+  warehouseGroup: string | null;
 
   @Column({ type: 'varchar2', name: 'PLANT_CODE', length: 50, nullable: true })
   plantCode: string | null;

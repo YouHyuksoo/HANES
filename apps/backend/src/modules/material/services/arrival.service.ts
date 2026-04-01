@@ -162,13 +162,20 @@ export class ArrivalService {
     });
 
     // 잔량 검증 — poItemId는 "poNo-seq" 형식 또는 seq 번호
+    // G2: 입하잔량 = 발주수량 - 입하합계 + 반품합계 (반품 시 잔량 복원)
+    const returnTxs = await this.stockTransactionRepository.find({
+      where: { refType: 'RETURN', transType: 'MAT_IN_CANCEL' },
+    });
     for (const item of dto.items) {
       const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
       if (!poItem) throw new BadRequestException(`PO 품목을 찾을 수 없습니다: ${item.poItemId}`);
-      const remaining = poItem.orderQty - poItem.receivedQty;
+      const returnQty = returnTxs
+        .filter((tx) => tx.itemCode === poItem.itemCode && tx.refId === String(poItem.seq))
+        .reduce((sum, tx) => sum + Math.abs(tx.qty), 0);
+      const remaining = poItem.orderQty - poItem.receivedQty + returnQty;
       if (item.receivedQty > remaining) {
         throw new BadRequestException(
-          `입하수량(${item.receivedQty})이 잔량(${remaining})을 초과합니다.`,
+          `입하수량(${item.receivedQty})이 잔량(${remaining})을 초과합니다. (발주: ${poItem.orderQty}, 입하합계: ${poItem.receivedQty}, 반품합계: ${returnQty})`,
         );
       }
     }
@@ -445,6 +452,17 @@ export class ArrivalService {
     if (!original) throw new NotFoundException(`트랜잭션을 찾을 수 없습니다: ${dto.transactionId}`);
     if (original.status === 'CANCELED') throw new BadRequestException('이미 취소된 트랜잭션입니다.');
     if (original.transType !== 'MAT_IN') throw new BadRequestException('입하 트랜잭션만 취소할 수 있습니다.');
+
+    // G3: 입하 취소 조건 제한 — IQC 판정 이후 취소 불가 (무검사품은 입고 전)
+    if (original.itemCode) {
+      const iqcRecord = await this.iqcLogRepository.findOne({
+        where: { arrivalNo: original.refId ?? undefined, itemCode: original.itemCode },
+        order: { inspectDate: 'DESC' },
+      });
+      if (iqcRecord && (iqcRecord.result === 'PASS' || iqcRecord.result === 'FAIL')) {
+        throw new BadRequestException('IQC 판정이 완료된 입하는 취소할 수 없습니다.');
+      }
+    }
 
     const cancelTransNo = `${original.transNo}-C`;
 

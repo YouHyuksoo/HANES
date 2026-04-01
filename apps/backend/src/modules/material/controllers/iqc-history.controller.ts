@@ -1,14 +1,22 @@
 /**
  * @file src/modules/material/controllers/iqc-history.controller.ts
  * @description IQC 이력 조회 전용 API 컨트롤러
+ *              G4: 검사성적서 파일 업로드, G5: 검사필 스탬프 라벨 지원
  */
 
-import { Controller, Get, Post, Query, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Query, Body, Param, HttpCode, HttpStatus, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
+import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { IqcHistoryService } from '../services/iqc-history.service';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+
+const IQC_UPLOAD_DIR = join(process.cwd(), 'uploads', 'iqc-certs');
+if (!existsSync(IQC_UPLOAD_DIR)) mkdirSync(IQC_UPLOAD_DIR, { recursive: true });
 
 @ApiTags('자재관리 - IQC이력')
 @Controller('material/iqc-history')
@@ -40,5 +48,31 @@ export class IqcHistoryController {
   ) {
     const data = await this.iqcHistoryService.cancel(inspectDate, Number(seq), dto);
     return ResponseUtil.success(data, 'IQC 판정이 취소되었습니다.');
+  }
+
+  /** G4: 검사성적서 파일 업로드 */
+  @Post(':inspectDate/:seq/upload-cert')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '검사성적서 파일 업로드' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: IQC_UPLOAD_DIR,
+        filename: (_req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, `iqc-cert-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  async uploadCert(
+    @Param('inspectDate') inspectDate: string,
+    @Param('seq') seq: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const data = await this.iqcHistoryService.uploadCert(inspectDate, Number(seq), file.path);
+    return ResponseUtil.success(data, '검사성적서가 업로드되었습니다.');
   }
 }

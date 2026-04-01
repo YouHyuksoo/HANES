@@ -1578,7 +1578,14 @@
       "overallJudge": "Phán định tổng hợp",
       "noInspectItems": "Không có hạng mục kiểm tra IQC đăng ký cho linh kiện này. Vui lòng phán định thủ công.",
       "submitFailed": "Đăng ký không đạt",
-      "submitPassed": "Đăng ký đạt"
+      "submitPassed": "Đăng ký đạt",
+      "inspectClassLabel": "Phân loại kiểm tra",
+      "inspectClassFull": "Kiểm tra toàn bộ",
+      "inspectClassSample": "Kiểm tra mẫu",
+      "inspectClassNone": "Không kiểm tra",
+      "destructSampleQty": "Số lượng mẫu phá hủy",
+      "certFile": "Giấy chứng nhận kiểm tra",
+      "uploadCert": "Chọn tệp"
     },
     "receive": {
       "title": "Nhập kho vật tư",

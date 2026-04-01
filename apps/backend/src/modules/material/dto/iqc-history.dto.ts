@@ -37,6 +37,19 @@ export class CreateIqcResultDto {
   @IsOptional()
   @IsString()
   details?: string;
+
+  @ApiPropertyOptional({ description: '검사분류', enum: ['FULL', 'SAMPLE', 'NONE'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['FULL', 'SAMPLE', 'NONE'])
+  inspectClass?: string;
+
+  @ApiPropertyOptional({ description: '파괴검사 시료 수량' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  destructSampleQty?: number;
 }
 
 export class CancelIqcResultDto {
