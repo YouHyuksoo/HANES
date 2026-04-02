@@ -19,7 +19,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ProdResult } from './prod-result.entity';
+
 
 @Entity({ name: 'MAT_ISSUES' })
 @Index(['orderNo'])
@@ -35,12 +35,8 @@ export class MatIssue {
   @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;
 
-  @Column({ type: 'varchar2', name: 'PROD_RESULT_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROD_RESULT_ID', length: 50, nullable: true })
   prodResultNo: string | null;
-
-  @ManyToOne(() => ProdResult, { nullable: true })
-  @JoinColumn({ name: 'PROD_RESULT_NO', referencedColumnName: 'resultNo' })
-  prodResult: ProdResult | null;
 
   @Column({ name: 'MAT_UID', length: 50 })
   matUid: string;

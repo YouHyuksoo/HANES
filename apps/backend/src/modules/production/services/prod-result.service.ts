@@ -192,7 +192,7 @@ export class ProdResultService {
    */
   async findMatIssues(resultNo: string) {
     const issues = await this.matIssueRepository.find({
-      where: { prodResult: { resultNo }, status: 'DONE' },
+      where: { prodResultNo: resultNo, status: 'DONE' },
       order: { issueDate: 'DESC' },
     });
 
@@ -405,6 +405,8 @@ export class ProdResultService {
         cycleTime: dto.cycleTime,
         status: 'RUNNING',
         remark: dto.remark,
+        company: jobOrder.company,
+        plant: jobOrder.plant,
       });
 
       // 교대 자동판별
@@ -678,6 +680,8 @@ export class ProdResultService {
             refType: 'PROD_RESULT',
             refId: prodResult.resultNo,
             remark: `생산실적 완료 자동 적재`,
+            company: jobOrder.company,
+            plant: jobOrder.plant,
           });
           this.logger.log(
             `공정재고 자동 적재: ${jobOrder.itemCode} × ${goodQty} → WIP_MAIN (실적 #${prodResult.resultNo})`,
@@ -773,7 +777,7 @@ export class ProdResultService {
     resultNo: string,
   ): Promise<void> {
     const issues = await qr.manager.find(MatIssue, {
-      where: { prodResult: { resultNo }, issueType: 'PROD_AUTO', status: 'DONE' },
+      where: { prodResultNo: resultNo, issueType: 'PROD_AUTO', status: 'DONE' },
     });
 
     if (issues.length === 0) return;
@@ -793,7 +797,6 @@ export class ProdResultService {
         // (c) MatStock 복원
         const stocks = await qr.manager.find(MatStock, {
           where: { matUid: issue.matUid },
-          lock: { mode: 'pessimistic_write' },
         });
         if (stocks.length > 0) {
           // 첫 번째 재고 레코드에 복원 (단순화)
@@ -855,7 +858,6 @@ export class ProdResultService {
       if (tx.toWarehouseId && tx.qty > 0) {
         const stock = await qr.manager.findOne(ProductStock, {
           where: { warehouseCode: tx.toWarehouseId, itemCode: tx.itemCode },
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (stock) {

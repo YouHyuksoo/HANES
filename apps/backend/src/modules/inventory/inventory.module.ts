@@ -29,11 +29,14 @@ import { ProductPhysicalInvService } from './services/product-physical-inv.servi
 import { WarehouseLocationService } from './services/warehouse-location.service';
 import { ProductHoldService } from './services/product-hold.service';
 import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { User } from '../../entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MatStock, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation])],
+  imports: [TypeOrmModule.forFeature([MatStock, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation, User])],
   controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController, ProductHoldController],
   providers: [
+    JwtAuthGuard,
     InventoryService,
     WarehouseService,
     ProductInventoryService,

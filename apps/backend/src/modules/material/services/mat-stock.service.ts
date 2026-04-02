@@ -221,7 +221,6 @@ export class MatStockService {
       // 기존 재고 조회 또는 생성
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode, ...(matUid && { matUid }) },
-        lock: { mode: 'pessimistic_write' },
       });
 
       const beforeQty = stock?.qty ?? 0;
@@ -292,7 +291,6 @@ export class MatStockService {
       // 출고 창고 재고 확인
       const fromStock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode: fromWarehouseCode, ...(matUid && { matUid }) },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!fromStock || fromStock.qty < qty) {
@@ -308,7 +306,6 @@ export class MatStockService {
       // 입고 창고 재고 확인 또는 생성
       let toStock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode: toWarehouseCode, ...(matUid && { matUid }) },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (toStock) {

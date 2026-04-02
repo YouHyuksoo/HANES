@@ -45,6 +45,8 @@ import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.enti
 import { PhysicalInvSession } from '../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../entities/physical-inv-count-detail.entity';
 import { InventoryFreezeGuard } from '../../common/guards/inventory-freeze.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { User } from '../../entities/user.entity';
 
 // 기존 컨트롤러/서비스
 import { MatLotController } from './controllers/mat-lot.controller';
@@ -118,6 +120,7 @@ import { ShelfLifeReInspectService } from './services/shelf-life-reinspect.servi
       VendorBarcodeMapping,
       PhysicalInvSession,
       PhysicalInvCountDetail,
+      User,
     ]),
   ],
   controllers: [
@@ -143,6 +146,7 @@ import { ShelfLifeReInspectService } from './services/shelf-life-reinspect.servi
     ReceiveLabelController,
   ],
   providers: [
+    JwtAuthGuard,
     InventoryFreezeGuard,
     MatLotService,
     MatStockService,

@@ -163,8 +163,7 @@ export class ProductInventoryService {
     const saved = await qr.manager.save(ProductTransaction, transaction);
 
     const existingStock = await qr.manager.findOne(ProductStock, {
-      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
-      lock: { mode: 'pessimistic_write' },
+      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || '*' },
     });
 
     if (existingStock) {
@@ -177,7 +176,7 @@ export class ProductInventoryService {
         warehouseCode: dto.warehouseId,
         itemCode: dto.itemCode,
         itemType: dto.itemType,
-        prdUid: dto.prdUid || null,
+        prdUid: dto.prdUid || '*',
         orderNo: dto.orderNo || null,
         processCode: dto.processCode || null,
         qty: dto.qty,

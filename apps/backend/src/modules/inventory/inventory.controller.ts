@@ -11,8 +11,10 @@ import {
   Body,
   Param,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { Company, Plant } from '../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { InventoryService } from './services/inventory.service';
 import { WarehouseService } from './services/warehouse.service';
 import { ProductInventoryService } from './services/product-inventory.service';
@@ -34,6 +36,7 @@ import {
   ProductStockQueryDto,
 } from './dto/product-inventory.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('inventory')
 export class InventoryController {
   constructor(
@@ -260,11 +263,13 @@ export class InventoryController {
    * 반제품 창고입고 → PRODUCT_STOCKS 테이블
    */
   @Post('wip/receive')
-  async receiveWip(@Body() dto: ProductReceiveStockDto) {
+  async receiveWip(@Body() dto: ProductReceiveStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.receiveStock({
       ...dto,
       itemType: 'WIP',
       transType: 'WIP_IN',
+      company: dto.company || company,
+      plant: dto.plant || plant,
     });
   }
 
@@ -272,11 +277,13 @@ export class InventoryController {
    * 반제품 출고 → PRODUCT_STOCKS 테이블
    */
   @Post('wip/issue')
-  async issueWip(@Body() dto: ProductIssueStockDto) {
+  async issueWip(@Body() dto: ProductIssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.issueStock({
       ...dto,
       itemType: 'WIP',
       transType: 'WIP_OUT',
+      company: dto.company || company,
+      plant: dto.plant || plant,
     });
   }
 
@@ -284,11 +291,13 @@ export class InventoryController {
    * 완제품 창고입고 → PRODUCT_STOCKS 테이블
    */
   @Post('fg/receive')
-  async receiveFg(@Body() dto: ProductReceiveStockDto) {
+  async receiveFg(@Body() dto: ProductReceiveStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.receiveStock({
       ...dto,
       itemType: 'FG',
       transType: 'FG_IN',
+      company: dto.company || company,
+      plant: dto.plant || plant,
     });
   }
 
@@ -296,11 +305,13 @@ export class InventoryController {
    * 완제품 출하 → PRODUCT_STOCKS 테이블
    */
   @Post('fg/issue')
-  async issueFg(@Body() dto: ProductIssueStockDto) {
+  async issueFg(@Body() dto: ProductIssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.issueStock({
       ...dto,
       itemType: 'FG',
       transType: 'FG_OUT',
+      company: dto.company || company,
+      plant: dto.plant || plant,
     });
   }
 

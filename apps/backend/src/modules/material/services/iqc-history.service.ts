@@ -173,6 +173,8 @@ export class IqcHistoryService {
       destructSampleQty: dto.destructSampleQty || null,
       remark: dto.remark || null,
       inspectDate: new Date(),
+      company: lot.company,
+      plant: lot.plant,
     });
     const saved = await this.iqcLogRepository.save(log);
 

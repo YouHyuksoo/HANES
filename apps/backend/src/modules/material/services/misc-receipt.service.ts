@@ -172,7 +172,6 @@ export class MiscReceiptService {
       // 재고 업데이트 또는 생성
       const existingStock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode: warehouse.warehouseCode, itemCode, ...(matUid && { matUid }) },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (existingStock) {

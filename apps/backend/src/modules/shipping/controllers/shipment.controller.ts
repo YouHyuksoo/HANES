@@ -39,8 +39,10 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
@@ -63,6 +65,7 @@ import {
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
 @ApiTags('출하관리 - 출하')
+@UseGuards(JwtAuthGuard)
 @Controller('shipping/shipments')
 export class ShipmentController {
   constructor(private readonly shipmentService: ShipmentService) {}

@@ -598,7 +598,6 @@ export class ReceivingService {
   private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: matUid || null },
-      lock: { mode: 'pessimistic_write' },
     });
 
     if (existing) {

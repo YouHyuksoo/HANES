@@ -108,7 +108,6 @@ export class LotMergeService {
       const lotMatUids = lots.map(l => l.matUid);
       const stocks = await queryRunner.manager.find(MatStock, {
         where: { matUid: In(lotMatUids) },
-        lock: { mode: 'pessimistic_write' },
       });
       const stockMap = new Map(stocks.map(s => [s.matUid, s]));
 

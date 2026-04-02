@@ -139,7 +139,6 @@ export class MatIssueService {
         // MatStock에서 재고 확인
         const stock = await queryRunner.manager.findOne(MatStock, {
           where: { matUid: lot.matUid },
-          lock: { mode: 'pessimistic_write' },
         });
         const stockQty = stock?.qty ?? 0;
 
@@ -316,7 +315,6 @@ export class MatIssueService {
       // 3. MatStock 재고 복구 + MatLot 상태 복구
       const stock = rawIssue.matUid ? await queryRunner.manager.findOne(MatStock, {
         where: { matUid: rawIssue.matUid },
-        lock: { mode: 'pessimistic_write' },
       }) : null;
 
       if (stock) {

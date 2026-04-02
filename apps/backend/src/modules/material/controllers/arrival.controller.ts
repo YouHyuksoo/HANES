@@ -14,7 +14,7 @@
  * 9. **POST /material/arrivals/cancel**: 입하 취소 (역분개)
  */
 
-import { Controller, Get, Post, Body, Query, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ArrivalService } from '../services/arrival.service';
 import {
@@ -26,8 +26,10 @@ import {
 } from '../dto/arrival.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 @ApiTags('자재관리 - 입하관리')
+@UseGuards(JwtAuthGuard)
 @Controller('material/arrivals')
 export class ArrivalController {
   constructor(private readonly arrivalService: ArrivalService) {}

@@ -804,9 +804,9 @@ export class ArrivalService {
 
   /** MatStock upsert (현재고 증감) */
   private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
+    const resolvedMatUid = matUid || '*';
     const existing = await manager.findOne(MatStock, {
-      where: { warehouseCode, itemCode, matUid: matUid || null },
-      lock: { mode: 'pessimistic_write' },
+      where: { warehouseCode, itemCode, matUid: resolvedMatUid },
     });
 
     if (existing) {
@@ -819,7 +819,7 @@ export class ArrivalService {
       const newStock = manager.create(MatStock, {
         warehouseCode,
         itemCode,
-        matUid,
+        matUid: resolvedMatUid,
         qty: qtyDelta,
         availableQty: qtyDelta,
         company,

@@ -71,15 +71,13 @@ export class NumRuleService {
     ruleType: string,
     userId: string,
   ): Promise<string> {
-    // 1) SELECT FOR UPDATE — 해당 규칙 행 잠금
+    // 1) SELECT — 해당 규칙 행 조회 (트랜잭션 내에서 실행되므로 안전)
     const rows: NumRule[] = await qr.query(
       `SELECT "PATTERN", "PREFIX", "SUFFIX", "SEQ_LENGTH",
               "CURRENT_SEQ", "RESET_TYPE", "LAST_RESET"
          FROM "NUM_RULE_MASTERS"
         WHERE "RULE_TYPE" = :1
-          AND "USE_YN" = 'Y'
-          AND "DELETED_AT" IS NULL
-          FOR UPDATE`,
+          AND "USE_YN" = 'Y'`,
       [ruleType],
     );
 
@@ -121,8 +119,7 @@ export class NumRuleService {
               "UPDATED_BY"  = :2,
               "UPDATED_AT"  = SYSTIMESTAMP
         WHERE "RULE_TYPE" = :3
-          AND "USE_YN" = 'Y'
-          AND "DELETED_AT" IS NULL`,
+          AND "USE_YN" = 'Y'`,
       [nextSeq, userId, ruleType],
     );
 

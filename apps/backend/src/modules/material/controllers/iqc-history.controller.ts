@@ -4,7 +4,7 @@
  *              G4: 검사성적서 파일 업로드, G5: 검사필 스탬프 라벨 지원
  */
 
-import { Controller, Get, Post, Query, Body, Param, HttpCode, HttpStatus, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Param, HttpCode, HttpStatus, UseInterceptors, UploadedFile, UseGuards } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -14,11 +14,13 @@ import { IqcHistoryService } from '../services/iqc-history.service';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 
 const IQC_UPLOAD_DIR = join(process.cwd(), 'uploads', 'iqc-certs');
 if (!existsSync(IQC_UPLOAD_DIR)) mkdirSync(IQC_UPLOAD_DIR, { recursive: true });
 
 @ApiTags('자재관리 - IQC이력')
+@UseGuards(JwtAuthGuard)
 @Controller('material/iqc-history')
 export class IqcHistoryController {
   constructor(private readonly iqcHistoryService: IqcHistoryService) {}

@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. itemCode + partnerId가 복합 PK (자연키)
- * 2. 품목(ITEM_CODE) + 거래처(PARTNER_ID) → 검사그룹(GROUP_CODE) 매핑
+ * 2. 품목(ITEM_CODE) + 거래처(PARTNER_ID) → 검사그룹(GROUP_ID) 매핑
  * 3. 같은 품목이라도 거래처에 따라 다른 검사그룹 적용 가능
  * 4. PARTNER_ID가 '*'이면 "기본 검사그룹" (거래처 무관)
  */
@@ -32,7 +32,7 @@ export class IqcPartLink {
   @PrimaryColumn({ name: 'PARTNER_ID', length: 255, default: '*' })
   partnerId: string;
 
-  @Column({ name: 'GROUP_CODE', length: 20 })
+  @Column({ name: 'GROUP_ID', length: 20 })
   groupCode: string;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
@@ -68,6 +68,6 @@ export class IqcPartLink {
   partner: PartnerMaster;
 
   @ManyToOne(() => IqcGroup, { eager: false })
-  @JoinColumn({ name: 'GROUP_CODE', referencedColumnName: 'groupCode' })
+  @JoinColumn({ name: 'GROUP_ID', referencedColumnName: 'groupCode' })
   group: IqcGroup;
 }

@@ -123,10 +123,12 @@ export class PhysicalInvService {
     seq: number,
     dto: CompletePhysicalInvSessionDto,
   ): Promise<PhysicalInvSession> {
-    // 날짜를 시분초 없이 비교 (Oracle DATE 컬럼은 TRUNC된 날짜만 저장)
-    const dateOnly = new Date(sessionDate);
-    dateOnly.setHours(0, 0, 0, 0);
-    const session = await this.sessionRepository.findOne({ where: { sessionDate: dateOnly, seq } });
+    // Oracle DATE 비교 — TRUNC로 시분초 무시
+    const session = await this.sessionRepository
+      .createQueryBuilder('s')
+      .where('TRUNC(s.sessionDate) = TO_DATE(:sd, \'YYYY-MM-DD\')', { sd: sessionDate })
+      .andWhere('s.seq = :seq', { seq })
+      .getOne();
     if (!session) {
       throw new NotFoundException(`실사 세션을 찾을 수 없습니다. (${sessionDate}-${seq})`);
     }
@@ -541,7 +543,6 @@ export class PhysicalInvService {
         const [whCode, itCode, ltNo] = item.stockId.split('::');
         const stock = await queryRunner.manager.findOne(MatStock, {
           where: { warehouseCode: whCode, itemCode: itCode, matUid: ltNo || '' },
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (!stock) {
@@ -593,6 +594,8 @@ export class PhysicalInvService {
           diffQty,
           reason: item.remark || '재고실사 조정',
           createdBy,
+          company: stock.company,
+          plant: stock.plant,
         });
         const savedLog = await queryRunner.manager.save(invAdjLog);
         results.push(savedLog);

@@ -183,7 +183,6 @@ export class AdjustmentService {
       // 재고 업데이트
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (stock) {
@@ -311,7 +310,6 @@ export class AdjustmentService {
       // 기존 재고 조회
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
-        lock: { mode: 'pessimistic_write' },
       });
 
       const beforeQty = stock?.qty ?? 0;

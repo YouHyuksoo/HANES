@@ -180,7 +180,6 @@ export class InventoryService {
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode: dto.warehouseCode, itemCode: dto.itemCode, matUid: dto.matUid || IsNull() },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (existingStock) {
@@ -225,7 +224,6 @@ export class InventoryService {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode: dto.warehouseCode, itemCode: dto.itemCode, matUid: dto.matUid || IsNull() },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -261,7 +259,6 @@ export class InventoryService {
       if (dto.toWarehouseCode) {
         const targetStock = await queryRunner.manager.findOne(MatStock, {
           where: { warehouseCode: dto.toWarehouseCode, itemCode: dto.itemCode, matUid: dto.matUid || IsNull() },
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (targetStock) {
@@ -371,7 +368,6 @@ export class InventoryService {
             itemCode: originalTrans.itemCode,
             matUid: originalTrans.matUid || IsNull(),
           },
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (stock) {
@@ -394,7 +390,6 @@ export class InventoryService {
             itemCode: originalTrans.itemCode,
             matUid: originalTrans.matUid || IsNull(),
           },
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (stock) {

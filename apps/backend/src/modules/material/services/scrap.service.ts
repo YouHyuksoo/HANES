@@ -112,7 +112,6 @@ export class ScrapService {
       // 재고 확인 (MatStock 기준)
       const stock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode: lot.itemCode, warehouseCode: warehouseId, matUid },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!stock || stock.qty < qty) {

@@ -51,11 +51,14 @@ import { PartMaster } from '../../entities/part-master.entity';
 import { MatLot } from '../../entities/mat-lot.entity';
 import { FgLabel } from '../../entities/fg-label.entity';
 import { InventoryModule } from '../inventory/inventory.module';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { User } from '../../entities/user.entity';
 
 @Module({
   imports: [
     InventoryModule,
     TypeOrmModule.forFeature([
+      User,
       BoxMaster,
       PalletMaster,
       ShipmentLog,
@@ -80,6 +83,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     CustomerOrderController,
   ],
   providers: [
+    JwtAuthGuard,
     BoxService,
     PalletService,
     ShipmentService,

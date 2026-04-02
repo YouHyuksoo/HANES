@@ -103,7 +103,6 @@ export class LotSplitService {
       // 원본 재고 조회 (수량 체크용)
       const sourceStock = await queryRunner.manager.findOne(MatStock, {
         where: { matUid: sourceLotId },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!sourceStock || sourceStock.qty < splitQty) {

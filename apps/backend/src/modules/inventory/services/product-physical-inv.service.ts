@@ -168,7 +168,6 @@ export class ProductPhysicalInvService {
         const compositeKey = { warehouseCode, itemCode, prdUid };
         const stock = await queryRunner.manager.findOne(ProductStock, {
           where: compositeKey,
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (!stock) {

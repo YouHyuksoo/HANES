@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. 복합 PK: occurAt(OCCUR_TIME) + seq(SEQ)
- * 2. PROD_RESULT_NO(string)로 ProdResult를 참조
+ * 2. PROD_RESULT_ID(string)로 ProdResult를 참조
  */
 import {
   Entity,
@@ -30,11 +30,11 @@ export class DefectLog {
   @PrimaryColumn({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
 
-  @Column({ type: 'varchar2', name: 'PROD_RESULT_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROD_RESULT_ID', length: 50, nullable: true })
   prodResultNo: string | null;
 
   @ManyToOne(() => ProdResult, (prodResult) => prodResult.defectLogs)
-  @JoinColumn({ name: 'PROD_RESULT_NO', referencedColumnName: 'resultNo' })
+  @JoinColumn({ name: 'PROD_RESULT_ID', referencedColumnName: 'resultNo' })
   prodResult: ProdResult;
 
   @Column({ name: 'DEFECT_CODE', length: 50 })

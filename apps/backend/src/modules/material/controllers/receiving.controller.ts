@@ -15,9 +15,11 @@ import { ReceivingService } from '../services/receiving.service';
 import { CreateBulkReceiveDto, ReceivingQueryDto, AutoReceiveDto } from '../dto/receiving.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - 입고관리')
+@UseGuards(JwtAuthGuard)
 @Controller('material/receiving')
 export class ReceivingController {
   constructor(private readonly receivingService: ReceivingService) {}

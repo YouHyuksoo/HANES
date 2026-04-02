@@ -88,7 +88,6 @@ export class ProductHoldService {
     try {
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: compositeKey,
-        lock: { mode: 'pessimistic_write' },
       });
       if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
       if (stock.status === 'HOLD') throw new BadRequestException('이미 HOLD 상태입니다.');
@@ -132,7 +131,6 @@ export class ProductHoldService {
     try {
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: compositeKey,
-        lock: { mode: 'pessimistic_write' },
       });
       if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
       if (stock.status !== 'HOLD') throw new BadRequestException('HOLD 상태가 아닙니다.');

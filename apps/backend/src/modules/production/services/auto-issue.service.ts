@@ -295,7 +295,6 @@ export class AutoIssueService {
     const stocks = await qr.manager.find(MatStock, {
       where: { itemCode, matUid },
       order: { createdAt: 'ASC' },
-      lock: { mode: 'pessimistic_write' },
     });
 
     let remaining = totalDeduct;
