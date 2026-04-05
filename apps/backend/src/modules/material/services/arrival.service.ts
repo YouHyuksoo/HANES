@@ -166,12 +166,19 @@ export class ArrivalService {
     const returnTxs = await this.stockTransactionRepository.find({
       where: { refType: 'RETURN', transType: 'MAT_IN_CANCEL' },
     });
+    // PO품목/반품 Map 전처리 (O(n*m) → O(n) 개선)
+    const poItemBySeq = new Map(poItems.map((pi) => [pi.seq, pi]));
+    const poItemByKey = new Map(poItems.map((pi) => [`${pi.poNo}-${pi.seq}`, pi]));
+    const returnQtyMap = new Map<string, number>();
+    for (const tx of returnTxs) {
+      const key = `${tx.itemCode}::${tx.refId}`;
+      returnQtyMap.set(key, (returnQtyMap.get(key) ?? 0) + Math.abs(tx.qty));
+    }
+
     for (const item of dto.items) {
-      const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
+      const poItem = poItemBySeq.get(Number(item.poItemId)) ?? poItemByKey.get(item.poItemId);
       if (!poItem) throw new BadRequestException(`PO 품목을 찾을 수 없습니다: ${item.poItemId}`);
-      const returnQty = returnTxs
-        .filter((tx) => tx.itemCode === poItem.itemCode && tx.refId === String(poItem.seq))
-        .reduce((sum, tx) => sum + Math.abs(tx.qty), 0);
+      const returnQty = returnQtyMap.get(`${poItem.itemCode}::${String(poItem.seq)}`) ?? 0;
       const remaining = poItem.orderQty - poItem.receivedQty + returnQty;
       if (item.receivedQty > remaining) {
         throw new BadRequestException(
@@ -179,6 +186,18 @@ export class ArrivalService {
         );
       }
     }
+
+    // 품목/창고 일괄 선조회 (트랜잭션 밖, N+1 제거)
+    const itemCodes = [...new Set(dto.items.map((i) => i.itemCode).filter(Boolean))];
+    const whCodes = [...new Set(dto.items.map((i) => i.warehouseId).filter(Boolean))];
+    const allParts = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      : [];
+    const allWarehouses = whCodes.length > 0
+      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes) } })
+      : [];
+    const partMap = new Map(allParts.map((p) => [p.itemCode, p] as const));
+    const whMap = new Map(allWarehouses.map((w) => [w.warehouseCode, w] as const));
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -192,8 +211,7 @@ export class ArrivalService {
       for (const item of dto.items) {
         const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
 
-        // 품목 정보 조회
-        const part = await this.partMasterRepository.findOne({ where: { itemCode: item.itemCode } });
+        const part = partMap.get(item.itemCode);
 
         // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
         const arrival = queryRunner.manager.create(MatArrival, {
@@ -246,8 +264,7 @@ export class ArrivalService {
           });
         }
 
-        // part, warehouse 정보 조회 (part는 이미 위에서 조회)
-        const warehouse = await this.warehouseRepository.findOne({ where: { warehouseCode: item.warehouseId } });
+        const warehouse = whMap.get(item.warehouseId);
 
         results.push({
           ...savedTx,

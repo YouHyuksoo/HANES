@@ -11,7 +11,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
@@ -232,6 +232,21 @@ export class TraceService {
 
     // TraceLog가 없으면 ProdResult + InspectResult에서 타임라인 생성
     if (timeline.length === 0) {
+      // 검사결과 일괄 조회 (N+1 제거)
+      const resultNos = prodResults.map((pr) => pr.resultNo).filter(Boolean);
+      const allInspResults = resultNos.length > 0
+        ? await this.inspectResultRepo.find({
+            where: { prodResultNo: In(resultNos), company, plant },
+            order: { inspectAt: 'ASC' },
+          })
+        : [];
+      const inspByResult = new Map<string, typeof allInspResults>();
+      for (const ir of allInspResults) {
+        const key = ir.prodResultNo;
+        if (!inspByResult.has(key)) inspByResult.set(key, []);
+        inspByResult.get(key)!.push(ir);
+      }
+
       for (const pr of prodResults) {
         stepCounter++;
         const procName = pr.processCode ? (processMap.get(pr.processCode) ?? pr.processCode) : '';
@@ -249,11 +264,7 @@ export class TraceService {
           detail: pr.remark ?? undefined,
         });
 
-        // 해당 ProdResult의 검사결과도 타임라인에 추가
-        const inspResults = await this.inspectResultRepo.find({
-          where: { prodResultNo: pr.resultNo, company, plant },
-          order: { inspectAt: 'ASC' },
-        });
+        const inspResults = inspByResult.get(pr.resultNo) ?? [];
         for (const ir of inspResults) {
           stepCounter++;
           timeline.push({
@@ -311,11 +322,22 @@ export class TraceService {
         where: { orderNo: fgLabel.orderNo, company, plant },
         order: { issueDate: 'ASC' },
       });
+      // 자재 LOT + 품목 일괄 조회 (N+1 제거)
+      const matUids = [...new Set(matIssues.map((mi) => mi.matUid).filter(Boolean))];
+      const allMatLots = matUids.length > 0
+        ? await this.matLotRepo.find({ where: { matUid: In(matUids) } })
+        : [];
+      const matLotMap = new Map(allMatLots.map((l) => [l.matUid, l]));
+
+      const matItemCodes = [...new Set(allMatLots.map((l) => l.itemCode).filter(Boolean))];
+      const matParts = matItemCodes.length > 0
+        ? await this.partMasterRepo.find({ where: { itemCode: In(matItemCodes) } })
+        : [];
+      const matPartMap = new Map(matParts.map((p) => [p.itemCode, p]));
+
       for (const mi of matIssues) {
-        const matLot = await this.matLotRepo.findOne({ where: { matUid: mi.matUid } });
-        const matPart = matLot
-          ? await this.partMasterRepo.findOne({ where: { itemCode: matLot.itemCode } })
-          : null;
+        const matLot = matLotMap.get(mi.matUid);
+        const matPart = matLot ? matPartMap.get(matLot.itemCode) : null;
         materialData.push({
           materialCode: matPart?.itemCode ?? matLot?.itemCode ?? '',
           materialName: matPart?.itemName ?? '',

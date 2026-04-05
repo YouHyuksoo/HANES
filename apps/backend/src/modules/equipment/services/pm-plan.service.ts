@@ -265,18 +265,23 @@ export class PmPlanService {
     let created = 0;
     let skipped = 0;
 
+    // 기간 내 기존 WO 일괄 선조회 (N+1 제거)
+    const planCodes = plans.map((p) => p.planCode);
+    const existingWos = planCodes.length > 0
+      ? await this.pmWorkOrderRepo.find({
+          where: { pmPlanCode: In(planCodes), scheduledDate: Between(startDate, endDate) },
+          select: ['pmPlanCode', 'scheduledDate'],
+        })
+      : [];
+    const existingWoSet = new Set(
+      existingWos.map((wo) => `${wo.pmPlanCode}::${this.formatDate(wo.scheduledDate)}`),
+    );
+
     for (const plan of plans) {
       const scheduledDate = plan.nextDueAt || startDate;
       const dateStr = this.formatDate(scheduledDate);
 
-      const existing = await this.pmWorkOrderRepo.findOne({
-        where: {
-          pmPlanCode: plan.planCode,
-          scheduledDate: scheduledDate,
-        },
-      });
-
-      if (existing) {
+      if (existingWoSet.has(`${plan.planCode}::${dateStr}`)) {
         skipped++;
         continue;
       }
@@ -552,39 +557,41 @@ export class PmPlanService {
       resultsMap.set(r.workOrderNo, list);
     }
 
-    const result = await Promise.all(
-      workOrders.map(async (wo) => {
-        const equip = equipMap.get(wo.equipCode);
+    // PM 계획 + 계획항목 일괄 선조회 (N+1 제거)
+    const pmPlanCodes = [...new Set(workOrders.map((wo) => wo.pmPlanCode).filter(Boolean))];
+    const allPlans = pmPlanCodes.length > 0
+      ? await this.pmPlanRepo.find({ where: { planCode: In(pmPlanCodes) }, select: ['planCode', 'planName'] })
+      : [];
+    const planNameMap = new Map(allPlans.map((p) => [p.planCode, p.planName]));
 
-        let planItems: PmPlanItem[] = [];
-        let planName: string | null = null;
-        if (wo.pmPlanCode) {
-          const plan = await this.pmPlanRepo.findOne({
-            where: { planCode: wo.pmPlanCode },
-            select: ['planCode', 'planName'],
-          });
-          planName = plan?.planName || null;
-          const rawItems = await this.pmPlanItemRepo.find({
-            where: { pmPlanCode: wo.pmPlanCode, useYn: 'Y' },
-            order: { seq: 'ASC' },
-          });
-          planItems = rawItems;
-        }
+    const allPlanItems = pmPlanCodes.length > 0
+      ? await this.pmPlanItemRepo.find({ where: { pmPlanCode: In(pmPlanCodes), useYn: 'Y' }, order: { seq: 'ASC' } })
+      : [];
+    const planItemsMap = new Map<string, PmPlanItem[]>();
+    for (const item of allPlanItems) {
+      const list = planItemsMap.get(item.pmPlanCode) || [];
+      list.push(item);
+      planItemsMap.set(item.pmPlanCode, list);
+    }
 
-        return {
-          ...wo,
-          planName,
-          equip: {
-            equipCode: equip?.equipCode || '-',
-            equipName: equip?.equipName || '-',
-            lineCode: equip?.lineCode || null,
-            equipType: equip?.equipType || null,
-          },
-          planItems,
-          results: resultsMap.get(wo.workOrderNo) || [],
-        };
-      }),
-    );
+    const result = workOrders.map((wo) => {
+      const equip = equipMap.get(wo.equipCode);
+      const planName = wo.pmPlanCode ? (planNameMap.get(wo.pmPlanCode) || null) : null;
+      const planItems = wo.pmPlanCode ? (planItemsMap.get(wo.pmPlanCode) || []) : [];
+
+      return {
+        ...wo,
+        planName,
+        equip: {
+          equipCode: equip?.equipCode || '-',
+          equipName: equip?.equipName || '-',
+          lineCode: equip?.lineCode || null,
+          equipType: equip?.equipType || null,
+        },
+        planItems,
+        results: resultsMap.get(wo.workOrderNo) || [],
+      };
+    });
 
     return result;
   }
