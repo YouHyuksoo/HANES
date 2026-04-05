@@ -1050,6 +1050,10 @@ export class ProdResultService {
    * - 품목별로 계획수량, 양품, 불량, 양품률을 집계
    */
   async getSummaryByProduct(dateFrom?: string, dateTo?: string, search?: string) {
+    // 날짜 범위가 없으면 당일 기준 (전량 집계 방지)
+    const effectiveDateFrom = dateFrom || new Date().toISOString().substring(0, 10);
+    const effectiveDateTo = dateTo || effectiveDateFrom;
+
     const qb = this.prodResultRepository
       .createQueryBuilder('pr')
       .leftJoin('pr.jobOrder', 'jo')
@@ -1065,17 +1069,12 @@ export class ProdResultService {
         'COUNT(pr."RESULT_NO") AS "resultCount"',
       ])
       .where('pr.status != :status', { status: 'CANCELED' })
+      .andWhere('pr.startAt >= TO_DATE(:dateFrom, \'YYYY-MM-DD\')', { dateFrom: effectiveDateFrom })
+      .andWhere('pr.startAt < TO_DATE(:dateTo, \'YYYY-MM-DD\') + 1', { dateTo: effectiveDateTo })
       .groupBy('p.itemCode')
       .addGroupBy('p.itemName')
       .addGroupBy('p.itemType')
       .orderBy('"totalGoodQty"', 'DESC');
-
-    if (dateFrom) {
-      qb.andWhere('pr.startAt >= :dateFrom', { dateFrom: new Date(dateFrom) });
-    }
-    if (dateTo) {
-      qb.andWhere('pr.startAt <= :dateTo', { dateTo: new Date(dateTo) });
-    }
     if (search) {
       qb.andWhere(
         '(p.itemCode LIKE :search OR p.itemName LIKE :search)',
