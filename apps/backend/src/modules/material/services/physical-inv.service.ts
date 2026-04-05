@@ -352,28 +352,34 @@ export class PhysicalInvService {
   async scanCount(dto: PdaScanCountDto, company?: string, plant?: string) {
     const { sessionDate, seq, locationCode, barcode, countedBy } = dto;
 
-    // 바코드로 MatLot 조회 (barcode = matUid)
-    const lot = await this.matLotRepository.findOne({ where: { matUid: barcode } });
-    if (!lot) {
-      throw new NotFoundException(`자재시리얼을 찾을 수 없습니다: ${barcode}`);
-    }
+    // lot + stock + part를 JOIN 1회로 조회 (기존 4회 → 1회)
+    const qb = this.matStockRepository
+      .createQueryBuilder('s')
+      .innerJoin('MAT_LOTS', 'l', 's.itemCode = l.ITEM_CODE AND s.matUid = l.MAT_UID')
+      .leftJoin('ITEM_MASTERS', 'p', 's.itemCode = p.ITEM_CODE')
+      .select([
+        's.warehouseCode AS "warehouseCode"',
+        's.itemCode AS "itemCode"',
+        's.matUid AS "matUid"',
+        's.qty AS "qty"',
+        'p.ITEM_NAME AS "itemName"',
+      ])
+      .where('l.MAT_UID = :barcode', { barcode });
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
 
-    // 해당 자재의 재고 찾기
-    const stockWhere: any = { itemCode: lot.itemCode, matUid: lot.matUid };
-    if (company) stockWhere.company = company;
-    if (plant) stockWhere.plant = plant;
-    const stock = await this.matStockRepository.findOne({ where: stockWhere });
-    if (!stock) {
-      throw new NotFoundException(`해당 자재의 재고를 찾을 수 없습니다: ${barcode}`);
+    const row = await qb.getRawOne();
+    if (!row) {
+      throw new NotFoundException(`자재시리얼 또는 재고를 찾을 수 없습니다: ${barcode}`);
     }
 
     // 카운트 상세 UPSERT
     const detailKey = {
       sessionDate: new Date(sessionDate),
       seq,
-      warehouseCode: stock.warehouseCode,
-      itemCode: stock.itemCode,
-      matUid: stock.matUid,
+      warehouseCode: row.warehouseCode,
+      itemCode: row.itemCode,
+      matUid: row.matUid,
     };
     let detail = await this.countDetailRepository.findOne({ where: detailKey });
 
@@ -384,18 +390,16 @@ export class PhysicalInvService {
       detail = this.countDetailRepository.create({
         ...detailKey,
         locationCode,
-        systemQty: stock.qty,
+        systemQty: row.qty,
         countedQty: 1,
         countedBy: countedBy ?? null,
       });
     }
     await this.countDetailRepository.save(detail);
 
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: stock.itemCode } });
-
     return {
-      itemCode: stock.itemCode,
-      itemName: part?.itemName ?? '',
+      itemCode: row.itemCode,
+      itemName: row.itemName ?? '',
       countedQty: detail.countedQty,
     };
   }
