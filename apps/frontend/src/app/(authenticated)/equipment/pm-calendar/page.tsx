@@ -154,7 +154,7 @@ export default function PmCalendarPage() {
   }, []);
 
   return (
-    <div className="space-y-5 p-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>

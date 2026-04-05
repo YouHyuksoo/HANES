@@ -114,7 +114,7 @@ export default function ReceivingPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
       <div className="flex justify-between items-center">
         <div>
@@ -141,8 +141,8 @@ export default function ReceivingPage() {
       </div>
 
       {/* 입고대기 테이블 */}
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4">
           <ReceivableTable
             data={filtered}
             inputs={inputs}

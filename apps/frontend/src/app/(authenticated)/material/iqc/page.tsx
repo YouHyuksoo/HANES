@@ -43,7 +43,7 @@ export default function IqcPage() {
   } = useIqcData();
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -64,8 +64,8 @@ export default function IqcPage() {
         <StatCard label={t('material.iqc.stats.failed')} value={stats.failed} icon={XCircle} color="red" />
       </div>
 
-      <Card>
-        <CardContent>
+      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4">
           <IqcTable
             data={filteredItems}
             onInspect={openIqcModal}

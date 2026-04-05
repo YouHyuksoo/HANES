@@ -91,7 +91,7 @@ export default function InterfaceManualPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Send className="w-7 h-7 text-primary" />{t("interface.manual.title")}</h1>

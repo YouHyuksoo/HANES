@@ -136,7 +136,7 @@ export default function RolesPage() {
       [...checkedCodes].some((c) => !originalCodes.has(c)));
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       {/* 헤더 */}
       <div className="flex justify-between items-center">
         <div>
