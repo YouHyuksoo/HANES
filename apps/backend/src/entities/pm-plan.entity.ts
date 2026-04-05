@@ -60,6 +60,18 @@ export class PmPlan {
   @Column({ name: 'NEXT_DUE_AT', type: 'timestamp', nullable: true })
   nextDueAt: Date | null;
 
+  /** USAGE_BASED: 감시 대상 센서 타입 (RUNTIME_HOURS, SHOT_COUNT 등) */
+  @Column({ type: 'varchar2', name: 'USAGE_FIELD', length: 30, nullable: true })
+  usageField: string | null;
+
+  /** USAGE_BASED: 이 값 도달 시 WO 생성 */
+  @Column({ name: 'USAGE_THRESHOLD', type: 'number', nullable: true })
+  usageThreshold: number | null;
+
+  /** USAGE_BASED: 현재 누적 사용량 (센서 데이터에서 자동 업데이트) */
+  @Column({ name: 'CURRENT_USAGE', type: 'number', default: 0 })
+  currentUsage: number;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

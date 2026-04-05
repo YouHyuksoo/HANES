@@ -49,6 +49,10 @@ import { MoldController } from './controllers/mold.controller';
 import { MoldService } from './services/mold.service';
 import { MoldMaster } from '../../entities/mold-master.entity';
 import { MoldUsageLog } from '../../entities/mold-usage-log.entity';
+import { SensorDataLog } from '../../entities/sensor-data-log.entity';
+import { EquipConditionRule } from '../../entities/equip-condition-rule.entity';
+import { SensorMonitorService } from './services/sensor-monitor.service';
+import { SensorMonitorController } from './controllers/sensor-monitor.controller';
 
 @Module({
   imports: [
@@ -68,6 +72,8 @@ import { MoldUsageLog } from '../../entities/mold-usage-log.entity';
       ProcessMaster,
       MoldMaster,
       MoldUsageLog,
+      SensorDataLog,
+      EquipConditionRule,
     ]),
   ],
   controllers: [
@@ -80,6 +86,7 @@ import { MoldUsageLog } from '../../entities/mold-usage-log.entity';
     PmPlanController,
     PmWorkOrderController,
     MoldController,
+    SensorMonitorController,
   ],
   providers: [
     EquipMasterService,
@@ -87,6 +94,7 @@ import { MoldUsageLog } from '../../entities/mold-usage-log.entity';
     EquipInspectService,
     PmPlanService,
     MoldService,
+    SensorMonitorService,
   ],
   exports: [
     EquipMasterService,
@@ -94,6 +102,7 @@ import { MoldUsageLog } from '../../entities/mold-usage-log.entity';
     EquipInspectService,
     PmPlanService,
     MoldService,
+    SensorMonitorService,
   ],
 })
 export class EquipmentModule {}

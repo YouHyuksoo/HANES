@@ -134,6 +134,16 @@ export class CreatePmPlanDto {
   @MaxLength(1000)
   description?: string;
 
+  @ApiPropertyOptional({ description: 'USAGE_BASED 감시 대상 센서 타입' })
+  @IsOptional()
+  @IsString()
+  usageField?: string;
+
+  @ApiPropertyOptional({ description: 'USAGE_BASED 임계값' })
+  @IsOptional()
+  @IsNumber()
+  usageThreshold?: number;
+
   @ApiPropertyOptional({ description: '보전 항목 목록', type: [PmPlanItemDto] })
   @IsOptional()
   @IsArray()

@@ -163,6 +163,8 @@ export class PmPlanService {
       seasonMonth: dto.seasonMonth ?? null,
       estimatedTime: dto.estimatedTime ?? null,
       description: dto.description ?? null,
+      usageField: dto.usageField ?? null,
+      usageThreshold: dto.usageThreshold ?? null,
       nextDueAt,
     });
 
@@ -204,6 +206,8 @@ export class PmPlanService {
     if (dto.seasonMonth !== undefined) plan.seasonMonth = dto.seasonMonth;
     if (dto.estimatedTime !== undefined) plan.estimatedTime = dto.estimatedTime;
     if (dto.description !== undefined) plan.description = dto.description;
+    if (dto.usageField !== undefined) plan.usageField = dto.usageField ?? null;
+    if (dto.usageThreshold !== undefined) plan.usageThreshold = dto.usageThreshold ?? null;
 
     if (dto.cycleType || dto.cycleValue || dto.cycleUnit) {
       plan.nextDueAt = this.calculateNextDueAt(
@@ -263,11 +267,22 @@ export class PmPlanService {
       },
     });
 
+    // USAGE_BASED 계획: currentUsage >= usageThreshold 도달한 건
+    const usagePlans = await this.pmPlanRepo
+      .createQueryBuilder('p')
+      .where('p.useYn = :yn', { yn: 'Y' })
+      .andWhere('p.pmType = :type', { type: 'USAGE_BASED' })
+      .andWhere('p.usageThreshold IS NOT NULL')
+      .andWhere('p.currentUsage >= p.usageThreshold')
+      .getMany();
+
+    const allPlans = [...plans, ...usagePlans];
+
     let created = 0;
     let skipped = 0;
 
     // 기간 내 기존 WO 일괄 선조회 (N+1 제거)
-    const planCodes = plans.map((p) => p.planCode);
+    const planCodes = allPlans.map((p) => p.planCode);
     const existingWos = planCodes.length > 0
       ? await this.pmWorkOrderRepo.find({
           where: { pmPlanCode: In(planCodes), scheduledDate: Between(startDate, endDate) },
@@ -281,7 +296,7 @@ export class PmPlanService {
     // 날짜별 최대 WO번호를 미리 조회하여 루프 안 개별 쿼리 제거
     const woSeqByDate = new Map<string, number>();
 
-    for (const plan of plans) {
+    for (const plan of allPlans) {
       const scheduledDate = plan.nextDueAt || startDate;
       const dateStr = this.formatDate(scheduledDate);
 
@@ -323,10 +338,16 @@ export class PmPlanService {
       });
 
       await this.pmWorkOrderRepo.save(wo);
+
+      // USAGE_BASED: WO 생성 후 사용량 리셋
+      if (plan.pmType === 'USAGE_BASED') {
+        await this.pmPlanRepo.update({ planCode: plan.planCode }, { currentUsage: 0 });
+      }
+
       created++;
     }
 
-    return { created, skipped, total: plans.length };
+    return { created, skipped, total: allPlans.length };
   }
 
   /** WO 수동 생성 */
