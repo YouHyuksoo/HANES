@@ -350,12 +350,13 @@ export class ReceivingService {
 
         const savedTx = await queryRunner.manager.save(stockTx);
 
-        // 3. 입하 창고 재고 차감 (입하 창고 ≠ 입고 창고인 경우만)
-        if (arrivalWarehouseCode && arrivalWarehouseCode !== item.warehouseId) {
-          await this.upsertStock(queryRunner.manager, arrivalWarehouseCode, lot.itemCode, item.matUid, -item.qty, lot.company, lot.plant);
+        // 3. 입하 창고의 bulk(*) 재고 차감 → LOT(matUid) 재고로 전환
+        //    입하 시 matUid='*'로 적재했으므로 '*' 기준으로 차감해야 함
+        if (arrivalWarehouseCode) {
+          await this.upsertStock(queryRunner.manager, arrivalWarehouseCode, lot.itemCode, null, -item.qty, lot.company, lot.plant);
         }
 
-        // 4. 입고 창고 재고 증가
+        // 4. 입고 창고에 LOT 단위(matUid) 재고 증가
         await this.upsertStock(queryRunner.manager, item.warehouseId, lot.itemCode, item.matUid, item.qty, lot.company, lot.plant);
 
         results.push({ ...savedTx, receiveNo });
