@@ -240,9 +240,13 @@ export class BoxService {
       throw new ConflictException(`이미 존재하는 시리얼입니다: ${duplicates.join(', ')}`);
     }
 
-    // 혼입방지: 시리얼(LOT)의 품목이 박스의 품목과 일치하는지 검증
+    // 혼입방지: 시리얼(LOT)의 품목이 박스의 품목과 일치하는지 검증 — IN 배치로 N+1 방지
+    const lots = dto.serials.length > 0
+      ? await this.lotRepository.find({ where: { matUid: In(dto.serials) } })
+      : [];
+    const lotMap = new Map(lots.map((l) => [l.matUid, l] as const));
     for (const serial of dto.serials) {
-      const lot = await this.lotRepository.findOne({ where: { matUid: serial } });
+      const lot = lotMap.get(serial);
       if (lot && lot.itemCode !== box.itemCode) {
         throw new BadRequestException(
           `혼입방지: 시리얼 "${serial}"의 품목이 박스 품목과 다릅니다.`,

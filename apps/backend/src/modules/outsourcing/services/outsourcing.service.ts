@@ -183,29 +183,49 @@ export class OutsourcingService {
       queryBuilder.getCount(),
     ]);
 
-    // Fetch vendor info and counts for each order
-    const data = await Promise.all(
-      orders.map(async (order) => {
-        const vendor = await this.vendorMasterRepository.findOne({
-          where: { vendorCode: order.vendorId },
-          select: ['vendorCode', 'vendorName'],
-        });
-        const deliveryCount = await this.subconDeliveryRepository.count({
-          where: { orderNo: order.orderNo },
-        });
-        const receiveCount = await this.subconReceiveRepository.count({
-          where: { orderNo: order.orderNo },
-        });
-        return {
-          ...order,
-          vendor,
-          _count: {
-            deliveries: deliveryCount,
-            receives: receiveCount,
-          },
-        };
-      }),
-    );
+    // IN 배치 선조회 + GROUP BY 집계로 N+1 방지
+    const vendorIds = [...new Set(orders.map((o) => o.vendorId).filter(Boolean))] as const;
+    const orderNos = orders.map((o) => o.orderNo);
+
+    const [vendors, deliveryCounts, receiveCounts] = await Promise.all([
+      vendorIds.length > 0
+        ? this.vendorMasterRepository.find({
+            where: { vendorCode: In(vendorIds) },
+            select: ['vendorCode', 'vendorName'],
+          })
+        : Promise.resolve([]),
+      orderNos.length > 0
+        ? this.subconDeliveryRepository
+            .createQueryBuilder('d')
+            .select('d.orderNo', 'orderNo')
+            .addSelect('COUNT(*)', 'cnt')
+            .where('d.orderNo IN (:...orderNos)', { orderNos })
+            .groupBy('d.orderNo')
+            .getRawMany<{ orderNo: string; cnt: string }>()
+        : Promise.resolve([]),
+      orderNos.length > 0
+        ? this.subconReceiveRepository
+            .createQueryBuilder('r')
+            .select('r.orderNo', 'orderNo')
+            .addSelect('COUNT(*)', 'cnt')
+            .where('r.orderNo IN (:...orderNos)', { orderNos })
+            .groupBy('r.orderNo')
+            .getRawMany<{ orderNo: string; cnt: string }>()
+        : Promise.resolve([]),
+    ]);
+
+    const vendorMap = new Map(vendors.map((v) => [v.vendorCode, v] as const));
+    const deliveryMap = new Map(deliveryCounts.map((d) => [d.orderNo, Number(d.cnt)] as const));
+    const receiveMap = new Map(receiveCounts.map((r) => [r.orderNo, Number(r.cnt)] as const));
+
+    const data = orders.map((order) => ({
+      ...order,
+      vendor: vendorMap.get(order.vendorId) ?? null,
+      _count: {
+        deliveries: deliveryMap.get(order.orderNo) ?? 0,
+        receives: receiveMap.get(order.orderNo) ?? 0,
+      },
+    }));
 
     return { data, total, page, limit };
   }
@@ -459,16 +479,21 @@ export class OutsourcingService {
       return acc;
     }, {} as Record<string, any>);
 
-    // Fetch vendor info
-    const vendorIds = Object.keys(stockByVendor);
-    for (const vendorId of vendorIds) {
-      const vendor = await this.vendorMasterRepository.findOne({
-        where: { vendorCode: vendorId },
-        select: ['vendorCode', 'vendorName'],
-      });
+    // IN 배치 선조회로 N+1 방지
+    const vendorIdList = Object.keys(stockByVendor);
+    const vendorList = vendorIdList.length > 0
+      ? await this.vendorMasterRepository.find({
+          where: { vendorCode: In(vendorIdList) },
+          select: ['vendorCode', 'vendorName'],
+        })
+      : [];
+    const vendorLookup = new Map(vendorList.map((v) => [v.vendorCode, v] as const));
+
+    for (const vid of vendorIdList) {
+      const vendor = vendorLookup.get(vid);
       if (vendor) {
-        stockByVendor[vendorId].vendorCode = vendor.vendorCode;
-        stockByVendor[vendorId].vendorName = vendor.vendorName;
+        stockByVendor[vid].vendorCode = vendor.vendorCode;
+        stockByVendor[vid].vendorName = vendor.vendorName;
       }
     }
 

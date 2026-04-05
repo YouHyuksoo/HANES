@@ -19,7 +19,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource, QueryRunner, In } from 'typeorm';
 
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -191,8 +191,7 @@ export class AutoIssueService {
   ): Promise<{ matUid: string; itemCode: string; issueQty: number }[]> {
     const issued: { matUid: string; itemCode: string; issueQty: number }[] = [];
 
-    /* FIFO LOT 목록 (PASS & NORMAL & MatStock.qty > 0) */
-    const lotsWithStock: { lot: MatLot; stockQty: number }[] = [];
+    /* FIFO LOT 목록 (PASS & NORMAL & MatStock.qty > 0) — IN 배치로 N+1 방지 */
     const candidateLots = await qr.manager
       .createQueryBuilder(MatLot, 'l')
       .where('l.itemCode = :itemCode', { itemCode })
@@ -201,11 +200,20 @@ export class AutoIssueService {
       .orderBy('l.createdAt', 'ASC')
       .getMany();
 
+    const candidateMatUids = candidateLots.map((l) => l.matUid);
+    const allStocks = candidateMatUids.length > 0
+      ? await qr.manager.find(MatStock, { where: { matUid: In(candidateMatUids) } })
+      : [];
+
+    // matUid별 재고수량 합산 Map
+    const stockQtyByMatUid = new Map<string, number>();
+    for (const s of allStocks) {
+      stockQtyByMatUid.set(s.matUid, (stockQtyByMatUid.get(s.matUid) ?? 0) + s.qty);
+    }
+
+    const lotsWithStock: { lot: MatLot; stockQty: number }[] = [];
     for (const lot of candidateLots) {
-      const stocks = await qr.manager.find(MatStock, {
-        where: { matUid: lot.matUid },
-      });
-      const totalStockQty = stocks.reduce((sum, s) => sum + s.qty, 0);
+      const totalStockQty = stockQtyByMatUid.get(lot.matUid) ?? 0;
       if (totalStockQty > 0) {
         lotsWithStock.push({ lot, stockQty: totalStockQty });
       }

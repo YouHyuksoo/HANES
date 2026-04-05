@@ -537,13 +537,29 @@ export class PhysicalInvService {
     await queryRunner.startTransaction();
 
     try {
+      // IN 배치 선조회로 N+1 방지 — stockId 파싱 후 일괄 조회
+      const stockKeys = items.map((item) => {
+        const [whCode, itCode, ltNo] = item.stockId.split('::');
+        return { warehouseCode: whCode, itemCode: itCode, matUid: ltNo || '' };
+      });
+      const allStocks = stockKeys.length > 0
+        ? await queryRunner.manager.find(MatStock, {
+            where: stockKeys.map((k) => ({
+              warehouseCode: k.warehouseCode,
+              itemCode: k.itemCode,
+              matUid: k.matUid,
+            })),
+          })
+        : [];
+      const stockMap = new Map(
+        allStocks.map((s) => [`${s.warehouseCode}::${s.itemCode}::${s.matUid}`, s] as const),
+      );
+
       const results = [];
 
       for (const item of items) {
         const [whCode, itCode, ltNo] = item.stockId.split('::');
-        const stock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: whCode, itemCode: itCode, matUid: ltNo || '' },
-        });
+        const stock = stockMap.get(`${whCode}::${itCode}::${ltNo || ''}`) ?? null;
 
         if (!stock) {
           throw new NotFoundException(`재고를 찾을 수 없습니다: ${item.stockId}`);

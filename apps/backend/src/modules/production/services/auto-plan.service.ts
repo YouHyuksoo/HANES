@@ -13,7 +13,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource, QueryRunner, In } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
@@ -150,7 +150,12 @@ export class AutoPlanService {
       qb.andWhere("co.dueDate >= TO_DATE(:startDate, 'YYYY-MM-DD')", { startDate });
       qb.andWhere("co.dueDate <= TO_DATE(:endDate, 'YYYY-MM-DD')", { endDate });
     } else {
-      qb.andWhere("TO_CHAR(co.dueDate, 'YYYY-MM') = :month", { month });
+      // 범위 조건으로 인덱스 활용 (TO_CHAR 대신)
+      const [year, mon] = month.split('-').map(Number);
+      const monthStart = `${month}-01`;
+      const nextMonth = mon === 12 ? `${year + 1}-01-01` : `${year}-${String(mon + 1).padStart(2, '0')}-01`;
+      qb.andWhere("co.dueDate >= TO_DATE(:monthStart, 'YYYY-MM-DD')", { monthStart });
+      qb.andWhere("co.dueDate < TO_DATE(:nextMonth, 'YYYY-MM-DD')", { nextMonth });
     }
 
     if (customerId) {
@@ -182,10 +187,17 @@ export class AutoPlanService {
     company: string,
     plant: string,
   ): Promise<number> {
+    // IN 배치로 품목 선조회 — N+1 방지
+    const itemCodes = [...new Set(items.map((i) => i.itemCode))] as const;
+    const parts = itemCodes.length > 0
+      ? await this.partRepo.find({ where: { itemCode: In(itemCodes) } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
+
     let created = 0;
     for (const item of items) {
       const planNo = await this.generatePlanNo(month, queryRunner);
-      const part = await this.partRepo.findOne({ where: { itemCode: item.itemCode } });
+      const part = partMap.get(item.itemCode);
 
       const plan = queryRunner.manager.create(ProdPlan, {
         planNo,

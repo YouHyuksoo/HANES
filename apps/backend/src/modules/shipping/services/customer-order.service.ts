@@ -69,32 +69,36 @@ export class CustomerOrderService {
       this.customerOrderRepository.count({ where }),
     ]);
 
-    // 품목 정보 병합
-    const resultData = await Promise.all(
-      data.map(async (order) => {
-        const items = await this.customerOrderItemRepository.find({
-          where: { orderNo: order.orderNo },
-        });
+    // 품목 정보 병합 — IN 배치 선조회로 N+1 방지
+    const orderNos = data.map((o) => o.orderNo);
+    const allItems = orderNos.length > 0
+      ? await this.customerOrderItemRepository.find({ where: { orderNo: In(orderNos) } })
+      : [];
 
-        const itemsWithPart = await Promise.all(
-          items.map(async (item) => {
-            const part = await this.partRepository.findOne({
-              where: { itemCode: item.itemCode },
-              select: ['itemCode', 'itemName'],
-            });
-            return {
-              ...item,
-              part: part || undefined,
-            };
-          })
-        );
+    const allItemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))] as const;
+    const allParts = allItemCodes.length > 0
+      ? await this.partRepository.find({
+          where: { itemCode: In(allItemCodes) },
+          select: ['itemCode', 'itemName'],
+        })
+      : [];
+    const partMap = new Map(allParts.map((p) => [p.itemCode, p] as const));
 
-        return {
-          ...order,
-          items: itemsWithPart,
-        };
-      })
-    );
+    const itemsByOrder = new Map<string, typeof allItems>();
+    for (const item of allItems) {
+      const list = itemsByOrder.get(item.orderNo) ?? [];
+      list.push(item);
+      itemsByOrder.set(item.orderNo, list);
+    }
+
+    const resultData = data.map((order) => {
+      const items = itemsByOrder.get(order.orderNo) ?? [];
+      const itemsWithPart = items.map((item) => ({
+        ...item,
+        part: partMap.get(item.itemCode) || undefined,
+      }));
+      return { ...order, items: itemsWithPart };
+    });
 
     return { data: resultData, total, page, limit };
   }
@@ -111,18 +115,19 @@ export class CustomerOrderService {
       where: { orderNo: order.orderNo },
     });
 
-    const itemsWithPart = await Promise.all(
-      items.map(async (item) => {
-        const part = await this.partRepository.findOne({
-          where: { itemCode: item.itemCode },
+    const itemCodes = [...new Set(items.map((i) => i.itemCode).filter(Boolean))] as const;
+    const parts = itemCodes.length > 0
+      ? await this.partRepository.find({
+          where: { itemCode: In(itemCodes) },
           select: ['itemCode', 'itemName'],
-        });
-        return {
-          ...item,
-          part: part || undefined,
-        };
-      })
-    );
+        })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
+
+    const itemsWithPart = items.map((item) => ({
+      ...item,
+      part: partMap.get(item.itemCode) || undefined,
+    }));
 
     return {
       ...order,
