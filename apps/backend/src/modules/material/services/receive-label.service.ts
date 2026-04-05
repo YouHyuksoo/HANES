@@ -127,6 +127,8 @@ export class ReceiveLabelService {
           vendor: arrival.vendorName,
           company: arrival.company,
           plant: arrival.plant,
+          arrivalNo: arrival.arrivalNo,
+          arrivalSeq: arrival.seq,
         });
         await queryRunner.manager.save(lot);
 

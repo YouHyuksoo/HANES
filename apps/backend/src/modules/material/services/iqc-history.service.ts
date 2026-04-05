@@ -163,7 +163,7 @@ export class IqcHistoryService {
 
     // G4: IqcLog 생성 — inspectClass, destructSampleQty, certFilePath 포함
     const log = this.iqcLogRepository.create({
-      arrivalNo: null,
+      arrivalNo: lot.arrivalNo || null,
       matUid: dto.matUid,
       itemCode: lot.itemCode,
       inspectType: dto.inspectType || 'INITIAL',
