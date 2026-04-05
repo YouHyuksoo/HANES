@@ -50,6 +50,12 @@ export default function DaySchedulePanel({
 }: DaySchedulePanelProps) {
   const { t } = useTranslation();
 
+  const getEquipKey = (equip: DayScheduleEquip, index: number) =>
+    [date, equip.equipId, equip.equipCode, equip.logId ?? "pending", index].join(":");
+
+  const getItemKey = (equip: DayScheduleEquip, item: DayScheduleItem, index: number) =>
+    [equip.equipId, equip.equipCode, item.itemId, item.seq, index].join(":");
+
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -81,9 +87,9 @@ export default function DaySchedulePanel({
         </div>
       ) : (
         <div className="space-y-3">
-          {data.map((equip) => (
+          {data.map((equip, equipIndex) => (
             <div
-              key={equip.equipId}
+              key={getEquipKey(equip, equipIndex)}
               className={`border rounded-lg p-3 transition-colors ${
                 equip.inspected
                   ? equip.overallResult === "PASS"
@@ -137,9 +143,9 @@ export default function DaySchedulePanel({
 
               {/* Item results */}
               <div className="flex flex-wrap gap-1.5">
-                {equip.items.map((item) => (
+                {equip.items.map((item, itemIndex) => (
                   <span
-                    key={item.itemId}
+                    key={getItemKey(equip, item, itemIndex)}
                     className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded ${
                       item.result === "PASS"
                         ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300"
