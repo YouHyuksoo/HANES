@@ -391,6 +391,14 @@ export class PmPlanService {
       await this.pmWoResultRepo.save(results);
     }
 
+    // FAIL 결과 시 설비 자동 INTERLOCK (일상점검과 동일 정책)
+    if (dto.overallResult === 'FAIL' && wo.equipCode) {
+      await this.equipMasterRepo.update(
+        { equipCode: wo.equipCode },
+        { status: 'INTERLOCK' },
+      );
+    }
+
     if (wo.pmPlanCode) {
       const plan = await this.pmPlanRepo.findOne({
         where: { planCode: wo.pmPlanCode },
