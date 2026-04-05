@@ -83,9 +83,10 @@ export class EquipInspectService {
       queryBuilder.andWhere('log.inspectDate <= :inspectDateTo', { inspectDateTo: new Date(inspectDateTo) });
     }
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(LOWER(log.inspectorName) LIKE LOWER(:search) OR LOWER(equip.equipCode) LIKE LOWER(:search))',
-        { search: `%${search}%` }
+        '(log.inspectorName LIKE :searchRaw OR equip.equipCode LIKE :search)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 
@@ -390,8 +391,15 @@ export class EquipInspectService {
         try { details = JSON.parse(log.details); } catch { details = null; }
       }
 
+      // Map으로 전환하여 O(n*m) → O(n) 조회
+      const detailBySeq = new Map(
+        (details?.items ?? []).map((d) => [d.seq, d] as const),
+      );
+      const detailByName = new Map(
+        (details?.items ?? []).map((d) => [d.itemName, d] as const),
+      );
       const itemResults = dueItems.map((item) => {
-        const detailItem = details?.items?.find((d) => d.seq === item.seq || d.itemName === item.itemName);
+        const detailItem = detailBySeq.get(item.seq) ?? detailByName.get(item.itemName) ?? null;
         return {
           itemId: `${item.equipCode}_${item.inspectType}_${item.seq}`,
           seq: item.seq,

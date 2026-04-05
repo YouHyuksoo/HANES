@@ -34,9 +34,10 @@ export class ProdLineService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(prodLine.lineCode) LIKE UPPER(:search) OR UPPER(prodLine.lineName) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(prodLine.lineCode LIKE :search OR prodLine.lineName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

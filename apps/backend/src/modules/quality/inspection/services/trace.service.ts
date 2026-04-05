@@ -374,10 +374,22 @@ export class TraceService {
     }
 
     // 검사 데이터가 있으면 Method에 실제 결과 반영
+    // N+1 제거: prodResult 전체에 대해 일괄 조회
+    const methodResultNos = prodResults.map((pr) => pr.resultNo).filter(Boolean);
+    const allMethodInspResults = methodResultNos.length > 0
+      ? await this.inspectResultRepo.find({
+          where: { prodResultNo: In(methodResultNos), company, plant },
+        })
+      : [];
+    const methodInspByResult = new Map<string, typeof allMethodInspResults>();
+    for (const ir of allMethodInspResults) {
+      const key = ir.prodResultNo;
+      if (!methodInspByResult.has(key)) methodInspByResult.set(key, []);
+      methodInspByResult.get(key)!.push(ir);
+    }
+
     for (const pr of prodResults) {
-      const inspResults = await this.inspectResultRepo.find({
-        where: { prodResultNo: pr.resultNo, company, plant },
-      });
+      const inspResults = methodInspByResult.get(pr.resultNo) ?? [];
       for (const ir of inspResults) {
         if (ir.inspectData) {
           try {

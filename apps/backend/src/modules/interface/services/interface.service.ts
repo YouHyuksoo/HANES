@@ -414,20 +414,16 @@ export class InterfaceService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [
-      total,
-      todayCount,
-      pending,
-      failed,
-      byType,
-      byDirection,
-    ] = await Promise.all([
-      this.interLogRepository.count(),
-      this.interLogRepository.count({
-        where: { createdAt: MoreThanOrEqual(today) },
-      }),
-      this.interLogRepository.count({ where: { status: 'PENDING' } }),
-      this.interLogRepository.count({ where: { status: 'FAIL' } }),
+    // 4번 count → 1번 집계 쿼리로 통합 + 타입/방향별 집계는 병렬 유지
+    const [statusCounts, byType, byDirection] = await Promise.all([
+      this.interLogRepository
+        .createQueryBuilder('log')
+        .select('COUNT(*)', 'total')
+        .addSelect("SUM(CASE WHEN log.createdAt >= :today THEN 1 ELSE 0 END)", 'todayCount')
+        .addSelect("SUM(CASE WHEN log.status = 'PENDING' THEN 1 ELSE 0 END)", 'pending')
+        .addSelect("SUM(CASE WHEN log.status = 'FAIL' THEN 1 ELSE 0 END)", 'failed')
+        .setParameter('today', today)
+        .getRawOne(),
       this.interLogRepository
         .createQueryBuilder('log')
         .select('log.messageType', 'messageType')
@@ -441,6 +437,10 @@ export class InterfaceService {
         .groupBy('log.direction')
         .getRawMany(),
     ]);
+    const total = Number(statusCounts.total) || 0;
+    const todayCount = Number(statusCounts.todayCount) || 0;
+    const pending = Number(statusCounts.pending) || 0;
+    const failed = Number(statusCounts.failed) || 0;
 
     return {
       total,

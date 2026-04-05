@@ -59,7 +59,7 @@ export class BomService {
       if (search) {
         params.push(`%${search.toUpperCase()}%`);
         const idx = params.length;
-        searchFilter = `AND (UPPER(p.ITEM_CODE) LIKE :${idx} OR UPPER(p.ITEM_NAME) LIKE :${idx} OR UPPER(p.PART_NO) LIKE :${idx})`;
+        searchFilter = `AND (p.ITEM_CODE LIKE :${idx} OR p.ITEM_NAME LIKE :${idx} OR p.PART_NO LIKE :${idx})`;
       }
 
       const rows: any[] = await this.bomRepository.query(

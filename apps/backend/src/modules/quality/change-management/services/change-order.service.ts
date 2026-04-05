@@ -103,9 +103,10 @@ export class ChangeOrderService {
     if (changeType) qb.andWhere('c.changeType = :changeType', { changeType });
     if (priority) qb.andWhere('c.priority = :priority', { priority });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(c.changeNo) LIKE UPPER(:s) OR UPPER(c.title) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(c.changeNo LIKE :sCode OR c.title LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

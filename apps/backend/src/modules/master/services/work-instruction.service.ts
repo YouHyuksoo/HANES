@@ -42,9 +42,10 @@ export class WorkInstructionService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(wi.itemCode) LIKE UPPER(:search) OR UPPER(wi.title) LIKE UPPER(:search) OR UPPER(wi.processCode) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(wi.itemCode LIKE :searchCode OR wi.title LIKE :searchRaw OR wi.processCode LIKE :searchCode)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

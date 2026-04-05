@@ -56,9 +56,10 @@ export class WorkCalendarService {
     if (processCd) qb.andWhere('c.processCd = :processCd', { processCd });
     if (status) qb.andWhere('c.status = :status', { status });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(c.calendarId) LIKE UPPER(:s) OR UPPER(c.remark) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(c.calendarId LIKE :sCode OR c.remark LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
 

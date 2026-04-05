@@ -78,9 +78,10 @@ export class MoldService {
     if (status) qb.andWhere('m.status = :status', { status });
     if (moldType) qb.andWhere('m.moldType = :moldType', { moldType });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(m.moldCode) LIKE UPPER(:s) OR UPPER(m.moldName) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(m.moldCode LIKE :sCode OR m.moldName LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
 

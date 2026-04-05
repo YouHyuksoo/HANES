@@ -100,9 +100,10 @@ export class ComplaintService {
     if (urgency) qb.andWhere('c.urgency = :urgency', { urgency });
     if (customerCode) qb.andWhere('c.customerCode = :customerCode', { customerCode });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(c.complaintNo) LIKE UPPER(:s) OR UPPER(c.customerName) LIKE UPPER(:s) OR UPPER(c.itemCode) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(c.complaintNo LIKE :sCode OR c.customerName LIKE :sRaw OR c.itemCode LIKE :sCode)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

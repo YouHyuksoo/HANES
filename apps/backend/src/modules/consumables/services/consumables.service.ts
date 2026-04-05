@@ -89,9 +89,10 @@ export class ConsumablesService {
     if (useYn) qb.andWhere('c.useYn = :useYn', { useYn });
 
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(c.consumableCode) LIKE :search OR LOWER(c.consumableName) LIKE :search OR LOWER(c.location) LIKE :search OR LOWER(c.vendor) LIKE :search)',
-        { search: `%${search.toLowerCase()}%` },
+        '(c.consumableCode LIKE :searchCode OR c.consumableName LIKE :searchRaw OR c.location LIKE :searchRaw OR c.vendor LIKE :searchRaw)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 
@@ -292,9 +293,10 @@ export class ConsumablesService {
     if (category) qb.andWhere('c.category = :category', { category });
 
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(c.consumableCode) LIKE :search OR LOWER(c.consumableName) LIKE :search)',
-        { search: `%${search.toLowerCase()}%` },
+        '(c.consumableCode LIKE :searchCode OR c.consumableName LIKE :searchRaw)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 

@@ -35,9 +35,10 @@ export class PlantService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(plant.plantCode) LIKE UPPER(:search) OR UPPER(plant.plantName) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(plant.plantCode LIKE :search OR plant.plantName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

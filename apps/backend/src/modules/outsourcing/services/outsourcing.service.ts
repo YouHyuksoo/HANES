@@ -71,9 +71,10 @@ export class OutsourcingService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(vm.vendorCode) LIKE UPPER(:search) OR UPPER(vm.vendorName) LIKE UPPER(:search))',
-        { search: `%${search}%` },
+        '(vm.vendorCode LIKE :search OR vm.vendorName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 
@@ -161,9 +162,10 @@ export class OutsourcingService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(so.orderNo) LIKE UPPER(:search) OR UPPER(so.partCode) LIKE UPPER(:search) OR UPPER(so.partName) LIKE UPPER(:search))',
-        { search: `%${search}%` },
+        '(so.orderNo LIKE :search OR so.partCode LIKE :search OR so.partName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 

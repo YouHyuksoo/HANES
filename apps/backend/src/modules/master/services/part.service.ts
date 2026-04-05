@@ -38,13 +38,15 @@ export class PartService {
     }
 
     if (customer) {
-      queryBuilder.andWhere('UPPER(p.customer) LIKE UPPER(:customer)', { customer: `%${customer}%` });
+      const upperCustomer = customer.toUpperCase();
+      queryBuilder.andWhere('p.customer LIKE :customer', { customer: `%${upperCustomer}%` });
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(p.itemCode) LIKE UPPER(:search) OR UPPER(p.itemName) LIKE UPPER(:search) OR UPPER(p.itemNo) LIKE UPPER(:search) OR UPPER(p.custPartNo) LIKE UPPER(:search) OR UPPER(p.spec) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(p.itemCode LIKE :search OR p.itemName LIKE :searchRaw OR p.itemNo LIKE :search OR p.custPartNo LIKE :search OR p.spec LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

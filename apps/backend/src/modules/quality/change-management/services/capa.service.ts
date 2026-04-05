@@ -109,9 +109,10 @@ export class CapaService {
     if (sourceType) qb.andWhere('c.sourceType = :sourceType', { sourceType });
     if (priority) qb.andWhere('c.priority = :priority', { priority });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(c.capaNo) LIKE UPPER(:s) OR UPPER(c.title) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(c.capaNo LIKE :sCode OR c.title LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

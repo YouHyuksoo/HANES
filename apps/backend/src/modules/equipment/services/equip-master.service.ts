@@ -80,9 +80,10 @@ export class EquipMasterService {
     if (query.plant) qb.andWhere('e.plant = :plant', { plant: query.plant });
 
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(e.equipCode) LIKE :search OR LOWER(e.equipName) LIKE :search OR LOWER(e.modelName) LIKE :search)',
-        { search: `%${search.toLowerCase()}%` },
+        '(e.equipCode LIKE :searchCode OR e.equipName LIKE :searchRaw OR e.modelName LIKE :searchRaw)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 

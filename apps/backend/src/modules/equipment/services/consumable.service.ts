@@ -133,15 +133,16 @@ export class ConsumableService {
       queryBuilder.andWhere('consumable.status = :status', { status });
     }
     if (vendor) {
-      queryBuilder.andWhere('LOWER(consumable.vendor) LIKE LOWER(:vendor)', { vendor: `%${vendor}%` });
+      queryBuilder.andWhere('consumable.vendor LIKE :vendor', { vendor: `%${vendor}%` });
     }
     if (useYn) {
       queryBuilder.andWhere('consumable.useYn = :useYn', { useYn });
     }
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(LOWER(consumable.consumableCode) LIKE LOWER(:search) OR LOWER(consumable.consumableName) LIKE LOWER(:search))',
-        { search: `%${search}%` }
+        '(consumable.consumableCode LIKE :searchCode OR consumable.consumableName LIKE :searchRaw)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
     if (nextReplaceBefore) {

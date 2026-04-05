@@ -123,10 +123,15 @@ export class PhysicalInvService {
     seq: number,
     dto: CompletePhysicalInvSessionDto,
   ): Promise<PhysicalInvSession> {
-    // Oracle DATE 비교 — TRUNC로 시분초 무시
+    // Oracle DATE 비교 — 범위 조건으로 인덱스 활용 (TRUNC 제거)
+    const sdStart = new Date(`${sessionDate}T00:00:00`);
+    const sdEnd = new Date(`${sessionDate}T23:59:59.999`);
     const session = await this.sessionRepository
       .createQueryBuilder('s')
-      .where('TRUNC(s.sessionDate) = TO_DATE(:sd, \'YYYY-MM-DD\')', { sd: sessionDate })
+      .where('s.sessionDate >= :sdStart AND s.sessionDate < :sdEnd', {
+        sdStart,
+        sdEnd: new Date(sdEnd.getTime() + 1),
+      })
       .andWhere('s.seq = :seq', { seq })
       .getOne();
     if (!session) {
@@ -148,22 +153,26 @@ export class PhysicalInvService {
     const { page = 1, limit = 10, search, warehouseId } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-    };
-    if (warehouseId) {
-      where.warehouseCode = warehouseId;
+    const qb = this.matStockRepository.createQueryBuilder('stock');
+    if (company) qb.andWhere('stock.company = :company', { company });
+    if (plant) qb.andWhere('stock.plant = :plant', { plant });
+    if (warehouseId) qb.andWhere('stock.warehouseCode = :warehouseId', { warehouseId });
+
+    // 검색어가 있으면 DB에서 필터 (메모리 필터 제거)
+    if (search) {
+      const upper = search.toUpperCase();
+      qb.leftJoin(PartMaster, 'part', 'part.itemCode = stock.itemCode')
+        .andWhere(
+          '(stock.itemCode LIKE :search OR part.itemName LIKE :searchRaw)',
+          { search: `%${upper}%`, searchRaw: `%${search}%` },
+        );
     }
 
+    qb.orderBy('stock.updatedAt', 'DESC');
+
     const [data, total] = await Promise.all([
-      this.matStockRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { updatedAt: 'DESC' },
-      }),
-      this.matStockRepository.count({ where }),
+      qb.clone().skip(skip).take(limit).getMany(),
+      qb.getCount(),
     ]);
 
     // part, lot 정보 조회
@@ -178,7 +187,7 @@ export class PhysicalInvService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
 
-    let result = data.map((stock) => {
+    const result = data.map((stock) => {
       const part = partMap.get(stock.itemCode);
       const lot = stock.matUid ? lotMap.get(stock.matUid) : null;
       return {
@@ -188,16 +197,6 @@ export class PhysicalInvService {
         matUid: lot?.matUid,
       };
     });
-
-    // 검색어 필터링
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(
-        (stock) =>
-          stock.itemCode.toLowerCase().includes(searchLower) ||
-          stock.itemName.toLowerCase().includes(searchLower),
-      );
-    }
 
     return { data: result, total, page, limit };
   }
@@ -243,9 +242,10 @@ export class PhysicalInvService {
       qb.andWhere('log.createdAt < :endDate', { endDate: end });
     }
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(part.itemCode) LIKE :search OR LOWER(part.itemName) LIKE :search)',
-        { search: `%${search.toLowerCase()}%` },
+        '(part.itemCode LIKE :search OR part.itemName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 
@@ -424,17 +424,25 @@ export class PhysicalInvService {
     // 진행 중 세션 (실사 개시/완료 판단용)
     const activeSession = sessions.find(s => s.status === 'IN_PROGRESS') ?? null;
 
-    // 재고 목록 조회
-    const stockWhere: any = {};
-    if (company) stockWhere.company = company;
-    if (plant) stockWhere.plant = plant;
-    if (warehouseCode) stockWhere.warehouseCode = warehouseCode;
+    // 재고 목록 조회 (검색어 필터를 DB로 이동)
+    const stockQb = this.matStockRepository.createQueryBuilder('stock');
+    if (company) stockQb.andWhere('stock.company = :company', { company });
+    if (plant) stockQb.andWhere('stock.plant = :plant', { plant });
+    if (warehouseCode) stockQb.andWhere('stock.warehouseCode = :warehouseCode', { warehouseCode });
 
-    const stocks = await this.matStockRepository.find({
-      where: stockWhere,
-      take: limit,
-      order: { updatedAt: 'DESC' },
-    });
+    if (search) {
+      const upper = search.toUpperCase();
+      stockQb.leftJoin(PartMaster, 'sp', 'sp.itemCode = stock.itemCode')
+        .andWhere(
+          '(stock.itemCode LIKE :search OR sp.itemName LIKE :searchRaw)',
+          { search: `%${upper}%`, searchRaw: `%${search}%` },
+        );
+    }
+
+    const stocks = await stockQb
+      .orderBy('stock.updatedAt', 'DESC')
+      .take(limit)
+      .getMany();
 
     // 품목 정보
     const itemCodes = [...new Set(stocks.map(s => s.itemCode).filter(Boolean))];
@@ -470,7 +478,7 @@ export class PhysicalInvService {
       }
     }
 
-    let result = stocks.map(stock => {
+    const result = stocks.map(stock => {
       const part = partMap.get(stock.itemCode);
       const key = `${stock.warehouseCode}::${stock.itemCode}::${stock.matUid}`;
       const detail = detailMap.get(key);
@@ -488,14 +496,6 @@ export class PhysicalInvService {
         lastCountAt: stock.lastCountAt,
       };
     });
-
-    // 검색어 필터링
-    if (search) {
-      const s = search.toLowerCase();
-      result = result.filter(
-        r => r.itemCode.toLowerCase().includes(s) || r.itemName.toLowerCase().includes(s),
-      );
-    }
 
     // 세션 목록 직렬화
     const formatDate = (d: Date | string) =>

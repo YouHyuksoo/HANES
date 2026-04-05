@@ -48,9 +48,10 @@ export class RoutingGroupService {
     if (plant) qb.andWhere('g.plant = :plant', { plant });
     if (useYn) qb.andWhere('g.useYn = :useYn', { useYn });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(g.routingCode) LIKE UPPER(:s) OR UPPER(g.routingName) LIKE UPPER(:s) OR UPPER(g.itemCode) LIKE UPPER(:s) OR UPPER(p.ITEM_NAME) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(g.routingCode LIKE :s OR g.routingName LIKE :sRaw OR g.itemCode LIKE :s OR p.ITEM_NAME LIKE :sRaw)',
+        { s: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
 

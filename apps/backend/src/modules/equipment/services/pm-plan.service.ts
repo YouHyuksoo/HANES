@@ -53,9 +53,10 @@ export class PmPlanService {
     if (equipCode) qb.andWhere('plan.equipCode = :equipCode', { equipCode });
     if (pmType) qb.andWhere('plan.pmType = :pmType', { pmType });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(plan.planCode) LIKE LOWER(:search) OR LOWER(plan.planName) LIKE LOWER(:search))',
-        { search: `%${search}%` },
+        '(plan.planCode LIKE :search OR plan.planName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
     if (dueDateFrom) {
@@ -277,6 +278,9 @@ export class PmPlanService {
       existingWos.map((wo) => `${wo.pmPlanCode}::${this.formatDate(wo.scheduledDate)}`),
     );
 
+    // 날짜별 최대 WO번호를 미리 조회하여 루프 안 개별 쿼리 제거
+    const woSeqByDate = new Map<string, number>();
+
     for (const plan of plans) {
       const scheduledDate = plan.nextDueAt || startDate;
       const dateStr = this.formatDate(scheduledDate);
@@ -286,7 +290,24 @@ export class PmPlanService {
         continue;
       }
 
-      const workOrderNo = await this.generateWoNumber(dateStr);
+      // 날짜별 seq 관리 (첫 조회만 DB, 이후는 메모리에서 증가)
+      if (!woSeqByDate.has(dateStr)) {
+        const prefix = `PM-${dateStr}-`;
+        const lastWo = await this.pmWorkOrderRepo
+          .createQueryBuilder('wo')
+          .where('wo.workOrderNo LIKE :prefix', { prefix: `${prefix}%` })
+          .orderBy('wo.workOrderNo', 'DESC')
+          .getOne();
+        let seq = 1;
+        if (lastWo) {
+          const lastSeq = parseInt(lastWo.workOrderNo.substring(prefix.length), 10);
+          if (!isNaN(lastSeq)) seq = lastSeq + 1;
+        }
+        woSeqByDate.set(dateStr, seq);
+      }
+      const seq = woSeqByDate.get(dateStr)!;
+      woSeqByDate.set(dateStr, seq + 1);
+      const workOrderNo = `PM-${dateStr}-${String(seq).padStart(3, '0')}`;
 
       const wo = this.pmWorkOrderRepo.create({
         workOrderNo,
@@ -415,7 +436,8 @@ export class PmPlanService {
     if (equipCode) qb.andWhere('wo.equipCode = :equipCode', { equipCode });
     if (status) qb.andWhere('wo.status = :status', { status });
     if (search) {
-      qb.andWhere('LOWER(wo.workOrderNo) LIKE LOWER(:search)', { search: `%${search}%` });
+      const upper = search.toUpperCase();
+      qb.andWhere('wo.workOrderNo LIKE :search', { search: `%${upper}%` });
     }
 
     const total = await qb.getCount();

@@ -34,9 +34,10 @@ export class DepartmentService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(dept.deptCode) LIKE UPPER(:search) OR UPPER(dept.deptName) LIKE UPPER(:search) OR UPPER(dept.managerName) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(dept.deptCode LIKE :search OR dept.deptName LIKE :searchRaw OR dept.managerName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

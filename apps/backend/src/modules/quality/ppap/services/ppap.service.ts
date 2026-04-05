@@ -230,9 +230,10 @@ export class PpapService {
       qb.andWhere('p.customerCode = :customerCode', { customerCode });
     if (reason) qb.andWhere('p.reason = :reason', { reason });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(p.ppapNo) LIKE UPPER(:s) OR UPPER(p.itemCode) LIKE UPPER(:s) OR UPPER(p.itemName) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(p.ppapNo LIKE :sCode OR p.itemCode LIKE :sCode OR p.itemName LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

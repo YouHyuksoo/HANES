@@ -98,9 +98,10 @@ export class TrainingService {
     if (trainingType)
       qb.andWhere('t.trainingType = :trainingType', { trainingType });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(t.planNo) LIKE UPPER(:s) OR UPPER(t.title) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(t.planNo LIKE :sCode OR t.title LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

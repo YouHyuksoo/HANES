@@ -108,9 +108,10 @@ export class ReworkService {
     if (defectType) qb.andWhere('r.defectType = :defectType', { defectType });
     if (lineCode) qb.andWhere('r.lineCode = :lineCode', { lineCode });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(r.reworkNo) LIKE UPPER(:s) OR UPPER(r.itemCode) LIKE UPPER(:s) OR UPPER(r.itemName) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(r.reworkNo LIKE :sCode OR r.itemCode LIKE :sCode OR r.itemName LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

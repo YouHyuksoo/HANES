@@ -33,9 +33,10 @@ export class CompanyService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(company.companyCode) LIKE UPPER(:search) OR UPPER(company.companyName) LIKE UPPER(:search) OR UPPER(company.bizNo) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(company.companyCode LIKE :search OR company.companyName LIKE :searchRaw OR company.bizNo LIKE :search)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

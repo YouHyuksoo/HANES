@@ -17,7 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull } from 'typeorm';
+import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull, In } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -93,7 +93,7 @@ export class JobOrderService {
 
     if (company) qb.andWhere('jo.company = :company', { company });
     if (plant) qb.andWhere('jo.plant = :plant', { plant });
-    if (orderNo) qb.andWhere('LOWER(jo.orderNo) LIKE :orderNo', { orderNo: `%${orderNo.toLowerCase()}%` });
+    if (orderNo) qb.andWhere('jo.orderNo LIKE :orderNo', { orderNo: `%${orderNo.toUpperCase()}%` });
     if (itemCode) qb.andWhere('jo.itemCode = :itemCode', { itemCode });
     if (lineCode) qb.andWhere('jo.lineCode = :lineCode', { lineCode });
     if (status) qb.andWhere('jo.status = :status', { status });
@@ -101,9 +101,10 @@ export class JobOrderService {
     if (planDateFrom) qb.andWhere('jo.planDate >= :planDateFrom', { planDateFrom: new Date(planDateFrom) });
     if (planDateTo) qb.andWhere('jo.planDate <= :planDateTo', { planDateTo: new Date(planDateTo) });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(jo.orderNo) LIKE :search OR LOWER(part.itemCode) LIKE :search OR LOWER(part.itemName) LIKE :search)',
-        { search: `%${search.toLowerCase()}%` },
+        '(jo.orderNo LIKE :search OR part.itemCode LIKE :search OR part.itemName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 
@@ -234,14 +235,22 @@ export class JobOrderService {
     const wipPartIds = new Set(wipParts.map(p => p.itemCode));
     const childOrders: JobOrder[] = [];
 
+    // 자식 품목들의 라우팅 일괄 조회 (N+1 제거)
+    const wipChildCodes = bomItems
+      .filter((b) => wipPartIds.has(b.childItemCode))
+      .map((b) => b.childItemCode);
+    const childRoutings = wipChildCodes.length > 0
+      ? await this.routingGroupRepository.find({
+          where: { itemCode: In(wipChildCodes), useYn: 'Y' },
+        })
+      : [];
+    const routingMap = new Map(childRoutings.map((r) => [r.itemCode, r]));
+
     for (let i = 0; i < bomItems.length; i++) {
       const bom = bomItems[i];
       if (!wipPartIds.has(bom.childItemCode)) continue;
 
-      // 자식 품목의 라우팅 자동 조회
-      const childRouting = await this.routingGroupRepository.findOne({
-        where: { itemCode: bom.childItemCode, useYn: 'Y' },
-      });
+      const childRouting = routingMap.get(bom.childItemCode) ?? null;
 
       childOrders.push(queryRunner.manager.create(JobOrder, {
         orderNo: `${parent.orderNo}-${String(i + 1).padStart(2, '0')}`,

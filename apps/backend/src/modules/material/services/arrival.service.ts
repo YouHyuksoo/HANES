@@ -163,9 +163,13 @@ export class ArrivalService {
 
     // 잔량 검증 — poItemId는 "poNo-seq" 형식 또는 seq 번호
     // G2: 입하잔량 = 발주수량 - 입하합계 + 반품합계 (반품 시 잔량 복원)
-    const returnTxs = await this.stockTransactionRepository.find({
-      where: { refType: 'RETURN', transType: 'MAT_IN_CANCEL' },
-    });
+    // 해당 PO 품목코드만 필터링하여 전체 스캔 방지
+    const poItemCodes = [...new Set(poItems.map((pi) => pi.itemCode).filter(Boolean))];
+    const returnTxs = poItemCodes.length > 0
+      ? await this.stockTransactionRepository.find({
+          where: { refType: 'RETURN', transType: 'MAT_IN_CANCEL', itemCode: In(poItemCodes) },
+        })
+      : [];
     // PO품목/반품 Map 전처리 (O(n*m) → O(n) 개선)
     const poItemBySeq = new Map(poItems.map((pi) => [pi.seq, pi]));
     const poItemByKey = new Map(poItems.map((pi) => [`${pi.poNo}-${pi.seq}`, pi]));

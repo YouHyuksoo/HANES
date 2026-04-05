@@ -160,9 +160,10 @@ export class ProductionViewsService {
     if (plant) qb.andWhere('bm.PLANT_CD = :plant', { plant });
 
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(bm.BOX_NO) LIKE UPPER(:s) OR UPPER(bm.ITEM_CODE) LIKE UPPER(:s) OR UPPER(im.ITEM_NAME) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(bm.BOX_NO LIKE :sCode OR bm.ITEM_CODE LIKE :sCode OR im.ITEM_NAME LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
 

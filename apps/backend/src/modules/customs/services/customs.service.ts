@@ -101,9 +101,10 @@ export class CustomsService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(ce.entryNo) LIKE UPPER(:search) OR UPPER(ce.invoiceNo) LIKE UPPER(:search) OR UPPER(ce.blNo) LIKE UPPER(:search))',
-        { search: `%${search}%` },
+        '(ce.entryNo LIKE :search OR ce.invoiceNo LIKE :search OR ce.blNo LIKE :search)',
+        { search: `%${upper}%` },
       );
     }
 
@@ -125,9 +126,10 @@ export class CustomsService {
     }
 
     if (search) {
+      const upper2 = search.toUpperCase();
       countQuery.andWhere(
-        '(UPPER(ce.entryNo) LIKE UPPER(:search) OR UPPER(ce.invoiceNo) LIKE UPPER(:search) OR UPPER(ce.blNo) LIKE UPPER(:search))',
-        { search: `%${search}%` },
+        '(ce.entryNo LIKE :search OR ce.invoiceNo LIKE :search OR ce.blNo LIKE :search)',
+        { search: `%${upper2}%` },
       );
     }
 

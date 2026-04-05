@@ -46,9 +46,10 @@ export class RoutingService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(routing.processCode) LIKE UPPER(:search) OR UPPER(routing.processName) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(routing.processCode LIKE :searchCode OR routing.processName LIKE :searchRaw)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

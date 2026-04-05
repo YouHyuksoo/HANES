@@ -48,9 +48,10 @@ export class LotMergeService {
       qb.andWhere('lot.itemCode = :itemCode', { itemCode });
     }
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(lot.matUid) LIKE UPPER(:search))',
-        { search: `%${search}%` },
+        '(lot.matUid LIKE :search)',
+        { search: `%${upper}%` },
       );
     }
 

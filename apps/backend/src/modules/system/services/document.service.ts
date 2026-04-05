@@ -95,9 +95,10 @@ export class DocumentService {
     if (docType) qb.andWhere('d.docType = :docType', { docType });
     if (category) qb.andWhere('d.category = :category', { category });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(d.docNo) LIKE UPPER(:s) OR UPPER(d.docTitle) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(d.docNo LIKE :sCode OR d.docTitle LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

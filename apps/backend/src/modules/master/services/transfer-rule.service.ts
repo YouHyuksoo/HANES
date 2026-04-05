@@ -51,9 +51,10 @@ export class TransferRuleService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(rule.fromWarehouseId) LIKE UPPER(:search) OR UPPER(rule.toWarehouseId) LIKE UPPER(:search) OR UPPER(rule.remark) LIKE UPPER(:search) OR UPPER(fw.WAREHOUSE_NAME) LIKE UPPER(:search) OR UPPER(tw.WAREHOUSE_NAME) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(rule.fromWarehouseId LIKE :searchCode OR rule.toWarehouseId LIKE :searchCode OR rule.remark LIKE :searchRaw OR fw.WAREHOUSE_NAME LIKE :searchRaw OR tw.WAREHOUSE_NAME LIKE :searchRaw)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

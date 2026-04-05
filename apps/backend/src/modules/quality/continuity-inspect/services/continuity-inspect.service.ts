@@ -80,8 +80,9 @@ export class ContinuityInspectService {
       qb.andWhere('jo.lineCode = :lineCode', { lineCode: query.lineCode });
     }
     if (query.planDate) {
-      qb.andWhere("TRUNC(jo.planDate) = TO_DATE(:planDate, 'YYYY-MM-DD')", {
-        planDate: query.planDate,
+      qb.andWhere("jo.planDate >= TO_DATE(:planDateFrom, 'YYYY-MM-DD') AND jo.planDate < TO_DATE(:planDateTo, 'YYYY-MM-DD') + 1", {
+        planDateFrom: query.planDate,
+        planDateTo: query.planDate,
       });
     }
 

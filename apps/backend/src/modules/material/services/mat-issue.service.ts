@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, DataSource } from 'typeorm';
+import { Repository, Between, DataSource, In } from 'typeorm';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -93,7 +93,37 @@ export class MatIssueService {
       this.matIssueRepository.count({ where }),
     ]);
 
-    const flattenedData = await Promise.all(data.map((issue) => this.flattenIssue(issue)));
+    // IN 배치 선조회로 N+1 제거 (flattenIssue 루프 호출 대신)
+    const matUids = [...new Set(data.map((i) => i.matUid).filter(Boolean))];
+    const orderNos = [...new Set(data.map((i) => i.orderNo).filter(Boolean))];
+
+    const [lots, jobOrders] = await Promise.all([
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
+      orderNos.length > 0 ? this.jobOrderRepository.find({ where: { orderNo: In(orderNos) } }) : Promise.resolve([]),
+    ]);
+
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
+    const jobOrderMap = new Map(jobOrders.map((j) => [j.orderNo, j]));
+
+    const lotItemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
+    const parts = lotItemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(lotItemCodes) } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    const flattenedData = data.map((issue) => {
+      const lot = issue.matUid ? lotMap.get(issue.matUid) : null;
+      const part = lot?.itemCode ? partMap.get(lot.itemCode) : null;
+      const jobOrder = issue.orderNo ? jobOrderMap.get(issue.orderNo) : null;
+      return {
+        ...issue,
+        matUid: lot?.matUid ?? null,
+        itemCode: part?.itemCode ?? null,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        jobOrderNo: jobOrder?.orderNo ?? null,
+      };
+    });
 
     return { data: flattenedData, total, page, limit };
   }

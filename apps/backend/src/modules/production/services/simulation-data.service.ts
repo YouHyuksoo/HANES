@@ -240,29 +240,44 @@ export class SimulationDataService {
       return map;
     }
 
-    // 각 (customer, itemCode) 쌍에 대해 납기일 조회
+    // 전체 (customer, itemCode) 쌍을 한 번에 조회 (N+1 제거 + TO_CHAR 제거)
     const dueDateByKey = new Map<string, string>();
-    for (const pair of pairs) {
-      const result: Array<{ dueDate: string }> = await this.orderRepo
-        .createQueryBuilder('co')
-        .innerJoin(CustomerOrderItem, 'ci', 'co.orderNo = ci.orderNo')
-        .select('MIN(co.dueDate)', 'dueDate')
-        .where('co.customerId = :customerId', { customerId: pair.customer })
-        .andWhere('ci.itemCode = :itemCode', { itemCode: pair.itemCode })
-        .andWhere("TO_CHAR(co.dueDate, 'YYYY-MM') = :month", { month })
-        .andWhere('co.company = :company', { company })
-        .andWhere('co.plant = :plant', { plant })
-        .getRawMany();
+    const monthStart = `${month}-01`;
+    // 월말 계산: 다음 달 1일
+    const [y, m] = month.split('-').map(Number);
+    const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
 
-      if (result[0]?.dueDate) {
-        const rawDue = result[0].dueDate;
-        const dt = typeof rawDue === 'object' && rawDue !== null
-          ? (rawDue as unknown as Date)
-          : new Date(String(rawDue));
-        dueDateByKey.set(
-          `${pair.customer}|${pair.itemCode}`,
-          dt.toISOString().substring(0, 10),
-        );
+    const customerIds = [...new Set(pairs.map((p) => p.customer))];
+    const pairItemCodes = [...new Set(pairs.map((p) => p.itemCode))];
+
+    if (customerIds.length > 0 && pairItemCodes.length > 0) {
+      const rows: Array<{ customerId: string; itemCode: string; minDueDate: string }> =
+        await this.orderRepo
+          .createQueryBuilder('co')
+          .innerJoin(CustomerOrderItem, 'ci', 'co.orderNo = ci.orderNo')
+          .select('co.customerId', 'customerId')
+          .addSelect('ci.itemCode', 'itemCode')
+          .addSelect('MIN(co.dueDate)', 'minDueDate')
+          .where('co.customerId IN (:...customerIds)', { customerIds })
+          .andWhere('ci.itemCode IN (:...itemCodes)', { itemCodes: pairItemCodes })
+          .andWhere('co.dueDate >= TO_DATE(:monthStart, \'YYYY-MM-DD\')', { monthStart })
+          .andWhere('co.dueDate < TO_DATE(:nextMonth, \'YYYY-MM-DD\')', { nextMonth })
+          .andWhere('co.company = :company', { company })
+          .andWhere('co.plant = :plant', { plant })
+          .groupBy('co.customerId')
+          .addGroupBy('ci.itemCode')
+          .getRawMany();
+
+      for (const row of rows) {
+        if (row.minDueDate) {
+          const dt = typeof row.minDueDate === 'object' && row.minDueDate !== null
+            ? (row.minDueDate as unknown as Date)
+            : new Date(String(row.minDueDate));
+          dueDateByKey.set(
+            `${row.customerId}|${row.itemCode}`,
+            dt.toISOString().substring(0, 10),
+          );
+        }
       }
     }
 

@@ -97,9 +97,10 @@ export class FaiService {
     if (status) qb.andWhere('f.status = :status', { status });
     if (triggerType) qb.andWhere('f.triggerType = :triggerType', { triggerType });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(f.faiNo) LIKE UPPER(:s) OR UPPER(f.itemCode) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(f.faiNo LIKE :s OR f.itemCode LIKE :s)',
+        { s: `%${upper}%` },
       );
     }
     if (startDate && endDate) {

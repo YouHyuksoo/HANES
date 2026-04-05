@@ -98,9 +98,10 @@ export class AuditService {
     if (status) qb.andWhere('a.status = :status', { status });
     if (auditType) qb.andWhere('a.auditType = :auditType', { auditType });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(UPPER(a.auditNo) LIKE UPPER(:s) OR UPPER(a.auditScope) LIKE UPPER(:s))',
-        { s: `%${search}%` },
+        '(a.auditNo LIKE :sCode OR a.auditScope LIKE :sRaw)',
+        { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
     if (startDate && endDate) {

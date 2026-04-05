@@ -42,9 +42,10 @@ export class PurchaseOrderService {
 
     // 검색: poNo OR partnerName (DB 레벨 OR 조건)
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(po.poNo) LIKE :search OR LOWER(po.partnerName) LIKE :search)',
-        { search: `%${search.toLowerCase()}%` },
+        '(po.poNo LIKE :searchCode OR po.partnerName LIKE :searchRaw)',
+        { searchCode: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 

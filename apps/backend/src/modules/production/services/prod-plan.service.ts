@@ -16,7 +16,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
@@ -67,9 +67,10 @@ export class ProdPlanService {
     if (itemType) qb.andWhere('pp.itemType = :itemType', { itemType });
     if (status) qb.andWhere('pp.status = :status', { status });
     if (search) {
+      const upper = search.toUpperCase();
       qb.andWhere(
-        '(LOWER(pp.planNo) LIKE :search OR LOWER(pp.itemCode) LIKE :search OR LOWER(part.itemName) LIKE :search)',
-        { search: `%${search.toLowerCase()}%` },
+        '(pp.planNo LIKE :search OR pp.itemCode LIKE :search OR part.itemName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
 
@@ -116,12 +117,19 @@ export class ProdPlanService {
     try {
       const results: ProdPlan[] = [];
 
-      for (const item of dto.items) {
-        const part = await this.partRepo.findOne({ where: { itemCode: item.itemCode } });
-        if (!part) {
-          throw new BadRequestException(`품목을 찾을 수 없습니다: ${item.itemCode}`);
+      // IN 배치 선조회로 품목 검증 (N+1 제거)
+      const allItemCodes = [...new Set(dto.items.map((i) => i.itemCode))];
+      const allParts = allItemCodes.length > 0
+        ? await queryRunner.manager.find(PartMaster, { where: { itemCode: In(allItemCodes) }, select: ['itemCode'] })
+        : [];
+      const validItemCodes = new Set(allParts.map((p) => p.itemCode));
+      for (const code of allItemCodes) {
+        if (!validItemCodes.has(code)) {
+          throw new BadRequestException(`품목을 찾을 수 없습니다: ${code}`);
         }
+      }
 
+      for (const item of dto.items) {
         const planNo = await this.generatePlanNo(dto.planMonth, queryRunner);
 
         const plan = queryRunner.manager.create(ProdPlan, {
@@ -193,17 +201,29 @@ export class ProdPlanService {
     return this.planRepo.findOne({ where: { planNo }, relations: ['part'] });
   }
 
-  /** 일괄 확정 */
+  /** 일괄 확정 — IN 배치 선조회 + 일괄 UPDATE (N+1 제거) */
   async bulkConfirm(planNos: string[]) {
-    let count = 0;
-    for (const planNo of planNos) {
-      const plan = await this.planRepo.findOne({ where: { planNo } });
-      if (plan && plan.status === 'DRAFT') {
-        await this.planRepo.update({ planNo }, { status: 'CONFIRMED' });
-        count++;
-      }
-    }
-    return { count };
+    if (planNos.length === 0) return { count: 0 };
+
+    const plans = await this.planRepo.find({
+      where: { planNo: In(planNos) },
+      select: ['planNo', 'status'],
+    });
+
+    const draftPlanNos = plans
+      .filter((p) => p.status === 'DRAFT')
+      .map((p) => p.planNo);
+
+    if (draftPlanNos.length === 0) return { count: 0 };
+
+    await this.planRepo
+      .createQueryBuilder()
+      .update(ProdPlan)
+      .set({ status: 'CONFIRMED' })
+      .where('planNo IN (:...planNos)', { planNos: draftPlanNos })
+      .execute();
+
+    return { count: draftPlanNos.length };
   }
 
   /** 확정 취소 (CONFIRMED → DRAFT) */

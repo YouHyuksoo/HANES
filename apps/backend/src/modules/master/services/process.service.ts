@@ -38,9 +38,10 @@ export class ProcessService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(process.processCode) LIKE UPPER(:search) OR UPPER(process.processName) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(process.processCode LIKE :search OR process.processName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

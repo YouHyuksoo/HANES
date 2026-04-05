@@ -38,9 +38,10 @@ export class PartnerService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(partner.partnerCode) LIKE UPPER(:search) OR UPPER(partner.partnerName) LIKE UPPER(:search) OR UPPER(partner.bizNo) LIKE UPPER(:search) OR UPPER(partner.contactPerson) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(partner.partnerCode LIKE :search OR partner.partnerName LIKE :searchRaw OR partner.bizNo LIKE :search OR partner.contactPerson LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 
@@ -117,13 +118,20 @@ export class PartnerService {
   }
 
   async getStatistics() {
-    const [totalCount, supplierCount, customerCount, activeCount] = await Promise.all([
-      this.partnerRepository.count({ where: {} }),
-      this.partnerRepository.count({ where: { partnerType: 'SUPPLIER' } }),
-      this.partnerRepository.count({ where: { partnerType: 'CUSTOMER' } }),
-      this.partnerRepository.count({ where: { useYn: 'Y' } }),
-    ]);
+    // 4번 count → 1번 집계 쿼리로 통합
+    const stats = await this.partnerRepository
+      .createQueryBuilder('p')
+      .select('COUNT(*)', 'totalCount')
+      .addSelect("SUM(CASE WHEN p.partnerType = 'SUPPLIER' THEN 1 ELSE 0 END)", 'supplierCount')
+      .addSelect("SUM(CASE WHEN p.partnerType = 'CUSTOMER' THEN 1 ELSE 0 END)", 'customerCount')
+      .addSelect("SUM(CASE WHEN p.useYn = 'Y' THEN 1 ELSE 0 END)", 'activeCount')
+      .getRawOne();
 
-    return { totalCount, supplierCount, customerCount, activeCount };
+    return {
+      totalCount: Number(stats.totalCount) || 0,
+      supplierCount: Number(stats.supplierCount) || 0,
+      customerCount: Number(stats.customerCount) || 0,
+      activeCount: Number(stats.activeCount) || 0,
+    };
   }
 }

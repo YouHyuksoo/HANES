@@ -120,28 +120,54 @@ export class IssueRequestService {
       this.requestRepository.count({ where }),
     ]);
 
-    const result = await Promise.all(
-      data.map(async (req) => {
-        const items = await this.requestItemRepository.find({ where: { requestId: req.requestNo } });
-        const flatItems = await this.flattenItems(items);
-        return {
-          ...req,
-          itemCount: items.length,
-          totalRequestQty: items.reduce((sum, i) => sum + i.requestQty, 0),
-          totalIssuedQty: items.reduce((sum, i) => sum + i.issuedQty, 0),
-          items: flatItems,
-        };
-      }),
-    );
+    // IN 배치 선조회로 N+1 제거 (요청별 아이템 개별 조회 → 일괄 조회)
+    const requestNos = data.map((r) => r.requestNo);
+    const allItems = requestNos.length > 0
+      ? await this.requestItemRepository.find({ where: { requestId: In(requestNos) } })
+      : [];
 
-    let filtered = result;
+    // 품목 정보 일괄 조회
+    const allItemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
+    const allParts = allItemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes) } })
+      : [];
+    const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
+
+    // 요청별 아이템 그룹화
+    const itemsByRequest = new Map<string, MatIssueRequestItem[]>();
+    for (const item of allItems) {
+      const list = itemsByRequest.get(item.requestId) ?? [];
+      list.push(item);
+      itemsByRequest.set(item.requestId, list);
+    }
+
+    let result = data.map((req) => {
+      const items = itemsByRequest.get(req.requestNo) ?? [];
+      const flatItems = items.map((item) => {
+        const part = partMap.get(item.itemCode);
+        return {
+          ...item,
+          itemCode: part?.itemCode ?? null,
+          itemName: part?.itemName ?? null,
+          unit: item.unit ?? part?.unit ?? null,
+        };
+      });
+      return {
+        ...req,
+        itemCount: items.length,
+        totalRequestQty: items.reduce((sum, i) => sum + i.requestQty, 0),
+        totalIssuedQty: items.reduce((sum, i) => sum + i.issuedQty, 0),
+        items: flatItems,
+      };
+    });
+
     if (search) {
-      const s = search.toLowerCase();
-      filtered = result.filter(
-        (r) => r.requestNo?.toLowerCase().includes(s) || r.requester?.toLowerCase().includes(s),
+      const upper = search.toUpperCase();
+      result = result.filter(
+        (r) => r.requestNo?.toUpperCase().includes(upper) || r.requester?.toUpperCase().includes(upper),
       );
     }
-    return { data: filtered, total, page, limit };
+    return { data: result, total, page, limit };
   }
 
   /** 출고요청 상세 조회 (헤더 + 품목) */

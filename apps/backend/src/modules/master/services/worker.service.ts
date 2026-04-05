@@ -36,7 +36,7 @@ export class WorkerService {
     }
 
     if (dept) {
-      queryBuilder.andWhere('UPPER(worker.dept) LIKE UPPER(:dept)', { dept: `%${dept}%` });
+      queryBuilder.andWhere('worker.dept LIKE :dept', { dept: `%${dept}%` });
     }
 
     if (useYn) {
@@ -44,9 +44,10 @@ export class WorkerService {
     }
 
     if (search) {
+      const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(UPPER(worker.workerCode) LIKE UPPER(:search) OR UPPER(worker.workerName) LIKE UPPER(:search))',
-        { search: `%${search}%` }
+        '(worker.workerCode LIKE :search OR worker.workerName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
 

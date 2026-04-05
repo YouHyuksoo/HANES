@@ -98,12 +98,14 @@ export class ErpMaterialService {
           await queryRunner.manager.save(po);
         }
 
-        // PO Items upsert
+        // PO Items upsert — 기존 항목 일괄 선조회로 N+1 제거
+        const existingItems = await queryRunner.manager.find(PurchaseOrderItem, {
+          where: { poNo: data.poNo },
+        });
+        const existingItemMap = new Map(existingItems.map((ei) => [ei.seq, ei]));
+
         for (const item of data.items) {
-          const existing = await queryRunner.manager.findOne(PurchaseOrderItem, {
-            where: { poNo: data.poNo, seq: item.seq },
-          });
-          if (existing) {
+          if (existingItemMap.has(item.seq)) {
             await queryRunner.manager.update(PurchaseOrderItem,
               { poNo: data.poNo, seq: item.seq },
               { orderQty: item.orderQty },
