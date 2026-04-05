@@ -9,7 +9,7 @@
  */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -41,8 +41,12 @@ export class ReceiveLabelService {
       .orderBy('a.createdAt', 'DESC')
       .getMany();
 
-    const parts = await this.partRepo.find();
-    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    // 필요한 itemCodes만 IN 배치 조회
+    const neededItemCodes = [...new Set(arrivals.map((a) => a.itemCode).filter(Boolean))];
+    const parts = neededItemCodes.length > 0
+      ? await this.partRepo.find({ where: { itemCode: In(neededItemCodes) } })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
 
     const printLogs = await this.printLogRepo
       .createQueryBuilder('log')
@@ -60,8 +64,12 @@ export class ReceiveLabelService {
       }
     }
 
+    // 필요한 matUids만 IN 배치 조회 (printedUids에 해당하는 것만)
     const labeledArrivalKeys = new Set<string>();
-    const lots = await this.matLotRepo.find();
+    const neededMatUids = [...printedUids];
+    const lots = neededMatUids.length > 0
+      ? await this.matLotRepo.find({ where: { matUid: In(neededMatUids) } })
+      : [];
     for (const lot of lots) {
       if (printedUids.has(lot.matUid)) {
         const arrival = arrivals.find(

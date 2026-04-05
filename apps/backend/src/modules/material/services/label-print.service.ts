@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import * as net from 'net';
 
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
@@ -75,18 +75,31 @@ export class LabelPrintService {
       );
     }
 
+    // 배치 선조회: matUids → MatLot Map
+    const matUids = dto.matUids as readonly string[];
+    const lots = await this.matLotRepo.find({ where: { matUid: In([...matUids]) } });
+    const lotMap = new Map(lots.map((l) => [l.matUid, l] as const));
+
+    // 누락 검사
+    for (const matUid of matUids) {
+      if (!lotMap.has(matUid)) {
+        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
+      }
+    }
+
+    // 배치 선조회: itemCodes → PartMaster Map
+    const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
+    const partsList = itemCodes.length > 0
+      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes) } })
+      : [];
+    const partMap = new Map(partsList.map((p) => [p.itemCode, p] as const));
+
     const zplDataList: string[] = [];
     const lotDetails: any[] = [];
 
-    for (const matUid of dto.matUids) {
-      const lot = await this.matLotRepo.findOne({ where: { matUid: matUid } });
-      if (!lot) {
-        throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
-      }
-
-      const part = await this.partMasterRepo.findOne({
-        where: { itemCode: lot.itemCode },
-      });
+    for (const matUid of matUids) {
+      const lot = lotMap.get(matUid)!;
+      const part = partMap.get(lot.itemCode);
 
       // 변수 치환 맵
       const vars: Record<string, string> = {

@@ -138,8 +138,12 @@ export class LotMergeService {
         return sum + (s?.qty ?? 0);
       }, 0);
 
-      // 품목 정보
-      const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode: target.itemCode } });
+      // 품목 정보 (배치 선조회 — 병합 대상은 동일 품목이므로 1건)
+      const partsForMerge = await queryRunner.manager.find(PartMaster, {
+        where: { itemCode: In([...itemCodes]) },
+      });
+      const partMapForMerge = new Map(partsForMerge.map(p => [p.itemCode, p] as const));
+      const part = partMapForMerge.get(target.itemCode);
 
       // 원본 LOT들 소진 처리 (상태만 변경, currentQty 업데이트 없음)
       for (const src of sources) {

@@ -38,7 +38,7 @@ export class LotSplitService {
 
     if (company) qb.andWhere('lot.company = :company', { company });
     if (plant) qb.andWhere('lot.plant = :plant', { plant });
-    if (search) qb.andWhere('UPPER(lot.matUid) LIKE UPPER(:search)', { search: `%${search}%` });
+    if (search) qb.andWhere('lot.matUid LIKE :search', { search: `%${search}%` });
 
     const [data, total] = await Promise.all([
       qb.orderBy('lot.createdAt', 'DESC')
