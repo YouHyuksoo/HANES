@@ -520,15 +520,23 @@ export class ShipmentService {
     }
 
     // 5. 품목별 제품재고 차감 (PRODUCT_STOCK - FG_OUT)
-    //    실제 재고가 있는 창고를 조회하여 차감 (하드코딩 방지)
+    //    재고 일괄 선조회 후 순차 차감 (N+1 제거)
+    const stockItemCodes = [...itemQtyMap.keys()];
+    const allStocks = stockItemCodes.length > 0
+      ? await this.dataSource.getRepository(ProductStock).find({
+          where: { itemCode: In(stockItemCodes) },
+          order: { availableQty: 'DESC' },
+        })
+      : [];
+    const stockByItem = new Map<string, typeof allStocks[number]>();
+    for (const s of allStocks) {
+      if (!stockByItem.has(s.itemCode)) stockByItem.set(s.itemCode, s);
+    }
+
     for (const [itemCode, qty] of itemQtyMap.entries()) {
       try {
-        const stock = await this.dataSource.getRepository(ProductStock).findOne({
-          where: { itemCode, availableQty: MoreThanOrEqual(qty) },
-          order: { availableQty: 'DESC' },
-        });
-
-        if (!stock) {
+        const stock = stockByItem.get(itemCode);
+        if (!stock || stock.availableQty < qty) {
           this.logger.warn(`출하 ${id} 품목 ${itemCode} 재고 부족 — 차감 생략`);
           continue;
         }

@@ -10,7 +10,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, MoreThanOrEqual, Between } from 'typeorm';
+import { Repository, DataSource, MoreThanOrEqual, Between, In } from 'typeorm';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -230,49 +230,58 @@ export class InterfaceService {
     });
 
     try {
-      const results = await Promise.all(
-        dtos.map(async (dto) => {
-          const parentPart = await this.partMasterRepository.findOne({
-            where: { itemCode: dto.parentItemCode },
-          });
-          const childPart = await this.partMasterRepository.findOne({
-            where: { itemCode: dto.childItemCode },
-          });
+      // 관련 품목코드 일괄 선조회 (N+1 제거)
+      const allItemCodes = [...new Set(dtos.flatMap((d) => [d.parentItemCode, d.childItemCode]))];
+      const allParts = allItemCodes.length > 0
+        ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes) } })
+        : [];
+      const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
 
-          if (!parentPart || !childPart) {
-            return { success: false, dto, error: '품목을 찾을 수 없습니다' };
-          }
-
-          // upsert 대신 find -> create/update 사용
-          const existingBom = await this.bomMasterRepository.findOne({
-            where: {
-              parentItemCode: parentPart.itemCode,
-              childItemCode: childPart.itemCode,
-              revision: dto.revision ?? 'A',
-            },
-          });
-
-          if (existingBom) {
-            // 업데이트
-            await this.bomMasterRepository.update(
-              { parentItemCode: existingBom.parentItemCode, childItemCode: existingBom.childItemCode, revision: existingBom.revision },
-              { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo },
-            );
-          } else {
-            // 생성
-            const newBom = this.bomMasterRepository.create({
-              parentItemCode: parentPart.itemCode,
-              childItemCode: childPart.itemCode,
-              qtyPer: dto.qtyPer,
-              revision: dto.revision ?? 'A',
-              ecoNo: dto.ecoNo,
-            });
-            await this.bomMasterRepository.save(newBom);
-          }
-
-          return { success: true, dto };
-        })
+      // 기존 BOM 일괄 선조회 (N+1 제거)
+      const bomKeys = dtos.map((d) => ({
+        parentItemCode: d.parentItemCode,
+        childItemCode: d.childItemCode,
+        revision: d.revision ?? 'A',
+      }));
+      const existingBoms = bomKeys.length > 0
+        ? await this.bomMasterRepository.find({ where: bomKeys })
+        : [];
+      const bomKeySet = new Set(
+        existingBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${b.revision}`),
       );
+
+      const results = [];
+      for (const dto of dtos) {
+        const parentPart = partMap.get(dto.parentItemCode);
+        const childPart = partMap.get(dto.childItemCode);
+
+        if (!parentPart || !childPart) {
+          results.push({ success: false, dto, error: '품목을 찾을 수 없습니다' });
+          continue;
+        }
+
+        const rev = dto.revision ?? 'A';
+        const key = `${parentPart.itemCode}::${childPart.itemCode}::${rev}`;
+
+        if (bomKeySet.has(key)) {
+          await this.bomMasterRepository.update(
+            { parentItemCode: parentPart.itemCode, childItemCode: childPart.itemCode, revision: rev },
+            { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo },
+          );
+        } else {
+          const newBom = this.bomMasterRepository.create({
+            parentItemCode: parentPart.itemCode,
+            childItemCode: childPart.itemCode,
+            qtyPer: dto.qtyPer,
+            revision: rev,
+            ecoNo: dto.ecoNo,
+          });
+          await this.bomMasterRepository.save(newBom);
+          bomKeySet.add(key);
+        }
+
+        results.push({ success: true, dto });
+      }
 
       await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
 
@@ -296,40 +305,40 @@ export class InterfaceService {
     });
 
     try {
-      const results = await Promise.all(
-        dtos.map(async (dto) => {
-          // upsert 대신 find -> create/update 사용
-          const existingPart = await this.partMasterRepository.findOne({
-            where: { itemCode: dto.itemCode },
+      // 기존 품목 일괄 선조회 (N+1 제거)
+      const itemCodes = dtos.map((d) => d.itemCode);
+      const existingParts = itemCodes.length > 0
+        ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+        : [];
+      const existingSet = new Set(existingParts.map((p) => p.itemCode));
+
+      const results = [];
+      for (const dto of dtos) {
+        if (existingSet.has(dto.itemCode)) {
+          await this.partMasterRepository.update(dto.itemCode, {
+            itemName: dto.itemName,
+            itemType: dto.itemType,
+            spec: dto.spec,
+            unit: dto.unit ?? 'EA',
+            drawNo: dto.drawNo,
+            customer: dto.customer,
           });
+        } else {
+          const newPart = this.partMasterRepository.create({
+            itemCode: dto.itemCode,
+            itemName: dto.itemName,
+            itemType: dto.itemType,
+            spec: dto.spec,
+            unit: dto.unit ?? 'EA',
+            drawNo: dto.drawNo,
+            customer: dto.customer,
+          });
+          await this.partMasterRepository.save(newPart);
+          existingSet.add(dto.itemCode);
+        }
 
-          if (existingPart) {
-            // 업데이트
-            await this.partMasterRepository.update(existingPart.itemCode, {
-              itemName: dto.itemName,
-              itemType: dto.itemType,
-              spec: dto.spec,
-              unit: dto.unit ?? 'EA',
-              drawNo: dto.drawNo,
-              customer: dto.customer,
-            });
-          } else {
-            // 생성
-            const newPart = this.partMasterRepository.create({
-              itemCode: dto.itemCode,
-              itemName: dto.itemName,
-              itemType: dto.itemType,
-              spec: dto.spec,
-              unit: dto.unit ?? 'EA',
-              drawNo: dto.drawNo,
-              customer: dto.customer,
-            });
-            await this.partMasterRepository.save(newPart);
-          }
-
-          return { success: true, itemCode: dto.itemCode };
-        })
-      );
+        results.push({ success: true, itemCode: dto.itemCode });
+      }
 
       await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
 
