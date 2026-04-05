@@ -39,7 +39,7 @@ export class EquipInspectService {
       .createQueryBuilder('log')
       .where('log.equipCode = :equipCode', { equipCode })
       .andWhere('log.inspectType = :inspectType', { inspectType })
-      .andWhere('TRUNC(log.inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
+      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
       .getCount();
     return count > 0;
   }
@@ -116,7 +116,7 @@ export class EquipInspectService {
       .createQueryBuilder('log')
       .where('log.equipCode = :equipCode', { equipCode })
       .andWhere('log.inspectType = :inspectType', { inspectType })
-      .andWhere('TRUNC(log.inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
+      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
       .getOne();
 
     if (!log) {

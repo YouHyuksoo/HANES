@@ -10,7 +10,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, In } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -60,32 +60,27 @@ export class ShipHistoryService {
       this.shipmentOrderRepository.count({ where }),
     ]);
 
-    // 품목 정보 병합
-    const resultData = await Promise.all(
-      data.map(async (order) => {
-        const items = await this.shipmentOrderItemRepository.find({
-          where: { shipOrderNo: order.shipOrderNo },
-        });
+    // 품목 정보 일괄 조회 (N+1 제거)
+    const orderNos = data.map((o) => o.shipOrderNo);
+    const allItems = orderNos.length > 0
+      ? await this.shipmentOrderItemRepository.find({ where: { shipOrderNo: In(orderNos) } })
+      : [];
 
-        const itemsWithPart = await Promise.all(
-          items.map(async (item) => {
-            const part = await this.partRepository.findOne({
-              where: { itemCode: item.itemCode },
-              select: ['itemCode', 'itemName'],
-            });
-            return {
-              ...item,
-              part: part || undefined,
-            };
-          })
-        );
+    const itemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
+    const parts = itemCodes.length > 0
+      ? await this.partRepository.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName'] })
+      : [];
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
-        return {
-          ...order,
-          items: itemsWithPart,
-        };
-      })
-    );
+    const resultData = data.map((order) => {
+      const items = allItems
+        .filter((i) => i.shipOrderNo === order.shipOrderNo)
+        .map((item) => ({
+          ...item,
+          part: partMap.get(item.itemCode) || undefined,
+        }));
+      return { ...order, items };
+    });
 
     return { data: resultData, total, page, limit };
   }

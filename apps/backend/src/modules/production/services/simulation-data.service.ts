@@ -83,7 +83,9 @@ export class SimulationDataService {
       .createQueryBuilder('d')
       .where('d.calendarId = :calId', { calId: calendar.calendarId })
       .andWhere('d.dayType = :dayType', { dayType: 'WORK' })
-      .andWhere("TO_CHAR(d.workDate, 'YYYY-MM') = :month", { month })
+      .andWhere('d.workDate >= :startDate AND d.workDate < ADD_MONTHS(TO_DATE(:startDate, \'YYYY-MM-DD\'), 1)', {
+        startDate: `${month}-01`,
+      })
       .orderBy('d.workDate', 'ASC')
       .getMany();
 
@@ -121,21 +123,33 @@ export class SimulationDataService {
         .groupBy('c.itemCode')
         .getRawMany();
 
+    // 병목 CAPA에 해당하는 상세 레코드를 일괄 조회 (N+1 제거)
+    const allCapas = await this.capaRepo.find({
+      where: { company, plant, useYn: 'Y', itemCode: In(itemCodes) },
+    });
+
+    // 병목 공정코드 추출을 위한 맵
+    const bottleneckDetails = new Map<string, typeof allCapas[number]>();
     for (const row of rows) {
       const dailyCapa = Number(row.minCapa) || 0;
       capaMap.set(row.itemCode, dailyCapa);
+      const detail = allCapas.find(
+        (c) => c.itemCode === row.itemCode && c.dailyCapa === dailyCapa,
+      );
+      if (detail) bottleneckDetails.set(row.itemCode, detail);
+    }
 
-      // 병목 공정코드 조회
-      const detail = await this.capaRepo.findOne({
-        where: { company, plant, itemCode: row.itemCode, dailyCapa, useYn: 'Y' },
-      });
-      if (detail) {
-        // 공정명 직접 조회
-        const proc = await this.processRepo.findOne({
-          where: { processCode: detail.processCode },
-        });
-        processMap.set(row.itemCode, proc?.processName ?? detail.processCode);
-      }
+    // 공정명 일괄 조회 (N+1 제거)
+    const processCodes = [...new Set(
+      [...bottleneckDetails.values()].map((d) => d.processCode).filter(Boolean),
+    )];
+    const processes = processCodes.length > 0
+      ? await this.processRepo.find({ where: { processCode: In(processCodes) } })
+      : [];
+    const procNameMap = new Map(processes.map((p) => [p.processCode, p.processName]));
+
+    for (const [itemCode, detail] of bottleneckDetails) {
+      processMap.set(itemCode, procNameMap.get(detail.processCode) ?? detail.processCode);
     }
 
     const DEFAULT_CAPA = 9999;
@@ -162,25 +176,32 @@ export class SimulationDataService {
     const result = new Map<string, ProcessCapaInfo[]>();
     if (itemCodes.length === 0) return result;
 
-    for (const itemCode of itemCodes) {
-      const capas = await this.capaRepo.find({
-        where: { company, plant, itemCode, useYn: 'Y' },
-        relations: ['process'],
-        order: { processCode: 'ASC' },
-      });
+    // 전체 품목 CAPA 일괄 조회 (N+1 제거)
+    const allCapas = await this.capaRepo.find({
+      where: { company, plant, useYn: 'Y', itemCode: In(itemCodes) },
+      order: { processCode: 'ASC' },
+    });
 
-      // ProcessMaster의 sortOrder로 정렬, setupTime 포함
-      const processes: ProcessCapaInfo[] = [];
-      for (const c of capas) {
-        const proc = await this.processRepo.findOne({ where: { processCode: c.processCode } });
-        processes.push({
+    // 관련 공정 일괄 조회 (N+1 제거)
+    const procCodes = [...new Set(allCapas.map((c) => c.processCode).filter(Boolean))];
+    const allProcs = procCodes.length > 0
+      ? await this.processRepo.find({ where: { processCode: In(procCodes) } })
+      : [];
+    const procMap = new Map(allProcs.map((p) => [p.processCode, p]));
+
+    // 품목별 그룹핑
+    for (const itemCode of itemCodes) {
+      const capas = allCapas.filter((c) => c.itemCode === itemCode);
+      const processes: ProcessCapaInfo[] = capas.map((c) => {
+        const proc = procMap.get(c.processCode);
+        return {
           processCode: c.processCode,
           processName: proc?.processName ?? c.processCode,
           dailyCapa: c.dailyCapa,
           setupTime: Number(c.setupTime) || 0,
           sortOrder: proc?.sortOrder ?? 999,
-        });
-      }
+        };
+      });
       processes.sort((a, b) => a.sortOrder - b.sortOrder);
       result.set(itemCode, processes);
     }
