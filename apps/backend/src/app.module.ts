@@ -36,6 +36,7 @@ import { OutsourcingModule } from './modules/outsourcing/outsourcing.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SystemModule } from './modules/system/system.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { WorkflowModule } from './modules/workflow/workflow.module';
 import { RoleModule } from './modules/role/role.module';
 import { SharedModule } from './shared/shared.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
@@ -101,6 +102,9 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
     // 대시보드 (KPI, 최근 생산현황)
     DashboardModule,
+
+    // 워크플로우 (노드별 상태 요약)
+    WorkflowModule,
 
     // 역할 관리 (RBAC 역할 정의, 메뉴 권한)
     RoleModule,

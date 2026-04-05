@@ -11,7 +11,7 @@
 import {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
   Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
 } from "lucide-react";
 
 /** 메뉴 설정 항목 인터페이스 */
@@ -35,6 +35,12 @@ export const menuConfig: MenuConfigItem[] = [
     labelKey: "menu.dashboard",
     path: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    code: "WORKFLOW",
+    labelKey: "menu.workflow",
+    path: "/workflow",
+    icon: GitBranch,
   },
   {
     code: "MONITORING",

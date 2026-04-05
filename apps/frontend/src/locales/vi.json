@@ -80,6 +80,7 @@
   },
   "menu": {
     "dashboard": "Bảng điều khiển",
+    "workflow": "Quy trình",
     "monitoring": "Giám sát",
     "master": "Dữ liệu cơ sở",
     "master.part": "Quản lý vật tư",
@@ -5540,5 +5541,22 @@
       "workerBased": "Nhân lực",
       "inactive": "Ngưng"
     }
+  },
+  "workflow": {
+    "title": "Quy trình",
+    "subtitle": "Xem luồng quy trình kinh doanh và điều hướng đến từng bước.",
+    "refresh": "Làm mới",
+    "activeSuffix": " đang xử lý",
+    "material": { "title": "Vật tư", "arrival": "Nhập hàng", "label": "Nhãn", "iqc": "IQC", "receive": "Nhập kho", "request": "Yêu cầu xuất", "issue": "Xuất kho" },
+    "production": { "title": "Sản xuất", "plan": "Kế hoạch", "simulation": "Mô phỏng", "order": "Lệnh SX", "result": "Kết quả", "inspect": "Kiểm tra", "fgReceive": "Nhập TP" },
+    "quality": { "title": "Chất lượng", "iqc": "IQC", "processInspect": "KT công đoạn", "oqc": "OQC", "defect": "Lỗi", "rework": "Sửa chữa", "reinspect": "Tái kiểm", "capa": "CAPA" },
+    "shipping": { "title": "Xuất hàng", "packResult": "KQ đóng gói", "pack": "Đóng gói", "pallet": "Pallet", "oqc": "OQC", "confirm": "Xác nhận", "history": "Lịch sử" },
+    "equipment": { "title": "Thiết bị", "pmPlan": "KH PM", "pmCalendar": "Lịch PM", "pmResult": "KQ PM", "daily": "KT hàng ngày", "periodic": "KT định kỳ", "history": "Lịch sử" },
+    "outsourcing": { "title": "Gia công", "vendor": "Nhà cung cấp", "order": "Đơn hàng", "receive": "Nhận hàng" },
+    "consumables": { "title": "Vật tư tiêu hao", "receiving": "Nhập", "label": "Nhãn", "issuing": "Xuất", "mount": "Lắp", "life": "Tuổi thọ" },
+    "status": { "pending": "Chờ", "active": "Đang xử lý", "done": "Hoàn thành", "inspecting": "Đang kiểm", "planning": "Lập KH", "simulating": "Mô phỏng", "inputting": "Nhập liệu", "reporting": "Đăng ký", "requesting": "Yêu cầu", "issuing": "Phát hành", "packing": "Đóng gói", "palletizing": "Xếp pallet", "confirming": "Xác nhận", "scheduled": "Đã lên lịch", "executing": "Thực hiện", "ordering": "Đặt hàng", "receiving": "Nhập kho", "master": "Chính", "managing": "Quản lý" },
+    "branch": { "pass": "Đạt", "fail": "Không đạt" },
+    "action": { "goTo": "Đi đến", "cancelReceipt": "Hủy nhập kho", "return": "Trả hàng", "close": "Đóng" },
+    "popover": { "stats": "Thống kê", "recentHistory": "Lịch sử gần đây", "pendingCnt": "Chờ", "activeCnt": "Đang xử lý", "doneCnt": "Hoàn thành", "reverseCnt": "Chờ hủy" }
   }
 }

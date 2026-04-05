@@ -80,6 +80,7 @@
   },
   "menu": {
     "dashboard": "Dashboard",
+    "workflow": "Workflow",
     "monitoring": "Monitoring",
     "master": "Master Data",
     "master.part": "Part Management",
@@ -5540,5 +5541,22 @@
       "workerBased": "Worker-based",
       "inactive": "Inactive"
     }
+  },
+  "workflow": {
+    "title": "Workflow",
+    "subtitle": "View business process flows at a glance and navigate to each step.",
+    "refresh": "Refresh",
+    "activeSuffix": " active",
+    "material": { "title": "Material", "arrival": "Arrival", "label": "Label", "iqc": "IQC", "receive": "Receive", "request": "Request", "issue": "Issue" },
+    "production": { "title": "Production", "plan": "Plan", "simulation": "Simulation", "order": "Order", "result": "Result", "inspect": "Inspect", "fgReceive": "FG Receive" },
+    "quality": { "title": "Quality", "iqc": "IQC", "processInspect": "Process Insp.", "oqc": "OQC", "defect": "Defect", "rework": "Rework", "reinspect": "Re-inspect", "capa": "CAPA" },
+    "shipping": { "title": "Shipping", "packResult": "Pack Result", "pack": "Pack", "pallet": "Pallet", "oqc": "OQC", "confirm": "Confirm", "history": "History" },
+    "equipment": { "title": "Equipment", "pmPlan": "PM Plan", "pmCalendar": "PM Calendar", "pmResult": "PM Result", "daily": "Daily Insp.", "periodic": "Periodic Insp.", "history": "History" },
+    "outsourcing": { "title": "Outsourcing", "vendor": "Vendor", "order": "Order", "receive": "Receive" },
+    "consumables": { "title": "Consumables", "receiving": "Receive", "label": "Label", "issuing": "Issue", "mount": "Mount", "life": "Life" },
+    "status": { "pending": "Pending", "active": "Active", "done": "Done", "inspecting": "Inspecting", "planning": "Planning", "simulating": "Simulating", "inputting": "Inputting", "reporting": "Reporting", "requesting": "Requesting", "issuing": "Issuing", "packing": "Packing", "palletizing": "Palletizing", "confirming": "Confirming", "scheduled": "Scheduled", "executing": "Executing", "ordering": "Ordering", "receiving": "Receiving", "master": "Master", "managing": "Managing" },
+    "branch": { "pass": "Pass", "fail": "Fail" },
+    "action": { "goTo": "Go to", "cancelReceipt": "Cancel Receipt", "return": "Return", "close": "Close" },
+    "popover": { "stats": "Statistics", "recentHistory": "Recent History", "pendingCnt": "Pending", "activeCnt": "Active", "doneCnt": "Done", "reverseCnt": "Cancel Pending" }
   }
 }

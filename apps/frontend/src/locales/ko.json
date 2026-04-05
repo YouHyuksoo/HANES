@@ -80,6 +80,7 @@
   },
   "menu": {
     "dashboard": "대시보드",
+    "workflow": "워크플로우",
     "monitoring": "모니터링",
     "master": "기준정보",
     "master.part": "품목관리",
@@ -5566,5 +5567,22 @@
       "workerBased": "인력종속",
       "inactive": "비활성"
     }
+  },
+  "workflow": {
+    "title": "워크플로우",
+    "subtitle": "업무 프로세스 흐름을 한눈에 파악하고, 각 단계로 바로 이동하세요.",
+    "refresh": "새로고침",
+    "activeSuffix": "건 진행중",
+    "material": { "title": "자재관리", "arrival": "입하", "label": "입고라벨", "iqc": "IQC", "receive": "입고", "request": "출고요청", "issue": "출고" },
+    "production": { "title": "생산관리", "plan": "월간계획", "simulation": "시뮬레이션", "order": "작업지시", "result": "생산실적", "inspect": "공정검사", "fgReceive": "완제품입고" },
+    "quality": { "title": "품질관리", "iqc": "IQC", "processInspect": "공정검사", "oqc": "OQC", "defect": "불량등록", "rework": "재작업", "reinspect": "재검사", "capa": "CAPA" },
+    "shipping": { "title": "출하관리", "packResult": "포장실적", "pack": "포장", "pallet": "파렛트", "oqc": "OQC", "confirm": "출하확정", "history": "출하이력" },
+    "equipment": { "title": "설비관리", "pmPlan": "PM계획", "pmCalendar": "PM캘린더", "pmResult": "PM결과", "daily": "일상점검", "periodic": "정기점검", "history": "점검이력" },
+    "outsourcing": { "title": "외주관리", "vendor": "외주업체", "order": "외주발주", "receive": "외주입고" },
+    "consumables": { "title": "소모품관리", "receiving": "입고", "label": "라벨", "issuing": "출고", "mount": "장착", "life": "수명" },
+    "status": { "pending": "대기", "active": "진행", "done": "완료", "inspecting": "검사중", "planning": "수립", "simulating": "시뮬레이션", "inputting": "입력중", "reporting": "등록", "requesting": "요청", "issuing": "발행", "packing": "포장중", "palletizing": "적재중", "confirming": "확정", "scheduled": "예정", "executing": "실행", "ordering": "발주", "receiving": "입고중", "master": "마스터", "managing": "관리" },
+    "branch": { "pass": "합격", "fail": "불합격" },
+    "action": { "goTo": "바로가기", "cancelReceipt": "입고취소", "return": "반품", "close": "닫기" },
+    "popover": { "stats": "현황 통계", "recentHistory": "최근 처리 이력", "pendingCnt": "대기", "activeCnt": "진행", "doneCnt": "완료", "reverseCnt": "취소대기" }
   }
 }

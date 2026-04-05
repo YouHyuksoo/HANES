@@ -80,6 +80,7 @@
   },
   "menu": {
     "dashboard": "仪表盘",
+    "workflow": "工作流程",
     "monitoring": "监控",
     "master": "基础数据",
     "master.part": "零件管理",
@@ -5540,5 +5541,22 @@
       "workerBased": "人力型",
       "inactive": "停用"
     }
+  },
+  "workflow": {
+    "title": "工作流程",
+    "subtitle": "一目了然地查看业务流程，快速导航到每个步骤。",
+    "refresh": "刷新",
+    "activeSuffix": "件进行中",
+    "material": { "title": "物料管理", "arrival": "到货", "label": "标签", "iqc": "IQC", "receive": "入库", "request": "出库申请", "issue": "出库" },
+    "production": { "title": "生产管理", "plan": "月计划", "simulation": "模拟", "order": "工单", "result": "实绩", "inspect": "工序检查", "fgReceive": "成品入库" },
+    "quality": { "title": "质量管理", "iqc": "IQC", "processInspect": "工序检查", "oqc": "OQC", "defect": "不良登记", "rework": "返工", "reinspect": "复检", "capa": "CAPA" },
+    "shipping": { "title": "出货管理", "packResult": "包装实绩", "pack": "包装", "pallet": "托盘", "oqc": "OQC", "confirm": "出货确认", "history": "出货历史" },
+    "equipment": { "title": "设备管理", "pmPlan": "PM计划", "pmCalendar": "PM日历", "pmResult": "PM结果", "daily": "日常点检", "periodic": "定期点检", "history": "点检历史" },
+    "outsourcing": { "title": "外协管理", "vendor": "外协商", "order": "外协订单", "receive": "外协入库" },
+    "consumables": { "title": "耗材管理", "receiving": "入库", "label": "标签", "issuing": "出库", "mount": "安装", "life": "寿命" },
+    "status": { "pending": "待处理", "active": "进行中", "done": "完成", "inspecting": "检查中", "planning": "计划中", "simulating": "模拟中", "inputting": "录入中", "reporting": "登记中", "requesting": "申请中", "issuing": "发行中", "packing": "包装中", "palletizing": "码垛中", "confirming": "确认中", "scheduled": "已安排", "executing": "执行中", "ordering": "订购中", "receiving": "入库中", "master": "主数据", "managing": "管理中" },
+    "branch": { "pass": "合格", "fail": "不合格" },
+    "action": { "goTo": "前往", "cancelReceipt": "取消入库", "return": "退货", "close": "关闭" },
+    "popover": { "stats": "统计", "recentHistory": "最近记录", "pendingCnt": "待处理", "activeCnt": "进行中", "doneCnt": "完成", "reverseCnt": "待取消" }
   }
 }
