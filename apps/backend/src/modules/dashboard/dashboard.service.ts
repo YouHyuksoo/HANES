@@ -32,7 +32,8 @@ export class DashboardService {
    * 기존 API 응답 구조 유지: { equip, job, mat, defect, daily, periodic, pm }
    */
   async getSummary(dateStr: string) {
-    const targetDate = new Date(dateStr);
+    // 'T00:00:00' 을 붙여 로컬 타임존 자정 생성 (UTC 변환 방지)
+    const targetDate = new Date(dateStr + 'T00:00:00');
 
     const [equip, job, mat, defect, daily, periodic, pm] = await Promise.all([
       this.getEquipStats(),

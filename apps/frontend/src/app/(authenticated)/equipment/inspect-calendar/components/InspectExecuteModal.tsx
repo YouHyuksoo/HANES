@@ -119,7 +119,7 @@ export default function InspectExecuteModal({
         })),
       };
       const payload = {
-        equipId: equip.equipId,
+        equipCode: equip.equipCode,
         inspectType,
         inspectDate: date,
         inspectorName: inspectorName.trim(),
