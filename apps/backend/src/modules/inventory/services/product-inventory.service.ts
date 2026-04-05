@@ -279,6 +279,88 @@ export class ProductInventoryService {
     }
   }
 
+  /**
+   * 외부 트랜잭션(QueryRunner) 내에서 제품 출고 처리
+   * - 출하 처리 시 제품재고 차감 등에 사용
+   * - 호출측 트랜잭션에 참여하므로 commit/rollback은 호출측이 담당
+   */
+  async issueStockInTx(qr: QueryRunner, dto: ProductIssueStockDto): Promise<ProductTransaction> {
+    const transNo = await this.generateTransNo(qr);
+
+    // 1. 재고 확인
+    const stock = await qr.manager.findOne(ProductStock, {
+      where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
+    });
+
+    if (!stock || stock.availableQty < dto.qty) {
+      throw new BadRequestException(
+        `재고 부족으로 출고할 수 없습니다: ${dto.itemCode} (가용 ${stock?.availableQty || 0}, 요청 ${dto.qty})`,
+      );
+    }
+
+    // 2. 트랜잭션 생성
+    const transaction = qr.manager.create(ProductTransaction, {
+      transNo,
+      transType: dto.transType,
+      transDate: new Date(),
+      fromWarehouseId: dto.warehouseId,
+      toWarehouseId: dto.toWarehouseId,
+      itemCode: dto.itemCode,
+      itemType: dto.itemType,
+      prdUid: dto.prdUid,
+      orderNo: dto.orderNo,
+      processCode: dto.processCode,
+      qty: -dto.qty,
+      refType: dto.refType,
+      refId: dto.refId,
+      workerId: dto.workerId,
+      issueType: dto.issueType,
+      remark: dto.remark,
+      status: 'DONE',
+      company: dto.company,
+      plant: dto.plant,
+    });
+
+    const saved = await qr.manager.save(ProductTransaction, transaction);
+
+    // 3. 출고 창고 재고 감소
+    await qr.manager.update(ProductStock,
+      { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid },
+      { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
+    );
+
+    // 4. 이동 대상 창고가 있으면 입고 처리
+    if (dto.toWarehouseId) {
+      const targetStock = await qr.manager.findOne(ProductStock, {
+        where: { warehouseCode: dto.toWarehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
+      });
+
+      if (targetStock) {
+        await qr.manager.update(ProductStock,
+          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, prdUid: targetStock.prdUid },
+          { qty: targetStock.qty + dto.qty, availableQty: targetStock.qty + dto.qty - targetStock.reservedQty },
+        );
+      } else {
+        await qr.manager.save(ProductStock, {
+          warehouseCode: dto.toWarehouseId,
+          itemCode: dto.itemCode,
+          itemType: dto.itemType,
+          prdUid: dto.prdUid || null,
+          orderNo: dto.orderNo || null,
+          processCode: dto.processCode || null,
+          qty: dto.qty,
+          reservedQty: 0,
+          availableQty: dto.qty,
+          company: dto.company,
+          plant: dto.plant,
+        });
+      }
+    }
+
+    this.logger.log(`제품 출고(Tx): ${dto.itemCode} × ${dto.qty} ← ${dto.warehouseId} (${dto.transType})`);
+    return saved;
+  }
+
   /** 제품 트랜잭션 취소 (입고취소, 출고취소) */
   async cancelTransaction(dto: CancelTransactionDto) {
     const originalTrans = await this.transactionRepository.findOne({

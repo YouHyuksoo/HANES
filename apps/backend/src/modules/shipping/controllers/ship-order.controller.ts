@@ -80,4 +80,12 @@ export class ShipOrderController {
     await this.shipOrderService.delete(id);
     return ResponseUtil.success(null, '출하지시가 삭제되었습니다.');
   }
+
+  @Put(':id/confirm')
+  @ApiOperation({ summary: '출하지시 확정 (DRAFT → CONFIRMED)' })
+  @ApiParam({ name: 'id', description: '출하지시 번호' })
+  async confirm(@Param('id') id: string) {
+    const data = await this.shipOrderService.confirm(id);
+    return ResponseUtil.success(data, '출하지시가 확정되었습니다.');
+  }
 }

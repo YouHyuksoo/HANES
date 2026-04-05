@@ -4,7 +4,10 @@
  *
  * 초보자 가이드:
  * 1. **CRUD**: 출하지시 생성/조회/수정/삭제 + 품목 관리
- * 2. **상태 흐름**: DRAFT -> CONFIRMED -> SHIPPING -> SHIPPED
+ * 2. **상태 흐름**: DRAFT -> CONFIRMED -> CLOSED
+ *    - DRAFT: 작성 중 (수정/삭제 가능)
+ *    - CONFIRMED: 확정 (실출하 생성 가능, 수정/삭제 불가)
+ *    - CLOSED: 실출하 완료 후 자동 마감
  * 3. **품목 관리**: 출하지시 생성/수정 시 items를 함께 처리
  */
 
@@ -236,5 +239,27 @@ export class ShipOrderService {
     await this.shipOrderRepository.delete({ shipOrderNo });
 
     return { shipOrderNo, deleted: true };
+  }
+
+  /**
+   * 출하지시 확정 (DRAFT -> CONFIRMED)
+   * 확정 후 실출하 생성 가능
+   */
+  async confirm(shipOrderNo: string) {
+    const order = await this.findById(shipOrderNo);
+    if (order.status !== 'DRAFT') {
+      throw new BadRequestException('DRAFT 상태에서만 확정할 수 있습니다.');
+    }
+
+    if (!order.items || order.items.length === 0) {
+      throw new BadRequestException('품목이 없는 출하지시는 확정할 수 없습니다.');
+    }
+
+    await this.shipOrderRepository.update(
+      { shipOrderNo },
+      { status: 'CONFIRMED' },
+    );
+
+    return this.findById(shipOrderNo);
   }
 }

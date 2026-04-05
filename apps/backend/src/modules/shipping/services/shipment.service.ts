@@ -149,6 +149,7 @@ export class ShipmentService {
       destination: dto.destination,
       customer: dto.customer,
       remark: dto.remark,
+      shipOrderNo: dto.shipOrderNo || null,
       palletCount: 0,
       boxCount: 0,
       totalQty: 0,
@@ -511,37 +512,29 @@ export class ShipmentService {
         }
       }
 
-      await queryRunner.commitTransaction();
-    } catch (err: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+      // 5. 품목별 제품재고 차감 (트랜잭션 내부 — 원자성 보장)
+      //    재고 부족 시 전체 출하 롤백
+      const stockItemCodes = [...itemQtyMap.keys()];
+      const allStocks = stockItemCodes.length > 0
+        ? await queryRunner.manager.getRepository(ProductStock).find({
+            where: { itemCode: In(stockItemCodes) },
+            order: { availableQty: 'DESC' },
+          })
+        : [];
+      const stockByItem = new Map<string, typeof allStocks[number]>();
+      for (const s of allStocks) {
+        if (!stockByItem.has(s.itemCode)) stockByItem.set(s.itemCode, s);
+      }
 
-    // 5. 품목별 제품재고 차감 (PRODUCT_STOCK - FG_OUT)
-    //    재고 일괄 선조회 후 순차 차감 (N+1 제거)
-    const stockItemCodes = [...itemQtyMap.keys()];
-    const allStocks = stockItemCodes.length > 0
-      ? await this.dataSource.getRepository(ProductStock).find({
-          where: { itemCode: In(stockItemCodes) },
-          order: { availableQty: 'DESC' },
-        })
-      : [];
-    const stockByItem = new Map<string, typeof allStocks[number]>();
-    for (const s of allStocks) {
-      if (!stockByItem.has(s.itemCode)) stockByItem.set(s.itemCode, s);
-    }
-
-    for (const [itemCode, qty] of itemQtyMap.entries()) {
-      try {
+      for (const [itemCode, qty] of itemQtyMap.entries()) {
         const stock = stockByItem.get(itemCode);
         if (!stock || stock.availableQty < qty) {
-          this.logger.warn(`출하 ${id} 품목 ${itemCode} 재고 부족 — 차감 생략`);
-          continue;
+          throw new BadRequestException(
+            `재고 부족으로 출하 처리할 수 없습니다: ${itemCode} (가용 ${stock?.availableQty || 0}, 요청 ${qty})`,
+          );
         }
 
-        await this.productInventoryService.issueStock({
+        await this.productInventoryService.issueStockInTx(queryRunner, {
           warehouseId: stock.warehouseCode,
           itemCode,
           itemType: 'FG',
@@ -554,11 +547,14 @@ export class ShipmentService {
           company: shipment.company,
           plant: shipment.plant,
         });
-      } catch (err: unknown) {
-        this.logger.warn(
-          `출하 ${id} 품목 ${itemCode} 재고 차감 실패: ${err instanceof Error ? err.message : String(err)}`,
-        );
       }
+
+      await queryRunner.commitTransaction();
+    } catch (err: unknown) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
 
     return this.findById(id);

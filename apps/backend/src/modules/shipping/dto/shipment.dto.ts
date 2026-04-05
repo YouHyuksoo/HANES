@@ -76,6 +76,11 @@ export class CreateShipmentDto {
   @IsString()
   @MaxLength(500)
   remark?: string;
+
+  @ApiPropertyOptional({ description: '출하지시 번호', example: 'SO-20250126-001', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  shipOrderNo?: string;
 }
 
 /**

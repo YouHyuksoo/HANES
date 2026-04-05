@@ -282,11 +282,19 @@ export class ReceivingService {
         const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: item.matUid } });
         if (!lot) continue;
 
-        // 0. MAT_ARRIVALS에서 입하 창고 조회 (itemCode 기준)
-        const arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
-          where: { itemCode: lot.itemCode, status: 'DONE' },
-          order: { arrivalDate: 'DESC' },
-        });
+        // 0. MAT_ARRIVALS에서 입하 창고 조회 (LOT의 arrivalNo FK 기준)
+        let arrivalRecord: MatArrival | null = null;
+        if (lot.arrivalNo) {
+          arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
+            where: { arrivalNo: lot.arrivalNo, seq: lot.arrivalSeq ?? 1 },
+          });
+        } else {
+          // arrivalNo 없는 레거시 LOT — 기존 로직
+          arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
+            where: { itemCode: lot.itemCode, status: 'DONE' },
+            order: { arrivalDate: 'DESC' },
+          });
+        }
         const arrivalWarehouseCode = arrivalRecord?.warehouseCode || null;
 
         // 1-1. 제조일자 수정 시 LOT 업데이트 + 유효기한 재계산
@@ -318,6 +326,8 @@ export class ReceivingService {
           status: 'DONE',
           company: lot.company,
           plant: lot.plant,
+          arrivalNo: lot.arrivalNo,
+          arrivalSeq: lot.arrivalSeq,
         });
         await queryRunner.manager.save(receiving);
 

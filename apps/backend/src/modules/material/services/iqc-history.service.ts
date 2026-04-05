@@ -3,9 +3,9 @@
  * @description IQC 이력 조회 서비스 (TypeORM)
  *
  * 초보자 가이드:
- * - IqcLog 엔티티는 arrivalNo 필드로 MatArrival과 연결 (matUid 필드 없음)
- * - CreateIqcResultDto의 matUid는 MatLot 조회용이며, IqcLog에는 arrivalNo로 저장
- * - 검색 시 MatLot(matUid)과 IqcLog(arrivalNo)를 각각 조회하여 매칭
+ * - IqcLog 엔티티는 arrivalNo + matUid 필드로 MatArrival/MatLot과 연결
+ * - CreateIqcResultDto의 matUid를 IqcLog에 직접 저장하여 정확한 LOT 식별
+ * - 취소 시 matUid 기반으로 정확한 LOT/입고 건 조회 (레거시 fallback: itemCode)
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -164,6 +164,7 @@ export class IqcHistoryService {
     // G4: IqcLog 생성 — inspectClass, destructSampleQty, certFilePath 포함
     const log = this.iqcLogRepository.create({
       arrivalNo: null,
+      matUid: dto.matUid,
       itemCode: lot.itemCode,
       inspectType: dto.inspectType || 'INITIAL',
       result: dto.result,
@@ -341,8 +342,17 @@ export class IqcHistoryService {
       throw new BadRequestException('이미 취소된 판정입니다.');
     }
 
-    // 이미 입고된 LOT인지 확인 (itemCode 기준으로 최근 입고 체크)
-    if (log.itemCode) {
+    // 이미 입고된 LOT인지 확인 (matUid 기준 → 레거시 fallback)
+    if (log.matUid) {
+      // matUid로 정확한 LOT의 입고 여부 확인
+      const receiving = await this.matReceivingRepository.findOne({
+        where: { matUid: log.matUid, status: 'DONE' },
+      });
+      if (receiving) {
+        throw new BadRequestException('이미 입고된 LOT은 IQC 판정을 취소할 수 없습니다.');
+      }
+    } else if (log.itemCode) {
+      // matUid 없는 레거시 — 기존 로직
       const receiving = await this.matReceivingRepository.findOne({
         where: { itemCode: log.itemCode, status: 'DONE' },
       });
@@ -357,16 +367,18 @@ export class IqcHistoryService {
       { status: 'CANCELED', remark: dto.reason },
     );
 
-    // LOT의 iqcStatus를 PENDING으로 복원 (itemCode 기준으로 LOT 찾기)
-    if (log.itemCode) {
+    // LOT의 iqcStatus를 PENDING으로 복원 (matUid 기준 → 레거시 fallback)
+    if (log.matUid) {
+      // matUid로 정확한 LOT 복원
+      await this.matLotRepository.update(log.matUid, { iqcStatus: 'PENDING' });
+    } else if (log.itemCode) {
+      // matUid 없는 레거시 — 기존 로직
       const lot = await this.matLotRepository.findOne({
         where: { itemCode: log.itemCode, iqcStatus: log.result },
         order: { createdAt: 'DESC' },
       });
       if (lot) {
-        await this.matLotRepository.update(lot.matUid, {
-          iqcStatus: 'PENDING',
-        });
+        await this.matLotRepository.update(lot.matUid, { iqcStatus: 'PENDING' });
       }
     }
 

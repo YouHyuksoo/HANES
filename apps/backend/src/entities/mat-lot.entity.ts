@@ -21,6 +21,7 @@ import {
 @Index(['itemCode'])
 @Index(['status'])
 @Index(['iqcStatus'])
+@Index(['arrivalNo'])
 export class MatLot {
   @PrimaryColumn({ name: 'MAT_UID', length: 50 })
   matUid: string;
@@ -40,6 +41,12 @@ export class MatLot {
 
   @Column({ name: 'EXPIRE_DATE', type: 'date', nullable: true })
   expireDate: Date | null;
+
+  @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 50, nullable: true })
+  arrivalNo: string | null;
+
+  @Column({ type: 'number', name: 'ARRIVAL_SEQ', nullable: true })
+  arrivalSeq: number | null;
 
   @Column({ type: 'varchar2', name: 'ORIGIN', length: 50, nullable: true })
   origin: string | null;

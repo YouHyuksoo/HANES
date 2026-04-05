@@ -23,6 +23,7 @@ import {
 @Entity({ name: 'IQC_LOGS' })
 @Index(['itemCode'])
 @Index(['arrivalNo'])
+@Index(['matUid'])
 @Index(['inspectType'])
 @Index(['result'])
 export class IqcLog {
@@ -34,6 +35,9 @@ export class IqcLog {
 
   @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 50, nullable: true })
   arrivalNo: string | null;
+
+  @Column({ type: 'varchar2', name: 'MAT_UID', length: 50, nullable: true })
+  matUid: string | null;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;

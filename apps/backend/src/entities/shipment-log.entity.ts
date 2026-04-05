@@ -20,6 +20,7 @@ import {
 @Index(['status'])
 @Index(['shipDate'])
 @Index(['customer'])
+@Index(['shipOrderNo'])
 export class ShipmentLog {
   @PrimaryColumn({ name: 'SHIP_NO', length: 50 })
   shipNo: string;
@@ -41,6 +42,9 @@ export class ShipmentLog {
 
   @Column({ type: 'varchar2', name: 'CUSTOMER', length: 100, nullable: true })
   customer: string | null;
+
+  @Column({ type: 'varchar2', name: 'SHIP_ORDER_NO', length: 50, nullable: true })
+  shipOrderNo: string | null;
 
   @Column({ name: 'PALLET_COUNT', type: 'int', default: 0 })
   palletCount: number;

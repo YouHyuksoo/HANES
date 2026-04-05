@@ -495,8 +495,15 @@ export class ArrivalService {
       // 1. 원본 CANCELED 처리
       await queryRunner.manager.update(StockTransaction, { transNo: original.transNo }, { status: 'CANCELED' });
 
-      // 1-1. MatArrival도 CANCELED 처리 (itemCode 기준으로 찾기)
-      if (original.itemCode) {
+      // 1-1. MatArrival도 CANCELED 처리 (matUid → LOT.arrivalNo FK 기준)
+      if (original.matUid) {
+        // matUid → MatLot.arrivalNo로 정확한 입하 건 식별
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: original.matUid } });
+        if (lot?.arrivalNo) {
+          await queryRunner.manager.update(MatArrival, { arrivalNo: lot.arrivalNo, seq: lot.arrivalSeq ?? 1 }, { status: 'CANCELED' });
+        }
+      } else if (original.itemCode) {
+        // matUid 없는 레거시 데이터 — 기존 로직 유지
         const arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
           where: { itemCode: original.itemCode, status: 'DONE' },
           order: { arrivalDate: 'DESC' },

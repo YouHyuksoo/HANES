@@ -41,6 +41,12 @@ export class MatReceiving {
   @Column({ name: 'WAREHOUSE_CODE', length: 50 })
   warehouseCode: string;
 
+  @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 50, nullable: true })
+  arrivalNo: string | null;
+
+  @Column({ type: 'number', name: 'ARRIVAL_SEQ', nullable: true })
+  arrivalSeq: number | null;
+
   @Column({ name: 'RECEIVE_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   receiveDate: Date;
 

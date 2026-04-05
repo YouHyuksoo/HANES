@@ -689,6 +689,43 @@ export class ProdResultService {
         }
       }
 
+      // 6. 작업지시 자동 완료 체크
+      // 해당 작업지시의 모든 실적이 DONE이고 계획수량 달성 시 자동 완료
+      const autoCompleteJobOrder = await queryRunner.manager.findOne(JobOrder, {
+        where: { orderNo: prodResult.orderNo },
+      });
+
+      if (autoCompleteJobOrder && autoCompleteJobOrder.status === 'RUNNING') {
+        const pendingResults = await queryRunner.manager.count(ProdResult, {
+          where: { orderNo: prodResult.orderNo, status: In(['RUNNING', 'WAITING']) },
+        });
+
+        if (pendingResults === 0) {
+          const summary = await queryRunner.manager
+            .createQueryBuilder(ProdResult, 'pr')
+            .select('SUM(pr.goodQty)', 'totalGoodQty')
+            .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
+            .where('pr.orderNo = :orderNo AND pr.status = :status', {
+              orderNo: prodResult.orderNo,
+              status: 'DONE',
+            })
+            .getRawOne();
+
+          const totalGood = parseInt(summary?.totalGoodQty) || 0;
+          const totalDefect = parseInt(summary?.totalDefectQty) || 0;
+
+          if (totalGood >= autoCompleteJobOrder.planQty) {
+            await queryRunner.manager.update(JobOrder, { orderNo: prodResult.orderNo }, {
+              status: 'DONE',
+              endAt: new Date(),
+              goodQty: totalGood,
+              defectQty: totalDefect,
+            });
+            this.logger.log(`작업지시 자동 완료: ${prodResult.orderNo} (양품 ${totalGood} >= 계획 ${autoCompleteJobOrder.planQty})`);
+          }
+        }
+      }
+
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
