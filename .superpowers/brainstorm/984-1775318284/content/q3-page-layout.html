@@ -1,0 +1,155 @@
+<h2>Q3. 페이지 레이아웃 — 워크플로우 목록을 어떻게 배치할까요?</h2>
+<p class="subtitle">7개 워크플로우를 하나의 페이지에 보여주는 방식입니다.</p>
+
+<div class="cards" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+
+  <!-- Option A: 아코디언 리스트 -->
+  <div class="card" data-choice="accordion" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #f59e0b;">A. 아코디언 리스트</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">워크플로우 제목을 세로로 나열, 클릭 시 흐름도 펼침</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1rem; font-size: 0.75rem;">
+        <!-- Closed items -->
+        <div style="background:#1e293b; border-radius:8px; padding:12px 16px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.2rem;">📦</span>
+            <span style="color:#e2e8f0; font-weight:600;">자재관리</span>
+            <span style="color:#666; font-size:0.7rem;">입하 → IQC → 입고</span>
+          </div>
+          <span style="color:#666;">▼</span>
+        </div>
+        <!-- Open item -->
+        <div style="background:#1e293b; border-radius:8px; padding:12px 16px; margin-bottom:6px; border:1px solid #6366f140;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:1.2rem;">🏭</span>
+              <span style="color:#e2e8f0; font-weight:600;">생산관리</span>
+            </div>
+            <span style="color:#6366f1;">▲</span>
+          </div>
+          <!-- Expanded flow -->
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:8px; background:#0f172a; border-radius:6px;">
+            <div style="background:#22c55e; color:#fff; padding:5px 12px; border-radius:16px; font-size:0.7rem; font-weight:600;">월간계획</div>
+            <span style="color:#555;">→</span>
+            <div style="background:#3b82f6; color:#fff; padding:5px 12px; border-radius:16px; font-size:0.7rem; font-weight:600;">작업지시</div>
+            <span style="color:#555;">→</span>
+            <div style="background:#f59e0b; color:#fff; padding:5px 12px; border-radius:16px; font-size:0.7rem; font-weight:600;">생산실적</div>
+            <span style="color:#555;">→</span>
+            <div style="background:#8b5cf6; color:#fff; padding:5px 12px; border-radius:16px; font-size:0.7rem; font-weight:600;">공정검사</div>
+            <span style="color:#555;">→</span>
+            <div style="background:#10b981; color:#fff; padding:5px 12px; border-radius:16px; font-size:0.7rem; font-weight:600;">완제품입고</div>
+          </div>
+        </div>
+        <!-- More closed -->
+        <div style="background:#1e293b; border-radius:8px; padding:12px 16px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.2rem;">🛡️</span>
+            <span style="color:#e2e8f0; font-weight:600;">품질관리</span>
+            <span style="color:#666; font-size:0.7rem;">IQC → 공정검사 → OQC → CAPA</span>
+          </div>
+          <span style="color:#666;">▼</span>
+        </div>
+        <div style="background:#1e293b; border-radius:8px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.2rem;">🚛</span>
+            <span style="color:#e2e8f0; font-weight:600;">출하관리</span>
+            <span style="color:#666; font-size:0.7rem;">포장 → OQC → 출하확정</span>
+          </div>
+          <span style="color:#666;">▼</span>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 1rem;">
+        <div class="pros"><h4>장점</h4><ul><li>세로 공간 효율적</li><li>관심있는 것만 펼침</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>전체 한눈에 안 보임</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: 대시보드 그리드 -->
+  <div class="card" data-choice="grid" onclick="toggleSelect(this)" style="cursor:pointer; border: 2px solid #6366f1;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #6366f1;">B. 대시보드 그리드 (추천)</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">카드 형태로 모든 워크플로우를 한 화면에 배치, 각 카드 안에 하이브리드 플로우</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1rem; font-size: 0.7rem;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <!-- Card 1 -->
+          <div style="background:#1e293b; border-radius:8px; padding:12px; border-left:3px solid #22c55e;">
+            <div style="color:#e2e8f0; font-weight:700; margin-bottom:8px; font-size:0.8rem;">📦 자재관리</div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div style="background:#22c55e30; color:#22c55e; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">입하 3</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#3b82f630; color:#3b82f6; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">IQC 5</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#8b5cf630; color:#8b5cf6; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">입고 12</div>
+            </div>
+          </div>
+          <!-- Card 2 -->
+          <div style="background:#1e293b; border-radius:8px; padding:12px; border-left:3px solid #3b82f6;">
+            <div style="color:#e2e8f0; font-weight:700; margin-bottom:8px; font-size:0.8rem;">🏭 생산관리</div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div style="background:#22c55e30; color:#22c55e; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">계획 2</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#f59e0b30; color:#f59e0b; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">지시 8</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#8b5cf630; color:#8b5cf6; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">실적 15</div>
+            </div>
+          </div>
+          <!-- Card 3 -->
+          <div style="background:#1e293b; border-radius:8px; padding:12px; border-left:3px solid #f59e0b;">
+            <div style="color:#e2e8f0; font-weight:700; margin-bottom:8px; font-size:0.8rem;">🛡️ 품질관리</div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div style="background:#3b82f630; color:#3b82f6; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">IQC 5</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#f59e0b30; color:#f59e0b; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">검사 3</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#10b98130; color:#10b981; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">OQC 7</div>
+            </div>
+          </div>
+          <!-- Card 4 -->
+          <div style="background:#1e293b; border-radius:8px; padding:12px; border-left:3px solid #ef4444;">
+            <div style="color:#e2e8f0; font-weight:700; margin-bottom:8px; font-size:0.8rem;">🚛 출하관리</div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div style="background:#22c55e30; color:#22c55e; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">포장 4</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#f59e0b30; color:#f59e0b; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">OQC 2</div>
+              <span style="color:#444;">→</span>
+              <div style="background:#8b5cf630; color:#8b5cf6; padding:3px 8px; border-radius:10px; font-size:0.65rem; font-weight:600;">출하 9</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 1rem;">
+        <div class="pros"><h4>장점</h4><ul><li>전체 현황 한눈에 파악</li><li>대시보드처럼 실용적</li><li>카드 클릭 시 상세 플로우 모달/페이지 이동</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>카드당 공간 제한</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: 탭 뷰 -->
+  <div class="card" data-choice="tab" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #10b981;">C. 탭 전환 뷰</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">상단 탭으로 워크플로우 전환, 한 번에 하나의 상세 플로우만 표시</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1rem; font-size: 0.75rem;">
+        <div style="display:flex; gap:2px; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:8px;">
+          <div style="background:#6366f1; color:#fff; padding:6px 14px; border-radius:6px 6px 0 0; font-weight:600; font-size:0.7rem;">자재관리</div>
+          <div style="background:#1e293b; color:#888; padding:6px 14px; border-radius:6px 6px 0 0; font-size:0.7rem;">생산관리</div>
+          <div style="background:#1e293b; color:#888; padding:6px 14px; border-radius:6px 6px 0 0; font-size:0.7rem;">품질관리</div>
+          <div style="background:#1e293b; color:#888; padding:6px 14px; border-radius:6px 6px 0 0; font-size:0.7rem;">...</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; padding:8px;">
+          <div style="background:#22c55e; color:#fff; padding:8px 16px; border-radius:8px; font-weight:600; text-align:center; min-width:60px;">입하<br/><span style="font-size:1.1rem;">3</span></div>
+          <span style="color:#555; font-size:1.5rem;">→</span>
+          <div style="background:#3b82f6; color:#fff; padding:8px 16px; border-radius:8px; font-weight:600; text-align:center; min-width:60px;">IQC<br/><span style="font-size:1.1rem;">5</span></div>
+          <span style="color:#555; font-size:1.5rem;">→</span>
+          <div style="background:#8b5cf6; color:#fff; padding:8px 16px; border-radius:8px; font-weight:600; text-align:center; min-width:60px;">입고<br/><span style="font-size:1.1rem;">12</span></div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 1rem;">
+        <div class="pros"><h4>장점</h4><ul><li>각 플로우 상세하게 표현 가능</li><li>넓은 공간 활용</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>전체 현황 비교 불가</li><li>탭 전환 필요</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>

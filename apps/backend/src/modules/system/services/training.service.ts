@@ -24,7 +24,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { TrainingPlan } from '../../../entities/training-plan.entity';
 import { TrainingResult } from '../../../entities/training-result.entity';
 import {
@@ -33,6 +33,7 @@ import {
   CreateTrainingResultDto,
   TrainingQueryDto,
 } from '../dto/training.dto';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class TrainingService {
@@ -43,34 +44,9 @@ export class TrainingService {
     private readonly planRepo: Repository<TrainingPlan>,
     @InjectRepository(TrainingResult)
     private readonly resultRepo: Repository<TrainingResult>,
+    private readonly dataSource: DataSource,
+    private readonly numbering: NumberingService,
   ) {}
-
-  // =============================================
-  // 계획번호 자동채번
-  // =============================================
-
-  /**
-   * 계획번호 자동채번: TRN-YYYYMMDD-NNN
-   */
-  private async generatePlanNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `TRN-${dateStr}-`;
-
-    const last = await this.planRepo
-      .createQueryBuilder('t')
-      .where('t.company = :company', { company })
-      .andWhere('t.plant = :plant', { plant })
-      .andWhere('t.planNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('t.planNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.planNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
-  }
 
   // =============================================
   // 교육 계획 CRUD
@@ -141,7 +117,8 @@ export class TrainingService {
     plant: string,
     userId: string,
   ) {
-    const planNo = await this.generatePlanNo(company, plant);
+    // NUM_RULE_MASTERS + SELECT FOR UPDATE 기반 채번 (동시성 안전)
+    const planNo = await this.numbering.next('TRAINING_PLAN', undefined, userId);
     const entity = this.planRepo.create({
       ...dto,
       planNo,
@@ -166,13 +143,14 @@ export class TrainingService {
   }
 
   /**
-   * 교육 계획 삭제
+   * 교육 계획 삭제 — 결과 삭제 + 계획 삭제를 단일 트랜잭션으로 처리 (원자성 보장)
    */
   async delete(planNo: string) {
     const item = await this.findById(planNo);
-    // 연관된 교육 결과도 함께 삭제
-    await this.resultRepo.delete({ planNo });
-    await this.planRepo.remove(item);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(TrainingResult, { planNo });
+      await manager.remove(TrainingPlan, item);
+    });
   }
 
   // =============================================

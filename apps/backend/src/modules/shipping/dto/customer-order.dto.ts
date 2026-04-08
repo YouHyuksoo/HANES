@@ -26,6 +26,7 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 const CUSTOMER_ORDER_STATUS = [
   'RECEIVED',
@@ -126,21 +127,8 @@ export class UpdateCustomerOrderDto extends PartialType(CreateCustomerOrderDto) 
 }
 
 /** 고객발주 목록 조회 쿼리 DTO */
-export class CustomerOrderQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class CustomerOrderQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (수주번호, 고객명)' })
   @IsOptional()

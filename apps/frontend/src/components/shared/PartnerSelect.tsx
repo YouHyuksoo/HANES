@@ -13,7 +13,7 @@ import type { SelectProps } from "@/components/ui/Select";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 
 interface PartnerSelectProps extends Omit<SelectProps, "options"> {
-  partnerType?: "SUPPLIER" | "CUSTOMER";
+  partnerType?: "SUPPLIER" | "CUSTOMER" | "VENDOR";
   /** 필터용: 모든 옵션 라벨 앞에 접두어 추가 + "전체" 옵션 자동 추가 */
   labelPrefix?: string;
 }

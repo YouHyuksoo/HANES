@@ -429,7 +429,7 @@ export class ConsumablesService {
         unitPrice: dto.unitPrice || null,
         incomingType: dto.incomingType || null,
         department: dto.department || null,
-        lineCode: dto.lineId || null,
+        lineCode: dto.lineCode || null,
         equipCode: dto.equipCode || null,
         issueReason: dto.issueReason || null,
         returnReason: dto.returnReason || null,

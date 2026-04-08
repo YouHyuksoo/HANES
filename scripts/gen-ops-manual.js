@@ -279,8 +279,8 @@ function buildDoc(){
 async function main(){
   const doc=buildDoc();
   const buffer=await Packer.toBuffer(doc);
-  fs.mkdirSync('docs/deliverables/system',{recursive:true});
-  const out='docs/deliverables/system/운영자매뉴얼_2026-03-19.docx';
+  fs.mkdirSync('exports/system',{recursive:true});
+  const out='exports/system/운영자매뉴얼_2026-03-19.docx';
   fs.writeFileSync(out,buffer);
   console.log('Generated: '+out);
 }

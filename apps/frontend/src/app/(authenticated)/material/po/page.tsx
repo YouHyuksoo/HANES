@@ -17,7 +17,7 @@ import {
   CheckCircle, Clock, Truck, Archive, Package,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard, ConfirmModal } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, PartnerSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -37,6 +37,7 @@ interface PurchaseOrderItem {
 
 interface PurchaseOrder {
   poNo: string;
+  partnerId: string;
   partnerName: string;
   orderDate: string;
   dueDate: string;
@@ -67,7 +68,7 @@ export default function PoPage() {
   const [editingItem, setEditingItem] = useState<PurchaseOrder | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    poNo: "", partnerName: "", orderDate: "", dueDate: "", remark: "",
+    poNo: "", partnerId: "", orderDate: "", dueDate: "", remark: "",
   });
   const [deleteTarget, setDeleteTarget] = useState<PurchaseOrder | null>(null);
 
@@ -105,21 +106,21 @@ export default function PoPage() {
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
-    setForm({ poNo: "", partnerName: "", orderDate: "", dueDate: "", remark: "" });
+    setForm({ poNo: "", partnerId: "", orderDate: "", dueDate: "", remark: "" });
     setIsModalOpen(true);
   }, []);
 
   const openEdit = useCallback((po: PurchaseOrder) => {
     setEditingItem(po);
     setForm({
-      poNo: po.poNo, partnerName: po.partnerName,
+      poNo: po.poNo, partnerId: po.partnerId || "",
       orderDate: po.orderDate, dueDate: po.dueDate, remark: po.remark || "",
     });
     setIsModalOpen(true);
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!form.poNo || !form.partnerName) return;
+    if (!form.poNo || !form.partnerId) return;
     setSaving(true);
     try {
       if (editingItem) {
@@ -384,10 +385,11 @@ export default function PoPage() {
             value={form.poNo}
             onChange={e => setForm(p => ({ ...p, poNo: e.target.value }))}
             disabled={!!editingItem} fullWidth />
-          <Input label={t("material.po.partnerName")}
-            placeholder={t("material.po.partnerName")}
-            value={form.partnerName}
-            onChange={e => setForm(p => ({ ...p, partnerName: e.target.value }))}
+          <PartnerSelect
+            label={t("material.po.partnerName")}
+            partnerType="SUPPLIER"
+            value={form.partnerId}
+            onChange={(v) => setForm(p => ({ ...p, partnerId: v }))}
             fullWidth />
           <Input label={t("material.po.orderDate")} type="date"
             value={form.orderDate}
@@ -403,7 +405,7 @@ export default function PoPage() {
             {t("common.cancel")}
           </Button>
           <Button onClick={handleSave}
-            disabled={saving || !form.poNo || !form.partnerName}>
+            disabled={saving || !form.poNo || !form.partnerId}>
             {saving ? t("common.saving") : editingItem ? t("common.edit") : t("common.register")}
           </Button>
         </div>

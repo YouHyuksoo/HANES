@@ -20,6 +20,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 // ========================================
 // BOM 품목 마스터 DTO
@@ -100,16 +101,8 @@ export class CreateEquipBomItemDto {
 
 export class UpdateEquipBomItemDto extends PartialType(CreateEquipBomItemDto) {}
 
-export class EquipBomItemQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number = 1;
+export class EquipBomItemQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number = 20;
 
   @ApiPropertyOptional({ description: '품목 유형', enum: ['PART', 'CONSUMABLE'] })
   @IsOptional()
@@ -179,16 +172,8 @@ export class CreateEquipBomRelDto {
 
 export class UpdateEquipBomRelDto extends PartialType(CreateEquipBomRelDto) {}
 
-export class EquipBomRelQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number = 1;
+export class EquipBomRelQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number = 20;
 
   @ApiPropertyOptional({ description: '설비 코드' })
   @IsOptional()

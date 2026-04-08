@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { Button, Modal, Input } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
+import { ComCodeSelect, ProcessSelect } from "@/components/shared";
 import api from "@/services/api";
 import { BomTreeItem } from "../types";
 
@@ -140,7 +140,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
           <Input label={t("master.bom.revision")} value={revision} onChange={(e) => setRevision(e.target.value)} fullWidth />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.bom.processCode", "공정코드")} value={processCode} onChange={(e) => setProcessCode(e.target.value)} placeholder="CUT-01" fullWidth />
+          <ProcessSelect label={t("master.bom.processCode", "공정코드")} value={processCode} onChange={(v) => setProcessCode(v)} fullWidth />
           <ComCodeSelect groupCode="BOM_SIDE" includeAll={false}
             label={t("master.bom.side", "사이드")} value={side} onChange={(v) => setSide(v)} fullWidth />
         </div>

@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -106,13 +107,11 @@ export default function IqcHistoryPage() {
   };
 
   const resultOptions = useMemo(() => [
-    { value: "", label: t("material.iqcHistory.result") },
     { value: "PASS", label: t("material.iqcHistory.pass") },
     { value: "FAIL", label: t("material.iqcHistory.fail") },
   ], [t]);
 
   const typeOptions = useMemo(() => [
-    { value: "", label: t("material.iqcHistory.inspectType") },
     { value: "INITIAL", label: t("material.iqcHistory.initial") },
     { value: "RETEST", label: t("material.iqcHistory.retest") },
   ], [t]);
@@ -241,11 +240,11 @@ export default function IqcHistoryPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-32 flex-shrink-0">
-                <Select options={resultOptions}
+                <ComCodeSelect groupCode="INSPECT_RESULT" labelPrefix={t("material.iqcHistory.result")}
                   value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
               <div className="w-32 flex-shrink-0">
-                <Select options={typeOptions}
+                <ComCodeSelect groupCode="IQC_TYPE" labelPrefix={t("material.iqcHistory.inspectType")}
                   value={typeFilter} onChange={setTypeFilter} fullWidth />
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">

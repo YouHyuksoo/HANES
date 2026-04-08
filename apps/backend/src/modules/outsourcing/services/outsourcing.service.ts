@@ -16,7 +16,7 @@ import { SubconOrder } from '../../../entities/subcon-order.entity';
 import { SubconDelivery } from '../../../entities/subcon-delivery.entity';
 import { SubconReceive } from '../../../entities/subcon-receive.entity';
 import { VendorMaster } from '../../../entities/vendor-master.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import {
   CreateVendorDto,
   UpdateVendorDto,
@@ -42,7 +42,7 @@ export class OutsourcingService {
     @InjectRepository(VendorMaster)
     private readonly vendorMasterRepository: Repository<VendorMaster>,
     private readonly dataSource: DataSource,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
   ) {}
 
   // ============================================================================
@@ -260,7 +260,7 @@ export class OutsourcingService {
 
   async createOrder(dto: CreateSubconOrderDto) {
     // 통합 채번 서비스로 발주번호 생성
-    const orderNo = await this.seqGenerator.nextSubconNo();
+    const orderNo = await this.numbering.nextSubconNo();
 
     const order = this.subconOrderRepository.create({
       orderNo,

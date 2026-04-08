@@ -10,6 +10,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateIqcPartLinkDto {
   @ApiProperty({ description: '품목 코드' })
@@ -40,21 +41,8 @@ export class CreateIqcPartLinkDto {
 
 export class UpdateIqcPartLinkDto extends PartialType(CreateIqcPartLinkDto) {}
 
-export class IqcPartLinkQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class IqcPartLinkQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색 (품목코드/품목명/거래처명)' })
   @IsOptional()

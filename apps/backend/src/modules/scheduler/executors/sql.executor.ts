@@ -69,8 +69,17 @@ export class SqlExecutor implements IJobExecutor {
 
     this.logger.log(`SQL 실행: ${sql.substring(0, 100)}...`);
 
-    // Oracle :name 바인드 사용 — params 객체를 직접 전달
-    const result = await this.dataSource.query(sql, params ? Object.values(params) : undefined);
+    // Oracle 바인드 파라미터 처리:
+    // - 이름 바인드(:col_name) → params 객체를 그대로 전달 (oracledb가 직접 처리)
+    // - 위치 바인드(:1, :2)   → Object.values() 배열로 전달
+    // SQL에 `:숫자` 패턴이 없으면 이름 바인드로 판단
+    const hasPositional = params && /:\d+/.test(sql);
+    const bindParams = params
+      ? hasPositional
+        ? Object.values(params)
+        : (params as unknown as unknown[])
+      : undefined;
+    const result = await this.dataSource.query(sql, bindParams);
 
     const affectedRows = Array.isArray(result) ? result.length : 0;
 

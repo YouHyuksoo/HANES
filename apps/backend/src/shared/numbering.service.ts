@@ -20,13 +20,15 @@ import { NumRuleService } from '../modules/num-rule/num-rule.service';
 const SEQ_TYPES = new Set([
   'MAT_UID', 'PRD_UID', 'CON_UID', 'FG_BARCODE',
   'JOB_ORDER', 'OQC_REQ', 'MAT_REQ', 'SHIPMENT',
-  'SUBCON', 'INSPECT_RESULT',
+  'SUBCON', 'INSPECT_RESULT', 'PROD_RESULT',
+  'TRAINING_PLAN',
 ]);
 
 /** NUM_RULE_MASTERS로 처리되는 채번 유형 */
 const RULE_TYPES = new Set([
-  'ARRIVAL', 'RECEIVING', 'MAT_ISSUE', 'PROD_RESULT',
+  'ARRIVAL', 'RECEIVING', 'MAT_ISSUE',
   'SCRAP', 'RECEIPT_CANCEL', 'ISSUE_REQUEST',
+  'STOCK_TX', 'CANCEL_TX', 'RECEIVE',
 ]);
 
 @Injectable()
@@ -78,4 +80,8 @@ export class NumberingService {
   async nextJobOrderNo(qr?: QueryRunner): Promise<string> { return this.next('JOB_ORDER', qr); }
   async nextArrivalNo(qr?: QueryRunner, userId?: string): Promise<string> { return this.next('ARRIVAL', qr, userId); }
   async nextProdResultNo(qr?: QueryRunner, userId?: string): Promise<string> { return this.next('PROD_RESULT', qr, userId); }
+  async nextFgBarcode(qr?: QueryRunner): Promise<string> { return this.next('FG_BARCODE', qr); }
+  async nextSubconNo(qr?: QueryRunner): Promise<string> { return this.next('SUBCON', qr); }
+  async nextShipmentNo(qr?: QueryRunner): Promise<string> { return this.next('SHIPMENT', qr); }
+  async nextTrainingPlanNo(qr?: QueryRunner): Promise<string> { return this.next('TRAINING_PLAN', qr); }
 }

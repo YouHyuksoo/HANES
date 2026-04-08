@@ -7,6 +7,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PLANT_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreatePlantDto {
   @ApiProperty({ description: '공장 코드', example: 'P001' })
@@ -43,11 +44,6 @@ export class CreatePlantDto {
   @IsIn([...PLANT_TYPE_VALUES])
   plantType?: string;
 
-  @ApiPropertyOptional({ description: '상위 위치 ID' })
-  @IsOptional()
-  @IsString()
-  parentId?: string;
-
   @ApiPropertyOptional({ description: '정렬 순서', default: 0 })
   @IsOptional()
   @IsInt()
@@ -63,21 +59,8 @@ export class CreatePlantDto {
 
 export class UpdatePlantDto extends PartialType(CreatePlantDto) {}
 
-export class PlantQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PlantQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ enum: PLANT_TYPE_VALUES })
   @IsOptional()
@@ -96,8 +79,4 @@ export class PlantQueryDto {
   @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  parentId?: string;
 }

@@ -7,6 +7,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateDepartmentDto {
   @ApiProperty({ description: '부서코드', example: 'D001' })
@@ -52,21 +53,8 @@ export class CreateDepartmentDto {
 
 export class UpdateDepartmentDto extends PartialType(CreateDepartmentDto) {}
 
-export class DepartmentQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class DepartmentQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional()
   @IsOptional()

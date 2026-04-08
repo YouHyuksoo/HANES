@@ -11,6 +11,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsArray, ValidateNested, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class PhysicalInvItemDto {
   @ApiProperty({ description: 'Stock ID' })
@@ -42,21 +43,8 @@ export class CreatePhysicalInvDto {
   createdBy?: string;
 }
 
-export class PhysicalInvQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PhysicalInvQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -128,7 +116,7 @@ export class PdaScanCountDto {
 }
 
 /** PC 웹 — 기준년월별 실사수량 조회 쿼리 DTO */
-export class PhysicalInvCountQueryDto {
+export class PhysicalInvCountQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '기준년월 (YYYY-MM)' })
   @IsOptional()
   @IsString()
@@ -144,13 +132,6 @@ export class PhysicalInvCountQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ default: 5000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
 }
 
 /** 실사 완료 요청 DTO */
@@ -168,21 +149,8 @@ export class CompletePhysicalInvSessionDto {
   remark?: string;
 }
 
-export class PhysicalInvHistoryQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PhysicalInvHistoryQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드/품목명)' })
   @IsOptional()

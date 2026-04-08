@@ -23,6 +23,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../../common/dto/base-query.dto';
 
 /**
  * 관리계획서 항목 DTO
@@ -160,21 +161,8 @@ export class UpdateControlPlanDto extends PartialType(CreateControlPlanDto) {}
 /**
  * 관리계획서 목록 조회 필터 DTO
  */
-export class ControlPlanFilterDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ControlPlanFilterDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({
     description: '상태 필터',

@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. **PartSearchModal**: 품목코드를 검색하고 선택할 수 있는 공통 모달
  * 2. **onSelect**: 행 클릭 시 선택된 품목 정보를 부모에 전달
- * 3. **itemType**: FG/WIP/RAW 등 품목유형 필터 (선택사항)
+ * 3. **itemType**: FINISHED/SEMI_PRODUCT/RAW_MATERIAL/CONSUMABLE 품목유형 필터 (선택사항)
  * 4. 검색어 입력 → Enter 또는 검색 버튼 클릭 → API 호출 → DataGrid 표시
  *
  * 사용 예:
@@ -13,7 +13,7 @@
  *   isOpen={open}
  *   onClose={() => setOpen(false)}
  *   onSelect={(part) => setItemCode(part.itemCode)}
- *   itemType="FG"
+ *   itemType="FINISHED"
  * />
  */
 
@@ -108,9 +108,9 @@ export default function PartSearchModal({
   const typeOptions = useMemo(
     () => [
       { value: "", label: t("common.all") },
-      { value: "FG", label: t("inventory.stock.fg", "완제품") },
-      { value: "WIP", label: t("inventory.stock.wip", "반제품") },
-      { value: "RAW", label: t("inventory.stock.raw", "원자재") },
+      { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
+      { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
+      { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
     ],
     [t]
   );

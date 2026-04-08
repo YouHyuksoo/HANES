@@ -10,6 +10,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class ProductHoldActionDto {
   @ApiProperty({ description: '제품 재고 ID (PRODUCT_STOCKS.ID)' })
@@ -34,21 +35,8 @@ export class ProductReleaseHoldDto {
   reason?: string;
 }
 
-export class ProductHoldQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ProductHoldQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -61,9 +49,9 @@ export class ProductHoldQueryDto {
   @IsIn(['HOLD', 'NORMAL'])
   status?: string;
 
-  @ApiPropertyOptional({ enum: ['WIP', 'FG'] })
+  @ApiPropertyOptional({ enum: ['SEMI_PRODUCT', 'FINISHED'] })
   @IsOptional()
   @IsString()
-  @IsIn(['WIP', 'FG'])
+  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
   itemType?: string;
 }

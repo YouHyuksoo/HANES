@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Search, RefreshCw, Settings2, Package, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
+import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useApiQuery } from '@/hooks/useApi';
 import { useFilteredList } from '@/hooks/useFilteredList';
@@ -23,14 +24,6 @@ function MoldPage() {
     '/molds'
   );
   const molds = response?.data || [];
-
-  const statusOptions = [
-    { value: '', label: t('crimping.mold.allStatus') },
-    { value: 'NORMAL', label: t('crimping.mold.ok') },
-    { value: 'WARNING', label: t('crimping.mold.warning') },
-    { value: 'REPLACE', label: t('crimping.mold.replace') },
-    { value: 'MAINT', label: t('crimping.mold.maint') },
-  ];
 
   // 필터링
   const { filteredData, filters, stats, resetFilters } = useFilteredList(molds, {
@@ -121,7 +114,8 @@ function MoldPage() {
               <div className="flex gap-2 items-center">
                 <Input placeholder={t('common.search')} value={filters.searchTerm}
                   onChange={(e) => filters.setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} />
-                <Select value={filters.statusFilter} onChange={filters.setStatusFilter} options={statusOptions} />
+                <ComCodeSelect groupCode="MOLD_STATUS" labelPrefix={t('common.status')}
+                  value={filters.statusFilter} onChange={filters.setStatusFilter} fullWidth className="w-40" />
                 <Button variant="outline" onClick={resetFilters}>{t('common.reset')}</Button>
               </div>
             }

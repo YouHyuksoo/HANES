@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>워크플로우 페이지 - 최종 디자인</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  .page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .page-header p { color: #94a3b8; font-size: 0.85rem; margin-top: 4px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+  .wf-card {
+    background: #1e293b; border-radius: 12px; padding: 20px;
+    border-left: 4px solid var(--accent); cursor: pointer;
+    transition: all 0.2s; position: relative;
+  }
+  .wf-card:hover { background: #253347; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+  .wf-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .wf-card-title { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.95rem; }
+  .wf-card-badge { background: var(--accent); color: #fff; padding: 2px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+
+  .wf-flow { display: flex; align-items: stretch; gap: 6px; }
+  .wf-node {
+    flex: 1; background: #0f172a; border-radius: 8px; padding: 10px 8px;
+    text-align: center; border: 1px solid #334155; transition: all 0.2s;
+    cursor: pointer; position: relative;
+  }
+  .wf-node:hover { border-color: var(--accent); background: #1a2744; }
+  .wf-node-name { font-size: 0.75rem; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .wf-node-count { font-size: 1.3rem; font-weight: 800; color: #e2e8f0; }
+  .wf-node-label { font-size: 0.65rem; color: #64748b; margin-top: 2px; }
+
+  .wf-arrow { display: flex; align-items: center; color: #475569; font-size: 1rem; }
+
+  .wf-branch { display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 4px; }
+  .wf-branch-item { padding: 2px 8px; border-radius: 8px; font-size: 0.6rem; font-weight: 600; white-space: nowrap; }
+  .wf-branch-pass { background: rgba(34,197,94,0.2); color: #22c55e; }
+  .wf-branch-fail { background: rgba(239,68,68,0.2); color: #ef4444; }
+
+  /* Popover */
+  .popover-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; }
+  .popover-overlay.active { display: flex; align-items: center; justify-content: center; }
+  .popover {
+    background: #1e293b; border-radius: 12px; padding: 24px; width: 380px;
+    border: 1px solid #334155; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .popover h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .popover-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .popover-stat { background: #0f172a; border-radius: 8px; padding: 10px; text-align: center; }
+  .popover-stat-value { font-size: 1.4rem; font-weight: 800; }
+  .popover-stat-label { font-size: 0.7rem; color: #64748b; }
+  .popover-recent { margin-bottom: 16px; }
+  .popover-recent h4 { font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; }
+  .popover-recent-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #334155; font-size: 0.75rem; }
+  .popover-actions { display: flex; gap: 8px; }
+  .btn { padding: 8px 20px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; border: none; cursor: pointer; }
+  .btn-primary { background: #6366f1; color: #fff; flex: 1; }
+  .btn-primary:hover { background: #5558e6; }
+  .btn-secondary { background: #334155; color: #e2e8f0; }
+  .btn-secondary:hover { background: #3d4f69; }
+
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .status-pass { background: #22c55e; }
+  .status-fail { background: #ef4444; }
+  .status-wait { background: #f59e0b; }
+
+  .design-label {
+    position: fixed; top: 12px; right: 12px; background: #6366f1; color: #fff;
+    padding: 6px 16px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; z-index: 200;
+  }
+</style>
+</head>
+<body>
+
+<div class="design-label">최종 디자인 프리뷰</div>
+
+<div class="page">
+  <div class="page-header">
+    <h1>🔄 워크플로우</h1>
+    <p>업무 프로세스 흐름을 한눈에 파악하고, 각 단계로 바로 이동하세요.</p>
+  </div>
+
+  <div class="grid">
+    <!-- 자재관리 -->
+    <div class="wf-card" style="--accent: #22c55e;" onclick="showPopover()">
+      <div class="wf-card-header">
+        <div class="wf-card-title">📦 자재관리</div>
+        <div class="wf-card-badge" style="background:#22c55e;">20건 진행중</div>
+      </div>
+      <div class="wf-flow">
+        <div class="wf-node" style="--accent:#22c55e;">
+          <div class="wf-node-name">입하</div>
+          <div class="wf-node-count">3</div>
+          <div class="wf-node-label">대기</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#3b82f6;">
+          <div class="wf-node-name">IQC</div>
+          <div class="wf-node-count">5</div>
+          <div class="wf-node-label">검사중</div>
+        </div>
+        <div class="wf-branch">
+          <div class="wf-branch-item wf-branch-pass">합격→</div>
+          <div class="wf-branch-item wf-branch-fail">불합격×</div>
+        </div>
+        <div class="wf-node" style="--accent:#8b5cf6;">
+          <div class="wf-node-name">입고</div>
+          <div class="wf-node-count">12</div>
+          <div class="wf-node-label">완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 생산관리 -->
+    <div class="wf-card" style="--accent: #3b82f6;">
+      <div class="wf-card-header">
+        <div class="wf-card-title">🏭 생산관리</div>
+        <div class="wf-card-badge" style="background:#3b82f6;">25건 진행중</div>
+      </div>
+      <div class="wf-flow">
+        <div class="wf-node" style="--accent:#22c55e;">
+          <div class="wf-node-name">계획</div>
+          <div class="wf-node-count">2</div>
+          <div class="wf-node-label">수립</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#f59e0b;">
+          <div class="wf-node-name">작업지시</div>
+          <div class="wf-node-count">8</div>
+          <div class="wf-node-label">진행</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#3b82f6;">
+          <div class="wf-node-name">실적</div>
+          <div class="wf-node-count">6</div>
+          <div class="wf-node-label">입력중</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#8b5cf6;">
+          <div class="wf-node-name">검사</div>
+          <div class="wf-node-count">9</div>
+          <div class="wf-node-label">완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 품질관리 -->
+    <div class="wf-card" style="--accent: #f59e0b;">
+      <div class="wf-card-header">
+        <div class="wf-card-title">🛡️ 품질관리</div>
+        <div class="wf-card-badge" style="background:#f59e0b;">15건 진행중</div>
+      </div>
+      <div class="wf-flow">
+        <div class="wf-node" style="--accent:#3b82f6;">
+          <div class="wf-node-name">IQC</div>
+          <div class="wf-node-count">5</div>
+          <div class="wf-node-label">검사</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#f59e0b;">
+          <div class="wf-node-name">공정검사</div>
+          <div class="wf-node-count">3</div>
+          <div class="wf-node-label">진행</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#10b981;">
+          <div class="wf-node-name">OQC</div>
+          <div class="wf-node-count">7</div>
+          <div class="wf-node-label">대기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 출하관리 -->
+    <div class="wf-card" style="--accent: #ef4444;">
+      <div class="wf-card-header">
+        <div class="wf-card-title">🚛 출하관리</div>
+        <div class="wf-card-badge" style="background:#ef4444;">15건 진행중</div>
+      </div>
+      <div class="wf-flow">
+        <div class="wf-node" style="--accent:#22c55e;">
+          <div class="wf-node-name">포장</div>
+          <div class="wf-node-count">4</div>
+          <div class="wf-node-label">진행</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#f59e0b;">
+          <div class="wf-node-name">OQC</div>
+          <div class="wf-node-count">2</div>
+          <div class="wf-node-label">검사</div>
+        </div>
+        <div class="wf-branch">
+          <div class="wf-branch-item wf-branch-pass">합격→</div>
+          <div class="wf-branch-item wf-branch-fail">불합격×</div>
+        </div>
+        <div class="wf-node" style="--accent:#8b5cf6;">
+          <div class="wf-node-name">출하</div>
+          <div class="wf-node-count">9</div>
+          <div class="wf-node-label">확정</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 설비관리 -->
+    <div class="wf-card" style="--accent: #8b5cf6;">
+      <div class="wf-card-header">
+        <div class="wf-card-title">🔧 설비관리</div>
+        <div class="wf-card-badge" style="background:#8b5cf6;">6건 진행중</div>
+      </div>
+      <div class="wf-flow">
+        <div class="wf-node" style="--accent:#3b82f6;">
+          <div class="wf-node-name">PM계획</div>
+          <div class="wf-node-count">2</div>
+          <div class="wf-node-label">수립</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#f59e0b;">
+          <div class="wf-node-name">점검</div>
+          <div class="wf-node-count">3</div>
+          <div class="wf-node-label">실행</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#10b981;">
+          <div class="wf-node-name">이력</div>
+          <div class="wf-node-count">1</div>
+          <div class="wf-node-label">기록</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 외주관리 -->
+    <div class="wf-card" style="--accent: #10b981;">
+      <div class="wf-card-header">
+        <div class="wf-card-title">🏢 외주관리</div>
+        <div class="wf-card-badge" style="background:#10b981;">4건 진행중</div>
+      </div>
+      <div class="wf-flow">
+        <div class="wf-node" style="--accent:#22c55e;">
+          <div class="wf-node-name">발주</div>
+          <div class="wf-node-count">1</div>
+          <div class="wf-node-label">대기</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#f59e0b;">
+          <div class="wf-node-name">입고</div>
+          <div class="wf-node-count">2</div>
+          <div class="wf-node-label">진행</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#10b981;">
+          <div class="wf-node-name">검수</div>
+          <div class="wf-node-count">1</div>
+          <div class="wf-node-label">완료</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 소모품관리 -->
+    <div class="wf-card" style="--accent: #ec4899; grid-column: span 2;">
+      <div class="wf-card-header">
+        <div class="wf-card-title">⚙️ 소모품관리</div>
+        <div class="wf-card-badge" style="background:#ec4899;">8건 진행중</div>
+      </div>
+      <div class="wf-flow">
+        <div class="wf-node" style="--accent:#22c55e;">
+          <div class="wf-node-name">입고</div>
+          <div class="wf-node-count">2</div>
+          <div class="wf-node-label">대기</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#3b82f6;">
+          <div class="wf-node-name">라벨</div>
+          <div class="wf-node-count">1</div>
+          <div class="wf-node-label">발행</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#f59e0b;">
+          <div class="wf-node-name">출고</div>
+          <div class="wf-node-count">3</div>
+          <div class="wf-node-label">진행</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#8b5cf6;">
+          <div class="wf-node-name">장착</div>
+          <div class="wf-node-count">1</div>
+          <div class="wf-node-label">완료</div>
+        </div>
+        <div class="wf-arrow">→</div>
+        <div class="wf-node" style="--accent:#ec4899;">
+          <div class="wf-node-name">수명</div>
+          <div class="wf-node-count">1</div>
+          <div class="wf-node-label">관리</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Popover Demo -->
+<div class="popover-overlay" id="popoverOverlay" onclick="hidePopover()">
+  <div class="popover" onclick="event.stopPropagation()">
+    <h3><span style="color:#3b82f6;">●</span> IQC 검사 현황</h3>
+    <div class="popover-stats">
+      <div class="popover-stat">
+        <div class="popover-stat-value" style="color:#f59e0b;">5</div>
+        <div class="popover-stat-label">검사 대기</div>
+      </div>
+      <div class="popover-stat">
+        <div class="popover-stat-value" style="color:#22c55e;">12</div>
+        <div class="popover-stat-label">오늘 합격</div>
+      </div>
+      <div class="popover-stat">
+        <div class="popover-stat-value" style="color:#ef4444;">2</div>
+        <div class="popover-stat-label">오늘 불합격</div>
+      </div>
+      <div class="popover-stat">
+        <div class="popover-stat-value" style="color:#6366f1;">85%</div>
+        <div class="popover-stat-label">합격률</div>
+      </div>
+    </div>
+    <div class="popover-recent">
+      <h4>최근 처리 이력</h4>
+      <div class="popover-recent-item">
+        <span>LOT-240403-001</span>
+        <span><span class="status-dot status-pass"></span> 합격 · 김철수 · 09:30</span>
+      </div>
+      <div class="popover-recent-item">
+        <span>LOT-240403-002</span>
+        <span><span class="status-dot status-fail"></span> 불합격 · 이영희 · 09:15</span>
+      </div>
+      <div class="popover-recent-item">
+        <span>LOT-240403-003</span>
+        <span><span class="status-dot status-pass"></span> 합격 · 박민수 · 08:50</span>
+      </div>
+    </div>
+    <div class="popover-actions">
+      <button class="btn btn-secondary" onclick="hidePopover()">닫기</button>
+      <button class="btn btn-primary">IQC 검사 바로가기 →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPopover() { document.getElementById('popoverOverlay').classList.add('active'); }
+function hidePopover() { document.getElementById('popoverOverlay').classList.remove('active'); }
+</script>
+
+</body>
+</html>

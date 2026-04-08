@@ -20,6 +20,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** 개별 샘플 측정값 */
 export class SampleMeasurementDto {
@@ -82,7 +83,7 @@ export class CreateSampleInspectDto {
 }
 
 /** 샘플검사 이력 조회 DTO */
-export class SampleInspectHistoryQueryDto {
+export class SampleInspectHistoryQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '합격 여부 (Y/N)' })
   @IsOptional()
   @IsString()
@@ -104,11 +105,4 @@ export class SampleInspectHistoryQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '조회 건수', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 }

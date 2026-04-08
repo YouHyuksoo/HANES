@@ -14,6 +14,7 @@ import {
   MaxLength, IsDateString, IsArray, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** PO 입하 시 개별 품목 DTO */
 export class ArrivalItemDto {
@@ -136,21 +137,8 @@ export class CreateManualArrivalDto {
 }
 
 /** 입하 이력 조회 DTO */
-export class ArrivalQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ArrivalQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (transNo, 품목코드, PO번호)' })
   @IsOptional()
@@ -174,21 +162,8 @@ export class ArrivalQueryDto {
 }
 
 /** 입하재고현황 조회 DTO */
-export class ArrivalStockQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ArrivalStockQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(5000)
-  limit?: number = 5000;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드, 품목명, PO번호, 인보이스번호)' })
   @IsOptional()

@@ -14,7 +14,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class MatOutRequestService {
@@ -24,7 +24,7 @@ export class MatOutRequestService {
     @InjectRepository(MatStock)
     private readonly matStockRepo: Repository<MatStock>,
     private readonly dataSource: DataSource,
-    private readonly numRuleService: NumRuleService,
+    private readonly numbering: NumberingService,
   ) {}
 
   /** 승인 대기 목록 조회 */
@@ -58,7 +58,7 @@ export class MatOutRequestService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       const tx = queryRunner.manager.create(StockTransaction, {
         transNo,

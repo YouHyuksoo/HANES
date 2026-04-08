@@ -24,6 +24,7 @@ import {
   IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 const INSPECT_TYPE = ['DAILY', 'PERIODIC'] as const;
 const OVERALL_RESULT = ['PASS', 'FAIL', 'CONDITIONAL'] as const;
@@ -71,7 +72,7 @@ export class CreateEquipInspectDto {
 export class UpdateEquipInspectDto extends PartialType(CreateEquipInspectDto) {}
 
 /** 점검 캘린더 월별 조회 DTO */
-export class InspectCalendarQueryDto {
+export class InspectCalendarQueryDto extends PaginationQueryDto {
   @ApiProperty({ description: '년도' })
   @Type(() => Number)
   @IsInt()
@@ -91,7 +92,7 @@ export class InspectCalendarQueryDto {
 }
 
 /** 점검 캘린더 일별 스케줄 조회 DTO */
-export class InspectDayScheduleQueryDto {
+export class InspectDayScheduleQueryDto extends PaginationQueryDto {
   @ApiProperty({ description: '날짜 (YYYY-MM-DD)' })
   @IsString()
   date: string;
@@ -103,21 +104,8 @@ export class InspectDayScheduleQueryDto {
 }
 
 /** 설비 점검 목록 조회 쿼리 DTO */
-export class EquipInspectQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class EquipInspectQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()

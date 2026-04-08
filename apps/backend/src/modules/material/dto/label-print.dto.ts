@@ -13,6 +13,7 @@ import {
   IsString, IsOptional, IsArray, IsInt, IsIn, Min, Max, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** ZPL 생성 요청 (변수 치환) */
 export class GenerateZplDto {
@@ -89,7 +90,7 @@ export class CreatePrintLogDto {
 }
 
 /** 발행 이력 조회 */
-export class PrintLogQueryDto {
+export class PrintLogQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '카테고리' })
   @IsOptional()
   @IsString()
@@ -115,18 +116,5 @@ export class PrintLogQueryDto {
   @IsString()
   dateTo?: string;
 
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
 
-  @ApiPropertyOptional({ default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(200)
-  limit?: number = 20;
 }

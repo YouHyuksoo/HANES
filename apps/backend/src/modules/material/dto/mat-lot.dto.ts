@@ -7,6 +7,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsDateString, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IQC_STATUS_VALUES, MAT_LOT_STATUS_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateMatLotDto {
   @ApiProperty({ description: '자재 UID', example: 'MAT-20260126-001' })
@@ -70,21 +71,8 @@ export class CreateMatLotDto {
 
 export class UpdateMatLotDto extends PartialType(CreateMatLotDto) {}
 
-export class MatLotQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class MatLotQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional()
   @IsOptional()

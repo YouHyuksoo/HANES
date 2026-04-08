@@ -1,6 +1,6 @@
-/**
+﻿/**
  * @file scripts/gen-srs-all.js
- * @description HARNESS MES 전체 모듈 요구사항 정의서 Word 문서 생성
+ * @description HARNESS MES ?꾩껜 紐⑤뱢 ?붽뎄?ы빆 ?뺤쓽??Word 臾몄꽌 ?앹꽦
  */
 const fs = require('fs');
 const {
@@ -27,11 +27,11 @@ function tbl(hds, data, ws) {
     rows: [
       new TableRow({ tableHeader: true, children: hds.map((h,i) => c(h, ws[i], { b:true, sh:C.hdr, al:AlignmentType.CENTER, sz:14 })) }),
       ...data.map((r,idx) => new TableRow({ children: r.map((v,i) => {
-        const isPri = hds[i]==='우선순위';
-        const isSt = hds[i]==='상태';
+        const isPri = hds[i]==='?곗꽑?쒖쐞';
+        const isSt = hds[i]==='?곹깭';
         let sh = idx%2===1 ? C.alt : C.w;
-        if (isPri) sh = v==='상' ? C.must : v==='중' ? C.should : C.could;
-        if (isSt) sh = v==='구현완료' ? C.done : v==='구현중' ? C.wip : C.hold;
+        if (isPri) sh = v==='?? ? C.must : v==='以? ? C.should : C.could;
+        if (isSt) sh = v==='援ы쁽?꾨즺' ? C.done : v==='援ы쁽以? ? C.wip : C.hold;
         return c(v, ws[i], { sz:14, sh, al: i===0||isPri||isSt ? AlignmentType.CENTER : AlignmentType.LEFT });
       }) })),
     ] });
@@ -43,142 +43,126 @@ function h1(t) { return new Paragraph({ heading: HeadingLevel.HEADING_1, childre
 function h2(t) { return new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: t, font: 'Arial' })] }); }
 function p(t) { return new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: t, font: 'Arial', size: 18 })] }); }
 
-// ── 요구사항 데이터 ──
+// ?? ?붽뎄?ы빆 ?곗씠????
 const reqs = [
-  // 기준정보
-  { id:'REQ-MST-001', name:'품목관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'품명코드, 품목명, 품목유형(자재/반제품/제품), 재고단위, 자재수명, 포장단위, IQC 검사여부 관리' },
-  { id:'REQ-MST-002', name:'BOM관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'품목별 BOM 소요자재 관리. 엑셀 업/다운로드, 라우팅 연동' },
-  { id:'REQ-MST-003', name:'라우팅관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'품목별 공정 라우팅 정보, 작업조건(전선길이, 탈피값, 압착값, 융착조건) 관리' },
-  { id:'REQ-MST-004', name:'공정관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'공정코드, 공정명, 공정분류(수작업/가공/단순검사/장비검사), 사용여부' },
-  { id:'REQ-MST-005', name:'작업자관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'작업자 코드, 이름, 유형, 접근가능 공정. QR코드 발행. 로그인 유저와 별개' },
-  { id:'REQ-MST-006', name:'IQC 검사항목관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'품목별 IQC 항목 및 조건값, 유수명자재 재검사 항목 관리' },
-  { id:'REQ-MST-007', name:'설비마스터관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'설비코드, 설비명, 소모성 부품 목록 및 수명, 사용공정 매핑. QR코드 발행' },
-  { id:'REQ-MST-008', name:'설비 점검항목관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'설비별 일상/정기 점검 항목 입력. 점검 포인트 QR코드 부착' },
-  { id:'REQ-MST-009', name:'창고/로케이션관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'창고코드, 창고명, 로케이션(세부위치), 사용여부' },
-  { id:'REQ-MST-010', name:'거래처관리', mod:'기준정보', pri:'상', st:'구현완료', desc:'고객사/공급사 코드, 정보 관리' },
-  { id:'REQ-MST-011', name:'작업지도서관리', mod:'기준정보', pri:'중', st:'구현완료', desc:'품목별 공정 작업지도서 이미지 파일 업로드 및 미리보기' },
-  { id:'REQ-MST-012', name:'제조사 바코드 매핑', mod:'기준정보', pri:'상', st:'구현완료', desc:'자재 제조사 바코드와 MES 내 품목코드 1:1 매핑' },
-  { id:'REQ-MST-013', name:'라벨관리', mod:'기준정보', pri:'중', st:'구현완료', desc:'라벨 양식 관리, 라벨 디자인 설정' },
-  // 자재관리
-  { id:'REQ-MAT-001', name:'PO관리', mod:'자재관리', pri:'상', st:'구현완료', desc:'PO 번호, 상세번호, 생성일, 구매유형, 상태, 거래처, 품목, 수량 관리' },
-  { id:'REQ-MAT-002', name:'PO현황조회', mod:'자재관리', pri:'상', st:'구현완료', desc:'PO 대비 입고 정보 시각화, 잔량 확인' },
-  { id:'REQ-MAT-003', name:'입하관리', mod:'자재관리', pri:'상', st:'구현완료', desc:'PO 기반/수동 입하 등록, 역분개 취소, 인보이스 관리. 바코드 스캔 입하' },
-  { id:'REQ-MAT-004', name:'IQC 검사관리', mod:'자재관리', pri:'상', st:'구현완료', desc:'IQC 항목별 계측값/판정 입력, 합격 시 입고라벨 발행. 무검사/샘플/전수 구분' },
-  { id:'REQ-MAT-005', name:'IQC 이력조회', mod:'자재관리', pri:'상', st:'구현완료', desc:'IQC 검사 이력 조회, 항목별 계측값 및 판정 결과' },
-  { id:'REQ-MAT-006', name:'입고라벨발행', mod:'자재관리', pri:'상', st:'구현완료', desc:'IQC 합격 자재 LOT에 대한 라벨 발행/재발행. matUid 채번' },
-  { id:'REQ-MAT-007', name:'자재입고관리', mod:'자재관리', pri:'상', st:'구현완료', desc:'IQC 합격건 일괄/분할 입고, 자동입고(라벨 발행 시). PO 오차율 검증' },
-  { id:'REQ-MAT-008', name:'입고이력조회', mod:'자재관리', pri:'상', st:'구현완료', desc:'입고 이력 조회, 통계 (금일 입고건수/수량)' },
-  { id:'REQ-MAT-009', name:'출고요청관리', mod:'자재관리', pri:'상', st:'구현완료', desc:'작업지시 기반 BOM 소요자재 불출요청' },
-  { id:'REQ-MAT-010', name:'자재출고관리', mod:'자재관리', pri:'상', st:'구현완료', desc:'출고유형별 자재 출고, 바코드 스캔 불출, 선입선출(FIFO) 가이드' },
-  { id:'REQ-MAT-011', name:'LOT관리', mod:'자재관리', pri:'상', st:'구현완료', desc:'자재 LOT 이력 추적, 상태 관리 (NORMAL/HOLD/SCRAPPED)' },
-  { id:'REQ-MAT-012', name:'자재분할관리', mod:'자재관리', pri:'중', st:'구현완료', desc:'벌크자재 분할 시 원 시리얼 사용중지, 분할 시리얼 생성 및 라벨 발행' },
-  { id:'REQ-MAT-013', name:'자재병합관리', mod:'자재관리', pri:'중', st:'구현완료', desc:'같은 LOT 자재끼리 병합 처리' },
-  { id:'REQ-MAT-014', name:'유수명자재관리', mod:'자재관리', pri:'중', st:'구현완료', desc:'유효기간 만료 자재 재검사 판정, 수명 연장 처리' },
-  { id:'REQ-MAT-015', name:'자재재고홀드관리', mod:'자재관리', pri:'중', st:'구현완료', desc:'재고 홀드/홀드해제 처리' },
-  { id:'REQ-MAT-016', name:'자재폐기처리', mod:'자재관리', pri:'중', st:'구현완료', desc:'불량/만료 자재 폐기 처리 및 이력 관리' },
-  { id:'REQ-MAT-017', name:'재고보정처리', mod:'자재관리', pri:'중', st:'구현완료', desc:'재고 조정(기타입출고 포함). 최초 재고 초과 보정 불가' },
-  { id:'REQ-MAT-018', name:'기타입고관리', mod:'자재관리', pri:'중', st:'구현완료', desc:'PO 없이 기타 입고 처리' },
-  { id:'REQ-MAT-019', name:'입고취소', mod:'자재관리', pri:'중', st:'구현완료', desc:'당일 입고분 취소, 불출/분할된 자재는 취소 불가' },
-  // 재고관리
-  { id:'REQ-INV-001', name:'자재재고현황조회', mod:'재고관리', pri:'상', st:'구현완료', desc:'창고/로케이션별, 품목별 재고 조회. 유효기간 근접(노랑)/만료(빨강) 시각 표시' },
-  { id:'REQ-INV-002', name:'자재수불이력조회', mod:'재고관리', pri:'상', st:'구현완료', desc:'자재 입출고 현황 조회 (수불원장)' },
-  { id:'REQ-INV-003', name:'자재재고실사관리', mod:'재고관리', pri:'중', st:'구현완료', desc:'PDA 입력 기반 재고실사, 실사 중 트랜잭션 제한, 월 1회 이상' },
-  { id:'REQ-INV-004', name:'자재재고실사조회', mod:'재고관리', pri:'중', st:'구현완료', desc:'재고실사 내역 조회' },
-  { id:'REQ-INV-005', name:'입하재고현황조회', mod:'재고관리', pri:'중', st:'구현완료', desc:'입하 기준 재고 현황 조회' },
-  { id:'REQ-INV-006', name:'제품재고현황조회', mod:'재고관리', pri:'상', st:'구현완료', desc:'품목별, 포장별 제품/반제품 현재고 조회' },
-  { id:'REQ-INV-007', name:'제품재고실사관리', mod:'재고관리', pri:'중', st:'구현완료', desc:'제품 재고실사 (자재와 별도)' },
-  { id:'REQ-INV-008', name:'제품재고홀드관리', mod:'재고관리', pri:'중', st:'구현완료', desc:'제품 재고 홀드/해제' },
-  // 생산관리
-  { id:'REQ-PRD-001', name:'월간생산계획', mod:'생산관리', pri:'상', st:'구현완료', desc:'월간 생산계획 등록/확정/마감' },
-  { id:'REQ-PRD-002', name:'작업지시관리', mod:'생산관리', pri:'상', st:'구현완료', desc:'완제품 기준 각 반제품 작업지시 동시 생성, 반제품 단위도 생성 가능. 자재불출요청서 연동' },
-  { id:'REQ-PRD-003', name:'작업지시현황조회', mod:'생산관리', pri:'상', st:'구현완료', desc:'작업지시 상태 및 진행 현황 조회' },
-  { id:'REQ-PRD-004', name:'실적입력(수작업)', mod:'생산관리', pri:'상', st:'구현완료', desc:'설비 QR 스캔 확인 후 시작. 작업지시번호, 품목, 수량, 작업자, 투입자재, 작업지도서 표시' },
-  { id:'REQ-PRD-005', name:'실적입력(가공)', mod:'생산관리', pri:'상', st:'구현완료', desc:'설비 QR 스캔, 설비설정값, 소모부품 확인. 품목 변경 시 샘플 검사 필수' },
-  { id:'REQ-PRD-006', name:'실적입력(단순검사)', mod:'생산관리', pri:'상', st:'구현완료', desc:'설비 QR 스캔, 검사 판정 저장. 외관검사, 단자검사' },
-  { id:'REQ-PRD-007', name:'실적입력(검사장비)', mod:'생산관리', pri:'상', st:'구현완료', desc:'설비설정값, 소모부품 확인. 검사항목 및 정상범위 표시. 통합검사(통전검사)' },
-  { id:'REQ-PRD-008', name:'작업실적통합조회', mod:'생산관리', pri:'상', st:'구현완료', desc:'완제품 기준 전체 공정 실적 통합 확인' },
-  { id:'REQ-PRD-009', name:'반제품 샘플검사', mod:'생산관리', pri:'상', st:'구현완료', desc:'압착 공정 샘플 인장력/배럴 검사 측정값 저장 (낱개 단위)' },
-  { id:'REQ-PRD-010', name:'재작업관리', mod:'생산관리', pri:'중', st:'구현완료', desc:'NG 제품 수리 이력, 재검사 결과 관리. 완료 후 신규 라벨 발행' },
-  { id:'REQ-PRD-011', name:'수리관리', mod:'생산관리', pri:'중', st:'구현완료', desc:'부적합품 수리 이력 및 결과 관리' },
-  // 제품수불관리
-  { id:'REQ-PM-001', name:'제품입고관리', mod:'제품수불', pri:'상', st:'구현완료', desc:'생산 완료 제품 입고 처리' },
-  { id:'REQ-PM-002', name:'제품입고취소', mod:'제품수불', pri:'중', st:'구현완료', desc:'제품 입고 취소 처리' },
-  { id:'REQ-PM-003', name:'제품출고관리', mod:'제품수불', pri:'상', st:'구현완료', desc:'출하지시 기반 제품 출고' },
-  { id:'REQ-PM-004', name:'제품출고취소', mod:'제품수불', pri:'중', st:'구현완료', desc:'제품 출고 취소 처리' },
-  // 품질관리
-  { id:'REQ-QUA-001', name:'수입검사(IQC)', mod:'품질관리', pri:'상', st:'구현완료', desc:'IQC 항목별 계측/판정 입력, 합불 판정' },
-  { id:'REQ-QUA-002', name:'불량관리', mod:'품질관리', pri:'상', st:'구현완료', desc:'불량 접수, 분석, 해결, 종결 프로세스' },
-  { id:'REQ-QUA-003', name:'재작업검사', mod:'품질관리', pri:'중', st:'구현완료', desc:'재작업 완료 후 재검사 판정' },
-  { id:'REQ-QUA-004', name:'공정검사', mod:'품질관리', pri:'상', st:'구현완료', desc:'공정별 검사 항목 입력 및 판정' },
-  { id:'REQ-QUA-005', name:'출하검사(OQC)', mod:'품질관리', pri:'상', st:'구현완료', desc:'외관검사 합/불 판정, 검사원 실명제' },
-  { id:'REQ-QUA-006', name:'추적관리', mod:'품질관리', pri:'상', st:'구현완료', desc:'제품 시리얼 기준 자재LOT, 작업자, 설비, 계측값 역추적' },
-  { id:'REQ-QUA-007', name:'SPC관리', mod:'품질관리', pri:'상', st:'구현완료', desc:'실시간 Cpk 계산, 관리도 차트, 계측 데이터 자동 수집' },
-  { id:'REQ-QUA-008', name:'Control Plan', mod:'품질관리', pri:'중', st:'구현완료', desc:'검사방법, 샘플크기/빈도, 관리방법 정의' },
-  { id:'REQ-QUA-009', name:'변경관리', mod:'품질관리', pri:'중', st:'구현완료', desc:'설계/공정 변경 관리 프로세스' },
-  { id:'REQ-QUA-010', name:'고객불만관리', mod:'품질관리', pri:'중', st:'구현완료', desc:'고객 불만 접수 및 처리 관리' },
-  { id:'REQ-QUA-011', name:'CAPA관리', mod:'품질관리', pri:'중', st:'구현완료', desc:'시정/예방 조치 관리' },
-  { id:'REQ-QUA-012', name:'FAI관리', mod:'품질관리', pri:'중', st:'구현완료', desc:'초도품 검사 관리' },
-  { id:'REQ-QUA-013', name:'PPAP관리', mod:'품질관리', pri:'중', st:'구현완료', desc:'생산부품 승인 프로세스' },
-  { id:'REQ-QUA-014', name:'감사관리', mod:'품질관리', pri:'하', st:'구현완료', desc:'내부/외부 감사 관리' },
-  // 통전검사
-  { id:'REQ-INS-001', name:'통전검사관리', mod:'통전검사', pri:'상', st:'구현완료', desc:'통전검사 실행, 마스터 샘플 검사, 합격 라벨 발행' },
-  { id:'REQ-INS-002', name:'통전검사이력', mod:'통전검사', pri:'상', st:'구현완료', desc:'통전검사 이력 조회' },
-  // 설비관리
-  { id:'REQ-EQP-001', name:'금형관리', mod:'설비관리', pri:'상', st:'구현완료', desc:'금형/어플리케이터 관리, 칼날 타수 카운팅, 수명 도달 시 가동 차단' },
-  { id:'REQ-EQP-002', name:'일상점검', mod:'설비관리', pri:'상', st:'구현완료', desc:'PDA 기반 일일 설비 점검. 미점검 시 설비 가동 차단 인터락' },
-  { id:'REQ-EQP-003', name:'정기점검', mod:'설비관리', pri:'상', st:'구현완료', desc:'설비별 정기점검 (세척, 교정 등). 주기별 관리' },
-  { id:'REQ-EQP-004', name:'점검이력조회', mod:'설비관리', pri:'상', st:'구현완료', desc:'일상/정기점검 내역 조회' },
-  { id:'REQ-EQP-005', name:'예방보전계획', mod:'설비관리', pri:'중', st:'구현완료', desc:'시간/상태/예측 기반 예방보전 계획 등록' },
-  { id:'REQ-EQP-006', name:'예방보전실적', mod:'설비관리', pri:'중', st:'구현완료', desc:'예방보전 실행 결과 기록' },
-  // 계측기관리
-  { id:'REQ-GAU-001', name:'계측기마스터', mod:'계측기', pri:'중', st:'구현완료', desc:'계측기 종류, 교정 상태 관리' },
-  { id:'REQ-GAU-002', name:'교정관리', mod:'계측기', pri:'중', st:'구현완료', desc:'계측기 교정 실행 및 결과 기록' },
-  // 출하관리
-  { id:'REQ-SHP-001', name:'포장관리', mod:'출하관리', pri:'상', st:'구현완료', desc:'포장 박스 스캔, 제품 혼입/과포장 방지, 포장 라벨 발행' },
-  { id:'REQ-SHP-002', name:'팔렛관리', mod:'출하관리', pri:'상', st:'구현완료', desc:'팔렛 적재/완료 관리' },
-  { id:'REQ-SHP-003', name:'출하확정', mod:'출하관리', pri:'상', st:'구현완료', desc:'출하지시 바코드 스캔, 포장 바코드 스캔 후 출하 처리' },
-  { id:'REQ-SHP-004', name:'출하오더관리', mod:'출하관리', pri:'상', st:'구현완료', desc:'출하일, 품목, 수량, 납품처 정보. 출하지시서 발행' },
-  { id:'REQ-SHP-005', name:'출하이력조회', mod:'출하관리', pri:'상', st:'구현완료', desc:'출하 이력 조회' },
-  { id:'REQ-SHP-006', name:'반품관리', mod:'출하관리', pri:'중', st:'구현완료', desc:'출하 반품 등록 및 처리' },
-  { id:'REQ-SHP-007', name:'고객PO관리', mod:'출하관리', pri:'중', st:'구현완료', desc:'고객 PO 등록 및 현황 관리' },
-  // 보세관리
-  { id:'REQ-CUS-001', name:'보세반입', mod:'보세관리', pri:'중', st:'구현완료', desc:'보세 자재 반입 관리' },
-  { id:'REQ-CUS-002', name:'보세재고', mod:'보세관리', pri:'중', st:'구현완료', desc:'보세 재고 현황 관리' },
-  { id:'REQ-CUS-003', name:'보세사용현황', mod:'보세관리', pri:'중', st:'구현완료', desc:'보세 자재 사용 이력 조회' },
-  // 소모품관리
-  { id:'REQ-CSM-001', name:'소모품마스터', mod:'소모품', pri:'중', st:'구현완료', desc:'소모품 종류, 카테고리, 수명 관리' },
-  { id:'REQ-CSM-002', name:'소모품입출고', mod:'소모품', pri:'중', st:'구현완료', desc:'소모품 입고/출고/재고 관리' },
-  { id:'REQ-CSM-003', name:'소모품수명관리', mod:'소모품', pri:'중', st:'구현완료', desc:'소모품 사용횟수 기반 수명 관리' },
-  // 외주관리
-  { id:'REQ-OUT-001', name:'외주업체관리', mod:'외주관리', pri:'중', st:'구현완료', desc:'외주 업체 정보 관리' },
-  { id:'REQ-OUT-002', name:'외주발주관리', mod:'외주관리', pri:'중', st:'구현완료', desc:'외주 발주 등록 및 관리' },
-  { id:'REQ-OUT-003', name:'외주입고관리', mod:'외주관리', pri:'중', st:'구현완료', desc:'외주 가공품 입고 처리' },
-  // 인터페이스
-  { id:'REQ-IF-001', name:'연동현황', mod:'인터페이스', pri:'중', st:'구현완료', desc:'ERP 등 외부 시스템 연동 현황 대시보드' },
-  { id:'REQ-IF-002', name:'연동로그', mod:'인터페이스', pri:'중', st:'구현완료', desc:'연동 로그 조회' },
-  // 시스템관리
-  { id:'REQ-SYS-001', name:'사용자관리', mod:'시스템', pri:'상', st:'구현완료', desc:'사용자 계정 등록, 권한 할당' },
-  { id:'REQ-SYS-002', name:'권한관리(RBAC)', mod:'시스템', pri:'상', st:'구현완료', desc:'메뉴 코드 기반 역할/권한 관리' },
-  { id:'REQ-SYS-003', name:'PDA권한관리', mod:'시스템', pri:'중', st:'구현완료', desc:'PDA 전용 권한 관리' },
-  { id:'REQ-SYS-004', name:'시스템설정', mod:'시스템', pri:'상', st:'구현완료', desc:'시스템 환경변수, 자동입고 설정 등' },
-  { id:'REQ-SYS-005', name:'코드관리', mod:'시스템', pri:'상', st:'구현완료', desc:'공통코드 그룹/상세코드 관리' },
-  { id:'REQ-SYS-006', name:'스케줄러관리', mod:'시스템', pri:'중', st:'구현완료', desc:'배치 작업 스케줄 등록/실행/로그 관리' },
-  { id:'REQ-SYS-007', name:'문서관리', mod:'시스템', pri:'중', st:'구현완료', desc:'규격서, 매뉴얼, 도면, SOP 파일 관리' },
-  { id:'REQ-SYS-008', name:'교육관리', mod:'시스템', pri:'하', st:'구현완료', desc:'교육 계획, 진행, 완료 관리' },
-  // 비기능
-  { id:'NFR-P-001', name:'응답시간', mod:'비기능-성능', pri:'상', st:'구현완료', desc:'페이지 로딩 3초 이내, API 응답 1초 이내' },
-  { id:'NFR-S-001', name:'JWT 인증', mod:'비기능-보안', pri:'상', st:'구현완료', desc:'Bearer Token 기반 인증, 토큰 만료 관리' },
-  { id:'NFR-S-002', name:'RBAC 인가', mod:'비기능-보안', pri:'상', st:'구현완료', desc:'메뉴 코드 기반 역할별 접근 제어' },
-  { id:'NFR-C-001', name:'다국어 지원', mod:'비기능-호환', pri:'상', st:'구현완료', desc:'한국어, 영어, 중국어, 베트남어 4개 언어' },
-  { id:'NFR-C-002', name:'다크모드', mod:'비기능-호환', pri:'중', st:'구현완료', desc:'다크/라이트 모드 전환 지원' },
-  { id:'NFR-C-003', name:'PWA 지원', mod:'비기능-호환', pri:'중', st:'구현완료', desc:'PDA 모바일 앱 (Progressive Web App)' },
-  { id:'NFR-C-004', name:'멀티테넌시', mod:'비기능-호환', pri:'상', st:'구현완료', desc:'COMPANY + PLANT_CD 기반 다중 사업장 지원' },
-  // 인터페이스
-  { id:'IR-001', name:'바코드 스캐너 연동', mod:'인터페이스', pri:'상', st:'구현중', desc:'Buffered Mode(Serial/API) 바코드 스캐닝, 유형 자동 구분' },
-  { id:'IR-002', name:'라벨 프린터 연동', mod:'인터페이스', pri:'상', st:'구현중', desc:'시리얼 포트 기반 라벨 프린터 제어' },
-  { id:'IR-003', name:'설비 PLC 연동', mod:'인터페이스', pri:'상', st:'보류', desc:'PLC 인터페이스 통한 설비 가동/중지 제어 (인터락)' },
-  { id:'IR-004', name:'계측장비 RS-232', mod:'인터페이스', pri:'상', st:'보류', desc:'미쓰도요 인장력계/마이크로미터 RS-232 데이터 자동 수집' },
-  { id:'IR-005', name:'ERP 연동', mod:'인터페이스', pri:'중', st:'보류', desc:'3차 개발 - ERP 데이터 인터페이스' },
+  // 湲곗??뺣낫
+  { id:'REQ-MST-001', name:'?덈ぉ愿由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?덈챸肄붾뱶, ?덈ぉ紐? ?덈ぉ?좏삎(?먯옱/諛섏젣???쒗뭹), ?ш퀬?⑥쐞, ?먯옱?섎챸, ?ъ옣?⑥쐞, IQC 寃?ъ뿬遺 愿由? },
+  { id:'REQ-MST-002', name:'BOM愿由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?덈ぉ蹂?BOM ?뚯슂?먯옱 愿由? ?묒? ???ㅼ슫濡쒕뱶, ?쇱슦???곕룞' },
+  { id:'REQ-MST-003', name:'?쇱슦?낃?由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?덈ぉ蹂?怨듭젙 ?쇱슦???뺣낫, ?묒뾽議곌굔(?꾩꽑湲몄씠, ?덊뵾媛? ?뺤갑媛? ?듭갑議곌굔) 愿由? },
+  { id:'REQ-MST-004', name:'怨듭젙愿由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'怨듭젙肄붾뱶, 怨듭젙紐? 怨듭젙遺꾨쪟(?섏옉??媛怨??⑥닚寃???λ퉬寃??, ?ъ슜?щ?' },
+  { id:'REQ-MST-005', name:'?묒뾽?먭?由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?묒뾽??肄붾뱶, ?대쫫, ?좏삎, ?묎렐媛??怨듭젙. QR肄붾뱶 諛쒗뻾. 濡쒓렇???좎?? 蹂꾧컻' },
+  { id:'REQ-MST-006', name:'IQC 寃?ы빆紐⑷?由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?덈ぉ蹂?IQC ??ぉ 諛?議곌굔媛? ?좎닔紐낆옄???ш?????ぉ 愿由? },
+  { id:'REQ-MST-007', name:'?ㅻ퉬留덉뒪?곌?由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅻ퉬肄붾뱶, ?ㅻ퉬紐? ?뚮え??遺??紐⑸줉 諛??섎챸, ?ъ슜怨듭젙 留ㅽ븨. QR肄붾뱶 諛쒗뻾' },
+  { id:'REQ-MST-008', name:'?ㅻ퉬 ?먭???ぉ愿由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅻ퉬蹂??쇱긽/?뺢린 ?먭? ??ぉ ?낅젰. ?먭? ?ъ씤??QR肄붾뱶 遺李? },
+  { id:'REQ-MST-009', name:'李쎄퀬/濡쒖??댁뀡愿由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'李쎄퀬肄붾뱶, 李쎄퀬紐? 濡쒖??댁뀡(?몃??꾩튂), ?ъ슜?щ?' },
+  { id:'REQ-MST-010', name:'嫄곕옒泥섍?由?, mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'怨좉컼??怨듦툒??肄붾뱶, ?뺣낫 愿由? },
+  { id:'REQ-MST-011', name:'?묒뾽吏?꾩꽌愿由?, mod:'湲곗??뺣낫', pri:'以?, st:'援ы쁽?꾨즺', desc:'?덈ぉ蹂?怨듭젙 ?묒뾽吏?꾩꽌 ?대?吏 ?뚯씪 ?낅줈??諛?誘몃━蹂닿린' },
+  { id:'REQ-MST-012', name:'?쒖“??諛붿퐫??留ㅽ븨', mod:'湲곗??뺣낫', pri:'??, st:'援ы쁽?꾨즺', desc:'?먯옱 ?쒖“??諛붿퐫?쒖? MES ???덈ぉ肄붾뱶 1:1 留ㅽ븨' },
+  { id:'REQ-MST-013', name:'?쇰꺼愿由?, mod:'湲곗??뺣낫', pri:'以?, st:'援ы쁽?꾨즺', desc:'?쇰꺼 ?묒떇 愿由? ?쇰꺼 ?붿옄???ㅼ젙' },
+  // ?먯옱愿由?  { id:'REQ-MAT-001', name:'PO愿由?, mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'PO 踰덊샇, ?곸꽭踰덊샇, ?앹꽦?? 援щℓ?좏삎, ?곹깭, 嫄곕옒泥? ?덈ぉ, ?섎웾 愿由? },
+  { id:'REQ-MAT-002', name:'PO?꾪솴議고쉶', mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'PO ?鍮??낃퀬 ?뺣낫 ?쒓컖?? ?붾웾 ?뺤씤' },
+  { id:'REQ-MAT-003', name:'?낇븯愿由?, mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'PO 湲곕컲/?섎룞 ?낇븯 ?깅줉, ??텇媛?痍⑥냼, ?몃낫?댁뒪 愿由? 諛붿퐫???ㅼ틪 ?낇븯' },
+  { id:'REQ-MAT-004', name:'IQC 寃?ш?由?, mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'IQC ??ぉ蹂?怨꾩륫媛??먯젙 ?낅젰, ?⑷꺽 ???낃퀬?쇰꺼 諛쒗뻾. 臾닿????섑뵆/?꾩닔 援щ텇' },
+  { id:'REQ-MAT-005', name:'IQC ?대젰議고쉶', mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'IQC 寃???대젰 議고쉶, ??ぉ蹂?怨꾩륫媛?諛??먯젙 寃곌낵' },
+  { id:'REQ-MAT-006', name:'?낃퀬?쇰꺼諛쒗뻾', mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'IQC ?⑷꺽 ?먯옱 LOT??????쇰꺼 諛쒗뻾/?щ컻?? matUid 梨꾨쾲' },
+  { id:'REQ-MAT-007', name:'?먯옱?낃퀬愿由?, mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'IQC ?⑷꺽嫄??쇨큵/遺꾪븷 ?낃퀬, ?먮룞?낃퀬(?쇰꺼 諛쒗뻾 ??. PO ?ㅼ감??寃利? },
+  { id:'REQ-MAT-008', name:'?낃퀬?대젰議고쉶', mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?낃퀬 ?대젰 議고쉶, ?듦퀎 (湲덉씪 ?낃퀬嫄댁닔/?섎웾)' },
+  { id:'REQ-MAT-009', name:'異쒓퀬?붿껌愿由?, mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?묒뾽吏??湲곕컲 BOM ?뚯슂?먯옱 遺덉텧?붿껌' },
+  { id:'REQ-MAT-010', name:'?먯옱異쒓퀬愿由?, mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'異쒓퀬?좏삎蹂??먯옱 異쒓퀬, 諛붿퐫???ㅼ틪 遺덉텧, ?좎엯?좎텧(FIFO) 媛?대뱶' },
+  { id:'REQ-MAT-011', name:'LOT愿由?, mod:'?먯옱愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?먯옱 LOT ?대젰 異붿쟻, ?곹깭 愿由?(NORMAL/HOLD/SCRAPPED)' },
+  { id:'REQ-MAT-012', name:'?먯옱遺꾪븷愿由?, mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'踰뚰겕?먯옱 遺꾪븷 ?????쒕━???ъ슜以묒?, 遺꾪븷 ?쒕━???앹꽦 諛??쇰꺼 諛쒗뻾' },
+  { id:'REQ-MAT-013', name:'?먯옱蹂묓빀愿由?, mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'媛숈? LOT ?먯옱?쇰━ 蹂묓빀 泥섎━' },
+  { id:'REQ-MAT-014', name:'?좎닔紐낆옄?ш?由?, mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?좏슚湲곌컙 留뚮즺 ?먯옱 ?ш????먯젙, ?섎챸 ?곗옣 泥섎━' },
+  { id:'REQ-MAT-015', name:'?먯옱?ш퀬??쒓?由?, mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?ш퀬 ?????쒗빐??泥섎━' },
+  { id:'REQ-MAT-016', name:'?먯옱?먭린泥섎━', mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'遺덈웾/留뚮즺 ?먯옱 ?먭린 泥섎━ 諛??대젰 愿由? },
+  { id:'REQ-MAT-017', name:'?ш퀬蹂댁젙泥섎━', mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?ш퀬 議곗젙(湲고??낆텧怨??ы븿). 理쒖큹 ?ш퀬 珥덇낵 蹂댁젙 遺덇?' },
+  { id:'REQ-MAT-018', name:'湲고??낃퀬愿由?, mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'PO ?놁씠 湲고? ?낃퀬 泥섎━' },
+  { id:'REQ-MAT-019', name:'?낃퀬痍⑥냼', mod:'?먯옱愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?뱀씪 ?낃퀬遺?痍⑥냼, 遺덉텧/遺꾪븷???먯옱??痍⑥냼 遺덇?' },
+  // ?ш퀬愿由?  { id:'REQ-INV-001', name:'?먯옱?ш퀬?꾪솴議고쉶', mod:'?ш퀬愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'李쎄퀬/濡쒖??댁뀡蹂? ?덈ぉ蹂??ш퀬 議고쉶. ?좏슚湲곌컙 洹쇱젒(?몃옉)/留뚮즺(鍮④컯) ?쒓컖 ?쒖떆' },
+  { id:'REQ-INV-002', name:'?먯옱?섎텋?대젰議고쉶', mod:'?ш퀬愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?먯옱 ?낆텧怨??꾪솴 議고쉶 (?섎텋?먯옣)' },
+  { id:'REQ-INV-003', name:'?먯옱?ш퀬?ㅼ궗愿由?, mod:'?ш퀬愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'PDA ?낅젰 湲곕컲 ?ш퀬?ㅼ궗, ?ㅼ궗 以??몃옖??뀡 ?쒗븳, ??1???댁긽' },
+  { id:'REQ-INV-004', name:'?먯옱?ш퀬?ㅼ궗議고쉶', mod:'?ш퀬愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?ш퀬?ㅼ궗 ?댁뿭 議고쉶' },
+  { id:'REQ-INV-005', name:'?낇븯?ш퀬?꾪솴議고쉶', mod:'?ш퀬愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?낇븯 湲곗? ?ш퀬 ?꾪솴 議고쉶' },
+  { id:'REQ-INV-006', name:'?쒗뭹?ш퀬?꾪솴議고쉶', mod:'?ш퀬愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?덈ぉ蹂? ?ъ옣蹂??쒗뭹/諛섏젣???꾩옱怨?議고쉶' },
+  { id:'REQ-INV-007', name:'?쒗뭹?ш퀬?ㅼ궗愿由?, mod:'?ш퀬愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?쒗뭹 ?ш퀬?ㅼ궗 (?먯옱? 蹂꾨룄)' },
+  { id:'REQ-INV-008', name:'?쒗뭹?ш퀬??쒓?由?, mod:'?ш퀬愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?쒗뭹 ?ш퀬 ????댁젣' },
+  // ?앹궛愿由?  { id:'REQ-PRD-001', name:'?붽컙?앹궛怨꾪쉷', mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?붽컙 ?앹궛怨꾪쉷 ?깅줉/?뺤젙/留덇컧' },
+  { id:'REQ-PRD-002', name:'?묒뾽吏?쒓?由?, mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?꾩젣??湲곗? 媛?諛섏젣???묒뾽吏???숈떆 ?앹꽦, 諛섏젣???⑥쐞???앹꽦 媛?? ?먯옱遺덉텧?붿껌???곕룞' },
+  { id:'REQ-PRD-003', name:'?묒뾽吏?쒗쁽?⑹“??, mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?묒뾽吏???곹깭 諛?吏꾪뻾 ?꾪솴 議고쉶' },
+  { id:'REQ-PRD-004', name:'?ㅼ쟻?낅젰(?섏옉??', mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅻ퉬 QR ?ㅼ틪 ?뺤씤 ???쒖옉. ?묒뾽吏?쒕쾲?? ?덈ぉ, ?섎웾, ?묒뾽?? ?ъ엯?먯옱, ?묒뾽吏?꾩꽌 ?쒖떆' },
+  { id:'REQ-PRD-005', name:'?ㅼ쟻?낅젰(媛怨?', mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅻ퉬 QR ?ㅼ틪, ?ㅻ퉬?ㅼ젙媛? ?뚮え遺???뺤씤. ?덈ぉ 蹂寃????섑뵆 寃???꾩닔' },
+  { id:'REQ-PRD-006', name:'?ㅼ쟻?낅젰(?⑥닚寃??', mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅻ퉬 QR ?ㅼ틪, 寃???먯젙 ??? ?멸?寃?? ?⑥옄寃?? },
+  { id:'REQ-PRD-007', name:'?ㅼ쟻?낅젰(寃?ъ옣鍮?', mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅻ퉬?ㅼ젙媛? ?뚮え遺???뺤씤. 寃?ы빆紐?諛??뺤긽踰붿쐞 ?쒖떆. ?듯빀寃???듭쟾寃??' },
+  { id:'REQ-PRD-008', name:'?묒뾽?ㅼ쟻?듯빀議고쉶', mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?꾩젣??湲곗? ?꾩껜 怨듭젙 ?ㅼ쟻 ?듯빀 ?뺤씤' },
+  { id:'REQ-PRD-009', name:'諛섏젣???섑뵆寃??, mod:'?앹궛愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?뺤갑 怨듭젙 ?섑뵆 ?몄옣??諛곕윺 寃??痢≪젙媛????(?깃컻 ?⑥쐞)' },
+  { id:'REQ-PRD-010', name:'?ъ옉?낃?由?, mod:'?앹궛愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'NG ?쒗뭹 ?섎━ ?대젰, ?ш???寃곌낵 愿由? ?꾨즺 ???좉퇋 ?쇰꺼 諛쒗뻾' },
+  { id:'REQ-PRD-011', name:'?섎━愿由?, mod:'?앹궛愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'遺?곹빀???섎━ ?대젰 諛?寃곌낵 愿由? },
+  // ?쒗뭹?섎텋愿由?  { id:'REQ-PM-001', name:'?쒗뭹?낃퀬愿由?, mod:'?쒗뭹?섎텋', pri:'??, st:'援ы쁽?꾨즺', desc:'?앹궛 ?꾨즺 ?쒗뭹 ?낃퀬 泥섎━' },
+  { id:'REQ-PM-002', name:'?쒗뭹?낃퀬痍⑥냼', mod:'?쒗뭹?섎텋', pri:'以?, st:'援ы쁽?꾨즺', desc:'?쒗뭹 ?낃퀬 痍⑥냼 泥섎━' },
+  { id:'REQ-PM-003', name:'?쒗뭹異쒓퀬愿由?, mod:'?쒗뭹?섎텋', pri:'??, st:'援ы쁽?꾨즺', desc:'異쒗븯吏??湲곕컲 ?쒗뭹 異쒓퀬' },
+  { id:'REQ-PM-004', name:'?쒗뭹異쒓퀬痍⑥냼', mod:'?쒗뭹?섎텋', pri:'以?, st:'援ы쁽?꾨즺', desc:'?쒗뭹 異쒓퀬 痍⑥냼 泥섎━' },
+  // ?덉쭏愿由?  { id:'REQ-QUA-001', name:'?섏엯寃??IQC)', mod:'?덉쭏愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'IQC ??ぉ蹂?怨꾩륫/?먯젙 ?낅젰, ?⑸텋 ?먯젙' },
+  { id:'REQ-QUA-002', name:'遺덈웾愿由?, mod:'?덉쭏愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'遺덈웾 ?묒닔, 遺꾩꽍, ?닿껐, 醫낃껐 ?꾨줈?몄뒪' },
+  { id:'REQ-QUA-003', name:'?ъ옉?낃???, mod:'?덉쭏愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?ъ옉???꾨즺 ???ш????먯젙' },
+  { id:'REQ-QUA-004', name:'怨듭젙寃??, mod:'?덉쭏愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'怨듭젙蹂?寃????ぉ ?낅젰 諛??먯젙' },
+  { id:'REQ-QUA-005', name:'異쒗븯寃??OQC)', mod:'?덉쭏愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?멸?寃????遺??먯젙, 寃?ъ썝 ?ㅻ챸?? },
+  { id:'REQ-QUA-006', name:'異붿쟻愿由?, mod:'?덉쭏愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?쒗뭹 ?쒕━??湲곗? ?먯옱LOT, ?묒뾽?? ?ㅻ퉬, 怨꾩륫媛???텛?? },
+  { id:'REQ-QUA-007', name:'SPC愿由?, mod:'?덉쭏愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅼ떆媛?Cpk 怨꾩궛, 愿由щ룄 李⑦듃, 怨꾩륫 ?곗씠???먮룞 ?섏쭛' },
+  { id:'REQ-QUA-008', name:'Control Plan', mod:'?덉쭏愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'寃?щ갑踰? ?섑뵆?ш린/鍮덈룄, 愿由щ갑踰??뺤쓽' },
+  { id:'REQ-QUA-009', name:'蹂寃쎄?由?, mod:'?덉쭏愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?ㅺ퀎/怨듭젙 蹂寃?愿由??꾨줈?몄뒪' },
+  { id:'REQ-QUA-010', name:'怨좉컼遺덈쭔愿由?, mod:'?덉쭏愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'怨좉컼 遺덈쭔 ?묒닔 諛?泥섎━ 愿由? },
+  { id:'REQ-QUA-011', name:'CAPA愿由?, mod:'?덉쭏愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?쒖젙/?덈갑 議곗튂 愿由? },
+  { id:'REQ-QUA-012', name:'FAI愿由?, mod:'?덉쭏愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'珥덈룄??寃??愿由? },
+  { id:'REQ-QUA-013', name:'PPAP愿由?, mod:'?덉쭏愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?앹궛遺???뱀씤 ?꾨줈?몄뒪' },
+  { id:'REQ-QUA-014', name:'媛먯궗愿由?, mod:'?덉쭏愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?대?/?몃? 媛먯궗 愿由? },
+  // ?듭쟾寃??  { id:'REQ-INS-001', name:'?듭쟾寃?ш?由?, mod:'?듭쟾寃??, pri:'??, st:'援ы쁽?꾨즺', desc:'?듭쟾寃???ㅽ뻾, 留덉뒪???섑뵆 寃?? ?⑷꺽 ?쇰꺼 諛쒗뻾' },
+  { id:'REQ-INS-002', name:'?듭쟾寃?ъ씠??, mod:'?듭쟾寃??, pri:'??, st:'援ы쁽?꾨즺', desc:'?듭쟾寃???대젰 議고쉶' },
+  // ?ㅻ퉬愿由?  { id:'REQ-EQP-001', name:'湲덊삎愿由?, mod:'?ㅻ퉬愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'湲덊삎/?댄뵆由ъ??댄꽣 愿由? 移쇰궇 ???移댁슫?? ?섎챸 ?꾨떖 ??媛??李⑤떒' },
+  { id:'REQ-EQP-002', name:'?쇱긽?먭?', mod:'?ㅻ퉬愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'PDA 湲곕컲 ?쇱씪 ?ㅻ퉬 ?먭?. 誘몄젏寃 ???ㅻ퉬 媛??李⑤떒 ?명꽣?? },
+  { id:'REQ-EQP-003', name:'?뺢린?먭?', mod:'?ㅻ퉬愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?ㅻ퉬蹂??뺢린?먭? (?몄쿃, 援먯젙 ??. 二쇨린蹂?愿由? },
+  { id:'REQ-EQP-004', name:'?먭??대젰議고쉶', mod:'?ㅻ퉬愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?쇱긽/?뺢린?먭? ?댁뿭 議고쉶' },
+  { id:'REQ-EQP-005', name:'?덈갑蹂댁쟾怨꾪쉷', mod:'?ㅻ퉬愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?쒓컙/?곹깭/?덉륫 湲곕컲 ?덈갑蹂댁쟾 怨꾪쉷 ?깅줉' },
+  { id:'REQ-EQP-006', name:'?덈갑蹂댁쟾?ㅼ쟻', mod:'?ㅻ퉬愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?덈갑蹂댁쟾 ?ㅽ뻾 寃곌낵 湲곕줉' },
+  // 怨꾩륫湲곌?由?  { id:'REQ-GAU-001', name:'怨꾩륫湲곕쭏?ㅽ꽣', mod:'怨꾩륫湲?, pri:'以?, st:'援ы쁽?꾨즺', desc:'怨꾩륫湲?醫낅쪟, 援먯젙 ?곹깭 愿由? },
+  { id:'REQ-GAU-002', name:'援먯젙愿由?, mod:'怨꾩륫湲?, pri:'以?, st:'援ы쁽?꾨즺', desc:'怨꾩륫湲?援먯젙 ?ㅽ뻾 諛?寃곌낵 湲곕줉' },
+  // 異쒗븯愿由?  { id:'REQ-SHP-001', name:'?ъ옣愿由?, mod:'異쒗븯愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?ъ옣 諛뺤뒪 ?ㅼ틪, ?쒗뭹 ?쇱엯/怨쇳룷??諛⑹?, ?ъ옣 ?쇰꺼 諛쒗뻾' },
+  { id:'REQ-SHP-002', name:'?붾젢愿由?, mod:'異쒗븯愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'?붾젢 ?곸옱/?꾨즺 愿由? },
+  { id:'REQ-SHP-003', name:'異쒗븯?뺤젙', mod:'異쒗븯愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'異쒗븯吏??諛붿퐫???ㅼ틪, ?ъ옣 諛붿퐫???ㅼ틪 ??異쒗븯 泥섎━' },
+  { id:'REQ-SHP-004', name:'異쒗븯?ㅻ뜑愿由?, mod:'異쒗븯愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'異쒗븯?? ?덈ぉ, ?섎웾, ?⑺뭹泥??뺣낫. 異쒗븯吏?쒖꽌 諛쒗뻾' },
+  { id:'REQ-SHP-005', name:'異쒗븯?대젰議고쉶', mod:'異쒗븯愿由?, pri:'??, st:'援ы쁽?꾨즺', desc:'異쒗븯 ?대젰 議고쉶' },
+  { id:'REQ-SHP-006', name:'諛섑뭹愿由?, mod:'異쒗븯愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'異쒗븯 諛섑뭹 ?깅줉 諛?泥섎━' },
+  { id:'REQ-SHP-007', name:'怨좉컼PO愿由?, mod:'異쒗븯愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'怨좉컼 PO ?깅줉 諛??꾪솴 愿由? },
+  // 蹂댁꽭愿由?  { id:'REQ-CUS-001', name:'蹂댁꽭諛섏엯', mod:'蹂댁꽭愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'蹂댁꽭 ?먯옱 諛섏엯 愿由? },
+  { id:'REQ-CUS-002', name:'蹂댁꽭?ш퀬', mod:'蹂댁꽭愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'蹂댁꽭 ?ш퀬 ?꾪솴 愿由? },
+  { id:'REQ-CUS-003', name:'蹂댁꽭?ъ슜?꾪솴', mod:'蹂댁꽭愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'蹂댁꽭 ?먯옱 ?ъ슜 ?대젰 議고쉶' },
+  // ?뚮え?덇?由?  { id:'REQ-CSM-001', name:'?뚮え?덈쭏?ㅽ꽣', mod:'?뚮え??, pri:'以?, st:'援ы쁽?꾨즺', desc:'?뚮え??醫낅쪟, 移댄뀒怨좊━, ?섎챸 愿由? },
+  { id:'REQ-CSM-002', name:'?뚮え?덉엯異쒓퀬', mod:'?뚮え??, pri:'以?, st:'援ы쁽?꾨즺', desc:'?뚮え???낃퀬/異쒓퀬/?ш퀬 愿由? },
+  { id:'REQ-CSM-003', name:'?뚮え?덉닔紐낃?由?, mod:'?뚮え??, pri:'以?, st:'援ы쁽?꾨즺', desc:'?뚮え???ъ슜?잛닔 湲곕컲 ?섎챸 愿由? },
+  // ?몄＜愿由?  { id:'REQ-OUT-001', name:'?몄＜?낆껜愿由?, mod:'?몄＜愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?몄＜ ?낆껜 ?뺣낫 愿由? },
+  { id:'REQ-OUT-002', name:'?몄＜諛쒖＜愿由?, mod:'?몄＜愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?몄＜ 諛쒖＜ ?깅줉 諛?愿由? },
+  { id:'REQ-OUT-003', name:'?몄＜?낃퀬愿由?, mod:'?몄＜愿由?, pri:'以?, st:'援ы쁽?꾨즺', desc:'?몄＜ 媛怨듯뭹 ?낃퀬 泥섎━' },
+  // ?명꽣?섏씠??  { id:'REQ-IF-001', name:'?곕룞?꾪솴', mod:'?명꽣?섏씠??, pri:'以?, st:'援ы쁽?꾨즺', desc:'ERP ???몃? ?쒖뒪???곕룞 ?꾪솴 ??쒕낫?? },
+  { id:'REQ-IF-002', name:'?곕룞濡쒓렇', mod:'?명꽣?섏씠??, pri:'以?, st:'援ы쁽?꾨즺', desc:'?곕룞 濡쒓렇 議고쉶' },
+  // ?쒖뒪?쒓?由?  { id:'REQ-SYS-001', name:'?ъ슜?먭?由?, mod:'?쒖뒪??, pri:'??, st:'援ы쁽?꾨즺', desc:'?ъ슜??怨꾩젙 ?깅줉, 沅뚰븳 ?좊떦' },
+  { id:'REQ-SYS-002', name:'沅뚰븳愿由?RBAC)', mod:'?쒖뒪??, pri:'??, st:'援ы쁽?꾨즺', desc:'硫붾돱 肄붾뱶 湲곕컲 ??븷/沅뚰븳 愿由? },
+  { id:'REQ-SYS-003', name:'PDA沅뚰븳愿由?, mod:'?쒖뒪??, pri:'以?, st:'援ы쁽?꾨즺', desc:'PDA ?꾩슜 沅뚰븳 愿由? },
+  { id:'REQ-SYS-004', name:'?쒖뒪?쒖꽕??, mod:'?쒖뒪??, pri:'??, st:'援ы쁽?꾨즺', desc:'?쒖뒪???섍꼍蹂?? ?먮룞?낃퀬 ?ㅼ젙 ?? },
+  { id:'REQ-SYS-005', name:'肄붾뱶愿由?, mod:'?쒖뒪??, pri:'??, st:'援ы쁽?꾨즺', desc:'怨듯넻肄붾뱶 洹몃９/?곸꽭肄붾뱶 愿由? },
+  { id:'REQ-SYS-006', name:'?ㅼ?以꾨윭愿由?, mod:'?쒖뒪??, pri:'以?, st:'援ы쁽?꾨즺', desc:'諛곗튂 ?묒뾽 ?ㅼ?以??깅줉/?ㅽ뻾/濡쒓렇 愿由? },
+  { id:'REQ-SYS-007', name:'臾몄꽌愿由?, mod:'?쒖뒪??, pri:'以?, st:'援ы쁽?꾨즺', desc:'洹쒓꺽?? 留ㅻ돱?? ?꾨㈃, SOP ?뚯씪 愿由? },
+  { id:'REQ-SYS-008', name:'援먯쑁愿由?, mod:'?쒖뒪??, pri:'??, st:'援ы쁽?꾨즺', desc:'援먯쑁 怨꾪쉷, 吏꾪뻾, ?꾨즺 愿由? },
+  // 鍮꾧린??  { id:'NFR-P-001', name:'?묐떟?쒓컙', mod:'鍮꾧린???깅뒫', pri:'??, st:'援ы쁽?꾨즺', desc:'?섏씠吏 濡쒕뵫 3珥??대궡, API ?묐떟 1珥??대궡' },
+  { id:'NFR-S-001', name:'JWT ?몄쬆', mod:'鍮꾧린??蹂댁븞', pri:'??, st:'援ы쁽?꾨즺', desc:'Bearer Token 湲곕컲 ?몄쬆, ?좏겙 留뚮즺 愿由? },
+  { id:'NFR-S-002', name:'RBAC ?멸?', mod:'鍮꾧린??蹂댁븞', pri:'??, st:'援ы쁽?꾨즺', desc:'硫붾돱 肄붾뱶 湲곕컲 ??븷蹂??묎렐 ?쒖뼱' },
+  { id:'NFR-C-001', name:'?ㅺ뎅??吏??, mod:'鍮꾧린???명솚', pri:'??, st:'援ы쁽?꾨즺', desc:'?쒓뎅?? ?곸뼱, 以묎뎅?? 踰좏듃?⑥뼱 4媛??몄뼱' },
+  { id:'NFR-C-002', name:'?ㅽ겕紐⑤뱶', mod:'鍮꾧린???명솚', pri:'以?, st:'援ы쁽?꾨즺', desc:'?ㅽ겕/?쇱씠??紐⑤뱶 ?꾪솚 吏?? },
+  { id:'NFR-C-003', name:'PWA 吏??, mod:'鍮꾧린???명솚', pri:'以?, st:'援ы쁽?꾨즺', desc:'PDA 紐⑤컮????(Progressive Web App)' },
+  { id:'NFR-C-004', name:'硫?고뀒?뚯떆', mod:'鍮꾧린???명솚', pri:'??, st:'援ы쁽?꾨즺', desc:'COMPANY + PLANT_CD 湲곕컲 ?ㅼ쨷 ?ъ뾽??吏?? },
+  // ?명꽣?섏씠??  { id:'IR-001', name:'諛붿퐫???ㅼ틦???곕룞', mod:'?명꽣?섏씠??, pri:'??, st:'援ы쁽以?, desc:'Buffered Mode(Serial/API) 諛붿퐫???ㅼ틦?? ?좏삎 ?먮룞 援щ텇' },
+  { id:'IR-002', name:'?쇰꺼 ?꾨┛???곕룞', mod:'?명꽣?섏씠??, pri:'??, st:'援ы쁽以?, desc:'?쒕━???ы듃 湲곕컲 ?쇰꺼 ?꾨┛???쒖뼱' },
+  { id:'IR-003', name:'?ㅻ퉬 PLC ?곕룞', mod:'?명꽣?섏씠??, pri:'??, st:'蹂대쪟', desc:'PLC ?명꽣?섏씠???듯븳 ?ㅻ퉬 媛??以묒? ?쒖뼱 (?명꽣??' },
+  { id:'IR-004', name:'怨꾩륫?λ퉬 RS-232', mod:'?명꽣?섏씠??, pri:'??, st:'蹂대쪟', desc:'誘몄벐?꾩슂 ?몄옣?κ퀎/留덉씠?щ줈誘명꽣 RS-232 ?곗씠???먮룞 ?섏쭛' },
+  { id:'IR-005', name:'ERP ?곕룞', mod:'?명꽣?섏씠??, pri:'以?, st:'蹂대쪟', desc:'3李?媛쒕컻 - ERP ?곗씠???명꽣?섏씠?? },
 ];
 
 function buildDoc() {
@@ -192,23 +176,23 @@ function buildDoc() {
       new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 100 }, children: [new TextRun({ text: '\uC804\uCCB4 \uBAA8\uB4C8 \uC885\uD569', font: 'Arial', size: 28, color: '666666' })] }),
       new Paragraph({ spacing: { before: 2000 }, children: [] }),
       new Table({ width: { size: 5000, type: WidthType.DXA }, columnWidths: [2000, 3000],
-        rows: [['프로젝트명','HARNESS MES'],['산출물명','요구사항 정의서 (전체)'],['버전','v1.0'],['작성일','2026-03-18'],['작성자','HANES MES팀'],['근거문서','공정별요구사항, WBS, 필요프로그램목록']].map(([k,v])=>
+        rows: [['?꾨줈?앺듃紐?,'HARNESS MES'],['?곗텧臾쇰챸','?붽뎄?ы빆 ?뺤쓽??(?꾩껜)'],['踰꾩쟾','v1.0'],['?묒꽦??,'2026-03-18'],['?묒꽦??,'HANES MES?'],['洹쇨굅臾몄꽌','怨듭젙蹂꾩슂援ъ궗?? WBS, ?꾩슂?꾨줈洹몃옩紐⑸줉']].map(([k,v])=>
           new TableRow({ children: [c(k,2000,{b:true,sh:C.hdr,al:AlignmentType.CENTER,sz:18}), c(v,3000,{sz:18})] })) }),
     ],
   };
 
   const body = [];
-  body.push(h1('\uAC1C\uC815\uC774\uB825'), tbl(['버전','일자','작성자','변경내용'],[['1.0','2026-03-18','HANES MES팀','최초 작성 (전체 모듈 종합)']],[1500,1500,2000,8440]), pb());
+  body.push(h1('\uAC1C\uC815\uC774\uB825'), tbl(['踰꾩쟾','?쇱옄','?묒꽦??,'蹂寃쎈궡??],[['1.0','2026-03-18','HANES MES?','理쒖큹 ?묒꽦 (?꾩껜 紐⑤뱢 醫낇빀)']],[1500,1500,2000,8440]), pb());
   body.push(h1('\uBAA9\uCC28'), new TableOfContents('TOC',{hyperlink:true,headingStyleRange:'1-3'}), pb());
 
-  // 1. 개요
+  // 1. 媛쒖슂
   const totalReqs = reqs.length;
   const frCount = reqs.filter(r=>r.id.startsWith('REQ')).length;
   const nfrCount = reqs.filter(r=>r.id.startsWith('NFR')).length;
   const irCount = reqs.filter(r=>r.id.startsWith('IR')).length;
-  const doneCount = reqs.filter(r=>r.st==='구현완료').length;
-  const wipCount = reqs.filter(r=>r.st==='구현중').length;
-  const holdCount = reqs.filter(r=>r.st==='보류').length;
+  const doneCount = reqs.filter(r=>r.st==='援ы쁽?꾨즺').length;
+  const wipCount = reqs.filter(r=>r.st==='援ы쁽以?).length;
+  const holdCount = reqs.filter(r=>r.st==='蹂대쪟').length;
 
   body.push(h1('1. \uAC1C\uC694'), h2('1.1 \uBAA9\uC801'),
     p('\uBCF8 \uBB38\uC11C\uB294 HARNESS MES \uC2DC\uC2A4\uD15C\uC758 \uC804\uCCB4 \uAE30\uB2A5/\uBE44\uAE30\uB2A5/\uC778\uD130\uD398\uC774\uC2A4 \uC694\uAD6C\uC0AC\uD56D\uC744 \uC885\uD569\uC801\uC73C\uB85C \uC815\uC758\uD55C\uB2E4.'),
@@ -217,87 +201,87 @@ function buildDoc() {
     p(`\uAD6C\uD604\uC644\uB8CC: ${doneCount}\uAC74 / \uAD6C\uD604\uC911: ${wipCount}\uAC74 / \uBCF4\uB958: ${holdCount}\uAC74`),
     h2('1.3 \uADFC\uAC70 \uBB38\uC11C'),
     tbl(['\uBB38\uC11C\uBA85','\uC704\uCE58','\uC124\uBA85'],[
-      ['01-공정별-요구사항.md','docs/','MES 고도화 상세 내역서'],
-      ['02-WBS.md','docs/','상세 개발 항목 (WBS)'],
-      ['04-프로세스.md','docs/','하네스 MES 공정 프로세스'],
-      ['05-필요프로그램-원본.md','docs/','1차/2차/3차 개발 프로그램 목록'],
-      ['06-필요프로그램-김산K추가분.md','docs/','추가 요구사항 (재고홀드, 폐기 등)'],
-      ['요구사항최종.md','docs/','최종 요구사항 비교표'],
+      ['01-system-architecture.md','docs/core/','시스템 아키텍처 개요'],
+      ['02-data-model-erd.md','docs/core/','핵심 엔티티와 데이터 관계'],
+      ['03-frontend-routing.md','docs/core/','프론트엔드 라우팅 구조'],
+      ['04-backend-api-endpoints.md','docs/core/','백엔드 API 그룹 구조'],
+      ['05-production-process-flow.md','docs/core/','도메인 워크플로우 개요'],
+      ['backend-module-index.md','docs/core/','현재 백엔드 모듈 인덱스'],
     ],[3500,2500,7440]),
     pb());
 
-  // 2. 시스템 개요
+  // 2. ?쒖뒪??媛쒖슂
   body.push(h1('2. \uC2DC\uC2A4\uD15C \uAC1C\uC694'), h2('2.1 \uC0AC\uC6A9\uC790 \uC720\uD615'),
     tbl(['\uC0AC\uC6A9\uC790 \uC720\uD615','\uC124\uBA85','\uD50C\uB7AB\uD3FC','\uC811\uADFC \uBAA8\uB4C8'],[
-      ['시스템관리자','전체 시스템 관리','PC','전체'],
-      ['생산관리자','작업지시, 생산계획, 실적 관리','PC','생산, 기준정보'],
-      ['품질관리자','IQC, 검사, SPC, CAPA','PC','품질, 계측기'],
-      ['자재관리자','입하, 입고, 출고, 재고 관리','PC, PDA','자재, 재고'],
-      ['현장작업자','실적입력, 설비점검','PC, PDA','생산, 설비'],
-      ['출하담당자','포장, 출하, 반품','PC, PDA','출하'],
+      ['?쒖뒪?쒓?由ъ옄','?꾩껜 ?쒖뒪??愿由?,'PC','?꾩껜'],
+      ['?앹궛愿由ъ옄','?묒뾽吏?? ?앹궛怨꾪쉷, ?ㅼ쟻 愿由?,'PC','?앹궛, 湲곗??뺣낫'],
+      ['?덉쭏愿由ъ옄','IQC, 寃?? SPC, CAPA','PC','?덉쭏, 怨꾩륫湲?],
+      ['?먯옱愿由ъ옄','?낇븯, ?낃퀬, 異쒓퀬, ?ш퀬 愿由?,'PC, PDA','?먯옱, ?ш퀬'],
+      ['?꾩옣?묒뾽??,'?ㅼ쟻?낅젰, ?ㅻ퉬?먭?','PC, PDA','?앹궛, ?ㅻ퉬'],
+      ['異쒗븯?대떦??,'?ъ옣, 異쒗븯, 諛섑뭹','PC, PDA','異쒗븯'],
     ],[2000,3000,1500,6940]),
     pb());
 
-  // 3. 기능 요구사항
+  // 3. 湲곕뒫 ?붽뎄?ы빆
   body.push(h1('3. \uAE30\uB2A5 \uC694\uAD6C\uC0AC\uD56D'));
   const ws = [500,1600,2200,1200,800,900,6240];
   const frReqs = reqs.filter(r=>r.id.startsWith('REQ'));
-  body.push(tbl(['No','요구사항ID','요구사항명','모듈','우선순위','상태','상세 설명'],
+  body.push(tbl(['No','?붽뎄?ы빆ID','?붽뎄?ы빆紐?,'紐⑤뱢','?곗꽑?쒖쐞','?곹깭','?곸꽭 ?ㅻ챸'],
     frReqs.map((r,i)=>[String(i+1),r.id,r.name,r.mod,r.pri,r.st,r.desc]), ws), pb());
 
-  // 모듈별 상세 (그룹핑)
+  // 紐⑤뱢蹂??곸꽭 (洹몃９??
   const modules = [...new Set(frReqs.map(r=>r.mod))];
   modules.forEach((mod, mi) => {
     body.push(h2(`3.${mi+1} ${mod}`));
     const modReqs = frReqs.filter(r=>r.mod===mod);
-    body.push(tbl(['No','요구사항ID','요구사항명','우선순위','상태','상세 설명'],
+    body.push(tbl(['No','?붽뎄?ы빆ID','?붽뎄?ы빆紐?,'?곗꽑?쒖쐞','?곹깭','?곸꽭 ?ㅻ챸'],
       modReqs.map((r,i)=>[String(i+1),r.id,r.name,r.pri,r.st,r.desc]),
       [500,1600,2200,900,900,7340]), sp());
   });
   body.push(pb());
 
-  // 4. 비기능 요구사항
+  // 4. 鍮꾧린???붽뎄?ы빆
   body.push(h1('4. \uBE44\uAE30\uB2A5 \uC694\uAD6C\uC0AC\uD56D'));
   const nfrs = reqs.filter(r=>r.id.startsWith('NFR'));
-  body.push(tbl(['No','요구사항ID','요구사항명','분류','우선순위','상태','상세 설명'],
+  body.push(tbl(['No','?붽뎄?ы빆ID','?붽뎄?ы빆紐?,'遺꾨쪟','?곗꽑?쒖쐞','?곹깭','?곸꽭 ?ㅻ챸'],
     nfrs.map((r,i)=>[String(i+1),r.id,r.name,r.mod,r.pri,r.st,r.desc]),
     [500,1600,1800,1500,800,900,6340]), pb());
 
-  // 5. 인터페이스 요구사항
+  // 5. ?명꽣?섏씠???붽뎄?ы빆
   body.push(h1('5. \uC778\uD130\uD398\uC774\uC2A4 \uC694\uAD6C\uC0AC\uD56D'));
   const irs = reqs.filter(r=>r.id.startsWith('IR'));
-  body.push(tbl(['No','요구사항ID','요구사항명','우선순위','상태','상세 설명'],
+  body.push(tbl(['No','?붽뎄?ы빆ID','?붽뎄?ы빆紐?,'?곗꽑?쒖쐞','?곹깭','?곸꽭 ?ㅻ챸'],
     irs.map((r,i)=>[String(i+1),r.id,r.name,r.pri,r.st,r.desc]),
     [500,1600,2500,900,900,7040]), pb());
 
-  // 6. 제약사항
+  // 6. ?쒖빟?ы빆
   body.push(h1('6. \uC81C\uC57D\uC0AC\uD56D'),
     tbl(['\uBD84\uB958','\uC81C\uC57D\uC0AC\uD56D'],[
-      ['DB','Oracle Database 사용 (PostgreSQL/MySQL 아님)'],
-      ['PK 전략','자연키/복합키 사용 (Auto Increment 금지)'],
-      ['패키지 매니저','pnpm 전용 (npm 사용 금지)'],
-      ['프론트엔드 포트','3002 (3000, 3001 사용 금지)'],
-      ['E2E 테스트','Playwright 사용 금지 (수동 테스트)'],
-      ['바코드 방식','HID Mode 아닌 Buffered Mode (Serial/API)'],
-      ['개발 단계','1차(THN 생산 대응) → 2차(보완) → 3차(ERP 연동)'],
+      ['DB','Oracle Database ?ъ슜 (PostgreSQL/MySQL ?꾨떂)'],
+      ['PK ?꾨왂','?먯뿰??蹂듯빀???ъ슜 (Auto Increment 湲덉?)'],
+      ['?⑦궎吏 留ㅻ땲?','pnpm ?꾩슜 (npm ?ъ슜 湲덉?)'],
+      ['?꾨줎?몄뿏???ы듃','3002 (3000, 3001 ?ъ슜 湲덉?)'],
+      ['E2E ?뚯뒪??,'Playwright ?ъ슜 湲덉? (?섎룞 ?뚯뒪??'],
+      ['諛붿퐫??諛⑹떇','HID Mode ?꾨땶 Buffered Mode (Serial/API)'],
+      ['媛쒕컻 ?④퀎','1李?THN ?앹궛 ??? ??2李?蹂댁셿) ??3李?ERP ?곕룞)'],
     ],[2500,10940]), pb());
 
-  // 7. 통계
+  // 7. ?듦퀎
   body.push(h1('7. \uC694\uAD6C\uC0AC\uD56D \uD1B5\uACC4'));
-  // 모듈별 통계
+  // 紐⑤뱢蹂??듦퀎
   const allMods = [...new Set(reqs.map(r=>r.mod))];
   const statData = allMods.map((mod,i) => {
     const modR = reqs.filter(r=>r.mod===mod);
     return [String(i+1), mod, String(modR.length),
-      String(modR.filter(r=>r.pri==='상').length),
-      String(modR.filter(r=>r.pri==='중').length),
-      String(modR.filter(r=>r.pri==='하').length),
-      String(modR.filter(r=>r.st==='구현완료').length),
-      String(modR.filter(r=>r.st!=='구현완료').length)];
+      String(modR.filter(r=>r.pri==='??).length),
+      String(modR.filter(r=>r.pri==='以?).length),
+      String(modR.filter(r=>r.pri==='??).length),
+      String(modR.filter(r=>r.st==='援ы쁽?꾨즺').length),
+      String(modR.filter(r=>r.st!=='援ы쁽?꾨즺').length)];
   });
-  statData.push(['', '합계', String(totalReqs), String(reqs.filter(r=>r.pri==='상').length), String(reqs.filter(r=>r.pri==='중').length), String(reqs.filter(r=>r.pri==='하').length), String(doneCount), String(wipCount+holdCount)]);
+  statData.push(['', '?⑷퀎', String(totalReqs), String(reqs.filter(r=>r.pri==='??).length), String(reqs.filter(r=>r.pri==='以?).length), String(reqs.filter(r=>r.pri==='??).length), String(doneCount), String(wipCount+holdCount)]);
 
-  body.push(tbl(['No','모듈','전체','상','중','하','완료','미완료'], statData,
+  body.push(tbl(['No','紐⑤뱢','?꾩껜','??,'以?,'??,'?꾨즺','誘몄셿猷?], statData,
     [500,2000,1000,1000,1000,1000,1200,5740]));
 
   const bodySection = {
@@ -320,9 +304,10 @@ function buildDoc() {
 async function main() {
   const doc = buildDoc();
   const buffer = await Packer.toBuffer(doc);
-  fs.mkdirSync('docs/deliverables/system', { recursive: true });
-  const outPath = 'docs/deliverables/system/요구사항정의서_전체_2026-03-18.docx';
+  fs.mkdirSync('exports/system', { recursive: true });
+  const outPath = 'exports/system/?붽뎄?ы빆?뺤쓽???꾩껜_2026-03-18.docx';
   fs.writeFileSync(outPath, buffer);
   console.log(`Generated: ${outPath}`);
 }
 main().catch(console.error);
+

@@ -22,6 +22,7 @@ import {
   IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class GroupItemDto {
   @ApiProperty({ description: '검사항목 ID' })
@@ -73,21 +74,8 @@ export class CreateIqcGroupDto {
 
 export class UpdateIqcGroupDto extends PartialType(CreateIqcGroupDto) {}
 
-export class IqcGroupQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class IqcGroupQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색 (그룹코드/그룹명)' })
   @IsOptional()

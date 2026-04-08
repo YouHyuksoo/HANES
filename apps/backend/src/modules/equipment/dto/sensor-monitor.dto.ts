@@ -10,6 +10,7 @@
 import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class SensorDataItemDto {
   @ApiProperty({ description: '설비 코드' })
@@ -112,7 +113,7 @@ export class UpdateConditionRuleDto {
   useYn?: string;
 }
 
-export class SensorDataQueryDto {
+export class SensorDataQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '설비 코드' })
   @IsOptional()
   @IsString()
@@ -133,18 +134,10 @@ export class SensorDataQueryDto {
   @IsString()
   to?: string;
 
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
 }
 
-export class ConditionRuleQueryDto {
+export class ConditionRuleQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '설비 코드' })
   @IsOptional()
   @IsString()
@@ -155,13 +148,5 @@ export class ConditionRuleQueryDto {
   @IsString()
   sensorType?: string;
 
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  page?: number;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number;
 }

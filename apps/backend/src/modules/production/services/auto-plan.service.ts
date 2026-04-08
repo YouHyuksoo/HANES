@@ -203,7 +203,7 @@ export class AutoPlanService {
         planNo,
         planMonth: month,
         itemCode: item.itemCode,
-        itemType: part?.itemType || 'FG',
+        itemType: part?.itemType || 'FINISHED',
         planQty: item.planQty,
         orderQty: 0,
         customer: item.customerId,

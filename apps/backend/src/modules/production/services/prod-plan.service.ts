@@ -22,7 +22,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import {
   CreateProdPlanDto,
   BulkCreateProdPlanDto,
@@ -46,7 +46,7 @@ export class ProdPlanService {
     private readonly routingGroupRepo: Repository<RoutingGroup>,
     @InjectRepository(BomMaster)
     private readonly bomMasterRepo: Repository<BomMaster>,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -271,7 +271,7 @@ export class ProdPlanService {
       else if (p.status === 'CONFIRMED') summary.confirmed++;
       else if (p.status === 'CLOSED') summary.closed++;
 
-      if (p.itemType === 'FG') {
+      if (p.itemType === 'FINISHED') {
         summary.fgCount++;
         summary.fgPlanQty += p.planQty;
       } else {
@@ -308,7 +308,7 @@ export class ProdPlanService {
     await queryRunner.startTransaction();
 
     try {
-      const orderNo = await this.seqGenerator.nextJobOrderNo(queryRunner);
+      const orderNo = await this.numbering.nextJobOrderNo(queryRunner);
 
       const routingGroup = await this.routingGroupRepo.findOne({
         where: { itemCode: plan.itemCode, useYn: 'Y' },
@@ -375,7 +375,7 @@ export class ProdPlanService {
     const wipParts = await this.partRepo
       .createQueryBuilder('p')
       .where('p.itemCode IN (:...ids)', { ids: bomItems.map(b => b.childItemCode) })
-      .andWhere('p.itemType = :type', { type: 'WIP' })
+      .andWhere('p.itemType = :type', { type: 'SEMI_PRODUCT' })
       .getMany();
 
     const wipPartIds = new Set(wipParts.map(p => p.itemCode));
@@ -388,7 +388,7 @@ export class ProdPlanService {
         where: { itemCode: bom.childItemCode, useYn: 'Y' },
       });
 
-      const childOrderNo = await this.seqGenerator.nextJobOrderNo(queryRunner);
+      const childOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
       const childQty = Math.ceil(parent.planQty * Number(bom.qtyPer || 1));
 
       const child = queryRunner.manager.create(JobOrder, {

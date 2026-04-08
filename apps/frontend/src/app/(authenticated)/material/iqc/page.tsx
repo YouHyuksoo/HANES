@@ -13,20 +13,13 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Shield, Search, RefreshCw, Clock, ClipboardCheck, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import IqcTable from '@/components/material/IqcTable';
 import IqcModal from '@/components/material/IqcModal';
 import { useIqcData } from '@/hooks/material/useIqcData';
 
 export default function IqcPage() {
   const { t } = useTranslation();
-
-  const statusOptions = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: 'PENDING', label: t('material.iqc.status.pending') },
-    { value: 'IQC_IN_PROGRESS', label: t('material.iqc.status.inProgress') },
-    { value: 'PASSED', label: t('material.iqc.status.passed') },
-    { value: 'FAILED', label: t('material.iqc.status.failed') },
-  ], [t]);
 
   const {
     filteredItems,
@@ -82,7 +75,8 @@ export default function IqcPage() {
                   />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                  <ComCodeSelect groupCode="IQC_STATUS" labelPrefix={t('common.status')}
+                    value={statusFilter} onChange={setStatusFilter} fullWidth />
                 </div>
               </div>
             }

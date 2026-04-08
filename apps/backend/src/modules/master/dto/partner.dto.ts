@@ -7,6 +7,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn, IsEmail } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PARTNER_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreatePartnerDto {
   @ApiProperty({ description: '거래처 코드', example: 'SUP-001' })
@@ -81,21 +82,8 @@ export class CreatePartnerDto {
 
 export class UpdatePartnerDto extends PartialType(CreatePartnerDto) {}
 
-export class PartnerQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PartnerQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ enum: PARTNER_TYPE_VALUES })
   @IsOptional()

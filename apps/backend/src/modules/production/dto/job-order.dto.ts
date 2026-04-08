@@ -26,6 +26,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JOB_ORDER_STATUS_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export type JobOrderStatus = typeof JOB_ORDER_STATUS_VALUES[number];
 
@@ -142,21 +143,8 @@ export class ChangeJobOrderStatusDto {
 /**
  * 작업지시 목록 조회 쿼리 DTO
  */
-export class JobOrderQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class JobOrderQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '통합 검색 (작업지시번호/품목코드/품목명)' })
   @IsOptional()

@@ -154,8 +154,8 @@ export default function GanttChart({ plans, schedule, selectedPlanNo, summary }:
               <div key={plan.planNo}
                 className={`h-10 border-b border-border px-3 flex flex-col justify-center text-xs gap-0.5 transition ${selectedPlanNo === plan.planNo ? "bg-primary/10 dark:bg-primary/20" : ""}`}>
                 <div className="flex items-center gap-1 min-w-0">
-                  <span className={`px-1 text-[8px] rounded-sm flex-shrink-0 ${plan.itemType === 'FINISHED' || plan.itemType === 'FG' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'}`}>
-                    {plan.itemType === 'FINISHED' || plan.itemType === 'FG' ? 'FG' : 'WIP'}
+                  <span className={`px-1 text-[8px] rounded-sm flex-shrink-0 ${plan.itemType === 'FINISHED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'}`}>
+                    {plan.itemType === 'FINISHED' ? 'FG' : 'WIP'}
                   </span>
                   <span className="font-medium text-text truncate">{plan.itemName}</span>
                 </div>

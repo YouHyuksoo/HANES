@@ -17,7 +17,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 interface CreateReInspectDto {
   matUid: string;
@@ -44,7 +44,7 @@ export class ShelfLifeReInspectService {
     @InjectRepository(PartMaster)
     private readonly partMasterRepo: Repository<PartMaster>,
     private readonly dataSource: DataSource,
-    private readonly numRuleService: NumRuleService,
+    private readonly numbering: NumberingService,
   ) {}
 
   /** 재검사 이력 조회 (inspectType = RETEST) */
@@ -115,7 +115,7 @@ export class ShelfLifeReInspectService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(MatStock,
         { warehouseCode: stock.warehouseCode, itemCode, matUid },

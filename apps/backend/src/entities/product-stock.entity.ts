@@ -4,9 +4,9 @@
  *
  * 초보자 가이드:
  * - 복합 PK: (warehouseCode, itemCode, prdUid) 조합으로 재고 식별
- * - 원자재(RAW)는 MAT_STOCKS, 제품(WIP/FG)은 PRODUCT_STOCKS 테이블 사용
+ * - 원자재(RAW_MATERIAL)는 MAT_STOCKS, 제품(SEMI_PRODUCT/FINISHED)은 PRODUCT_STOCKS 테이블 사용
  * - qty: 총수량, reservedQty: 예약수량, availableQty: 가용수량
- * - itemType: 'WIP'(반제품) 또는 'FG'(완제품)
+ * - itemType: 'SEMI_PRODUCT'(반제품) 또는 'FINISHED'(완제품)
  * - orderNo: 작업지시 참조, processCode: 공정코드
  */
 import {

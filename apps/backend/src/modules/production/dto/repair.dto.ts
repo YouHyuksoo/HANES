@@ -19,21 +19,10 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-export class RepairQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class RepairQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상태 (RECEIVED, IN_REPAIR, COMPLETED)' })
   @IsOptional()

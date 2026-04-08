@@ -1284,8 +1284,8 @@
       "partnerName": "거래처명",
       "partnerType": "거래처 유형",
       "allType": "전체",
-      "supplier": "공급상",
-      "customer": "고객",
+      "supplier": "공급사",
+      "customer": "고객사",
       "bizNo": "사업자번호",
       "ceoName": "대표자",
       "tel": "전화번호",
@@ -3625,7 +3625,9 @@
       "statsInspecting": "검사중",
       "statsPass": "합격",
       "statsFail": "불합격",
-      "orderNo": "작업지시"
+      "orderNo": "작업지시",
+      "orderSearch": "작업지시 검색",
+      "orderSearchPlaceholder": "작업지시번호 또는 품목 검색..."
     },
     "ppap": {
       "title": "PPAP관리",

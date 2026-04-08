@@ -71,13 +71,15 @@ export class NumRuleService {
     ruleType: string,
     userId: string,
   ): Promise<string> {
-    // 1) SELECT — 해당 규칙 행 조회 (트랜잭션 내에서 실행되므로 안전)
+    // 1) SELECT FOR UPDATE — 행 잠금으로 동시 채번 방지 (직렬화 보장)
+    //    트랜잭션이 COMMIT/ROLLBACK될 때 잠금이 자동 해제됨
     const rows: NumRule[] = await qr.query(
       `SELECT "PATTERN", "PREFIX", "SUFFIX", "SEQ_LENGTH",
               "CURRENT_SEQ", "RESET_TYPE", "LAST_RESET"
          FROM "NUM_RULE_MASTERS"
         WHERE "RULE_TYPE" = :1
-          AND "USE_YN" = 'Y'`,
+          AND "USE_YN" = 'Y'
+          FOR UPDATE`,
       [ruleType],
     );
 

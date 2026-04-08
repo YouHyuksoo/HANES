@@ -14,14 +14,14 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { CreateMatLabelsDto, MatLabelResultDto } from '../dto/receive-label.dto';
 
 @Injectable()
 export class ReceiveLabelService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
     @InjectRepository(MatArrival)
     private readonly arrivalRepo: Repository<MatArrival>,
     @InjectRepository(MatLot)
@@ -117,7 +117,7 @@ export class ReceiveLabelService {
       const results: MatLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
-        const matUid = await this.seqGenerator.nextMatUid(queryRunner);
+        const matUid = await this.numbering.nextMatUid(queryRunner);
         const lot = queryRunner.manager.create(MatLot, {
           matUid,
           itemCode: arrival.itemCode,

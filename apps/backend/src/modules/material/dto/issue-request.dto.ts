@@ -24,6 +24,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** 출고요청 품목 DTO */
 export class IssueRequestItemDto {
@@ -75,21 +76,8 @@ export class CreateIssueRequestDto {
 }
 
 /** 출고요청 목록 조회 DTO */
-export class IssueRequestQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class IssueRequestQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({
     description: '상태 필터',

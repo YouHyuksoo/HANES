@@ -76,8 +76,8 @@ export default function InventoryStockPage() {
 
   const PART_TYPES = useMemo(() => [
     { value: '', label: t('common.all') },
-    { value: 'WIP', label: t('inventory.stock.wip') },
-    { value: 'FG', label: t('inventory.stock.fg') },
+    { value: 'SEMI_PRODUCT', label: t('inventory.stock.wip') },
+    { value: 'FINISHED', label: t('inventory.stock.fg') },
   ], [t]);
 
   // 필터
@@ -113,7 +113,7 @@ export default function InventoryStockPage() {
   // 필터링된 데이터 (제품재고만: RAW 제외)
   const filteredStocks = useMemo(() => {
     return stocks.filter(stock => {
-      if (stock.part?.itemType === 'RAW') return false;
+      if (stock.part?.itemType === 'RAW_MATERIAL') return false;
       if (stock.warehouse?.warehouseType === 'RAW') return false;
       if (filters.itemCode && !stock.part.itemCode.includes(filters.itemCode)) return false;
       return true;

@@ -17,6 +17,7 @@ import {
   CheckCircle, Clock, Package, Truck,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -86,15 +87,6 @@ export default function PoStatusPage() {
   }, [searchText, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.status") },
-    { value: "DRAFT", label: "DRAFT" },
-    { value: "CONFIRMED", label: "CONFIRMED" },
-    { value: "PARTIAL", label: "PARTIAL" },
-    { value: "RECEIVED", label: "RECEIVED" },
-    { value: "CLOSED", label: "CLOSED" },
-  ], [t]);
 
   const stats = useMemo(() => ({
     total: data.length,
@@ -253,7 +245,7 @@ export default function PoStatusPage() {
                       leftIcon={<Search className="w-4 h-4" />} fullWidth />
                   </div>
                   <div className="w-36 flex-shrink-0">
-                    <Select options={statusOptions}
+                    <ComCodeSelect groupCode="PO_STATUS" labelPrefix={t("common.status")}
                       value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
                 </div>

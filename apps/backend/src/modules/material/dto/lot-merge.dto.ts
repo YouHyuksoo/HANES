@@ -11,6 +11,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsArray, ArrayMinSize, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsInt, Min, Max } from 'class-validator';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class LotMergeDto {
   @ApiProperty({ description: '병합할 LOT ID 목록 (2개 이상)', type: [String] })
@@ -31,21 +32,8 @@ export class LotMergeDto {
   remark?: string;
 }
 
-export class LotMergeQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class LotMergeQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색 (로트번호, 품목코드)' })
   @IsOptional()

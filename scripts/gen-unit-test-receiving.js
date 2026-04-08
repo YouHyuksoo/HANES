@@ -379,7 +379,7 @@ function buildDoc() {
 async function main() {
   const doc = buildDoc();
   const buffer = await Packer.toBuffer(doc);
-  const outPath = 'docs/deliverables/material/단위테스트결과서_자재입고_2026-03-18.docx';
+  const outPath = 'exports/material/단위테스트결과서_자재입고_2026-03-18.docx';
   fs.writeFileSync(outPath, buffer);
   console.log(`Generated: ${outPath}`);
 }

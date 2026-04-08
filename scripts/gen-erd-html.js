@@ -379,5 +379,5 @@ render();
 </body>
 </html>`;
 
-fs.writeFileSync('docs/deliverables/system/ERD_2026-03-18.html', html);
+fs.writeFileSync('exports/system/ERD_2026-03-18.html', html);
 console.log(`Generated: ERD_2026-03-18.html (${totalTables} tables, ${totalCols} columns)`);

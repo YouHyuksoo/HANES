@@ -32,7 +32,7 @@ import {
   ArrivalStockQueryDto,
   CancelArrivalDto,
 } from '../dto/arrival.dto';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class ArrivalService {
@@ -58,7 +58,7 @@ export class ArrivalService {
     @InjectRepository(IqcLog)
     private readonly iqcLogRepository: Repository<IqcLog>,
     private readonly dataSource: DataSource,
-    private readonly numRuleService: NumRuleService,
+    private readonly numbering: NumberingService,
   ) {}
 
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
@@ -209,11 +209,11 @@ export class ArrivalService {
 
     try {
       const results = [];
-      const arrivalNo = await this.numRuleService.nextNumberInTx(queryRunner, 'ARRIVAL');
+      const arrivalNo = await this.numbering.nextInTx(queryRunner, 'ARRIVAL');
       let arrivalSeq = 1;
 
       for (const item of dto.items) {
-        const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+        const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
         const part = partMap.get(item.itemCode);
 
@@ -302,8 +302,8 @@ export class ArrivalService {
     await queryRunner.startTransaction();
 
     try {
-      const arrivalNo = await this.numRuleService.nextNumberInTx(queryRunner, 'ARRIVAL');
-      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+      const arrivalNo = await this.numbering.nextInTx(queryRunner, 'ARRIVAL');
+      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       // 품목 정보 조회
       const part = await this.partMasterRepository.findOne({ where: { itemCode: dto.itemCode } });

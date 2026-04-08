@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. 실행: node scripts/gen-program-list.js
- * 2. 출력: docs/deliverables/all/전체프로그램목록표_YYYY-MM-DD.docx
+ * 2. 출력: exports/all/전체프로그램목록표_YYYY-MM-DD.docx
  * 3. menuConfig + 백엔드 컨트롤러/서비스/DTO + PDA 화면 정보를 기반으로 생성
  */
 const fs = require("fs");

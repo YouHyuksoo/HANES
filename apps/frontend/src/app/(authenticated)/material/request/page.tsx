@@ -14,6 +14,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClipboardList, Plus, Search, RefreshCw, Clock, CheckCircle, Package, AlertCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import RequestTable from '@/components/material/RequestTable';
 import RequestModal from '@/components/material/RequestModal';
 import { useIssueRequestData } from '@/hooks/material/useIssueRequestData';
@@ -21,13 +22,6 @@ import { useIssueRequestData } from '@/hooks/material/useIssueRequestData';
 function IssueRequestPage() {
   const { t } = useTranslation();
 
-  const statusOptions = useMemo(() => [
-    { value: '', label: t('common.all') },
-    { value: 'REQUESTED', label: t('material.request.status.requested') },
-    { value: 'APPROVED', label: t('material.request.status.approved') },
-    { value: 'COMPLETED', label: t('material.request.status.completed') },
-    { value: 'REJECTED', label: t('material.request.status.rejected') },
-  ], [t]);
   const {
     filteredRequests,
     stats,
@@ -82,8 +76,9 @@ function IssueRequestPage() {
                   />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <Select
-                    options={statusOptions}
+                  <ComCodeSelect
+                    groupCode="ISSUE_STATUS"
+                    labelPrefix={t('common.status')}
                     value={statusFilter}
                     onChange={setStatusFilter}
                     fullWidth

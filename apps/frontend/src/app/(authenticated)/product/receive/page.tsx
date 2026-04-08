@@ -46,7 +46,7 @@ const statusColors: Record<string, string> = {
 export default function ProductReceivePage() {
   const { t } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState<"WIP" | "FG">("WIP");
+  const [activeTab, setActiveTab] = useState<"SEMI_PRODUCT" | "FINISHED">("SEMI_PRODUCT");
   const [data, setData] = useState<ProductTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -56,7 +56,7 @@ export default function ProductReceivePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const transType = activeTab === "WIP" ? "WIP_IN,WIP_IN_CANCEL" : "FG_IN,FG_IN_CANCEL";
+      const transType = activeTab === "SEMI_PRODUCT" ? "WIP_IN,WIP_IN_CANCEL" : "FG_IN,FG_IN_CANCEL";
       const res = await api.get("/inventory/product/transactions", {
         params: { transType, limit: 500 },
       });
@@ -156,8 +156,8 @@ export default function ProductReceivePage() {
   );
 
   const tabs = [
-    { key: "WIP" as const, label: t("productMgmt.receive.tabWip") },
-    { key: "FG" as const, label: t("productMgmt.receive.tabFg") },
+    { key: "SEMI_PRODUCT" as const, label: t("productMgmt.receive.tabWip") },
+    { key: "FINISHED" as const, label: t("productMgmt.receive.tabFg") },
   ];
 
   return (

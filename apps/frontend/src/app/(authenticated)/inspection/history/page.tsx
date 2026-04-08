@@ -16,6 +16,7 @@ import {
   Zap, RefreshCw, Search, CheckCircle, XCircle, TrendingUp, Activity,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -79,12 +80,6 @@ export default function InspectionHistoryPage() {
     const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : "0.0";
     return { total, passed, failed, passRate };
   }, [data]);
-
-  const resultOptions = useMemo(() => [
-    { value: "", label: t("quality.inspect.resultAll", "판정: 전체") },
-    { value: "Y", label: t("quality.inspect.pass", "합격") },
-    { value: "N", label: t("quality.inspect.fail", "불합격") },
-  ], [t]);
 
   const columns = useMemo<ColumnDef<InspectHistoryRow>[]>(() => [
     {
@@ -185,7 +180,7 @@ export default function InspectionHistoryPage() {
                   <span className="text-text-muted">~</span>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
                 </div>
-                <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} />
+                <ComCodeSelect groupCode="INSPECT_RESULT" labelPrefix={t('common.result', '결과')} value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
             }
           />

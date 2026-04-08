@@ -181,7 +181,12 @@
       "Bash(git status:*)",
       "Bash(grep -rn \"type: ''''varchar2''''\" apps/backend/src/entities/)",
       "Bash(grep -rn \"type: ''''number''''\" apps/backend/src/entities/)",
-      "Bash(grep -rn \"type: ''''timestamp''''\" apps/backend/src/entities/)"
+      "Bash(grep -rn \"type: ''''timestamp''''\" apps/backend/src/entities/)",
+      "Bash(codex exec:*)",
+      "Bash(gemini)",
+      "Bash(kimi -p \"한국어로 한 문장으로 자기소개해줘\" --print)",
+      "Bash(kimi:*)",
+      "Bash(wait)"
     ]
   }
 }

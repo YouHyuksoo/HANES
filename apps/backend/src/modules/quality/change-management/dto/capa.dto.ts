@@ -25,6 +25,7 @@ import {
   IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../../common/dto/base-query.dto';
 
 /**
  * CAPA 조치 항목 DTO (생성/수정 시 사용)
@@ -147,21 +148,8 @@ export class UpdateCapaDto extends PartialType(CreateCapaDto) {}
 /**
  * CAPA 목록 조회 쿼리 DTO
  */
-export class CapaQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class CapaQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상태 필터' })
   @IsOptional()

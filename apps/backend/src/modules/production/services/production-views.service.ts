@@ -194,8 +194,8 @@ export class ProductionViewsService {
     const queryBuilder = this.stockRepository
       .createQueryBuilder('s')
       .leftJoinAndSelect('s.part', 'p')
-      .where('p.itemType IN (:...itemTypes)', {
-        itemTypes: itemType ? [itemType] : ['WIP', 'FG'],
+      .where('s.itemType IN (:...itemTypes)', {
+        itemTypes: itemType ? [itemType] : ['SEMI_PRODUCT', 'FINISHED'],
       })
       .orderBy('s.updatedAt', 'DESC')
       .skip(skip)

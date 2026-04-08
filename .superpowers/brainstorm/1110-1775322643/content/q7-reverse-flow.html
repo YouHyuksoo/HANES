@@ -1,0 +1,98 @@
+<h2>Q7. 역분개 표현 — 취소/반품 동작을 어떻게 보여줄까요?</h2>
+<p class="subtitle">입고취소, 출고취소, 반품 등 역방향 흐름을 워크플로우에서 표현하는 방식입니다.</p>
+
+<div class="cards" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+
+  <!-- Option A: 노드 하단 역분개 버튼 -->
+  <div class="card" data-choice="node-reverse" onclick="toggleSelect(this)" style="cursor:pointer; border: 2px solid #6366f1;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #6366f1;">A. 노드 하단에 역분개 표시 (추천)</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">역분개가 가능한 노드 아래에 ↩ 취소 버튼을 배치. 클릭 시 해당 취소 페이지로 이동.</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1.5rem; font-size: 0.75rem;">
+        <div style="display:flex; align-items:flex-start; gap: 8px;">
+          <!-- 입하 -->
+          <div style="text-align:center; flex:1;">
+            <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:10px;">
+              <div style="color:#22c55e; font-weight:700; font-size:0.8rem;">입하</div>
+              <div style="color:#e2e8f0; font-size:1.3rem; font-weight:800;">3</div>
+              <div style="color:#64748b; font-size:0.65rem;">대기</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; color:#475569; font-size:1.2rem; padding-top:18px;">→</div>
+          <!-- IQC -->
+          <div style="text-align:center; flex:1;">
+            <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:10px;">
+              <div style="color:#3b82f6; font-weight:700; font-size:0.8rem;">IQC</div>
+              <div style="color:#e2e8f0; font-size:1.3rem; font-weight:800;">5</div>
+              <div style="color:#64748b; font-size:0.65rem;">검사중</div>
+            </div>
+          </div>
+          <!-- 분기 -->
+          <div style="display:flex; flex-direction:column; justify-content:center; gap:3px; padding-top:12px;">
+            <div style="background:rgba(34,197,94,0.2); color:#22c55e; padding:2px 8px; border-radius:8px; font-size:0.6rem; font-weight:600;">합격→</div>
+            <div style="background:rgba(239,68,68,0.2); color:#ef4444; padding:2px 8px; border-radius:8px; font-size:0.6rem; font-weight:600;">불합격×</div>
+          </div>
+          <!-- 입고 (역분개 있음) -->
+          <div style="text-align:center; flex:1;">
+            <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:10px;">
+              <div style="color:#8b5cf6; font-weight:700; font-size:0.8rem;">입고</div>
+              <div style="color:#e2e8f0; font-size:1.3rem; font-weight:800;">12</div>
+              <div style="color:#64748b; font-size:0.65rem;">완료</div>
+            </div>
+            <div style="margin-top:6px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); border-radius:6px; padding:4px 8px; cursor:pointer;">
+              <div style="color:#ef4444; font-size:0.65rem; font-weight:600;">↩ 입고취소 (1)</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; color:#475569; font-size:1.2rem; padding-top:18px;">→</div>
+          <!-- 출고 -->
+          <div style="text-align:center; flex:1;">
+            <div style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:10px;">
+              <div style="color:#10b981; font-weight:700; font-size:0.8rem;">출고</div>
+              <div style="color:#e2e8f0; font-size:1.3rem; font-weight:800;">8</div>
+              <div style="color:#64748b; font-size:0.65rem;">완료</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: 팝오버 안에 역분개 -->
+  <div class="card" data-choice="popover-reverse" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #f59e0b;">B. 팝오버 안에 역분개 버튼 포함</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">노드 클릭 시 나오는 팝오버에 정방향(바로가기) + 역방향(취소) 버튼을 함께 배치.</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1.5rem; font-size: 0.75rem;">
+        <div style="background:#1e293b; border-radius:12px; padding:20px; width:320px; margin:0 auto; border:1px solid #334155;">
+          <div style="font-weight:700; font-size:0.9rem; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+            <span style="color:#8b5cf6;">●</span> 입고 현황
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:14px;">
+            <div style="background:#0f172a; border-radius:6px; padding:8px; text-align:center;">
+              <div style="color:#22c55e; font-size:1.2rem; font-weight:800;">12</div>
+              <div style="color:#64748b; font-size:0.65rem;">오늘 입고</div>
+            </div>
+            <div style="background:#0f172a; border-radius:6px; padding:8px; text-align:center;">
+              <div style="color:#ef4444; font-size:1.2rem; font-weight:800;">1</div>
+              <div style="color:#64748b; font-size:0.65rem;">취소 대기</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <div style="flex:1; background:#6366f1; color:#fff; padding:8px; border-radius:6px; text-align:center; font-weight:600; font-size:0.8rem; cursor:pointer;">입고 바로가기 →</div>
+            <div style="background:rgba(239,68,68,0.2); color:#ef4444; padding:8px 12px; border-radius:6px; text-align:center; font-weight:600; font-size:0.8rem; cursor:pointer; border:1px solid rgba(239,68,68,0.3);">↩ 취소</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: 둘 다 -->
+  <div class="card" data-choice="both" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #10b981;">C. 둘 다 (노드 하단 표시 + 팝오버 버튼)</h3>
+      <p style="font-size: 0.85rem; color: #888;">노드 하단에 역분개 건수를 시각적으로 표시하고, 팝오버에서도 취소 버튼 제공.<br/>
+      역분개가 있다는 사실을 한눈에 인지 + 상세 액션도 가능.</p>
+    </div>
+  </div>
+
+</div>

@@ -14,6 +14,7 @@ import {
   MaxLength, IsDateString, IsArray, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** 입고 품목 DTO (matUid 단위) */
 export class ReceiveItemDto {
@@ -57,21 +58,8 @@ export class CreateBulkReceiveDto {
 }
 
 /** 입고 이력 조회 DTO */
-export class ReceivingQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ReceivingQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어' })
   @IsOptional()

@@ -32,6 +32,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EQUIP_STATUS_VALUES, COMM_TYPE_VALUES, EQUIP_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /**
  * 설비마스터 생성 DTO
@@ -172,21 +173,8 @@ export class AssignJobOrderDto {
 /**
  * 설비마스터 목록 조회 쿼리 DTO
  */
-export class EquipMasterQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class EquipMasterQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '설비 유형', enum: EQUIP_TYPE_VALUES })
   @IsOptional()

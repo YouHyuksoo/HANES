@@ -10,6 +10,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateTransferRuleDto {
   @ApiProperty({ description: '출발 창고 ID' })
@@ -35,21 +36,8 @@ export class CreateTransferRuleDto {
 
 export class UpdateTransferRuleDto extends PartialType(CreateTransferRuleDto) {}
 
-export class TransferRuleQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class TransferRuleQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '출발 창고 ID 필터' })
   @IsOptional()

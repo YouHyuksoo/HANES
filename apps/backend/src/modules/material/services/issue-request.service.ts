@@ -17,7 +17,7 @@ import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatIssueService } from './mat-issue.service';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import {
   CreateIssueRequestDto,
   IssueRequestQueryDto,
@@ -35,13 +35,13 @@ export class IssueRequestService {
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly matIssueService: MatIssueService,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
     private readonly dataSource: DataSource,
   ) {}
 
   /** 통합 채번 서비스를 통한 요청번호 생성 */
   private async generateRequestNo(qr?: import('typeorm').QueryRunner): Promise<string> {
-    return this.seqGenerator.nextMatReqNo(qr);
+    return this.numbering.next('MAT_REQ', qr);
   }
 
   /** 품목 목록에 itemCode/itemName 평탄화 */

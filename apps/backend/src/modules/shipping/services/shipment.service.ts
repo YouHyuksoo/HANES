@@ -537,7 +537,7 @@ export class ShipmentService {
         await this.productInventoryService.issueStockInTx(queryRunner, {
           warehouseId: stock.warehouseCode,
           itemCode,
-          itemType: 'FG',
+          itemType: 'FINISHED',
           prdUid: stock.prdUid || undefined,
           qty,
           transType: 'FG_OUT',

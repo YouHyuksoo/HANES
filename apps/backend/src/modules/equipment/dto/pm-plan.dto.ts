@@ -25,6 +25,7 @@ import {
   IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 const PM_TYPE = ['TIME_BASED', 'USAGE_BASED'] as const;
 const CYCLE_TYPE = ['MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL', 'CUSTOM'] as const;
@@ -156,21 +157,8 @@ export class CreatePmPlanDto {
 export class UpdatePmPlanDto extends PartialType(CreatePmPlanDto) {}
 
 /** PM 계획 목록 조회 DTO */
-export class PmPlanQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PmPlanQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(5000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
@@ -300,7 +288,7 @@ export class ExecutePmWorkOrderDto {
 }
 
 /** PM 캘린더 월별 조회 DTO */
-export class PmCalendarQueryDto {
+export class PmCalendarQueryDto extends PaginationQueryDto {
   @ApiProperty({ description: '년도' })
   @Type(() => Number)
   @IsInt()
@@ -325,7 +313,7 @@ export class PmCalendarQueryDto {
 }
 
 /** PM 캘린더 일별 조회 DTO */
-export class PmDayScheduleQueryDto {
+export class PmDayScheduleQueryDto extends PaginationQueryDto {
   @ApiProperty({ description: '날짜 (YYYY-MM-DD)' })
   @IsString()
   date: string;
@@ -357,21 +345,8 @@ export class GenerateWorkOrdersDto {
 }
 
 /** WO 목록 조회 DTO */
-export class PmWorkOrderQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PmWorkOrderQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(5000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()

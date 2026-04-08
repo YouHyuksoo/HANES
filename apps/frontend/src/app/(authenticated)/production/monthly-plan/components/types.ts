@@ -13,7 +13,7 @@ export interface ProdPlanItem {
   planNo: string;
   planMonth: string;
   itemCode: string;
-  itemType: 'FG' | 'WIP';
+  itemType: 'FINISHED' | 'SEMI_PRODUCT';
   planQty: number;
   orderQty: number;
   customer?: string | null;

@@ -7,6 +7,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, IsNumber, Min, Max, MaxLength, IsIn, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ITEM_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreatePartDto {
   @ApiProperty({ description: '품목 코드', example: 'P-001' })
@@ -174,21 +175,8 @@ export class CreatePartDto {
 
 export class UpdatePartDto extends PartialType(CreatePartDto) {}
 
-export class PartQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PartQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ enum: ITEM_TYPE_VALUES })
   @IsOptional()

@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { Plus, RefreshCw, AlertTriangle, Wrench, CheckCircle, XCircle, Trash2, Calendar, Clock, Search } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, ComCodeBadge, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -41,14 +42,6 @@ export default function DefectPage() {
   const [data, setData] = useState<Defect[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const defectTypes = useMemo(() => [
-    { value: "", label: t("quality.defect.allTypes") },
-    { value: "D001", label: t("quality.defect.typeCoating") },
-    { value: "D002", label: t("quality.defect.typeCrimping") },
-    { value: "D003", label: t("quality.defect.typeContinuity") },
-    { value: "D004", label: t("quality.defect.typeAppearance") },
-  ], [t]);
 
   const comCodeStatusOptions = useComCodeOptions("DEFECT_STATUS");
   const statusOptions = useMemo(() => [{ value: "", label: t("common.allStatus") }, ...comCodeStatusOptions], [t, comCodeStatusOptions]);
@@ -180,8 +173,8 @@ export default function DefectPage() {
                 <span className="text-text-muted">~</span>
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
               </div>
-              <Select options={defectTypes} value={defectType} onChange={setDefectType} placeholder={t("quality.defect.defectType")} />
-              <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
+              <ComCodeSelect groupCode="DEFECT_TYPE" labelPrefix={t('quality.defect.type', '불량유형')} value={defectType} onChange={setDefectType} fullWidth />
+              <ComCodeSelect groupCode="DEFECT_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
             </div>
           }
         />
@@ -191,7 +184,7 @@ export default function DefectPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label={t("quality.defect.workOrderNo")} placeholder="WO-2024-XXXX" value={form.workOrderNo} onChange={(e) => setForm((p) => ({ ...p, workOrderNo: e.target.value }))} fullWidth />
-            <Select label={t("quality.defect.defectType")} options={defectTypes.filter((d) => d.value !== "")} value={form.defectCode} onChange={(v) => setForm((p) => ({ ...p, defectCode: v }))} fullWidth />
+            <ComCodeSelect label={t("quality.defect.defectType")} groupCode="DEFECT_TYPE" includeAll={false} value={form.defectCode} onChange={(v) => setForm((p) => ({ ...p, defectCode: v }))} fullWidth />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label={t("quality.defect.partNo")} placeholder={t("quality.defect.partNoPlaceholder")} value={form.itemNo} onChange={(e) => setForm((p) => ({ ...p, itemNo: e.target.value }))} fullWidth />

@@ -457,7 +457,7 @@ export class ProductInventoryService {
           await queryRunner.manager.save(ProductStock, {
             warehouseCode: originalTrans.fromWarehouseId,
             itemCode: originalTrans.itemCode,
-            itemType: originalTrans.itemType || 'WIP',
+            itemType: originalTrans.itemType || 'SEMI_PRODUCT',
             prdUid: originalTrans.prdUid || null,
             qty: Math.abs(originalTrans.qty),
             reservedQty: 0,

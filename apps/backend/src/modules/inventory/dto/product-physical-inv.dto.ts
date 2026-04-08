@@ -12,6 +12,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class ProductPhysicalInvItemDto {
   @ApiProperty({ description: 'Stock ID' })
@@ -54,21 +55,8 @@ export class CreateProductPhysicalInvDto {
   createdBy?: string;
 }
 
-export class ProductPhysicalInvQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ProductPhysicalInvQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드/품목명)' })
   @IsOptional()
@@ -81,21 +69,8 @@ export class ProductPhysicalInvQueryDto {
   warehouseId?: string;
 }
 
-export class ProductPhysicalInvHistoryQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ProductPhysicalInvHistoryQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드/품목명)' })
   @IsOptional()

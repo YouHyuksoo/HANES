@@ -4,6 +4,7 @@
  */
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Modal, Select } from '@/components/ui';
+import { LineSelect, ProcessSelect } from '@/components/shared';
 
 interface WarehouseFormData {
   warehouseCode: string;
@@ -46,12 +47,20 @@ export default function WarehouseForm({ isOpen, isEdit, formData, typeOptions, o
         {formData.warehouseType === 'FLOOR' && (
           <>
             <div>
-              <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.lineCode')}</label>
-              <Input value={formData.lineCode} onChange={(e) => onChange({ ...formData, lineCode: e.target.value })} placeholder="L01" />
+              <LineSelect
+                label={t('inventory.warehouse.lineCode')}
+                value={formData.lineCode}
+                onChange={(v) => onChange({ ...formData, lineCode: v })}
+                fullWidth
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.processCode')}</label>
-              <Input value={formData.processCode} onChange={(e) => onChange({ ...formData, processCode: e.target.value })} placeholder="CRIMP" />
+              <ProcessSelect
+                label={t('inventory.warehouse.processCode')}
+                value={formData.processCode}
+                onChange={(v) => onChange({ ...formData, processCode: v })}
+                fullWidth
+              />
             </div>
           </>
         )}

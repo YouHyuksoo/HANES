@@ -3317,7 +3317,9 @@
       "statsInspecting": "检验中",
       "statsPass": "合格",
       "statsFail": "不合格",
-      "orderNo": "工单"
+      "orderNo": "工单",
+      "orderSearch": "工单搜索",
+      "orderSearchPlaceholder": "搜索工单编号或零件..."
     },
     "ppap": {
       "title": "PPAP管理",

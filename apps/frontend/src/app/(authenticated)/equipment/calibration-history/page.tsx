@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { History, Search, RefreshCw, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -64,12 +65,6 @@ export default function CalibrationHistoryPage() {
   }, [searchText, resultFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const resultOptions = useMemo(() => [
-    { value: "", label: `${t("equipment.calibrationHistory.result", "결과")}: ${t("common.all")}` },
-    { value: "PASS", label: `${t("equipment.calibrationHistory.result", "결과")}: PASS` },
-    { value: "FAIL", label: `${t("equipment.calibrationHistory.result", "결과")}: FAIL` },
-  ], [t]);
 
   const stats = useMemo(() => ({
     total: data.length,
@@ -159,7 +154,8 @@ export default function CalibrationHistoryPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">
-                <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />
+                <ComCodeSelect groupCode="INSPECT_RESULT" labelPrefix={t("common.result", "결과")}
+                  value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
             </div>
           } />

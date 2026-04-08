@@ -13,6 +13,7 @@ import {
   IsArray, ValidateNested, Min, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 // ─── 라우팅 그룹 ───
 
@@ -40,14 +41,8 @@ export class CreateRoutingGroupDto {
 
 export class UpdateRoutingGroupDto extends PartialType(CreateRoutingGroupDto) {}
 
-export class RoutingGroupQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
-  page?: number = 1;
+export class RoutingGroupQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
-  limit?: number = 50;
 
   @ApiPropertyOptional()
   @IsOptional() @IsString()

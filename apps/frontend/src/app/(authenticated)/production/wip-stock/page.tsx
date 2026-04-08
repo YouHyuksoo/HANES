@@ -39,8 +39,8 @@ export default function WipStockPage() {
 
   const typeOptions = useMemo(() => [
     { value: '', label: t('production.wipStock.allType') },
-    { value: 'WIP', label: t('production.wipStock.wip') },
-    { value: 'FG', label: t('production.wipStock.fg') },
+    { value: 'SEMI_PRODUCT', label: t('production.wipStock.wip') },
+    { value: 'FINISHED', label: t('production.wipStock.fg') },
   ], [t]);
 
   const fetchData = useCallback(async () => {
@@ -62,8 +62,8 @@ export default function WipStockPage() {
 
   const stats = useMemo(() => ({
     totalItems: data.length,
-    wipQty: data.filter(d => d.itemType === 'WIP').reduce((s, r) => s + r.qty, 0),
-    fgQty: data.filter(d => d.itemType === 'FG').reduce((s, r) => s + r.qty, 0),
+    wipQty: data.filter(d => d.itemType === 'SEMI_PRODUCT').reduce((s, r) => s + r.qty, 0),
+    fgQty: data.filter(d => d.itemType === 'FINISHED').reduce((s, r) => s + r.qty, 0),
     totalQty: data.reduce((s, r) => s + r.qty, 0),
   }), [data]);
 
@@ -75,7 +75,7 @@ export default function WipStockPage() {
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return v === 'WIP'
+        return v === 'SEMI_PRODUCT'
           ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{t('production.wipStock.wipLabel')}</span>
           : <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{t('production.wipStock.fgLabel')}</span>;
       },

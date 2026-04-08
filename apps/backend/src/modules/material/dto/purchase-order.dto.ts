@@ -14,6 +14,7 @@ import {
   IsDateString, IsIn, IsArray, ValidateNested, IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** PO 품목 DTO */
 export class CreatePurchaseOrderItemDto {
@@ -84,21 +85,8 @@ export class CreatePurchaseOrderDto {
 export class UpdatePurchaseOrderDto extends PartialType(CreatePurchaseOrderDto) {}
 
 /** PO 목록 조회 DTO */
-export class PurchaseOrderQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PurchaseOrderQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional()
   @IsOptional()

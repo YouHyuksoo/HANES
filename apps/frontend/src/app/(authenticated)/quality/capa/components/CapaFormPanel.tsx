@@ -11,9 +11,11 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { LineSelect, ComCodeSelect, WorkerSelect } from "@/components/shared";
+import PartSearchModal from "@/components/shared/PartSearchModal";
+import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
 
 interface CapaFormData {
@@ -44,6 +46,7 @@ export default function CapaFormPanel({ editData, onClose, onSave }: Props) {
   const isEdit = !!editData;
   const [form, setForm] = useState<CapaFormData>(INIT);
   const [saving, setSaving] = useState(false);
+  const [partModalOpen, setPartModalOpen] = useState(false);
 
   useEffect(() => {
     if (editData) {
@@ -146,8 +149,20 @@ export default function CapaFormPanel({ editData, onClose, onSave }: Props) {
 
         {/* 품목코드 / 담당자 */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("quality.capa.itemCode")} value={form.itemCode}
-            onChange={e => setField("itemCode", e.target.value)} fullWidth />
+          <div>
+            <label className="block text-xs font-medium text-text mb-1">
+              {t("quality.capa.itemCode")}
+            </label>
+            <div className="flex gap-1">
+              <Input value={form.itemCode} readOnly fullWidth
+                placeholder={t("common.partSearchPlaceholder", "품목 검색...")}
+                onClick={() => setPartModalOpen(true)}
+                className="cursor-pointer" />
+              <Button size="sm" variant="secondary" onClick={() => setPartModalOpen(true)}>
+                <Search className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
           <WorkerSelect label={t("quality.capa.responsible")} value={form.responsibleCode}
             onChange={v => setField("responsibleCode", v)} fullWidth />
         </div>
@@ -160,6 +175,11 @@ export default function CapaFormPanel({ editData, onClose, onSave }: Props) {
             onChange={e => setField("targetDate", e.target.value)} fullWidth />
         </div>
       </div>
+      <PartSearchModal
+        isOpen={partModalOpen}
+        onClose={() => setPartModalOpen(false)}
+        onSelect={(part: PartItem) => setField("itemCode", part.itemCode)}
+      />
     </div>
   );
 }

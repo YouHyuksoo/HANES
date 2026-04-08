@@ -11,6 +11,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsString, IsOptional, MaxLength, IsIn, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 const MATCH_TYPE_VALUES = ['EXACT', 'PREFIX', 'REGEX'] as const;
 
@@ -70,21 +71,8 @@ export class CreateVendorBarcodeMappingDto {
 
 export class UpdateVendorBarcodeMappingDto extends PartialType(CreateVendorBarcodeMappingDto) {}
 
-export class VendorBarcodeMappingQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class VendorBarcodeMappingQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (바코드/품번/품명)' })
   @IsOptional()

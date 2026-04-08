@@ -20,9 +20,19 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as oracledb from 'oracledb';
+
+/** Oracle 식별자 화이트리스트 패턴 (패키지명/프로시저명 인젝션 방지) */
+const SAFE_IDENTIFIER = /^[A-Z][A-Z0-9_$#]{0,29}$/i;
+
+function validateIdentifier(name: string, label: string): void {
+  if (!SAFE_IDENTIFIER.test(name)) {
+    throw new BadRequestException(`유효하지 않은 ${label}: "${name}"`);
+  }
+}
 
 @Injectable()
 export class OracleService implements OnModuleInit, OnModuleDestroy {
@@ -82,6 +92,9 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
     procName: string,
     inParams?: Record<string, any>,
   ): Promise<T[]> {
+    validateIdentifier(packageName, '패키지명');
+    validateIdentifier(procName, '프로시저명');
+
     let conn: oracledb.Connection | undefined;
     try {
       conn = await this.pool.getConnection();
@@ -142,6 +155,9 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
     cursorNames: string[],
     inParams?: Record<string, any>,
   ): Promise<Record<string, T[]>> {
+    validateIdentifier(packageName, '패키지명');
+    validateIdentifier(procName, '프로시저명');
+
     let conn: oracledb.Connection | undefined;
     try {
       conn = await this.pool.getConnection();

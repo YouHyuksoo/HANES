@@ -30,7 +30,7 @@ export interface IssueFormValues {
   itemCode: string;
   warehouseCode: string;
   qty: number;
-  itemType: "WIP" | "FG";
+  itemType: "SEMI_PRODUCT" | "FINISHED";
   transType: string;
   issueType: string;
   remark: string;
@@ -52,15 +52,15 @@ const INITIAL_FORM = {
 
 export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
   const { t } = useTranslation();
-  const [partType, setPartType] = useState<"WIP" | "FG">("WIP");
+  const [partType, setPartType] = useState<"SEMI_PRODUCT" | "FINISHED">("SEMI_PRODUCT");
   const [form, setForm] = useState(INITIAL_FORM);
   const [stocks, setStocks] = useState<ProductStockItem[]>([]);
 
   const issueTypeOptions = useComCodeOptions("ISSUE_TYPE");
 
   const tabs = [
-    { key: "WIP" as const, label: t("productMgmt.receive.tabWip") },
-    { key: "FG" as const, label: t("productMgmt.receive.tabFg") },
+    { key: "SEMI_PRODUCT" as const, label: t("productMgmt.receive.tabWip") },
+    { key: "FINISHED" as const, label: t("productMgmt.receive.tabFg") },
   ];
 
   /** 가용재고 조회 */
@@ -79,7 +79,7 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
   useEffect(() => { fetchStocks(partType); }, [partType, fetchStocks]);
 
   /** 품목유형 전환 */
-  const handlePartTypeChange = useCallback((type: "WIP" | "FG") => {
+  const handlePartTypeChange = useCallback((type: "SEMI_PRODUCT" | "FINISHED") => {
     setPartType(type);
     setForm((prev) => ({ ...prev, itemCode: "", warehouseCode: "" }));
   }, []);
@@ -127,7 +127,7 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
       warehouseCode: form.warehouseCode,
       qty: form.qty,
       itemType: partType,
-      transType: partType === "WIP" ? "WIP_OUT" : "FG_OUT",
+      transType: partType === "SEMI_PRODUCT" ? "WIP_OUT" : "FG_OUT",
       issueType: form.issueType,
       remark: form.remark,
     });

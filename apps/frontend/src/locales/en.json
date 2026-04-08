@@ -3317,7 +3317,9 @@
       "statsInspecting": "Inspecting",
       "statsPass": "Pass",
       "statsFail": "Fail",
-      "orderNo": "Work Order"
+      "orderNo": "Work Order",
+      "orderSearch": "Work Order Search",
+      "orderSearchPlaceholder": "Search work order no. or part..."
     },
     "ppap": {
       "title": "PPAP Management",

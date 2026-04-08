@@ -1,0 +1,31 @@
+<h2>Q5. 데이터 소스 — 각 노드의 건수/현황을 어디서 가져올까요?</h2>
+<p class="subtitle">워크플로우 노드에 표시할 실시간 건수의 데이터 소스 전략입니다.</p>
+
+<div class="options">
+  <div class="option" data-choice="static-config" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>정적 설정 (건수 없음)</h3>
+      <p>워크플로우 흐름만 보여주고, 실시간 건수는 표시하지 않음.<br/>
+      순수하게 <strong>업무 프로세스 가이드</strong> 역할. 빠르게 구현 가능.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="api-realtime" onclick="toggleSelect(this)" style="border: 2px solid #6366f1;">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>API 실시간 조회 (추천)</h3>
+      <p>워크플로우 페이지 진입 시 <strong>PKG_WORKFLOW Oracle 패키지</strong>에서 각 단계별 건수를 한번에 조회.<br/>
+      대시보드 PKG_DASHBOARD와 같은 패턴. 새로고침 버튼으로 갱신.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="hybrid-lazy" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>하이브리드 (지연 로딩)</h3>
+      <p>처음엔 흐름만 보여주고, 카드를 호버/클릭하면 해당 워크플로우 건수만 API 조회.<br/>
+      초기 로딩 빠르고, 필요한 데이터만 가져옴.</p>
+    </div>
+  </div>
+</div>

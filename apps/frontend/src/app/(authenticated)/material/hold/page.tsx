@@ -16,6 +16,7 @@ import {
   ShieldAlert, Search, RefreshCw, Lock, Unlock, AlertTriangle, CheckCircle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -66,12 +67,6 @@ export default function HoldPage() {
   }, [searchText, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.status") },
-    { value: "HOLD", label: "HOLD" },
-    { value: "NORMAL", label: "NORMAL" },
-  ], [t]);
 
   const stats = useMemo(() => ({
     total: data.length,
@@ -180,7 +175,7 @@ export default function HoldPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">
-                <Select options={statusOptions}
+                <ComCodeSelect groupCode="MAT_LOT_STATUS" labelPrefix={t("common.status")}
                   value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
             </div>

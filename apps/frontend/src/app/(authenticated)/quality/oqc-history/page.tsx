@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -66,12 +67,6 @@ export default function OqcHistoryPage() {
   }, [searchText, resultFilter, startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const resultOptions = useMemo(() => [
-    { value: "", label: t("quality.oqc.result") },
-    { value: "PASS", label: t("quality.oqc.pass") },
-    { value: "FAIL", label: t("quality.oqc.fail") },
-  ], [t]);
 
   const stats = useMemo(() => {
     const total = data.length;
@@ -182,7 +177,7 @@ export default function OqcHistoryPage() {
                 />
               </div>
               <div className="w-32 flex-shrink-0">
-                <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />
+                <ComCodeSelect groupCode="INSPECT_RESULT" labelPrefix={t('common.result', '결과')} value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} fullWidth />

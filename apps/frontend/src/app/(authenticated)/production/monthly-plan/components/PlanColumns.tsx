@@ -89,7 +89,7 @@ export function usePlanColumns({ onConfirm, onUnconfirm, onIssue }: UsePlanColum
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        const cls = v === "FG"
+        const cls = v === "FINISHED"
           ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
           : "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300";
         return <span className={`px-2 py-0.5 text-xs rounded-full ${cls}`}>{v}</span>;

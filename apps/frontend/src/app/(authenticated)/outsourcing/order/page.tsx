@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Eye, RefreshCw, Search, FileText, Truck, Package, CheckCircle } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -55,14 +56,6 @@ export default function SubconOrderPage() {
     CLOSED: t("outsourcing.order.statusClosed"),
     CANCELED: t("common.cancel"),
   }), [t]);
-
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.allStatus") },
-    { value: "ORDERED", label: t("outsourcing.order.statusOrdered") },
-    { value: "DELIVERED", label: t("outsourcing.order.statusDelivered") },
-    { value: "PARTIAL_RECV", label: t("outsourcing.order.statusPartialRecv") },
-    { value: "RECEIVED", label: t("outsourcing.order.statusReceived") },
-  ], [t]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -175,7 +168,7 @@ export default function SubconOrderPage() {
                 <Input placeholder={t("outsourcing.order.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                <ComCodeSelect groupCode="SUBCON_ORDER_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
             </div>
           }

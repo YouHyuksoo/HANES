@@ -26,7 +26,7 @@ import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity'
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
@@ -53,7 +53,7 @@ export class ReceivingService {
     @InjectRepository(LabelPrintLog)
     private readonly labelPrintLogRepository: Repository<LabelPrintLog>,
     private readonly dataSource: DataSource,
-    private readonly numRuleService: NumRuleService,
+    private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
   ) {}
 
@@ -273,11 +273,11 @@ export class ReceivingService {
     try {
       const results = [];
       // 같은 배치의 모든 아이템에 동일한 receiveNo 부여
-      const receiveNo = await this.numRuleService.nextNumberInTx(queryRunner, 'RECEIVE');
+      const receiveNo = await this.numbering.nextInTx(queryRunner, 'RECEIVE');
       let seqCounter = 1;
 
       for (const item of dto.items) {
-        const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+        const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
         const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: item.matUid } });
         if (!lot) continue;
@@ -539,66 +539,63 @@ export class ReceivingService {
       };
     }
 
-    // 3. 각 LOT별 기입고 여부 확인 (재발행 판별)
-    const received: string[] = [];
+    // 3. N+1 방지: 3개 쿼리를 일괄 배치 처리
+    const [existingReceivings, lots, receivedAgg] = await Promise.all([
+      // 이미 입고된 LOT 조회
+      this.matReceivingRepository.find({
+        where: { matUid: In(matUids), status: 'DONE' },
+        select: ['matUid'],
+      }),
+      // LOT 정보 일괄 조회
+      this.matLotRepository.find({
+        where: { matUid: In(matUids) },
+      }),
+      // 기입고수량 일괄 집계
+      this.stockTransactionRepository
+        .createQueryBuilder('tx')
+        .select('tx.matUid', 'matUid')
+        .addSelect('SUM(tx.qty)', 'sumQty')
+        .where('tx.matUid IN (:...matUids)', { matUids })
+        .andWhere('tx.transType = :transType', { transType: 'RECEIVE' })
+        .andWhere('tx.status = :status', { status: 'DONE' })
+        .groupBy('tx.matUid')
+        .getRawMany(),
+    ]);
+
+    const alreadyReceivedSet = new Set(existingReceivings.map((r) => r.matUid));
+    const lotMap = new Map(lots.map((l) => [l.matUid, l]));
+    const receivedMap = new Map(receivedAgg.map((r) => [r.matUid, parseInt(r.sumQty) || 0]));
+
     const skipped: string[] = [];
     const receiveItems: { matUid: string; qty: number; warehouseId: string }[] = [];
 
     for (const matUid of matUids) {
-      // MAT_RECEIVINGS에 해당 LOT 기록이 있으면 재발행 → 스킵
-      const existingReceiving = await this.matReceivingRepository.findOne({
-        where: { matUid: matUid, status: 'DONE' },
-      });
-      if (existingReceiving) {
+      if (alreadyReceivedSet.has(matUid)) {
         skipped.push(matUid);
         continue;
       }
-
-      // LOT 검증 (IQC 합격 + 잔량)
-      const lot = await this.matLotRepository.findOne({
-        where: { matUid },
-      });
+      const lot = lotMap.get(matUid);
       if (!lot || lot.iqcStatus !== 'PASS') {
         skipped.push(matUid);
         continue;
       }
-
-      // 기입고수량 확인
-      const receivedAgg = await this.stockTransactionRepository
-        .createQueryBuilder('tx')
-        .select('SUM(tx.qty)', 'sumQty')
-        .where('tx.matUid = :matUid', { matUid })
-        .andWhere('tx.transType = :transType', { transType: 'RECEIVE' })
-        .andWhere('tx.status = :status', { status: 'DONE' })
-        .getRawOne();
-
-      const receivedQty = parseInt(receivedAgg?.sumQty) || 0;
-      const remaining = lot.initQty - receivedQty;
-
+      const received = receivedMap.get(matUid) || 0;
+      const remaining = lot.initQty - received;
       if (remaining <= 0) {
         skipped.push(matUid);
         continue;
       }
-
-      receiveItems.push({
-        matUid: matUid,
-        qty: remaining,
-        warehouseId: defaultWarehouse.warehouseCode,
-      });
+      receiveItems.push({ matUid, qty: remaining, warehouseId: defaultWarehouse.warehouseCode });
     }
 
     // 4. 미입고 건이 있으면 일괄 입고
     if (receiveItems.length > 0) {
-      await this.createBulkReceive({
-        items: receiveItems,
-        workerId,
-      });
-      received.push(...receiveItems.map((i) => i.matUid));
+      await this.createBulkReceive({ items: receiveItems, workerId });
     }
 
     return {
       autoReceiveEnabled: true,
-      received,
+      received: receiveItems.map((i) => i.matUid),
       skipped,
       warehouseCode: defaultWarehouse.warehouseCode,
       warehouseName: defaultWarehouse.warehouseName,

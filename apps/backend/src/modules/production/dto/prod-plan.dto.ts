@@ -25,6 +25,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** 생산계획 개별 생성 DTO */
 export class CreateProdPlanDto {
@@ -38,9 +39,9 @@ export class CreateProdPlanDto {
   @MaxLength(50)
   itemCode: string;
 
-  @ApiProperty({ description: '품목유형 (FG/WIP)', example: 'FG' })
+  @ApiProperty({ description: '품목유형 (FINISHED/SEMI_PRODUCT)', example: 'FINISHED' })
   @IsString()
-  @IsIn(['FG', 'WIP'])
+  @IsIn(['FINISHED', 'SEMI_PRODUCT'])
   itemType: string;
 
   @ApiProperty({ description: '계획수량', example: 1000, minimum: 1 })
@@ -81,9 +82,9 @@ export class BulkProdPlanItemDto {
   @MaxLength(50)
   itemCode: string;
 
-  @ApiProperty({ description: '품목유형 (FG/WIP)' })
+  @ApiProperty({ description: '품목유형 (FINISHED/SEMI_PRODUCT)' })
   @IsString()
-  @IsIn(['FG', 'WIP'])
+  @IsIn(['FINISHED', 'SEMI_PRODUCT'])
   itemType: string;
 
   @ApiProperty({ description: '계획수량', minimum: 1 })
@@ -141,31 +142,18 @@ export class UpdateProdPlanDto extends PartialType(CreateProdPlanDto) {
 }
 
 /** 목록 조회 쿼리 DTO */
-export class ProdPlanQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ProdPlanQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '계획월 필터 (YYYY-MM)' })
   @IsOptional()
   @IsString()
   planMonth?: string;
 
-  @ApiPropertyOptional({ description: '품목유형 필터 (FG/WIP)' })
+  @ApiPropertyOptional({ description: '품목유형 필터 (FINISHED/SEMI_PRODUCT)' })
   @IsOptional()
   @IsString()
-  @IsIn(['FG', 'WIP'])
+  @IsIn(['FINISHED', 'SEMI_PRODUCT'])
   itemType?: string;
 
   @ApiPropertyOptional({ description: '상태 필터' })

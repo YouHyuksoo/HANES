@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. 실행: node scripts/gen-traceability.js
- * 2. 출력: docs/deliverables/all/추적표_YYYY-MM-DD.docx
+ * 2. 출력: exports/all/추적표_YYYY-MM-DD.docx
  * 3. 요구사항 ↔ As-Is/To-Be ↔ 기능 ↔ 테이블 ↔ 화면 ↔ 프로그램 매핑
  */
 const fs = require("fs");

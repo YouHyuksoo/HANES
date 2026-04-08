@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. 실행: node scripts/gen-glossary.js
- * 2. 출력: docs/deliverables/all/용어정의서_YYYY-MM-DD.docx
+ * 2. 출력: exports/all/용어정의서_YYYY-MM-DD.docx
  * 3. 약어, 도메인용어, 기술용어, 데이터용어, 공통코드 5개 섹션으로 구성
  */
 const fs = require("fs");

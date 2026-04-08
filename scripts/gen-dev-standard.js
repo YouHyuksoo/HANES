@@ -332,8 +332,8 @@ function buildDoc() {
 async function main() {
   const doc = buildDoc();
   const buffer = await Packer.toBuffer(doc);
-  fs.mkdirSync('docs/deliverables/system', { recursive: true });
-  const outPath = 'docs/deliverables/system/개발표준정의서_2026-03-18.docx';
+  fs.mkdirSync('exports/system', { recursive: true });
+  const outPath = 'exports/system/개발표준정의서_2026-03-18.docx';
   fs.writeFileSync(outPath, buffer);
   console.log(`Generated: ${outPath}`);
 }

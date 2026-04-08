@@ -240,8 +240,8 @@ function buildDoc(){
 async function main(){
   const doc=buildDoc();
   const buffer=await Packer.toBuffer(doc);
-  fs.mkdirSync('docs/deliverables/material',{recursive:true});
-  const out='docs/deliverables/material/사용자매뉴얼_자재입고_2026-03-19.docx';
+  fs.mkdirSync('exports/material',{recursive:true});
+  const out='exports/material/사용자매뉴얼_자재입고_2026-03-19.docx';
   fs.writeFileSync(out,buffer);
   console.log('Generated: '+out);
 }

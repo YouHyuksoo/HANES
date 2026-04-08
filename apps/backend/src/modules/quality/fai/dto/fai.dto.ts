@@ -27,6 +27,7 @@ import {
   IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../../common/dto/base-query.dto';
 
 /**
  * 검사항목 DTO — 항목별 규격/측정값/판정
@@ -146,21 +147,8 @@ export class UpdateFaiDto extends PartialType(CreateFaiDto) {}
 /**
  * 초물검사 목록 조회 쿼리 DTO
  */
-export class FaiQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class FaiQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상태 필터' })
   @IsOptional()

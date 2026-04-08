@@ -73,7 +73,7 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
-        accessorKey: 'lineId',
+        accessorKey: 'lineCode',
         header: t('consumables.comp.line'),
         size: 90,
         cell: ({ getValue }) => (getValue() as string) ?? '-',

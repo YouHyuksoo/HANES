@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. 실행: node scripts/gen-business-process.js
- * 2. 출력: docs/deliverables/all/업무프로세스정의서_YYYY-MM-DD.docx
+ * 2. 출력: exports/all/업무프로세스정의서_YYYY-MM-DD.docx
  * 3. 각 프로세스별 개요/처리흐름/관련화면·API·테이블/업무규칙 상세 기술
  */
 const fs = require("fs");

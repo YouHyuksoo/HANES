@@ -20,7 +20,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class IqcHistoryService {
@@ -41,7 +41,7 @@ export class IqcHistoryService {
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly dataSource: DataSource,
     private readonly sysConfigService: SysConfigService,
-    private readonly numRuleService: NumRuleService,
+    private readonly numbering: NumberingService,
   ) {}
 
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
@@ -222,7 +222,7 @@ export class IqcHistoryService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       // 원래 창고에서 차감
       await queryRunner.manager.update(MatStock,
@@ -288,7 +288,7 @@ export class IqcHistoryService {
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(MatStock,
         { warehouseCode: stock.warehouseCode, itemCode, matUid },

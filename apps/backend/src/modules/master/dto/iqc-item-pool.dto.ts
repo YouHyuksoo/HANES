@@ -21,6 +21,7 @@ import {
   IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateIqcItemPoolDto {
   @ApiProperty({ description: '항목코드', example: 'IQC-001' })
@@ -89,21 +90,8 @@ export class CreateIqcItemPoolDto {
 
 export class UpdateIqcItemPoolDto extends PartialType(CreateIqcItemPoolDto) {}
 
-export class IqcItemPoolQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class IqcItemPoolQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색 (항목코드/항목명)' })
   @IsOptional()

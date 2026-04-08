@@ -25,7 +25,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import {
@@ -66,7 +66,7 @@ export class JobOrderService {
     private readonly fgLabelRepo: Repository<FgLabel>,
     @InjectRepository(ProdPlan)
     private readonly prodPlanRepo: Repository<ProdPlan>,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
     private readonly dataSource: DataSource,
   ) {}
@@ -160,7 +160,7 @@ export class JobOrderService {
   async create(dto: CreateJobOrderDto, company?: string, plant?: string) {
     // orderNo가 없으면 자동 채번
     if (!dto.orderNo) {
-      dto.orderNo = await this.seqGenerator.nextJobOrderNo();
+      dto.orderNo = await this.numbering.nextJobOrderNo();
     }
 
     const existing = await this.jobOrderRepository.findOne({
@@ -229,7 +229,7 @@ export class JobOrderService {
     const wipParts = await this.partMasterRepository
       .createQueryBuilder('p')
       .where('p.itemCode IN (:...ids)', { ids: bomItems.map(b => b.childItemCode) })
-      .andWhere('p.itemType = :type', { type: 'WIP' })
+      .andWhere('p.itemType = :type', { type: 'SEMI_PRODUCT' })
       .getMany();
 
     const wipPartIds = new Set(wipParts.map(p => p.itemCode));
@@ -345,7 +345,7 @@ export class JobOrderService {
     if (fgTiming === 'PRE_ISSUE') {
       const fgJobOrder = await this.findById(id);
       for (let i = 0; i < fgJobOrder.planQty; i++) {
-        const fgBarcode = await this.seqGenerator.nextFgBarcode();
+        const fgBarcode = await this.numbering.nextFgBarcode();
         await this.fgLabelRepo.save({
           fgBarcode,
           itemCode: fgJobOrder.itemCode,

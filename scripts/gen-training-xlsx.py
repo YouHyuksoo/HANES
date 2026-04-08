@@ -128,6 +128,6 @@ evals=[
 ]
 fill_rows(ws5, evals)
 
-out='docs/deliverables/system/교육명세서_2026-03-19.xlsx'
+out='exports/system/교육명세서_2026-03-19.xlsx'
 wb.save(out)
 print(f'Generated: {out}')

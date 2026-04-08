@@ -27,7 +27,7 @@ export interface IssuingFormValues {
   consumableId: string;
   qty: number;
   department: string;
-  lineId: string;
+  lineCode: string;
   equipCode: string;
   issueReason: string;
   remark: string;
@@ -37,7 +37,7 @@ const EMPTY: IssuingFormValues = {
   consumableId: "",
   qty: 1,
   department: "",
-  lineId: "",
+  lineCode: "",
   equipCode: "",
   issueReason: "PRODUCTION",
   remark: "",
@@ -126,8 +126,8 @@ export default function IssuingFormPanel({ onClose, onSubmit, loading, animate =
             <div className="grid grid-cols-2 gap-3">
               <LineSelect
                 label={t("consumables.issuing.lineLabel")}
-                value={form.lineId}
-                onChange={(val) => set("lineId", val)}
+                value={form.lineCode}
+                onChange={(val) => set("lineCode", val)}
                 fullWidth
               />
               <EquipSelect

@@ -266,7 +266,7 @@ export class InventoryController {
   async receiveWip(@Body() dto: ProductReceiveStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.receiveStock({
       ...dto,
-      itemType: 'WIP',
+      itemType: 'SEMI_PRODUCT',
       transType: 'WIP_IN',
       company: dto.company || company,
       plant: dto.plant || plant,
@@ -280,7 +280,7 @@ export class InventoryController {
   async issueWip(@Body() dto: ProductIssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.issueStock({
       ...dto,
-      itemType: 'WIP',
+      itemType: 'SEMI_PRODUCT',
       transType: 'WIP_OUT',
       company: dto.company || company,
       plant: dto.plant || plant,
@@ -294,7 +294,7 @@ export class InventoryController {
   async receiveFg(@Body() dto: ProductReceiveStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.receiveStock({
       ...dto,
-      itemType: 'FG',
+      itemType: 'FINISHED',
       transType: 'FG_IN',
       company: dto.company || company,
       plant: dto.plant || plant,
@@ -308,7 +308,7 @@ export class InventoryController {
   async issueFg(@Body() dto: ProductIssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.productInventoryService.issueStock({
       ...dto,
-      itemType: 'FG',
+      itemType: 'FINISHED',
       transType: 'FG_OUT',
       company: dto.company || company,
       plant: dto.plant || plant,

@@ -83,7 +83,7 @@ export default function ProductIssuePage() {
   const handleSubmit = useCallback(async (formValues: IssueFormValues) => {
     setSaving(true);
     try {
-      const endpoint = formValues.itemType === "WIP" ? "/inventory/wip/issue" : "/inventory/fg/issue";
+      const endpoint = formValues.itemType === "SEMI_PRODUCT" ? "/inventory/wip/issue" : "/inventory/fg/issue";
       await api.post(endpoint, {
         itemCode: formValues.itemCode,
         warehouseCode: formValues.warehouseCode,

@@ -18,6 +18,7 @@ import {
   CheckCircle, AlertTriangle, Clock, Package,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -72,15 +73,6 @@ export default function PmResultPage() {
   }, [searchText, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const statusOptions = useMemo(() => [
-    { value: "", label: `${t("common.status", "상태")}: ${t("common.all")}` },
-    { value: "PLANNED", label: `${t("common.status")}: ${t("equipment.pmResult.planned", "예정")}` },
-    { value: "IN_PROGRESS", label: `${t("common.status")}: ${t("equipment.pmResult.inProgress", "진행중")}` },
-    { value: "COMPLETED", label: `${t("common.status")}: ${t("equipment.pmResult.completed", "완료")}` },
-    { value: "OVERDUE", label: `${t("common.status")}: ${t("equipment.pmResult.overdue", "지연")}` },
-    { value: "CANCELLED", label: `${t("common.status")}: ${t("equipment.pmResult.cancelled", "취소")}` },
-  ], [t]);
 
   const stats = useMemo(() => ({
     total: data.length,
@@ -191,7 +183,8 @@ export default function PmResultPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-40 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                <ComCodeSelect groupCode="PM_WO_STATUS" labelPrefix={t("common.status")}
+                  value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
             </div>
           } />

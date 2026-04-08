@@ -13,6 +13,7 @@ import {
   IsString, IsOptional, IsNumber, IsIn, Min, Max, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateProcessCapaDto {
   @ApiProperty({ description: '공정 코드' })
@@ -91,7 +92,7 @@ export class UpdateProcessCapaDto extends PartialType(
   OmitType(CreateProcessCapaDto, ['processCode', 'itemCode'] as const),
 ) {}
 
-export class ProcessCapaQueryDto {
+export class ProcessCapaQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '공정 코드 필터' })
   @IsOptional()
   @IsString()
@@ -107,11 +108,4 @@ export class ProcessCapaQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '조회 제한', default: 5000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 5000;
 }

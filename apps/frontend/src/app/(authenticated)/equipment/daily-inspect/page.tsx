@@ -18,6 +18,7 @@ import {
   CheckCircle, XCircle, AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, StatCard, ConfirmModal } from "@/components/ui";
+import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -72,10 +73,9 @@ export default function DailyInspectPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const resultOptions = useMemo(() => [
-    { value: "", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("common.all", "전체")}` },
-    { value: "PASS", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("equipment.dailyInspect.resultPass")}` },
-    { value: "FAIL", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("equipment.dailyInspect.resultFail")}` },
-    { value: "CONDITIONAL", label: `${t("equipment.dailyInspect.result", "점검결과")}: ${t("equipment.dailyInspect.resultConditional")}` },
+    { value: "PASS", label: t("equipment.dailyInspect.resultPass") },
+    { value: "FAIL", label: t("equipment.dailyInspect.resultFail") },
+    { value: "CONDITIONAL", label: t("equipment.dailyInspect.resultConditional") },
   ], [t]);
 
   const stats = useMemo(() => ({
@@ -211,7 +211,8 @@ export default function DailyInspectPage() {
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">
-                <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />
+                <ComCodeSelect groupCode="QUALITY_JUDGMENT" labelPrefix={t("common.result", "결과")}
+                  value={resultFilter} onChange={setResultFilter} fullWidth />
               </div>
               <div className="w-36 flex-shrink-0">
                 <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} fullWidth />

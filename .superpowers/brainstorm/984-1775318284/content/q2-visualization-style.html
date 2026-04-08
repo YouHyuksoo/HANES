@@ -1,0 +1,136 @@
+<h2>Q2. 시각화 스타일 — 워크플로우를 어떤 형태로 표현할까요?</h2>
+<p class="subtitle">업무 흐름을 보여주는 시각화 방식입니다. 클릭해서 선택해주세요.</p>
+
+<div class="cards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+
+  <!-- Option A: 수평 스텝 플로우 -->
+  <div class="card" data-choice="step-flow" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #6366f1;">A. 스텝 플로우 (Step Flow)</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">수평 스텝으로 순서를 표현, 분기는 아래로 확장</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1.5rem; font-size: 0.75rem;">
+        <div style="display:flex; align-items:center; gap: 0.5rem; flex-wrap: wrap;">
+          <div style="background:#22c55e; color:#fff; padding:6px 14px; border-radius:20px; font-weight:600;">입하</div>
+          <span style="color:#555; font-size:1.2rem;">→</span>
+          <div style="background:#3b82f6; color:#fff; padding:6px 14px; border-radius:20px; font-weight:600;">IQC</div>
+          <span style="color:#555; font-size:1.2rem;">→</span>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="background:#22c55e; color:#fff; padding:4px 10px; border-radius:12px; font-size:0.7rem;">합격 →</div>
+            <div style="background:#ef4444; color:#fff; padding:4px 10px; border-radius:12px; font-size:0.7rem;">불합격 ×</div>
+          </div>
+          <span style="color:#555; font-size:1.2rem;">→</span>
+          <div style="background:#8b5cf6; color:#fff; padding:6px 14px; border-radius:20px; font-weight:600;">입고</div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 1rem;">
+        <div class="pros"><h4>장점</h4><ul><li>한눈에 전체 흐름 파악</li><li>구현 간단</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>복잡한 분기 표현 한계</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B: 노드-엣지 다이어그램 -->
+  <div class="card" data-choice="node-diagram" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #f59e0b;">B. 노드-엣지 다이어그램 (Flowchart)</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">노드와 화살표로 연결, 분기/병합 자유롭게 표현</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1.5rem; font-size: 0.75rem;">
+        <svg viewBox="0 0 320 120" style="width:100%; height:auto;">
+          <defs>
+            <marker id="arrowB" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#555"/></marker>
+          </defs>
+          <!-- Nodes -->
+          <rect x="10" y="40" width="60" height="35" rx="8" fill="#22c55e"/>
+          <text x="40" y="62" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">입하</text>
+          <rect x="100" y="40" width="60" height="35" rx="8" fill="#3b82f6"/>
+          <text x="130" y="62" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">IQC</text>
+          <!-- Diamond -->
+          <polygon points="220,35 245,57 220,80 195,57" fill="#f59e0b"/>
+          <text x="220" y="61" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">판정</text>
+          <!-- End nodes -->
+          <rect x="265" y="15" width="50" height="28" rx="6" fill="#22c55e"/>
+          <text x="290" y="33" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">입고</text>
+          <rect x="265" y="72" width="50" height="28" rx="6" fill="#ef4444"/>
+          <text x="290" y="90" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">반품</text>
+          <!-- Arrows -->
+          <line x1="70" y1="57" x2="100" y2="57" stroke="#555" stroke-width="2" marker-end="url(#arrowB)"/>
+          <line x1="160" y1="57" x2="195" y2="57" stroke="#555" stroke-width="2" marker-end="url(#arrowB)"/>
+          <line x1="245" y1="45" x2="265" y2="30" stroke="#555" stroke-width="2" marker-end="url(#arrowB)"/>
+          <line x1="245" y1="70" x2="265" y2="85" stroke="#555" stroke-width="2" marker-end="url(#arrowB)"/>
+          <text x="252" y="28" fill="#22c55e" font-size="8">합격</text>
+          <text x="252" y="98" fill="#ef4444" font-size="8">불합격</text>
+        </svg>
+      </div>
+      <div class="pros-cons" style="margin-top: 1rem;">
+        <div class="pros"><h4>장점</h4><ul><li>분기/병합 자유로움</li><li>직관적 시각 표현</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>라이브러리 필요 (React Flow 등)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C: 칸반 레인 -->
+  <div class="card" data-choice="kanban-lane" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #10b981;">C. 칸반 레인 (Swim Lane)</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">단계별 컬럼에 현재 건수를 배치</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1rem; font-size: 0.7rem; display:flex; gap:4px;">
+        <div style="flex:1; background:#1e293b; border-radius:6px; padding:8px; text-align:center;">
+          <div style="color:#22c55e; font-weight:700; margin-bottom:4px;">입하</div>
+          <div style="background:#22c55e20; color:#22c55e; padding:4px; border-radius:4px; font-weight:700;">3건</div>
+        </div>
+        <div style="color:#555; display:flex; align-items:center;">→</div>
+        <div style="flex:1; background:#1e293b; border-radius:6px; padding:8px; text-align:center;">
+          <div style="color:#3b82f6; font-weight:700; margin-bottom:4px;">IQC</div>
+          <div style="background:#3b82f620; color:#3b82f6; padding:4px; border-radius:4px; font-weight:700;">5건</div>
+        </div>
+        <div style="color:#555; display:flex; align-items:center;">→</div>
+        <div style="flex:1; background:#1e293b; border-radius:6px; padding:8px; text-align:center;">
+          <div style="color:#8b5cf6; font-weight:700; margin-bottom:4px;">입고</div>
+          <div style="background:#8b5cf620; color:#8b5cf6; padding:4px; border-radius:4px; font-weight:700;">12건</div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 1rem;">
+        <div class="pros"><h4>장점</h4><ul><li>실시간 현황 파악</li><li>병목 식별 용이</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>흐름보다 현황 중심</li><li>분기 표현 어려움</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option D: 하이브리드 -->
+  <div class="card" data-choice="hybrid" onclick="toggleSelect(this)" style="cursor:pointer; border: 2px solid #6366f1;">
+    <div class="card-body" style="padding: 1.5rem;">
+      <h3 style="color: #6366f1;">D. 하이브리드 (추천)</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 1rem;">스텝 플로우 + 각 노드에 건수/상태 표시 + 클릭 시 해당 메뉴 이동</p>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 1.5rem; font-size: 0.75rem;">
+        <div style="display:flex; align-items:stretch; gap: 0.5rem;">
+          <div style="background:#1e293b; border-radius:8px; padding:10px; text-align:center; flex:1; border:1px solid #22c55e40; cursor:pointer;">
+            <div style="color:#22c55e; font-weight:700; font-size:0.8rem;">입하</div>
+            <div style="color:#22c55e; font-size:1.2rem; font-weight:800; margin:4px 0;">3</div>
+            <div style="color:#666; font-size:0.65rem;">대기중</div>
+          </div>
+          <div style="display:flex; align-items:center; color:#555; font-size:1.5rem;">→</div>
+          <div style="background:#1e293b; border-radius:8px; padding:10px; text-align:center; flex:1; border:1px solid #3b82f640; cursor:pointer;">
+            <div style="color:#3b82f6; font-weight:700; font-size:0.8rem;">IQC</div>
+            <div style="color:#3b82f6; font-size:1.2rem; font-weight:800; margin:4px 0;">5</div>
+            <div style="color:#666; font-size:0.65rem;">검사중</div>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:center; gap:4px;">
+            <div style="background:#22c55e30; color:#22c55e; padding:2px 8px; border-radius:8px; font-size:0.65rem;">합격→</div>
+            <div style="background:#ef444430; color:#ef4444; padding:2px 8px; border-radius:8px; font-size:0.65rem;">불합격×</div>
+          </div>
+          <div style="display:flex; align-items:center; color:#555; font-size:1.5rem;">→</div>
+          <div style="background:#1e293b; border-radius:8px; padding:10px; text-align:center; flex:1; border:1px solid #8b5cf640; cursor:pointer;">
+            <div style="color:#8b5cf6; font-weight:700; font-size:0.8rem;">입고</div>
+            <div style="color:#8b5cf6; font-size:1.2rem; font-weight:800; margin:4px 0;">12</div>
+            <div style="color:#666; font-size:0.65rem;">완료</div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top: 1rem;">
+        <div class="pros"><h4>장점</h4><ul><li>흐름 + 현황 동시 제공</li><li>노드 클릭→메뉴 이동</li><li>순수 CSS, 라이브러리 불필요</li></ul></div>
+        <div class="cons"><h4>단점</h4><ul><li>복잡한 분기는 단순화 필요</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -12,7 +12,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateScrapDto, ScrapQueryDto } from '../dto/scrap.dto';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
@@ -29,7 +29,7 @@ export class ScrapService {
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
-    private readonly numRuleService: NumRuleService,
+    private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
   ) {}
   async findAll(query: ScrapQueryDto, company?: string, plant?: string) {
@@ -131,7 +131,7 @@ export class ScrapService {
       }
 
       // 폐기 트랜잭션 생성
-      const transNo = await this.numRuleService.nextNumberInTx(queryRunner, 'STOCK_TX');
+      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
       const transaction = queryRunner.manager.create(StockTransaction, {
         transNo,
         transType: 'SCRAP',

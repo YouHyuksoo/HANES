@@ -26,6 +26,7 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 const RETURN_STATUS = ['DRAFT', 'CONFIRMED', 'COMPLETED'] as const;
 const DISPOSAL_TYPE = ['RESTOCK', 'SCRAP', 'REPAIR'] as const;
@@ -101,21 +102,8 @@ export class UpdateShipReturnDto extends PartialType(CreateShipReturnDto) {
 }
 
 /** 출하반품 목록 조회 쿼리 DTO */
-export class ShipReturnQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ShipReturnQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '검색어 (반품번호)' })
   @IsOptional()

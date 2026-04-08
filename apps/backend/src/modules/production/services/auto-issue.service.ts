@@ -28,7 +28,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 /** 자동차감 결과 인터페이스 */
 export interface AutoIssueResult {
@@ -57,7 +57,7 @@ export class AutoIssueService {
     @InjectRepository(JobOrder)
     private readonly jobOrderRepo: Repository<JobOrder>,
     private readonly sysConfigService: SysConfigService,
-    private readonly numRuleService: NumRuleService,
+    private readonly numbering: NumberingService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -242,7 +242,7 @@ export class AutoIssueService {
       remaining -= issueQty;
 
       /* (a) MatIssue 생성 */
-      const issueNo = await this.numRuleService.nextNumberInTx(qr, 'MAT_ISSUE');
+      const issueNo = await this.numbering.nextInTx(qr, 'MAT_ISSUE');
       const issueEntity = qr.manager.create(MatIssue, {
         issueNo,
         seq: 1,
@@ -258,7 +258,7 @@ export class AutoIssueService {
       await qr.manager.save(MatIssue, issueEntity);
 
       /* (b) StockTransaction 생성 */
-      const transNo = await this.numRuleService.nextNumberInTx(qr, 'STOCK_TX');
+      const transNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
       const txEntity = qr.manager.create(StockTransaction, {
         transNo,
         transType: 'MAT_OUT',

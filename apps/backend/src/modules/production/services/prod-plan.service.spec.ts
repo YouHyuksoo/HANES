@@ -103,7 +103,7 @@ describe('ProdPlanService', () => {
 
       // Act
       const result = await target.create({
-        planMonth: '2026-03', itemCode: 'PART-001', itemType: 'FG', planQty: 100,
+        planMonth: '2026-03', itemCode: 'PART-001', itemType: 'FINISHED', planQty: 100,
       } as any, 'COMP', 'PLT');
 
       // Assert
@@ -117,7 +117,7 @@ describe('ProdPlanService', () => {
       // Act & Assert
       await expect(
         target.create({
-          planMonth: '2026-03', itemCode: 'INVALID', itemType: 'FG', planQty: 100,
+          planMonth: '2026-03', itemCode: 'INVALID', itemType: 'FINISHED', planQty: 100,
         } as any),
       ).rejects.toThrow(NotFoundException);
     });
@@ -302,9 +302,9 @@ describe('ProdPlanService', () => {
     it('should return monthly summary', async () => {
       // Arrange
       const plans = [
-        { status: 'DRAFT', itemType: 'FG', planQty: 100, orderQty: 50 },
-        { status: 'CONFIRMED', itemType: 'WIP', planQty: 200, orderQty: 100 },
-        { status: 'CLOSED', itemType: 'FG', planQty: 150, orderQty: 150 },
+        { status: 'DRAFT', itemType: 'FINISHED', planQty: 100, orderQty: 50 },
+        { status: 'CONFIRMED', itemType: 'SEMI_PRODUCT', planQty: 200, orderQty: 100 },
+        { status: 'CLOSED', itemType: 'FINISHED', planQty: 150, orderQty: 150 },
       ] as ProdPlan[];
       const mockQb = {
         where: jest.fn().mockReturnThis(),
@@ -348,7 +348,7 @@ describe('ProdPlanService', () => {
       // Act
       const result = await target.bulkCreate({
         planMonth: '2026-03',
-        items: [{ itemCode: 'PART-001', itemType: 'FG', planQty: 100 }],
+        items: [{ itemCode: 'PART-001', itemType: 'FINISHED', planQty: 100 }],
       } as any);
 
       // Assert
@@ -364,7 +364,7 @@ describe('ProdPlanService', () => {
       await expect(
         target.bulkCreate({
           planMonth: '2026-03',
-          items: [{ itemCode: 'INVALID', itemType: 'FG', planQty: 100 }],
+          items: [{ itemCode: 'INVALID', itemType: 'FINISHED', planQty: 100 }],
         } as any),
       ).rejects.toThrow(BadRequestException);
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();

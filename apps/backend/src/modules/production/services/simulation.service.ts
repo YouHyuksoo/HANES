@@ -379,7 +379,7 @@ export class SimulationService {
         planNo: plan.planNo,
         itemCode: plan.itemCode,
         itemName: plan.part?.itemName ?? plan.itemCode,
-        itemType: plan.itemType ?? 'FG',
+        itemType: plan.itemType ?? 'FINISHED',
         customer: plan.customer ?? '',
         customerName: customerNameMap.get(plan.customer ?? '') ?? '',
         planQty: plan.planQty,

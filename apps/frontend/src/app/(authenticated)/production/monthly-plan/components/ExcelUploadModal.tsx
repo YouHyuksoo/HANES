@@ -61,7 +61,7 @@ export default function ExcelUploadModal({ isOpen, onClose, onUploaded, planMont
 
   const validateRow = (row: ParsedRow, idx: number): string | undefined => {
     if (!row.itemCode) return t("monthlyPlan.validation.itemCodeRequired");
-    if (!row.itemType || !["FG", "WIP"].includes(row.itemType.toUpperCase()))
+    if (!row.itemType || !["FINISHED", "SEMI_PRODUCT"].includes(row.itemType.toUpperCase()))
       return t("monthlyPlan.validation.itemTypeInvalid");
     if (!row.planQty || row.planQty <= 0) return t("monthlyPlan.validation.planQtyRequired");
     return undefined;

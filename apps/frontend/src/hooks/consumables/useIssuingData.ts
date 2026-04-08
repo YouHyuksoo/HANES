@@ -19,7 +19,7 @@ export interface IssuingLog {
   logType: 'OUT' | 'OUT_RETURN';
   qty: number;
   department: string | null;
-  lineId: string | null;
+  lineCode: string | null;
   equipCode: string | null;
   issueReason: string | null;
   returnReason: string | null;

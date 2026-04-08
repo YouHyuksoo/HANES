@@ -26,6 +26,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../../common/dto/base-query.dto';
 
 /**
  * 고객클�태 등록 DTO
@@ -103,21 +104,8 @@ export class UpdateComplaintDto extends PartialType(CreateComplaintDto) {}
 /**
  * 고객클�태 목록 조회 쿼리 DTO
  */
-export class ComplaintQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ComplaintQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상태 필터' })
   @IsOptional()

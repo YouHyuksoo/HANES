@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, RefreshCw, CalendarRange, Plus, Upload, Edit2, Trash2, Wand2 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ConfirmModal, StatCard } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
@@ -56,12 +57,6 @@ export default function MonthlyPlanPage() {
     ...comCodeStatusOptions,
   ], [t, comCodeStatusOptions]);
 
-  const itemTypeOptions = useMemo(() => [
-    { value: "", label: t("monthlyPlan.itemType") },
-    { value: "FG", label: t("inventory.stock.fg", "완제품") },
-    { value: "WIP", label: t("inventory.stock.wip", "반제품") },
-  ], [t]);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -93,7 +88,7 @@ export default function MonthlyPlanPage() {
       if (p.status === "DRAFT") s.draft++;
       else if (p.status === "CONFIRMED") s.confirmed++;
       else if (p.status === "CLOSED") s.closed++;
-      if (p.itemType === "FG") { s.fgCount++; s.fgPlanQty += p.planQty; }
+      if (p.itemType === "FINISHED") { s.fgCount++; s.fgPlanQty += p.planQty; }
       else { s.wipCount++; s.wipPlanQty += p.planQty; }
       s.totalPlanQty += p.planQty;
       s.totalOrderQty += p.orderQty;
@@ -222,7 +217,7 @@ export default function MonthlyPlanPage() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-28 flex-shrink-0">
-                  <Select options={itemTypeOptions} value={itemTypeFilter}
+                  <ComCodeSelect groupCode="ITEM_TYPE" labelPrefix={t('common.itemType', '품목유형')} value={itemTypeFilter}
                     onChange={setItemTypeFilter} fullWidth />
                 </div>
                 <div className="w-28 flex-shrink-0">

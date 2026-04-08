@@ -23,6 +23,7 @@ import { ProductPhysicalInvController } from './controllers/product-physical-inv
 import { WarehouseLocationController } from './controllers/warehouse-location.controller';
 import { ProductHoldController } from './controllers/product-hold.controller';
 import { InventoryService } from './services/inventory.service';
+import { InventoryQueryService } from './services/inventory-query.service';
 import { WarehouseService } from './services/warehouse.service';
 import { ProductInventoryService } from './services/product-inventory.service';
 import { ProductPhysicalInvService } from './services/product-physical-inv.service';
@@ -38,6 +39,7 @@ import { User } from '../../entities/user.entity';
   providers: [
     JwtAuthGuard,
     InventoryService,
+    InventoryQueryService,
     WarehouseService,
     ProductInventoryService,
     ProductPhysicalInvService,
@@ -45,6 +47,6 @@ import { User } from '../../entities/user.entity';
     ProductHoldService,
     { provide: STOCK_MANAGER, useExisting: ProductInventoryService },
   ],
-  exports: [InventoryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, STOCK_MANAGER],
+  exports: [InventoryService, InventoryQueryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, STOCK_MANAGER],
 })
 export class InventoryModule {}

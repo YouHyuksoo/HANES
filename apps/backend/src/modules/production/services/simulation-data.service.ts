@@ -309,7 +309,7 @@ export class SimulationDataService {
         .addSelect('SUM(s.availableQty)', 'totalAvail')
         .where('s.company = :company', { company })
         .andWhere('s.plant = :plant', { plant })
-        .andWhere('s.itemType = :type', { type: 'WIP' })
+        .andWhere('s.itemType = :type', { type: 'SEMI_PRODUCT' })
         .andWhere('s.status = :status', { status: 'NORMAL' })
         .andWhere('s.itemCode IN (:...codes)', { codes: itemCodes })
         .groupBy('s.itemCode')

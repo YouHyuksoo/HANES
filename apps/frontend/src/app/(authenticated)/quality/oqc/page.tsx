@@ -20,6 +20,7 @@ import {
   XCircle, FileText, Calendar, FileSearch, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import OqcRequestModal from "./components/OqcRequestModal";
@@ -79,13 +80,6 @@ export default function OqcPage() {
   }, [searchText, statusFilter, customerFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.allStatus") },
-    { value: "PENDING", label: t("quality.oqc.statusPending") },
-    { value: "PASS", label: t("quality.oqc.statusPass") },
-    { value: "FAIL", label: t("quality.oqc.statusFail") },
-  ], [t]);
 
   const handleRowClick = useCallback((row: OqcRequest) => {
     setSelectedRequest(row);
@@ -216,7 +210,7 @@ export default function OqcPage() {
                 <span className="text-text-muted">~</span>
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" />
               </div>
-              <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} placeholder={t("common.status")} />
+              <ComCodeSelect groupCode="OQC_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
             </div>
           }
         />

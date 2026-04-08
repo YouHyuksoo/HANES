@@ -9,10 +9,11 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
-import { Button, Input, Select } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface Partner {
@@ -42,11 +43,6 @@ export type { Partner };
 export default function PartnerFormPanel({ editingPartner, onClose, onSave, animate = true }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingPartner;
-
-  const partnerTypeOptions = useMemo(() => [
-    { value: "SUPPLIER", label: t("master.partner.supplier") },
-    { value: "CUSTOMER", label: t("master.partner.customer") },
-  ], [t]);
 
   const [form, setForm] = useState({
     partnerCode: editingPartner?.partnerCode || "",
@@ -135,7 +131,8 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
             <Input label={t("master.partner.partnerCode")} placeholder="101001"
               value={form.partnerCode} onChange={e => setField("partnerCode", e.target.value)}
               disabled={isEdit} fullWidth />
-            <Select label={t("master.partner.partnerType")} options={partnerTypeOptions}
+            <ComCodeSelect groupCode="PARTNER_TYPE" includeAll={false}
+              label={t("master.partner.partnerType")}
               value={form.partnerType} onChange={v => setField("partnerType", v)} fullWidth />
             <div className="col-span-2">
               <Input label={t("master.partner.partnerName")} placeholder={t("master.partner.partnerName")}

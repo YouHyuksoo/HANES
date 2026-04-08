@@ -19,7 +19,7 @@ interface ReceiveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  defaultPartType?: "WIP" | "FG";
+  defaultPartType?: "SEMI_PRODUCT" | "FINISHED";
 }
 
 import api from "@/services/api";
@@ -37,24 +37,25 @@ export default function ReceiveModal({
   isOpen,
   onClose,
   onSuccess,
-  defaultPartType = "WIP",
+  defaultPartType = "SEMI_PRODUCT",
 }: ReceiveModalProps) {
   const { t } = useTranslation();
 
-  const [modalPartType, setModalPartType] = useState<"WIP" | "FG">(defaultPartType);
+  const [modalPartType, setModalPartType] = useState<"SEMI_PRODUCT" | "FINISHED">(defaultPartType);
   const [form, setForm] = useState(INITIAL_FORM);
   const [saving, setSaving] = useState(false);
 
   const { options: partOptions } = usePartOptions(modalPartType);
-  const { options: warehouseOptions } = useWarehouseOptions(modalPartType);
+  const warehouseType = modalPartType === 'SEMI_PRODUCT' ? 'WIP' : 'FG';
+  const { options: warehouseOptions } = useWarehouseOptions(warehouseType);
 
   const tabs = [
-    { key: "WIP" as const, label: t("productMgmt.receive.tabWip") },
-    { key: "FG" as const, label: t("productMgmt.receive.tabFg") },
+    { key: "SEMI_PRODUCT" as const, label: t("productMgmt.receive.tabWip") },
+    { key: "FINISHED" as const, label: t("productMgmt.receive.tabFg") },
   ];
 
   /** 품목유형 전환 — partId 리셋 */
-  const handlePartTypeChange = useCallback((type: "WIP" | "FG") => {
+  const handlePartTypeChange = useCallback((type: "SEMI_PRODUCT" | "FINISHED") => {
     setModalPartType(type);
     setForm((prev) => ({ ...prev, itemCode: "" }));
   }, []);
@@ -65,13 +66,13 @@ export default function ReceiveModal({
     setSaving(true);
     try {
       const endpoint =
-        modalPartType === "WIP" ? "/inventory/wip/receive" : "/inventory/fg/receive";
+        modalPartType === "SEMI_PRODUCT" ? "/inventory/wip/receive" : "/inventory/fg/receive";
       await api.post(endpoint, {
         itemCode: form.itemCode,
         warehouseCode: form.warehouseCode,
         qty: form.qty,
         itemType: modalPartType,
-        transType: modalPartType === "WIP" ? "WIP_IN" : "FG_IN",
+        transType: modalPartType === "SEMI_PRODUCT" ? "WIP_IN" : "FG_IN",
         orderNo: form.orderNo || undefined,
         processCode: form.processCode || undefined,
         remark: form.remark || undefined,

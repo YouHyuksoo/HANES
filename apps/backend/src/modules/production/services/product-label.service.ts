@@ -14,14 +14,14 @@ import { ProdResult } from '../../../entities/prod-result.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { CreatePrdLabelsDto, PrdLabelResultDto } from '../dto/product-label.dto';
 
 @Injectable()
 export class ProductLabelService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
     @InjectRepository(ProdResult)
     private readonly prodResultRepo: Repository<ProdResult>,
     @InjectRepository(PartMaster)
@@ -73,7 +73,7 @@ export class ProductLabelService {
       const results: PrdLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
-        const prdUid = await this.seqGenerator.nextPrdUid(queryRunner);
+        const prdUid = await this.numbering.nextPrdUid(queryRunner);
         results.push({
           prdUid,
           itemCode,

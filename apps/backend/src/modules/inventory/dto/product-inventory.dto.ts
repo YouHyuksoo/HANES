@@ -9,6 +9,7 @@
  */
 import { IsString, IsOptional, IsNumber, IsIn, IsDate, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /** 제품 입고 DTO */
 export class ProductReceiveStockDto {
@@ -19,7 +20,7 @@ export class ProductReceiveStockDto {
   itemCode: string;
 
   @IsOptional()
-  @IsIn(['WIP', 'FG'])
+  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
   itemType?: string;
 
   @IsOptional()
@@ -80,7 +81,7 @@ export class ProductIssueStockDto {
   itemCode: string;
 
   @IsOptional()
-  @IsIn(['WIP', 'FG'])
+  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
   itemType?: string;
 
   @IsOptional()
@@ -137,7 +138,7 @@ export class ProductIssueStockDto {
 }
 
 /** 제품 수불 조회 DTO */
-export class ProductTransactionQueryDto {
+export class ProductTransactionQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   warehouseId?: string;
@@ -176,9 +177,6 @@ export class ProductTransactionQueryDto {
   @IsDate()
   dateTo?: Date;
 
-  @IsOptional()
-  @IsNumber()
-  limit?: number;
 
   @IsOptional()
   @IsNumber()
@@ -186,7 +184,7 @@ export class ProductTransactionQueryDto {
 }
 
 /** 제품 재고 조회 DTO */
-export class ProductStockQueryDto {
+export class ProductStockQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   warehouseId?: string;

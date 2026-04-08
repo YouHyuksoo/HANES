@@ -37,6 +37,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CONSUMABLE_CATEGORY_VALUES, CONSUMABLE_STATUS_VALUES, CONSUMABLE_LOG_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /**
  * 소모품마스터 생성 DTO
@@ -137,21 +138,8 @@ export class EquipUpdateConsumableDto extends PartialType(EquipCreateConsumableD
 /**
  * 소모품마스터 목록 조회 쿼리 DTO
  */
-export class ConsumableQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ConsumableQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '카테고리', enum: CONSUMABLE_CATEGORY_VALUES })
   @IsOptional()
@@ -310,21 +298,8 @@ export class SetRepairDto {
 /**
  * 소모품 로그 조회 쿼리 DTO
  */
-export class ConsumableLogQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ConsumableLogQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50, minimum: 1, maximum: 10000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '소모품 ID' })
   @IsOptional()
@@ -351,7 +326,7 @@ export class ConsumableLogQueryDto {
 /**
  * 예방보전 캘린더 조회 쿼리 DTO
  */
-export class PmCalendarQueryDto {
+export class PmCalendarQueryDto extends PaginationQueryDto {
   @ApiProperty({ description: '조회 연도', example: 2026 })
   @Type(() => Number)
   @IsInt()
@@ -374,7 +349,7 @@ export class PmCalendarQueryDto {
 /**
  * 예방보전 캘린더 일별 상세 쿼리 DTO
  */
-export class PmDayScheduleQueryDto {
+export class PmDayScheduleQueryDto extends PaginationQueryDto {
   @ApiProperty({ description: '조회 날짜 (YYYY-MM-DD)', example: '2026-02-23' })
   @IsString()
   date: string;

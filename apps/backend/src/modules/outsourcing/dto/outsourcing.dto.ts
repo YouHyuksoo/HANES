@@ -16,6 +16,7 @@ import {
   IsEmail,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 // ============================================================================
 // 외주처 마스터 DTOs
@@ -86,21 +87,8 @@ export class UpdateVendorDto extends PartialType(CreateVendorDto) {
   useYn?: string;
 }
 
-export class VendorQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class VendorQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '업체 유형' })
   @IsOptional()
@@ -169,21 +157,8 @@ export class UpdateSubconOrderDto extends PartialType(CreateSubconOrderDto) {
   status?: string;
 }
 
-export class SubconOrderQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class SubconOrderQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '외주처 ID' })
   @IsOptional()

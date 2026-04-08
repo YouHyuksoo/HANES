@@ -1,0 +1,32 @@
+<h2>Q6. 워크플로우 정의 방식 — 흐름 구조를 어디에 관리할까요?</h2>
+<p class="subtitle">7개 워크플로우의 단계, 순서, 분기, 연결 메뉴 경로를 정의하는 방식입니다.</p>
+
+<div class="options">
+  <div class="option" data-choice="frontend-config" onclick="toggleSelect(this)" style="border: 2px solid #6366f1;">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>프론트엔드 설정 파일 (추천)</h3>
+      <p><code>config/workflowConfig.ts</code> 에 JSON 형태로 정의. menuConfig.ts와 같은 패턴.<br/>
+      각 워크플로우의 단계(노드), 연결(엣지), 분기 조건, 메뉴 경로를 코드로 관리.<br/>
+      <strong>장점:</strong> 빠른 구현, 타입 안전, 빌드 타임 검증. <strong>단점:</strong> 변경 시 배포 필요.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="db-config" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>DB 테이블 관리</h3>
+      <p>WORKFLOW_MASTERS, WORKFLOW_STEPS 테이블에 저장. 관리자 화면에서 편집 가능.<br/>
+      <strong>장점:</strong> 런타임 변경 가능, 관리자가 직접 수정. <strong>단점:</strong> 구현 복잡, 워크플로우 편집기 필요.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="mixed" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>혼합 (설정+DB)</h3>
+      <p>흐름 구조는 프론트엔드 설정 파일, 건수 데이터만 DB/API에서 조회.<br/>
+      워크플로우 자체는 거의 변하지 않으므로 합리적. 나중에 DB로 마이그레이션 가능.</p>
+    </div>
+  </div>
+</div>

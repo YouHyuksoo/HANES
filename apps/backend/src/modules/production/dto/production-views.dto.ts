@@ -20,25 +20,13 @@ import {
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /**
  * 작업지시 진행현황 조회 DTO
  */
-export class ProgressQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ProgressQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '상태 필터 (WAITING, RUNNING, PAUSED, DONE, CANCELED)' })
   @IsOptional()
@@ -69,21 +57,8 @@ export class ProgressQueryDto {
 /**
  * 샘플검사이력 조회 DTO
  */
-export class SampleInspectQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class SampleInspectQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '합격 여부 (Y/N)' })
   @IsOptional()
@@ -110,21 +85,8 @@ export class SampleInspectQueryDto {
 /**
  * 포장실적 조회 DTO
  */
-export class PackResultQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class PackResultQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '포장일 시작' })
   @IsOptional()
@@ -145,26 +107,13 @@ export class PackResultQueryDto {
 /**
  * 반제품/제품재고 조회 DTO
  */
-export class WipStockQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class WipStockQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
-  @ApiPropertyOptional({ description: '품목 유형 (WIP/FG)', enum: ['WIP', 'FG'] })
+  @ApiPropertyOptional({ description: '품목 유형 (SEMI_PRODUCT/FINISHED)', enum: ['SEMI_PRODUCT', 'FINISHED'] })
   @IsOptional()
   @IsString()
-  @IsIn(['WIP', 'FG'])
+  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
   itemType?: string;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드, 품목명)' })

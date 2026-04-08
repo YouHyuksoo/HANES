@@ -1,0 +1,65 @@
+<h2>Q1. 워크플로우 범위 — 어떤 업무 흐름을 포함할까요?</h2>
+<p class="subtitle">현재 HANES MES 메뉴 구조에서 식별된 주요 업무 프로세스입니다. 포함할 워크플로우를 선택해주세요.</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="mat" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>자재관리 (Material)</h3>
+      <p>입하 → 입고라벨 → IQC검사(합격/불합격) → 입고(입고/취소) → 출고요청 → 출고</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="prod" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>생산관리 (Production)</h3>
+      <p>월간계획 → 시뮬레이션 → 작업지시 → 생산실적(수동/설비) → 공정검사 → 완제품입고</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="quality" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>품질관리 (Quality)</h3>
+      <p>IQC → 공정검사 → OQC → 불량등록 → 재작업 → 재검사 → CAPA</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="ship" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>출하관리 (Shipping)</h3>
+      <p>포장실적 → 포장 → 파렛트 → OQC → 출하확정 → 출하이력</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="equip" onclick="toggleSelect(this)">
+    <div class="letter">5</div>
+    <div class="content">
+      <h3>설비관리 (Equipment)</h3>
+      <p>PM계획 → PM작업지시 → PM실행 → 일상점검 → 정기점검 → 점검이력</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="outsource" onclick="toggleSelect(this)">
+    <div class="letter">6</div>
+    <div class="content">
+      <h3>외주관리 (Outsourcing)</h3>
+      <p>외주업체 → 외주발주 → 외주입고</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="cons" onclick="toggleSelect(this)">
+    <div class="letter">7</div>
+    <div class="content">
+      <h3>소모품관리 (Consumables)</h3>
+      <p>소모품마스터 → 라벨 → 입고 → 출고 → 재고 → 수명 → 장착</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; padding: 1.5rem; background: rgba(99,102,241,0.08); border-radius: 12px; border-left: 4px solid #6366f1;">
+  <h3 style="margin: 0 0 0.5rem 0; color: #6366f1;">Tip</h3>
+  <p style="margin: 0; color: #888;">복수 선택 가능합니다. 1차로 핵심 워크플로우만 구현하고, 나머지는 추후 확장할 수도 있습니다.</p>
+</div>

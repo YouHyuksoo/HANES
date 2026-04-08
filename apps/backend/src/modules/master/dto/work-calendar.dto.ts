@@ -15,6 +15,7 @@ import {
   IsArray, ValidateNested, Min, Max, MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 // ─── 교대 패턴 ───
 
@@ -80,14 +81,8 @@ export class CreateWorkCalendarDto {
 
 export class UpdateWorkCalendarDto extends PartialType(CreateWorkCalendarDto) {}
 
-export class WorkCalendarQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
-  page?: number = 1;
+export class WorkCalendarQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '캘린더 연도' })
   @IsOptional() @IsString()

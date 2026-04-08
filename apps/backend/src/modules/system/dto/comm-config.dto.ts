@@ -20,6 +20,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 import {
   COMM_TYPE_VALUES,
   BAUD_RATE_VALUES,
@@ -198,21 +199,8 @@ export class UpdateCommConfigDto {
 }
 
 /** 통신설정 목록 조회 DTO */
-export class CommConfigQueryDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class CommConfigQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '통신 유형 필터', enum: COMM_TYPE_VALUES })
   @IsOptional()

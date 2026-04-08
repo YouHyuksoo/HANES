@@ -42,8 +42,7 @@ import { ProductInventoryService } from '../../inventory/services/product-invent
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
-import { NumRuleService } from '../../num-rule/num-rule.service';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
@@ -76,8 +75,7 @@ export class ProdResultService {
     private readonly dataSource: DataSource,
     private readonly autoIssueService: AutoIssueService,
     private readonly productInventoryService: ProductInventoryService,
-    private readonly numRuleService: NumRuleService,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
     @InjectRepository(ShiftPattern)
     private readonly shiftPatternRepo: Repository<ShiftPattern>,
@@ -390,7 +388,7 @@ export class ProdResultService {
 
     let savedResultNo: string;
     try {
-      const resultNo = await this.seqGenerator.getNo('PROD_RESULT', queryRunner);
+      const resultNo = await this.numbering.next('PROD_RESULT', queryRunner);
       const prodResult = queryRunner.manager.create(ProdResult, {
         resultNo,
         orderNo: dto.orderNo,
@@ -426,7 +424,7 @@ export class ProdResultService {
       if (fgTiming === 'ON_PRODUCTION') {
         const fgJobOrder = await queryRunner.manager.findOne(JobOrder, { where: { orderNo: dto.orderNo } });
         if (fgJobOrder) {
-          const fgBarcode = await this.seqGenerator.nextFgBarcode(queryRunner);
+          const fgBarcode = await this.numbering.nextFgBarcode(queryRunner);
           await queryRunner.manager.save(FgLabel, {
             fgBarcode,
             itemCode: fgJobOrder.itemCode,
@@ -667,7 +665,7 @@ export class ProdResultService {
         });
 
         if (jobOrder?.itemCode) {
-          const itemType = jobOrder.part?.itemType === 'FG' ? 'FG' : 'WIP';
+          const itemType = jobOrder.part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
           await this.productInventoryService.receiveStockInTx(queryRunner, {
             warehouseId: 'WIP_MAIN',
             itemCode: jobOrder.itemCode,
@@ -849,7 +847,7 @@ export class ProdResultService {
         }
 
         // (d) 역방향 StockTransaction 생성
-        const reverseTransNo = await this.numRuleService.nextNumberInTx(qr, 'STOCK_TX');
+        const reverseTransNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
         const reverseTx = qr.manager.create(StockTransaction, {
           transNo: reverseTransNo,
           transType: 'MAT_IN',

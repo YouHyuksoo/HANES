@@ -12,6 +12,7 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Modal, Select } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 
 interface Props {
@@ -32,16 +33,6 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
   const [seq, setSeq] = useState(String(currentMaxSeq + 1));
   const [saving, setSaving] = useState(false);
 
-  const typeOptions = useMemo(() => [
-    { value: "DAILY", label: t("master.equipInspect.typeDaily") },
-    { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
-  ], [t]);
-
-  const cycleOptions = useMemo(() => [
-    { value: "DAILY", label: t("master.equipInspect.cycleDaily") },
-    { value: "WEEKLY", label: t("master.equipInspect.cycleWeekly") },
-    { value: "MONTHLY", label: t("master.equipInspect.cycleMonthly") },
-  ], [t]);
 
   const resetForm = () => {
     setItemName("");
@@ -89,9 +80,9 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
           onChange={e => setItemName(e.target.value)} placeholder={t("master.equipInspect.itemNamePlaceholder", "점검항목명 입력")} fullWidth />
 
         <div className="grid grid-cols-3 gap-4">
-          <Select label={t("master.equipInspect.inspectType")} options={typeOptions}
+          <ComCodeSelect label={t("master.equipInspect.inspectType")} groupCode="INSPECT_TYPE" includeAll={false}
             value={inspectType} onChange={v => setInspectType(v as "DAILY" | "PERIODIC")} />
-          <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
+          <ComCodeSelect label={t("master.equipInspect.cycle")} groupCode="PM_CYCLE_TYPE" includeAll={false}
             value={cycle} onChange={setCycle} />
           <Input label={t("master.equipInspect.seq")} type="number" value={seq}
             onChange={e => setSeq(e.target.value)} fullWidth />

@@ -15,6 +15,7 @@ import {
   IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 // ============================================================================
 // 소모품 마스터 DTOs
@@ -84,21 +85,8 @@ export class UpdateConsumableDto extends PartialType(CreateConsumableDto) {
   useYn?: string;
 }
 
-export class ConsumableQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ConsumableQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '카테고리 필터' })
   @IsOptional()
@@ -177,10 +165,10 @@ export class CreateConsumableLogDto {
   @IsString()
   department?: string;
 
-  @ApiPropertyOptional({ description: '라인 ID' })
+  @ApiPropertyOptional({ description: '라인 코드' })
   @IsOptional()
   @IsString()
-  lineId?: string;
+  lineCode?: string;
 
   @ApiPropertyOptional({ description: '설비 ID' })
   @IsOptional()
@@ -199,21 +187,8 @@ export class CreateConsumableLogDto {
   returnReason?: string;
 }
 
-export class ConsumableLogQueryDto {
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export class ConsumableLogQueryDto extends PaginationQueryDto {
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 
   @ApiPropertyOptional({ description: '소모품 ID' })
   @IsOptional()

@@ -15,6 +15,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export class CreateLabelTemplateDto {
   @ApiProperty({ description: '템플릿 이름', maxLength: 100 })
@@ -60,7 +61,7 @@ export class CreateLabelTemplateDto {
 
 export class UpdateLabelTemplateDto extends PartialType(CreateLabelTemplateDto) {}
 
-export class LabelTemplateQueryDto {
+export class LabelTemplateQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '카테고리 필터', enum: ['equip', 'jig', 'worker', 'part', 'mat_lot'] })
   @IsOptional()
   @IsString()
@@ -72,18 +73,5 @@ export class LabelTemplateQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '페이지 번호', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
 
-  @ApiPropertyOptional({ description: '페이지 크기', default: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  limit?: number = 50;
 }

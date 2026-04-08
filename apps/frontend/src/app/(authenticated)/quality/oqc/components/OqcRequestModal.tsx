@@ -47,7 +47,7 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
   /** 품목 목록 조회 */
   const fetchParts = useCallback(async () => {
     try {
-      const res = await api.get("/master/parts", { params: { limit: "5000", itemType: "FG" } });
+      const res = await api.get("/master/parts", { params: { limit: "5000", itemType: "FINISHED" } });
       const items = res.data?.data ?? [];
       setParts(items.map((p: any) => ({ value: p.id, label: `${p.itemCode} - ${p.itemName}` })));
     } catch { setParts([]); }

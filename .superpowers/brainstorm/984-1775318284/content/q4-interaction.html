@@ -1,0 +1,31 @@
+<h2>Q4. 노드 클릭 시 동작 — 워크플로우 노드를 클릭하면?</h2>
+<p class="subtitle">각 단계(노드)를 클릭했을 때 어떤 동작을 할지 선택해주세요.</p>
+
+<div class="options">
+  <div class="option" data-choice="direct-nav" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>바로 해당 메뉴 페이지로 이동</h3>
+      <p>예: "IQC" 노드 클릭 → <code>/material/iqc</code> 페이지로 즉시 이동<br/>
+      가장 단순하고 빠른 접근. 워크플로우 페이지를 업무 시작점(런치패드)으로 활용.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="detail-modal" onclick="toggleSelect(this)" style="border: 2px solid #6366f1;">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>상세 팝업 → 메뉴 이동 (추천)</h3>
+      <p>노드 클릭 시 간단한 팝오버에 <strong>현재 건수, 최근 처리 이력, "이동" 버튼</strong>을 표시.<br/>
+      맥락 확인 후 이동할지 결정할 수 있어서, 불필요한 페이지 전환을 줄임.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="expand-detail" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>카드 확장 → 전체 플로우 상세</h3>
+      <p>카드 클릭 시 전체 화면으로 확장되어 상세 플로우(분기 포함)와 단계별 현황을 표시.<br/>
+      각 노드에서 다시 해당 메뉴로 이동 가능. 2단계 구조.</p>
+    </div>
+  </div>
+</div>

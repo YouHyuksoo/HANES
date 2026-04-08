@@ -12,9 +12,13 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { LineSelect, ComCodeSelect, WorkerSelect } from "@/components/shared";
+import PartSearchModal from "@/components/shared/PartSearchModal";
+import type { PartItem } from "@/components/shared/PartSearchModal";
+import OrderSearchModal from "@/components/shared/OrderSearchModal";
+import type { OrderItem } from "@/components/shared/OrderSearchModal";
 import api from "@/services/api";
 
 interface FaiFormData {
@@ -60,6 +64,8 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
   const isEdit = !!editData;
   const [form, setForm] = useState<FaiFormData>(INIT);
   const [saving, setSaving] = useState(false);
+  const [partModalOpen, setPartModalOpen] = useState(false);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
 
   useEffect(() => {
     if (editData) {
@@ -137,8 +143,20 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
         <Input label={t("quality.fai.triggerRef")} value={form.triggerRef}
           onChange={(e) => setField("triggerRef", e.target.value)} fullWidth />
 
-        <Input label={t("common.code") + " *"} value={form.itemCode}
-          onChange={(e) => setField("itemCode", e.target.value)} fullWidth />
+        <div>
+          <label className="block text-xs font-medium text-text mb-1">
+            {t("common.code") + " *"}
+          </label>
+          <div className="flex gap-1">
+            <Input value={form.itemCode} readOnly fullWidth
+              placeholder={t("common.partSearchPlaceholder", "품목 검색...")}
+              onClick={() => setPartModalOpen(true)}
+              className="cursor-pointer" />
+            <Button size="sm" variant="secondary" onClick={() => setPartModalOpen(true)}>
+              <Search className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
 
         <Input label={t("quality.fai.sampleQty")} type="number" value={form.sampleQty}
           onChange={(e) => setField("sampleQty", e.target.value)} fullWidth />
@@ -146,8 +164,20 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
         <WorkerSelect label={t("quality.fai.inspectorCode")} value={form.inspectorCode}
           onChange={(v) => setField("inspectorCode", v)} fullWidth />
 
-        <Input label={t("quality.fai.orderNo", "작업지시")} value={form.orderNo}
-          onChange={(e) => setField("orderNo", e.target.value)} fullWidth />
+        <div>
+          <label className="block text-xs font-medium text-text mb-1">
+            {t("quality.fai.orderNo", "작업지시")}
+          </label>
+          <div className="flex gap-1">
+            <Input value={form.orderNo} readOnly fullWidth
+              placeholder={t("quality.fai.orderSearchPlaceholder", "작업지시 검색...")}
+              onClick={() => setOrderModalOpen(true)}
+              className="cursor-pointer" />
+            <Button size="sm" variant="secondary" onClick={() => setOrderModalOpen(true)}>
+              <Search className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
 
         <LineSelect label={t("production.line", "라인")} value={form.lineCode}
           onChange={(v) => setField("lineCode", v)} fullWidth />
@@ -155,6 +185,16 @@ export default function FaiFormPanel({ editData, onClose, onSave }: Props) {
         <Input label={t("common.remark")} value={form.remark}
           onChange={(e) => setField("remark", e.target.value)} fullWidth />
       </div>
+      <PartSearchModal
+        isOpen={partModalOpen}
+        onClose={() => setPartModalOpen(false)}
+        onSelect={(part: PartItem) => setField("itemCode", part.itemCode)}
+      />
+      <OrderSearchModal
+        isOpen={orderModalOpen}
+        onClose={() => setOrderModalOpen(false)}
+        onSelect={(order: OrderItem) => setField("orderNo", order.orderNo)}
+      />
     </div>
   );
 }

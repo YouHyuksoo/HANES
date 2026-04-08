@@ -3317,7 +3317,9 @@
       "statsInspecting": "Đang kiểm tra",
       "statsPass": "Đạt",
       "statsFail": "Không đạt",
-      "orderNo": "Lệnh sản xuất"
+      "orderNo": "Lệnh sản xuất",
+      "orderSearch": "Tìm lệnh sản xuất",
+      "orderSearchPlaceholder": "Tìm số lệnh hoặc mã sản phẩm..."
     },
     "ppap": {
       "title": "Quản lý PPAP",

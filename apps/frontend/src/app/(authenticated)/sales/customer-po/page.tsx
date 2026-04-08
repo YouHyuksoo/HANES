@@ -18,6 +18,7 @@ import {
   FileText, Clock, CheckCircle, Factory, Truck,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ConfirmModal } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import CustomerPoFormPanel, { type CustomerOrder } from "./components/CustomerPoFormPanel";
 import api from "@/services/api";
@@ -43,14 +44,6 @@ export default function CustomerPoPage() {
   const [deleteTarget, setDeleteTarget] = useState<CustomerOrder | null>(null);
   const panelAnimateRef = useRef(true);
 
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.allStatus") },
-    { value: "RECEIVED", label: t("shipping.customerPo.statusReceived") },
-    { value: "CONFIRMED", label: t("shipping.customerPo.statusConfirmed") },
-    { value: "IN_PRODUCTION", label: t("shipping.customerPo.statusInProduction") },
-    { value: "SHIPPED", label: t("shipping.customerPo.statusShipped") },
-    { value: "CLOSED", label: t("shipping.customerPo.statusClosed") },
-  ], [t]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -125,11 +118,10 @@ export default function CustomerPoPage() {
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;
-        const label = statusOptions.find((o) => o.value === s)?.label || s;
-        return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{label}</span>;
+        return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{s}</span>;
       },
     },
-  ], [t, statusOptions, isPanelOpen]);
+  ], [t, isPanelOpen]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -175,7 +167,7 @@ export default function CustomerPoPage() {
                     onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                  <ComCodeSelect groupCode="SHIPMENT_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
                 </div>
               </div>
             }

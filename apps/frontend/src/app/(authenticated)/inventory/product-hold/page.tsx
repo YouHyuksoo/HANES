@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from "@/components/ui";
 import { ComCodeBadge } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -72,17 +73,6 @@ export default function ProductHoldPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("common.status") },
-    { value: "HOLD", label: "HOLD" },
-    { value: "NORMAL", label: "NORMAL" },
-  ], [t]);
-
-  const typeOptions = useMemo(() => [
-    { value: "", label: t("productHold.partType") },
-    { value: "WIP", label: "WIP" },
-    { value: "FG", label: "FG" },
-  ], [t]);
 
   const stats = useMemo(() => ({
     total: data.length,
@@ -227,10 +217,10 @@ export default function ProductHoldPage() {
                 />
               </div>
               <div className="w-28 flex-shrink-0">
-                <Select options={typeOptions} value={typeFilter} onChange={setTypeFilter} fullWidth />
+                <ComCodeSelect groupCode="ITEM_TYPE" labelPrefix={t('productHold.partType')} value={typeFilter} onChange={setTypeFilter} fullWidth />
               </div>
               <div className="w-32 flex-shrink-0">
-                <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                <ComCodeSelect groupCode="PRODUCT_HOLD_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
             </div>
           }

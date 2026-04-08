@@ -40,8 +40,8 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
   ], [t, customerRawOptions]);
 
   const itemTypeOptions = useMemo(() => [
-    { value: "FG", label: t("inventory.stock.fg", "완제품") },
-    { value: "WIP", label: t("inventory.stock.wip", "반제품") },
+    { value: "FINISHED", label: t("inventory.stock.fg", "완제품") },
+    { value: "SEMI_PRODUCT", label: t("inventory.stock.wip", "반제품") },
   ], [t]);
 
   const [lineOptions, setLineOptions] = useState<{ value: string; label: string }[]>([]);
@@ -60,7 +60,7 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
   const [form, setForm] = useState(() => ({
     planMonth: editingPlan?.planMonth || defaultMonth,
     itemCode: editingPlan?.itemCode || "",
-    itemType: editingPlan?.itemType || "FG",
+    itemType: editingPlan?.itemType || "FINISHED",
     planQty: editingPlan?.planQty ?? 0,
     customer: editingPlan?.customer || "",
     lineCode: editingPlan?.lineCode || "",
@@ -74,7 +74,7 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
     setForm({
       planMonth: editingPlan?.planMonth || defaultMonth,
       itemCode: editingPlan?.itemCode || "",
-      itemType: editingPlan?.itemType || "FG",
+      itemType: editingPlan?.itemType || "FINISHED",
       planQty: editingPlan?.planQty ?? 0,
       customer: editingPlan?.customer || "",
       lineCode: editingPlan?.lineCode || "",

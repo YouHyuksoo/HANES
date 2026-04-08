@@ -16,7 +16,7 @@ import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import {
   CreateConLabelsDto,
   ConfirmConReceivingDto,
@@ -28,7 +28,7 @@ import {
 export class ConsumableLabelService {
   constructor(
     private readonly dataSource: DataSource,
-    private readonly seqGenerator: SeqGeneratorService,
+    private readonly numbering: NumberingService,
     @InjectRepository(ConsumableMaster)
     private readonly masterRepo: Repository<ConsumableMaster>,
     @InjectRepository(ConsumableStock)
@@ -91,7 +91,7 @@ export class ConsumableLabelService {
       const results: ConLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
-        const conUid = await this.seqGenerator.nextConUid(queryRunner);
+        const conUid = await this.numbering.nextConUid(queryRunner);
         const stock = queryRunner.manager.create(ConsumableStock, {
           conUid,
           consumableCode: dto.consumableCode,

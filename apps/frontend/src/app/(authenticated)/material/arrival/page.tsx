@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, PackageCheck, Package, AlertTriangle, Hash, Search, RefreshCw, Plus } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, StatCard } from '@/components/ui';
+import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import api from '@/services/api';
 import PoArrivalModal from './components/PoArrivalModal';
 import ManualArrivalModal from './components/ManualArrivalModal';
@@ -40,12 +41,6 @@ export default function ArrivalPage() {
   const [isPoModalOpen, setIsPoModalOpen] = useState(false);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<ArrivalRecord | null>(null);
-
-  const statusOptions = [
-    { value: '', label: t('common.all') },
-    { value: 'DONE', label: t('material.arrival.status.done') },
-    { value: 'CANCELED', label: t('material.arrival.status.canceled') },
-  ];
 
   /** 이력 조회 */
   const fetchRecords = useCallback(async () => {
@@ -137,7 +132,8 @@ export default function ArrivalPage() {
                   />
                 </div>
                 <div className="w-40 flex-shrink-0">
-                  <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                  <ComCodeSelect groupCode="RECEIVE_STATUS" labelPrefix={t('common.status')}
+                    value={statusFilter} onChange={setStatusFilter} fullWidth />
                 </div>
               </div>
             }

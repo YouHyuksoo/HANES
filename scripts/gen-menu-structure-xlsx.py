@@ -1,7 +1,7 @@
 """
 HANES MES 메뉴구성도 Excel 생성
 실행: python scripts/gen-menu-structure-xlsx.py
-출력: docs/deliverables/all/메뉴구성도_YYYY-MM-DD.xlsx
+출력: exports/all/메뉴구성도_YYYY-MM-DD.xlsx
 """
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side

@@ -236,6 +236,6 @@ for ci in range(3,10):
     ws4.cell(row=tr, column=ci, value=f'=SUM({get_column_letter(ci)}2:{get_column_letter(ci)}{tr-1})').font=Font(bold=True)
     ws4.cell(row=tr, column=ci).alignment=ct
 
-out='docs/deliverables/system/추적표_2026-03-19.xlsx'
+out='exports/system/추적표_2026-03-19.xlsx'
 wb.save(out)
 print(f'Generated: {out} ({len(reqs)} requirements)')
