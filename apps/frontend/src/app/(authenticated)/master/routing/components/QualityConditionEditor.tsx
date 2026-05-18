@@ -100,12 +100,20 @@ export default function QualityConditionEditor({ selectedProcess }: { selectedPr
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div className="flex items-center gap-2 text-sm min-w-0">
-          <span className="font-medium text-primary truncate">{selectedProcess.routingCode}</span>
-          <span className="text-text-muted dark:text-gray-400">&gt;</span>
-          <span className="font-medium text-text dark:text-gray-200 truncate">{selectedProcess.processName}</span>
-          <span className="text-text-muted dark:text-gray-400 text-xs">{selectedProcess.processCode}</span>
+      <div className="flex items-start justify-between mb-4 shrink-0 gap-4">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-text dark:text-gray-100">
+            {t("master.routing.conditionEditorTitle")}
+          </div>
+          <div className="mt-0.5 flex items-center gap-2 text-xs text-text-muted dark:text-gray-400 min-w-0">
+            <span className="font-medium text-primary truncate">{selectedProcess.routingCode}</span>
+            <span>&gt;</span>
+            <span className="font-medium text-text dark:text-gray-200 truncate">{selectedProcess.processName}</span>
+            <span>{selectedProcess.processCode}</span>
+          </div>
+          <div className="mt-1 text-xs text-text-muted dark:text-gray-400">
+            {t("master.routing.conditionEditorDesc")}
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {isDirty && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">{t("master.routing.unsavedChanges")}</span>}
@@ -130,7 +138,7 @@ export default function QualityConditionEditor({ selectedProcess }: { selectedPr
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[100px]">{t("master.routing.minValue")}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[100px]">{t("master.routing.maxValue")}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[100px]">{t("master.routing.unit")}</th>
-                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[50px]">I/F</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[70px]">{t("master.routing.equipInterface")}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[40px]">{t("common.delete")}</th>
               </tr>
             </thead>
