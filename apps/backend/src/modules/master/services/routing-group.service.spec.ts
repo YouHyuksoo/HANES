@@ -16,6 +16,7 @@ import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('RoutingGroupService', () => {
@@ -24,16 +25,26 @@ describe('RoutingGroupService', () => {
   let mockProcessRepo: DeepMocked<Repository<RoutingProcess>>;
   let mockConditionRepo: DeepMocked<Repository<ProcessQualityCondition>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockBomRepo: DeepMocked<Repository<BomMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockEntityManager: DeepMocked<EntityManager>;
+  let mockBomQb: any;
 
   beforeEach(async () => {
     mockGroupRepo = createMock<Repository<RoutingGroup>>();
     mockProcessRepo = createMock<Repository<RoutingProcess>>();
     mockConditionRepo = createMock<Repository<ProcessQualityCondition>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
+    mockBomRepo = createMock<Repository<BomMaster>>();
     mockDataSource = createMock<DataSource>();
     mockEntityManager = createMock<EntityManager>();
+    mockBomQb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    };
+    mockBomRepo.createQueryBuilder.mockReturnValue(mockBomQb);
 
     // Transaction mock: execute callback with mockEntityManager
     mockDataSource.transaction.mockImplementation(async (cb: any) => {
@@ -47,6 +58,7 @@ describe('RoutingGroupService', () => {
         { provide: getRepositoryToken(RoutingProcess), useValue: mockProcessRepo },
         { provide: getRepositoryToken(ProcessQualityCondition), useValue: mockConditionRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
         { provide: DataSource, useValue: mockDataSource },
       ],
     })

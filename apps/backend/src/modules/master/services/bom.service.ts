@@ -171,6 +171,7 @@ export class BomService {
               b.SEQ              AS "seq",
               b.BOM_GRP          AS "bomGrp",
               b.OPER             AS "processCode",
+              b.ROUTING_CODE     AS "routingCode",
               b.SIDE             AS "side",
               b.ECO_NO           AS "ecoNo",
               b.VALID_FROM       AS "validFrom",
@@ -236,6 +237,7 @@ export class BomService {
         b.SEQ              AS "seq",
         b.REVISION         AS "revision",
         b.OPER             AS "processCode",
+        b.ROUTING_CODE     AS "routingCode",
         b.SIDE             AS "side",
         b.VALID_FROM       AS "validFrom",
         b.VALID_TO         AS "validTo",
@@ -285,6 +287,7 @@ export class BomService {
         revision: row.revision,
         seq: Number(row.seq),
         processCode: row.processCode,
+        routingCode: row.routingCode,
         side: row.side,
         validFrom: row.validFrom,
         validTo: row.validTo,
@@ -308,7 +311,7 @@ export class BomService {
     return roots;
   }
 
-  async create(dto: CreateBomDto) {
+  async create(dto: CreateBomDto, company?: string, plant?: string) {
     if (dto.parentItemCode === dto.childItemCode) {
       throw new ConflictException('상위 품목과 하위 품목이 같을 수 없습니다.');
     }
@@ -331,12 +334,15 @@ export class BomService {
       revision: dto.revision ?? 'A',
       bomGrp: dto.bomGrp,
       processCode: dto.processCode,
+      routingCode: dto.routingCode,
       side: dto.side,
       ecoNo: dto.ecoNo,
       validFrom: dto.validFrom ? new Date(dto.validFrom) : undefined,
       validTo: dto.validTo ? new Date(dto.validTo) : undefined,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.bomRepository.save(bom);
@@ -350,6 +356,7 @@ export class BomService {
     if (dto.seq !== undefined) updateData.seq = dto.seq;
     if (dto.bomGrp !== undefined) updateData.bomGrp = dto.bomGrp;
     if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
+    if (dto.routingCode !== undefined) updateData.routingCode = dto.routingCode;
     if (dto.side !== undefined) updateData.side = dto.side;
     if (dto.ecoNo !== undefined) updateData.ecoNo = dto.ecoNo;
     if (dto.validFrom !== undefined) updateData.validFrom = dto.validFrom ? new Date(dto.validFrom) : null;
@@ -378,14 +385,14 @@ export class BomService {
     if (plant) where.plant = plant;
 
     const bomList = await this.bomRepository.find({ where, order: { parentItemCode: 'ASC', seq: 'ASC' } });
-    const headers = ['상위품목코드', '하위품목코드', '소요량', '리비전', '순서', 'BOM그룹', '공정코드', '사이드', 'ECO번호', '유효시작일', '유효종료일', '비고'];
+    const headers = ['상위품목코드', '하위품목코드', '소요량', '리비전', '순서', 'BOM그룹', '공정코드', '라우팅코드', '사이드', 'ECO번호', '유효시작일', '유효종료일', '비고'];
     const fmtDate = (d: Date | null) => (d ? new Date(d).toISOString().slice(0, 10) : '');
     const rows = bomList.length > 0
-      ? bomList.map((b) => [b.parentItemCode, b.childItemCode, b.qtyPer, b.revision, b.seq, b.bomGrp ?? '', b.processCode ?? '', b.side ?? '', b.ecoNo ?? '', fmtDate(b.validFrom), fmtDate(b.validTo), b.remark ?? ''])
+      ? bomList.map((b) => [b.parentItemCode, b.childItemCode, b.qtyPer, b.revision, b.seq, b.bomGrp ?? '', b.processCode ?? '', b.routingCode ?? '', b.side ?? '', b.ecoNo ?? '', fmtDate(b.validFrom), fmtDate(b.validTo), b.remark ?? ''])
       : [Array(headers.length).fill('')];
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 14 }, { wch: 14 }, { wch: 30 }];
+    ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }, { wch: 15 }, { wch: 18 }, { wch: 10 }, { wch: 15 }, { wch: 14 }, { wch: 14 }, { wch: 30 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'BOM');
     return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
@@ -447,6 +454,7 @@ export class BomService {
           parentItemCode: parentCode, childItemCode: childCode, revision,
           qtyPer: Number(qtyRaw), seq: Number(row['순서'] ?? 0) || 0,
           bomGrp: str(row['BOM그룹']) || null, processCode: str(row['공정코드']) || null,
+          routingCode: str(row['라우팅코드']) || null,
           side: str(row['사이드']) || null, ecoNo: str(row['ECO번호']) || null,
           validFrom: row['유효시작일'] ? new Date(String(row['유효시작일'])) : null,
           validTo: row['유효종료일'] ? new Date(String(row['유효종료일'])) : null,

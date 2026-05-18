@@ -14,6 +14,7 @@ import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
 import {
   CreateRoutingGroupDto, UpdateRoutingGroupDto, RoutingGroupQueryDto,
   CreateRoutingProcessDto, UpdateRoutingProcessDto,
@@ -31,6 +32,8 @@ export class RoutingGroupService {
     private readonly conditionRepo: Repository<ProcessQualityCondition>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(BomMaster)
+    private readonly bomRepo: Repository<BomMaster>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -73,7 +76,17 @@ export class RoutingGroupService {
 
   /** 품목코드로 라우팅 그룹 조회 (BOM 페이지용) */
   async findByItemCode(itemCode: string) {
-    const group = await this.groupRepo.findOne({ where: { itemCode } });
+    const bom = await this.bomRepo
+      .createQueryBuilder('b')
+      .where('b.parentItemCode = :itemCode', { itemCode })
+      .andWhere('b.useYn = :useYn', { useYn: 'Y' })
+      .andWhere('b.routingCode IS NOT NULL')
+      .orderBy('b.seq', 'ASC')
+      .getOne();
+
+    const group = bom?.routingCode
+      ? await this.groupRepo.findOne({ where: { routingCode: bom.routingCode, useYn: 'Y' } })
+      : await this.groupRepo.findOne({ where: { itemCode, useYn: 'Y' } });
     if (!group) return null;
 
     const processes = await this.processRepo.find({

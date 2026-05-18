@@ -47,6 +47,12 @@ export class CreateBomDto {
   @MaxLength(20)
   processCode?: string;
 
+  @ApiPropertyOptional({ description: '매핑 라우팅 그룹 코드' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  routingCode?: string;
+
   @ApiPropertyOptional({ description: '사이드 (N/L/R)' })
   @IsOptional()
   @IsString()

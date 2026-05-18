@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, Route } from "lucide-react";
 import { Button, Card, CardContent } from "@/components/ui";
-import RoutingTreePanel from "./components/RoutingTreePanel";
+import RoutingGroupManager from "./components/RoutingGroupManager";
 import QualityConditionEditor from "./components/QualityConditionEditor";
 import type { SelectedProcess } from "./types";
 
@@ -37,10 +37,10 @@ export default function RoutingPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-5 min-h-0 flex-1">
-        <div className="col-span-5 flex flex-col min-h-0">
+        <div className="col-span-7 flex flex-col min-h-0">
           <Card padding="none" className="flex-1 flex flex-col min-h-0">
             <CardContent className="flex-1 flex flex-col min-h-0 p-4">
-              <RoutingTreePanel
+              <RoutingGroupManager
                 key={refreshKey}
                 selectedProcess={selectedProcess}
                 onSelectProcess={setSelectedProcess}
@@ -49,7 +49,7 @@ export default function RoutingPage() {
           </Card>
         </div>
 
-        <div className="col-span-7 flex flex-col min-h-0">
+        <div className="col-span-5 flex flex-col min-h-0">
           <Card padding="none" className="flex-1 flex flex-col min-h-0">
             <CardContent className="flex-1 flex flex-col min-h-0 p-4">
               {selectedProcess ? (

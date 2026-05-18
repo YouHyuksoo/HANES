@@ -33,6 +33,11 @@ interface PartOption {
   itemType: string;
 }
 
+interface RoutingGroupOption {
+  routingCode: string;
+  routingName: string;
+}
+
 export default function BomFormModal({ isOpen, onClose, onSave, editingItem, parentItemCode, parentItemCodeDisplay }: BomFormModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
@@ -44,13 +49,25 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
   const [seq, setSeq] = useState("0");
   const [revision, setRevision] = useState("A");
   const [processCode, setProcessCode] = useState("");
+  const [routingCode, setRoutingCode] = useState("");
   const [side, setSide] = useState("");
   const [validFrom, setValidFrom] = useState("");
   const [validTo, setValidTo] = useState("");
   const [remark, setRemark] = useState("");
+  const [routingOptions, setRoutingOptions] = useState<RoutingGroupOption[]>([]);
+
+  const fetchRoutingGroups = useCallback(async () => {
+    try {
+      const res = await api.get("/master/routing-groups", { params: { limit: 5000, useYn: "Y" } });
+      setRoutingOptions(res.data?.data || []);
+    } catch {
+      setRoutingOptions([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
+    fetchRoutingGroups();
     if (editingItem) {
       setSelectedChild({ id: editingItem.childItemCode || "", itemCode: editingItem.itemCode, itemName: editingItem.itemName, itemType: editingItem.itemType });
       setChildSearch(editingItem.itemCode);
@@ -58,15 +75,16 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
       setSeq(String(editingItem.seq));
       setRevision(editingItem.revision || "A");
       setProcessCode(editingItem.processCode || "");
+      setRoutingCode(editingItem.routingCode || "");
       setSide(editingItem.side || "");
       setValidFrom(editingItem.validFrom ? editingItem.validFrom.split("T")[0] : "");
       setValidTo(editingItem.validTo ? editingItem.validTo.split("T")[0] : "");
       setRemark("");
     } else {
       setSelectedChild(null); setChildSearch(""); setQtyPer("1"); setSeq("0");
-      setRevision("A"); setProcessCode(""); setSide(""); setValidFrom(""); setValidTo(""); setRemark("");
+      setRevision("A"); setProcessCode(""); setRoutingCode(""); setSide(""); setValidFrom(""); setValidTo(""); setRemark("");
     }
-  }, [isOpen, editingItem]);
+  }, [isOpen, editingItem, fetchRoutingGroups]);
 
   const searchParts = useCallback(async (keyword: string) => {
     if (keyword.length < 1) { setChildOptions([]); return; }
@@ -95,7 +113,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
       const body = {
         parentItemCode, childItemCode: selectedChild.id,
         qtyPer: Number(qtyPer), seq: Number(seq), revision,
-        processCode: processCode || undefined, side: side || undefined,
+        processCode: processCode || undefined, routingCode: routingCode || undefined, side: side || undefined,
         validFrom: validFrom || undefined, validTo: validTo || undefined,
         remark: remark || undefined, useYn: "Y",
       };
@@ -141,14 +159,31 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
         </div>
         <div className="grid grid-cols-2 gap-4">
           <ProcessSelect label={t("master.bom.processCode", "공정코드")} value={processCode} onChange={(v) => setProcessCode(v)} fullWidth />
+          <div>
+            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.routingCode")}</label>
+            <select
+              value={routingCode}
+              onChange={(e) => setRoutingCode(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-text dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">-- {t("common.select")} --</option>
+              {routingOptions.map((option) => (
+                <option key={option.routingCode} value={option.routingCode}>
+                  [{option.routingCode}] {option.routingName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
           <ComCodeSelect groupCode="BOM_SIDE" includeAll={false}
             label={t("master.bom.side", "사이드")} value={side} onChange={(v) => setSide(v)} fullWidth />
+          <Input label={t("master.bom.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} fullWidth />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Input label={t("master.bom.validFrom")} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} fullWidth />
           <Input label={t("master.bom.validTo")} type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} fullWidth />
         </div>
-        <Input label={t("master.bom.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} fullWidth />
       </div>
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>

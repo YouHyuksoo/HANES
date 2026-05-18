@@ -17,7 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull, In } from 'typeorm';
+import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -71,10 +71,34 @@ export class JobOrderService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private async resolveRoutingCodeByBom(itemCode: string, company?: string | null, plant?: string | null): Promise<string | null> {
+    const bom = await this.bomMasterRepository
+      .createQueryBuilder('b')
+      .where('b.parentItemCode = :itemCode', { itemCode })
+      .andWhere('b.useYn = :useYn', { useYn: 'Y' })
+      .andWhere('b.routingCode IS NOT NULL')
+      .andWhere(company ? 'b.company = :company' : '1=1', { company })
+      .andWhere(plant ? 'b.plant = :plant' : '1=1', { plant })
+      .orderBy('b.seq', 'ASC')
+      .getOne();
+
+    if (bom?.routingCode) return bom.routingCode;
+
+    const legacyGroup = await this.routingGroupRepository.findOne({
+      where: {
+        itemCode,
+        useYn: 'Y',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    return legacyGroup?.routingCode ?? null;
+  }
+
   /** 작업지시 단건 조회 + select 필드 적용 (내부 헬퍼) */
-  private findOneWithSelect(orderNo: string) {
+  private findOneWithSelect(orderNo: string, company?: string, plant?: string) {
     return this.jobOrderRepository.findOne({
-      where: { orderNo }, relations: ['part'], select: JOB_ORDER_SELECT,
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }, relations: ['part'], select: JOB_ORDER_SELECT,
     });
   }
 
@@ -118,9 +142,9 @@ export class JobOrderService {
   }
 
   /** 작업지시 단건 조회 (orderNo) - 내부용 (prodResults 미포함) */
-  async findById(orderNo: string) {
+  async findById(orderNo: string, company?: string, plant?: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { orderNo },
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['part', 'routing'],
     });
     if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
@@ -128,14 +152,16 @@ export class JobOrderService {
   }
 
   /** 작업지시 상세 조회 (orderNo) - API용 (prodResults 최근 10건 포함, DB 레벨 제한) */
-  async findByIdWithResults(orderNo: string) {
-    const jobOrder = await this.findById(orderNo);
-    const prodResults = await this.prodResultRepository
+  async findByIdWithResults(orderNo: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(orderNo, company, plant);
+    const prQb = this.prodResultRepository
       .createQueryBuilder('pr')
       .where('pr.orderNo = :orderNo', { orderNo })
       .orderBy('pr.createdAt', 'DESC')
-      .take(10)
-      .getMany();
+      .take(10);
+    if (company) prQb.andWhere('pr.company = :company', { company });
+    if (plant) prQb.andWhere('pr.plant = :plant', { plant });
+    const prodResults = await prQb.getMany();
     // 라우팅 공정순서 조회
     const routingProcesses = jobOrder.routingCode
       ? await this.routingProcessRepository.find({
@@ -147,9 +173,9 @@ export class JobOrderService {
   }
 
   /** 작업지시 단건 조회 (작업지시번호) */
-  async findByOrderNo(orderNo: string) {
+  async findByOrderNo(orderNo: string, company?: string, plant?: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { orderNo },
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['part', 'routing'],
     });
     if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
@@ -174,9 +200,7 @@ export class JobOrderService {
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
 
     // 품목 기반 라우팅 자동 조회
-    const routingGroup = await this.routingGroupRepository.findOne({
-      where: { itemCode: dto.itemCode, useYn: 'Y' },
-    });
+    const routingCode = await this.resolveRoutingCodeByBom(dto.itemCode, company, plant);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -188,7 +212,7 @@ export class JobOrderService {
         itemCode: dto.itemCode,
         parentOrderNo: dto.parentId || null,
         lineCode: dto.lineCode,
-        routingCode: routingGroup?.routingCode || null,
+        routingCode,
         planQty: dto.planQty,
         planDate: dto.planDate ? new Date(dto.planDate) : null,
         priority: dto.priority ?? 5,
@@ -207,7 +231,7 @@ export class JobOrderService {
 
       await queryRunner.commitTransaction();
       return this.jobOrderRepository.findOne({
-        where: { orderNo: saved.orderNo },
+        where: { orderNo: saved.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         relations: ['part', 'routing', 'children', 'children.part', 'children.routing'],
       });
     } catch (err) {
@@ -221,7 +245,12 @@ export class JobOrderService {
   /** BOM 기반 반제품 작업지시 자동생성 (트랜잭션 내에서 일괄 저장) */
   private async createChildOrders(queryRunner: QueryRunner, parent: JobOrder, dto: CreateJobOrderDto) {
     const bomItems = await this.bomMasterRepository.find({
-      where: { parentItemCode: parent.itemCode, useYn: 'Y' },
+      where: {
+        parentItemCode: parent.itemCode,
+        useYn: 'Y',
+        ...(parent.company ? { company: parent.company } : {}),
+        ...(parent.plant ? { plant: parent.plant } : {}),
+      },
       order: { seq: 'ASC' },
     });
     if (bomItems.length === 0) return;
@@ -230,34 +259,27 @@ export class JobOrderService {
       .createQueryBuilder('p')
       .where('p.itemCode IN (:...ids)', { ids: bomItems.map(b => b.childItemCode) })
       .andWhere('p.itemType = :type', { type: 'SEMI_PRODUCT' })
+      .andWhere(parent.company ? 'p.company = :company' : '1=1', { company: parent.company })
+      .andWhere(parent.plant ? 'p.plant = :plant' : '1=1', { plant: parent.plant })
       .getMany();
 
     const wipPartIds = new Set(wipParts.map(p => p.itemCode));
     const childOrders: JobOrder[] = [];
 
     // 자식 품목들의 라우팅 일괄 조회 (N+1 제거)
-    const wipChildCodes = bomItems
-      .filter((b) => wipPartIds.has(b.childItemCode))
-      .map((b) => b.childItemCode);
-    const childRoutings = wipChildCodes.length > 0
-      ? await this.routingGroupRepository.find({
-          where: { itemCode: In(wipChildCodes), useYn: 'Y' },
-        })
-      : [];
-    const routingMap = new Map(childRoutings.map((r) => [r.itemCode, r]));
-
     for (let i = 0; i < bomItems.length; i++) {
       const bom = bomItems[i];
       if (!wipPartIds.has(bom.childItemCode)) continue;
 
-      const childRouting = routingMap.get(bom.childItemCode) ?? null;
+      const childRoutingCode =
+        bom.routingCode ?? await this.resolveRoutingCodeByBom(bom.childItemCode, parent.company, parent.plant);
 
       childOrders.push(queryRunner.manager.create(JobOrder, {
         orderNo: `${parent.orderNo}-${String(i + 1).padStart(2, '0')}`,
         itemCode: bom.childItemCode,
         parentOrderNo: parent.orderNo,
         lineCode: dto.lineCode,
-        routingCode: childRouting?.routingCode || null,
+        routingCode: childRoutingCode,
         planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
         planDate: dto.planDate ? new Date(dto.planDate) : null,
         priority: dto.priority ?? 5,
@@ -275,11 +297,11 @@ export class JobOrderService {
   }
 
   /** 작업지시 트리 조회 (완제품 기준 계층구조) */
-  async findTree(parentOrderNo?: string) {
+  async findTree(parentOrderNo?: string, company?: string, plant?: string) {
     return this.jobOrderRepository.find({
       where: parentOrderNo
-        ? { orderNo: parentOrderNo }
-        : { parentOrderNo: IsNull() },
+        ? { orderNo: parentOrderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }
+        : { parentOrderNo: IsNull(), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['part', 'routing', 'children', 'children.part', 'children.routing'],
       order: { planDate: 'DESC', createdAt: 'DESC' },
       take: 100,
@@ -287,20 +309,22 @@ export class JobOrderService {
   }
 
   /** 작업지시 수정 */
-  async update(id: string, dto: UpdateJobOrderDto) {
-    const jobOrder = await this.findById(id);
+  async update(id: string, dto: UpdateJobOrderDto, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
     if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
       throw new BadRequestException(`완료되거나 취소된 작업지시는 수정할 수 없습니다.`);
+    }
+    if (dto.status !== undefined) {
+      throw new BadRequestException(
+        `작업지시 상태(${dto.status})는 직접 변경할 수 없습니다. 시작/보류/보류해제/완료/취소 전용 API를 사용해 주세요.`,
+      );
     }
 
     const updateData: Partial<JobOrder> = {};
     // itemCode 변경 시 라우팅 재조회
     if (dto.itemCode !== undefined && dto.itemCode !== jobOrder.itemCode) {
       updateData.itemCode = dto.itemCode;
-      const routingGroup = await this.routingGroupRepository.findOne({
-        where: { itemCode: dto.itemCode, useYn: 'Y' },
-      });
-      updateData.routingCode = routingGroup?.routingCode || null;
+      updateData.routingCode = await this.resolveRoutingCodeByBom(dto.itemCode, company, plant);
     }
     if (dto.lineCode !== undefined) updateData.lineCode = dto.lineCode;
     if (dto.planQty !== undefined) updateData.planQty = dto.planQty;
@@ -310,26 +334,28 @@ export class JobOrderService {
     if (dto.remark !== undefined) updateData.remark = dto.remark;
     if (dto.goodQty !== undefined) updateData.goodQty = dto.goodQty;
     if (dto.defectQty !== undefined) updateData.defectQty = dto.defectQty;
-    if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.parentId !== undefined) updateData.parentOrderNo = dto.parentId || null;
 
-    await this.jobOrderRepository.update({ orderNo: id }, updateData);
-    return this.findOneWithSelect(id);
+    await this.jobOrderRepository.update(
+      { orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      updateData,
+    );
+    return this.findOneWithSelect(id, company, plant);
   }
 
   /** 작업지시 삭제 (소프트 삭제) */
-  async delete(id: string) {
-    const jobOrder = await this.findById(id);
+  async delete(id: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
     if (jobOrder.status === 'RUNNING') {
       throw new BadRequestException(`진행 중인 작업지시는 삭제할 수 없습니다.`);
     }
-    await this.jobOrderRepository.delete({ orderNo: id });
+    await this.jobOrderRepository.delete({ orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) });
     return { id };
   }
 
   /** 작업 시작 (WAITING -> RUNNING) */
-  async start(id: string) {
-    const jobOrder = await this.findById(id);
+  async start(id: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
     if (jobOrder.status !== 'WAITING') {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 시작할 수 없습니다. WAITING 상태여야 합니다.`,
@@ -338,12 +364,15 @@ export class JobOrderService {
     const updateData: Partial<JobOrder> = { status: 'RUNNING' };
     if (!jobOrder.startAt) updateData.startAt = new Date();
 
-    await this.jobOrderRepository.update({ orderNo: id }, updateData);
+    await this.jobOrderRepository.update(
+      { orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      updateData,
+    );
 
     // FG 바코드 사전 일괄 발행 (PRE_ISSUE 모드)
     const fgTiming = await this.sysConfigService.getValue('FG_BARCODE_ISSUE_TIMING');
     if (fgTiming === 'PRE_ISSUE') {
-      const fgJobOrder = await this.findById(id);
+      const fgJobOrder = await this.findById(id, company, plant);
       for (let i = 0; i < fgJobOrder.planQty; i++) {
         const fgBarcode = await this.numbering.nextFgBarcode();
         await this.fgLabelRepo.save({
@@ -359,28 +388,28 @@ export class JobOrderService {
       this.logger.log(`PRE_ISSUE: ${fgJobOrder.orderNo} — ${fgJobOrder.planQty}건 바코드 발행`);
     }
 
-    return this.findOneWithSelect(id);
+    return this.findOneWithSelect(id, company, plant);
   }
 
   /** 홀딩 (WAITING/RUNNING -> HOLD) - 실적등록/출하 전부 차단 */
-  async hold(id: string) {
-    const jobOrder = await this.findById(id);
+  async hold(id: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
     if (jobOrder.status !== 'WAITING' && jobOrder.status !== 'RUNNING') {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 홀딩할 수 없습니다. WAITING 또는 RUNNING 상태여야 합니다.`,
       );
     }
     // 이전 상태 저장 (홀딩해제 시 복귀용)
-    await this.jobOrderRepository.update({ orderNo: id }, {
+    await this.jobOrderRepository.update({ orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }, {
       status: 'HOLD',
       remark: `[HOLD] 이전상태:${jobOrder.status}${jobOrder.remark ? ' | ' + jobOrder.remark : ''}`,
     });
-    return this.findOneWithSelect(id);
+    return this.findOneWithSelect(id, company, plant);
   }
 
   /** 홀딩 해제 (HOLD -> 이전 상태 복귀) */
-  async holdRelease(id: string) {
-    const jobOrder = await this.findById(id);
+  async holdRelease(id: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
     if (jobOrder.status !== 'HOLD') {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 홀딩해제할 수 없습니다. HOLD 상태여야 합니다.`,
@@ -395,19 +424,19 @@ export class JobOrderService {
     // remark에서 HOLD 접두사 제거
     const originalRemark = jobOrder.remark?.replace(/\[HOLD\] 이전상태:\w+( \| )?/, '') || null;
 
-    await this.jobOrderRepository.update({ orderNo: id }, {
+    await this.jobOrderRepository.update({ orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }, {
       status: prevStatus,
       remark: originalRemark || null,
     });
-    return this.findOneWithSelect(id);
+    return this.findOneWithSelect(id, company, plant);
   }
 
   /**
    * 작업 완료 (RUNNING -> DONE)
    * 잔량이 있어도 종료 허용, 트랜잭션으로 집계+상태변경 원자성 보장
    */
-  async complete(id: string) {
-    const jobOrder = await this.findById(id);
+  async complete(id: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
     if (jobOrder.status !== 'RUNNING') {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 완료할 수 없습니다. RUNNING 상태여야 합니다.`,
@@ -419,14 +448,16 @@ export class JobOrderService {
     await queryRunner.startTransaction();
 
     try {
-      const summary = await queryRunner.manager
+      const summaryQb = queryRunner.manager
         .createQueryBuilder(ProdResult, 'pr')
         .select('SUM(pr.goodQty)', 'totalGoodQty')
         .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
-        .where('pr.orderNo = :orderNo', { orderNo: id })
-        .getRawOne();
+        .where('pr.orderNo = :orderNo', { orderNo: id });
+      if (company) summaryQb.andWhere('pr.company = :company', { company });
+      if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
+      const summary = await summaryQb.getRawOne();
 
-      await queryRunner.manager.update(JobOrder, { orderNo: id }, {
+      await queryRunner.manager.update(JobOrder, { orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }, {
         status: 'DONE',
         endAt: new Date(),
         goodQty: summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0,
@@ -440,12 +471,12 @@ export class JobOrderService {
       await queryRunner.release();
     }
 
-    return this.findOneWithSelect(id);
+    return this.findOneWithSelect(id, company, plant);
   }
 
   /** 작업 취소 (WAITING/HOLD -> CANCELED) - 실적 있으면 취소 불가 */
-  async cancel(id: string, remark?: string) {
-    const jobOrder = await this.findById(id);
+  async cancel(id: string, remark?: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
     if (jobOrder.status !== 'WAITING' && jobOrder.status !== 'HOLD') {
       throw new BadRequestException(
         `현재 상태(${jobOrder.status})에서는 취소할 수 없습니다. WAITING 또는 HOLD 상태여야 합니다.`,
@@ -454,7 +485,7 @@ export class JobOrderService {
 
     // 실적 존재 여부 체크
     const resultCount = await this.prodResultRepository.count({
-      where: { orderNo: id },
+      where: { orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (resultCount > 0) {
       throw new BadRequestException(
@@ -464,41 +495,51 @@ export class JobOrderService {
 
     const updateData: Partial<JobOrder> = { status: 'CANCELED', endAt: new Date() };
     if (remark) updateData.remark = remark;
-    await this.jobOrderRepository.update({ orderNo: id }, updateData);
+    await this.jobOrderRepository.update({ orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }, updateData);
 
     // 생산계획 연결된 경우: orderQty 차감
     if (jobOrder.planNo) {
-      await this.prodPlanRepo
+      const planQb = this.prodPlanRepo
         .createQueryBuilder()
         .update(ProdPlan)
         .set({ orderQty: () => `GREATEST(ORDER_QTY - ${jobOrder.planQty}, 0)` })
-        .where('planNo = :planNo', { planNo: jobOrder.planNo })
-        .execute();
+        .where('planNo = :planNo', { planNo: jobOrder.planNo });
+      if (company) planQb.andWhere('company = :company', { company });
+      if (plant) planQb.andWhere('plant = :plant', { plant });
+      await planQb.execute();
     }
 
-    return this.findOneWithSelect(id);
+    return this.findOneWithSelect(id, company, plant);
   }
 
   /** 상태 직접 변경 (관리자용) */
-  async changeStatus(id: string, dto: ChangeJobOrderStatusDto) {
-    await this.findById(id);
-    const updateData: Partial<JobOrder> = { status: dto.status };
-    if (dto.remark) updateData.remark = dto.remark;
-    await this.jobOrderRepository.update({ orderNo: id }, updateData);
-    return this.findOneWithSelect(id);
+  async changeStatus(id: string, dto: ChangeJobOrderStatusDto, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
+    throw new BadRequestException(
+      [
+        `작업지시 상태 직접 변경은 허용되지 않습니다. 현재 상태: ${jobOrder.status}`,
+        '작업 시작/보류/보류해제/완료/취소 전용 API로만 처리하세요.',
+        '후공정이 이미 진행되었을 수 있으므로 상태 점프 방식으로 우회하면 안 됩니다.',
+      ].join(' '),
+    );
   }
 
   /** ERP 동기화 플래그 업데이트 */
-  async updateErpSyncYn(id: string, dto: UpdateErpSyncDto) {
-    await this.findById(id);
-    await this.jobOrderRepository.update({ orderNo: id }, { erpSyncYn: dto.erpSyncYn });
-    return this.jobOrderRepository.findOne({ where: { orderNo: id } });
+  async updateErpSyncYn(id: string, dto: UpdateErpSyncDto, company?: string, plant?: string) {
+    await this.findById(id, company, plant);
+    await this.jobOrderRepository.update(
+      { orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      { erpSyncYn: dto.erpSyncYn },
+    );
+    return this.jobOrderRepository.findOne({
+      where: { orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
   }
 
   /** ERP 미동기화 작업지시 목록 조회 */
-  async findUnsyncedForErp() {
+  async findUnsyncedForErp(company?: string, plant?: string) {
     return this.jobOrderRepository.find({
-      where: { erpSyncYn: 'N', status: 'DONE' },
+      where: { erpSyncYn: 'N', status: 'DONE', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['part'],
       select: JOB_ORDER_SELECT,
       order: { endAt: 'ASC' },
@@ -506,27 +547,31 @@ export class JobOrderService {
   }
 
   /** ERP 동기화 완료 처리 (일괄) */
-  async markAsSynced(orderNos: string[]) {
-    await this.jobOrderRepository
+  async markAsSynced(orderNos: string[], company?: string, plant?: string) {
+    const qb = this.jobOrderRepository
       .createQueryBuilder()
       .update()
       .set({ erpSyncYn: 'Y' })
-      .where('orderNo IN (:...orderNos)', { orderNos })
-      .execute();
+      .where('orderNo IN (:...orderNos)', { orderNos });
+    if (company) qb.andWhere('company = :company', { company });
+    if (plant) qb.andWhere('plant = :plant', { plant });
+    await qb.execute();
     return { count: orderNos.length };
   }
 
   /** 작업지시 실적 집계 */
-  async getJobOrderSummary(id: string) {
-    const jobOrder = await this.findById(id);
-    const summary = await this.prodResultRepository
+  async getJobOrderSummary(id: string, company?: string, plant?: string) {
+    const jobOrder = await this.findById(id, company, plant);
+    const summaryQb = this.prodResultRepository
       .createQueryBuilder('pr')
       .select('SUM(pr.goodQty)', 'totalGoodQty')
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
-      .where('pr.orderNo = :orderNo', { orderNo: jobOrder.orderNo })
-      .getRawOne();
+      .where('pr.orderNo = :orderNo', { orderNo: jobOrder.orderNo });
+    if (company) summaryQb.andWhere('pr.company = :company', { company });
+    if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
+    const summary = await summaryQb.getRawOne();
 
     const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
     const totalDefectQty = summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0;
