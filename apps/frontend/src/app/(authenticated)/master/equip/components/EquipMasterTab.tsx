@@ -21,14 +21,13 @@ import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/compone
 import DataGrid from "@/components/data-grid/DataGrid";
 import { EquipMaster, EquipType, CommType, COMM_TYPE_COLORS, COMM_TYPE_LABELS } from "../types";
 import api from "@/services/api";
-import { ComCodeSelect, LineSelect, ProcessSelect } from '@/components/shared';
+import { ComCodeSelect, LineSelect } from '@/components/shared';
 
 interface FormState {
   equipCode: string;
   equipName: string;
   equipType: EquipType;
   lineCode: string;
-  processCode: string;
   modelName: string;
   maker: string;
   commType: CommType;
@@ -45,7 +44,6 @@ const EMPTY_FORM: FormState = {
   equipName: "",
   equipType: "SINGLE_CUT",
   lineCode: "",
-  processCode: "",
   modelName: "",
   maker: "",
   commType: "NONE",
@@ -110,7 +108,6 @@ export default function EquipMasterTab() {
       equipName: equip.equipName,
       equipType: equip.equipType,
       lineCode: equip.lineCode || "",
-      processCode: equip.processCode || "",
       modelName: equip.modelName || "",
       maker: equip.maker || "",
       commType: equip.commType,
@@ -131,7 +128,6 @@ export default function EquipMasterTab() {
         equipName: form.equipName,
         equipType: form.equipType,
         lineCode: form.lineCode || undefined,
-        processCode: form.processCode || undefined,
         modelName: form.modelName || undefined,
         maker: form.maker || undefined,
         commType: form.commType,
@@ -192,7 +188,6 @@ export default function EquipMasterTab() {
       },
     },
     { accessorKey: "lineCode", header: t("master.equip.line", "라인"), size: 60 },
-    { accessorKey: "processCode", header: t("master.equip.process", "공정"), size: 60 },
     {
       accessorKey: "commType", header: t("master.equip.commType", "통신"), size: 80,
       cell: ({ getValue }) => {
@@ -298,17 +293,11 @@ export default function EquipMasterTab() {
               fullWidth
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div>
             <LineSelect
               label={t("master.equip.line", "라인")}
               value={form.lineCode}
               onChange={(v) => setForm({ ...form, lineCode: v })}
-              fullWidth
-            />
-            <ProcessSelect
-              label={t("master.equip.process", "공정")}
-              value={form.processCode}
-              onChange={(v) => setForm({ ...form, processCode: v })}
               fullWidth
             />
           </div>
