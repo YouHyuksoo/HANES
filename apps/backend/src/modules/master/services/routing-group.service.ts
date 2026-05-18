@@ -173,13 +173,30 @@ export class RoutingGroupService {
     });
   }
 
+  private async resolveProcessTenant(routingCode: string, seq: number, company?: string, plant?: string) {
+    if (company && plant) return { company, plant };
+
+    const process = await this.processRepo.findOne({
+      where: { routingCode, seq },
+      select: ['routingCode', 'seq', 'company', 'plant'],
+    });
+    if (!process) throw new NotFoundException(`공정순서를 찾을 수 없습니다: ${routingCode}/${seq}`);
+
+    return {
+      company: company || process.company,
+      plant: plant || process.plant,
+    };
+  }
+
   async bulkSaveConditions(
     routingCode: string, seq: number,
     dto: BulkSaveConditionDto,
     company?: string, plant?: string,
   ) {
+    const tenant = await this.resolveProcessTenant(routingCode, seq, company, plant);
+
     return this.dataSource.transaction(async (manager) => {
-      await manager.delete(ProcessQualityCondition, { routingCode, seq });
+      await manager.delete(ProcessQualityCondition, { routingCode, seq, company: tenant.company, plant: tenant.plant });
       if (dto.conditions.length === 0) return [];
 
       const entities = dto.conditions.map((c) =>
@@ -192,8 +209,8 @@ export class RoutingGroupService {
           unit: c.unit,
           equipInterfaceYn: c.equipInterfaceYn ?? 'N',
           useYn: 'Y',
-          company,
-          plant,
+          company: tenant.company,
+          plant: tenant.plant,
         }),
       );
       return manager.save(ProcessQualityCondition, entities);

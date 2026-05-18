@@ -256,6 +256,12 @@ describe('RoutingGroupService', () => {
         ],
       } as any;
       const created = { routingCode: 'RG01', seq: 10, conditionSeq: 1 } as ProcessQualityCondition;
+      mockProcessRepo.findOne.mockResolvedValue({
+        routingCode: 'RG01',
+        seq: 10,
+        company: 'COMP01',
+        plant: 'PLANT01',
+      } as RoutingProcess);
       mockEntityManager.delete.mockResolvedValue({ affected: 0 } as any);
       mockEntityManager.create.mockReturnValue(created);
       mockEntityManager.save.mockResolvedValue([created]);
@@ -265,11 +271,27 @@ describe('RoutingGroupService', () => {
 
       // Assert
       expect(mockDataSource.transaction).toHaveBeenCalled();
+      expect(mockEntityManager.delete).toHaveBeenCalledWith(ProcessQualityCondition, {
+        routingCode: 'RG01',
+        seq: 10,
+        company: 'COMP01',
+        plant: 'PLANT01',
+      });
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        ProcessQualityCondition,
+        expect.objectContaining({ company: 'COMP01', plant: 'PLANT01' }),
+      );
     });
 
     it('should return empty array when no conditions provided', async () => {
       // Arrange
       const dto = { conditions: [] } as any;
+      mockProcessRepo.findOne.mockResolvedValue({
+        routingCode: 'RG01',
+        seq: 10,
+        company: 'COMP01',
+        plant: 'PLANT01',
+      } as RoutingProcess);
       mockEntityManager.delete.mockResolvedValue({ affected: 0 } as any);
 
       // Act
