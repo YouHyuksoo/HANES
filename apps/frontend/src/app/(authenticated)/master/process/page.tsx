@@ -39,6 +39,7 @@ export default function ProcessPage() {
 
   /* ── 설비 목록 상태 ── */
   const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [allEquipments, setAllEquipments] = useState<Equipment[]>([]);
   const [equipLoading, setEquipLoading] = useState(false);
   const [allEquipCounts, setAllEquipCounts] = useState<Record<string, number>>(
     {},
@@ -50,6 +51,8 @@ export default function ProcessPage() {
   const [formData, setFormData] = useState<Partial<Process>>({});
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Process | null>(null);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignEquipCode, setAssignEquipCode] = useState("");
 
   const processTypeOptions = useComCodeOptions("PROCESS_TYPE");
   const processCategoryOptions = useMemo(
@@ -87,21 +90,25 @@ export default function ProcessPage() {
   /* ── 전체 설비 수 카운트 (공정별) ── */
   const fetchEquipCounts = useCallback(async () => {
     try {
-      const res = await api.get("/equipment/equips", {
-        params: { limit: "10000" },
-      });
+      const res = await api.get("/master/processes/equipment-counts");
       if (res.data.success) {
-        const all: Equipment[] = res.data.data || [];
-        const counts: Record<string, number> = {};
-        all.forEach((eq: any) => {
-          if (eq.processCode) {
-            counts[eq.processCode] = (counts[eq.processCode] || 0) + 1;
-          }
-        });
-        setAllEquipCounts(counts);
+        setAllEquipCounts(res.data.data || {});
       }
     } catch {
       setAllEquipCounts({});
+    }
+  }, []);
+
+  const fetchAllEquipments = useCallback(async () => {
+    try {
+      const res = await api.get("/equipment/equips", {
+        params: { limit: "10000", useYn: "Y" },
+      });
+      if (res.data.success) {
+        setAllEquipments(res.data.data || []);
+      }
+    } catch {
+      setAllEquipments([]);
     }
   }, []);
 
@@ -113,9 +120,7 @@ export default function ProcessPage() {
     }
     setEquipLoading(true);
     try {
-      const res = await api.get("/equipment/equips", {
-        params: { processCode, limit: "5000" },
-      });
+      const res = await api.get(`/master/processes/${encodeURIComponent(processCode)}/equipments`);
       if (res.data.success) {
         setEquipments(res.data.data || []);
       }
@@ -130,7 +135,8 @@ export default function ProcessPage() {
   useEffect(() => {
     fetchProcesses();
     fetchEquipCounts();
-  }, [fetchProcesses, fetchEquipCounts]);
+    fetchAllEquipments();
+  }, [fetchProcesses, fetchEquipCounts, fetchAllEquipments]);
 
   /* ── 공정 선택 시 설비 조회 ── */
   useEffect(() => {
@@ -199,8 +205,50 @@ export default function ProcessPage() {
   const handleRefresh = useCallback(() => {
     fetchProcesses();
     fetchEquipCounts();
+    fetchAllEquipments();
     if (selectedCode) fetchEquipments(selectedCode);
-  }, [fetchProcesses, fetchEquipCounts, fetchEquipments, selectedCode]);
+  }, [fetchProcesses, fetchEquipCounts, fetchAllEquipments, fetchEquipments, selectedCode]);
+
+  const handleOpenAssign = useCallback(() => {
+    setAssignEquipCode("");
+    setAssignModalOpen(true);
+  }, []);
+
+  const handleAssignEquipment = useCallback(async () => {
+    if (!selectedCode || !assignEquipCode) return;
+    try {
+      await api.post(`/master/processes/${encodeURIComponent(selectedCode)}/equipments`, {
+        equipCode: assignEquipCode,
+      });
+      setAssignModalOpen(false);
+      setAssignEquipCode("");
+      fetchEquipments(selectedCode);
+      fetchEquipCounts();
+    } catch (e: any) {
+      console.error("Assign equipment failed:", e);
+    }
+  }, [selectedCode, assignEquipCode, fetchEquipments, fetchEquipCounts]);
+
+  const handleRemoveEquipment = useCallback(async (equipment: Equipment) => {
+    if (!selectedCode) return;
+    try {
+      await api.delete(`/master/processes/${encodeURIComponent(selectedCode)}/equipments/${encodeURIComponent(equipment.equipCode)}`);
+      fetchEquipments(selectedCode);
+      fetchEquipCounts();
+    } catch (e: any) {
+      console.error("Remove equipment failed:", e);
+    }
+  }, [selectedCode, fetchEquipments, fetchEquipCounts]);
+
+  const assignOptions = useMemo(
+    () => allEquipments
+      .filter((equipment) => !equipments.some((assigned) => assigned.equipCode === equipment.equipCode))
+      .map((equipment) => ({
+        value: equipment.equipCode,
+        label: `${equipment.equipCode} - ${equipment.equipName}`,
+      })),
+    [allEquipments, equipments],
+  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -245,6 +293,8 @@ export default function ProcessPage() {
             processName={selectedProcess?.processName ?? ""}
             equipments={equipments}
             isLoading={equipLoading}
+            onAdd={handleOpenAssign}
+            onRemove={handleRemoveEquipment}
           />
         </div>
       </div>
@@ -332,6 +382,34 @@ export default function ProcessPage() {
       </Modal>
 
       {/* 삭제 확인 */}
+      <Modal
+        isOpen={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        title={t("master.process.assignEquipment", "설비 배치")}
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="text-sm text-text-muted">
+            {selectedProcess?.processCode} ({selectedProcess?.processName})
+          </div>
+          <Select
+            label={t("equipment.master.equipName", { defaultValue: "설비" })}
+            options={assignOptions}
+            value={assignEquipCode}
+            onChange={setAssignEquipCode}
+            fullWidth
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setAssignModalOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={handleAssignEquipment} disabled={!assignEquipCode}>
+              {t("common.add")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <ConfirmModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

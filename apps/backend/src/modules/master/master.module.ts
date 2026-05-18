@@ -72,7 +72,9 @@ import { DepartmentMaster } from '../../entities/department-master.entity';
 import { Plant } from '../../entities/plant.entity';
 import { ProcessMap } from '../../entities/process-map.entity';
 import { ProcessMaster } from '../../entities/process-master.entity';
+import { ProcessEquipment } from '../../entities/process-equipment.entity';
 import { ProdLineMaster } from '../../entities/prod-line-master.entity';
+import { EquipMaster } from '../../entities/equip-master.entity';
 import { WarehouseTransferRule } from '../../entities/warehouse-transfer-rule.entity';
 import { WorkInstruction } from '../../entities/work-instruction.entity';
 import { WorkerMaster } from '../../entities/worker-master.entity';
@@ -108,7 +110,9 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       Plant,
       ProcessMap,
       ProcessMaster,
+      ProcessEquipment,
       ProdLineMaster,
+      EquipMaster,
       WarehouseTransferRule,
       WorkInstruction,
       WorkerMaster,

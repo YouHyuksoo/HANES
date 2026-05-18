@@ -28,6 +28,40 @@ export class ProcessController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
+  @Get('equipment-counts')
+  @ApiOperation({ summary: '공정별 배치 설비 수 조회' })
+  async getEquipmentCounts() {
+    const data = await this.processService.getEquipmentCounts();
+    return ResponseUtil.success(data);
+  }
+
+  @Get(':id/equipments')
+  @ApiOperation({ summary: '공정 배치 설비 목록 조회' })
+  async findEquipments(@Param('id') id: string) {
+    const data = await this.processService.findEquipments(id);
+    return ResponseUtil.success(data);
+  }
+
+  @Post(':id/equipments')
+  @ApiOperation({ summary: '공정에 설비 배치' })
+  async assignEquipment(
+    @Param('id') id: string,
+    @Body('equipCode') equipCode: string,
+  ) {
+    const data = await this.processService.assignEquipment(id, equipCode);
+    return ResponseUtil.success(data, '설비가 공정에 배치되었습니다.');
+  }
+
+  @Delete(':id/equipments/:equipCode')
+  @ApiOperation({ summary: '공정 배치 설비 삭제' })
+  async removeEquipment(
+    @Param('id') id: string,
+    @Param('equipCode') equipCode: string,
+  ) {
+    const data = await this.processService.removeEquipment(id, equipCode);
+    return ResponseUtil.success(data, '공정 배치 설비가 삭제되었습니다.');
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '공정 상세 조회' })
   async findById(@Param('id') id: string) {

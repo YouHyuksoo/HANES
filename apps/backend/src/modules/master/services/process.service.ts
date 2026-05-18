@@ -7,6 +7,8 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProcessMaster } from '../../../entities/process-master.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
+import { ProcessEquipment } from '../../../entities/process-equipment.entity';
 import { CreateProcessDto, UpdateProcessDto, ProcessQueryDto } from '../dto/process.dto';
 
 @Injectable()
@@ -14,6 +16,10 @@ export class ProcessService {
   constructor(
     @InjectRepository(ProcessMaster)
     private readonly processRepository: Repository<ProcessMaster>,
+    @InjectRepository(EquipMaster)
+    private readonly equipRepository: Repository<EquipMaster>,
+    @InjectRepository(ProcessEquipment)
+    private readonly processEquipmentRepository: Repository<ProcessEquipment>,
   ) {}
 
   async findAll(query: ProcessQueryDto, company?: string, plant?: string) {
@@ -94,5 +100,69 @@ export class ProcessService {
     await this.findById(processCode);
     await this.processRepository.delete({ processCode });
     return { processCode };
+  }
+
+  async findEquipments(processCode: string) {
+    await this.findById(processCode);
+
+    const assignments = await this.processEquipmentRepository.find({
+      where: { processCode, useYn: 'Y' },
+      relations: ['equipment'],
+      order: { equipCode: 'ASC' },
+    });
+
+    return assignments
+      .map((assignment) => assignment.equipment)
+      .filter((equipment): equipment is EquipMaster => !!equipment);
+  }
+
+  async getEquipmentCounts(): Promise<Record<string, number>> {
+    const rows = await this.processEquipmentRepository
+      .createQueryBuilder('pe')
+      .select('pe.processCode', 'processCode')
+      .addSelect('COUNT(*)', 'count')
+      .where('pe.useYn = :useYn', { useYn: 'Y' })
+      .groupBy('pe.processCode')
+      .getRawMany<{ processCode: string; count: string }>();
+
+    return rows.reduce<Record<string, number>>((acc, row) => {
+      acc[row.processCode] = Number(row.count);
+      return acc;
+    }, {});
+  }
+
+  async assignEquipment(processCode: string, equipCode: string) {
+    await this.findById(processCode);
+
+    const equipment = await this.equipRepository.findOne({ where: { equipCode } });
+    if (!equipment) {
+      throw new NotFoundException(`설비를 찾을 수 없습니다: ${equipCode}`);
+    }
+
+    const existing = await this.processEquipmentRepository.findOne({
+      where: { processCode, equipCode },
+    });
+
+    if (existing) {
+      if (existing.useYn === 'Y') {
+        return existing;
+      }
+      await this.processEquipmentRepository.update({ processCode, equipCode }, { useYn: 'Y' });
+      return this.processEquipmentRepository.findOne({ where: { processCode, equipCode } });
+    }
+
+    const assignment = this.processEquipmentRepository.create({
+      processCode,
+      equipCode,
+      useYn: 'Y',
+    });
+
+    return this.processEquipmentRepository.save(assignment);
+  }
+
+  async removeEquipment(processCode: string, equipCode: string) {
+    await this.findById(processCode);
+    await this.processEquipmentRepository.delete({ processCode, equipCode });
+    return { processCode, equipCode };
   }
 }
