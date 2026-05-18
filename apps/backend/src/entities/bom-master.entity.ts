@@ -44,9 +44,6 @@ export class BomMaster {
   @Column({ type: 'varchar2', name: 'OPER', length: 50, nullable: true })
   processCode: string | null;
 
-  @Column({ type: 'varchar2', name: 'ROUTING_CODE', length: 50, nullable: true })
-  routingCode: string | null;
-
   @Column({ type: 'varchar2', name: 'SIDE', length: 10, nullable: true })
   side: string | null;
 

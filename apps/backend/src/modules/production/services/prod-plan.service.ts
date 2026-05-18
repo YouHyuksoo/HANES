@@ -50,20 +50,8 @@ export class ProdPlanService {
     private readonly dataSource: DataSource,
   ) {}
 
-  private async resolveRoutingCodeByBom(itemCode: string, company?: string | null, plant?: string | null): Promise<string | null> {
-    const bom = await this.bomMasterRepo
-      .createQueryBuilder('b')
-      .where('b.parentItemCode = :itemCode', { itemCode })
-      .andWhere('b.useYn = :useYn', { useYn: 'Y' })
-      .andWhere('b.routingCode IS NOT NULL')
-      .andWhere(company ? 'b.company = :company' : '1=1', { company })
-      .andWhere(plant ? 'b.plant = :plant' : '1=1', { plant })
-      .orderBy('b.seq', 'ASC')
-      .getOne();
-
-    if (bom?.routingCode) return bom.routingCode;
-
-    const legacyGroup = await this.routingGroupRepo.findOne({
+  private async resolveRoutingCodeByItem(itemCode: string, company?: string | null, plant?: string | null): Promise<string | null> {
+    const group = await this.routingGroupRepo.findOne({
       where: {
         itemCode,
         useYn: 'Y',
@@ -71,7 +59,7 @@ export class ProdPlanService {
         ...(plant ? { plant } : {}),
       },
     });
-    return legacyGroup?.routingCode ?? null;
+    return group?.routingCode ?? null;
   }
 
   /** 목록 조회 (필터, 페이징, part join) */
@@ -359,7 +347,7 @@ export class ProdPlanService {
     try {
       const orderNo = await this.numbering.nextJobOrderNo(queryRunner);
 
-      const routingCode = await this.resolveRoutingCodeByBom(plan.itemCode, company, plant);
+      const routingCode = await this.resolveRoutingCodeByItem(plan.itemCode, company, plant);
 
       const jobOrder = queryRunner.manager.create(JobOrder, {
         orderNo,
@@ -438,8 +426,7 @@ export class ProdPlanService {
       const bom = bomItems[i];
       if (!wipPartIds.has(bom.childItemCode)) continue;
 
-      const childRoutingCode =
-        bom.routingCode ?? await this.resolveRoutingCodeByBom(bom.childItemCode, company, plant);
+      const childRoutingCode = await this.resolveRoutingCodeByItem(bom.childItemCode, company, plant);
 
       const childOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
       const childQty = Math.ceil(parent.planQty * Number(bom.qtyPer || 1));

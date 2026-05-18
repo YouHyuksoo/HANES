@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,7 +18,13 @@ interface ProcessOption {
   processName: string;
 }
 
-const EMPTY_GROUP = { routingCode: "", routingName: "", description: "", useYn: "Y" };
+interface PartOption {
+  itemCode: string;
+  itemName: string;
+  itemType: string;
+}
+
+const EMPTY_GROUP = { routingCode: "", routingName: "", itemCode: "", description: "", useYn: "Y" };
 const EMPTY_PROCESS = { seq: "10", processCode: "", processName: "", processType: "", equipType: "", stdTime: "", setupTime: "" };
 
 export default function RoutingGroupManager({ selectedProcess, onSelectProcess }: Props) {
@@ -29,6 +35,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   const [groups, setGroups] = useState<RoutingGroupItem[]>([]);
   const [processes, setProcesses] = useState<RoutingProcessItem[]>([]);
   const [processOptions, setProcessOptions] = useState<ProcessOption[]>([]);
+  const [partOptions, setPartOptions] = useState<PartOption[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<RoutingGroupItem | null>(null);
   const [search, setSearch] = useState("");
   const [loadingGroups, setLoadingGroups] = useState(false);
@@ -85,9 +92,19 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     }
   }, []);
 
+  const fetchPartOptions = useCallback(async () => {
+    try {
+      const res = await api.get("/master/parts", { params: { limit: 5000, useYn: "Y" } });
+      setPartOptions((res.data?.data || []).map((p: any) => ({ itemCode: p.itemCode, itemName: p.itemName, itemType: p.itemType })));
+    } catch {
+      setPartOptions([]);
+    }
+  }, []);
+
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
   useEffect(() => { fetchProcesses(); }, [fetchProcesses]);
   useEffect(() => { fetchProcessOptions(); }, [fetchProcessOptions]);
+  useEffect(() => { fetchPartOptions(); }, [fetchPartOptions]);
 
   const nextSeq = useMemo(() => {
     if (processes.length === 0) return "10";
@@ -105,6 +122,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     setGroupForm({
       routingCode: group.routingCode,
       routingName: group.routingName,
+      itemCode: group.itemCode || "",
       description: group.description || "",
       useYn: group.useYn || "Y",
     });
@@ -115,10 +133,11 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     const body = {
       routingCode: groupForm.routingCode.trim(),
       routingName: groupForm.routingName.trim(),
+      itemCode: groupForm.itemCode || undefined,
       description: groupForm.description || undefined,
       useYn: groupForm.useYn,
     };
-    if (!body.routingCode || !body.routingName) return;
+    if (!body.routingCode || !body.routingName || !body.itemCode) return;
     if (editingGroup) {
       await api.put(`/master/routing-groups/${editingGroup.routingCode}`, body);
     } else {
@@ -211,7 +230,10 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                   <tr key={group.routingCode} onClick={() => setSelectedGroup(group)}
                     className={`border-b border-border/50 cursor-pointer ${selectedGroup?.routingCode === group.routingCode ? "bg-primary text-white" : "hover:bg-surface-hover text-text"}`}>
                     <td className="px-2 py-2 font-mono font-semibold whitespace-nowrap">{group.routingCode}</td>
-                    <td className="px-2 py-2 truncate">{group.routingName}</td>
+                    <td className="px-2 py-2 truncate">
+                      <div className="font-medium truncate">{group.routingName}</div>
+                      <div className="text-[11px] opacity-70 truncate">{group.itemCode || "-"} {group.itemName ? `- ${group.itemName}` : ""}</div>
+                    </td>
                     <td className="px-2 py-2 text-right whitespace-nowrap">
                       <button onClick={(e) => { e.stopPropagation(); openEditGroup(group); }} className="p-1 rounded hover:bg-white/20"><Edit2 className="w-3.5 h-3.5" /></button>
                       <button onClick={(e) => { e.stopPropagation(); setDeleteGroup(group); }} className="p-1 rounded hover:bg-white/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
@@ -277,11 +299,26 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
         <div className="space-y-4">
           <Input label={t("master.routing.routingCode")} value={groupForm.routingCode} disabled={!!editingGroup} onChange={(e) => setGroupForm((f) => ({ ...f, routingCode: e.target.value }))} fullWidth />
           <Input label={t("master.routing.routingName")} value={groupForm.routingName} onChange={(e) => setGroupForm((f) => ({ ...f, routingName: e.target.value }))} fullWidth />
-          <Input label={t("common.description", { defaultValue: "설명" })} value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} fullWidth />
+          <div>
+            <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.part.itemCode", { defaultValue: "품목" })}</label>
+            <select
+              value={groupForm.itemCode}
+              onChange={(e) => setGroupForm((f) => ({ ...f, itemCode: e.target.value }))}
+              className={selectCls}
+            >
+              <option value="">-- {t("common.select")} --</option>
+              {partOptions.map((option) => (
+                <option key={option.itemCode} value={option.itemCode}>
+                  [{option.itemCode}] {option.itemName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Input label={t("common.description", { defaultValue: "?ㅻ챸" })} value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setGroupModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={saveGroup} disabled={!groupForm.routingCode || !groupForm.routingName}>{t("common.save")}</Button>
+          <Button onClick={saveGroup} disabled={!groupForm.routingCode || !groupForm.routingName || !groupForm.itemCode}>{t("common.save")}</Button>
         </div>
       </Modal>
 
@@ -326,7 +363,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       </Modal>
 
       <ConfirmModal isOpen={!!deleteGroup} onClose={() => setDeleteGroup(null)} onConfirm={confirmDeleteGroup}
-        title={t("common.delete")} message={`${deleteGroup?.routingCode || ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`} variant="danger" />
+        title={t("common.delete")} message={`${deleteGroup?.routingCode || ""} ${t("common.deleteMessage", { defaultValue: "??瑜? ??젣?섏떆寃좎뒿?덇퉴?" })}`} variant="danger" />
       <ConfirmModal isOpen={!!deleteProcess} onClose={() => setDeleteProcess(null)} onConfirm={confirmDeleteProcess}
         title={t("common.delete")} message={`${deleteProcess?.processName || ""} ${t("master.routing.deleteConfirm")}`} variant="danger" />
     </div>

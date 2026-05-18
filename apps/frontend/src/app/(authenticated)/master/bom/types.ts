@@ -32,7 +32,6 @@ export interface BomItem {
   revision: string;
   seq: number;
   processCode?: string;
-  routingCode?: string;
   side?: string;
   useYn: string;
 }
@@ -50,7 +49,6 @@ export interface BomTreeItem {
   revision: string;
   seq: number;
   processCode?: string;
-  routingCode?: string;
   side?: string;
   validFrom?: string;
   validTo?: string;
@@ -76,7 +74,6 @@ export interface BomFormData {
   revision?: string;
   bomGrp?: string;
   processCode?: string;
-  routingCode?: string;
   side?: string;
   validFrom?: string;
   validTo?: string;

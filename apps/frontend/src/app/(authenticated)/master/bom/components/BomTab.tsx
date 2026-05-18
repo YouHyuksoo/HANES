@@ -140,7 +140,6 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
               <th className="px-2 py-2 text-left font-semibold text-text border-b border-r border-border w-[220px] whitespace-nowrap">{t("master.bom.childPartName")}</th>
               <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.type")}</th>
               <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-16 whitespace-nowrap">{t("master.bom.oper", "공정")}</th>
-              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-28 whitespace-nowrap">{t("master.routing.routingCode")}</th>
               <th className="px-2 py-2 text-right font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.qtyPer")}</th>
               <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-16 whitespace-nowrap">{t("master.bom.revision")}</th>
               <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-14 whitespace-nowrap">{t("master.bom.side", "사이드")}</th>
@@ -151,9 +150,9 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={12} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
+              <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
             ) : bomTree.length === 0 ? (
-              <tr><td colSpan={12} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
+              <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
             ) : (
               <BomTreeRows items={bomTree} expanded={expanded} onToggle={toggleExpand}
                 onEdit={handleEdit} onDelete={setDeletingBom} onViewRouting={handleViewRouting}
@@ -234,7 +233,6 @@ function BomTreeRows({
                 <span className={`inline-flex px-1.5 py-0.5 text-[10px] rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.itemType}</span>
               </td>
               <td className="px-2 py-1.5 border-r border-border text-center text-text-muted font-mono whitespace-nowrap">{item.processCode || "-"}</td>
-              <td className="px-2 py-1.5 border-r border-border text-center text-primary font-mono whitespace-nowrap">{item.routingCode || "-"}</td>
               <td className="px-2 py-1.5 border-r border-border text-right font-mono text-text whitespace-nowrap">{item.qtyPer} {item.unit}</td>
               <td className="px-2 py-1.5 border-r border-border text-center text-text whitespace-nowrap">{item.revision}</td>
               <td className="px-2 py-1.5 border-r border-border text-center text-text-muted whitespace-nowrap">{item.side || "-"}</td>

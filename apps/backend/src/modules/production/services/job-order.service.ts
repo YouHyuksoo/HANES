@@ -71,20 +71,8 @@ export class JobOrderService {
     private readonly dataSource: DataSource,
   ) {}
 
-  private async resolveRoutingCodeByBom(itemCode: string, company?: string | null, plant?: string | null): Promise<string | null> {
-    const bom = await this.bomMasterRepository
-      .createQueryBuilder('b')
-      .where('b.parentItemCode = :itemCode', { itemCode })
-      .andWhere('b.useYn = :useYn', { useYn: 'Y' })
-      .andWhere('b.routingCode IS NOT NULL')
-      .andWhere(company ? 'b.company = :company' : '1=1', { company })
-      .andWhere(plant ? 'b.plant = :plant' : '1=1', { plant })
-      .orderBy('b.seq', 'ASC')
-      .getOne();
-
-    if (bom?.routingCode) return bom.routingCode;
-
-    const legacyGroup = await this.routingGroupRepository.findOne({
+  private async resolveRoutingCodeByItem(itemCode: string, company?: string | null, plant?: string | null): Promise<string | null> {
+    const group = await this.routingGroupRepository.findOne({
       where: {
         itemCode,
         useYn: 'Y',
@@ -92,7 +80,7 @@ export class JobOrderService {
         ...(plant ? { plant } : {}),
       },
     });
-    return legacyGroup?.routingCode ?? null;
+    return group?.routingCode ?? null;
   }
 
   /** 작업지시 단건 조회 + select 필드 적용 (내부 헬퍼) */
@@ -200,7 +188,7 @@ export class JobOrderService {
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
 
     // 품목 기반 라우팅 자동 조회
-    const routingCode = await this.resolveRoutingCodeByBom(dto.itemCode, company, plant);
+    const routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -271,8 +259,7 @@ export class JobOrderService {
       const bom = bomItems[i];
       if (!wipPartIds.has(bom.childItemCode)) continue;
 
-      const childRoutingCode =
-        bom.routingCode ?? await this.resolveRoutingCodeByBom(bom.childItemCode, parent.company, parent.plant);
+      const childRoutingCode = await this.resolveRoutingCodeByItem(bom.childItemCode, parent.company, parent.plant);
 
       childOrders.push(queryRunner.manager.create(JobOrder, {
         orderNo: `${parent.orderNo}-${String(i + 1).padStart(2, '0')}`,
@@ -324,7 +311,7 @@ export class JobOrderService {
     // itemCode 변경 시 라우팅 재조회
     if (dto.itemCode !== undefined && dto.itemCode !== jobOrder.itemCode) {
       updateData.itemCode = dto.itemCode;
-      updateData.routingCode = await this.resolveRoutingCodeByBom(dto.itemCode, company, plant);
+      updateData.routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);
     }
     if (dto.lineCode !== undefined) updateData.lineCode = dto.lineCode;
     if (dto.planQty !== undefined) updateData.planQty = dto.planQty;

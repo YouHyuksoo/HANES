@@ -1,11 +1,11 @@
-/**
+﻿/**
  * @file src/modules/master/services/routing-group.service.ts
- * @description 라우팅 그룹 + 공정순서 + 양품조건 비즈니스 로직
+ * @description ?쇱슦??洹몃９ + 怨듭젙?쒖꽌 + ?묓뭹議곌굔 鍮꾩쫰?덉뒪 濡쒖쭅
  *
- * 초보자 가이드:
- * 1. 라우팅 그룹 CRUD: ROUTING_GROUPS 테이블
- * 2. 공정순서 CRUD: ROUTING_PROCESSES 테이블
- * 3. 양품조건 CRUD + bulk: PROCESS_QUALITY_CONDITIONS 테이블
+ * 珥덈낫??媛?대뱶:
+ * 1. ?쇱슦??洹몃９ CRUD: ROUTING_GROUPS ?뚯씠釉?
+ * 2. 怨듭젙?쒖꽌 CRUD: ROUTING_PROCESSES ?뚯씠釉?
+ * 3. ?묓뭹議곌굔 CRUD + bulk: PROCESS_QUALITY_CONDITIONS ?뚯씠釉?
  */
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,7 +14,6 @@ import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
-import { BomMaster } from '../../../entities/bom-master.entity';
 import {
   CreateRoutingGroupDto, UpdateRoutingGroupDto, RoutingGroupQueryDto,
   CreateRoutingProcessDto, UpdateRoutingProcessDto,
@@ -32,12 +31,10 @@ export class RoutingGroupService {
     private readonly conditionRepo: Repository<ProcessQualityCondition>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
-    @InjectRepository(BomMaster)
-    private readonly bomRepo: Repository<BomMaster>,
     private readonly dataSource: DataSource,
   ) {}
 
-  // ─── 라우팅 그룹 CRUD ───
+  // ??? ?쇱슦??洹몃９ CRUD ???
 
   async findAllGroups(query: RoutingGroupQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, useYn } = query;
@@ -74,19 +71,9 @@ export class RoutingGroupService {
     return { data, total, page, limit };
   }
 
-  /** 품목코드로 라우팅 그룹 조회 (BOM 페이지용) */
+  /** ?덈ぉ肄붾뱶濡??쇱슦??洹몃９ 議고쉶 (BOM ?섏씠吏?? */
   async findByItemCode(itemCode: string) {
-    const bom = await this.bomRepo
-      .createQueryBuilder('b')
-      .where('b.parentItemCode = :itemCode', { itemCode })
-      .andWhere('b.useYn = :useYn', { useYn: 'Y' })
-      .andWhere('b.routingCode IS NOT NULL')
-      .orderBy('b.seq', 'ASC')
-      .getOne();
-
-    const group = bom?.routingCode
-      ? await this.groupRepo.findOne({ where: { routingCode: bom.routingCode, useYn: 'Y' } })
-      : await this.groupRepo.findOne({ where: { itemCode, useYn: 'Y' } });
+    const group = await this.groupRepo.findOne({ where: { itemCode, useYn: 'Y' } });
     if (!group) return null;
 
     const processes = await this.processRepo.find({
@@ -99,13 +86,13 @@ export class RoutingGroupService {
 
   async findGroupByCode(routingCode: string) {
     const group = await this.groupRepo.findOne({ where: { routingCode } });
-    if (!group) throw new NotFoundException(`라우팅 그룹을 찾을 수 없습니다: ${routingCode}`);
+    if (!group) throw new NotFoundException(`?쇱슦??洹몃９??李얠쓣 ???놁뒿?덈떎: ${routingCode}`);
     return group;
   }
 
   async createGroup(dto: CreateRoutingGroupDto, company?: string, plant?: string) {
     const existing = await this.groupRepo.findOne({ where: { routingCode: dto.routingCode } });
-    if (existing) throw new ConflictException(`이미 존재하는 라우팅 그룹: ${dto.routingCode}`);
+    if (existing) throw new ConflictException(`?대? 議댁옱?섎뒗 ?쇱슦??洹몃９: ${dto.routingCode}`);
 
     const group = this.groupRepo.create({
       ...dto,
@@ -133,7 +120,7 @@ export class RoutingGroupService {
     return { routingCode };
   }
 
-  // ─── 공정순서 CRUD ───
+  // ??? 怨듭젙?쒖꽌 CRUD ???
 
   async findProcesses(routingCode: string) {
     return this.processRepo.find({
@@ -146,7 +133,7 @@ export class RoutingGroupService {
     const existing = await this.processRepo.findOne({
       where: { routingCode: dto.routingCode, seq: dto.seq },
     });
-    if (existing) throw new ConflictException(`이미 존재하는 공정순서: ${dto.routingCode} / seq ${dto.seq}`);
+    if (existing) throw new ConflictException(`?대? 議댁옱?섎뒗 怨듭젙?쒖꽌: ${dto.routingCode} / seq ${dto.seq}`);
 
     const proc = this.processRepo.create({
       ...dto,
@@ -159,7 +146,7 @@ export class RoutingGroupService {
 
   async updateProcess(routingCode: string, seq: number, dto: UpdateRoutingProcessDto) {
     const existing = await this.processRepo.findOne({ where: { routingCode, seq } });
-    if (!existing) throw new NotFoundException(`공정순서를 찾을 수 없습니다: ${routingCode}/${seq}`);
+    if (!existing) throw new NotFoundException(`怨듭젙?쒖꽌瑜?李얠쓣 ???놁뒿?덈떎: ${routingCode}/${seq}`);
 
     const { routingCode: _rc, seq: _s, ...updateData } = dto;
     await this.processRepo.update({ routingCode, seq }, updateData);
@@ -168,7 +155,7 @@ export class RoutingGroupService {
 
   async deleteProcess(routingCode: string, seq: number) {
     const existing = await this.processRepo.findOne({ where: { routingCode, seq } });
-    if (!existing) throw new NotFoundException(`공정순서를 찾을 수 없습니다: ${routingCode}/${seq}`);
+    if (!existing) throw new NotFoundException(`怨듭젙?쒖꽌瑜?李얠쓣 ???놁뒿?덈떎: ${routingCode}/${seq}`);
 
     await this.dataSource.transaction(async (manager) => {
       await manager.delete(ProcessQualityCondition, { routingCode, seq });
@@ -177,7 +164,7 @@ export class RoutingGroupService {
     return { routingCode, seq };
   }
 
-  // ─── 양품조건 CRUD ───
+  // ??? ?묓뭹議곌굔 CRUD ???
 
   async findConditions(routingCode: string, seq: number) {
     return this.conditionRepo.find({
