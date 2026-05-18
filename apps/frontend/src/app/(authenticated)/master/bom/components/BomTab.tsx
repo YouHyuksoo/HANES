@@ -132,20 +132,20 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
       </div>
 
       <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
-        <table className="font-data text-sm min-w-[1160px]">
+        <table className="font-data text-xs min-w-[1160px] table-fixed">
           <thead className="bg-background">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-text border-b border-r border-border w-10">Lv</th>
-              <th className="px-4 py-3 text-left font-semibold text-text border-b border-r border-border min-w-[180px]">{t("master.bom.childPartCode")}</th>
-              <th className="px-4 py-3 text-left font-semibold text-text border-b border-r border-border min-w-[140px]">{t("master.bom.childPartName")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-24">{t("master.bom.type")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-20">{t("master.bom.oper", "공정")}</th>
-              <th className="px-4 py-3 text-right font-semibold text-text border-b border-r border-border w-28">{t("master.bom.qtyPer")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-20">{t("master.bom.revision")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-16">{t("master.bom.side", "사이드")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-28">{t("master.bom.validFrom")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-r border-border w-28">{t("master.bom.validTo")}</th>
-              <th className="px-4 py-3 text-center font-semibold text-text border-b border-border w-24">{t("common.actions")}</th>
+              <th className="px-2 py-2 text-left font-semibold text-text border-b border-r border-border w-10 whitespace-nowrap">Lv</th>
+              <th className="px-2 py-2 text-left font-semibold text-text border-b border-r border-border w-[190px] whitespace-nowrap">{t("master.bom.childPartCode")}</th>
+              <th className="px-2 py-2 text-left font-semibold text-text border-b border-r border-border w-[220px] whitespace-nowrap">{t("master.bom.childPartName")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.type")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-16 whitespace-nowrap">{t("master.bom.oper", "공정")}</th>
+              <th className="px-2 py-2 text-right font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.qtyPer")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-16 whitespace-nowrap">{t("master.bom.revision")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-14 whitespace-nowrap">{t("master.bom.side", "사이드")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.validFrom")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-r border-border w-24 whitespace-nowrap">{t("master.bom.validTo")}</th>
+              <th className="px-2 py-2 text-center font-semibold text-text border-b border-border w-20 whitespace-nowrap">{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -209,10 +209,10 @@ function BomTreeRows({
         return (
           <Fragment key={item.id}>
             <tr className={`border-b border-border last:border-b-0 transition-colors hover:bg-primary/5 ${idx % 2 === 0 ? "bg-surface" : "bg-background/50"}`}>
-              <td className="px-4 py-2.5 border-r border-border">
-                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[11px] font-bold ${levelColor}`}>{item.level}</span>
+              <td className="px-2 py-1.5 border-r border-border whitespace-nowrap">
+                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold ${levelColor}`}>{item.level}</span>
               </td>
-              <td className="px-4 py-2.5 border-r border-border whitespace-nowrap">
+              <td className="px-2 py-1.5 border-r border-border whitespace-nowrap">
                 <div className="flex items-center" style={{ paddingLeft: `${depth * 24}px` }}>
                   {hasChildren ? (
                     <button onClick={() => onToggle(item.id)} className="mr-2 p-0.5 rounded hover:bg-surface transition-colors">
@@ -225,20 +225,20 @@ function BomTreeRows({
                   <span className="font-mono text-text font-medium">{item.itemNo || item.itemCode}</span>
                 </div>
               </td>
-              <td className="px-4 py-2.5 border-r border-border text-text">
-                {item.itemName}
+              <td className="px-2 py-1.5 border-r border-border text-text whitespace-nowrap truncate" title={item.itemName}>
+                <span className="truncate">{item.itemName}</span>
                 {hasChildren && <span className="ml-1 text-[10px] text-text-muted">({item.children!.length})</span>}
               </td>
-              <td className="px-4 py-2.5 border-r border-border text-center">
-                <span className={`inline-flex px-2 py-0.5 text-xs rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.itemType}</span>
+              <td className="px-2 py-1.5 border-r border-border text-center whitespace-nowrap">
+                <span className={`inline-flex px-1.5 py-0.5 text-[10px] rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.itemType}</span>
               </td>
-              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text-muted font-mono">{item.processCode || "-"}</td>
-              <td className="px-4 py-2.5 border-r border-border text-right font-mono text-text">{item.qtyPer} {item.unit}</td>
-              <td className="px-4 py-2.5 border-r border-border text-center text-text">{item.revision}</td>
-              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text-muted">{item.side || "-"}</td>
-              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text font-mono whitespace-nowrap">{validFrom}</td>
-              <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text font-mono whitespace-nowrap">{validTo}</td>
-              <td className="px-4 py-2.5 text-center">
+              <td className="px-2 py-1.5 border-r border-border text-center text-text-muted font-mono whitespace-nowrap">{item.processCode || "-"}</td>
+              <td className="px-2 py-1.5 border-r border-border text-right font-mono text-text whitespace-nowrap">{item.qtyPer} {item.unit}</td>
+              <td className="px-2 py-1.5 border-r border-border text-center text-text whitespace-nowrap">{item.revision}</td>
+              <td className="px-2 py-1.5 border-r border-border text-center text-text-muted whitespace-nowrap">{item.side || "-"}</td>
+              <td className="px-2 py-1.5 border-r border-border text-center text-text font-mono whitespace-nowrap">{validFrom}</td>
+              <td className="px-2 py-1.5 border-r border-border text-center text-text font-mono whitespace-nowrap">{validTo}</td>
+              <td className="px-2 py-1.5 text-center whitespace-nowrap">
                 <div className="flex justify-center gap-1">
                   <button onClick={() => onViewRouting(item, itemBreadcrumb)} className="p-1 hover:bg-surface rounded" title={t("master.bom.goRoutingManagement")}>
                     <GitBranch className="w-3.5 h-3.5 text-purple-500" />
