@@ -39,6 +39,12 @@ export class MenuCategoryItemsService {
     });
   }
 
+  async findAll(): Promise<MenuCategoryItem[]> {
+    return this.itemRepo.find({
+      order: { categoryCode: 'ASC', sortOrder: 'ASC', menuCode: 'ASC' },
+    });
+  }
+
   async move(dto: MoveMenuItemDto, scope: AuditScope): Promise<MenuCategoryItem> {
     if (!isValidMenuCode(dto.menuCode)) {
       throw new BadRequestException(`알 수 없는 메뉴 코드입니다: ${dto.menuCode}`);

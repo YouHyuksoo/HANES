@@ -44,20 +44,24 @@ export class MenuCategoriesController {
   @Get('tree')
   @ApiOperation({ summary: '사이드바 트리 (카테고리 + 메뉴 배치)' })
   async tree() {
-    const categories = await this.categories.findAll();
-    const tree = await Promise.all(
-      categories.map(async (c) => ({
-        categoryCode: c.categoryCode,
-        labelKey: c.labelKey,
-        iconName: c.iconName,
-        sortOrder: c.sortOrder,
-        isActive: c.isActive,
-        menus: (await this.items.findByCategory(c.categoryCode)).map((i) => ({
-          menuCode: i.menuCode,
-          sortOrder: i.sortOrder,
-        })),
-      })),
-    );
+    const [categories, allItems] = await Promise.all([
+      this.categories.findAll(),
+      this.items.findAll(),
+    ]);
+    const byCategory = new Map<string, { menuCode: string; sortOrder: number }[]>();
+    for (const it of allItems) {
+      const arr = byCategory.get(it.categoryCode) ?? [];
+      arr.push({ menuCode: it.menuCode, sortOrder: it.sortOrder });
+      byCategory.set(it.categoryCode, arr);
+    }
+    const tree = categories.map((c) => ({
+      categoryCode: c.categoryCode,
+      labelKey: c.labelKey,
+      iconName: c.iconName,
+      sortOrder: c.sortOrder,
+      isActive: c.isActive,
+      menus: byCategory.get(c.categoryCode) ?? [],
+    }));
     return ResponseUtil.success(tree);
   }
 
@@ -65,13 +69,8 @@ export class MenuCategoriesController {
   @ApiOperation({ summary: '어디에도 배치되지 않은 메뉴 코드 목록' })
   async unassigned() {
     const all = listKnownMenuCodes();
-    const categories = await this.categories.findAll();
-    const placed = new Set<string>();
-    for (const c of categories) {
-      for (const i of await this.items.findByCategory(c.categoryCode)) {
-        placed.add(i.menuCode);
-      }
-    }
+    const allItems = await this.items.findAll();
+    const placed = new Set(allItems.map((i) => i.menuCode));
     const unassigned = all.filter((code) => !placed.has(code));
     return ResponseUtil.success(unassigned);
   }
