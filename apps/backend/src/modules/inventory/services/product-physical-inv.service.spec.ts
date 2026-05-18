@@ -5,7 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { ProductPhysicalInvService } from './product-physical-inv.service';
 import { ProductStock } from '../../../entities/product-stock.entity';
@@ -66,10 +66,13 @@ describe('ProductPhysicalInvService', () => {
       const r = await target.applyCount({
         items: [{ stockId: 'WH::IT::LOT1', countedQty: 90 }],
         createdBy: 'user',
-      } as any);
+      } as any, 'CO', 'P01', 'user');
 
       expect(r).toHaveLength(1);
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
+        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
+      });
     });
 
     it('should throw when stock not found', async () => {
@@ -77,7 +80,7 @@ describe('ProductPhysicalInvService', () => {
       await expect(target.applyCount({
         items: [{ stockId: 'WH::IT::LOT1', countedQty: 90 }],
         createdBy: 'user',
-      } as any)).rejects.toThrow(NotFoundException);
+      } as any, 'CO', 'P01', 'user')).rejects.toThrow(NotFoundException);
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     });
 
@@ -85,7 +88,17 @@ describe('ProductPhysicalInvService', () => {
       await expect(target.applyCount({
         items: [{ stockId: 'INVALID', countedQty: 90 }],
         createdBy: 'user',
-      } as any)).rejects.toThrow(NotFoundException);
+      } as any, 'CO', 'P01', 'user')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw when countedQty is below reservedQty', async () => {
+      const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', qty: 100, reservedQty: 20, company: 'CO', plant: 'P01' } as any;
+      mockQueryRunner.manager.findOne.mockResolvedValue(stock);
+
+      await expect(target.applyCount({
+        items: [{ stockId: 'WH::IT::LOT1', countedQty: 10 }],
+        createdBy: 'user',
+      } as any, 'CO', 'P01', 'user')).rejects.toThrow(BadRequestException);
     });
   });
 });

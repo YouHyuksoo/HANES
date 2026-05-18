@@ -16,6 +16,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { LotMergeService } from './lot-merge.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
@@ -24,6 +25,7 @@ describe('LotMergeService', () => {
   let target: LotMergeService;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
+  let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockDataSource: DeepMocked<DataSource>;
@@ -49,6 +51,7 @@ describe('LotMergeService', () => {
   beforeEach(async () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
+    mockMatIssueRepo = createMock<Repository<MatIssue>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockDataSource = createMock<DataSource>();
@@ -66,6 +69,7 @@ describe('LotMergeService', () => {
         LotMergeService,
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
+        { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: DataSource, useValue: mockDataSource },
@@ -117,12 +121,16 @@ describe('LotMergeService', () => {
     });
 
     it('정상적으로 LOT을 병합한다', async () => {
-      const lots = [createLot('MAT-001'), createLot('MAT-002')];
+      const lots = [
+        { ...createLot('MAT-001'), originMatUid: 'ROOT-001' } as any,
+        { ...createLot('MAT-002'), originMatUid: 'ROOT-001' } as any,
+      ];
       const stocks = [createStock('MAT-001', 30), createStock('MAT-002', 20)];
 
       mockQueryRunner.manager.find
         .mockResolvedValueOnce(lots)
-        .mockResolvedValueOnce(stocks);
+        .mockResolvedValueOnce(stocks)
+        .mockResolvedValueOnce([]);
       mockQueryRunner.manager.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A' } as PartMaster);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);

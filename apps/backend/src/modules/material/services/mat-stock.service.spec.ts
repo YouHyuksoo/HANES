@@ -160,24 +160,24 @@ describe('MatStockService', () => {
 
   // ─── adjustStock ───
   describe('adjustStock', () => {
-    it('기존 재고를 증가 조정한다', async () => {
+    it('??? ???????? ??????', async () => {
       const stock = createStock();
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock); // 기존 재고 조회
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock); // ??? ??? ???
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce({ ...stock, qty: 110 }); // 업데이트 후 조회
-      mockQueryRunner.manager.save.mockResolvedValue({} as any); // InvAdjLog 저장
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({ ...stock, qty: 110 }); // ?????? ?????
+      mockQueryRunner.manager.save.mockResolvedValue({} as any); // InvAdjLog ????
 
       const result = await target.adjustStock({
         itemCode: 'ITEM-001',
         warehouseCode: 'WH-01',
         adjustQty: 10,
-        reason: '조정',
+        reason: '???',
       } as any);
 
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
 
-    it('재고가 음수가 되면 BadRequestException', async () => {
+    it('????? ????? ??? BadRequestException', async () => {
       const stock = createStock({ qty: 5 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock);
 
@@ -186,14 +186,14 @@ describe('MatStockService', () => {
           itemCode: 'ITEM-001',
           warehouseCode: 'WH-01',
           adjustQty: -10,
-          reason: '조정',
+          reason: '???',
         } as any),
       ).rejects.toThrow(BadRequestException);
 
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     });
 
-    it('재고가 없는 상태에서 감소 조정이면 BadRequestException', async () => {
+    it('????? ??? ?????? ??? ?????? BadRequestException', async () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
 
       await expect(
@@ -201,7 +201,23 @@ describe('MatStockService', () => {
           itemCode: 'ITEM-001',
           warehouseCode: 'WH-01',
           adjustQty: -5,
-          reason: '조정',
+          reason: '???',
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('?????? ?? ??? ???? ????', async () => {
+      const stock = createStock({ qty: 20, reservedQty: 10, availableQty: 10 });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock);
+
+      await expect(
+        target.adjustStock({
+          itemCode: 'ITEM-001',
+          warehouseCode: 'WH-01',
+          adjustQty: -15,
+          reason: '????',
         } as any),
       ).rejects.toThrow(BadRequestException);
 
@@ -209,7 +225,6 @@ describe('MatStockService', () => {
     });
   });
 
-  // ─── transferStock ───
   describe('transferStock', () => {
     it('출고 창고에서 입고 창고로 재고를 이동한다', async () => {
       const fromStock = createStock({ warehouseCode: 'WH-FROM', qty: 100, availableQty: 100 });
@@ -261,5 +276,69 @@ describe('MatStockService', () => {
 
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     });
+    it('??? ??? ?? ??? ???? ????', async () => {
+      const fromStock = createStock({ warehouseCode: 'WH-01', qty: 50, availableQty: 50 });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
+
+      await expect(
+        target.transferStock({
+          itemCode: 'ITEM-001',
+          fromWarehouseCode: 'WH-01',
+          toWarehouseCode: 'WH-01',
+          qty: 10,
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('??? ??? ??? ?? ??? ????', async () => {
+      const fromStock = createStock({ warehouseCode: 'WH-FROM', qty: 50, availableQty: 5, reservedQty: 45 });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
+
+      await expect(
+        target.transferStock({
+          itemCode: 'ITEM-001',
+          fromWarehouseCode: 'WH-FROM',
+          toWarehouseCode: 'WH-TO',
+          qty: 10,
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('??? ??? ?? ??? ???? ????', async () => {
+      const fromStock = createStock({ warehouseCode: 'WH-01', qty: 50, availableQty: 50 });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
+
+      await expect(
+        target.transferStock({
+          itemCode: 'ITEM-001',
+          fromWarehouseCode: 'WH-01',
+          toWarehouseCode: 'WH-01',
+          qty: 10,
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('??? ??? ??? ?? ??? ????', async () => {
+      const fromStock = createStock({ warehouseCode: 'WH-FROM', qty: 50, availableQty: 5, reservedQty: 45 });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
+
+      await expect(
+        target.transferStock({
+          itemCode: 'ITEM-001',
+          fromWarehouseCode: 'WH-FROM',
+          toWarehouseCode: 'WH-TO',
+          qty: 10,
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
   });
 });

@@ -22,14 +22,18 @@ export class HoldService {
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   async findAll(query: HoldQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-    };
+    const where: any = this.tenantWhere(company, plant);
 
     if (status) {
       where.status = status;
@@ -40,8 +44,8 @@ export class HoldService {
       // 먼저 품목 검색
       const parts = await this.partMasterRepository.find({
         where: [
-          { itemCode: Like(`%${search}%`) },
-          { itemName: Like(`%${search}%`) },
+          { itemCode: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
+          { itemName: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
         ],
       });
       const itemCodes = parts.map((p) => p.itemCode);
@@ -65,14 +69,14 @@ export class HoldService {
     // part 정보 조회 및 중첩 객체 평면화
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // 재고 정보 조회
     const matUids = data.map((lot) => lot.matUid);
     const stocks = matUids.length > 0
-      ? await this.matStockRepository.find({ where: { matUid: In(matUids) } })
+      ? await this.matStockRepository.find({ where: { matUid: In(matUids), ...this.tenantWhere(company, plant) } })
       : [];
     const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
@@ -91,11 +95,11 @@ export class HoldService {
     return { data: flattenedData, total, page, limit };
   }
 
-  async hold(dto: HoldActionDto) {
+  async hold(dto: HoldActionDto, company?: string, plant?: string) {
     const { matUid, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { matUid: matUid },
+      where: { matUid: matUid, ...this.tenantWhere(company, plant) },
     });
 
     if (!lot) {
@@ -111,12 +115,14 @@ export class HoldService {
     }
 
     // HOLD 상태로 변경
-    await this.matLotRepository.update(matUid, {
+    await this.matLotRepository.update({ matUid, ...this.tenantWhere(company, plant) }, {
       status: 'HOLD',
     });
 
-    const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid } });
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: updatedLot!.itemCode } });
+    const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid, ...this.tenantWhere(company, plant) } });
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: updatedLot!.itemCode, ...this.tenantWhere(company, plant) },
+    });
 
     return {
       id: matUid,
@@ -128,11 +134,11 @@ export class HoldService {
     };
   }
 
-  async release(dto: ReleaseHoldDto) {
+  async release(dto: ReleaseHoldDto, company?: string, plant?: string) {
     const { matUid, reason } = dto;
 
     const lot = await this.matLotRepository.findOne({
-      where: { matUid: matUid },
+      where: { matUid: matUid, ...this.tenantWhere(company, plant) },
     });
 
     if (!lot) {
@@ -144,12 +150,14 @@ export class HoldService {
     }
 
     // NORMAL 상태로 변경
-    await this.matLotRepository.update(matUid, {
+    await this.matLotRepository.update({ matUid, ...this.tenantWhere(company, plant) }, {
       status: 'NORMAL',
     });
 
-    const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid } });
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: updatedLot!.itemCode } });
+    const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid, ...this.tenantWhere(company, plant) } });
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: updatedLot!.itemCode, ...this.tenantWhere(company, plant) },
+    });
 
     return {
       id: matUid,

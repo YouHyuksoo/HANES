@@ -1,21 +1,3 @@
-/**
- * @file mold.service.ts
- * @description 금형관리 서비스 — 금형 마스터 CRUD 및 타수/보전 관리
- *
- * 초보자 가이드:
- * 1. **금형 CRUD**: 등록, 조회, 수정, 삭제
- * 2. **사용 이력(타수)**: addUsage()로 사용 등록 시 currentShots 자동 누적
- * 3. **보전 관리**: getMaintenanceDue()로 보전 예정 금형 조회
- * 4. **폐기**: retire()로 금형 상태를 RETIRED로 변경
- *
- * 주요 메서드:
- * - findAll(): 목록 조회 (페이지네이션 + 필터)
- * - findById() / create() / update() / delete()
- * - addUsage(): 사용 이력 등록 + currentShots 누적
- * - getMaintenanceDue(): 보전 예정 금형 조회
- * - retire(): 금형 폐기 처리
- */
-
 import {
   Injectable,
   Logger,
@@ -48,9 +30,6 @@ export class MoldService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * 날짜별 MoldUsageLog SEQ 채번
-   */
   private async getNextUsageSeq(usageDate: Date, qr?: import('typeorm').QueryRunner): Promise<number> {
     const repo = qr ? qr.manager.getRepository(MoldUsageLog) : this.usageRepo;
     const result = await repo
@@ -61,13 +40,6 @@ export class MoldService {
     return (result?.maxSeq ?? 0) + 1;
   }
 
-  // =============================================
-  // CRUD
-  // =============================================
-
-  /**
-   * 금형 목록 조회 (페이지네이션 + 필터)
-   */
   async findAll(query: MoldQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, status, moldType, search } = query;
 
@@ -79,10 +51,10 @@ export class MoldService {
     if (moldType) qb.andWhere('m.moldType = :moldType', { moldType });
     if (search) {
       const upper = search.toUpperCase();
-      qb.andWhere(
-        '(m.moldCode LIKE :sCode OR m.moldName LIKE :sRaw)',
-        { sCode: `%${upper}%`, sRaw: `%${search}%` },
-      );
+      qb.andWhere('(m.moldCode LIKE :sCode OR m.moldName LIKE :sRaw)', {
+        sCode: `%${upper}%`,
+        sRaw: `%${search}%`,
+      });
     }
 
     qb.orderBy('m.createdAt', 'DESC');
@@ -95,26 +67,29 @@ export class MoldService {
     return { data, total, page, limit };
   }
 
-  /**
-   * 금형 단건 조회
-   */
-  async findById(moldCode: string) {
-    const item = await this.moldRepo.findOne({ where: { moldCode } });
+  async findById(moldCode: string, company?: string, plant?: string) {
+    const item = await this.moldRepo.findOne({
+      where: {
+        moldCode,
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
+    });
+
     if (!item) {
-      throw new NotFoundException('금형을 찾을 수 없습니다.');
+      throw new NotFoundException('Mold not found.');
     }
     return item;
   }
 
-  /**
-   * 금형 등록
-   */
-  async create(
-    dto: CreateMoldDto,
-    company: string,
-    plant: string,
-    userId: string,
-  ) {
+  async create(dto: CreateMoldDto, company: string, plant: string, userId: string) {
+    const existing = await this.moldRepo.findOne({
+      where: { moldCode: dto.moldCode, company, plant },
+    });
+    if (existing) {
+      throw new BadRequestException(`Mold already exists: ${dto.moldCode}`);
+    }
+
     const entity = this.moldRepo.create({
       ...dto,
       currentShots: 0,
@@ -125,45 +100,40 @@ export class MoldService {
       updatedBy: userId,
     });
     const saved = await this.moldRepo.save(entity);
-    this.logger.log(`금형 등록: ${dto.moldCode}`);
+    this.logger.log(`Mold created: ${dto.moldCode}`);
     return saved;
   }
 
-  /**
-   * 금형 수정
-   */
-  async update(moldCode: string, dto: UpdateMoldDto, userId: string) {
-    const item = await this.findById(moldCode);
+  async update(moldCode: string, dto: UpdateMoldDto, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(moldCode, company, plant);
     if (item.status === 'SCRAPPED') {
-      throw new BadRequestException('폐기된 금형은 수정할 수 없습니다.');
+      throw new BadRequestException('Cannot update scrapped mold.');
     }
+    if ((dto as any).status !== undefined) {
+      throw new BadRequestException('Mold status cannot be changed via generic update API.');
+    }
+
     Object.assign(item, dto, { updatedBy: userId });
     return this.moldRepo.save(item);
   }
 
-  /**
-   * 금형 삭제 (사용 이력이 없는 경우만)
-   */
-  async delete(moldCode: string) {
-    const item = await this.findById(moldCode);
+  async delete(moldCode: string, company?: string, plant?: string) {
+    const item = await this.findById(moldCode, company, plant);
     const usageCount = await this.usageRepo.count({
-      where: { moldCode },
+      where: {
+        moldCode,
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
     });
     if (usageCount > 0) {
-      throw new BadRequestException(
-        '사용 이력이 있는 금형은 삭제할 수 없습니다.',
-      );
+      throw new BadRequestException('Cannot delete mold with usage history.');
     }
+
     await this.moldRepo.remove(item);
+    return { moldCode };
   }
 
-  // =============================================
-  // 사용 이력 (타수)
-  // =============================================
-
-  /**
-   * 사용 이력 등록 + currentShots 누적 (트랜잭션 보장)
-   */
   async addUsage(
     moldCode: string,
     dto: CreateMoldUsageDto,
@@ -171,23 +141,24 @@ export class MoldService {
     plant: string,
     userId: string,
   ) {
-    const mold = await this.findById(moldCode);
-    if (mold.status !== 'ACTIVE') {
-      throw new BadRequestException(
-        '활성 상태의 금형만 사용 등록할 수 있습니다.',
-      );
-    }
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // SEQ 채번
+      const mold = await queryRunner.manager.findOne(MoldMaster, {
+        where: { moldCode, company, plant },
+      });
+      if (!mold) {
+        throw new NotFoundException('Mold not found.');
+      }
+      if (mold.status !== 'ACTIVE') {
+        throw new BadRequestException('Usage can be recorded only for ACTIVE mold.');
+      }
+
       const usageDate = dto.usageDate ? new Date(dto.usageDate) : new Date();
       const seq = await this.getNextUsageSeq(usageDate, queryRunner);
 
-      // 사용 이력 저장
       const usage = queryRunner.manager.create(MoldUsageLog, {
         ...dto,
         usageDate,
@@ -199,31 +170,27 @@ export class MoldService {
       });
       const saved = await queryRunner.manager.save(MoldUsageLog, usage);
 
-      // currentShots 누적
       mold.currentShots += dto.shotCount;
       mold.updatedBy = userId;
       await queryRunner.manager.save(MoldMaster, mold);
 
-      // 보증 타수 초과 시 사용 설비 인터락 처리
       if (mold.guaranteedShots && mold.currentShots >= mold.guaranteedShots && dto.equipCode) {
         try {
-          await queryRunner.manager.update(EquipMaster,
-            { equipCode: dto.equipCode },
+          await queryRunner.manager.update(
+            EquipMaster,
+            { equipCode: dto.equipCode, company, plant },
             { status: 'INTERLOCK' },
           );
           this.logger.warn(
-            `금형 보증타수 초과로 설비 인터락: ${dto.equipCode} ← ${mold.moldCode} (${mold.currentShots}/${mold.guaranteedShots})`,
+            `Mold guaranteed shots exceeded. INTERLOCK set: ${dto.equipCode} / ${mold.moldCode} (${mold.currentShots}/${mold.guaranteedShots})`,
           );
         } catch (err: unknown) {
-          this.logger.error(`설비 인터락 설정 실패: ${dto.equipCode}`, err);
+          this.logger.error(`Failed to set INTERLOCK for equipment: ${dto.equipCode}`, err as Error);
         }
       }
 
       await queryRunner.commitTransaction();
-
-      this.logger.log(
-        `금형 사용 등록: ${mold.moldCode}, shots=${dto.shotCount}, total=${mold.currentShots}`,
-      );
+      this.logger.log(`Mold usage logged: ${mold.moldCode}, shots=${dto.shotCount}, total=${mold.currentShots}`);
       return saved;
     } catch (err: unknown) {
       await queryRunner.rollbackTransaction();
@@ -233,23 +200,17 @@ export class MoldService {
     }
   }
 
-  /**
-   * 금형별 사용 이력 조회
-   */
-  async getUsageLogs(moldCode: string) {
+  async getUsageLogs(moldCode: string, company?: string, plant?: string) {
     return this.usageRepo.find({
-      where: { moldCode },
+      where: {
+        moldCode,
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
       order: { usageDate: 'DESC' },
     });
   }
 
-  // =============================================
-  // 보전 관리
-  // =============================================
-
-  /**
-   * 보전 예정 금형 조회 (보전 주기 도달 또는 보전일 임박)
-   */
   async getMaintenanceDue(company?: string, plant?: string) {
     const qb = this.moldRepo
       .createQueryBuilder('m')
@@ -274,22 +235,20 @@ export class MoldService {
     return qb.getMany();
   }
 
-  // =============================================
-  // 폐기
-  // =============================================
+  async retire(moldCode: string, userId: string, company?: string, plant?: string) {
+    const item = await this.findById(moldCode, company, plant);
 
-  /**
-   * 금형 폐기 처리 (ACTIVE/MAINTENANCE → RETIRED)
-   */
-  async retire(moldCode: string, userId: string) {
-    const item = await this.findById(moldCode);
     if (['RETIRED', 'SCRAPPED'].includes(item.status)) {
-      throw new BadRequestException('이미 폐기/스크랩된 금형입니다.');
+      throw new BadRequestException('Mold is already retired or scrapped.');
     }
+    if (!['ACTIVE', 'MAINTENANCE'].includes(item.status)) {
+      throw new BadRequestException(`Mold status ${item.status} cannot be retired.`);
+    }
+
     item.status = 'RETIRED';
     item.updatedBy = userId;
     const saved = await this.moldRepo.save(item);
-    this.logger.log(`금형 폐기: ${item.moldCode}`);
+    this.logger.log(`Mold retired: ${item.moldCode}`);
     return saved;
   }
 }

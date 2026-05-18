@@ -37,6 +37,13 @@ export class CustomerOrderService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /** 고객발주 목록 조회 */
   async findAll(query: CustomerOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
@@ -72,7 +79,7 @@ export class CustomerOrderService {
     // 품목 정보 병합 — IN 배치 선조회로 N+1 방지
     const orderNos = data.map((o) => o.orderNo);
     const allItems = orderNos.length > 0
-      ? await this.customerOrderItemRepository.find({ where: { orderNo: In(orderNos) } })
+      ? await this.customerOrderItemRepository.find({ where: { orderNo: In(orderNos), ...this.tenantWhere(company, plant) } })
       : [];
 
     const allItemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))] as const;
@@ -104,15 +111,15 @@ export class CustomerOrderService {
   }
 
   /** 고객발주 단건 조회 */
-  async findById(orderNo: string) {
+  async findById(orderNo: string, company?: string, plant?: string) {
     const order = await this.customerOrderRepository.findOne({
-      where: { orderNo },
+      where: { orderNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!order) throw new NotFoundException(`고객발주를 찾을 수 없습니다: ${orderNo}`);
 
     const items = await this.customerOrderItemRepository.find({
-      where: { orderNo: order.orderNo },
+      where: { orderNo: order.orderNo, ...this.tenantWhere(company, plant) },
     });
 
     const itemCodes = [...new Set(items.map((i) => i.itemCode).filter(Boolean))] as const;
@@ -138,7 +145,7 @@ export class CustomerOrderService {
   /** 고객발주 생성 */
   async create(dto: CreateCustomerOrderDto, company?: string, plant?: string) {
     const existing = await this.customerOrderRepository.findOne({
-      where: { orderNo: dto.orderNo },
+      where: { orderNo: dto.orderNo, ...this.tenantWhere(company, plant) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 수주번호입니다: ${dto.orderNo}`);
 
@@ -181,7 +188,7 @@ export class CustomerOrderService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(savedOrder.orderNo);
+      return this.findById(savedOrder.orderNo, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -191,10 +198,15 @@ export class CustomerOrderService {
   }
 
   /** 고객발주 수정 */
-  async update(orderNo: string, dto: UpdateCustomerOrderDto) {
-    const order = await this.findById(orderNo);
+  async update(orderNo: string, dto: UpdateCustomerOrderDto, company?: string, plant?: string) {
+    const order = await this.findById(orderNo, company, plant);
     if (order.status === 'CLOSED') {
       throw new BadRequestException('마감된 발주는 수정할 수 없습니다.');
+    }
+    if (dto.status !== undefined) {
+      throw new BadRequestException(
+        `고객오더 상태(${dto.status})는 직접 변경할 수 없습니다. 고객오더 전용 상태처리 API를 사용해 주세요.`,
+      );
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -203,7 +215,7 @@ export class CustomerOrderService {
 
     try {
       if (dto.items) {
-        await queryRunner.manager.delete(CustomerOrderItem, { orderNo });
+        await queryRunner.manager.delete(CustomerOrderItem, { orderNo, ...this.tenantWhere(company, plant) });
 
         const items = dto.items.map((item, idx) =>
           this.customerOrderItemRepository.create({
@@ -227,14 +239,13 @@ export class CustomerOrderService {
       if (dto.dueDate !== undefined) updateData.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
       if (dto.totalAmount !== undefined) updateData.totalAmount = dto.totalAmount;
       if (dto.currency !== undefined) updateData.currency = dto.currency;
-      if (dto.status !== undefined) updateData.status = dto.status;
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(CustomerOrder, { orderNo }, updateData);
+      await queryRunner.manager.update(CustomerOrder, { orderNo, ...this.tenantWhere(company, plant) }, updateData);
 
       await queryRunner.commitTransaction();
 
-      return this.findById(dto.orderNo ?? orderNo);
+      return this.findById(dto.orderNo ?? orderNo, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -244,13 +255,13 @@ export class CustomerOrderService {
   }
 
   /** 고객발주 삭제 */
-  async delete(orderNo: string) {
-    const order = await this.findById(orderNo);
+  async delete(orderNo: string, company?: string, plant?: string) {
+    const order = await this.findById(orderNo, company, plant);
     if (order.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.customerOrderRepository.delete({ orderNo });
+    await this.customerOrderRepository.delete({ orderNo, ...this.tenantWhere(company, plant) });
 
     return { orderNo, deleted: true };
   }

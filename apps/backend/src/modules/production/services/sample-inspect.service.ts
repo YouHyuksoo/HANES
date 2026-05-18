@@ -30,9 +30,9 @@ export class SampleInspectService {
   ) {}
 
   /** 샘플검사 일괄 입력 */
-  async create(dto: CreateSampleInspectDto) {
+  async create(dto: CreateSampleInspectDto, company?: string, plant?: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { orderNo: dto.orderNo },
+      where: { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!jobOrder) {
       throw new NotFoundException('작업지시를 찾을 수 없습니다.');
@@ -133,9 +133,9 @@ export class SampleInspectService {
   }
 
   /** 특정 작업지시의 샘플검사 목록 */
-  async findByJobOrder(orderNo: string) {
+  async findByJobOrder(orderNo: string, company?: string, plant?: string) {
     return this.sampleInspectRepository.find({
-      where: { orderNo },
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       order: { inspectDate: 'DESC', sampleNo: 'ASC' },
     });
   }

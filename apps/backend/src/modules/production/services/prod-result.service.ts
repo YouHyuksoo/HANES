@@ -156,9 +156,9 @@ export class ProdResultService {
   /**
    * 생산실적 단건 조회 (resultNo)
    */
-  async findById(resultNo: string) {
+  async findById(resultNo: string, company?: string, plant?: string) {
     const prodResult = await this.prodResultRepository.findOne({
-      where: { resultNo },
+      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['jobOrder', 'jobOrder.part', 'equip', 'worker', 'inspectResults', 'defectLogs'],
     });
 
@@ -179,7 +179,7 @@ export class ProdResultService {
     }
 
     // 자재 투입 이력 조회
-    const matIssues = await this.findMatIssues(prodResult.resultNo);
+    const matIssues = await this.findMatIssues(prodResult.resultNo, company, plant);
     (prodResult as any).matIssues = matIssues;
 
     return prodResult;
@@ -188,16 +188,27 @@ export class ProdResultService {
   /**
    * 생산실적의 자재 투입 이력 조회
    */
-  async findMatIssues(resultNo: string) {
+  async findMatIssues(resultNo: string, company?: string, plant?: string) {
     const issues = await this.matIssueRepository.find({
-      where: { prodResultNo: resultNo, status: 'DONE' },
+      where: {
+        prodResultNo: resultNo,
+        status: 'DONE',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       order: { issueDate: 'DESC' },
     });
 
     // LOT 및 품목 정보 추가
     const matUids = issues.map(i => i.matUid).filter(Boolean);
     const lots = matUids.length > 0
-      ? await this.dataSource.getRepository('MatLot').find({ where: { matUid: In(matUids) } })
+      ? await this.dataSource.getRepository('MatLot').find({
+          where: {
+            matUid: In(matUids),
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        })
       : [];
     const lotMap = new Map(lots.map((l: any) => [l.matUid, l]));
 
@@ -223,9 +234,9 @@ export class ProdResultService {
   /**
    * 작업지시별 생산실적 목록 조회
    */
-  async findByJobOrderId(orderNo: string) {
+  async findByJobOrderId(orderNo: string, company?: string, plant?: string) {
     return this.prodResultRepository.find({
-      where: { orderNo },
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       order: { createdAt: 'DESC' },
       relations: ['equip', 'worker'],
       select: {
@@ -253,12 +264,17 @@ export class ProdResultService {
    * - 작업지시 품목과 설비에 장착된 부품이 일치하는지 확인
    * - 불일치 시 BadRequestException 발생
    */
-  private async checkEquipBomInterlock(equipCode: string | null | undefined, orderNo: string): Promise<void> {
+  private async checkEquipBomInterlock(
+    equipCode: string | null | undefined,
+    orderNo: string,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
     if (!equipCode) return; // 설비 미지정 시 체크 불필요
 
     // 작업지시 품목 조회
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { orderNo: orderNo },
+      where: { orderNo: orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['part'],
     });
     if (!jobOrder?.part) return; // 품목 정보 없으면 체크 불필요
@@ -301,9 +317,15 @@ export class ProdResultService {
    * 작업지시 수량 초과 체크
    * - 기등록 실적 + 새 실적의 합이 planQty를 초과하는지 확인
    */
-  private async checkJobOrderQtyLimit(orderNo: string, newGoodQty: number, newDefectQty: number): Promise<void> {
+  private async checkJobOrderQtyLimit(
+    orderNo: string,
+    newGoodQty: number,
+    newDefectQty: number,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { orderNo: orderNo },
+      where: { orderNo: orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       select: ['orderNo', 'planQty'],
     });
     
@@ -316,6 +338,8 @@ export class ProdResultService {
       .select('SUM(pr.goodQty)', 'totalGood')
       .addSelect('SUM(pr.defectQty)', 'totalDefect')
       .where('pr.orderNo = :orderNo', { orderNo })
+      .andWhere(company ? 'pr.company = :company' : '1=1', company ? { company } : {})
+      .andWhere(plant ? 'pr.plant = :plant' : '1=1', plant ? { plant } : {})
       .andWhere('pr.status != :canceled', { canceled: 'CANCELED' })
       .getRawOne();
 
@@ -339,10 +363,10 @@ export class ProdResultService {
   /**
    * 생산실적 생성
    */
-  async create(dto: CreateProdResultDto) {
+  async create(dto: CreateProdResultDto, company?: string, plant?: string) {
     // 작업지시 존재 및 상태 확인
     const jobOrder = await this.jobOrderRepository.findOne({
-      where: { orderNo: dto.orderNo },
+      where: { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
     if (!jobOrder) {
@@ -357,10 +381,10 @@ export class ProdResultService {
     }
 
     // 작업지시 수량 초과 체크
-    await this.checkJobOrderQtyLimit(dto.orderNo, dto.goodQty ?? 0, dto.defectQty ?? 0);
+    await this.checkJobOrderQtyLimit(dto.orderNo, dto.goodQty ?? 0, dto.defectQty ?? 0, company, plant);
 
     // 설비부품 인터락 체크
-    await this.checkEquipBomInterlock(dto.equipCode, dto.orderNo);
+    await this.checkEquipBomInterlock(dto.equipCode, dto.orderNo, company, plant);
 
     // 설비 존재 확인 (옵션)
     if (dto.equipCode) {
@@ -419,10 +443,21 @@ export class ProdResultService {
       const saved = await queryRunner.manager.save(ProdResult, prodResult);
       savedResultNo = saved.resultNo;
 
+      // 실적이 최초 등록되면 작업지시를 RUNNING으로 승격한다.
+      if (jobOrder.status === 'WAITING') {
+        await queryRunner.manager.update(
+          JobOrder,
+          { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+          { status: 'RUNNING', startAt: new Date() },
+        );
+      }
+
       // FG 바코드 사전 발행 (ON_PRODUCTION 모드)
       const fgTiming = await this.sysConfigService.getValue('FG_BARCODE_ISSUE_TIMING');
       if (fgTiming === 'ON_PRODUCTION') {
-        const fgJobOrder = await queryRunner.manager.findOne(JobOrder, { where: { orderNo: dto.orderNo } });
+        const fgJobOrder = await queryRunner.manager.findOne(JobOrder, {
+          where: { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        });
         if (fgJobOrder) {
           const fgBarcode = await this.numbering.nextFgBarcode(queryRunner);
           await queryRunner.manager.save(FgLabel, {
@@ -459,7 +494,7 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { resultNo: savedResultNo },
+      where: { resultNo: savedResultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['jobOrder', 'equip', 'worker'],
       select: {
         resultNo: true,
@@ -485,8 +520,8 @@ export class ProdResultService {
    * 생산실적 수정
    * - 수량(goodQty/defectQty) 변경 시 자재 자동차감 재계산 (역분개 후 재차감)
    */
-  async update(resultNo: string, dto: UpdateProdResultDto) {
-    const prodResult = await this.findById(resultNo);
+  async update(resultNo: string, dto: UpdateProdResultDto, company?: string, plant?: string) {
+    const prodResult = await this.findById(resultNo, company, plant);
 
     // DONE 상태에서는 일부 필드만 수정 가능
     if (prodResult.status === 'DONE') {
@@ -517,7 +552,11 @@ export class ProdResultService {
       if (dto.startAt !== undefined) updateData.startAt = new Date(dto.startAt);
       if (dto.endAt !== undefined) updateData.endAt = new Date(dto.endAt);
       if (dto.cycleTime !== undefined) updateData.cycleTime = dto.cycleTime;
-      if (dto.status !== undefined) updateData.status = dto.status;
+      if (dto.status !== undefined) {
+        throw new BadRequestException(
+          '???? ??? ?? ???? ??? ? ????. ?? ?? ?? ?? API? ??? ???.',
+        );
+      }
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
       await queryRunner.manager.update(ProdResult, prodResult.resultNo, updateData);
@@ -544,7 +583,7 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { resultNo },
+      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['jobOrder', 'equip', 'worker'],
       select: {
         resultNo: true,
@@ -569,10 +608,20 @@ export class ProdResultService {
   /**
    * 생산실적 삭제
    */
-  async delete(resultNo: string) {
-    await this.findById(resultNo); // 존재 확인
+  async delete(resultNo: string, company?: string, plant?: string) {
+    const prodResult = await this.findById(resultNo, company, plant);
 
-    await this.prodResultRepository.delete(resultNo);
+    if (prodResult.status !== 'CANCELED') {
+      throw new BadRequestException(
+        `????? ?? ??? ??? ? ????. ?? ?? ??? ???. ?? ??: ${prodResult.status}`,
+      );
+    }
+
+    await this.prodResultRepository.delete({
+      resultNo,
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    });
 
     return { resultNo };
   }
@@ -580,8 +629,8 @@ export class ProdResultService {
   /**
    * 생산실적 완료 (트랜잭션: 실적 완료 + 금형 타수 + 설비 해제 원자성 보장)
    */
-  async complete(resultNo: string, dto: CompleteProdResultDto) {
-    const prodResult = await this.findById(resultNo);
+  async complete(resultNo: string, dto: CompleteProdResultDto, company?: string, plant?: string) {
+    const prodResult = await this.findById(resultNo, company, plant);
 
     if (prodResult.status !== 'RUNNING') {
       throw new BadRequestException(
@@ -660,7 +709,11 @@ export class ProdResultService {
       const goodQty = dto.goodQty ?? prodResult.goodQty;
       if (goodQty > 0) {
         const jobOrder = await queryRunner.manager.findOne(JobOrder, {
-          where: { orderNo: prodResult.orderNo },
+          where: {
+            orderNo: prodResult.orderNo,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
           relations: ['part'],
         });
 
@@ -690,35 +743,58 @@ export class ProdResultService {
       // 6. 작업지시 자동 완료 체크
       // 해당 작업지시의 모든 실적이 DONE이고 계획수량 달성 시 자동 완료
       const autoCompleteJobOrder = await queryRunner.manager.findOne(JobOrder, {
-        where: { orderNo: prodResult.orderNo },
+        where: {
+          orderNo: prodResult.orderNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
 
-      if (autoCompleteJobOrder && autoCompleteJobOrder.status === 'RUNNING') {
+      if (autoCompleteJobOrder && !['DONE', 'CANCELED'].includes(autoCompleteJobOrder.status)) {
         const pendingResults = await queryRunner.manager.count(ProdResult, {
-          where: { orderNo: prodResult.orderNo, status: In(['RUNNING', 'WAITING']) },
+          where: {
+            orderNo: prodResult.orderNo,
+            status: In(['RUNNING', 'WAITING']),
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
         });
 
         if (pendingResults === 0) {
-          const summary = await queryRunner.manager
+          const summaryQb = queryRunner.manager
             .createQueryBuilder(ProdResult, 'pr')
             .select('SUM(pr.goodQty)', 'totalGoodQty')
             .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
             .where('pr.orderNo = :orderNo AND pr.status = :status', {
               orderNo: prodResult.orderNo,
               status: 'DONE',
-            })
-            .getRawOne();
+            });
+          if (company) {
+            summaryQb.andWhere('pr.company = :company', { company });
+          }
+          if (plant) {
+            summaryQb.andWhere('pr.plant = :plant', { plant });
+          }
+          const summary = await summaryQb.getRawOne();
 
           const totalGood = parseInt(summary?.totalGoodQty) || 0;
           const totalDefect = parseInt(summary?.totalDefectQty) || 0;
 
           if (totalGood >= autoCompleteJobOrder.planQty) {
-            await queryRunner.manager.update(JobOrder, { orderNo: prodResult.orderNo }, {
-              status: 'DONE',
-              endAt: new Date(),
-              goodQty: totalGood,
-              defectQty: totalDefect,
-            });
+            await queryRunner.manager.update(
+              JobOrder,
+              {
+                orderNo: prodResult.orderNo,
+                ...(company ? { company } : {}),
+                ...(plant ? { plant } : {}),
+              },
+              {
+                status: 'DONE',
+                endAt: new Date(),
+                goodQty: totalGood,
+                defectQty: totalDefect,
+              },
+            );
             this.logger.log(`작업지시 자동 완료: ${prodResult.orderNo} (양품 ${totalGood} >= 계획 ${autoCompleteJobOrder.planQty})`);
           }
         }
@@ -733,7 +809,7 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { resultNo },
+      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['jobOrder'],
       select: {
         resultNo: true,
@@ -758,12 +834,14 @@ export class ProdResultService {
   /**
    * 생산실적 취소 (트랜잭션: 실적 취소 + 설비 해제 원자성 보장)
    */
-  async cancel(resultNo: string, remark?: string) {
-    const prodResult = await this.findById(resultNo);
+  async cancel(resultNo: string, remark?: string, company?: string, plant?: string) {
+    const prodResult = await this.findById(resultNo, company, plant);
 
     if (prodResult.status === 'CANCELED') {
       throw new BadRequestException(`이미 취소된 실적입니다.`);
     }
+
+    await this.ensureNoDownstreamProgress(prodResult, company, plant);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -784,10 +862,10 @@ export class ProdResultService {
       }
 
       // PROD_AUTO 자동차감 역분개
-      await this.reverseAutoIssue(queryRunner, prodResult.resultNo);
+      await this.reverseAutoIssue(queryRunner, prodResult.resultNo, company, plant);
 
       // 공정재고 자동 적재 역분개 — PROD_RESULT 참조 트랜잭션 찾아서 취소
-      await this.reverseProductStock(queryRunner, prodResult.resultNo);
+      await this.reverseProductStock(queryRunner, prodResult.resultNo, company, plant);
 
       await queryRunner.commitTransaction();
     } catch (err) {
@@ -798,7 +876,7 @@ export class ProdResultService {
     }
 
     return this.prodResultRepository.findOne({
-      where: { resultNo },
+      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
   }
 
@@ -807,98 +885,271 @@ export class ProdResultService {
    * - 해당 실적의 PROD_AUTO MatIssue를 모두 찾아 CANCELED 처리
    * - MatStock.qty 복원, 역방향 StockTransaction 생성
    */
+  /**
+   * ???? ??? ????? ?? ???? ??, ? ???? ????? ????.
+   */
+  private async ensureNoDownstreamProgress(prodResult: ProdResult, company?: string, plant?: string): Promise<void> {
+    if (!prodResult.prdUid) return;
+
+    const { FgLabel } = await import('../../../entities/fg-label.entity');
+    const fgLabelRepo = this.dataSource.getRepository(FgLabel);
+    const fgLabel = await fgLabelRepo.findOne({
+      where: {
+        fgBarcode: prodResult.prdUid,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+
+    if (!fgLabel || !['PACKED', 'SHIPPED'].includes(fgLabel.status)) {
+      return;
+    }
+
+    const { BoxMaster } = await import('../../../entities/box-master.entity');
+    const { PalletMaster } = await import('../../../entities/pallet-master.entity');
+    const { ShipmentLog } = await import('../../../entities/shipment-log.entity');
+
+    const boxRepo = this.dataSource.getRepository(BoxMaster);
+    const palletRepo = this.dataSource.getRepository(PalletMaster);
+    const shipmentRepo = this.dataSource.getRepository(ShipmentLog);
+
+    const box = await boxRepo
+      .createQueryBuilder('box')
+      .where('box.serialList LIKE :serial', { serial: `%${prodResult.prdUid}%` })
+      .andWhere(company ? 'box.company = :company' : '1=1', { company })
+      .andWhere(plant ? 'box.plant = :plant' : '1=1', { plant })
+      .orderBy('box.createdAt', 'DESC')
+      .getOne();
+
+    const pallet = box?.palletNo
+      ? await palletRepo.findOne({
+          where: {
+            palletNo: box.palletNo,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        })
+      : null;
+
+    const shipment = pallet?.shipmentId
+      ? await shipmentRepo.findOne({
+          where: {
+            shipNo: pallet.shipmentId,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        })
+      : null;
+
+    const details = [
+      `FG 라벨: ${prodResult.prdUid}`,
+      box ? `박스: ${box.boxNo}` : null,
+      box?.oqcStatus ? `OQC: ${box.oqcStatus}` : null,
+      pallet ? `팔레트: ${pallet.palletNo}` : null,
+      shipment ? `출하: ${shipment.shipNo}` : null,
+    ].filter(Boolean).join(', ');
+
+    throw new BadRequestException(
+      `이미 후공정이 진행된 생산실적입니다. ${details}. 출하 -> 팔레트 -> 박스/OQC -> FG 라벨 순서로 역처리 후 다시 취소해 주세요.`,
+    );
+  }
+
   private async reverseAutoIssue(
     qr: import('typeorm').QueryRunner,
     resultNo: string,
+    company?: string,
+    plant?: string,
   ): Promise<void> {
     const issues = await qr.manager.find(MatIssue, {
-      where: { prodResultNo: resultNo, issueType: 'PROD_AUTO', status: 'DONE' },
+      where: {
+        prodResultNo: resultNo,
+        issueType: 'PROD_AUTO',
+        status: 'DONE',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
 
     if (issues.length === 0) return;
 
     for (const issue of issues) {
-      // (a) MatIssue → CANCELED
-      await qr.manager.update(MatIssue, { issueNo: issue.issueNo, seq: issue.seq }, {
-        status: 'CANCELED',
+      await qr.manager.update(
+        MatIssue,
+        { issueNo: issue.issueNo, seq: issue.seq, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { status: 'CANCELED' },
+      );
+
+      if (!issue.matUid || issue.issueQty <= 0) {
+        continue;
+      }
+
+      const lot = await qr.manager.findOne(MatLot, {
+        where: { matUid: issue.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
 
-      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
-      if (issue.matUid && issue.issueQty > 0) {
-        const lot = await qr.manager.findOne(MatLot, {
-          where: { matUid: issue.matUid },
-        });
+      const originalTransactions = await qr.manager.find(StockTransaction, {
+        where: {
+          refType: 'MAT_ISSUE',
+          refId: `${issue.issueNo}-${issue.seq}`,
+          status: 'DONE',
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+      });
 
-        // (c) MatStock 복원
-        const stocks = await qr.manager.find(MatStock, {
-          where: { matUid: issue.matUid },
-        });
-        if (stocks.length > 0) {
-          // 첫 번째 재고 레코드에 복원 (단순화)
-          const stock = stocks[0];
-          await qr.manager.update(
-            MatStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
-            {
-              qty: stock.qty + issue.issueQty,
-              availableQty: stock.availableQty + issue.issueQty,
+      if (originalTransactions.length > 0) {
+        for (const originalTx of originalTransactions) {
+          const restoreQty = Math.abs(Number(originalTx.qty) || 0);
+          if (restoreQty <= 0 || !originalTx.fromWarehouseId) continue;
+
+          const stock = await qr.manager.findOne(MatStock, {
+            where: {
+              warehouseCode: originalTx.fromWarehouseId,
+              itemCode: originalTx.itemCode,
+              matUid: issue.matUid,
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
             },
+          });
+
+          if (stock) {
+            await qr.manager.update(
+              MatStock,
+              {
+                warehouseCode: stock.warehouseCode,
+                itemCode: stock.itemCode,
+                matUid: stock.matUid,
+                ...(company ? { company } : {}),
+                ...(plant ? { plant } : {}),
+              },
+              {
+                qty: stock.qty + restoreQty,
+                availableQty: stock.availableQty + restoreQty,
+              },
+            );
+          }
+
+          await qr.manager.update(
+            StockTransaction,
+            { transNo: originalTx.transNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+            { status: 'CANCELED' },
           );
+
+          const reverseTransNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
+          const reverseTx = qr.manager.create(StockTransaction, {
+            transNo: reverseTransNo,
+            transType: 'MAT_IN',
+            transDate: new Date(),
+            toWarehouseId: originalTx.fromWarehouseId,
+            itemCode: originalTx.itemCode || lot?.itemCode || '',
+            matUid: issue.matUid,
+            qty: restoreQty,
+            refType: 'MAT_ISSUE_CANCEL',
+            refId: `${issue.issueNo}-${issue.seq}`,
+            cancelRefId: originalTx.transNo,
+            status: 'DONE',
+            company: originalTx.company || lot?.company || issue.company,
+            plant: originalTx.plant || lot?.plant || issue.plant,
+          });
+          await qr.manager.save(StockTransaction, reverseTx);
         }
 
-        // (d) 역방향 StockTransaction 생성
-        const reverseTransNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
-        const reverseTx = qr.manager.create(StockTransaction, {
-          transNo: reverseTransNo,
-          transType: 'MAT_IN',
-          itemCode: lot?.itemCode ?? '',
-          matUid: issue.matUid,
-          qty: issue.issueQty,
-          refType: 'MAT_ISSUE_CANCEL',
-          refId: issue.issueNo,
-          status: 'DONE',
-          company: lot?.company || issue.company,
-          plant: lot?.plant || issue.plant,
-        });
-        await qr.manager.save(StockTransaction, reverseTx);
+        continue;
       }
+
+      const fallbackStock = await qr.manager.findOne(MatStock, {
+        where: { matUid: issue.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      });
+
+      if (fallbackStock) {
+        await qr.manager.update(
+          MatStock,
+          {
+            warehouseCode: fallbackStock.warehouseCode,
+            itemCode: fallbackStock.itemCode,
+            matUid: fallbackStock.matUid,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+          {
+            qty: fallbackStock.qty + issue.issueQty,
+            availableQty: fallbackStock.availableQty + issue.issueQty,
+          },
+        );
+      }
+
+      const reverseTransNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
+      const reverseTx = qr.manager.create(StockTransaction, {
+        transNo: reverseTransNo,
+        transType: 'MAT_IN',
+        transDate: new Date(),
+        toWarehouseId: fallbackStock?.warehouseCode,
+        itemCode: lot?.itemCode ?? fallbackStock?.itemCode ?? '',
+        matUid: issue.matUid,
+        qty: issue.issueQty,
+        refType: 'MAT_ISSUE_CANCEL',
+        refId: `${issue.issueNo}-${issue.seq}`,
+        status: 'DONE',
+        company: lot?.company || issue.company,
+        plant: lot?.plant || issue.plant,
+      });
+      await qr.manager.save(StockTransaction, reverseTx);
     }
 
-    this.logger.log(`자동차감 역분개 완료 — resultNo: ${resultNo}, ${issues.length}건`);
+    this.logger.log(`???? ??? ?? - resultNo: ${resultNo}, ${issues.length}?`);
   }
 
-  /**
-   * 공정재고 자동 적재 역분개
-   * - 해당 실적의 PROD_RESULT 참조 ProductTransaction(WIP_IN)을 찾아 취소
-   * - ProductStock(WIP_MAIN) 재고 복원
-   */
   private async reverseProductStock(
     qr: import('typeorm').QueryRunner,
     resultNo: string,
+    company?: string,
+    plant?: string,
   ): Promise<void> {
     const { ProductTransaction } = await import('../../../entities/product-transaction.entity');
     const { ProductStock } = await import('../../../entities/product-stock.entity');
 
     const transactions = await qr.manager.find(ProductTransaction, {
-      where: { refType: 'PROD_RESULT', refId: resultNo, status: 'DONE' },
+      where: {
+        refType: 'PROD_RESULT',
+        refId: resultNo,
+        status: 'DONE',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
 
     if (transactions.length === 0) return;
 
     for (const tx of transactions) {
       // (a) 원본 트랜잭션 → CANCELED
-      await qr.manager.update(ProductTransaction, { transNo: tx.transNo }, { status: 'CANCELED' });
+      await qr.manager.update(
+        ProductTransaction,
+        { transNo: tx.transNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { status: 'CANCELED' },
+      );
 
       // (b) 재고 차감 (입고 취소이므로 toWarehouseId에서 감소)
       if (tx.toWarehouseId && tx.qty > 0) {
         const stock = await qr.manager.findOne(ProductStock, {
-          where: { warehouseCode: tx.toWarehouseId, itemCode: tx.itemCode },
+          where: {
+            warehouseCode: tx.toWarehouseId,
+            itemCode: tx.itemCode,
+            ...(tx.prdUid ? { prdUid: tx.prdUid } : {}),
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
         });
 
         if (stock) {
           const newQty = Math.max(stock.qty - tx.qty, 0);
           await qr.manager.update(ProductStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, prdUid: stock.prdUid },
+            {
+              warehouseCode: stock.warehouseCode,
+              itemCode: stock.itemCode,
+              prdUid: stock.prdUid,
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
             { qty: newQty, availableQty: Math.max(newQty - stock.reservedQty, 0) },
           );
         }
@@ -935,16 +1186,18 @@ export class ProdResultService {
   /**
    * 작업지시별 실적 집계
    */
-  async getSummaryByJobOrder(orderNo: string) {
-    const summary = await this.prodResultRepository
+  async getSummaryByJobOrder(orderNo: string, company?: string, plant?: string) {
+    const qb = this.prodResultRepository
       .createQueryBuilder('pr')
       .select('SUM(pr.goodQty)', 'totalGoodQty')
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
       .where('pr.orderNo = :orderNo', { orderNo })
-      .andWhere('pr.status != :status', { status: 'CANCELED' })
-      .getRawOne();
+      .andWhere('pr.status != :status', { status: 'CANCELED' });
+    if (company) qb.andWhere('pr.company = :company', { company });
+    if (plant) qb.andWhere('pr.plant = :plant', { plant });
+    const summary = await qb.getRawOne();
 
     const totalGoodQty = summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0;
     const totalDefectQty = summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0;
@@ -964,7 +1217,7 @@ export class ProdResultService {
   /**
    * 설비별 실적 집계
    */
-  async getSummaryByEquip(equipCode: string, dateFrom?: string, dateTo?: string) {
+  async getSummaryByEquip(equipCode: string, dateFrom?: string, dateTo?: string, company?: string, plant?: string) {
     const queryBuilder = this.prodResultRepository
       .createQueryBuilder('pr')
       .select('SUM(pr.goodQty)', 'totalGoodQty')
@@ -973,6 +1226,8 @@ export class ProdResultService {
       .addSelect('COUNT(*)', 'resultCount')
       .where('pr.equipCode = :equipCode', { equipCode })
       .andWhere('pr.status != :status', { status: 'CANCELED' });
+    if (company) queryBuilder.andWhere('pr.company = :company', { company });
+    if (plant) queryBuilder.andWhere('pr.plant = :plant', { plant });
 
     if (dateFrom || dateTo) {
       queryBuilder.andWhere('pr.startAt BETWEEN :dateFrom AND :dateTo', {
@@ -1001,7 +1256,7 @@ export class ProdResultService {
   /**
    * 작업자별 실적 집계
    */
-  async getSummaryByWorker(workerId: string, dateFrom?: string, dateTo?: string) {
+  async getSummaryByWorker(workerId: string, dateFrom?: string, dateTo?: string, company?: string, plant?: string) {
     const queryBuilder = this.prodResultRepository
       .createQueryBuilder('pr')
       .select('SUM(pr.goodQty)', 'totalGoodQty')
@@ -1010,6 +1265,8 @@ export class ProdResultService {
       .addSelect('COUNT(*)', 'resultCount')
       .where('pr.workerId = :workerId', { workerId })
       .andWhere('pr.status != :status', { status: 'CANCELED' });
+    if (company) queryBuilder.andWhere('pr.company = :company', { company });
+    if (plant) queryBuilder.andWhere('pr.plant = :plant', { plant });
 
     if (dateFrom || dateTo) {
       queryBuilder.andWhere('pr.startAt BETWEEN :dateFrom AND :dateTo', {
@@ -1038,11 +1295,13 @@ export class ProdResultService {
   /**
    * 일자별 실적 집계 (대시보드용)
    */
-  async getDailySummary(dateFrom: string, dateTo: string) {
+  async getDailySummary(dateFrom: string, dateTo: string, company?: string, plant?: string) {
     const results = await this.prodResultRepository.find({
       where: {
         status: Not('CANCELED'),
         startAt: Between(new Date(dateFrom), new Date(dateTo)),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
       },
       select: {
         startAt: true,
@@ -1084,7 +1343,7 @@ export class ProdResultService {
    * 완제품 기준 생산실적 통합 조회
    * - 품목별로 계획수량, 양품, 불량, 양품률을 집계
    */
-  async getSummaryByProduct(dateFrom?: string, dateTo?: string, search?: string) {
+  async getSummaryByProduct(dateFrom?: string, dateTo?: string, search?: string, company?: string, plant?: string) {
     // 날짜 범위가 없으면 당일 기준 (전량 집계 방지)
     const effectiveDateFrom = dateFrom || new Date().toISOString().substring(0, 10);
     const effectiveDateTo = dateTo || effectiveDateFrom;
@@ -1110,6 +1369,8 @@ export class ProdResultService {
       .addGroupBy('p.itemName')
       .addGroupBy('p.itemType')
       .orderBy('"totalGoodQty"', 'DESC');
+    if (company) qb.andWhere('pr.company = :company', { company });
+    if (plant) qb.andWhere('pr.plant = :plant', { plant });
     if (search) {
       qb.andWhere(
         '(p.itemCode LIKE :search OR p.itemName LIKE :search)',

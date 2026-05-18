@@ -1,34 +1,20 @@
-/**
- * @file src/modules/quality/oqc/services/oqc.service.ts
- * @description OQC(출하검사) 비즈니스 로직 서비스
- *
- * 초보자 가이드:
- * 1. **createRequest**: 의뢰 생성 + 박스 연결 + 박스 oqcStatus 변경
- * 2. **executeInspection**: 검사 판정(PASS/FAIL) + 박스 oqcStatus 일괄 업데이트
- * 3. **getAvailableBoxes**: CLOSED 상태 + oqcStatus IS NULL인 박스 조회
- * 4. **getStats**: 상태별 통계 (총/대기/합격/불합격)
- *
- * 프로세스 흐름:
- * CLOSED 박스 → OQC 의뢰(PENDING) → 검사 실행 → 판정(PASS/FAIL)
- */
-
-import {
-  Injectable,
-  NotFoundException,
+﻿import {
   BadRequestException,
+  Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
-import { OqcRequest } from '../../../../entities/oqc-request.entity';
-import { OqcRequestBox } from '../../../../entities/oqc-request-box.entity';
+import { DataSource, In, Repository } from 'typeorm';
 import { BoxMaster } from '../../../../entities/box-master.entity';
+import { OqcRequestBox } from '../../../../entities/oqc-request-box.entity';
+import { OqcRequest } from '../../../../entities/oqc-request.entity';
 import { PartMaster } from '../../../../entities/part-master.entity';
 import {
   CreateOqcRequestDto,
   ExecuteOqcInspectionDto,
-  UpdateOqcResultDto,
   OqcRequestQueryDto,
+  UpdateOqcResultDto,
 } from '../dto/oqc.dto';
 
 @Injectable()
@@ -47,16 +33,16 @@ export class OqcService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /** 목록 조회 (QueryBuilder + PartMaster 조인) */
-  async findAll(query: OqcRequestQueryDto, company?: string) {
+  async findAll(query: OqcRequestQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, status, customer, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.oqcRequestRepo
       .createQueryBuilder('oqc')
-      .leftJoinAndMapOne('oqc.part', PartMaster, 'part', 'oqc.itemCode = part.itemCode')
+      .leftJoinAndMapOne('oqc.part', PartMaster, 'part', 'oqc.itemCode = part.itemCode');
 
     if (company) qb.andWhere('oqc.company = :company', { company });
+    if (plant) qb.andWhere('oqc.plant = :plant', { plant });
     if (status) qb.andWhere('oqc.status = :status', { status });
     if (customer) qb.andWhere('oqc.customer LIKE :customer', { customer: `%${customer}%` });
     if (fromDate) qb.andWhere('oqc.requestDate >= :fromDate', { fromDate });
@@ -77,7 +63,6 @@ export class OqcService {
     return { data, total, page, limit };
   }
 
-  /** 상세 조회 (의뢰 + 연결 박스 목록) */
   async findById(id: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
       where: { requestNo: id },
@@ -85,36 +70,31 @@ export class OqcService {
     });
 
     if (!oqcRequest) {
-      throw new NotFoundException(`OQC 의뢰를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`OQC ?붿껌??李얠쓣 ???놁뒿?덈떎: ${id}`);
     }
 
-    // 품목 정보 조인
     const part = await this.partRepo.findOne({ where: { itemCode: oqcRequest.itemCode } });
-
     return { ...oqcRequest, part };
   }
 
-  /** 의뢰 생성 — requestNo 자동채번, 박스 유효성 검사, oqcStatus=PENDING */
-  async createRequest(dto: CreateOqcRequestDto, company?: string, createdBy?: string) {
+  async createRequest(dto: CreateOqcRequestDto, company?: string, plant?: string, createdBy?: string) {
     const { itemCode, boxIds, customer, requestDate, sampleSize } = dto;
 
-    // 1. 박스 유효성: status=CLOSED + oqcStatus IS NULL
     const boxes = await this.boxRepo.find({
       where: { boxNo: In(boxIds) },
     });
 
     if (boxes.length !== boxIds.length) {
-      throw new BadRequestException('일부 박스를 찾을 수 없습니다.');
+      throw new BadRequestException('?쇰? 諛뺤뒪瑜?李얠쓣 ???놁뒿?덈떎.');
     }
 
-    const invalidBoxes = boxes.filter(b => b.status !== 'CLOSED' || b.oqcStatus !== null);
+    const invalidBoxes = boxes.filter((box) => box.status !== 'CLOSED' || box.oqcStatus !== null);
     if (invalidBoxes.length > 0) {
       throw new BadRequestException(
-        `검사 불가 박스: ${invalidBoxes.map(b => b.boxNo).join(', ')} (CLOSED 상태 + OQC 미의뢰 박스만 가능)`,
+        `寃??遺덇? 諛뺤뒪: ${invalidBoxes.map((box) => box.boxNo).join(', ')} (CLOSED ?곹깭 + OQC 誘몄???諛뺤뒪留?媛??`,
       );
     }
 
-    // 2. requestNo 자동채번: OQC-YYYYMMDD-NNN
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
     const prefix = `OQC-${dateStr}`;
@@ -130,11 +110,10 @@ export class OqcService {
       const lastSeq = parseInt(lastReq.requestNo.split('-').pop() || '0', 10);
       seq = lastSeq + 1;
     }
+
     const requestNo = `${prefix}-${String(seq).padStart(3, '0')}`;
+    const totalQty = boxes.reduce((sum, box) => sum + box.qty, 0);
 
-    const totalQty = boxes.reduce((sum, b) => sum + b.qty, 0);
-
-    // 3. 트랜잭션으로 의뢰 + 박스 연결 + 박스 상태 업데이트
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -150,12 +129,12 @@ export class OqcService {
         sampleSize: sampleSize || null,
         status: 'PENDING',
         company: company || null,
+        plant: plant || null,
         createdBy: createdBy || null,
       });
       const saved = await queryRunner.manager.save(OqcRequest, oqcRequest);
 
-      // OqcRequestBox 레코드 생성
-      const requestBoxes = boxes.map(box =>
+      const requestBoxes = boxes.map((box) =>
         queryRunner.manager.create(OqcRequestBox, {
           requestNo: saved.requestNo,
           boxNo: box.boxNo,
@@ -165,7 +144,6 @@ export class OqcService {
       );
       await queryRunner.manager.save(OqcRequestBox, requestBoxes);
 
-      // 박스 oqcStatus 업데이트
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: In(boxIds) },
@@ -182,7 +160,6 @@ export class OqcService {
     }
   }
 
-  /** 검사 실행 — 판정(PASS/FAIL), 샘플 표시, oqcStatus 일괄 업데이트 */
   async executeInspection(id: string, dto: ExecuteOqcInspectionDto, updatedBy?: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
       where: { requestNo: id },
@@ -190,11 +167,24 @@ export class OqcService {
     });
 
     if (!oqcRequest) {
-      throw new NotFoundException(`OQC 의뢰를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`OQC ?붿껌??李얠쓣 ???놁뒿?덈떎: ${id}`);
     }
 
     if (oqcRequest.status !== 'PENDING' && oqcRequest.status !== 'IN_PROGRESS') {
-      throw new BadRequestException('대기/진행 상태의 의뢰만 검사 실행이 가능합니다.');
+      throw new BadRequestException('?湲??먮뒗 吏꾪뻾 ?곹깭???붿껌留?寃?ы븷 ???덉뒿?덈떎.');
+    }
+
+    const boxNos = oqcRequest.boxes.map((box) => box.boxNo);
+    if (boxNos.length > 0) {
+      const linkedBoxes = await this.boxRepo.find({
+        where: { boxNo: In(boxNos) },
+      });
+      const progressedBoxes = linkedBoxes.filter((box) => box.palletNo || box.status === 'SHIPPED');
+      if (progressedBoxes.length > 0) {
+        throw new BadRequestException(
+          `?꾧났?뺤씠 吏꾪뻾??諛뺤뒪(${progressedBoxes.map((box) => box.boxNo).join(', ')})媛 ?덉뼱 OQC 寃?щ? ?ㅽ뻾?????놁뒿?덈떎. ?붾젅??異쒗븯遺??癒쇱? ?뺣━??二쇱꽭??`,
+        );
+      }
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -202,7 +192,6 @@ export class OqcService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. 샘플 박스 표시
       if (dto.sampleBoxIds && dto.sampleBoxIds.length > 0) {
         await queryRunner.manager.update(
           OqcRequestBox,
@@ -211,18 +200,19 @@ export class OqcService {
         );
       }
 
-      // 2. 의뢰 결과 업데이트
-      await queryRunner.manager.update(OqcRequest, { requestNo: id }, {
-        status: dto.result,
-        result: dto.result,
-        details: dto.details || null,
-        inspectorName: dto.inspectorName || null,
-        inspectDate: new Date(),
-        updatedBy: updatedBy || null,
-      });
+      await queryRunner.manager.update(
+        OqcRequest,
+        { requestNo: id },
+        {
+          status: dto.result,
+          result: dto.result,
+          details: dto.details || null,
+          inspectorName: dto.inspectorName || null,
+          inspectDate: new Date(),
+          updatedBy: updatedBy || null,
+        },
+      );
 
-      // 3. 연결된 박스 oqcStatus 일괄 업데이트
-      const boxNos = oqcRequest.boxes.map(b => b.boxNo);
       if (boxNos.length > 0) {
         await queryRunner.manager.update(
           BoxMaster,
@@ -241,7 +231,6 @@ export class OqcService {
     }
   }
 
-  /** 결과 수정 (판정 후 보정) */
   async updateResult(id: string, dto: UpdateOqcResultDto, updatedBy?: string) {
     const oqcRequest = await this.oqcRequestRepo.findOne({
       where: { requestNo: id },
@@ -249,7 +238,22 @@ export class OqcService {
     });
 
     if (!oqcRequest) {
-      throw new NotFoundException(`OQC 의뢰를 찾을 수 없습니다: ${id}`);
+      throw new NotFoundException(`OQC ?붿껌??李얠쓣 ???놁뒿?덈떎: ${id}`);
+    }
+
+    if (dto.result) {
+      const boxNos = oqcRequest.boxes.map((box) => box.boxNo);
+      if (boxNos.length > 0) {
+        const linkedBoxes = await this.boxRepo.find({
+          where: { boxNo: In(boxNos) },
+        });
+        const progressedBoxes = linkedBoxes.filter((box) => box.palletNo || box.status === 'SHIPPED');
+        if (progressedBoxes.length > 0) {
+          throw new BadRequestException(
+            `?꾧났?뺤씠 吏꾪뻾??諛뺤뒪(${progressedBoxes.map((box) => box.boxNo).join(', ')})媛 ?덉뼱 OQC 寃곌낵瑜??섏젙?????놁뒿?덈떎. ?붾젅??異쒗븯遺??癒쇱? ?뺣━??二쇱꽭??`,
+          );
+        }
+      }
     }
 
     const updateData: Partial<OqcRequest> = { updatedBy: updatedBy || null };
@@ -266,9 +270,8 @@ export class OqcService {
     try {
       await queryRunner.manager.update(OqcRequest, { requestNo: id }, updateData);
 
-      // 결과 변경 시 박스 oqcStatus도 동기화
       if (dto.result) {
-        const boxNos = oqcRequest.boxes.map(b => b.boxNo);
+        const boxNos = oqcRequest.boxes.map((box) => box.boxNo);
         if (boxNos.length > 0) {
           await queryRunner.manager.update(
             BoxMaster,
@@ -288,36 +291,35 @@ export class OqcService {
     }
   }
 
-  /** 검사 가능 박스 목록 (CLOSED + oqcStatus IS NULL) */
-  async getAvailableBoxes(itemCode?: string, company?: string) {
+  async getAvailableBoxes(itemCode?: string, company?: string, plant?: string) {
     const qb = this.boxRepo
       .createQueryBuilder('box')
       .leftJoinAndMapOne('box.part', PartMaster, 'part', 'box.itemCode = part.itemCode')
       .where('box.status = :status', { status: 'CLOSED' })
-      .andWhere('box.oqcStatus IS NULL')
+      .andWhere('box.oqcStatus IS NULL');
 
     if (itemCode) qb.andWhere('box.itemCode = :itemCode', { itemCode });
     if (company) qb.andWhere('box.company = :company', { company });
+    if (plant) qb.andWhere('box.plant = :plant', { plant });
 
     qb.orderBy('box.boxNo', 'ASC');
-
     return qb.getMany();
   }
 
-  /** 통계 (총/대기/합격/불합격) */
-  async getStats(company?: string) {
-    const qb = this.oqcRequestRepo
-      .createQueryBuilder('oqc')
+  async getStats(company?: string, plant?: string) {
+    const qb = this.oqcRequestRepo.createQueryBuilder('oqc');
 
     if (company) qb.andWhere('oqc.company = :company', { company });
+    if (plant) qb.andWhere('oqc.plant = :plant', { plant });
 
     const all = await qb.getMany();
-
     return {
       total: all.length,
-      pending: all.filter(r => r.status === 'PENDING').length,
-      pass: all.filter(r => r.status === 'PASS' || r.result === 'PASS').length,
-      fail: all.filter(r => r.status === 'FAIL' || r.result === 'FAIL').length,
+      pending: all.filter((row) => row.status === 'PENDING').length,
+      pass: all.filter((row) => row.status === 'PASS' || row.result === 'PASS').length,
+      fail: all.filter((row) => row.status === 'FAIL' || row.result === 'FAIL').length,
     };
   }
 }
+
+

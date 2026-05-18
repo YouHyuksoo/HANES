@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Like, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
@@ -19,6 +20,8 @@ export class LotSplitService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(MatIssue)
+    private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(StockTransaction)
@@ -107,6 +110,18 @@ export class LotSplitService {
 
       if (!sourceStock || sourceStock.qty < splitQty) {
         throw new BadRequestException(`분할 수량이 현재 재고보다 많습니다. 현재: ${sourceStock?.qty ?? 0}, 요청: ${splitQty}`);
+      }
+      if ((sourceStock.reservedQty ?? 0) > 0) {
+        throw new BadRequestException('예약 수량이 있는 LOT는 분할할 수 없습니다. 예약부터 먼저 정리해 주세요.');
+      }
+
+      const issueHistories = await queryRunner.manager.find(MatIssue, {
+        where: { matUid: sourceLotId },
+      });
+      if (issueHistories.some((issue) => issue.status !== 'CANCELED')) {
+        throw new BadRequestException(
+          '이미 자재출고 이력이 있는 LOT는 분할할 수 없습니다. 자재출고부터 먼저 정리해 주세요.',
+        );
       }
 
       // 품목 정보 조회

@@ -13,6 +13,7 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between, In } from 'typeorm';
@@ -213,7 +214,7 @@ export class RepairService {
 
       await queryRunner.manager.update(
         RepairOrder,
-        { repairDate: new Date(repairDate), seq },
+        { repairDate: new Date(repairDate), seq, company, plant },
         updateData,
       );
 
@@ -222,6 +223,8 @@ export class RepairService {
         await queryRunner.manager.delete(RepairUsedPart, {
           repairDate: new Date(repairDate),
           seq,
+          company,
+          plant,
         });
         if (usedParts?.length) {
           const parts = usedParts.map((p) =>
@@ -271,14 +274,23 @@ export class RepairService {
           `수리오더를 찾을 수 없습니다: ${repairDate}-${seq}`,
         );
       }
+      if (existing.status !== 'RECEIVED') {
+        throw new BadRequestException(
+          `수리오더는 RECEIVED 상태에서만 삭제할 수 있습니다. 현재 상태: ${existing.status}`,
+        );
+      }
 
       await queryRunner.manager.delete(RepairUsedPart, {
         repairDate: new Date(repairDate),
         seq,
+        company,
+        plant,
       });
       await queryRunner.manager.delete(RepairOrder, {
         repairDate: new Date(repairDate),
         seq,
+        company,
+        plant,
       });
 
       await queryRunner.commitTransaction();

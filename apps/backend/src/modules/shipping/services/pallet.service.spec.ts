@@ -76,6 +76,44 @@ describe('PalletService', () => {
     });
   });
 
+  describe('update', () => {
+    it('should block direct status changes', async () => {
+      mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN' } as any);
+
+      await expect(target.update('P-001', { status: 'LOADED' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(mockPalletRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('delete', () => {
+    it('blocks delete after pallet entered shipping flow', async () => {
+      mockPalletRepo.findOne.mockResolvedValue({
+        palletNo: 'P-002',
+        status: 'CLOSED',
+        boxCount: 0,
+        shipmentId: null,
+      } as any);
+
+      await expect(target.delete('P-002')).rejects.toThrow(BadRequestException);
+      expect(mockPalletRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it('allows delete only for empty open pallet', async () => {
+      mockPalletRepo.findOne.mockResolvedValue({
+        palletNo: 'P-003',
+        status: 'OPEN',
+        boxCount: 0,
+        shipmentId: null,
+      } as any);
+
+      await expect(target.delete('P-003')).resolves.toEqual({ id: 'P-003', deleted: true });
+      expect(mockPalletRepo.delete).toHaveBeenCalledWith({ palletNo: 'P-003' });
+    });
+  });
+
   describe('closePallet', () => {
     it('should close OPEN pallet with boxes', async () => {
       mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN', boxCount: 3 } as any);

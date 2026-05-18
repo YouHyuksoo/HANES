@@ -66,6 +66,52 @@ describe('ReworkService', () => {
       mockProcessRepo.find.mockResolvedValue([]);
       await expect(target.delete('RW-001')).rejects.toThrow(BadRequestException);
     });
+
+    it('should restore linked defect status before deleting registered rework', async () => {
+      mockReworkRepo.findOne.mockResolvedValue({
+        reworkNo: 'RW-001',
+        status: 'REGISTERED',
+        defectLogId: '2026-04-08T00:00:00.000Z|1',
+        id: 1,
+      } as any);
+      mockProcessRepo.find.mockResolvedValue([]);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockReworkRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.delete('RW-001');
+
+      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
+        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 1 },
+        { status: 'WAIT' },
+      );
+    });
+
+    it('should block delete when rework process has already progressed', async () => {
+      mockReworkRepo.findOne.mockResolvedValue({
+        reworkNo: 'RW-002',
+        status: 'REGISTERED',
+        id: 2,
+      } as any);
+      mockProcessRepo.find.mockResolvedValue([
+        { reworkOrderId: 'RW-002', status: 'IN_PROGRESS' } as any,
+      ]);
+
+      await expect(target.delete('RW-002')).rejects.toThrow(BadRequestException);
+      expect(mockReworkRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it('should block delete when inspection history already exists', async () => {
+      mockReworkRepo.findOne.mockResolvedValue({
+        reworkNo: 'RW-003',
+        status: 'REGISTERED',
+        id: 3,
+      } as any);
+      mockProcessRepo.find.mockResolvedValue([]);
+      mockInspectRepo.find.mockResolvedValue([{ reworkOrderId: 'RW-003' } as any]);
+
+      await expect(target.delete('RW-003')).rejects.toThrow(BadRequestException);
+      expect(mockReworkRepo.delete).not.toHaveBeenCalled();
+    });
   });
 
   describe('qcApprove', () => {

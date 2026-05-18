@@ -208,6 +208,9 @@ export class ProductInventoryService {
       if (!stock || stock.availableQty < dto.qty) {
         throw new BadRequestException(`재고 부족: 가용 ${stock?.availableQty || 0}, 요청 ${dto.qty}`);
       }
+      if (stock.status === 'HOLD') {
+        throw new BadRequestException(`HOLD stock cannot be issued: ${dto.itemCode}`);
+      }
 
       // 2. 트랜잭션 생성
       const transaction = this.transactionRepository.create({
@@ -297,6 +300,9 @@ export class ProductInventoryService {
         `재고 부족으로 출고할 수 없습니다: ${dto.itemCode} (가용 ${stock?.availableQty || 0}, 요청 ${dto.qty})`,
       );
     }
+    if (stock.status === 'HOLD') {
+      throw new BadRequestException(`HOLD stock cannot be issued: ${dto.itemCode}`);
+    }
 
     // 2. 트랜잭션 생성
     const transaction = qr.manager.create(ProductTransaction, {
@@ -362,9 +368,13 @@ export class ProductInventoryService {
   }
 
   /** 제품 트랜잭션 취소 (입고취소, 출고취소) */
-  async cancelTransaction(dto: CancelTransactionDto) {
+  async cancelTransaction(dto: CancelTransactionDto, company?: string, plant?: string) {
     const originalTrans = await this.transactionRepository.findOne({
-      where: { transNo: dto.transactionId },
+      where: {
+        transNo: dto.transactionId,
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
     });
 
     if (!originalTrans) {

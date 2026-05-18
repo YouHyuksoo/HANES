@@ -14,6 +14,7 @@ import { Repository, Like, DataSource, In } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
 
 @Injectable()
@@ -25,6 +26,8 @@ export class PurchaseOrderService {
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(MatArrival)
+    private readonly matArrivalRepository: Repository<MatArrival>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -281,10 +284,24 @@ export class PurchaseOrderService {
   }
 
   async delete(poNo: string) {
-    await this.findById(poNo);
+    const po = await this.findById(poNo);
+    if (po.status !== 'DRAFT') {
+      throw new BadRequestException(
+        `구매오더는 DRAFT 상태에서만 삭제할 수 있습니다. 현재 상태: ${po.status}`,
+      );
+    }
+
+    const arrivals = await this.matArrivalRepository.find({
+      where: { poNo },
+    });
+    if (arrivals.length > 0) {
+      throw new BadRequestException(
+        '이미 입하가 진행된 구매오더는 직접 삭제할 수 없습니다. 입하부터 먼저 정리해 주세요.',
+      );
+    }
+
     await this.purchaseOrderRepository.delete(poNo);
     return { poNo };
   }
 }
-
 

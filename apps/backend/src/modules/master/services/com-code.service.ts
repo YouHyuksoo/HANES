@@ -106,11 +106,18 @@ export class ComCodeService {
   /**
    * 공통코드 목록 조회
    */
-  async findAll(query: ComCodeQueryDto) {
+  async findAll(query: ComCodeQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, groupCode, search, useYn } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.comCodeRepository.createQueryBuilder('code');
+
+    if (company) {
+      queryBuilder.andWhere('code.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('code.plant = :plant', { plant });
+    }
 
     if (groupCode) {
       queryBuilder.andWhere('code.groupCode = :groupCode', { groupCode });
@@ -187,7 +194,7 @@ export class ComCodeService {
   /**
    * 공통코드 생성
    */
-  async create(dto: CreateComCodeDto) {
+  async create(dto: CreateComCodeDto, company?: string, plant?: string) {
     // 중복 체크
     const existing = await this.comCodeRepository.findOne({
       where: {
@@ -213,6 +220,8 @@ export class ComCodeService {
       attr1: dto.attr1,
       attr2: dto.attr2,
       attr3: dto.attr3,
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.comCodeRepository.save(comCode);

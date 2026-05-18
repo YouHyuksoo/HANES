@@ -71,8 +71,8 @@ export class PalletController {
   @Get('unassigned')
   @ApiOperation({ summary: '미할당 팔레트 목록', description: '출하에 할당되지 않은 CLOSED 상태 팔레트 목록' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findUnassignedPallets() {
-    const data = await this.palletService.findUnassignedPallets();
+  async findUnassignedPallets(@Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.findUnassignedPallets(company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -81,8 +81,8 @@ export class PalletController {
   @ApiParam({ name: 'palletNo', description: '팔레트 번호', example: 'PLT-20250126-001' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '팔레트 없음' })
-  async findByPalletNo(@Param('palletNo') palletNo: string) {
-    const data = await this.palletService.findByPalletNo(palletNo);
+  async findByPalletNo(@Param('palletNo') palletNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.findByPalletNo(palletNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -90,8 +90,8 @@ export class PalletController {
   @ApiOperation({ summary: '출하별 팔레트 목록 조회' })
   @ApiParam({ name: 'shipmentId', description: '출하 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByShipmentId(@Param('shipmentId') shipmentId: string) {
-    const data = await this.palletService.findByShipmentId(shipmentId);
+  async findByShipmentId(@Param('shipmentId') shipmentId: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.findByShipmentId(shipmentId, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -100,8 +100,8 @@ export class PalletController {
   @ApiParam({ name: 'palletBarcode', description: '팔레트 바코드(팔레트번호)', example: 'PLT-20250126-001' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '팔레트 없음' })
-  async getPalletBoxes(@Param('palletBarcode') palletBarcode: string) {
-    const data = await this.palletService.findBoxesByPallet(palletBarcode);
+  async getPalletBoxes(@Param('palletBarcode') palletBarcode: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.findBoxesByPallet(palletBarcode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -110,8 +110,8 @@ export class PalletController {
   @ApiParam({ name: 'id', description: '팔레트 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '팔레트 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.palletService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -120,8 +120,8 @@ export class PalletController {
   @ApiParam({ name: 'id', description: '팔레트 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '팔레트 없음' })
-  async getPalletSummary(@Param('id') id: string) {
-    const data = await this.palletService.getPalletSummary(id);
+  async getPalletSummary(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.getPalletSummary(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -141,8 +141,8 @@ export class PalletController {
   @ApiResponse({ status: 200, description: '수정 성공' })
   @ApiResponse({ status: 404, description: '팔레트 없음' })
   @ApiResponse({ status: 400, description: '수정 불가 상태' })
-  async update(@Param('id') id: string, @Body() dto: UpdatePalletDto) {
-    const data = await this.palletService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdatePalletDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '팔레트가 수정되었습니다.');
   }
 
@@ -153,8 +153,8 @@ export class PalletController {
   @ApiResponse({ status: 200, description: '삭제 성공' })
   @ApiResponse({ status: 404, description: '팔레트 없음' })
   @ApiResponse({ status: 400, description: '삭제 불가 상태' })
-  async delete(@Param('id') id: string) {
-    await this.palletService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.palletService.delete(id, company, plant);
     return ResponseUtil.success(null, '팔레트가 삭제되었습니다.');
   }
 
@@ -167,8 +167,8 @@ export class PalletController {
   @ApiResponse({ status: 200, description: '추가 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
   @ApiResponse({ status: 404, description: '박스 없음' })
-  async addBox(@Param('id') id: string, @Body() dto: AddBoxToPalletDto) {
-    const data = await this.palletService.addBox(id, dto);
+  async addBox(@Param('id') id: string, @Body() dto: AddBoxToPalletDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.addBox(id, dto, company, plant);
     return ResponseUtil.success(data, '박스가 추가되었습니다.');
   }
 
@@ -179,8 +179,13 @@ export class PalletController {
   @ApiResponse({ status: 200, description: '제거 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
   @ApiResponse({ status: 404, description: '박스 없음' })
-  async removeBox(@Param('id') id: string, @Body() dto: RemoveBoxFromPalletDto) {
-    const data = await this.palletService.removeBox(id, dto);
+  async removeBox(
+    @Param('id') id: string,
+    @Body() dto: RemoveBoxFromPalletDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.palletService.removeBox(id, dto, company, plant);
     return ResponseUtil.success(data, '박스가 제거되었습니다.');
   }
 
@@ -192,8 +197,8 @@ export class PalletController {
   @ApiParam({ name: 'id', description: '팔레트 ID' })
   @ApiResponse({ status: 200, description: '닫기 성공' })
   @ApiResponse({ status: 400, description: '상태 변경 불가' })
-  async closePallet(@Param('id') id: string) {
-    const data = await this.palletService.closePallet(id);
+  async closePallet(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.closePallet(id, company, plant);
     return ResponseUtil.success(data, '팔레트가 닫혔습니다.');
   }
 
@@ -203,8 +208,8 @@ export class PalletController {
   @ApiParam({ name: 'id', description: '팔레트 ID' })
   @ApiResponse({ status: 200, description: '열기 성공' })
   @ApiResponse({ status: 400, description: '상태 변경 불가' })
-  async reopenPallet(@Param('id') id: string) {
-    const data = await this.palletService.reopenPallet(id);
+  async reopenPallet(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.reopenPallet(id, company, plant);
     return ResponseUtil.success(data, '팔레트가 다시 열렸습니다.');
   }
 
@@ -217,8 +222,13 @@ export class PalletController {
   @ApiResponse({ status: 200, description: '할당 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
   @ApiResponse({ status: 404, description: '출하 없음' })
-  async assignToShipment(@Param('id') id: string, @Body() dto: AssignPalletToShipmentDto) {
-    const data = await this.palletService.assignToShipment(id, dto);
+  async assignToShipment(
+    @Param('id') id: string,
+    @Body() dto: AssignPalletToShipmentDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.palletService.assignToShipment(id, dto, company, plant);
     return ResponseUtil.success(data, '팔레트가 출하에 할당되었습니다.');
   }
 
@@ -228,8 +238,8 @@ export class PalletController {
   @ApiParam({ name: 'id', description: '팔레트 ID' })
   @ApiResponse({ status: 200, description: '제거 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
-  async removeFromShipment(@Param('id') id: string) {
-    const data = await this.palletService.removeFromShipment(id);
+  async removeFromShipment(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.palletService.removeFromShipment(id, company, plant);
     return ResponseUtil.success(data, '팔레트가 출하에서 제거되었습니다.');
   }
 }

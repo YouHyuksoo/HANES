@@ -74,8 +74,8 @@ export class ProdPlanController {
   @ApiOperation({ summary: '월간 집계', description: 'FG/WIP별 수량, 상태별 건수' })
   @ApiParam({ name: 'month', description: '계획월 (YYYY-MM)', example: '2026-03' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getSummary(@Param('month') month: string) {
-    const data = await this.prodPlanService.getSummary(month);
+  async getSummary(@Param('month') month: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodPlanService.getSummary(month, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -127,8 +127,13 @@ export class ProdPlanController {
   @ApiOperation({ summary: '생산계획 수정', description: 'DRAFT 상태만 수정 가능' })
   @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '수정 성공' })
-  async update(@Param('id') id: string, @Body() dto: UpdateProdPlanDto) {
-    const data = await this.prodPlanService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProdPlanDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.prodPlanService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '생산계획이 수정되었습니다.');
   }
 
@@ -137,8 +142,8 @@ export class ProdPlanController {
   @ApiOperation({ summary: '생산계획 삭제', description: 'DRAFT 상태만 삭제 가능' })
   @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.prodPlanService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.prodPlanService.delete(id, company, plant);
     return ResponseUtil.success(null, '생산계획이 삭제되었습니다.');
   }
 
@@ -147,8 +152,8 @@ export class ProdPlanController {
   @ApiOperation({ summary: '생산계획 확정', description: 'DRAFT → CONFIRMED' })
   @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '확정 성공' })
-  async confirm(@Param('id') id: string) {
-    const data = await this.prodPlanService.confirm(id);
+  async confirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodPlanService.confirm(id, company, plant);
     return ResponseUtil.success(data, '생산계획이 확정되었습니다.');
   }
 
@@ -157,8 +162,8 @@ export class ProdPlanController {
   @ApiOperation({ summary: '생산계획 일괄 확정' })
   @ApiBody({ schema: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } } } } })
   @ApiResponse({ status: 200, description: '확정 성공' })
-  async bulkConfirm(@Body('ids') ids: string[]) {
-    const result = await this.prodPlanService.bulkConfirm(ids);
+  async bulkConfirm(@Body('ids') ids: string[], @Company() company: string, @Plant() plant: string) {
+    const result = await this.prodPlanService.bulkConfirm(ids, company, plant);
     return ResponseUtil.success(result, `${result.count}건의 생산계획이 확정되었습니다.`);
   }
 
@@ -167,8 +172,8 @@ export class ProdPlanController {
   @ApiOperation({ summary: '생산계획 확정 취소', description: 'CONFIRMED → DRAFT' })
   @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '확정 취소 성공' })
-  async unconfirm(@Param('id') id: string) {
-    const data = await this.prodPlanService.unconfirm(id);
+  async unconfirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodPlanService.unconfirm(id, company, plant);
     return ResponseUtil.success(data, '생산계획 확정이 취소되었습니다.');
   }
 
@@ -192,8 +197,8 @@ export class ProdPlanController {
   @ApiOperation({ summary: '생산계획 마감', description: 'CONFIRMED → CLOSED' })
   @ApiParam({ name: 'id', description: '계획번호' })
   @ApiResponse({ status: 200, description: '마감 성공' })
-  async close(@Param('id') id: string) {
-    const data = await this.prodPlanService.close(id);
+  async close(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodPlanService.close(id, company, plant);
     return ResponseUtil.success(data, '생산계획이 마감되었습니다.');
   }
 }

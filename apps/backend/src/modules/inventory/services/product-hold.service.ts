@@ -1,13 +1,3 @@
-/**
- * @file src/modules/inventory/services/product-hold.service.ts
- * @description 제품 재고 홀드 비즈니스 로직 - PRODUCT_STOCKS 상태를 HOLD/NORMAL로 변경
- *
- * 초보자 가이드:
- * - 제품 재고(WIP/FG)를 홀드하면 출하 불가
- * - 자재 홀드는 LOT 기반(MatLot.status), 제품 홀드는 재고 기반(ProductStock.status)
- * - API: GET /inventory/product-hold, POST /inventory/product-hold/hold, POST /inventory/product-hold/release
- */
-
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Like, In } from 'typeorm';
@@ -48,7 +38,6 @@ export class ProductHoldService {
       this.productStockRepository.count({ where }),
     ]);
 
-    /* part 정보 조인 */
     const itemCodes = [...new Set(data.map((s) => s.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
       ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
@@ -68,18 +57,22 @@ export class ProductHoldService {
     return { data: flatData, total, page, limit };
   }
 
-  /** stockId를 복합 PK로 파싱 ("warehouseCode::itemCode::prdUid") */
   private parseStockId(stockId: string): { warehouseCode: string; itemCode: string; prdUid: string } {
     const [warehouseCode, itemCode, prdUid] = stockId.split('::');
     if (!warehouseCode || !itemCode || !prdUid) {
-      throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${stockId} (예: WH001::ITEM001::LOT001)`);
+      throw new NotFoundException(`�߸��� ��� ID �����Դϴ�: ${stockId} (��: WH001::ITEM001::LOT001)`);
     }
     return { warehouseCode, itemCode, prdUid };
   }
 
-  async hold(dto: ProductHoldActionDto) {
+  async hold(dto: ProductHoldActionDto, company?: string, plant?: string, userId?: string) {
     const { stockId, reason } = dto;
     const compositeKey = this.parseStockId(stockId);
+    const scopedKey = {
+      ...compositeKey,
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -87,16 +80,18 @@ export class ProductHoldService {
 
     try {
       const stock = await queryRunner.manager.findOne(ProductStock, {
-        where: compositeKey,
+        where: scopedKey,
       });
-      if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
-      if (stock.status === 'HOLD') throw new BadRequestException('이미 HOLD 상태입니다.');
-      if (stock.qty <= 0) throw new BadRequestException('수량이 0인 재고는 HOLD할 수 없습니다.');
+      if (!stock) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
+      if (stock.status === 'HOLD') throw new BadRequestException('�̹� HOLD �����Դϴ�.');
+      if (stock.qty <= 0) throw new BadRequestException('������ 0�� ���� HOLD�� �� �����ϴ�.');
 
-      await queryRunner.manager.update(ProductStock, compositeKey, {
+      await queryRunner.manager.update(ProductStock, scopedKey, {
         status: 'HOLD',
         holdReason: reason,
         holdAt: new Date(),
+        holdBy: userId || null,
+        updatedBy: userId || null,
       });
 
       await queryRunner.commitTransaction();
@@ -107,22 +102,28 @@ export class ProductHoldService {
       await queryRunner.release();
     }
 
-    const updated = await this.productStockRepository.findOne({ where: compositeKey });
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });
+    const updated = await this.productStockRepository.findOne({ where: scopedKey });
+    if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated.itemCode } });
 
     return {
       id: stockId,
       status: 'HOLD',
       itemCode: part?.itemCode,
       itemName: part?.itemName,
-      qty: updated!.qty,
+      qty: updated.qty,
       reason,
     };
   }
 
-  async release(dto: ProductReleaseHoldDto) {
+  async release(dto: ProductReleaseHoldDto, company?: string, plant?: string, userId?: string) {
     const { stockId, reason } = dto;
     const compositeKey = this.parseStockId(stockId);
+    const scopedKey = {
+      ...compositeKey,
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -130,15 +131,17 @@ export class ProductHoldService {
 
     try {
       const stock = await queryRunner.manager.findOne(ProductStock, {
-        where: compositeKey,
+        where: scopedKey,
       });
-      if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
-      if (stock.status !== 'HOLD') throw new BadRequestException('HOLD 상태가 아닙니다.');
+      if (!stock) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
+      if (stock.status !== 'HOLD') throw new BadRequestException('HOLD ���°� �ƴմϴ�.');
 
-      await queryRunner.manager.update(ProductStock, compositeKey, {
+      await queryRunner.manager.update(ProductStock, scopedKey, {
         status: 'NORMAL',
         holdReason: null,
         holdAt: null,
+        holdBy: null,
+        updatedBy: userId || null,
       });
 
       await queryRunner.commitTransaction();
@@ -149,15 +152,16 @@ export class ProductHoldService {
       await queryRunner.release();
     }
 
-    const updated = await this.productStockRepository.findOne({ where: compositeKey });
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated!.itemCode } });
+    const updated = await this.productStockRepository.findOne({ where: scopedKey });
+    if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated.itemCode } });
 
     return {
       id: stockId,
       status: 'NORMAL',
       itemCode: part?.itemCode,
       itemName: part?.itemName,
-      qty: updated!.qty,
+      qty: updated.qty,
       reason,
     };
   }

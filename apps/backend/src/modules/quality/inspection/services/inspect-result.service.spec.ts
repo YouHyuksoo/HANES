@@ -5,7 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InspectResultService } from './inspect-result.service';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
@@ -68,10 +68,31 @@ describe('InspectResultService', () => {
 
   describe('delete', () => {
     it('should delete inspect result', async () => {
-      mockInspectRepo.findOne.mockResolvedValue({ resultNo: 'IR-001' } as any);
+      mockInspectRepo.findOne.mockResolvedValue({
+        resultNo: 'IR-001',
+        prodResultNo: 'PR-001',
+      } as any);
+      mockProdResultRepo.findOne.mockResolvedValue({
+        resultNo: 'PR-001',
+        status: 'CANCELED',
+      } as any);
       mockInspectRepo.delete.mockResolvedValue({ affected: 1 } as any);
       const r = await target.delete('IR-001');
       expect(r.deleted).toBe(true);
+    });
+
+    it('should block delete while linked production result is still active', async () => {
+      mockInspectRepo.findOne.mockResolvedValue({
+        resultNo: 'IR-002',
+        prodResultNo: 'PR-002',
+      } as any);
+      mockProdResultRepo.findOne.mockResolvedValue({
+        resultNo: 'PR-002',
+        status: 'DONE',
+      } as any);
+
+      await expect(target.delete('IR-002')).rejects.toThrow(BadRequestException);
+      expect(mockInspectRepo.delete).not.toHaveBeenCalled();
     });
   });
 

@@ -9,6 +9,7 @@
 import { Controller, Get, Param, Query, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 
@@ -26,14 +27,23 @@ export class ConsumableStockController {
   async list(
     @Query('consumableCode') consumableCode?: string,
     @Query('status') status?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
     const qb = this.stockRepo.createQueryBuilder('s');
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plantCd = :plant', { plant });
     if (consumableCode) qb.andWhere('s.consumableCode = :consumableCode', { consumableCode });
     if (status) qb.andWhere('s.status = :status', { status });
     qb.orderBy('s.createdAt', 'DESC');
 
     const stocks = await qb.getMany();
-    const masters = await this.masterRepo.find();
+    const masters = await this.masterRepo.find({
+      where: {
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
+    });
     const masterMap = new Map(masters.map((m) => [m.consumableCode, m]));
 
     const data = stocks.map((s) => {
@@ -51,12 +61,26 @@ export class ConsumableStockController {
 
   /** 특정 인스턴스 상세 */
   @Get(':conUid')
-  async detail(@Param('conUid') conUid: string) {
-    const stock = await this.stockRepo.findOne({ where: { conUid } });
+  async detail(
+    @Param('conUid') conUid: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const stock = await this.stockRepo.findOne({
+      where: {
+        conUid,
+        ...(company && { company }),
+        ...(plant && { plantCd: plant }),
+      },
+    });
     if (!stock) throw new NotFoundException(`소모품 인스턴스를 찾을 수 없습니다: ${conUid}`);
 
     const master = await this.masterRepo.findOne({
-      where: { consumableCode: stock.consumableCode },
+      where: {
+        consumableCode: stock.consumableCode,
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
     });
 
     return {

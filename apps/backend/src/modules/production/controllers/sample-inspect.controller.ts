@@ -1,63 +1,65 @@
-/**
- * @file src/modules/production/controllers/sample-inspect.controller.ts
- * @description 반제품 샘플검사 입력/조회 API 컨트롤러
- *
- * 초보자 가이드:
- * 1. POST /production/sample-inspect-input : 샘플검사 일괄 입력
- * 2. GET  /production/sample-inspect-input : 샘플검사 이력 조회
- * 3. GET  /production/sample-inspect-input/job-order/:id : 작업지시별 검사목록
- */
-
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Param,
-  Query,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
-import { SampleInspectService } from '../services/sample-inspect.service';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import {
   CreateSampleInspectDto,
   SampleInspectHistoryQueryDto,
 } from '../dto/sample-inspect.dto';
-import { ResponseUtil } from '../../../common/dto/response.dto';
+import { SampleInspectService } from '../services/sample-inspect.service';
 
-@ApiTags('생산관리 - 반제품 샘플검사')
+@ApiTags('Production - Sample Inspect')
 @UseGuards(JwtAuthGuard)
 @Controller('production/sample-inspect-input')
 export class SampleInspectController {
   constructor(private readonly sampleInspectService: SampleInspectService) {}
 
   @Get()
-  @ApiOperation({ summary: '샘플검사 이력 조회', description: '날짜/합불/검색어 필터링' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async findHistory(@Query() query: SampleInspectHistoryQueryDto, @Company() company: string, @Plant() plant: string) {
+  @ApiOperation({ summary: 'List sample inspection history' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async findHistory(
+    @Query() query: SampleInspectHistoryQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
     const result = await this.sampleInspectService.findHistory(query, company, plant);
     return ResponseUtil.success(result.data);
   }
 
   @Get('job-order/:orderNo')
-  @ApiOperation({ summary: '작업지시별 샘플검사 조회' })
-  @ApiParam({ name: 'orderNo', description: '작업지시 ID' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByJobOrder(@Param('orderNo') orderNo: string) {
-    const data = await this.sampleInspectService.findByJobOrder(orderNo);
+  @ApiOperation({ summary: 'List sample inspections by job order' })
+  @ApiParam({ name: 'orderNo', description: 'Job order no' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async findByJobOrder(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.sampleInspectService.findByJobOrder(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: '샘플검사 일괄 입력', description: '작업지시 기준 샘플별 측정값 저장' })
-  @ApiResponse({ status: 201, description: '입력 성공' })
-  async create(@Body() dto: CreateSampleInspectDto) {
-    const result = await this.sampleInspectService.create(dto);
-    return ResponseUtil.success(result, `${result.count}건의 샘플검사가 등록되었습니다.`);
+  @ApiOperation({ summary: 'Create sample inspection records' })
+  @ApiResponse({ status: 201, description: 'Created' })
+  async create(
+    @Body() dto: CreateSampleInspectDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.sampleInspectService.create(dto, company, plant);
+    return ResponseUtil.success(result, `${result.count} sample inspection records created`);
   }
 }

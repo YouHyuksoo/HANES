@@ -115,10 +115,14 @@ export class ScrapService {
       });
 
       if (!stock || stock.qty < qty) {
-        throw new BadRequestException(`폐기할 재고가 부족합니다. 현재 재고: ${stock?.qty ?? 0}`);
+        throw new BadRequestException(`??? ??? ?????. ?? ??: ${stock?.qty ?? 0}`);
+      }
+      if (stock.availableQty < qty) {
+        throw new BadRequestException(
+          `??? ??? ?? ?? ??? ??? ?????. ????: ${stock.availableQty}`,
+        );
       }
 
-      // 재고 차감 (MatStock만 업데이트)
       const newStockQty = stock.qty - qty;
       await queryRunner.manager.update(MatStock,
         { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },

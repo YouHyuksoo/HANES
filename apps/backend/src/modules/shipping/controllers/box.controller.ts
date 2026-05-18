@@ -70,8 +70,8 @@ export class BoxController {
   @Get('unassigned')
   @ApiOperation({ summary: '미할당 박스 목록', description: '팔레트에 할당되지 않은 CLOSED 상태 박스 목록' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findUnassignedBoxes() {
-    const data = await this.boxService.findUnassignedBoxes();
+  async findUnassignedBoxes(@Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.findUnassignedBoxes(company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -80,8 +80,8 @@ export class BoxController {
   @ApiParam({ name: 'boxNo', description: '박스 번호', example: 'BOX-20250126-001' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '박스 없음' })
-  async findByBoxNo(@Param('boxNo') boxNo: string) {
-    const data = await this.boxService.findByBoxNo(boxNo);
+  async findByBoxNo(@Param('boxNo') boxNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.findByBoxNo(boxNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -89,8 +89,8 @@ export class BoxController {
   @ApiOperation({ summary: '팔레트별 박스 목록 조회' })
   @ApiParam({ name: 'palletId', description: '팔레트 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByPalletId(@Param('palletId') palletId: string) {
-    const data = await this.boxService.findByPalletId(palletId);
+  async findByPalletId(@Param('palletId') palletId: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.findByPalletId(palletId, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -99,8 +99,8 @@ export class BoxController {
   @ApiParam({ name: 'id', description: '박스 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '박스 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.boxService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -120,8 +120,8 @@ export class BoxController {
   @ApiResponse({ status: 200, description: '수정 성공' })
   @ApiResponse({ status: 404, description: '박스 없음' })
   @ApiResponse({ status: 400, description: '수정 불가 상태' })
-  async update(@Param('id') id: string, @Body() dto: UpdateBoxDto) {
-    const data = await this.boxService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateBoxDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '박스가 수정되었습니다.');
   }
 
@@ -132,8 +132,8 @@ export class BoxController {
   @ApiResponse({ status: 200, description: '삭제 성공' })
   @ApiResponse({ status: 404, description: '박스 없음' })
   @ApiResponse({ status: 400, description: '삭제 불가 상태' })
-  async delete(@Param('id') id: string) {
-    await this.boxService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.boxService.delete(id, company, plant);
     return ResponseUtil.success(null, '박스가 삭제되었습니다.');
   }
 
@@ -146,8 +146,8 @@ export class BoxController {
   @ApiResponse({ status: 200, description: '추가 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
   @ApiResponse({ status: 409, description: '중복 시리얼' })
-  async addSerial(@Param('id') id: string, @Body() dto: AddSerialToBoxDto) {
-    const data = await this.boxService.addSerial(id, dto);
+  async addSerial(@Param('id') id: string, @Body() dto: AddSerialToBoxDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.addSerial(id, dto, company, plant);
     return ResponseUtil.success(data, '시리얼이 추가되었습니다.');
   }
 
@@ -159,8 +159,13 @@ export class BoxController {
   @ApiResponse({ status: 200, description: '제거 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
   @ApiResponse({ status: 404, description: '시리얼 없음' })
-  async removeSerial(@Param('id') id: string, @Body('serials') serials: string[]) {
-    const data = await this.boxService.removeSerial(id, serials);
+  async removeSerial(
+    @Param('id') id: string,
+    @Body('serials') serials: string[],
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.boxService.removeSerial(id, serials, company, plant);
     return ResponseUtil.success(data, '시리얼이 제거되었습니다.');
   }
 
@@ -172,8 +177,8 @@ export class BoxController {
   @ApiParam({ name: 'id', description: '박스 ID' })
   @ApiResponse({ status: 200, description: '닫기 성공' })
   @ApiResponse({ status: 400, description: '상태 변경 불가' })
-  async closeBox(@Param('id') id: string) {
-    const data = await this.boxService.closeBox(id);
+  async closeBox(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.closeBox(id, company, plant);
     return ResponseUtil.success(data, '박스가 닫혔습니다.');
   }
 
@@ -183,8 +188,8 @@ export class BoxController {
   @ApiParam({ name: 'id', description: '박스 ID' })
   @ApiResponse({ status: 200, description: '열기 성공' })
   @ApiResponse({ status: 400, description: '상태 변경 불가' })
-  async reopenBox(@Param('id') id: string) {
-    const data = await this.boxService.reopenBox(id);
+  async reopenBox(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.reopenBox(id, company, plant);
     return ResponseUtil.success(data, '박스가 다시 열렸습니다.');
   }
 
@@ -197,8 +202,13 @@ export class BoxController {
   @ApiResponse({ status: 200, description: '할당 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
   @ApiResponse({ status: 404, description: '팔레트 없음' })
-  async assignToPallet(@Param('id') id: string, @Body() dto: AssignBoxToPalletDto) {
-    const data = await this.boxService.assignToPallet(id, dto);
+  async assignToPallet(
+    @Param('id') id: string,
+    @Body() dto: AssignBoxToPalletDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.boxService.assignToPallet(id, dto, company, plant);
     return ResponseUtil.success(data, '박스가 팔레트에 할당되었습니다.');
   }
 
@@ -208,8 +218,8 @@ export class BoxController {
   @ApiParam({ name: 'id', description: '박스 ID' })
   @ApiResponse({ status: 200, description: '제거 성공' })
   @ApiResponse({ status: 400, description: '상태 오류' })
-  async removeFromPallet(@Param('id') id: string) {
-    const data = await this.boxService.removeFromPallet(id);
+  async removeFromPallet(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.boxService.removeFromPallet(id, company, plant);
     return ResponseUtil.success(data, '박스가 팔레트에서 제거되었습니다.');
   }
 }

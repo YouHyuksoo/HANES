@@ -23,7 +23,10 @@ import { ProdResult } from '../../../entities/prod-result.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { FgLabel } from '../../../entities/fg-label.entity';
+import { ProdPlan } from '../../../entities/prod-plan.entity';
+import { NumberingService } from '../../../shared/numbering.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('JobOrderService', () => {
@@ -34,7 +37,10 @@ describe('JobOrderService', () => {
   let mockBomMasterRepo: DeepMocked<Repository<BomMaster>>;
   let mockRoutingGroupRepo: DeepMocked<Repository<RoutingGroup>>;
   let mockRoutingProcessRepo: DeepMocked<Repository<RoutingProcess>>;
-  let mockSeqGenerator: DeepMocked<SeqGeneratorService>;
+  let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
+  let mockProdPlanRepo: DeepMocked<Repository<ProdPlan>>;
+  let mockNumbering: DeepMocked<NumberingService>;
+  let mockSysConfigService: DeepMocked<SysConfigService>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
@@ -45,7 +51,10 @@ describe('JobOrderService', () => {
     mockBomMasterRepo = createMock<Repository<BomMaster>>();
     mockRoutingGroupRepo = createMock<Repository<RoutingGroup>>();
     mockRoutingProcessRepo = createMock<Repository<RoutingProcess>>();
-    mockSeqGenerator = createMock<SeqGeneratorService>();
+    mockFgLabelRepo = createMock<Repository<FgLabel>>();
+    mockProdPlanRepo = createMock<Repository<ProdPlan>>();
+    mockNumbering = createMock<NumberingService>();
+    mockSysConfigService = createMock<SysConfigService>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
 
@@ -65,7 +74,10 @@ describe('JobOrderService', () => {
         { provide: getRepositoryToken(BomMaster), useValue: mockBomMasterRepo },
         { provide: getRepositoryToken(RoutingGroup), useValue: mockRoutingGroupRepo },
         { provide: getRepositoryToken(RoutingProcess), useValue: mockRoutingProcessRepo },
-        { provide: SeqGeneratorService, useValue: mockSeqGenerator },
+        { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
+        { provide: getRepositoryToken(ProdPlan), useValue: mockProdPlanRepo },
+        { provide: NumberingService, useValue: mockNumbering },
+        { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: DataSource, useValue: mockDataSource },
       ],
     })
@@ -145,7 +157,7 @@ describe('JobOrderService', () => {
 
     it('should create job order with auto-generated orderNo', async () => {
       // Arrange
-      mockSeqGenerator.nextJobOrderNo.mockResolvedValue('JO-20260318-0001');
+      mockNumbering.nextJobOrderNo.mockResolvedValue('JO-20260318-0001');
       mockJobOrderRepo.findOne
         .mockResolvedValueOnce(null) // existing check
         .mockResolvedValueOnce({ orderNo: 'JO-20260318-0001' } as JobOrder); // final findOne
@@ -158,7 +170,7 @@ describe('JobOrderService', () => {
       const result = await target.create(createDto, 'COMPANY', 'PLANT');
 
       // Assert
-      expect(mockSeqGenerator.nextJobOrderNo).toHaveBeenCalled();
+      expect(mockNumbering.nextJobOrderNo).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalled();
     });
@@ -175,7 +187,7 @@ describe('JobOrderService', () => {
 
     it('should throw NotFoundException when part not found', async () => {
       // Arrange
-      mockSeqGenerator.nextJobOrderNo.mockResolvedValue('JO-001');
+      mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
       mockJobOrderRepo.findOne.mockResolvedValue(null);
       mockPartMasterRepo.findOne.mockResolvedValue(null);
 
@@ -185,7 +197,7 @@ describe('JobOrderService', () => {
 
     it('should rollback on error', async () => {
       // Arrange
-      mockSeqGenerator.nextJobOrderNo.mockResolvedValue('JO-001');
+      mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
       mockJobOrderRepo.findOne.mockResolvedValue(null);
       mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001' } as PartMaster);
       mockRoutingGroupRepo.findOne.mockResolvedValue(null);
@@ -235,6 +247,20 @@ describe('JobOrderService', () => {
 
       // Act & Assert
       await expect(target.update('JO-001', {} as any)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should block direct status changes in update', async () => {
+      mockJobOrderRepo.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        status: 'WAITING',
+        itemCode: 'PART-001',
+      } as JobOrder);
+
+      await expect(target.update('JO-001', { status: 'RUNNING' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(mockJobOrderRepo.update).not.toHaveBeenCalled();
     });
   });
 
@@ -452,21 +478,17 @@ describe('JobOrderService', () => {
   // changeStatus
   // ─────────────────────────────────────────────
   describe('changeStatus', () => {
-    it('should directly change status', async () => {
+    it('should block direct status changes and require lifecycle APIs', async () => {
       // Arrange
-      mockJobOrderRepo.findOne
-        .mockResolvedValueOnce({ orderNo: 'JO-001', status: 'WAITING' } as JobOrder)
-        .mockResolvedValueOnce({ orderNo: 'JO-001', status: 'RUNNING' } as JobOrder);
-      mockJobOrderRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockJobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-001', status: 'WAITING' } as JobOrder);
 
       // Act
-      await target.changeStatus('JO-001', { status: 'RUNNING' } as any);
+      await expect(target.changeStatus('JO-001', { status: 'RUNNING' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
 
       // Assert
-      expect(mockJobOrderRepo.update).toHaveBeenCalledWith(
-        { orderNo: 'JO-001' },
-        expect.objectContaining({ status: 'RUNNING' }),
-      );
+      expect(mockJobOrderRepo.update).not.toHaveBeenCalled();
     });
   });
 

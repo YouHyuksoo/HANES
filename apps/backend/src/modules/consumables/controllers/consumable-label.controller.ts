@@ -27,8 +27,8 @@ export class ConsumableLabelController {
 
   /** 라벨 발행 가능 마스터 목록 */
   @Get('masters')
-  async getMasters() {
-    const data = await this.labelService.findLabelableConsumables();
+  async getMasters(@Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.findLabelableConsumables(company, plant);
     return { data };
   }
 
@@ -41,22 +41,22 @@ export class ConsumableLabelController {
 
   /** 미입고 UID 목록 */
   @Get('pending')
-  async getPending() {
-    const data = await this.labelService.findPendingStocks();
+  async getPending(@Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.findPendingStocks(company, plant);
     return { data };
   }
 
   /** 단건 입고 확정 (바코드 스캔) */
   @Post('confirm')
-  async confirmReceiving(@Body() dto: ConfirmConReceivingDto) {
-    const data = await this.labelService.confirmReceiving(dto);
+  async confirmReceiving(@Body() dto: ConfirmConReceivingDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.confirmReceiving(dto, company, plant);
     return { data };
   }
 
   /** 다건 입고 확정 */
   @Post('confirm-bulk')
-  async confirmBulk(@Body() dto: BulkConfirmConReceivingDto) {
-    const data = await this.labelService.bulkConfirmReceiving(dto);
+  async confirmBulk(@Body() dto: BulkConfirmConReceivingDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelService.bulkConfirmReceiving(dto, company, plant);
     return { data };
   }
 }

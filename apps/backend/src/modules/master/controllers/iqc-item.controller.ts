@@ -1,61 +1,77 @@
-/**
- * @file src/modules/master/controllers/iqc-item.controller.ts
- * @description IQC 검사항목마스터 CRUD API 컨트롤러
- *
- * 초보자 가이드:
- * 1. **GET /master/iqc-items**: 검사항목 목록 조회 (itemCode 필터)
- * 2. **POST /master/iqc-items**: 검사항목 생성
- * 3. **PUT /master/iqc-items/:itemCode/:seq**: 검사항목 수정
- * 4. **DELETE /master/iqc-items/:itemCode/:seq**: 검사항목 삭제
- */
-
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+﻿import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
-import { IqcItemService } from '../services/iqc-item.service';
-import { CreateIqcItemDto, UpdateIqcItemDto, IqcItemQueryDto } from '../dto/iqc-item.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { CreateIqcItemDto, IqcItemQueryDto, UpdateIqcItemDto } from '../dto/iqc-item.dto';
+import { IqcItemService } from '../services/iqc-item.service';
 
-@ApiTags('기준정보 - IQC검사항목')
+@ApiTags('Master - IQC Items')
 @UseGuards(JwtAuthGuard)
 @Controller('master/iqc-items')
 export class IqcItemController {
   constructor(private readonly iqcItemService: IqcItemService) {}
 
   @Get()
-  @ApiOperation({ summary: 'IQC 검사항목 목록 조회' })
-  async findAll(@Query() query: IqcItemQueryDto, @Company() company: string, @Plant() plant: string) {
+  @ApiOperation({ summary: 'Get IQC item list' })
+  async findAll(
+    @Query() query: IqcItemQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
     const result = await this.iqcItemService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get(':itemCode/:seq')
-  @ApiOperation({ summary: 'IQC 검사항목 상세 조회' })
-  async findByCompositeKey(@Param('itemCode') itemCode: string, @Param('seq') seq: string) {
+  @ApiOperation({ summary: 'Get one IQC item' })
+  async findByCompositeKey(
+    @Param('itemCode') itemCode: string,
+    @Param('seq') seq: string,
+  ) {
     const data = await this.iqcItemService.findByCompositeKey(itemCode, +seq);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'IQC 검사항목 생성' })
-  async create(@Body() dto: CreateIqcItemDto) {
-    const data = await this.iqcItemService.create(dto);
-    return ResponseUtil.success(data, 'IQC 검사항목이 생성되었습니다.');
+  @ApiOperation({ summary: 'Create IQC item' })
+  async create(
+    @Body() dto: CreateIqcItemDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.iqcItemService.create(dto, company, plant);
+    return ResponseUtil.success(data, 'IQC item created');
   }
 
   @Put(':itemCode/:seq')
-  @ApiOperation({ summary: 'IQC 검사항목 수정' })
-  async update(@Param('itemCode') itemCode: string, @Param('seq') seq: string, @Body() dto: UpdateIqcItemDto) {
+  @ApiOperation({ summary: 'Update IQC item' })
+  async update(
+    @Param('itemCode') itemCode: string,
+    @Param('seq') seq: string,
+    @Body() dto: UpdateIqcItemDto,
+  ) {
     const data = await this.iqcItemService.update(itemCode, +seq, dto);
-    return ResponseUtil.success(data, 'IQC 검사항목이 수정되었습니다.');
+    return ResponseUtil.success(data, 'IQC item updated');
   }
 
   @Delete(':itemCode/:seq')
-  @ApiOperation({ summary: 'IQC 검사항목 삭제' })
+  @ApiOperation({ summary: 'Delete IQC item' })
   async delete(@Param('itemCode') itemCode: string, @Param('seq') seq: string) {
     await this.iqcItemService.delete(itemCode, +seq);
-    return ResponseUtil.success(null, 'IQC 검사항목이 삭제되었습니다.');
+    return ResponseUtil.success(null, 'IQC item deleted');
   }
 }

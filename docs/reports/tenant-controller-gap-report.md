@@ -1,0 +1,258 @@
+﻿# Tenant Controller Gap Report
+
+- Generated: 2026-04-12 22:27:00
+- Total gaps: 215
+- Files with gaps: 30
+
+| File | Gap Methods |
+|---|---:|
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | 22 |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | 18 |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | 17 |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | 14 |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | 12 |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | 10 |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | 10 |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | 9 |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | 9 |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | 8 |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | 8 |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | 8 |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | 7 |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | 7 |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\control-plan.controller.ts | 5 |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\spc.controller.ts | 5 |
+| C:\Project\HANES\apps\backend\src\modules\quality\continuity-inspect\controllers\continuity-inspect.controller.ts | 4 |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\bom.controller.ts | 4 |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\arrival.controller.ts | 4 |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item.controller.ts | 4 |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumable-label.controller.ts | 4 |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\sensor-monitor.controller.ts | 4 |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item-pool.controller.ts | 3 |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\ship-order.controller.ts | 3 |
+| C:\Project\HANES\apps\backend\src\modules\quality\inspection\controllers\inspect-result.controller.ts | 3 |
+| C:\Project\HANES\apps\backend\src\modules\quality\oqc\controllers\oqc.controller.ts | 3 |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\msa.controller.ts | 3 |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-part-link.controller.ts | 3 |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\receiving.controller.ts | 2 |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-group.controller.ts | 2 |
+
+## Details
+
+| File | Method | hasCompany | hasPlant |
+|---|---|---:|---:|
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumable-label.controller.ts | confirmBulk | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumable-label.controller.ts | confirmReceiving | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumable-label.controller.ts | getMasters | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumable-label.controller.ts | getPending | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | create | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | findAllLogs | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | getLifeStatus | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | getStockStatus | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | getSummary | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | getWarningList | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | removeImage | False | False |
+| C:\Project\HANES\apps\backend\src\modules\consumables\controllers\consumables.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | create | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | createLog | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | findByCategory | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | findByCode | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | findLogs | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | findLogsByConsumableId | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | findMountedByEquip | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | getPmCalendarSummary | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | getPmDaySchedule | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | getReplacementSchedule | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | getStats | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | getWarningConsumables | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | increaseCount | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | registerReplacement | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | removeImage | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\consumable.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\sensor-monitor.controller.ts | deleteRule | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\sensor-monitor.controller.ts | findAllRules | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\sensor-monitor.controller.ts | querySensorData | False | False |
+| C:\Project\HANES\apps\backend\src\modules\equipment\controllers\sensor-monitor.controller.ts | updateRule | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | adjustMinus | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | adjustPlus | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | createLot | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | createWarehouse | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | deleteWarehouse | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | getLot | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | getLots | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | getStockByPart | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | getStockByWarehouse | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | getStockSummary | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | getTransaction | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | getWarehouse | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | initWarehouses | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | issueMaterial | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | issueStock | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | issueSubcon | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | receiveMaterial | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | receiveStock | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | receiveSubcon | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | scrap | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | transferStock | False | False |
+| C:\Project\HANES\apps\backend\src\modules\inventory\inventory.controller.ts | updateWarehouse | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\bom.controller.ts | create | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\bom.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\bom.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\bom.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | create | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | deleteByGroupCode | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | findAll | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | findAllActive | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | findAllGroups | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | findByGroupCode | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\com-code.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-group.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-group.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item.controller.ts | create | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item.controller.ts | findByCompositeKey | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item-pool.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item-pool.controller.ts | findByCode | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-item-pool.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-part-link.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-part-link.controller.ts | findByCompositeKey | False | False |
+| C:\Project\HANES\apps\backend\src\modules\master\controllers\iqc-part-link.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\arrival.controller.ts | cancel | False | False |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\arrival.controller.ts | createPoArrival | False | False |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\arrival.controller.ts | findByBarcode | False | False |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\arrival.controller.ts | getArrivalStockStatus | False | False |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\receiving.controller.ts | autoReceive | False | False |
+| C:\Project\HANES\apps\backend\src\modules\material\controllers\receiving.controller.ts | createBulkReceive | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | close | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | complete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | getFindings | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | linkCapa | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\audit\controllers\audit.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | addAction | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | analyze | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | close | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | plan | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | start | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | updateAction | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\capa.controller.ts | verify | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | approve | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | complete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | review | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | start | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | submit | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\change-order.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | close | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | investigate | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | linkCapa | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | resolve | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | respond | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\change-management\controllers\complaint.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\continuity-inspect\controllers\continuity-inspect.controller.ts | createProtocol | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\continuity-inspect\controllers\continuity-inspect.controller.ts | deleteProtocol | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\continuity-inspect\controllers\continuity-inspect.controller.ts | findProtocols | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\continuity-inspect\controllers\continuity-inspect.controller.ts | updateProtocol | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | changeStatus | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | findByProdResultNo | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | getDailyTrend | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | getPendingDefects | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | getRepairLogs | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\defects\controllers\defect-log.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\inspection\controllers\inspect-result.controller.ts | findByProdResultNo | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\inspection\controllers\inspect-result.controller.ts | findBySerialNo | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\inspection\controllers\inspect-result.controller.ts | getDailyTrend | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\oqc\controllers\oqc.controller.ts | executeInspection | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\oqc\controllers\oqc.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\oqc\controllers\oqc.controller.ts | updateResult | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | approve | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | cancelApproval | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | cancelSubmit | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | getCompletionRate | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | reject | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | submit | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\ppap\controllers\ppap.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\control-plan.controller.ts | approve | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\control-plan.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\control-plan.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\control-plan.controller.ts | revise | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\control-plan.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\msa.controller.ts | deleteGauge | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\msa.controller.ts | findGaugeById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\msa.controller.ts | updateGauge | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\spc.controller.ts | calculateCpk | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\spc.controller.ts | calculateLimits | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\spc.controller.ts | deleteChart | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\spc.controller.ts | findChartById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\quality\spc\controllers\spc.controller.ts | updateChart | False | False |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | create | True | False |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | findAll | True | False |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | findOne | False | False |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | getPermissions | False | False |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | remove | False | False |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\role\role.controller.ts | updatePermissions | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | addSerial | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | assignToPallet | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | closeBox | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | findByBoxNo | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | findByPalletId | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | findUnassignedBoxes | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | removeFromPallet | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | removeSerial | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | reopenBox | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\box.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | addBox | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | assignToShipment | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | closePallet | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | findByPalletNo | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | findByShipmentId | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | findUnassignedPallets | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | getPalletBoxes | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | getPalletSummary | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | removeBox | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | removeFromShipment | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | reopenPallet | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\pallet.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | cancel | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | findByShipNo | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | findUnsyncedForErp | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | getShipmentPallets | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | getShipmentStats | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | getShipmentSummary | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | loadPallets | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | markAsDelivered | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | markAsLoaded | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | markAsShipped | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | reverseShipment | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | unloadPallets | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | update | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | updateErpSyncYn | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\shipment.controller.ts | verifyPalletBarcode | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\ship-order.controller.ts | delete | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\ship-order.controller.ts | findById | False | False |
+| C:\Project\HANES\apps\backend\src\modules\shipping\controllers\ship-order.controller.ts | update | False | False |

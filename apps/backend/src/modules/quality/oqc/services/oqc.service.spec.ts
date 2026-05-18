@@ -68,5 +68,37 @@ describe('OqcService', () => {
       mockOqcRepo.findOne.mockResolvedValue({ requestNo: 'OQC-001', status: 'PASS', boxes: [] } as any);
       await expect(target.executeInspection('OQC-001', { result: 'PASS' } as any)).rejects.toThrow(BadRequestException);
     });
+
+    it('should block inspection when downstream has already progressed', async () => {
+      mockOqcRepo.findOne.mockResolvedValue({
+        requestNo: 'OQC-001',
+        status: 'PENDING',
+        boxes: [{ boxNo: 'BOX-001' }],
+      } as any);
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BOX-001', palletNo: 'PALLET-001', status: 'CLOSED' } as any,
+      ]);
+
+      await expect(target.executeInspection('OQC-001', { result: 'PASS' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('updateResult', () => {
+    it('should block result changes after downstream progress', async () => {
+      mockOqcRepo.findOne.mockResolvedValue({
+        requestNo: 'OQC-001',
+        status: 'PASS',
+        boxes: [{ boxNo: 'BOX-001' }],
+      } as any);
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BOX-001', palletNo: 'PALLET-001', status: 'CLOSED' } as any,
+      ]);
+
+      await expect(
+        target.updateResult('OQC-001', { result: 'FAIL' } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 });

@@ -9,11 +9,13 @@
  * - status: LOT 상태 (NORMAL/HOLD/SCRAPPED/DEPLETED)
  */
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In } from 'typeorm';
+import { Repository, Like, In, Not } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
 
 @Injectable()
@@ -23,6 +25,10 @@ export class MatLotService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
+    @InjectRepository(MatStock)
+    private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(MatIssue)
+    private readonly matIssueRepository: Repository<MatIssue>,
   ) {}
 
   async findAll(query: MatLotQueryDto, company?: string, plant?: string) {
@@ -137,10 +143,14 @@ export class MatLotService {
 
   async update(matUid: string, dto: UpdateMatLotDto) {
     await this.findById(matUid);
+    if (dto.status) {
+      throw new BadRequestException(
+        `LOT 상태(${dto.status})는 직접 변경할 수 없습니다. HOLD/해제/폐기/소진 전용 처리 API를 사용해 주세요.`,
+      );
+    }
 
     const updateData: any = {};
     if (dto.iqcStatus) updateData.iqcStatus = dto.iqcStatus;
-    if (dto.status) updateData.status = dto.status;
     if (dto.expireDate) updateData.expireDate = new Date(dto.expireDate);
     if (dto.vendor) updateData.vendor = dto.vendor;
     if (dto.origin) updateData.origin = dto.origin;
@@ -159,7 +169,25 @@ export class MatLotService {
   }
 
   async delete(matUid: string) {
-    await this.findById(matUid);
+    const lot = await this.findById(matUid);
+
+    const stocks = await this.matStockRepository.find({ where: { matUid } });
+    const hasStock = stocks.some((stock) => (stock.qty ?? 0) > 0 || (stock.availableQty ?? 0) > 0);
+    if (hasStock) {
+      throw new BadRequestException(
+        '재고가 남아 있는 LOT는 직접 삭제할 수 없습니다. 재고 정리 후 다시 삭제해 주세요.',
+      );
+    }
+
+    const issues = await this.matIssueRepository.find({
+      where: { matUid, status: Not('CANCELED') },
+    });
+    if (issues.length > 0) {
+      throw new BadRequestException(
+        `이미 자재출고가 진행된 LOT입니다. 자재출고부터 먼저 정리해 주세요. LOT: ${lot.matUid}`,
+      );
+    }
+
     await this.matLotRepository.delete(matUid);
     return { matUid };
   }

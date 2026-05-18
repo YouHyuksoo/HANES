@@ -1,14 +1,4 @@
-/**
- * @file src/modules/inventory/services/product-physical-inv.service.ts
- * @description 제품 재고실사 비즈니스 로직 - Stock(제품/반제품) 대사 + InvAdjLog 기록
- *
- * 초보자 가이드:
- * 1. findStocks(): Stock + PartMaster + Lot 조인 → 실사 대상 목록
- * 2. findHistory(): InvAdjLog(adjType=PRODUCT_PHYSICAL_COUNT) 이력 조회
- * 3. applyCount(): 트랜잭션 기반 — Stock 수량 업데이트 + InvAdjLog 기록
- */
-
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
@@ -38,7 +28,6 @@ export class ProductPhysicalInvService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /** 실사 대상 Stock 목록 조회 */
   async findStocks(query: ProductPhysicalInvQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, warehouseId } = query;
     const skip = (page - 1) * limit;
@@ -49,7 +38,7 @@ export class ProductPhysicalInvService {
       .leftJoin(MatLot, 'l', 'l.matUid = s.prdUid')
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode')
       .select([
-        's.warehouseCode || \'::\'  || s.itemCode || \'::\'  || s.prdUid AS "id"',
+        's.warehouseCode || \'::\' || s.itemCode || \'::\' || s.prdUid AS "id"',
         's.warehouseCode AS "warehouseId"',
         'w.warehouseName AS "warehouseName"',
         's.itemCode AS "itemCode"',
@@ -64,15 +53,9 @@ export class ProductPhysicalInvService {
       ])
       .where('s.qty > 0');
 
-    if (company) {
-      qb.andWhere('s.company = :company', { company });
-    }
-    if (plant) {
-      qb.andWhere('s.plant = :plant', { plant });
-    }
-    if (warehouseId) {
-      qb.andWhere('s.warehouseCode = :warehouseId', { warehouseId });
-    }
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
+    if (warehouseId) qb.andWhere('s.warehouseCode = :warehouseId', { warehouseId });
 
     if (search) {
       qb.andWhere(
@@ -89,7 +72,6 @@ export class ProductPhysicalInvService {
     return { data, total, page, limit };
   }
 
-  /** 실사 이력 조회 (InvAdjLog adjType=PRODUCT_PHYSICAL_COUNT) */
   async findHistory(query: ProductPhysicalInvHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, warehouseId, startDate, endDate } = query;
 
@@ -116,18 +98,10 @@ export class ProductPhysicalInvService {
       ])
       .where('log.adjType = :adjType', { adjType: 'PRODUCT_PHYSICAL_COUNT' });
 
-    if (company) {
-      qb.andWhere('log.company = :company', { company });
-    }
-    if (plant) {
-      qb.andWhere('log.plant = :plant', { plant });
-    }
-    if (warehouseId) {
-      qb.andWhere('log.warehouseCode = :warehouseId', { warehouseId });
-    }
-    if (startDate) {
-      qb.andWhere('log.createdAt >= :startDate', { startDate: new Date(startDate) });
-    }
+    if (company) qb.andWhere('log.company = :company', { company });
+    if (plant) qb.andWhere('log.plant = :plant', { plant });
+    if (warehouseId) qb.andWhere('log.warehouseCode = :warehouseId', { warehouseId });
+    if (startDate) qb.andWhere('log.createdAt >= :startDate', { startDate: new Date(startDate) });
     if (endDate) {
       const end = new Date(endDate);
       end.setDate(end.getDate() + 1);
@@ -148,9 +122,10 @@ export class ProductPhysicalInvService {
     return { data, total, page, limit };
   }
 
-  /** 실사 결과 반영 (Stock 수량 업데이트 + InvAdjLog 기록) */
-  async applyCount(dto: CreateProductPhysicalInvDto) {
-    const { items, createdBy, countMonth, countType } = dto;
+  async applyCount(dto: CreateProductPhysicalInvDto, company?: string, plant?: string, actor?: string) {
+    const { items, countMonth, countType } = dto;
+    const createdBy = actor || dto.createdBy || 'system';
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -159,33 +134,45 @@ export class ProductPhysicalInvService {
       const results = [];
 
       for (const item of items) {
-        // stockId는 복합키 "warehouseCode::itemCode::prdUid" 형식
         const [warehouseCode, itemCode, prdUid] = item.stockId.split('::');
         if (!warehouseCode || !itemCode || !prdUid) {
           throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${item.stockId}`);
         }
 
-        const compositeKey = { warehouseCode, itemCode, prdUid };
+        const scopedKey: any = {
+          warehouseCode,
+          itemCode,
+          prdUid,
+          ...(company && { company }),
+          ...(plant && { plant }),
+        };
+
         const stock = await queryRunner.manager.findOne(ProductStock, {
-          where: compositeKey,
+          where: scopedKey,
         });
 
         if (!stock) {
           throw new NotFoundException(`재고를 찾을 수 없습니다: ${item.stockId}`);
         }
 
+        const reservedQty = stock.reservedQty ?? 0;
+        if (item.countedQty < reservedQty) {
+          throw new BadRequestException(
+            `실사수량(${item.countedQty})은 예약수량(${reservedQty})보다 작을 수 없습니다: ${item.stockId}`,
+          );
+        }
+
         const beforeQty = stock.qty;
         const afterQty = item.countedQty;
         const diffQty = afterQty - beforeQty;
 
-        // Stock 수량 업데이트
-        await queryRunner.manager.update(ProductStock, compositeKey, {
+        await queryRunner.manager.update(ProductStock, scopedKey, {
           qty: afterQty,
-          availableQty: afterQty - stock.reservedQty,
+          availableQty: afterQty - reservedQty,
           lastCountAt: new Date(),
+          updatedBy: createdBy,
         });
 
-        // InvAdjLog 기록
         const invAdjLog = queryRunner.manager.create(InvAdjLog, {
           warehouseCode: stock.warehouseCode,
           itemCode: stock.itemCode,

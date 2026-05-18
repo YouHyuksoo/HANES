@@ -54,10 +54,13 @@ export class ProductionViewsService {
 
     /* shift 필터: 해당 교대의 ProdResult가 존재하는 작업지시만 조회 */
     if (shift) {
+      const shiftJoin: string[] = ['pr.ORDER_NO = jo.ORDER_NO', 'pr.SHIFT_CODE = :shift'];
+      if (company) shiftJoin.push('pr.COMPANY = :company');
+      if (plant) shiftJoin.push('pr.PLANT_CD = :plant');
       queryBuilder.innerJoin(
         ProdResult,
         'pr',
-        'pr.ORDER_NO = jo.ORDER_NO AND pr.SHIFT_CODE = :shift',
+        shiftJoin.join(' AND '),
         { shift },
       );
     }
@@ -109,6 +112,13 @@ export class ProductionViewsService {
       .orderBy('ir.createdAt', 'DESC')
       .skip(skip)
       .take(limit);
+
+    if (company) {
+      queryBuilder.andWhere('pr.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('pr.plant = :plant', { plant });
+    }
 
     if (passYn) {
       queryBuilder.andWhere('ir.passYn = :passYn', { passYn });
@@ -200,6 +210,13 @@ export class ProductionViewsService {
       .orderBy('s.updatedAt', 'DESC')
       .skip(skip)
       .take(limit);
+
+    if (company) {
+      queryBuilder.andWhere('s.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('s.plant = :plant', { plant });
+    }
 
     if (search) {
       queryBuilder.andWhere('(p.itemCode ILIKE :search OR p.itemName ILIKE :search)', {

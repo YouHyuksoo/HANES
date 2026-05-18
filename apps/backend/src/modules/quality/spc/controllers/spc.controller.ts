@@ -59,11 +59,15 @@ export class SpcController {
   @ApiResponse({ status: 200, description: '계산 완료' })
   async calculateLimits(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.spcService.calculateControlLimits(
       id,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '관리한계가 계산되었습니다.');
   }
@@ -72,8 +76,12 @@ export class SpcController {
   @ApiOperation({ summary: 'Cpk/Ppk 계산', description: '규격 한계 + 데이터 기반 공정능력 산출' })
   @ApiParam({ name: 'id', description: '관리도 chartNo' })
   @ApiResponse({ status: 200, description: '계산 완료' })
-  async calculateCpk(@Param('id') id: string) {
-    const data = await this.spcService.calculateCpk(id);
+  async calculateCpk(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.spcService.calculateCpk(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -129,8 +137,12 @@ export class SpcController {
   @ApiParam({ name: 'id', description: '관리도 chartNo' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '관리도 없음' })
-  async findChartById(@Param('id') id: string) {
-    const data = await this.spcService.findChartById(id);
+  async findChartById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.spcService.findChartById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -160,12 +172,16 @@ export class SpcController {
   async updateChart(
     @Param('id') id: string,
     @Body() dto: UpdateSpcChartDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.spcService.updateChart(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, 'SPC 관리도가 수정되었습니다.');
   }
@@ -175,8 +191,12 @@ export class SpcController {
   @ApiOperation({ summary: 'SPC 관리도 삭제' })
   @ApiParam({ name: 'id', description: '관리도 chartNo' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteChart(@Param('id') id: string) {
-    await this.spcService.deleteChart(id);
+  async deleteChart(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.spcService.deleteChart(id, company, plant);
     return ResponseUtil.success(null, 'SPC 관리도가 삭제되었습니다.');
   }
 

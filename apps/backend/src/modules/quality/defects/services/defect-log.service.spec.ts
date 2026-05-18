@@ -15,6 +15,7 @@ import { DefectLogService } from './defect-log.service';
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
+import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { MockLoggerService } from '../../../../common/test/mock-logger.service';
 
 describe('DefectLogService', () => {
@@ -22,6 +23,7 @@ describe('DefectLogService', () => {
   let mockDefectLogRepo: DeepMocked<Repository<DefectLog>>;
   let mockRepairLogRepo: DeepMocked<Repository<RepairLog>>;
   let mockProdResultRepo: DeepMocked<Repository<ProdResult>>;
+  let mockReworkOrderRepo: DeepMocked<Repository<ReworkOrder>>;
 
   /** 테스트용 불량로그 팩토리 */
   const createDefectLog = (overrides: Partial<DefectLog> = {}): DefectLog =>
@@ -55,6 +57,7 @@ describe('DefectLogService', () => {
     mockDefectLogRepo = createMock<Repository<DefectLog>>();
     mockRepairLogRepo = createMock<Repository<RepairLog>>();
     mockProdResultRepo = createMock<Repository<ProdResult>>();
+    mockReworkOrderRepo = createMock<Repository<ReworkOrder>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,6 +65,7 @@ describe('DefectLogService', () => {
         { provide: getRepositoryToken(DefectLog), useValue: mockDefectLogRepo },
         { provide: getRepositoryToken(RepairLog), useValue: mockRepairLogRepo },
         { provide: getRepositoryToken(ProdResult), useValue: mockProdResultRepo },
+        { provide: getRepositoryToken(ReworkOrder), useValue: mockReworkOrderRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -72,6 +76,10 @@ describe('DefectLogService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  beforeEach(() => {
+    mockReworkOrderRepo.findOne.mockResolvedValue(null);
   });
 
   // ─────────────────────────────────────────────
@@ -218,6 +226,26 @@ describe('DefectLogService', () => {
       expect(mockProdResultRepo.update).toHaveBeenCalledWith(
         { resultNo: 'PR260318-00001' },
         expect.objectContaining({ defectQty: expect.any(Function) }),
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('should apply the qty delta back to the linked prodResult', async () => {
+      const defect = createDefectLog({ qty: 2 });
+      const updated = createDefectLog({ qty: 5 });
+
+      mockDefectLogRepo.findOne
+        .mockResolvedValueOnce(defect)
+        .mockResolvedValueOnce(updated);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('1', { qty: 5 } as any);
+
+      expect(mockProdResultRepo.update).toHaveBeenCalledWith(
+        { resultNo: 'PR260318-00001' },
+        { defectQty: expect.any(Function) },
       );
     });
   });

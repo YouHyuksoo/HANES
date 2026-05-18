@@ -16,7 +16,7 @@ import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('ConsumableLabelService', () => {
@@ -26,7 +26,7 @@ describe('ConsumableLabelService', () => {
   let mockLogRepo: DeepMocked<Repository<ConsumableLog>>;
   let mockPrintLogRepo: DeepMocked<Repository<LabelPrintLog>>;
   let mockDataSource: DeepMocked<DataSource>;
-  let mockSeqGenerator: DeepMocked<SeqGeneratorService>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockMasterRepo = createMock<Repository<ConsumableMaster>>();
@@ -34,7 +34,7 @@ describe('ConsumableLabelService', () => {
     mockLogRepo = createMock<Repository<ConsumableLog>>();
     mockPrintLogRepo = createMock<Repository<LabelPrintLog>>();
     mockDataSource = createMock<DataSource>();
-    mockSeqGenerator = createMock<SeqGeneratorService>();
+    mockNumbering = createMock<NumberingService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,7 +44,7 @@ describe('ConsumableLabelService', () => {
         { provide: getRepositoryToken(ConsumableLog), useValue: mockLogRepo },
         { provide: getRepositoryToken(LabelPrintLog), useValue: mockPrintLogRepo },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: SeqGeneratorService, useValue: mockSeqGenerator },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -66,6 +66,8 @@ describe('ConsumableLabelService', () => {
       ] as ConsumableMaster[]);
 
       const qb = createMock<any>();
+      qb.where.mockReturnThis();
+      qb.andWhere.mockReturnThis();
       qb.select.mockReturnThis();
       qb.addSelect.mockReturnThis();
       qb.groupBy.mockReturnThis();
@@ -106,7 +108,7 @@ describe('ConsumableLabelService', () => {
         },
       };
       mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
-      mockSeqGenerator.nextConUid.mockResolvedValueOnce('CON001').mockResolvedValueOnce('CON002');
+      mockNumbering.nextConUid.mockResolvedValueOnce('CON001').mockResolvedValueOnce('CON002');
 
       // Act
       const result = await target.createConLabels(

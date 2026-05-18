@@ -92,8 +92,12 @@ export class MsaController {
   @ApiParam({ name: 'id', description: '계측기 코드' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '계측기 없음' })
-  async findGaugeById(@Param('id') id: string) {
-    const data = await this.msaService.findGaugeById(id);
+  async findGaugeById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.msaService.findGaugeById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -123,12 +127,16 @@ export class MsaController {
   async updateGauge(
     @Param('id') id: string,
     @Body() dto: UpdateGaugeDto,
+    @Company() company: string,
+    @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.msaService.updateGauge(
       id,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '계측기가 수정되었습니다.');
   }
@@ -138,8 +146,12 @@ export class MsaController {
   @ApiOperation({ summary: '계측기 삭제', description: '교정 이력 없는 경우만 삭제 가능' })
   @ApiParam({ name: 'id', description: '계측기 코드' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteGauge(@Param('id') id: string) {
-    await this.msaService.deleteGauge(id);
+  async deleteGauge(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.msaService.deleteGauge(id, company, plant);
     return ResponseUtil.success(null, '계측기가 삭제되었습니다.');
   }
 
@@ -195,8 +207,18 @@ export class MsaController {
   @ApiOperation({ summary: '교정 이력 삭제' })
   @ApiParam({ name: 'id', description: '교정번호 (calibrationNo)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteCalibration(@Param('id') id: string) {
-    await this.msaService.deleteCalibration(id);
+  async deleteCalibration(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    await this.msaService.deleteCalibration(
+      id,
+      company,
+      plant,
+      req.user?.id ?? 'system',
+    );
     return ResponseUtil.success(null, '교정 이력이 삭제되었습니다.');
   }
 }

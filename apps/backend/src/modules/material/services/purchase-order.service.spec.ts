@@ -16,6 +16,7 @@ import { PurchaseOrderService } from './purchase-order.service';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('PurchaseOrderService', () => {
@@ -23,6 +24,7 @@ describe('PurchaseOrderService', () => {
   let mockPoRepo: DeepMocked<Repository<PurchaseOrder>>;
   let mockPoItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
@@ -42,6 +44,7 @@ describe('PurchaseOrderService', () => {
     mockPoRepo = createMock<Repository<PurchaseOrder>>();
     mockPoItemRepo = createMock<Repository<PurchaseOrderItem>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
 
@@ -58,6 +61,7 @@ describe('PurchaseOrderService', () => {
         { provide: getRepositoryToken(PurchaseOrder), useValue: mockPoRepo },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPoItemRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
         { provide: DataSource, useValue: mockDataSource },
       ],
     })
@@ -174,11 +178,33 @@ describe('PurchaseOrderService', () => {
       mockPoRepo.findOne.mockResolvedValue(createPo());
       mockPoItemRepo.find.mockResolvedValue([]);
       mockPartMasterRepo.find.mockResolvedValue([]);
+      mockMatArrivalRepo.find.mockResolvedValue([]);
       mockPoRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       const result = await target.delete('PO-001');
 
       expect(result.poNo).toBe('PO-001');
+    });
+
+    it('DRAFT가 아니면 PO 삭제를 차단한다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'CONFIRMED' }));
+      mockPoItemRepo.find.mockResolvedValue([]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await expect(target.delete('PO-001')).rejects.toThrow(BadRequestException);
+      expect(mockPoRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it('입하 이력이 있으면 PO 삭제를 차단한다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'DRAFT' }));
+      mockPoItemRepo.find.mockResolvedValue([]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockMatArrivalRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', arrivalNo: 'ARR-001', seq: 1 } as MatArrival,
+      ]);
+
+      await expect(target.delete('PO-001')).rejects.toThrow(BadRequestException);
+      expect(mockPoRepo.delete).not.toHaveBeenCalled();
     });
   });
 });

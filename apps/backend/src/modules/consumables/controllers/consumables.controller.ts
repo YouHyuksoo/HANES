@@ -76,40 +76,48 @@ export class ConsumablesController {
   @Get('summary')
   @ApiOperation({ summary: '소모품 현황 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getSummary() {
-    const data = await this.consumablesService.getSummary();
+  async getSummary(@Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.getSummary(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('warning')
   @ApiOperation({ summary: '경고/교체 필요 소모품 목록' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getWarningList() {
-    const data = await this.consumablesService.getWarningList();
+  async getWarningList(@Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.getWarningList(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('life-status')
   @ApiOperation({ summary: '소모품 수명 현황' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getLifeStatus() {
-    const data = await this.consumablesService.getLifeStatus();
+  async getLifeStatus(@Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.getLifeStatus(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('stock-status')
   @ApiOperation({ summary: '소모품 재고 현황' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getStockStatus(@Query() query: ConsumableQueryDto) {
-    const result = await this.consumablesService.getStockStatus(query);
+  async getStockStatus(
+    @Query() query: ConsumableQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.consumablesService.getStockStatus(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get('logs')
   @ApiOperation({ summary: '입출고 이력 목록' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAllLogs(@Query() query: ConsumableLogQueryDto) {
-    const result = await this.consumablesService.findAllLogs(query);
+  async findAllLogs(
+    @Query() query: ConsumableLogQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.consumablesService.findAllLogs(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -145,23 +153,25 @@ export class ConsumablesController {
   @ApiParam({ name: 'id', description: '소모품 코드' })
   async uploadImage(
     @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const imageUrl = `/uploads/consumables/${file.filename}`;
-    const data = await this.consumablesService.updateImage(id, imageUrl);
+    const data = await this.consumablesService.updateImage(id, imageUrl, company, plant);
     return ResponseUtil.success(data, '이미지가 업로드되었습니다.');
   }
 
   @Delete(':id/image')
   @ApiOperation({ summary: '소모품 이미지 삭제' })
   @ApiParam({ name: 'id', description: '소모품 코드' })
-  async removeImage(@Param('id') id: string) {
-    const existing = await this.consumablesService.findById(id);
+  async removeImage(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const existing = await this.consumablesService.findById(id, company, plant);
     if (existing.imageUrl) {
       const filePath = join('.', existing.imageUrl);
       try { if (existsSync(filePath)) unlinkSync(filePath); } catch { /* ignore */ }
     }
-    const data = await this.consumablesService.updateImage(id, null);
+    const data = await this.consumablesService.updateImage(id, null, company, plant);
     return ResponseUtil.success(data, '이미지가 삭제되었습니다.');
   }
 
@@ -169,8 +179,8 @@ export class ConsumablesController {
   @ApiOperation({ summary: '소모품 상세 조회' })
   @ApiParam({ name: 'id', description: '소모품 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findById(@Param('id') id: string) {
-    const data = await this.consumablesService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -178,8 +188,8 @@ export class ConsumablesController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '소모품 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async create(@Body() dto: CreateConsumableDto) {
-    const data = await this.consumablesService.create(dto);
+  async create(@Body() dto: CreateConsumableDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.create(dto, company, plant);
     return ResponseUtil.success(data, '소모품이 등록되었습니다.');
   }
 
@@ -187,8 +197,8 @@ export class ConsumablesController {
   @ApiOperation({ summary: '소모품 수정' })
   @ApiParam({ name: 'id', description: '소모품 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
-  async update(@Param('id') id: string, @Body() dto: UpdateConsumableDto) {
-    const data = await this.consumablesService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateConsumableDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumablesService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '소모품이 수정되었습니다.');
   }
 
@@ -197,8 +207,8 @@ export class ConsumablesController {
   @ApiOperation({ summary: '소모품 삭제' })
   @ApiParam({ name: 'id', description: '소모품 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') id: string) {
-    await this.consumablesService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.consumablesService.delete(id, company, plant);
     return ResponseUtil.success(null, '소모품이 삭제되었습니다.');
   }
 

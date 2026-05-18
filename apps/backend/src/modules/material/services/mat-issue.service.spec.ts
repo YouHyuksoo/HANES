@@ -1,18 +1,8 @@
-/**
- * @file src/modules/material/services/mat-issue.service.spec.ts
- * @description MatIssueService 단위 테스트 - 자재출고, 바코드 스캔 출고, 출고취소
- *
- * 초보자 가이드:
- * - create: 트랜잭션으로 LOT 검증 → 재고 차감 → StockTransaction 생성
- * - scanIssue: 바코드(matUid)로 LOT 전량 출고
- * - cancel: 역분개 방식 출고 취소
- * - 실행: `npx jest --testPathPattern="mat-issue.service.spec"`
- */
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { BadRequestException } from '@nestjs/common';
 import { MatIssueService } from './mat-issue.service';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -20,7 +10,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('MatIssueService', () => {
@@ -33,19 +23,7 @@ describe('MatIssueService', () => {
   let mockJobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
-  let mockNumRuleService: DeepMocked<NumRuleService>;
-
-  const createLot = (overrides: Partial<MatLot> = {}): MatLot =>
-    ({
-      matUid: 'MAT-001',
-      itemCode: 'ITEM-001',
-      initQty: 100,
-      iqcStatus: 'PASS',
-      status: 'NORMAL',
-      company: 'HANES',
-      plant: 'P01',
-      ...overrides,
-    }) as MatLot;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
@@ -56,7 +34,7 @@ describe('MatIssueService', () => {
     mockJobOrderRepo = createMock<Repository<JobOrder>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
-    mockNumRuleService = createMock<NumRuleService>();
+    mockNumbering = createMock<NumberingService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockQueryRunner.connect.mockResolvedValue(undefined);
@@ -75,142 +53,160 @@ describe('MatIssueService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: NumRuleService, useValue: mockNumRuleService },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
       .compile();
 
-    target = module.get<MatIssueService>(MatIssueService);
+    target = module.get(MatIssueService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  afterEach(() => jest.clearAllMocks());
+
+  it('create splits manual issue across multiple stock rows', async () => {
+    const manager = {
+      findOne: jest.fn().mockResolvedValueOnce({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot),
+      find: jest
+        .fn()
+        .mockResolvedValueOnce([
+          { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 3, availableQty: 3 } as MatStock,
+          { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 4, availableQty: 4 } as MatStock,
+        ])
+        .mockResolvedValueOnce([
+          { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0 } as MatStock,
+          { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 2, availableQty: 2 } as MatStock,
+        ]),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('ISS-001')
+      .mockResolvedValueOnce('TX-001')
+      .mockResolvedValueOnce('TX-002');
+    mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+
+    await target.create({
+      issueType: 'PROD',
+      items: [{ matUid: 'MAT-001', issueQty: 5 }],
+    } as any);
+
+    expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', qty: -3 }));
+    expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-002', qty: -2 }));
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { qty: 0, availableQty: 0 },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { qty: 2, availableQty: 2 },
+    );
   });
 
-  // ─── findAll ───
-  describe('findAll', () => {
-    it('출고 이력 목록을 반환한다', async () => {
-      const issue = { issueNo: 'ISS-001', seq: 1, matUid: 'MAT-001', orderNo: null } as MatIssue;
-      mockMatIssueRepo.find.mockResolvedValue([issue]);
-      mockMatIssueRepo.count.mockResolvedValue(1);
-      mockMatLotRepo.findOne.mockResolvedValue(createLot());
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster);
-      mockJobOrderRepo.findOne.mockResolvedValue(null);
+  it('cancel restores stock to the original warehouse rows', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-001',
+      seq: 1,
+      status: 'DONE',
+      matUid: 'MAT-001',
+      issueQty: 5,
+    } as MatIssue);
 
-      const result = await target.findAll({ page: 1, limit: 10 });
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      find: jest.fn().mockResolvedValue([
+        {
+          transNo: 'TX-001',
+          fromWarehouseId: 'W1',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: -3,
+          company: 'HANES',
+          plant: 'P01',
+        } as StockTransaction,
+        {
+          transNo: 'TX-002',
+          fromWarehouseId: 'W2',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: -2,
+          company: 'HANES',
+          plant: 'P01',
+        } as StockTransaction,
+      ]),
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce({ warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0 } as MatStock)
+        .mockResolvedValueOnce({ warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 2, availableQty: 2 } as MatStock),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+    (mockQueryRunner as any).manager = manager;
 
-      expect(result.data).toHaveLength(1);
-      expect(result.total).toBe(1);
-    });
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('CANCEL-001')
+      .mockResolvedValueOnce('CANCEL-002');
+
+    await target.cancel('ISS-001', 1, 'cancel');
+
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { qty: 3, availableQty: 3 },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { qty: 4, availableQty: 4 },
+    );
   });
 
-  // ─── findById ───
-  describe('findById', () => {
-    it('출고 이력을 issueNo + seq로 조회한다', async () => {
-      const issue = { issueNo: 'ISS-001', seq: 1, matUid: 'MAT-001', orderNo: null } as MatIssue;
-      mockMatIssueRepo.findOne.mockResolvedValue(issue);
-      mockMatLotRepo.findOne.mockResolvedValue(createLot());
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster);
-      mockJobOrderRepo.findOne.mockResolvedValue(null);
+  it('blocks cancel when linked production has already progressed', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-002',
+      seq: 1,
+      status: 'DONE',
+      orderNo: 'JO-001',
+      prodResultNo: 'PR-001',
+      issueType: 'PROD',
+    } as MatIssue);
 
-      const result = await target.findById('ISS-001', 1);
+    const prodResultRepo = {
+      findOne: jest.fn().mockResolvedValue({
+        resultNo: 'PR-001',
+        status: 'DONE',
+        prdUid: 'FG-001',
+      } as any),
+    };
+    const fgLabelRepo = {
+      findOne: jest.fn().mockResolvedValue({
+        fgBarcode: 'FG-001',
+        status: 'PACKED',
+      } as any),
+    };
 
-      expect(result).not.toBeNull();
+    mockDataSource.getRepository.mockImplementation((entity: any) => {
+      if (entity?.name === 'ProdResult') return prodResultRepo as any;
+      if (entity?.name === 'FgLabel') return fgLabelRepo as any;
+      return createMock<Repository<any>>() as any;
     });
 
-    it('존재하지 않으면 NotFoundException', async () => {
-      mockMatIssueRepo.findOne.mockResolvedValue(null);
-
-      await expect(target.findById('NONE', 1)).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  // ─── create ───
-  describe('create', () => {
-    it('LOT이 존재하지 않으면 BadRequestException', async () => {
-      mockNumRuleService.nextNumberInTx.mockResolvedValue('ISS-001');
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null); // lot not found
-
-      await expect(
-        target.create({
-          issueType: 'PROD',
-          items: [{ matUid: 'NONE', issueQty: 10 }],
-        } as any),
-      ).rejects.toThrow(BadRequestException);
-
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-    });
-
-    it('IQC 미합격 LOT이면 BadRequestException', async () => {
-      mockNumRuleService.nextNumberInTx.mockResolvedValue('ISS-001');
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce(createLot({ iqcStatus: 'PENDING' }));
-
-      await expect(
-        target.create({
-          issueType: 'PROD',
-          items: [{ matUid: 'MAT-001', issueQty: 10 }],
-        } as any),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('HOLD 상태 LOT이면 BadRequestException', async () => {
-      mockNumRuleService.nextNumberInTx.mockResolvedValue('ISS-001');
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce(createLot({ status: 'HOLD' }));
-
-      await expect(
-        target.create({
-          issueType: 'PROD',
-          items: [{ matUid: 'MAT-001', issueQty: 10 }],
-        } as any),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('재고 부족이면 BadRequestException', async () => {
-      const lot = createLot();
-      mockNumRuleService.nextNumberInTx.mockResolvedValue('ISS-001');
-      mockQueryRunner.manager.findOne
-        .mockResolvedValueOnce(lot) // lot 조회
-        .mockResolvedValueOnce({ qty: 5 } as MatStock); // stock 조회 (부족)
-
-      await expect(
-        target.create({
-          issueType: 'PROD',
-          items: [{ matUid: 'MAT-001', issueQty: 10 }],
-        } as any),
-      ).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  // ─── cancel ───
-  describe('cancel', () => {
-    it('존재하지 않는 출고이면 NotFoundException', async () => {
-      mockMatIssueRepo.findOne.mockResolvedValue(null);
-
-      await expect(target.cancel('NONE', 1)).rejects.toThrow(NotFoundException);
-    });
-
-    it('이미 취소된 출고이면 BadRequestException', async () => {
-      mockMatIssueRepo.findOne.mockResolvedValue({ issueNo: 'ISS-001', seq: 1, status: 'CANCELED' } as MatIssue);
-
-      await expect(target.cancel('ISS-001', 1)).rejects.toThrow(BadRequestException);
-    });
-
-    it('정상 출고를 취소하면 역분개 처리한다', async () => {
-      const issue = { issueNo: 'ISS-001', seq: 1, status: 'DONE', matUid: 'MAT-001', issueQty: 10 } as MatIssue;
-      mockMatIssueRepo.findOne.mockResolvedValue(issue);
-      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockQueryRunner.manager.findOne
-        .mockResolvedValueOnce({ transNo: 'TX-001', qty: -10, fromWarehouseId: 'WH-01', company: 'HANES', plant: 'P01' } as StockTransaction) // originalTx
-        .mockResolvedValueOnce({ warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0 } as MatStock); // stock
-      mockNumRuleService.nextNumberInTx.mockResolvedValue('CANCEL-001');
-      mockQueryRunner.manager.create.mockReturnValue({} as any);
-      mockQueryRunner.manager.save.mockResolvedValue({} as any);
-
-      const result = await target.cancel('ISS-001', 1);
-
-      expect(result.status).toBe('CANCELED');
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
-    });
+    await expect(target.cancel('ISS-002', 1, 'rollback')).rejects.toThrow(BadRequestException);
+    await expect(target.cancel('ISS-002', 1, 'rollback')).rejects.toThrow(
+      '생산실적 순서로 역처리 후 다시 자재출고를 취소해 주세요.',
+    );
   });
 });

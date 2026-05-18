@@ -95,7 +95,12 @@ export class ReceivingService {
     const lotItemCodes = [...new Set(validLots.map((l) => l.itemCode))].filter(Boolean);
     const arrivalRecords = lotItemCodes.length > 0
       ? await this.matArrivalRepository.find({
-          where: { itemCode: In(lotItemCodes), status: 'DONE' },
+          where: {
+            itemCode: In(lotItemCodes),
+            status: 'DONE',
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
           select: ['itemCode', 'warehouseCode'],
           order: { arrivalDate: 'DESC' },
         })
@@ -110,13 +115,17 @@ export class ReceivingService {
     }
 
     // 기본 창고(양품창고) 조회 - 입고 시 기본 선택값
-    const defaultWarehouse = await this.warehouseRepository.findOne({ where: { isDefault: 'Y' } });
+    const defaultWarehouse = await this.warehouseRepository.findOne({
+      where: { isDefault: 'Y', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
 
     // 창고 정보 조회 (warehouseCode 기준)
     const warehouseCodes = [...new Set(arrivalWhByItemCode.values())].filter(Boolean);
     const warehouseIds = [] as string[]; // 호환용
     const warehouses = warehouseCodes.length > 0
-      ? await this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes) } })
+      ? await this.warehouseRepository.find({
+          where: { warehouseCode: In(warehouseCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        })
       : [];
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
@@ -162,8 +171,8 @@ export class ReceivingService {
           arrivalWarehouse: arrivalWarehouse || null,
           part: part ? { id: part.itemCode, itemCode: part.itemCode, itemName: part.itemName, unit: part.unit } : null,
           expiryDays: part?.expiryDate || 0,
-          arrivalWarehouseCode: defaultWarehouse?.warehouseCode || arrivalWarehouse?.warehouseCode,
-          arrivalWarehouseName: defaultWarehouse?.warehouseName || arrivalWarehouse?.warehouseName,
+          arrivalWarehouseCode: arrivalWarehouse?.warehouseCode || defaultWarehouse?.warehouseCode,
+          arrivalWarehouseName: arrivalWarehouse?.warehouseName || defaultWarehouse?.warehouseName,
           labelPrinted: printedLotNos.has(lot.matUid),
         };
       })
@@ -236,11 +245,11 @@ export class ReceivingService {
   }
 
   /** 일괄/분할 입고 처리 */
-  async createBulkReceive(dto: CreateBulkReceiveDto) {
+  async createBulkReceive(dto: CreateBulkReceiveDto, company?: string, plant?: string) {
     // LOT 검증
     for (const item of dto.items) {
       const lot = await this.matLotRepository.findOne({
-        where: { matUid: item.matUid },
+        where: { matUid: item.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
       if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${item.matUid}`);
       if (lot.iqcStatus !== 'PASS') throw new BadRequestException(`IQC 합격되지 않은 LOT입니다: ${lot.matUid}`);
@@ -252,6 +261,8 @@ export class ReceivingService {
         .where('tx.matUid = :matUid', { matUid: item.matUid })
         .andWhere('tx.transType = :transType', { transType: 'RECEIVE' })
         .andWhere('tx.status = :status', { status: 'DONE' })
+        .andWhere(company ? 'tx.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
         .getRawOne();
 
       const receivedQty = parseInt(receivedAgg?.sumQty) || 0;
@@ -279,19 +290,31 @@ export class ReceivingService {
       for (const item of dto.items) {
         const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: item.matUid } });
+        const lot = await queryRunner.manager.findOne(MatLot, {
+          where: { matUid: item.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        });
         if (!lot) continue;
 
         // 0. MAT_ARRIVALS에서 입하 창고 조회 (LOT의 arrivalNo FK 기준)
         let arrivalRecord: MatArrival | null = null;
         if (lot.arrivalNo) {
           arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
-            where: { arrivalNo: lot.arrivalNo, seq: lot.arrivalSeq ?? 1 },
+            where: {
+              arrivalNo: lot.arrivalNo,
+              seq: lot.arrivalSeq ?? 1,
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
           });
         } else {
           // arrivalNo 없는 레거시 LOT — 기존 로직
           arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
-            where: { itemCode: lot.itemCode, status: 'DONE' },
+            where: {
+              itemCode: lot.itemCode,
+              status: 'DONE',
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
             order: { arrivalDate: 'DESC' },
           });
         }
@@ -461,6 +484,8 @@ export class ReceivingService {
       .where('lot.iqcStatus = :iqcStatus', { iqcStatus: 'PASS' })
       .andWhere('lot.status = :status', { status: 'NORMAL' })
       .andWhere('lot.initQty > 0')
+      .andWhere(company ? 'lot.company = :company' : '1=1', { company })
+      .andWhere(plant ? 'lot.plant = :plant' : '1=1', { plant })
       .getMany();
     const matUids = validLots.map((l) => l.matUid);
 
@@ -475,6 +500,8 @@ export class ReceivingService {
         .where('tx.matUid IN (:...matUids)', { matUids })
         .andWhere('tx.transType = :transType', { transType: 'RECEIVE' })
         .andWhere('tx.status = :status', { status: 'DONE' })
+        .andWhere(company ? 'tx.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
         .groupBy('tx.matUid')
         .getRawMany();
 
@@ -491,6 +518,8 @@ export class ReceivingService {
           transType: 'RECEIVE',
           status: 'DONE',
           transDate: Between(todayStart, todayEnd),
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
         },
       }),
       this.stockTransactionRepository
@@ -499,6 +528,8 @@ export class ReceivingService {
         .where('tx.transType = :transType', { transType: 'RECEIVE' })
         .andWhere('tx.status = :status', { status: 'DONE' })
         .andWhere('tx.transDate BETWEEN :start AND :end', { start: todayStart, end: todayEnd })
+        .andWhere(company ? 'tx.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
         .getRawOne(),
     ]);
 
@@ -519,7 +550,7 @@ export class ReceivingService {
    * 3. 기본 창고(isDefault='Y') 조회
    * 4. 미입고 LOT만 createBulkReceive()로 입고 처리
    */
-  async autoReceive(matUids: string[], workerId?: string) {
+  async autoReceive(matUids: string[], workerId?: string, company?: string, plant?: string) {
     // 1. 설정 확인
     const isAutoEnabled = await this.sysConfigService.isEnabled('IQC_AUTO_RECEIVE');
     if (!isAutoEnabled) {
@@ -528,7 +559,7 @@ export class ReceivingService {
 
     // 2. 기본 창고 조회
     const defaultWarehouse = await this.warehouseRepository.findOne({
-      where: { isDefault: 'Y' },
+      where: { isDefault: 'Y', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!defaultWarehouse) {
       return {
@@ -543,12 +574,12 @@ export class ReceivingService {
     const [existingReceivings, lots, receivedAgg] = await Promise.all([
       // 이미 입고된 LOT 조회
       this.matReceivingRepository.find({
-        where: { matUid: In(matUids), status: 'DONE' },
+        where: { matUid: In(matUids), status: 'DONE', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         select: ['matUid'],
       }),
       // LOT 정보 일괄 조회
       this.matLotRepository.find({
-        where: { matUid: In(matUids) },
+        where: { matUid: In(matUids), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       }),
       // 기입고수량 일괄 집계
       this.stockTransactionRepository
@@ -558,6 +589,8 @@ export class ReceivingService {
         .where('tx.matUid IN (:...matUids)', { matUids })
         .andWhere('tx.transType = :transType', { transType: 'RECEIVE' })
         .andWhere('tx.status = :status', { status: 'DONE' })
+        .andWhere(company ? 'tx.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
         .groupBy('tx.matUid')
         .getRawMany(),
     ]);
@@ -590,7 +623,7 @@ export class ReceivingService {
 
     // 4. 미입고 건이 있으면 일괄 입고
     if (receiveItems.length > 0) {
-      await this.createBulkReceive({ items: receiveItems, workerId });
+      await this.createBulkReceive({ items: receiveItems, workerId }, company, plant);
     }
 
     return {
@@ -605,13 +638,19 @@ export class ReceivingService {
   /** MatStock upsert */
   private async upsertStock(manager: any, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
     const existing = await manager.findOne(MatStock, {
-      where: { warehouseCode, itemCode, matUid: matUid || null },
+      where: { warehouseCode, itemCode, matUid: matUid || null, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
     if (existing) {
       const newQty = existing.qty + qtyDelta;
       await manager.update(MatStock,
-        { warehouseCode: existing.warehouseCode, itemCode: existing.itemCode, matUid: existing.matUid },
+        {
+          warehouseCode: existing.warehouseCode,
+          itemCode: existing.itemCode,
+          matUid: existing.matUid,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
         { qty: newQty, availableQty: Math.max(0, newQty - existing.reservedQty) },
       );
     } else if (qtyDelta > 0) {

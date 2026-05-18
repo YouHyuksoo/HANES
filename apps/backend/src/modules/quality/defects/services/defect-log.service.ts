@@ -24,6 +24,7 @@ import { Repository, ILike, Between, In, MoreThanOrEqual, LessThanOrEqual, And }
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
+import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import {
   CreateDefectLogDto,
   UpdateDefectLogDto,
@@ -45,7 +46,24 @@ export class DefectLogService {
     private readonly repairLogRepository: Repository<RepairLog>,
     @InjectRepository(ProdResult)
     private readonly prodResultRepository: Repository<ProdResult>,
+    @InjectRepository(ReworkOrder)
+    private readonly reworkOrderRepository: Repository<ReworkOrder>,
   ) {}
+
+  private buildDefectLogId(defect: DefectLog) {
+    return `${defect.occurAt.toISOString()}|${defect.seq}`;
+  }
+
+  private async ensureNoLinkedRework(defect: DefectLog) {
+    const linkedRework = await this.reworkOrderRepository.findOne({
+      where: { defectLogId: this.buildDefectLogId(defect) },
+    });
+    if (linkedRework) {
+      throw new BadRequestException(
+        `재작업(${linkedRework.reworkNo})이 연결된 불량은 직접 처리할 수 없습니다. 재작업부터 먼저 정리해 주세요.`,
+      );
+    }
+  }
 
   // =============================================
   // 불량로그 CRUD
@@ -184,6 +202,7 @@ export class DefectLogService {
    */
   async update(id: string, dto: UpdateDefectLogDto) {
     const existing = await this.findById(id);
+    await this.ensureNoLinkedRework(existing);
     const pk = { occurAt: existing.occurAt, seq: existing.seq };
 
     // 수량 변경 시 생산실적 반영
@@ -225,6 +244,7 @@ export class DefectLogService {
    */
   async delete(id: string) {
     const existing = await this.findById(id);
+    await this.ensureNoLinkedRework(existing);
 
     // 불량 삭제 시 생산실적 불량수량 감소
     await this.defectLogRepository.delete({ occurAt: existing.occurAt, seq: existing.seq });
@@ -248,6 +268,7 @@ export class DefectLogService {
     const existing = await this.findById(id);
 
     // 상태 변경 유효성 검사
+    await this.ensureNoLinkedRework(existing);
     this.validateStatusChange(existing.status, dto.status);
 
     await this.defectLogRepository.update(

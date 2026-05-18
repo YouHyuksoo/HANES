@@ -51,8 +51,8 @@ export class ShipOrderController {
   @Get(':id')
   @ApiOperation({ summary: '출하지시 상세 조회' })
   @ApiParam({ name: 'id', description: '출하지시 ID' })
-  async findById(@Param('id') id: string) {
-    const data = await this.shipOrderService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -68,24 +68,24 @@ export class ShipOrderController {
   @Put(':id')
   @ApiOperation({ summary: '출하지시 수정' })
   @ApiParam({ name: 'id', description: '출하지시 ID' })
-  async update(@Param('id') id: string, @Body() dto: UpdateShipOrderDto) {
-    const data = await this.shipOrderService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateShipOrderDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '출하지시가 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '출하지시 삭제' })
   @ApiParam({ name: 'id', description: '출하지시 ID' })
-  async delete(@Param('id') id: string) {
-    await this.shipOrderService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.shipOrderService.delete(id, company, plant);
     return ResponseUtil.success(null, '출하지시가 삭제되었습니다.');
   }
 
   @Put(':id/confirm')
   @ApiOperation({ summary: '출하지시 확정 (DRAFT → CONFIRMED)' })
   @ApiParam({ name: 'id', description: '출하지시 번호' })
-  async confirm(@Param('id') id: string) {
-    const data = await this.shipOrderService.confirm(id);
+  async confirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipOrderService.confirm(id, company, plant);
     return ResponseUtil.success(data, '출하지시가 확정되었습니다.');
   }
 }

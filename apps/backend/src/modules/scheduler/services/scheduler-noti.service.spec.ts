@@ -1,10 +1,8 @@
-/**
+﻿/**
  * @file src/modules/scheduler/services/scheduler-noti.service.spec.ts
- * @description SchedulerNotiService 단위 테스트
- *
- * 초보자 가이드:
- * - target: 테스트 대상(SUT), mock*: 모킹된 의존성
- * - 실행: `pnpm test -- -t "SchedulerNotiService"`
+ * @description SchedulerNotiService ?⑥쐞 ?뚯뒪?? *
+ * 珥덈낫??媛?대뱶:
+ * - target: ?뚯뒪?????SUT), mock*: 紐⑦궧???섏〈?? * - ?ㅽ뻾: `pnpm test -- -t "SchedulerNotiService"`
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
@@ -40,7 +38,7 @@ describe('SchedulerNotiService', () => {
     jest.clearAllMocks();
   });
 
-  // ─── generateNotiId ───
+  // ??? generateNotiId ???
   describe('generateNotiId', () => {
     it('should return next noti ID', async () => {
       // Arrange
@@ -54,7 +52,7 @@ describe('SchedulerNotiService', () => {
     });
   });
 
-  // ─── createNotification ───
+  // ??? createNotification ???
   describe('createNotification', () => {
     it('should create notification with auto ID', async () => {
       // Arrange
@@ -76,7 +74,7 @@ describe('SchedulerNotiService', () => {
     });
   });
 
-  // ─── findByUser ───
+  // ??? findByUser ???
   describe('findByUser', () => {
     it('should return user notifications', async () => {
       // Arrange
@@ -84,12 +82,12 @@ describe('SchedulerNotiService', () => {
       mockNotiRepo.find.mockResolvedValue(notis);
 
       // Act
-      const result = await target.findByUser('user', 'COMP');
+      const result = await target.findByUser('user', 'COMP', 'PLANT');
 
       // Assert
       expect(result).toEqual(notis);
       expect(mockNotiRepo.find).toHaveBeenCalledWith({
-        where: { userId: 'user', company: 'COMP' },
+        where: { userId: 'user', company: 'COMP', plantCd: 'PLANT' },
         order: { createdAt: 'DESC' },
         take: 20,
       });
@@ -100,7 +98,7 @@ describe('SchedulerNotiService', () => {
       mockNotiRepo.find.mockResolvedValue([]);
 
       // Act
-      await target.findByUser('user', 'COMP', 5);
+      await target.findByUser('user', 'COMP', 'PLANT', 5);
 
       // Assert
       expect(mockNotiRepo.find).toHaveBeenCalledWith(
@@ -109,51 +107,53 @@ describe('SchedulerNotiService', () => {
     });
   });
 
-  // ─── getUnreadCount ───
+  // ??? getUnreadCount ???
   describe('getUnreadCount', () => {
     it('should return unread count', async () => {
       // Arrange
       mockNotiRepo.count.mockResolvedValue(3);
 
       // Act
-      const result = await target.getUnreadCount('user', 'COMP');
+      const result = await target.getUnreadCount('user', 'COMP', 'PLANT');
 
       // Assert
       expect(result).toBe(3);
       expect(mockNotiRepo.count).toHaveBeenCalledWith({
-        where: { userId: 'user', company: 'COMP', isRead: 'N' },
+        where: { userId: 'user', company: 'COMP', plantCd: 'PLANT', isRead: 'N' },
       });
     });
   });
 
-  // ─── markAsRead ───
+  // ??? markAsRead ???
   describe('markAsRead', () => {
     it('should mark notification as read', async () => {
       // Arrange
       mockNotiRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      await target.markAsRead('COMP', 1);
+      await target.markAsRead('COMP', 'PLANT', 1);
 
       // Assert
       expect(mockNotiRepo.update).toHaveBeenCalledWith(
-        { company: 'COMP', notiId: 1 },
+        { company: 'COMP', plantCd: 'PLANT', notiId: 1 },
         { isRead: 'Y' },
       );
     });
   });
 
-  // ─── markAllAsRead ───
+  // ??? markAllAsRead ???
   describe('markAllAsRead', () => {
     it('should mark all notifications as read', async () => {
       // Arrange
       mockDataSource.query.mockResolvedValue({ affected: 5 });
 
       // Act
-      await target.markAllAsRead('user', 'COMP');
+      await target.markAllAsRead('user', 'COMP', 'PLANT');
 
       // Assert
       expect(mockDataSource.query).toHaveBeenCalled();
     });
   });
 });
+
+

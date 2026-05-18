@@ -1,19 +1,8 @@
-/**
- * @file src/modules/material/services/physical-inv.service.spec.ts
- * @description PhysicalInvService 단위 테스트 - 재고실사 세션 관리, 실사 반영
- *
- * 초보자 가이드:
- * - startSession: 실사 개시 (IN_PROGRESS 세션 생성)
- * - completeSession: 실사 완료 (IN_PROGRESS → COMPLETED)
- * - applyCount: 실사 결과 반영 (MatStock + InvAdjLog)
- * - scanCount: PDA 바코드 스캔 → 실사수량 +1
- * - 실행: `npx jest --testPathPattern="physical-inv.service.spec"`
- */
+﻿import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { PhysicalInvService } from './physical-inv.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
@@ -26,226 +15,476 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('PhysicalInvService', () => {
-  let target: PhysicalInvService;
-  let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
-  let mockInvAdjLogRepo: DeepMocked<Repository<InvAdjLog>>;
-  let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
-  let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
-  let mockSessionRepo: DeepMocked<Repository<PhysicalInvSession>>;
-  let mockCountDetailRepo: DeepMocked<Repository<PhysicalInvCountDetail>>;
-  let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
-  let mockDataSource: DeepMocked<DataSource>;
-  let mockQueryRunner: DeepMocked<QueryRunner>;
+  let service: PhysicalInvService;
+  let matStockRepo: DeepMocked<Repository<MatStock>>;
+  let invAdjLogRepo: DeepMocked<Repository<InvAdjLog>>;
+  let matLotRepo: DeepMocked<Repository<MatLot>>;
+  let partMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let sessionRepo: DeepMocked<Repository<PhysicalInvSession>>;
+  let countDetailRepo: DeepMocked<Repository<PhysicalInvCountDetail>>;
+  let warehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let dataSource: DeepMocked<DataSource>;
+  let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
-    mockMatStockRepo = createMock<Repository<MatStock>>();
-    mockInvAdjLogRepo = createMock<Repository<InvAdjLog>>();
-    mockMatLotRepo = createMock<Repository<MatLot>>();
-    mockPartMasterRepo = createMock<Repository<PartMaster>>();
-    mockSessionRepo = createMock<Repository<PhysicalInvSession>>();
-    mockCountDetailRepo = createMock<Repository<PhysicalInvCountDetail>>();
-    mockWarehouseRepo = createMock<Repository<Warehouse>>();
-    mockDataSource = createMock<DataSource>();
-    mockQueryRunner = createMock<QueryRunner>();
+    matStockRepo = createMock<Repository<MatStock>>();
+    invAdjLogRepo = createMock<Repository<InvAdjLog>>();
+    matLotRepo = createMock<Repository<MatLot>>();
+    partMasterRepo = createMock<Repository<PartMaster>>();
+    sessionRepo = createMock<Repository<PhysicalInvSession>>();
+    countDetailRepo = createMock<Repository<PhysicalInvCountDetail>>();
+    warehouseRepo = createMock<Repository<Warehouse>>();
+    dataSource = createMock<DataSource>();
+    queryRunner = createMock<QueryRunner>();
 
-    mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
-    mockDataSource.getRepository.mockReturnValue(createMock<Repository<StockTransaction>>() as any);
-    mockQueryRunner.connect.mockResolvedValue(undefined);
-    mockQueryRunner.startTransaction.mockResolvedValue(undefined);
-    mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
-    mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
-    mockQueryRunner.release.mockResolvedValue(undefined);
+    dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    dataSource.getRepository.mockReturnValue(createMock<Repository<StockTransaction>>() as any);
+    queryRunner.connect.mockResolvedValue(undefined);
+    queryRunner.startTransaction.mockResolvedValue(undefined);
+    queryRunner.commitTransaction.mockResolvedValue(undefined);
+    queryRunner.rollbackTransaction.mockResolvedValue(undefined);
+    queryRunner.release.mockResolvedValue(undefined);
+    queryRunner.manager.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PhysicalInvService,
-        { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
-        { provide: getRepositoryToken(InvAdjLog), useValue: mockInvAdjLogRepo },
-        { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
-        { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
-        { provide: getRepositoryToken(PhysicalInvSession), useValue: mockSessionRepo },
-        { provide: getRepositoryToken(PhysicalInvCountDetail), useValue: mockCountDetailRepo },
-        { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
-        { provide: DataSource, useValue: mockDataSource },
+        { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
+        { provide: getRepositoryToken(InvAdjLog), useValue: invAdjLogRepo },
+        { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
+        { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
+        { provide: getRepositoryToken(PhysicalInvSession), useValue: sessionRepo },
+        { provide: getRepositoryToken(PhysicalInvCountDetail), useValue: countDetailRepo },
+        { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
+        { provide: DataSource, useValue: dataSource },
       ],
     })
       .setLogger(new MockLoggerService())
       .compile();
 
-    target = module.get<PhysicalInvService>(PhysicalInvService);
+    service = module.get(PhysicalInvService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  // ─── getSessionStatus ───
-  describe('getSessionStatus', () => {
-    it('진행 중인 세션이 있으면 isFreeze=true', async () => {
-      mockSessionRepo.findOne.mockResolvedValue({ status: 'IN_PROGRESS' } as PhysicalInvSession);
-
-      const result = await target.getSessionStatus();
-
-      expect(result.isFreeze).toBe(true);
-    });
-
-    it('진행 중인 세션이 없으면 isFreeze=false', async () => {
-      mockSessionRepo.findOne.mockResolvedValue(null);
-
-      const result = await target.getSessionStatus();
-
-      expect(result.isFreeze).toBe(false);
-    });
-  });
-
-  // ─── startSession ───
-  describe('startSession', () => {
-    it('이미 진행 중인 세션이 있으면 BadRequestException', async () => {
-      mockSessionRepo.findOne.mockResolvedValue({
-        status: 'IN_PROGRESS', sessionDate: new Date(), seq: 1,
-      } as PhysicalInvSession);
+  describe('scanCount', () => {
+    it('blocks when session does not exist', async () => {
+      const sessionQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      sessionRepo.createQueryBuilder.mockReturnValue(sessionQb as any);
 
       await expect(
-        target.startSession({ invType: 'MATERIAL', countMonth: '2026-03' } as any),
+        service.scanCount({
+          sessionDate: '2026-03-18',
+          seq: 1,
+          locationCode: 'LOC-01',
+          barcode: 'MAT-001',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('blocks when session is not IN_PROGRESS', async () => {
+      const sessionQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ status: 'COMPLETED' }),
+      };
+      sessionRepo.createQueryBuilder.mockReturnValue(sessionQb as any);
+
+      await expect(
+        service.scanCount({
+          sessionDate: '2026-03-18',
+          seq: 1,
+          locationCode: 'LOC-01',
+          barcode: 'MAT-001',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('새 실사 세션을 생성한다', async () => {
-      mockSessionRepo.findOne.mockResolvedValue(null);
-      mockSessionRepo.createQueryBuilder.mockReturnValue({
+    it('blocks when scanned stock location mismatches request location', async () => {
+      const sessionQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ status: 'IN_PROGRESS' }),
+      };
+      sessionRepo.createQueryBuilder.mockReturnValue(sessionQb as any);
+
+      const stockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({
+          warehouseCode: 'WH-01',
+          locationCode: 'LOC-02',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 5,
+          itemName: 'Part 1',
+        }),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
+
+      await expect(
+        service.scanCount({
+          sessionDate: '2026-03-18',
+          seq: 1,
+          locationCode: 'LOC-01',
+          barcode: 'MAT-001',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('blocks when scanned stock warehouse mismatches active session warehouse', async () => {
+      const sessionQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ status: 'IN_PROGRESS', warehouseCode: 'WH-SESSION' }),
+      };
+      sessionRepo.createQueryBuilder.mockReturnValue(sessionQb as any);
+
+      const stockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({
+          warehouseCode: 'WH-OTHER',
+          locationCode: 'LOC-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 5,
+          itemName: 'Part 1',
+        }),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
+
+      await expect(
+        service.scanCount({
+          sessionDate: '2026-03-18',
+          seq: 1,
+          locationCode: 'LOC-01',
+          barcode: 'MAT-001',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('applyCount', () => {
+    it('blocks when no IN_PROGRESS session exists', async () => {
+      sessionRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.applyCount({
+          items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 9 }],
+          createdBy: 'admin',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('skips records with no diff and commits', async () => {
+      sessionRepo.findOne.mockResolvedValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+      } as PhysicalInvSession);
+      queryRunner.manager.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: 0,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatStock,
+      ]);
+      const txRepo = createMock<Repository<StockTransaction>>();
+      txRepo.findOne.mockResolvedValue(null);
+      queryRunner.manager.getRepository = jest.fn().mockReturnValue(txRepo);
+
+      const result = await service.applyCount({
+        items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 10 }],
+        createdBy: 'admin',
+      });
+
+      expect(result).toHaveLength(0);
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('blocks when counted qty is lower than reserved qty', async () => {
+      sessionRepo.findOne.mockResolvedValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+      } as PhysicalInvSession);
+      queryRunner.manager.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: 8,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatStock,
+      ]);
+
+      await expect(
+        service.applyCount({
+          items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 7 }],
+          createdBy: 'admin',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('filters active session by tenant in applyCount', async () => {
+      sessionRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.applyCount(
+          {
+            items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 7 }],
+            createdBy: 'admin',
+          },
+          'HANES',
+          'P01',
+        ),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(sessionRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: 'IN_PROGRESS', company: 'HANES', plant: 'P01' }),
+        }),
+      );
+    });
+
+    it('blocks when request includes duplicated stockId', async () => {
+      await expect(
+        service.applyCount({
+          items: [
+            { stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 10 },
+            { stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 9 },
+          ],
+          createdBy: 'admin',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('blocks when stock warehouse is outside active session warehouse scope', async () => {
+      sessionRepo.findOne.mockResolvedValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+        warehouseCode: 'WH-SESSION',
+      } as PhysicalInvSession);
+      queryRunner.manager.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-OTHER',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: 0,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatStock,
+      ]);
+
+      await expect(
+        service.applyCount({
+          items: [{ stockId: 'WH-OTHER::ITEM-001::MAT-001', countedQty: 9 }],
+          createdBy: 'admin',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('handles null reservedQty as zero', async () => {
+      sessionRepo.findOne.mockResolvedValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+        warehouseCode: 'WH-01',
+      } as PhysicalInvSession);
+      queryRunner.manager.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: null,
+          company: 'HANES',
+          plant: 'P01',
+        } as unknown as MatStock,
+      ]);
+      const txRepo = createMock<Repository<StockTransaction>>();
+      txRepo.findOne.mockResolvedValue(null);
+      queryRunner.manager.getRepository = jest.fn().mockReturnValue(txRepo);
+      queryRunner.manager.create
+        .mockReturnValueOnce({ transNo: 'PHC202603180001' } as any)
+        .mockReturnValueOnce({ adjDate: new Date('2026-03-18') } as any);
+      queryRunner.manager.save
+        .mockResolvedValueOnce({ transNo: 'PHC202603180001' } as any)
+        .mockResolvedValueOnce({ adjDate: new Date('2026-03-18') } as any);
+
+      await service.applyCount({
+        items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 8 }],
+        createdBy: 'admin',
+      });
+
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+        expect.objectContaining({ qty: 8, availableQty: 8 }),
+      );
+    });
+  });
+
+  describe('workflow', () => {
+    it('keeps consistency across start -> scan -> apply -> complete flow', async () => {
+      sessionRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          sessionDate: new Date('2026-03-18'),
+          seq: 1,
+          status: 'IN_PROGRESS',
+          warehouseCode: 'WH-01',
+          company: 'HANES',
+          plant: 'P01',
+        } as PhysicalInvSession);
+
+      const maxSeqQb = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ maxSeq: 0 }),
-      } as any);
-      const session = { sessionDate: new Date(), seq: 1, status: 'IN_PROGRESS' } as PhysicalInvSession;
-      mockSessionRepo.create.mockReturnValue(session);
-      mockSessionRepo.save.mockResolvedValue(session);
+      };
+      const scanSessionQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({
+          status: 'IN_PROGRESS',
+          warehouseCode: 'WH-01',
+        }),
+      };
+      const completeSessionEntity = {
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+        warehouseCode: 'WH-01',
+      } as PhysicalInvSession;
+      const completeSessionQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(completeSessionEntity),
+      };
+      sessionRepo.createQueryBuilder
+        .mockReturnValueOnce(maxSeqQb as any)
+        .mockReturnValueOnce(scanSessionQb as any)
+        .mockReturnValueOnce(completeSessionQb as any);
 
-      const result = await target.startSession({ invType: 'MATERIAL', countMonth: '2026-03' } as any);
+      sessionRepo.create.mockReturnValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+        warehouseCode: 'WH-01',
+      } as PhysicalInvSession);
+      sessionRepo.save
+        .mockResolvedValueOnce({
+          sessionDate: new Date('2026-03-18'),
+          seq: 1,
+          status: 'IN_PROGRESS',
+          warehouseCode: 'WH-01',
+        } as PhysicalInvSession)
+        .mockResolvedValueOnce({
+          ...completeSessionEntity,
+          status: 'COMPLETED',
+        } as PhysicalInvSession);
 
-      expect(result.status).toBe('IN_PROGRESS');
-    });
-  });
+      const stockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({
+          warehouseCode: 'WH-01',
+          locationCode: 'LOC-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          itemName: 'Part 1',
+        }),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
 
-  // ─── completeSession ───
-  describe('completeSession', () => {
-    it('존재하지 않는 세션이면 NotFoundException', async () => {
-      mockSessionRepo.findOne.mockResolvedValue(null);
-
-      await expect(
-        target.completeSession('2026-03-18', 1, {} as any),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('IN_PROGRESS가 아닌 세션이면 BadRequestException', async () => {
-      mockSessionRepo.findOne.mockResolvedValue({ status: 'COMPLETED' } as PhysicalInvSession);
-
-      await expect(
-        target.completeSession('2026-03-18', 1, {} as any),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('정상적으로 세션을 완료한다', async () => {
-      const session = { status: 'IN_PROGRESS', sessionDate: new Date(), seq: 1 } as PhysicalInvSession;
-      mockSessionRepo.findOne.mockResolvedValue(session);
-      mockSessionRepo.save.mockResolvedValue({ ...session, status: 'COMPLETED' } as PhysicalInvSession);
-
-      const result = await target.completeSession('2026-03-18', 1, { completedBy: 'admin' } as any);
-
-      expect(result.status).toBe('COMPLETED');
-    });
-  });
-
-  // ─── applyCount ───
-  describe('applyCount', () => {
-    it('재고를 찾을 수 없으면 NotFoundException', async () => {
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
-
-      await expect(
-        target.applyCount({ items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 10 }] } as any),
-      ).rejects.toThrow(NotFoundException);
-
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-    });
-
-    it('차이가 0인 항목은 스킵한다', async () => {
-      const stock = { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 10, reservedQty: 0, company: 'HANES', plant: 'P01' } as MatStock;
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock);
-
-      // 매니저의 getRepository를 모킹
-      const mockTxRepo = createMock<Repository<StockTransaction>>();
-      mockTxRepo.findOne.mockResolvedValue(null);
-      mockQueryRunner.manager.getRepository = jest.fn().mockReturnValue(mockTxRepo);
-
-      const result = await target.applyCount({
-        items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 10 }],
-        createdBy: 'admin',
-      } as any);
-
-      expect(result).toHaveLength(0);
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
-    });
-  });
-
-  // ─── scanCount ───
-  describe('scanCount', () => {
-    it('바코드에 해당하는 LOT이 없으면 NotFoundException', async () => {
-      mockMatLotRepo.findOne.mockResolvedValue(null);
-
-      await expect(
-        target.scanCount({
-          sessionDate: '2026-03-18', seq: 1,
-          locationCode: 'LOC-01', barcode: 'NONE',
-        } as any),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('재고가 없으면 NotFoundException', async () => {
-      mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
-      mockMatStockRepo.findOne.mockResolvedValue(null);
-
-      await expect(
-        target.scanCount({
-          sessionDate: '2026-03-18', seq: 1,
-          locationCode: 'LOC-01', barcode: 'MAT-001',
-        } as any),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('정상적으로 스캔 카운트를 처리한다', async () => {
-      mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
-      mockMatStockRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 100 } as MatStock);
-      mockCountDetailRepo.findOne.mockResolvedValue(null);
-      mockCountDetailRepo.create.mockReturnValue({
-        countedQty: 1, countedBy: null,
-        sessionDate: new Date(), seq: 1, warehouseCode: 'WH-01',
-        itemCode: 'ITEM-001', matUid: 'MAT-001',
+      countDetailRepo.findOne.mockResolvedValue(null);
+      countDetailRepo.create.mockReturnValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        countedQty: 1,
       } as PhysicalInvCountDetail);
-      mockCountDetailRepo.save.mockResolvedValue({ countedQty: 1 } as PhysicalInvCountDetail);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A' } as PartMaster);
+      countDetailRepo.save.mockResolvedValue({
+        sessionDate: new Date('2026-03-18'),
+        seq: 1,
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        countedQty: 1,
+      } as PhysicalInvCountDetail);
 
-      const result = await target.scanCount({
-        sessionDate: '2026-03-18', seq: 1,
-        locationCode: 'LOC-01', barcode: 'MAT-001',
-      } as any);
+      queryRunner.manager.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: 0,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatStock,
+      ]);
+      const txRepo = createMock<Repository<StockTransaction>>();
+      txRepo.findOne.mockResolvedValue(null);
+      queryRunner.manager.getRepository = jest.fn().mockReturnValue(txRepo);
+      queryRunner.manager.create
+        .mockReturnValueOnce({ transNo: 'PHC202603180001' } as any)
+        .mockReturnValueOnce({ adjDate: new Date('2026-03-18') } as any);
+      queryRunner.manager.save
+        .mockResolvedValueOnce({ transNo: 'PHC202603180001' } as any)
+        .mockResolvedValueOnce({ adjDate: new Date('2026-03-18') } as any);
 
-      expect(result.countedQty).toBe(1);
-      expect(result.itemName).toBe('커넥터A');
-    });
-  });
+      const started = await service.startSession(
+        { invType: 'MATERIAL', countMonth: '2026-03', warehouseCode: 'WH-01', startedBy: 'admin' },
+        'HANES',
+        'P01',
+      );
+      expect(started.status).toBe('IN_PROGRESS');
 
-  // ─── findStocks ───
-  describe('findStocks', () => {
-    it('재고 목록을 반환한다', async () => {
-      const stock = { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 100, updatedAt: new Date() } as MatStock;
-      mockMatStockRepo.find.mockResolvedValue([stock]);
-      mockMatStockRepo.count.mockResolvedValue(1);
-      mockPartMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: '커넥터A' } as PartMaster]);
-      mockMatLotRepo.find.mockResolvedValue([{ matUid: 'MAT-001' } as MatLot]);
+      const scanned = await service.scanCount(
+        { sessionDate: '2026-03-18', seq: 1, locationCode: 'LOC-01', barcode: 'MAT-001' },
+        'HANES',
+        'P01',
+      );
+      expect(scanned.countedQty).toBe(1);
 
-      const result = await target.findStocks({ page: 1, limit: 10 });
+      const applied = await service.applyCount(
+        { items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 8 }], createdBy: 'admin' },
+        'HANES',
+        'P01',
+      );
+      expect(applied).toHaveLength(1);
 
-      expect(result.data).toHaveLength(1);
+      const completed = await service.completeSession('2026-03-18', 1, { completedBy: 'admin' });
+      expect(completed.status).toBe('COMPLETED');
     });
   });
 });

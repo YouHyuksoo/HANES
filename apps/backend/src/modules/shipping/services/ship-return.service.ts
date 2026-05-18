@@ -36,10 +36,17 @@ export class ShipReturnService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /** items 배열의 part를 평면화하는 헬퍼 메서드 */
-  private async flattenItems(data: any): Promise<any> {
+  private async flattenItems(data: any, company?: string, plant?: string): Promise<any> {
     const items = await this.shipReturnItemRepository.find({
-      where: { returnNo: data.returnNo },
+      where: { returnNo: data.returnNo, ...this.tenantWhere(company, plant) },
     });
 
     const itemsWithPart = await Promise.all(
@@ -99,12 +106,12 @@ export class ShipReturnService {
       data.map(async (item) => {
         const shipOrder = item.shipmentId
           ? await this.shipOrderRepository.findOne({
-              where: { shipOrderNo: item.shipmentId },
+              where: { shipOrderNo: item.shipmentId, ...this.tenantWhere(company, plant) },
               select: ['shipOrderNo', 'customerName'],
             })
           : null;
 
-        const flattened = await this.flattenItems(item);
+        const flattened = await this.flattenItems(item, company, plant);
         return {
           ...flattened,
           shipOrder,
@@ -116,21 +123,21 @@ export class ShipReturnService {
   }
 
   /** 반품 단건 조회 */
-  async findById(returnNo: string) {
+  async findById(returnNo: string, company?: string, plant?: string) {
     const ret = await this.shipReturnRepository.findOne({
-      where: { returnNo },
+      where: { returnNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!ret) throw new NotFoundException(`반품을 찾을 수 없습니다: ${returnNo}`);
 
     const shipOrder = ret.shipmentId
       ? await this.shipOrderRepository.findOne({
-          where: { shipOrderNo: ret.shipmentId },
+          where: { shipOrderNo: ret.shipmentId, ...this.tenantWhere(company, plant) },
           select: ['shipOrderNo', 'customerName'],
         })
       : null;
 
-    const flattened = await this.flattenItems(ret);
+    const flattened = await this.flattenItems(ret, company, plant);
     return {
       ...flattened,
       shipOrder,
@@ -140,7 +147,7 @@ export class ShipReturnService {
   /** 반품 생성 */
   async create(dto: CreateShipReturnDto, company?: string, plant?: string) {
     const existing = await this.shipReturnRepository.findOne({
-      where: { returnNo: dto.returnNo },
+      where: { returnNo: dto.returnNo, ...this.tenantWhere(company, plant) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 반품 번호입니다: ${dto.returnNo}`);
 
@@ -179,7 +186,7 @@ export class ShipReturnService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(savedReturn.returnNo);
+      return this.findById(savedReturn.returnNo, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -189,10 +196,15 @@ export class ShipReturnService {
   }
 
   /** 반품 수정 */
-  async update(returnNo: string, dto: UpdateShipReturnDto) {
-    const ret = await this.findById(returnNo);
+  async update(returnNo: string, dto: UpdateShipReturnDto, company?: string, plant?: string) {
+    const ret = await this.findById(returnNo, company, plant);
     if (ret.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 수정할 수 있습니다.');
+    }
+    if (dto.status !== undefined) {
+      throw new BadRequestException(
+        `반품 상태(${dto.status})는 직접 변경할 수 없습니다. 반품 전용 처리 API를 사용해 주세요.`,
+      );
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -201,7 +213,7 @@ export class ShipReturnService {
 
     try {
       if (dto.items) {
-        await queryRunner.manager.delete(ShipmentReturnItem, { returnNo });
+        await queryRunner.manager.delete(ShipmentReturnItem, { returnNo, ...this.tenantWhere(company, plant) });
 
         const items = dto.items.map((item, idx) =>
           this.shipReturnItemRepository.create({
@@ -221,14 +233,13 @@ export class ShipReturnService {
       if (dto.shipmentId !== undefined) updateData.shipmentId = dto.shipmentId;
       if (dto.returnDate !== undefined) updateData.returnDate = dto.returnDate ? new Date(dto.returnDate) : null;
       if (dto.returnReason !== undefined) updateData.returnReason = dto.returnReason;
-      if (dto.status !== undefined) updateData.status = dto.status;
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ShipmentReturn, { returnNo }, updateData);
+      await queryRunner.manager.update(ShipmentReturn, { returnNo, ...this.tenantWhere(company, plant) }, updateData);
 
       await queryRunner.commitTransaction();
 
-      return this.findById(returnNo);
+      return this.findById(returnNo, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -238,13 +249,13 @@ export class ShipReturnService {
   }
 
   /** 반품 삭제 */
-  async delete(returnNo: string) {
-    const ret = await this.findById(returnNo);
+  async delete(returnNo: string, company?: string, plant?: string) {
+    const ret = await this.findById(returnNo, company, plant);
     if (ret.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipReturnRepository.delete({ returnNo });
+    await this.shipReturnRepository.delete({ returnNo, ...this.tenantWhere(company, plant) });
 
     return { returnNo, deleted: true };
   }

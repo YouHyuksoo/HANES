@@ -234,6 +234,32 @@ export class ReworkService {
     if (item.status !== 'REGISTERED') {
       throw new BadRequestException('등록 상태에서만 삭제할 수 있습니다.');
     }
+    const progressedProcesses = (item.processes ?? []).filter(
+      (process) => process.status && process.status !== 'WAITING',
+    );
+    if (progressedProcesses.length > 0) {
+      throw new BadRequestException(
+        '이미 재작업 공정이 진행된 건은 직접 삭제할 수 없습니다. 재작업 공정부터 먼저 정리해 주세요.',
+      );
+    }
+    const linkedInspects = await this.inspectRepo.find({
+      where: { reworkOrderId: reworkNo },
+    });
+    if (linkedInspects.length > 0) {
+      throw new BadRequestException(
+        '이미 재작업 검사 이력이 있는 건은 직접 삭제할 수 없습니다. 검사 이력부터 먼저 정리해 주세요.',
+      );
+    }
+    if (item.defectLogId) {
+      const [occurAtStr, seqStr] = item.defectLogId.split('|');
+      if (occurAtStr && seqStr) {
+        await this.defectLogRepo.update(
+          { occurAt: new Date(occurAtStr), seq: Number(seqStr) },
+          { status: 'WAIT' },
+        );
+      }
+    }
+    await this.processRepo.delete({ reworkOrderId: reworkNo });
     await this.reworkRepo.delete({ reworkNo });
   }
 

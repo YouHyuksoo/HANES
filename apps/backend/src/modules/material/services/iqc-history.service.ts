@@ -1,16 +1,6 @@
-/**
- * @file src/modules/material/services/iqc-history.service.ts
- * @description IQC 이력 조회 서비스 (TypeORM)
- *
- * 초보자 가이드:
- * - IqcLog 엔티티는 arrivalNo + matUid 필드로 MatArrival/MatLot과 연결
- * - CreateIqcResultDto의 matUid를 IqcLog에 직접 저장하여 정확한 LOT 식별
- * - 취소 시 matUid 기반으로 정확한 LOT/입고 건 조회 (레거시 fallback: itemCode)
- */
-
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In, DataSource } from 'typeorm';
+import { Repository, Between, Like, In, DataSource, IsNull } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
@@ -48,28 +38,18 @@ export class IqcHistoryService {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       ...(company && { company }),
       ...(plant && { plant }),
+      ...(inspectType && { inspectType }),
+      ...(result && { result }),
+      ...(fromDate && toDate && { inspectDate: Between(new Date(fromDate), new Date(toDate)) }),
     };
-
-    if (inspectType) {
-      where.inspectType = inspectType;
-    }
-
-    if (result) {
-      where.result = result;
-    }
-
-    if (fromDate && toDate) {
-      where.inspectDate = Between(new Date(fromDate), new Date(toDate));
-    }
 
     let data: IqcLog[];
     let total: number;
 
     if (search) {
-      // 검색어가 있으면 품목 검색 후 필터링
       const parts = await this.partMasterRepository.find({
         where: [
           { itemCode: Like(`%${search}%`) },
@@ -78,18 +58,12 @@ export class IqcHistoryService {
       });
       const searchItemCodes = parts.map((p) => p.itemCode);
 
-      // 복합 조건으로 IQC 로그 검색
       const queryBuilder = this.iqcLogRepository.createQueryBuilder('iqc');
 
       if (company) queryBuilder.andWhere('iqc.company = :company', { company });
       if (plant) queryBuilder.andWhere('iqc.plant = :plant', { plant });
-
-      if (inspectType) {
-        queryBuilder.andWhere('iqc.inspectType = :inspectType', { inspectType });
-      }
-      if (result) {
-        queryBuilder.andWhere('iqc.result = :result', { result });
-      }
+      if (inspectType) queryBuilder.andWhere('iqc.inspectType = :inspectType', { inspectType });
+      if (result) queryBuilder.andWhere('iqc.result = :result', { result });
       if (fromDate && toDate) {
         queryBuilder.andWhere('iqc.inspectDate BETWEEN :fromDate AND :toDate', {
           fromDate: new Date(fromDate),
@@ -100,16 +74,13 @@ export class IqcHistoryService {
       if (searchItemCodes.length > 0) {
         queryBuilder.andWhere('iqc.itemCode IN (:...searchItemCodes)', { searchItemCodes });
       } else {
-        // arrivalNo로도 검색
-        queryBuilder.andWhere('(iqc.arrivalNo LIKE :search OR iqc.itemCode LIKE :search)', { search: `%${search}%` });
+        queryBuilder.andWhere('(iqc.arrivalNo LIKE :search OR iqc.itemCode LIKE :search)', {
+          search: `%${search}%`,
+        });
       }
 
       [data, total] = await Promise.all([
-        queryBuilder
-          .orderBy('iqc.inspectDate', 'DESC')
-          .skip(skip)
-          .take(limit)
-          .getMany(),
+        queryBuilder.orderBy('iqc.inspectDate', 'DESC').skip(skip).take(limit).getMany(),
         queryBuilder.getCount(),
       ]);
     } else {
@@ -124,17 +95,12 @@ export class IqcHistoryService {
       ]);
     }
 
-    // 관련 정보 조회
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
-    const arrivalNos = data.map((log) => log.arrivalNo).filter(Boolean) as string[];
-
-    const [partsResult] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-    ]);
-
+    const partsResult = itemCodes.length > 0
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      : [];
     const partMap = new Map(partsResult.map((p) => [p.itemCode, p]));
 
-    // 중첩 객체 평면화
     const flattenedData = data.map((log) => {
       const part = partMap.get(log.itemCode);
       return {
@@ -156,12 +122,10 @@ export class IqcHistoryService {
       throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
     }
 
-    // LOT iqcStatus 업데이트
     await this.matLotRepository.update(dto.matUid, {
       iqcStatus: dto.result,
     });
 
-    // G4: IqcLog 생성 — inspectClass, destructSampleQty, certFilePath 포함
     const log = this.iqcLogRepository.create({
       arrivalNo: lot.arrivalNo || null,
       matUid: dto.matUid,
@@ -179,16 +143,20 @@ export class IqcHistoryService {
     });
     const saved = await this.iqcLogRepository.save(log);
 
-    // G6: 불합격 시 자동처리 — 불용창고(DEFECT)로 자동이동
     if (dto.result === 'FAIL') {
       await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
     }
 
-    // G4: 합격 + 파괴검사 시료 자동출고 (사이트 설정에 따라)
     if (dto.result === 'PASS' && dto.destructSampleQty && dto.destructSampleQty > 0) {
       const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE');
       if (issueMode === 'AUTO_ISSUE') {
-        await this.autoIssueDestructSample(lot.matUid, lot.itemCode, dto.destructSampleQty, lot.company, lot.plant);
+        await this.autoIssueDestructSample(
+          lot.matUid,
+          lot.itemCode,
+          dto.destructSampleQty,
+          lot.company,
+          lot.plant,
+        );
       }
     }
 
@@ -204,10 +172,12 @@ export class IqcHistoryService {
     };
   }
 
-  /**
-   * G6: IQC 불합격 자동처리 — 불용창고(DEFECT)로 자동이동
-   */
-  private async handleIqcFail(matUid: string, itemCode: string, company?: string | null, plant?: string | null) {
+  private async handleIqcFail(
+    matUid: string,
+    itemCode: string,
+    company?: string | null,
+    plant?: string | null,
+  ) {
     const defectWarehouse = await this.warehouseRepository.findOne({
       where: { warehouseType: 'DEFECT', useYn: 'Y' },
     });
@@ -224,18 +194,18 @@ export class IqcHistoryService {
     try {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
-      // 원래 창고에서 차감
-      await queryRunner.manager.update(MatStock,
+      await queryRunner.manager.update(
+        MatStock,
         { warehouseCode: stock.warehouseCode, itemCode, matUid },
         { qty: 0 },
       );
 
-      // 불용창고에 upsert
       const existing = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid },
       });
       if (existing) {
-        await queryRunner.manager.update(MatStock,
+        await queryRunner.manager.update(
+          MatStock,
           { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid },
           { qty: existing.qty + stock.qty },
         );
@@ -251,7 +221,6 @@ export class IqcHistoryService {
         });
       }
 
-      // StockTransaction 기록
       await queryRunner.manager.save(StockTransaction, {
         transNo,
         transType: 'MAT_MOVE',
@@ -275,10 +244,13 @@ export class IqcHistoryService {
     }
   }
 
-  /**
-   * G4: 파괴검사 시료 자동출고 (IQC_SAMPLE_ISSUE_MODE = AUTO_ISSUE인 경우)
-   */
-  private async autoIssueDestructSample(matUid: string, itemCode: string, sampleQty: number, company?: string | null, plant?: string | null) {
+  private async autoIssueDestructSample(
+    matUid: string,
+    itemCode: string,
+    sampleQty: number,
+    company?: string | null,
+    plant?: string | null,
+  ) {
     const stock = await this.matStockRepository.findOne({
       where: { matUid, itemCode },
     });
@@ -290,7 +262,8 @@ export class IqcHistoryService {
     try {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
-      await queryRunner.manager.update(MatStock,
+      await queryRunner.manager.update(
+        MatStock,
         { warehouseCode: stock.warehouseCode, itemCode, matUid },
         { qty: stock.qty - sampleQty },
       );
@@ -317,7 +290,6 @@ export class IqcHistoryService {
     }
   }
 
-  /** G4: 검사성적서 파일 업로드 */
   async uploadCert(inspectDate: string, seq: number, filePath: string) {
     const log = await this.iqcLogRepository.findOne({
       where: { inspectDate: new Date(inspectDate), seq },
@@ -327,10 +299,6 @@ export class IqcHistoryService {
     return { ...log, certFilePath: filePath };
   }
 
-  /** IQC 판정 취소 - LOT iqcStatus를 PENDING으로 복원
-   *  @param inspectDate ISO 날짜 문자열 (복합 PK 일부)
-   *  @param seq 시퀀스 번호 (복합 PK 일부)
-   */
   async cancel(inspectDate: string, seq: number, dto: CancelIqcResultDto) {
     const log = await this.iqcLogRepository.findOne({
       where: { inspectDate: new Date(inspectDate), seq },
@@ -342,46 +310,155 @@ export class IqcHistoryService {
       throw new BadRequestException('이미 취소된 판정입니다.');
     }
 
-    // 이미 입고된 LOT인지 확인 (matUid 기준 → 레거시 fallback)
     if (log.matUid) {
-      // matUid로 정확한 LOT의 입고 여부 확인
       const receiving = await this.matReceivingRepository.findOne({
         where: { matUid: log.matUid, status: 'DONE' },
       });
       if (receiving) {
-        throw new BadRequestException('이미 입고된 LOT은 IQC 판정을 취소할 수 없습니다.');
+        throw new BadRequestException(
+          `이미 입고된 LOT입니다. LOT ${log.matUid}의 입고부터 먼저 정리한 뒤 IQC 판정을 취소해 주세요.`,
+        );
       }
     } else if (log.itemCode) {
-      // matUid 없는 레거시 — 기존 로직
       const receiving = await this.matReceivingRepository.findOne({
         where: { itemCode: log.itemCode, status: 'DONE' },
       });
       if (receiving) {
-        throw new BadRequestException('이미 입고된 LOT은 IQC 판정을 취소할 수 없습니다.');
+        throw new BadRequestException(
+          '이미 입고된 LOT입니다. 입고부터 먼저 정리한 뒤 IQC 판정을 취소해 주세요.',
+        );
       }
     }
 
-    // IqcLog 상태 변경
-    await this.iqcLogRepository.update(
-      { inspectDate: new Date(inspectDate), seq },
-      { status: 'CANCELED', remark: dto.reason },
-    );
-
-    // LOT의 iqcStatus를 PENDING으로 복원 (matUid 기준 → 레거시 fallback)
-    if (log.matUid) {
-      // matUid로 정확한 LOT 복원
-      await this.matLotRepository.update(log.matUid, { iqcStatus: 'PENDING' });
-    } else if (log.itemCode) {
-      // matUid 없는 레거시 — 기존 로직
-      const lot = await this.matLotRepository.findOne({
-        where: { itemCode: log.itemCode, iqcStatus: log.result },
+    if (log.matUid && log.result === 'PASS') {
+      const sampleIssue = await this.stockTransactionRepository.findOne({
+        where: {
+          matUid: log.matUid,
+          itemCode: log.itemCode,
+          refType: 'IQC_DESTRUCT',
+          cancelRefId: IsNull(),
+          status: 'DONE',
+        },
         order: { createdAt: 'DESC' },
       });
-      if (lot) {
-        await this.matLotRepository.update(lot.matUid, { iqcStatus: 'PENDING' });
+      if (sampleIssue) {
+        throw new BadRequestException(
+          `파괴검사 시료 자동출고(${sampleIssue.transNo})가 이미 반영되어 있습니다. 시료 출고를 먼저 정리한 뒤 IQC 판정을 취소해 주세요.`,
+        );
       }
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      if (log.matUid && log.result === 'FAIL') {
+        await this.reverseIqcFailMove(queryRunner, log.matUid, log.itemCode, log.company, log.plant);
+      }
+
+      await queryRunner.manager.update(
+        IqcLog,
+        { inspectDate: new Date(inspectDate), seq },
+        { status: 'CANCELED', remark: dto.reason },
+      );
+
+      if (log.matUid) {
+        await queryRunner.manager.update(MatLot, log.matUid, { iqcStatus: 'PENDING' });
+      } else if (log.itemCode) {
+        const lot = await queryRunner.manager.findOne(MatLot, {
+          where: { itemCode: log.itemCode, iqcStatus: log.result },
+          order: { createdAt: 'DESC' },
+        });
+        if (lot) {
+          await queryRunner.manager.update(MatLot, lot.matUid, { iqcStatus: 'PENDING' });
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error: unknown) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
     return { inspectDate, seq, status: 'CANCELED' };
+  }
+
+  private async reverseIqcFailMove(
+    queryRunner: any,
+    matUid: string,
+    itemCode: string,
+    company?: string | null,
+    plant?: string | null,
+  ) {
+    const failMove = await queryRunner.manager.findOne(StockTransaction, {
+      where: {
+        matUid,
+        itemCode,
+        refType: 'IQC_FAIL',
+        cancelRefId: IsNull(),
+        status: 'DONE',
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!failMove || !failMove.fromWarehouseId || !failMove.toWarehouseId || failMove.qty <= 0) {
+      return;
+    }
+
+    const defectStock = await queryRunner.manager.findOne(MatStock, {
+      where: { warehouseCode: failMove.toWarehouseId, itemCode, matUid },
+    });
+    if (!defectStock || defectStock.qty < failMove.qty) {
+      throw new BadRequestException(
+        `불량창고 재고가 이미 변경되어 IQC 불합격 취소를 자동 처리할 수 없습니다. LOT: ${matUid}`,
+      );
+    }
+
+    const sourceStock = await queryRunner.manager.findOne(MatStock, {
+      where: { warehouseCode: failMove.fromWarehouseId, itemCode, matUid },
+    });
+
+    await queryRunner.manager.update(
+      MatStock,
+      { warehouseCode: failMove.toWarehouseId, itemCode, matUid },
+      { qty: defectStock.qty - failMove.qty },
+    );
+
+    if (sourceStock) {
+      await queryRunner.manager.update(
+        MatStock,
+        { warehouseCode: failMove.fromWarehouseId, itemCode, matUid },
+        { qty: sourceStock.qty + failMove.qty },
+      );
+    } else {
+      await queryRunner.manager.save(MatStock, {
+        warehouseCode: failMove.fromWarehouseId,
+        itemCode,
+        matUid,
+        qty: failMove.qty,
+        reservedQty: 0,
+        company,
+        plant,
+      });
+    }
+
+    const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
+    await queryRunner.manager.save(StockTransaction, {
+      transNo,
+      transType: 'MAT_MOVE',
+      fromWarehouseId: failMove.toWarehouseId,
+      toWarehouseId: failMove.fromWarehouseId,
+      itemCode,
+      matUid,
+      qty: failMove.qty,
+      remark: 'IQC 불합격 취소 원복',
+      refType: 'IQC_FAIL_CANCEL',
+      cancelRefId: failMove.transNo,
+      company,
+      plant,
+    });
   }
 }

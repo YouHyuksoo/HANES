@@ -230,6 +230,15 @@ export class IssueRequestService {
         const reqItem = await this.requestItemRepository.findOne({
           where: { requestId: requestNo, seq: reqItemSeq },
         });
+        if (!reqItem) {
+          throw new BadRequestException(`출고요청 항목을 찾을 수 없습니다: ${dtoItem.requestItemId}`);
+        }
+        const remainingQty = reqItem.requestQty - reqItem.issuedQty;
+        if (dtoItem.issueQty > remainingQty) {
+          throw new BadRequestException(
+            `요청 수량을 초과해 출고할 수 없습니다. 항목 ${reqItemSeq}, 잔여: ${remainingQty}, 요청: ${dtoItem.issueQty}`,
+          );
+        }
         if (reqItem) {
           await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq }, {
             issuedQty: reqItem.issuedQty + dtoItem.issueQty,

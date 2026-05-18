@@ -26,6 +26,7 @@ import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
+import { ProdResult } from '../../../../entities/prod-result.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
 import {
@@ -48,10 +49,58 @@ export class ContinuityInspectService {
     private readonly jobOrderRepo: Repository<JobOrder>,
     @InjectRepository(EquipProtocol)
     private readonly equipProtocolRepo: Repository<EquipProtocol>,
+    @InjectRepository(ProdResult)
+    private readonly prodResultRepo: Repository<ProdResult>,
     private readonly seqGenerator: SeqGeneratorService,
     private readonly sysConfigService: SysConfigService,
     private readonly dataSource: DataSource,
   ) {}
+
+  private async resolveProdResult(
+    orderNo: string,
+    prodResultNo?: string,
+    fgBarcode?: string,
+    company?: string,
+    plant?: string,
+  ): Promise<ProdResult | null> {
+    if (prodResultNo) {
+      return this.prodResultRepo.findOne({
+        where: {
+          resultNo: prodResultNo,
+          orderNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+      });
+    }
+
+    if (fgBarcode) {
+      const barcodeMatched = await this.prodResultRepo.findOne({
+        where: {
+          orderNo,
+          prdUid: fgBarcode,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        order: { createdAt: 'DESC' },
+      });
+      if (barcodeMatched) {
+        return barcodeMatched;
+      }
+    }
+
+    const candidates = await this.prodResultRepo.find({
+      where: {
+        orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      order: { createdAt: 'DESC' },
+      take: 2,
+    });
+
+    return candidates.length === 1 ? candidates[0] : null;
+  }
 
   /**
    * 작업지시 목록 조회 (상태: IN_PROGRESS 또는 WAITING)
@@ -67,7 +116,7 @@ export class ContinuityInspectService {
       .createQueryBuilder('jo')
       .leftJoinAndSelect('jo.part', 'part')
       .where('jo.status IN (:...statuses)', {
-        statuses: ['IN_PROGRESS', 'WAITING'],
+        statuses: ['RUNNING', 'IN_PROGRESS', 'WAITING'],
       });
 
     if (query.company) {
@@ -131,8 +180,14 @@ export class ContinuityInspectService {
   /**
    * FG 바코드로 라벨 단건 조회 (바코드 스캔 시)
    */
-  async findFgLabel(fgBarcode: string) {
-    const label = await this.fgLabelRepo.findOne({ where: { fgBarcode } });
+  async findFgLabel(fgBarcode: string, company?: string, plant?: string) {
+    const label = await this.fgLabelRepo.findOne({
+      where: {
+        fgBarcode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
     if (!label) {
       throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
     }
@@ -142,8 +197,19 @@ export class ContinuityInspectService {
   /**
    * FG 라벨 상태 변경 (ISSUED → VISUAL_PASS/VISUAL_FAIL → PACKED → SHIPPED)
    */
-  async updateFgLabelStatus(fgBarcode: string, status: string) {
-    const label = await this.fgLabelRepo.findOne({ where: { fgBarcode } });
+  async updateFgLabelStatus(
+    fgBarcode: string,
+    status: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const label = await this.fgLabelRepo.findOne({
+      where: {
+        fgBarcode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
     if (!label) {
       throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
     }
@@ -154,9 +220,13 @@ export class ContinuityInspectService {
   /**
    * 작업지시별 발행된 FG_LABELS 목록 조회
    */
-  async findFgLabelsByOrder(orderNo: string) {
+  async findFgLabelsByOrder(orderNo: string, company?: string, plant?: string) {
     return this.fgLabelRepo.find({
-      where: { orderNo },
+      where: {
+        orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       order: { issuedAt: 'DESC' },
     });
   }
@@ -165,7 +235,7 @@ export class ContinuityInspectService {
    * 통전검사 결과 등록 (트랜잭션)
    * - ON_INSPECT 모드: PASS → InspectResult + FG_BARCODE 채번 + FG_LABELS 등록
    * - ON_PRODUCTION/PRE_ISSUE 모드: PASS → dto.fgBarcode로 PENDING 라벨 조회 → ISSUED 전환
-   * - FAIL: InspectResult 등록 + JobOrder.defectQty++
+ * - FAIL: InspectResult 등록
    */
   async inspect(
     dto: ContinuityInspectDto,
@@ -182,7 +252,11 @@ export class ContinuityInspectService {
     try {
       /** 1. 작업지시 존재 확인 */
       const jobOrder = await queryRunner.manager.findOne(JobOrder, {
-        where: { orderNo: dto.orderNo },
+        where: {
+          orderNo: dto.orderNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
       if (!jobOrder) {
         throw new NotFoundException(
@@ -191,11 +265,19 @@ export class ContinuityInspectService {
       }
 
       /** 2. InspectResult 생성 */
+      const prodResult = await this.resolveProdResult(
+        dto.orderNo,
+        dto.prodResultNo,
+        dto.fgBarcode,
+        company,
+        plant,
+      );
+
       const inspectResultNo = await this.seqGenerator.getNo('INSPECT_RESULT', queryRunner);
 
       const inspectResult = queryRunner.manager.create(InspectResult, {
         resultNo: inspectResultNo,
-        prodResultNo: null,
+        prodResultNo: prodResult?.resultNo ?? null,
         inspectType: 'CONTINUITY',
         inspectScope: 'FULL',
         passYn: dto.passYn,
@@ -245,7 +327,12 @@ export class ContinuityInspectService {
           fgBarcode = dto.fgBarcode;
 
           const pendingLabel = await queryRunner.manager.findOne(FgLabel, {
-            where: { fgBarcode: dto.fgBarcode, status: 'PENDING' },
+            where: {
+              fgBarcode: dto.fgBarcode,
+              status: 'PENDING',
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
           });
           if (!pendingLabel) {
             throw new NotFoundException(
@@ -265,19 +352,25 @@ export class ContinuityInspectService {
           await queryRunner.manager.save(InspectResult, savedInspect);
         }
 
-        /** JobOrder.goodQty += 1 */
-        await queryRunner.manager.increment(
-          JobOrder,
-          { orderNo: dto.orderNo },
-          'goodQty',
-          1,
-        );
+        if (prodResult && fgBarcode && prodResult.prdUid !== fgBarcode) {
+          await queryRunner.manager.update(
+            ProdResult,
+            { resultNo: prodResult.resultNo },
+            { prdUid: fgBarcode },
+          );
+        }
+
       } else {
         /** FAIL 처리 */
         if (timing !== 'ON_INSPECT' && dto.fgBarcode) {
           /** ON_PRODUCTION/PRE_ISSUE: 스캔된 PENDING 라벨에 불합격 기록 */
           const pendingLabel = await queryRunner.manager.findOne(FgLabel, {
-            where: { fgBarcode: dto.fgBarcode, status: 'PENDING' },
+            where: {
+              fgBarcode: dto.fgBarcode,
+              status: 'PENDING',
+              ...(company ? { company } : {}),
+              ...(plant ? { plant } : {}),
+            },
           });
           if (pendingLabel) {
             pendingLabel.inspectResultId = savedInspect.resultNo;
@@ -286,13 +379,6 @@ export class ContinuityInspectService {
           }
         }
 
-        /** JobOrder.defectQty += 1 */
-        await queryRunner.manager.increment(
-          JobOrder,
-          { orderNo: dto.orderNo },
-          'defectQty',
-          1,
-        );
       }
 
       await queryRunner.commitTransaction();
@@ -319,14 +405,22 @@ export class ContinuityInspectService {
     plant?: string,
   ): Promise<{ issued: number; barcodes: string[] }> {
     const jobOrder = await this.jobOrderRepo.findOne({
-      where: { orderNo: dto.orderNo },
+      where: {
+        orderNo: dto.orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
     if (!jobOrder) {
       throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${dto.orderNo}`);
     }
 
     const alreadyIssued = await this.fgLabelRepo.count({
-      where: { orderNo: dto.orderNo },
+      where: {
+        orderNo: dto.orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
     const remaining = jobOrder.planQty - alreadyIssued;
 
@@ -375,16 +469,21 @@ export class ContinuityInspectService {
   /**
    * 작업지시별 PENDING 상태 FG 라벨 목록 조회
    */
-  async getPendingLabels(orderNo: string) {
+  async getPendingLabels(orderNo: string, company?: string, plant?: string) {
     return this.fgLabelRepo.find({
-      where: { orderNo, status: 'PENDING' },
+      where: {
+        orderNo,
+        status: 'PENDING',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       order: { issuedAt: 'ASC' },
     });
   }
 
   /**
    * 재검사 — FAIL(inspectPassYn='N') 바코드 대상으로 재검사 결과 등록
-   * PASS 전환 시 JobOrder.goodQty++, defectQty--
+   * PASS 전환 시 FG 라벨 상태를 복구
    */
   async reInspect(
     fgBarcode: string,
@@ -392,7 +491,13 @@ export class ContinuityInspectService {
     company?: string,
     plant?: string,
   ): Promise<{ inspectResult: InspectResult; fgLabel: FgLabel }> {
-    const label = await this.fgLabelRepo.findOne({ where: { fgBarcode } });
+    const label = await this.fgLabelRepo.findOne({
+      where: {
+        fgBarcode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
     if (!label) {
       throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
     }
@@ -407,11 +512,31 @@ export class ContinuityInspectService {
     await queryRunner.startTransaction();
 
     try {
+      let prodResultNo: string | null = null;
+
+      if (label.inspectResultId) {
+        const previousInspect = await queryRunner.manager.findOne(InspectResult, {
+          where: { resultNo: label.inspectResultId },
+        });
+        prodResultNo = previousInspect?.prodResultNo ?? null;
+      }
+
+      if (!prodResultNo && label.orderNo) {
+        const prodResult = await this.resolveProdResult(
+          label.orderNo,
+          undefined,
+          fgBarcode,
+          company,
+          plant,
+        );
+        prodResultNo = prodResult?.resultNo ?? null;
+      }
+
       /** 새 InspectResult 생성 */
       const inspectResultNo = await this.seqGenerator.getNo('INSPECT_RESULT', queryRunner);
       const inspectResult = queryRunner.manager.create(InspectResult, {
         resultNo: inspectResultNo,
-        prodResultNo: null,
+        prodResultNo,
         inspectType: 'CONTINUITY',
         inspectScope: 'RE_INSPECT',
         passYn: dto.passYn,
@@ -432,22 +557,6 @@ export class ContinuityInspectService {
       }
       const savedLabel = await queryRunner.manager.save(FgLabel, label);
 
-      /** PASS 전환 시 JobOrder 수량 보정 */
-      if (dto.passYn === 'Y' && label.orderNo) {
-        await queryRunner.manager.increment(
-          JobOrder,
-          { orderNo: label.orderNo },
-          'goodQty',
-          1,
-        );
-        await queryRunner.manager.decrement(
-          JobOrder,
-          { orderNo: label.orderNo },
-          'defectQty',
-          1,
-        );
-      }
-
       await queryRunner.commitTransaction();
       this.logger.log(
         `재검사 완료: fgBarcode=${fgBarcode}, passYn=${dto.passYn}`,
@@ -464,11 +573,21 @@ export class ContinuityInspectService {
   /**
    * 작업지시별 통전검사 통계
    */
-  async getStats(orderNo: string) {
-    const labels = await this.fgLabelRepo.count({ where: { orderNo } });
+  async getStats(orderNo: string, company?: string, plant?: string) {
+    const labels = await this.fgLabelRepo.count({
+      where: {
+        orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
 
     const jobOrder = await this.jobOrderRepo.findOne({
-      where: { orderNo },
+      where: {
+        orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
     if (!jobOrder) {
       throw new NotFoundException(
@@ -476,8 +595,27 @@ export class ContinuityInspectService {
       );
     }
 
-    const passed = jobOrder.goodQty;
-    const failed = jobOrder.defectQty;
+    const qb = this.inspectResultRepo
+      .createQueryBuilder('ir')
+      .innerJoin('ir.prodResult', 'pr')
+      .select('SUM(CASE WHEN ir.passYn = :passYn THEN 1 ELSE 0 END)', 'passed')
+      .addSelect('SUM(CASE WHEN ir.passYn = :failYn THEN 1 ELSE 0 END)', 'failed')
+      .where('pr.orderNo = :orderNo', { orderNo })
+      .andWhere('pr.status != :canceled', { canceled: 'CANCELED' })
+      .andWhere('ir.inspectType = :inspectType', { inspectType: 'CONTINUITY' })
+      .setParameters({ passYn: 'Y', failYn: 'N' });
+
+    if (company) {
+      qb.andWhere('ir.company = :company', { company });
+    }
+    if (plant) {
+      qb.andWhere('ir.plant = :plant', { plant });
+    }
+
+    const summary = await qb.getRawOne();
+
+    const passed = parseInt(summary?.passed) || 0;
+    const failed = parseInt(summary?.failed) || 0;
     const total = passed + failed;
     const passRate =
       total > 0 ? Math.round((passed / total) * 10000) / 100 : 0;
@@ -496,8 +634,14 @@ export class ContinuityInspectService {
   /**
    * 라벨 재인쇄 (reprintCount += 1)
    */
-  async reprintLabel(fgBarcode: string) {
-    const label = await this.fgLabelRepo.findOne({ where: { fgBarcode } });
+  async reprintLabel(fgBarcode: string, company?: string, plant?: string) {
+    const label = await this.fgLabelRepo.findOne({
+      where: {
+        fgBarcode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
     if (!label) {
       throw new NotFoundException(
         `FG 라벨을 찾을 수 없습니다: ${fgBarcode}`,
@@ -516,8 +660,12 @@ export class ContinuityInspectService {
   /**
    * 장비 프로토콜 목록 조회 (관리 페이지용 — 전체)
    */
-  async findProtocols() {
+  async findProtocols(company?: string, plant?: string) {
     return this.equipProtocolRepo.find({
+      where: {
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       order: { protocolId: 'ASC' },
     });
   }
@@ -525,17 +673,21 @@ export class ContinuityInspectService {
   /**
    * 프로토콜 등록
    */
-  async createProtocol(data: Partial<EquipProtocol>) {
-    const protocol = this.equipProtocolRepo.create(data);
+  async createProtocol(data: Partial<EquipProtocol>, company?: string, plant?: string) {
+    const protocol = this.equipProtocolRepo.create({
+      ...data,
+      company: data.company ?? company ?? null,
+      plant: data.plant ?? plant ?? null,
+    });
     return this.equipProtocolRepo.save(protocol);
   }
 
   /**
    * 프로토콜 수정
    */
-  async updateProtocol(protocolId: string, data: Partial<EquipProtocol>) {
+  async updateProtocol(protocolId: string, data: Partial<EquipProtocol>, company?: string, plant?: string) {
     const protocol = await this.equipProtocolRepo.findOne({
-      where: { protocolId },
+      where: { protocolId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!protocol)
       throw new NotFoundException(
@@ -548,9 +700,9 @@ export class ContinuityInspectService {
   /**
    * 프로토콜 삭제
    */
-  async deleteProtocol(protocolId: string) {
+  async deleteProtocol(protocolId: string, company?: string, plant?: string) {
     const protocol = await this.equipProtocolRepo.findOne({
-      where: { protocolId },
+      where: { protocolId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!protocol)
       throw new NotFoundException(
@@ -575,7 +727,12 @@ export class ContinuityInspectService {
       errorCode = dto.errorCode ?? null;
     } else if (dto.rawData) {
       const protocol = await this.equipProtocolRepo.findOne({
-        where: { protocolId: dto.protocolId, useYn: 'Y' },
+        where: {
+          protocolId: dto.protocolId,
+          useYn: 'Y',
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
       if (!protocol) {
         throw new NotFoundException(
@@ -656,8 +813,19 @@ export class ContinuityInspectService {
   /**
    * 라벨 취소 (status → VOIDED)
    */
-  async voidLabel(fgBarcode: string, reason: string) {
-    const label = await this.fgLabelRepo.findOne({ where: { fgBarcode } });
+  async voidLabel(
+    fgBarcode: string,
+    reason: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const label = await this.fgLabelRepo.findOne({
+      where: {
+        fgBarcode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
     if (!label) {
       throw new NotFoundException(
         `FG 라벨을 찾을 수 없습니다: ${fgBarcode}`,
@@ -665,6 +833,12 @@ export class ContinuityInspectService {
     }
     if (label.status === 'VOIDED') {
       throw new BadRequestException('이미 취소된 라벨입니다.');
+    }
+
+    if (['PACKED', 'SHIPPED'].includes(label.status)) {
+      throw new BadRequestException(
+        `후공정이 진행된 FG 라벨(${fgBarcode})은 취소할 수 없습니다. 출하/팔레트/박스부터 먼저 정리해 주세요.`,
+      );
     }
 
     label.status = 'VOIDED';

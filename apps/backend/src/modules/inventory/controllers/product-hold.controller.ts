@@ -1,27 +1,19 @@
-/**
- * @file src/modules/inventory/controllers/product-hold.controller.ts
- * @description 제품 재고 홀드 API 컨트롤러
- *
- * 초보자 가이드:
- * - GET /inventory/product-hold : 제품 재고 목록 (홀드 관리용)
- * - POST /inventory/product-hold/hold : 재고 홀드
- * - POST /inventory/product-hold/release : 홀드 해제
- */
-
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductHoldService } from '../services/product-hold.service';
 import { ProductHoldActionDto, ProductReleaseHoldDto, ProductHoldQueryDto } from '../dto/product-hold.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 
-@ApiTags('제품재고관리 - 제품홀드')
+@ApiTags('��ǰ������- ��ǰȦ��')
+@UseGuards(JwtAuthGuard)
 @Controller('inventory/product-hold')
 export class ProductHoldController {
   constructor(private readonly productHoldService: ProductHoldService) {}
 
   @Get()
-  @ApiOperation({ summary: '제품 재고 목록 조회 (홀드 관리)' })
+  @ApiOperation({ summary: '��ǰ ��� ��� ��ȸ (Ȧ�� ����)' })
   async findAll(
     @Query() query: ProductHoldQueryDto,
     @Company() company: string,
@@ -32,16 +24,26 @@ export class ProductHoldController {
   }
 
   @Post('hold')
-  @ApiOperation({ summary: '제품 재고 홀드' })
-  async hold(@Body() dto: ProductHoldActionDto) {
-    const data = await this.productHoldService.hold(dto);
-    return ResponseUtil.success(data, '제품 재고가 홀드 처리되었습니다.');
+  @ApiOperation({ summary: '��ǰ ��� Ȧ��' })
+  async hold(
+    @Body() dto: ProductHoldActionDto,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.productHoldService.hold(dto, company, plant, req.user?.id ?? 'system');
+    return ResponseUtil.success(data, '��ǰ ���� Ȧ�� ó���Ǿ����ϴ�.');
   }
 
   @Post('release')
-  @ApiOperation({ summary: '제품 재고 홀드 해제' })
-  async release(@Body() dto: ProductReleaseHoldDto) {
-    const data = await this.productHoldService.release(dto);
-    return ResponseUtil.success(data, '제품 재고 홀드가 해제되었습니다.');
+  @ApiOperation({ summary: '��ǰ ��� Ȧ�� ����' })
+  async release(
+    @Body() dto: ProductReleaseHoldDto,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.productHoldService.release(dto, company, plant, req.user?.id ?? 'system');
+    return ResponseUtil.success(data, '��ǰ ��� Ȧ�尡 �����Ǿ����ϴ�.');
   }
 }

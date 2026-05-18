@@ -1,0 +1,115 @@
+import { BadRequestException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { createMock, DeepMocked } from '@golevelup/ts-jest';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { MiscReceiptService } from './misc-receipt.service';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { MockLoggerService } from '../../../common/test/mock-logger.service';
+
+describe('MiscReceiptService', () => {
+  let service: MiscReceiptService;
+  let stockTxRepo: DeepMocked<Repository<StockTransaction>>;
+  let matStockRepo: DeepMocked<Repository<MatStock>>;
+  let matLotRepo: DeepMocked<Repository<MatLot>>;
+  let partRepo: DeepMocked<Repository<PartMaster>>;
+  let warehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let dataSource: DeepMocked<DataSource>;
+  let queryRunner: DeepMocked<QueryRunner>;
+
+  beforeEach(async () => {
+    stockTxRepo = createMock<Repository<StockTransaction>>();
+    matStockRepo = createMock<Repository<MatStock>>();
+    matLotRepo = createMock<Repository<MatLot>>();
+    partRepo = createMock<Repository<PartMaster>>();
+    warehouseRepo = createMock<Repository<Warehouse>>();
+    dataSource = createMock<DataSource>();
+    queryRunner = createMock<QueryRunner>();
+
+    dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    queryRunner.connect.mockResolvedValue(undefined);
+    queryRunner.startTransaction.mockResolvedValue(undefined);
+    queryRunner.commitTransaction.mockResolvedValue(undefined);
+    queryRunner.rollbackTransaction.mockResolvedValue(undefined);
+    queryRunner.release.mockResolvedValue(undefined);
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MiscReceiptService,
+        { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
+        { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
+        { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
+        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+        { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
+        { provide: DataSource, useValue: dataSource },
+      ],
+    })
+      .setLogger(new MockLoggerService())
+      .compile();
+
+    service = module.get(MiscReceiptService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('recalculates availableQty from qty and reservedQty when stock already exists', async () => {
+    stockTxRepo.findOne.mockResolvedValue(null);
+
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH' } as Warehouse)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw' } as PartMaster)
+      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot)
+      .mockResolvedValueOnce({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 8,
+        availableQty: 2,
+      } as MatStock);
+
+    queryRunner.manager.create.mockReturnValue({ transNo: 'MISC2026010100001' } as any);
+    queryRunner.manager.save.mockResolvedValue({ transNo: 'MISC2026010100001' } as any);
+
+    await service.create({
+      warehouseId: 'WH-01',
+      itemCode: 'ITEM-001',
+      matUid: 'MAT-001',
+      qty: 5,
+      workerId: 'W1',
+    });
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      expect.objectContaining({
+        qty: 15,
+        availableQty: 7,
+      }),
+    );
+  });
+
+  it('blocks create when matUid lot itemCode mismatches request itemCode', async () => {
+    stockTxRepo.findOne.mockResolvedValue(null);
+
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH' } as Warehouse)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw' } as PartMaster)
+      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-999' } as MatLot);
+
+    await expect(
+      service.create({
+        warehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 1,
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+});

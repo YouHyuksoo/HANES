@@ -226,9 +226,13 @@ export class InventoryController {
    * WIP/FG 계열 → productInventoryService, 그 외 → inventoryService
    */
   @Post('cancel')
-  async cancelTransaction(@Body() dto: CancelTransactionDto & { source?: string }) {
+  async cancelTransaction(
+    @Body() dto: CancelTransactionDto & { source?: string },
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
     if (dto.source === 'product') {
-      return this.productInventoryService.cancelTransaction(dto);
+      return this.productInventoryService.cancelTransaction(dto, company, plant);
     }
     return this.inventoryService.cancelTransaction(dto);
   }
@@ -268,8 +272,8 @@ export class InventoryController {
       ...dto,
       itemType: 'SEMI_PRODUCT',
       transType: 'WIP_IN',
-      company: dto.company || company,
-      plant: dto.plant || plant,
+      company,
+      plant,
     });
   }
 
@@ -282,8 +286,8 @@ export class InventoryController {
       ...dto,
       itemType: 'SEMI_PRODUCT',
       transType: 'WIP_OUT',
-      company: dto.company || company,
-      plant: dto.plant || plant,
+      company,
+      plant,
     });
   }
 
@@ -296,8 +300,8 @@ export class InventoryController {
       ...dto,
       itemType: 'FINISHED',
       transType: 'FG_IN',
-      company: dto.company || company,
-      plant: dto.plant || plant,
+      company,
+      plant,
     });
   }
 
@@ -310,8 +314,8 @@ export class InventoryController {
       ...dto,
       itemType: 'FINISHED',
       transType: 'FG_OUT',
-      company: dto.company || company,
-      plant: dto.plant || plant,
+      company,
+      plant,
     });
   }
 

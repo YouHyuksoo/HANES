@@ -48,11 +48,14 @@ describe('ProductHoldService', () => {
       const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', status: 'NORMAL', qty: 100 } as any;
       mockQueryRunner.manager.findOne.mockResolvedValue(stock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'HOLD' });
+      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'HOLD', company: 'CO', plant: 'P01' });
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
 
-      const r = await target.hold({ stockId: 'WH::IT::LOT1', reason: 'QC hold' } as any);
+      const r = await target.hold({ stockId: 'WH::IT::LOT1', reason: 'QC hold' } as any, 'CO', 'P01', 'user');
       expect(r.status).toBe('HOLD');
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
+        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
+      });
     });
 
     it('should throw when already HOLD', async () => {
@@ -76,11 +79,14 @@ describe('ProductHoldService', () => {
       const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', status: 'HOLD', qty: 100 } as any;
       mockQueryRunner.manager.findOne.mockResolvedValue(stock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'NORMAL' });
+      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'NORMAL', company: 'CO', plant: 'P01' });
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
 
-      const r = await target.release({ stockId: 'WH::IT::LOT1', reason: 'Released' } as any);
+      const r = await target.release({ stockId: 'WH::IT::LOT1', reason: 'Released' } as any, 'CO', 'P01', 'user');
       expect(r.status).toBe('NORMAL');
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
+        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
+      });
     });
 
     it('should throw when not HOLD', async () => {

@@ -73,4 +73,15 @@ describe('ShipOrderService', () => {
       await expect(target.delete('SO-001')).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('update', () => {
+    it('should block direct status changes', async () => {
+      mockOrderRepo.findOne.mockResolvedValue({ shipOrderNo: 'SO-001', status: 'DRAFT' } as any);
+      mockItemRepo.find.mockResolvedValue([]);
+
+      await expect(target.update('SO-001', { status: 'CONFIRMED' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });

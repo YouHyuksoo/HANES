@@ -77,4 +77,15 @@ describe('ShipReturnService', () => {
       await expect(target.delete('SR-001')).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('update', () => {
+    it('should block direct status changes', async () => {
+      mockReturnRepo.findOne.mockResolvedValue({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null } as any);
+      mockReturnItemRepo.find.mockResolvedValue([]);
+
+      await expect(target.update('SR-001', { status: 'CONFIRMED' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });

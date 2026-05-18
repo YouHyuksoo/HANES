@@ -61,6 +61,13 @@ export class SpcService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /** chartId + sampleDate 기준 다음 SEQ 번호 조회 */
   private async getNextDataSeq(chartId: string, sampleDate: Date): Promise<number> {
     const result = await this.dataSource.query(
@@ -133,8 +140,10 @@ export class SpcService {
   /**
    * 관리도 단건 조회 (chartNo PK)
    */
-  async findChartById(chartNo: string) {
-    const item = await this.chartRepo.findOne({ where: { chartNo } });
+  async findChartById(chartNo: string, company?: string, plant?: string) {
+    const item = await this.chartRepo.findOne({
+      where: { chartNo, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('SPC 관리도를 찾을 수 없습니다.');
     }
@@ -167,8 +176,14 @@ export class SpcService {
   /**
    * 관리도 수정
    */
-  async updateChart(chartNo: string, dto: UpdateSpcChartDto, userId: string) {
-    const item = await this.findChartById(chartNo);
+  async updateChart(
+    chartNo: string,
+    dto: UpdateSpcChartDto,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findChartById(chartNo, company, plant);
     Object.assign(item, dto, { updatedBy: userId });
     return this.chartRepo.save(item);
   }
@@ -176,8 +191,8 @@ export class SpcService {
   /**
    * 관리도 삭제
    */
-  async deleteChart(chartNo: string) {
-    const item = await this.findChartById(chartNo);
+  async deleteChart(chartNo: string, company?: string, plant?: string) {
+    const item = await this.findChartById(chartNo, company, plant);
     await this.chartRepo.remove(item);
   }
 
@@ -194,7 +209,7 @@ export class SpcService {
     plant: string,
     userId: string,
   ) {
-    const chart = await this.findChartById(dto.chartId);
+    const chart = await this.findChartById(dto.chartId, company, plant);
     const vals = dto.values;
 
     if (vals.length !== chart.subgroupSize) {
@@ -244,10 +259,15 @@ export class SpcService {
   /**
    * 관리한계 계산 (Xbar-R 기준): UCL/LCL/CL 산출 후 관리도에 저장
    */
-  async calculateControlLimits(chartNo: string, userId: string) {
-    const chart = await this.findChartById(chartNo);
+  async calculateControlLimits(
+    chartNo: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const chart = await this.findChartById(chartNo, company, plant);
     const dataList = await this.dataRepo.find({
-      where: { chartId: chart.chartNo },
+      where: { chartId: chart.chartNo, ...this.tenantWhere(chart.company, chart.plant) },
       order: { subgroupNo: 'ASC' },
     });
 
@@ -286,8 +306,8 @@ export class SpcService {
   /**
    * Cpk/Ppk 계산 — 최근 데이터 기반
    */
-  async calculateCpk(chartNo: string) {
-    const chart = await this.findChartById(chartNo);
+  async calculateCpk(chartNo: string, company?: string, plant?: string) {
+    const chart = await this.findChartById(chartNo, company, plant);
 
     if (chart.usl == null || chart.lsl == null) {
       throw new BadRequestException(
@@ -296,7 +316,7 @@ export class SpcService {
     }
 
     const dataList = await this.dataRepo.find({
-      where: { chartId: chart.chartNo },
+      where: { chartId: chart.chartNo, ...this.tenantWhere(chart.company, chart.plant) },
       order: { subgroupNo: 'ASC' },
     });
 
@@ -344,7 +364,7 @@ export class SpcService {
     company?: string,
     plant?: string,
   ) {
-    const chart = await this.findChartById(chartNo);
+    const chart = await this.findChartById(chartNo, company, plant);
 
     const qb = this.dataRepo
       .createQueryBuilder('d')

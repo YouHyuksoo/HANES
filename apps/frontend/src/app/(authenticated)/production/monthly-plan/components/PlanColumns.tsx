@@ -37,6 +37,15 @@ export function usePlanColumns({ onConfirm, onUnconfirm, onIssue }: UsePlanColum
       ),
     },
     {
+      accessorKey: "planMonth",
+      header: t("monthlyPlan.planMonth"),
+      size: 90,
+      meta: { filterType: "text" as const, align: "center" as const },
+      cell: ({ getValue }) => (
+        <span className="font-mono text-sm">{getValue() as string}</span>
+      ),
+    },
+    {
       id: "actions",
       header: t("common.actions"),
       size: 220,

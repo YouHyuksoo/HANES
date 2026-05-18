@@ -50,6 +50,8 @@ import { CustomerOrderItem } from '../../entities/customer-order-item.entity';
 import { PartMaster } from '../../entities/part-master.entity';
 import { MatLot } from '../../entities/mat-lot.entity';
 import { FgLabel } from '../../entities/fg-label.entity';
+import { OqcRequest } from '../../entities/oqc-request.entity';
+import { OqcRequestBox } from '../../entities/oqc-request-box.entity';
 import { InventoryModule } from '../inventory/inventory.module';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { User } from '../../entities/user.entity';
@@ -71,6 +73,8 @@ import { User } from '../../entities/user.entity';
       PartMaster,
       MatLot,
       FgLabel,
+      OqcRequest,
+      OqcRequestBox,
     ]),
   ],
   controllers: [

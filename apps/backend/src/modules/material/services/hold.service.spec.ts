@@ -1,0 +1,105 @@
+﻿import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { createMock, DeepMocked } from '@golevelup/ts-jest';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { HoldService } from './hold.service';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { MockLoggerService } from '../../../common/test/mock-logger.service';
+
+describe('HoldService', () => {
+  let service: HoldService;
+  let matLotRepo: DeepMocked<Repository<MatLot>>;
+  let matStockRepo: DeepMocked<Repository<MatStock>>;
+  let partRepo: DeepMocked<Repository<PartMaster>>;
+
+  beforeEach(async () => {
+    matLotRepo = createMock<Repository<MatLot>>();
+    matStockRepo = createMock<Repository<MatStock>>();
+    partRepo = createMock<Repository<PartMaster>>();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        HoldService,
+        { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
+        { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
+        { provide: getRepositoryToken(PartMaster), useValue: partRepo },
+      ],
+    })
+      .setLogger(new MockLoggerService())
+      .compile();
+
+    service = module.get(HoldService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('hold', () => {
+    it('throws when lot does not exist', async () => {
+      matLotRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.hold({ matUid: 'MAT-404', reason: 'test' })).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws when lot is depleted', async () => {
+      matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status: 'DEPLETED' } as MatLot);
+
+      await expect(service.hold({ matUid: 'MAT-001', reason: 'test' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('updates lot status to HOLD', async () => {
+      matLotRepo.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot);
+      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as PartMaster);
+
+      const result = await service.hold({ matUid: 'MAT-001', reason: 'test' });
+
+      expect(matLotRepo.update).toHaveBeenCalledWith({ matUid: 'MAT-001' }, { status: 'HOLD' });
+      expect(result.status).toBe('HOLD');
+      expect(result.itemCode).toBe('ITEM-001');
+    });
+  });
+
+  describe('release', () => {
+    it('throws when lot is not HOLD', async () => {
+      matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status: 'NORMAL' } as MatLot);
+
+      await expect(service.release({ matUid: 'MAT-001' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('updates lot status to NORMAL', async () => {
+      matLotRepo.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot);
+      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as PartMaster);
+
+      const result = await service.release({ matUid: 'MAT-001' });
+
+      expect(matLotRepo.update).toHaveBeenCalledWith({ matUid: 'MAT-001' }, { status: 'NORMAL' });
+      expect(result.status).toBe('NORMAL');
+      expect(result.itemCode).toBe('ITEM-001');
+    });
+
+    it('applies tenant scope when releasing', async () => {
+      matLotRepo.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot);
+      partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part 1' } as PartMaster);
+
+      await service.release({ matUid: 'MAT-001' }, 'C1', 'P1');
+
+      expect(matLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(matLotRepo.update).toHaveBeenCalledWith(
+        { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+        { status: 'NORMAL' },
+      );
+    });
+  });
+});

@@ -73,4 +73,15 @@ describe('CustomerOrderService', () => {
       await expect(target.delete('CO-001')).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('update', () => {
+    it('should block direct status changes', async () => {
+      mockOrderRepo.findOne.mockResolvedValue({ orderNo: 'CO-001', status: 'RECEIVED' } as any);
+      mockItemRepo.find.mockResolvedValue([]);
+
+      await expect(target.update('CO-001', { status: 'CONFIRMED' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });

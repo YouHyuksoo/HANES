@@ -1,12 +1,12 @@
-/**
+﻿/**
  * @file src/modules/material/services/adjustment.service.ts
- * @description 재고보정 비즈니스 로직 - InvAdjLog 생성 + StockTransaction 기록 (TypeORM)
+ * @description ?ш퀬蹂댁젙 鍮꾩쫰?덉뒪 濡쒖쭅 - InvAdjLog ?앹꽦 + StockTransaction 湲곕줉 (TypeORM)
  *
- * 초보자 가이드:
- * - create(): 즉시 승인(APPROVED) 처리 — 기존 PC 화면용, 재고 즉시 반영
- * - createPending(): 승인 대기(PENDING) 처리 — PDA 요청용, 재고 보류
- * - approve(adjDate, seq): PENDING → APPROVED, 실제 재고 차감/증가 실행
- * - reject(adjDate, seq): PENDING → REJECTED, 재고 변동 없음
+ * 珥덈낫??媛?대뱶:
+ * - create(): 利됱떆 ?뱀씤(APPROVED) 泥섎━ ??湲곗〈 PC ?붾㈃?? ?ш퀬 利됱떆 諛섏쁺
+ * - createPending(): ?뱀씤 ?湲?PENDING) 泥섎━ ??PDA ?붿껌?? ?ш퀬 蹂대쪟
+ * - approve(adjDate, seq): PENDING ??APPROVED, ?ㅼ젣 ?ш퀬 李④컧/利앷? ?ㅽ뻾
+ * - reject(adjDate, seq): PENDING ??REJECTED, ?ш퀬 蹂???놁쓬
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -62,7 +62,7 @@ export class AdjustmentService {
       this.invAdjLogRepository.count({ where }),
     ]);
 
-    // part 정보 조회 및 중첩 객체 평면화
+    // part ?뺣낫 議고쉶 諛?以묒꺽 媛앹껜 ?됰㈃??
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
       ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
@@ -83,17 +83,17 @@ export class AdjustmentService {
   }
 
   /**
-   * 즉시 승인 보정 등록 (PC 화면 기본 동작)
-   * - adjustStatus = 'APPROVED' 로 저장하고 재고를 즉시 반영합니다.
+   * 利됱떆 ?뱀씤 蹂댁젙 ?깅줉 (PC ?붾㈃ 湲곕낯 ?숈옉)
+   * - adjustStatus = 'APPROVED' 濡???ν븯怨??ш퀬瑜?利됱떆 諛섏쁺?⑸땲??
    */
   async create(dto: CreateAdjustmentDto, company?: string, plant?: string) {
     return this._executeAdjustment(dto, 'APPROVED', company, plant);
   }
 
   /**
-   * 승인 대기 보정 등록 (PDA 요청용)
-   * - adjustStatus = 'PENDING' 으로 저장하고 재고 변동은 보류합니다.
-   * - approve(id) 호출 시 재고가 실제 반영됩니다.
+   * ?뱀씤 ?湲?蹂댁젙 ?깅줉 (PDA ?붿껌??
+   * - adjustStatus = 'PENDING' ?쇰줈 ??ν븯怨??ш퀬 蹂?숈? 蹂대쪟?⑸땲??
+   * - approve(id) ?몄텧 ???ш퀬媛 ?ㅼ젣 諛섏쁺?⑸땲??
    */
   async createPending(dto: CreateAdjustmentDto, company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
@@ -104,21 +104,37 @@ export class AdjustmentService {
 
     try {
       const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode } });
-      if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
+      if (!part) throw new NotFoundException(`?덈ぉ??李얠쓣 ???놁뒿?덈떎: ${itemCode}`);
 
       if (matUid) {
         const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid } });
-        if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
+        if (!lot) throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
+        if (company && lot.company && lot.company !== company) {
+          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
+        }
+        if (plant && lot.plant && lot.plant !== plant) {
+          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
+        }
       }
 
-      // 재고 조회 (변동 없이 beforeQty만 기록)
+      // ?ш퀬 議고쉶 (蹂???놁씠 beforeQty留?湲곕줉)
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
+        where: {
+          warehouseCode,
+          itemCode,
+          ...(matUid && { matUid }),
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
       const beforeQty = stock?.qty ?? 0;
       const diffQty = afterQty - beforeQty;
+      if (stock && afterQty < stock.reservedQty) {
+        throw new BadRequestException(
+          `????(${stock.reservedQty})?? ?? ??? ??? ? ????.`,
+        );
+      }
 
-      // 보정 이력 생성 — PENDING 상태로만 저장, 재고 변동 없음
       const invAdjLog = queryRunner.manager.create(InvAdjLog, {
         warehouseCode,
         itemCode,
@@ -160,17 +176,17 @@ export class AdjustmentService {
   }
 
   /**
-   * 보정 승인 처리
-   * - PENDING 상태의 보정 요청을 APPROVED로 변경하고 실제 재고를 반영합니다.
-   * @param adjDate InvAdjLog 조정일자 PK
-   * @param seq InvAdjLog 일련번호 PK
-   * @param approvedBy 승인자 ID
+   * 蹂댁젙 ?뱀씤 泥섎━
+   * - PENDING ?곹깭??蹂댁젙 ?붿껌??APPROVED濡?蹂寃쏀븯怨??ㅼ젣 ?ш퀬瑜?諛섏쁺?⑸땲??
+   * @param adjDate InvAdjLog 議곗젙?쇱옄 PK
+   * @param seq InvAdjLog ?쇰젴踰덊샇 PK
+   * @param approvedBy ?뱀씤??ID
    */
   async approve(adjDate: string, seq: number, approvedBy?: string) {
     const adjLog = await this.invAdjLogRepository.findOne({ where: { adjDate: new Date(adjDate), seq } });
-    if (!adjLog) throw new NotFoundException(`보정 이력을 찾을 수 없습니다: ${adjDate}-${seq}`);
+    if (!adjLog) throw new NotFoundException(`蹂댁젙 ?대젰??李얠쓣 ???놁뒿?덈떎: ${adjDate}-${seq}`);
     if (adjLog.adjustStatus !== 'PENDING') {
-      throw new BadRequestException(`이미 처리된 보정 요청입니다. 현재 상태: ${adjLog.adjustStatus}`);
+      throw new BadRequestException(`?대? 泥섎━??蹂댁젙 ?붿껌?낅땲?? ?꾩옱 ?곹깭: ${adjLog.adjustStatus}`);
     }
 
     const { warehouseCode, itemCode, matUid, afterQty, diffQty, reason } = adjLog;
@@ -180,20 +196,29 @@ export class AdjustmentService {
     await queryRunner.startTransaction();
 
     try {
-      // 재고 업데이트
+      // ?ш퀬 ?낅뜲?댄듃
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
       });
 
       if (stock) {
+        if (afterQty < stock.reservedQty) {
+          throw new BadRequestException(
+            `????(${stock.reservedQty})?? ?? ??? ??? ? ????.`,
+          );
+        }
         await queryRunner.manager.update(
           MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+          {
+            warehouseCode: stock.warehouseCode,
+            itemCode: stock.itemCode,
+            matUid: stock.matUid,
+          },
           { qty: afterQty, availableQty: afterQty - stock.reservedQty },
         );
       } else {
         if (afterQty < 0) {
-          throw new BadRequestException('재고가 없는 상태에서 음수 조정을 할 수 없습니다.');
+          throw new BadRequestException('?ш퀬媛 ?녿뒗 ?곹깭?먯꽌 ?뚯닔 議곗젙???????놁뒿?덈떎.');
         }
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode,
@@ -208,14 +233,14 @@ export class AdjustmentService {
         stock = await queryRunner.manager.save(newStock);
       }
 
-      // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
+      // LOT ?곹깭 ?낅뜲?댄듃 (?ш퀬 0?대㈃ DEPLETED ??currentQty??MatStock?먯꽌留?愿由?
       if (matUid) {
         if (afterQty <= 0) {
           await queryRunner.manager.update(MatLot, matUid, { status: 'DEPLETED' });
         }
       }
 
-      // 재고 거래 이력 생성
+      // ?ш퀬 嫄곕옒 ?대젰 ?앹꽦
       const transNo = await this.generateTransNo();
       const stockTransaction = queryRunner.manager.create(StockTransaction, {
         transNo,
@@ -236,7 +261,7 @@ export class AdjustmentService {
       });
       await queryRunner.manager.save(stockTransaction);
 
-      // 보정 이력 상태 업데이트
+      // 蹂댁젙 ?대젰 ?곹깭 ?낅뜲?댄듃
       await queryRunner.manager.update(InvAdjLog, { adjDate: new Date(adjDate), seq }, {
         adjustStatus: 'APPROVED',
         approvedBy: approvedBy || null,
@@ -255,18 +280,18 @@ export class AdjustmentService {
   }
 
   /**
-   * 보정 반려 처리
-   * - PENDING 상태의 보정 요청을 REJECTED로 변경합니다.
-   * - 재고 변동은 일어나지 않습니다.
-   * @param adjDate InvAdjLog 조정일자 PK
-   * @param seq InvAdjLog 일련번호 PK
-   * @param rejectedBy 반려자 ID
+   * 蹂댁젙 諛섎젮 泥섎━
+   * - PENDING ?곹깭??蹂댁젙 ?붿껌??REJECTED濡?蹂寃쏀빀?덈떎.
+   * - ?ш퀬 蹂?숈? ?쇱뼱?섏? ?딆뒿?덈떎.
+   * @param adjDate InvAdjLog 議곗젙?쇱옄 PK
+   * @param seq InvAdjLog ?쇰젴踰덊샇 PK
+   * @param rejectedBy 諛섎젮??ID
    */
   async reject(adjDate: string, seq: number, rejectedBy?: string) {
     const adjLog = await this.invAdjLogRepository.findOne({ where: { adjDate: new Date(adjDate), seq } });
-    if (!adjLog) throw new NotFoundException(`보정 이력을 찾을 수 없습니다: ${adjDate}-${seq}`);
+    if (!adjLog) throw new NotFoundException(`蹂댁젙 ?대젰??李얠쓣 ???놁뒿?덈떎: ${adjDate}-${seq}`);
     if (adjLog.adjustStatus !== 'PENDING') {
-      throw new BadRequestException(`이미 처리된 보정 요청입니다. 현재 상태: ${adjLog.adjustStatus}`);
+      throw new BadRequestException(`?대? 泥섎━??蹂댁젙 ?붿껌?낅땲?? ?꾩옱 ?곹깭: ${adjLog.adjustStatus}`);
     }
 
     await this.invAdjLogRepository.update({ adjDate: new Date(adjDate), seq }, {
@@ -278,8 +303,8 @@ export class AdjustmentService {
   }
 
   /**
-   * 즉시 승인 보정의 내부 공통 로직
-   * - adjustStatus='APPROVED'일 때만 실제 재고 변동이 발생합니다.
+   * 利됱떆 ?뱀씤 蹂댁젙???대? 怨듯넻 濡쒖쭅
+   * - adjustStatus='APPROVED'???뚮쭔 ?ㅼ젣 ?ш퀬 蹂?숈씠 諛쒖깮?⑸땲??
    */
   private async _executeAdjustment(dto: CreateAdjustmentDto, adjustStatus: 'APPROVED', company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
@@ -289,41 +314,59 @@ export class AdjustmentService {
     await queryRunner.startTransaction();
 
     try {
-      // 품목 확인
+      // ?덈ぉ ?뺤씤
       const part = await queryRunner.manager.findOne(PartMaster, {
         where: { itemCode },
       });
       if (!part) {
-        throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
+        throw new NotFoundException(`?덈ぉ??李얠쓣 ???놁뒿?덈떎: ${itemCode}`);
       }
 
-      // LOT 확인 (matUid가 있는 경우)
+      // LOT ?뺤씤 (matUid媛 ?덈뒗 寃쎌슦)
       if (matUid) {
         const lot = await queryRunner.manager.findOne(MatLot, {
           where: { matUid: matUid },
         });
         if (!lot) {
-          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
+          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
+        }
+        if (company && lot.company && lot.company !== company) {
+          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
+        }
+        if (plant && lot.plant && lot.plant !== plant) {
+          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
         }
       }
 
-      // 기존 재고 조회
+      // 湲곗〈 ?ш퀬 議고쉶
       let stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
+        where: {
+          warehouseCode,
+          itemCode,
+          ...(matUid && { matUid }),
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
 
       const beforeQty = stock?.qty ?? 0;
       const diffQty = afterQty - beforeQty;
 
-      // 재고 업데이트 또는 생성
+      // ?ш퀬 ?낅뜲?댄듃 ?먮뒗 ?앹꽦
       if (stock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+          {
+            warehouseCode: stock.warehouseCode,
+            itemCode: stock.itemCode,
+            matUid: stock.matUid,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
           { qty: afterQty, availableQty: afterQty - stock.reservedQty },
         );
       } else {
         if (afterQty < 0) {
-          throw new BadRequestException('재고가 없는 상태에서 음수 조정을 할 수 없습니다.');
+          throw new BadRequestException('?ш퀬媛 ?녿뒗 ?곹깭?먯꽌 ?뚯닔 議곗젙???????놁뒿?덈떎.');
         }
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode,
@@ -338,14 +381,14 @@ export class AdjustmentService {
         stock = await queryRunner.manager.save(newStock);
       }
 
-      // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
+      // LOT ?곹깭 ?낅뜲?댄듃 (?ш퀬 0?대㈃ DEPLETED ??currentQty??MatStock?먯꽌留?愿由?
       if (matUid) {
         if (afterQty <= 0) {
           await queryRunner.manager.update(MatLot, matUid, { status: 'DEPLETED' });
         }
       }
 
-      // 보정 이력 생성
+      // 蹂댁젙 ?대젰 ?앹꽦
       const invAdjLog = queryRunner.manager.create(InvAdjLog, {
         warehouseCode,
         itemCode,
@@ -362,7 +405,7 @@ export class AdjustmentService {
       });
       await queryRunner.manager.save(invAdjLog);
 
-      // 재고 거래 이력 생성 (트랜잭션 번호 생성)
+      // ?ш퀬 嫄곕옒 ?대젰 ?앹꽦 (?몃옖??뀡 踰덊샇 ?앹꽦)
       const transNo = await this.generateTransNo();
       const stockTransaction = queryRunner.manager.create(StockTransaction, {
         transNo,
@@ -408,7 +451,7 @@ export class AdjustmentService {
   }
 
   /**
-   * 트랜잭션 번호 생성
+   * ?몃옖??뀡 踰덊샇 ?앹꽦
    */
   private async generateTransNo(): Promise<string> {
     const today = new Date();
@@ -428,3 +471,4 @@ export class AdjustmentService {
     return `${prefix}${String(seq).padStart(5, '0')}`;
   }
 }
+

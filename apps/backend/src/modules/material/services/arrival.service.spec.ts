@@ -24,7 +24,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('ArrivalService', () => {
@@ -41,7 +41,7 @@ describe('ArrivalService', () => {
   let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
-  let mockNumRuleService: DeepMocked<NumRuleService>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockPurchaseOrderRepo = createMock<Repository<PurchaseOrder>>();
@@ -56,7 +56,7 @@ describe('ArrivalService', () => {
     mockIqcLogRepo = createMock<Repository<IqcLog>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
-    mockNumRuleService = createMock<NumRuleService>();
+    mockNumbering = createMock<NumberingService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockQueryRunner.connect.mockResolvedValue(undefined);
@@ -79,7 +79,7 @@ describe('ArrivalService', () => {
         { provide: getRepositoryToken(VendorBarcodeMapping), useValue: mockVendorBarcodeRepo },
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: NumRuleService, useValue: mockNumRuleService },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -178,6 +178,53 @@ describe('ArrivalService', () => {
       await expect(
         target.cancel({ transactionId: 'TX-001' } as any),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('뒤 공정이 진행된 LOT는 취소를 차단한다', async () => {
+      mockStockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-002',
+        status: 'DONE',
+        transType: 'MAT_IN',
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        qty: 10,
+        toWarehouseId: 'WH-001',
+      } as StockTransaction);
+      mockIqcLogRepo.findOne.mockResolvedValue(null);
+
+      const matIssueRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          issueNo: 'ISS-001',
+          seq: 1,
+          orderNo: 'JO-001',
+          prodResultNo: 'PR-001',
+          status: 'DONE',
+        }),
+      };
+      const prodResultRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          resultNo: 'PR-001',
+          status: 'DONE',
+          prdUid: 'FG-001',
+        }),
+      };
+      const fgLabelRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          fgBarcode: 'FG-001',
+          status: 'PACKED',
+        }),
+      };
+
+      mockDataSource.getRepository.mockImplementation((entity: any) => {
+        if (entity?.name === 'MatIssue') return matIssueRepo as any;
+        if (entity?.name === 'ProdResult') return prodResultRepo as any;
+        if (entity?.name === 'FgLabel') return fgLabelRepo as any;
+        return createMock<Repository<any>>() as any;
+      });
+
+      await expect(target.cancel({ transactionId: 'TX-002' } as any)).rejects.toThrow(
+        '자재출고 순서로 역처리 후 다시 입하를 취소해 주세요.',
+      );
     });
   });
 

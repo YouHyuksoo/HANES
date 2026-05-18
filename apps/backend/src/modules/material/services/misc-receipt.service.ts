@@ -1,9 +1,4 @@
-/**
- * @file src/modules/material/services/misc-receipt.service.ts
- * @description 기타입고 비즈니스 로직 - StockTransaction(MISC_IN) 생성 (TypeORM)
- */
-
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between, Like, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -29,6 +24,13 @@ export class MiscReceiptService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   async findAll(query: MiscReceiptQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -47,16 +49,16 @@ export class MiscReceiptService {
     let total: number;
 
     if (search) {
-      // 검색어가 있으면 품목 검색 후 필터링
       const parts = await this.partMasterRepository.find({
         where: [
-          { itemCode: Like(`%${search}%`) },
-          { itemName: Like(`%${search}%`) },
+          { itemCode: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
+          { itemName: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
         ],
       });
       const itemCodes = parts.map((p) => p.itemCode);
 
-      const queryBuilder = this.stockTransactionRepository.createQueryBuilder('trans')
+      const queryBuilder = this.stockTransactionRepository
+        .createQueryBuilder('trans')
         .where('trans.transType = :transType', { transType: 'MISC_IN' });
 
       if (company) queryBuilder.andWhere('trans.company = :company', { company });
@@ -72,16 +74,11 @@ export class MiscReceiptService {
       if (itemCodes.length > 0) {
         queryBuilder.andWhere('trans.itemCode IN (:...itemCodes)', { itemCodes });
       } else {
-        // 품목 검색 결과가 없으면 빈 결과 반환
         return { data: [], total: 0, page, limit };
       }
 
       [data, total] = await Promise.all([
-        queryBuilder
-          .orderBy('trans.transDate', 'DESC')
-          .skip(skip)
-          .take(limit)
-          .getMany(),
+        queryBuilder.orderBy('trans.transDate', 'DESC').skip(skip).take(limit).getMany(),
         queryBuilder.getCount(),
       ]);
     } else {
@@ -96,24 +93,26 @@ export class MiscReceiptService {
       ]);
     }
 
-    // 관련 정보 조회
     const itemCodes = data.map((trans) => trans.itemCode).filter(Boolean);
     const matUids = data.map((trans) => trans.matUid).filter(Boolean) as string[];
-    const warehouseIds = data
-      .map((trans) => trans.toWarehouseId)
-      .filter(Boolean) as string[];
+    const warehouseIds = data.map((trans) => trans.toWarehouseId).filter(Boolean) as string[];
 
     const [parts, lots, warehouses] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
-      warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds) } }) : Promise.resolve([]),
+      itemCodes.length > 0
+        ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+        : Promise.resolve([]),
+      matUids.length > 0
+        ? this.matLotRepository.find({ where: { matUid: In(matUids), ...this.tenantWhere(company, plant) } })
+        : Promise.resolve([]),
+      warehouseIds.length > 0
+        ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds), ...this.tenantWhere(company, plant) } })
+        : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
-    // 중첩 객체 평면화
     const flattenedData = data.map((trans) => {
       const part = partMap.get(trans.itemCode);
       const lot = trans.matUid ? lotMap.get(trans.matUid) : null;
@@ -140,44 +139,65 @@ export class MiscReceiptService {
     await queryRunner.startTransaction();
 
     try {
-      // 창고 확인
       const warehouse = await queryRunner.manager.findOne(Warehouse, {
-        where: { warehouseCode: warehouseId },
+        where: {
+          warehouseCode: warehouseId,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
       if (!warehouse) {
-        throw new NotFoundException(`창고를 찾을 수 없습니다: ${warehouseId}`);
+        throw new NotFoundException(`Warehouse not found: ${warehouseId}`);
       }
 
-      // 품목 확인
       const part = await queryRunner.manager.findOne(PartMaster, {
-        where: { itemCode },
+        where: { itemCode, ...this.tenantWhere(company, plant) },
       });
       if (!part) {
-        throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
+        throw new NotFoundException(`Part not found: ${itemCode}`);
       }
 
-      // LOT 확인 (matUid가 있는 경우)
       if (matUid) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { matUid: matUid },
+          where: { matUid, ...this.tenantWhere(company, plant) },
         });
         if (!lot) {
-          throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
+          throw new NotFoundException(`Lot not found: ${matUid}`);
+        }
+        if (lot.itemCode !== itemCode) {
+          throw new BadRequestException(
+            `Lot ${matUid} item (${lot.itemCode}) does not match receipt item (${itemCode}).`,
+          );
         }
       }
 
-      // 트랜잭션 번호 생성
       const transNo = await this.generateTransNo();
 
-      // 재고 업데이트 또는 생성
       const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: warehouse.warehouseCode, itemCode, ...(matUid && { matUid }) },
+        where: {
+          warehouseCode: warehouse.warehouseCode,
+          itemCode,
+          ...(matUid && { matUid }),
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
 
       if (existingStock) {
-        await queryRunner.manager.update(MatStock,
-          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, matUid: existingStock.matUid },
-          { qty: existingStock.qty + qty, availableQty: existingStock.availableQty + qty },
+        const nextQty = existingStock.qty + qty;
+        await queryRunner.manager.update(
+          MatStock,
+          {
+            warehouseCode: existingStock.warehouseCode,
+            itemCode: existingStock.itemCode,
+            matUid: existingStock.matUid,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+          {
+            qty: nextQty,
+            availableQty: Math.max(0, nextQty - (existingStock.reservedQty ?? 0)),
+          },
         );
       } else {
         const newStock = queryRunner.manager.create(MatStock, {
@@ -193,9 +213,6 @@ export class MiscReceiptService {
         await queryRunner.manager.save(newStock);
       }
 
-      // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
-
-      // 기타입고 트랜잭션 생성
       const transaction = queryRunner.manager.create(StockTransaction, {
         transNo,
         transType: 'MISC_IN',
@@ -235,9 +252,6 @@ export class MiscReceiptService {
     }
   }
 
-  /**
-   * 트랜잭션 번호 생성
-   */
   private async generateTransNo(): Promise<string> {
     const today = new Date();
     const prefix = `MISC${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;

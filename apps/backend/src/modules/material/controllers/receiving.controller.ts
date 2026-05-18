@@ -1,15 +1,4 @@
-/**
- * @file src/modules/material/controllers/receiving.controller.ts
- * @description 입고관리 API 컨트롤러 - IQC 합격건 일괄/분할 입고
- *
- * 초보자 가이드:
- * 1. **GET /material/receiving**: 입고 이력 조회
- * 2. **GET /material/receiving/stats**: 입고 통계
- * 3. **GET /material/receiving/receivable**: 입고 가능 LOT 목록
- * 4. **POST /material/receiving**: 일괄/분할 입고 등록
- */
-
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ReceivingService } from '../services/receiving.service';
 import { CreateBulkReceiveDto, ReceivingQueryDto, AutoReceiveDto } from '../dto/receiving.dto';
@@ -18,28 +7,28 @@ import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
-@ApiTags('자재관리 - 입고관리')
+@ApiTags('Material - Receiving')
 @UseGuards(JwtAuthGuard)
 @Controller('material/receiving')
 export class ReceivingController {
   constructor(private readonly receivingService: ReceivingService) {}
 
   @Get()
-  @ApiOperation({ summary: '입고 이력 조회' })
+  @ApiOperation({ summary: 'Get receiving history' })
   async findAll(@Query() query: ReceivingQueryDto, @Company() company: string, @Plant() plant: string) {
     const result = await this.receivingService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get('stats')
-  @ApiOperation({ summary: '입고 통계' })
+  @ApiOperation({ summary: 'Get receiving stats' })
   async getStats(@Company() company: string, @Plant() plant: string) {
     const data = await this.receivingService.getStats(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('receivable')
-  @ApiOperation({ summary: '입고 가능 목록 (IQC 합격 + 미입고)' })
+  @ApiOperation({ summary: 'Get receivable lots' })
   async findReceivable(@Company() company: string, @Plant() plant: string) {
     const data = await this.receivingService.findReceivable(company, plant);
     return ResponseUtil.success(data);
@@ -48,18 +37,18 @@ export class ReceivingController {
   @Post('auto')
   @HttpCode(HttpStatus.OK)
   @UseGuards(InventoryFreezeGuard)
-  @ApiOperation({ summary: '자동입고 처리 (라벨 발행 시)' })
-  async autoReceive(@Body() dto: AutoReceiveDto) {
-    const data = await this.receivingService.autoReceive(dto.matUids, dto.workerId);
+  @ApiOperation({ summary: 'Auto receive' })
+  async autoReceive(@Body() dto: AutoReceiveDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.receivingService.autoReceive(dto.matUids, dto.workerId, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(InventoryFreezeGuard)
-  @ApiOperation({ summary: '일괄/분할 입고 등록' })
-  async createBulkReceive(@Body() dto: CreateBulkReceiveDto) {
-    const data = await this.receivingService.createBulkReceive(dto);
-    return ResponseUtil.success(data, '입고가 등록되었습니다.');
+  @ApiOperation({ summary: 'Create bulk receive' })
+  async createBulkReceive(@Body() dto: CreateBulkReceiveDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.receivingService.createBulkReceive(dto, company, plant);
+    return ResponseUtil.success(data, 'Receiving created');
   }
 }

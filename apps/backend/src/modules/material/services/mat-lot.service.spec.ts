@@ -10,17 +10,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { MatLotService } from './mat-lot.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('MatLotService', () => {
   let target: MatLotService;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
+  let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
+  let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
 
   const createMatLot = (overrides: Partial<MatLot> = {}): MatLot =>
     ({
@@ -53,12 +57,16 @@ describe('MatLotService', () => {
   beforeEach(async () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
+    mockMatStockRepo = createMock<Repository<MatStock>>();
+    mockMatIssueRepo = createMock<Repository<MatIssue>>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MatLotService,
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
+        { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
+        { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -192,19 +200,54 @@ describe('MatLotService', () => {
 
       expect(mockMatLotRepo.update).toHaveBeenCalled();
     });
+
+    it('LOT 상태 직접 변경은 차단한다', async () => {
+      const lot = createMatLot();
+      mockMatLotRepo.findOne.mockResolvedValue(lot);
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster());
+
+      await expect(target.update('MAT-001', { status: 'HOLD' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   // ─── delete ───
   describe('delete', () => {
     it('LOT을 삭제한다', async () => {
       mockMatLotRepo.findOne.mockResolvedValue(createMatLot());
-      mockMatLotRepo.delete.mockResolvedValue({ affected: 1 } as any);
       mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster());
+      mockMatStockRepo.find.mockResolvedValue([]);
+      mockMatIssueRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       const result = await target.delete('MAT-001');
 
       expect(result.matUid).toBe('MAT-001');
       expect(mockMatLotRepo.delete).toHaveBeenCalledWith('MAT-001');
+    });
+
+    it('재고가 남아 있으면 LOT 삭제를 차단한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot());
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster());
+      mockMatStockRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', qty: 1, availableQty: 1 } as MatStock,
+      ]);
+
+      await expect(target.delete('MAT-001')).rejects.toThrow(BadRequestException);
+      expect(mockMatLotRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it('자재출고 이력이 남아 있으면 LOT 삭제를 차단한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot());
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster());
+      mockMatStockRepo.find.mockResolvedValue([]);
+      mockMatIssueRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', issueNo: 'ISS-001', status: 'DONE' } as MatIssue,
+      ]);
+
+      await expect(target.delete('MAT-001')).rejects.toThrow(BadRequestException);
+      expect(mockMatLotRepo.delete).not.toHaveBeenCalled();
     });
 
     it('존재하지 않는 LOT이면 NotFoundException', async () => {

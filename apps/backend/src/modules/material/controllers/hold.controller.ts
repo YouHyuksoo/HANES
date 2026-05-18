@@ -24,15 +24,15 @@ export class HoldController {
 
   @Post('hold')
   @ApiOperation({ summary: 'LOT 홀드 처리' })
-  async hold(@Body() dto: HoldActionDto) {
-    const data = await this.holdService.hold(dto);
+  async hold(@Body() dto: HoldActionDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.holdService.hold(dto, company, plant);
     return ResponseUtil.success(data, 'LOT이 홀드 처리되었습니다.');
   }
 
   @Post('release')
   @ApiOperation({ summary: 'LOT 홀드 해제' })
-  async release(@Body() dto: ReleaseHoldDto) {
-    const data = await this.holdService.release(dto);
+  async release(@Body() dto: ReleaseHoldDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.holdService.release(dto, company, plant);
     return ResponseUtil.success(data, 'LOT 홀드가 해제되었습니다.');
   }
 }

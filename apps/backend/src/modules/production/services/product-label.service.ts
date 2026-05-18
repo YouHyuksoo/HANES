@@ -1,19 +1,9 @@
-/**
- * @file product-label.service.ts
- * @description 제품 라벨 발행 서비스 — 생산실적/OQC PASS → prdUid 채번 → 제품 라벨 발행
- *
- * 초보자 가이드:
- * 1. findLabelableResults(): 라벨 미발행 생산실적 조회 (JobOrder join으로 itemCode 획득)
- * 2. findLabelableOqcPassed(): OQC 합격 + 라벨 미발행건 조회
- * 3. createPrdLabels(): prdUid 채번 → ProdResult 업데이트 → 인쇄 로그 저장
- */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
-import { ProdResult } from '../../../entities/prod-result.entity';
-import { PartMaster } from '../../../entities/part-master.entity';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { JobOrder } from '../../../entities/job-order.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { ProdResult } from '../../../entities/prod-result.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { CreatePrdLabelsDto, PrdLabelResultDto } from '../dto/product-label.dto';
 
@@ -26,39 +16,54 @@ export class ProductLabelService {
     private readonly prodResultRepo: Repository<ProdResult>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
-    @InjectRepository(LabelPrintLog)
-    private readonly printLogRepo: Repository<LabelPrintLog>,
   ) {}
 
-  /** 라벨 미발행 생산실적 목록 (JobOrder join으로 itemCode 획득) */
-  async findLabelableResults() {
+  async findLabelableResults(company?: string, plant?: string) {
     const results = await this.prodResultRepo.find({
-      where: { prdUid: IsNull() },
-      relations: ['jobOrder'],
+      where: { prdUid: IsNull(), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      relations: ['jobOrder', 'jobOrder.part'],
       order: { createdAt: 'DESC' },
     });
     return this.enrichWithPartInfo(results);
   }
 
-  /** OQC 합격 + 라벨 미발행 생산실적 */
-  async findLabelableOqcPassed() {
-    const results = await this.prodResultRepo
+  async findLabelableOqcPassed(company?: string, plant?: string) {
+    const qb = this.prodResultRepo
       .createQueryBuilder('r')
       .leftJoinAndSelect('r.jobOrder', 'jo')
+      .leftJoinAndSelect('jo.part', 'part')
       .innerJoin('r.inspectResults', 'ir', 'ir.result = :result', { result: 'PASS' })
       .where('r.prdUid IS NULL')
-      .orderBy('r.createdAt', 'DESC')
-      .getMany();
+      .orderBy('r.createdAt', 'DESC');
+
+    if (company) {
+      qb.andWhere('r.company = :company', { company });
+    }
+    if (plant) {
+      qb.andWhere('r.plant = :plant', { plant });
+    }
+
+    const results = await qb.getMany();
     return this.enrichWithPartInfo(results);
   }
 
-  /** prdUid 채번 + ProdResult 업데이트 + 라벨 인쇄 로그 */
-  async createPrdLabels(dto: CreatePrdLabelsDto): Promise<PrdLabelResultDto[]> {
+  async createPrdLabels(
+    dto: CreatePrdLabelsDto,
+    company?: string,
+    plant?: string,
+  ): Promise<PrdLabelResultDto[]> {
     const prodResult = await this.prodResultRepo.findOne({
-      where: { resultNo: String(dto.sourceId) },
+      where: {
+        resultNo: String(dto.sourceId),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       relations: ['jobOrder'],
     });
-    if (!prodResult) throw new NotFoundException('생산실적을 찾을 수 없습니다.');
+
+    if (!prodResult) {
+      throw new NotFoundException('Production result not found');
+    }
 
     const itemCode = prodResult.jobOrder?.itemCode ?? '';
     const part = itemCode

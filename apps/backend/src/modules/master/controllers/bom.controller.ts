@@ -1,35 +1,40 @@
-/**
- * @file src/modules/master/controllers/bom.controller.ts
- * @description BOM CRUD API 컨트롤러 - Oracle TM_BOM 기준 보강
- *
- * 초보자 가이드:
- * 1. **GET /parents**: BOM에 등재된 모품목(부모품목) 목록 + 자품목 수
- * 2. **GET /hierarchy/:parentItemCode**: 부모품목 기준 트리 구조 조회
- * 3. **CRUD**: 추가/수정/삭제 모두 DB에 반영
- * 4. **GET /export**: BOM 데이터를 xlsx 파일로 다운로드
- * 5. **POST /upload**: xlsx 파일에서 BOM 데이터를 일괄 업로드
- */
-
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, Res, Req, UseInterceptors, UploadedFile, BadRequestException, UseGuards } from '@nestjs/common';
+﻿import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Company, Plant } from '../../../common/decorators/tenant.decorator';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { BomService } from '../services/bom.service';
-import { CreateBomDto, UpdateBomDto, BomQueryDto } from '../dto/bom.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
-import { JwtAuthGuard, AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
+import { AuthenticatedRequest, JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { BomQueryDto, CreateBomDto, UpdateBomDto } from '../dto/bom.dto';
+import { BomService } from '../services/bom.service';
 
-@ApiTags('기준정보 - BOM')
+@ApiTags('Master - BOM')
 @Controller('master/boms')
 export class BomController {
   constructor(private readonly bomService: BomService) {}
 
   @Get('parents')
-  @ApiOperation({ summary: 'BOM 모품목(부모품목) 목록 조회' })
-  @ApiQuery({ name: 'search', required: false, description: '검색어' })
-  @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
+  @ApiOperation({ summary: 'Get BOM parent list' })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'effectiveDate', required: false })
   async findParents(
     @Query('search') search?: string,
     @Query('effectiveDate') effectiveDate?: string,
@@ -40,8 +45,8 @@ export class BomController {
 
   @Get('export')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'BOM Excel 다운로드' })
-  @ApiQuery({ name: 'parentItemCode', required: false, description: '상위 품목코드 (없으면 전체)' })
+  @ApiOperation({ summary: 'Export BOM to Excel' })
+  @ApiQuery({ name: 'parentItemCode', required: false })
   async exportToExcel(
     @Query('parentItemCode') parentItemCode: string | undefined,
     @Company() company: string,
@@ -64,7 +69,7 @@ export class BomController {
 
   @Post('upload')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'BOM Excel 업로드' })
+  @ApiOperation({ summary: 'Upload BOM from Excel' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -72,7 +77,7 @@ export class BomController {
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req: any, file: Express.Multer.File, cb: (error: Error | null, accept: boolean) => void) => {
         if (!file.originalname.match(/\.xlsx$/i)) {
-          return cb(new BadRequestException('.xlsx 파일만 업로드 가능합니다.'), false);
+          return cb(new BadRequestException('Only .xlsx is allowed'), false);
         }
         cb(null, true);
       },
@@ -84,17 +89,20 @@ export class BomController {
     @Plant() plant: string,
     @Req() req: AuthenticatedRequest,
   ) {
-    if (!file) throw new BadRequestException('파일이 첨부되지 않았습니다.');
+    if (!file) throw new BadRequestException('File is required');
     const userId = req.user.id;
     const result = await this.bomService.uploadFromExcel(file.buffer, company, plant, userId);
-    return ResponseUtil.success(result, `등록: ${result.inserted}건, 스킵: ${result.skipped}건, 오류: ${result.errors.length}건`);
+    return ResponseUtil.success(
+      result,
+      `Inserted: ${result.inserted}, Skipped: ${result.skipped}, Errors: ${result.errors.length}`,
+    );
   }
 
   @Get('hierarchy/:parentItemCode')
-  @ApiOperation({ summary: 'BOM 계층 조회' })
-  @ApiParam({ name: 'parentItemCode', description: '상위 품목 ID' })
-  @ApiQuery({ name: 'depth', required: false, description: '조회 깊이 (기본 3)' })
-  @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
+  @ApiOperation({ summary: 'Get BOM hierarchy' })
+  @ApiParam({ name: 'parentItemCode' })
+  @ApiQuery({ name: 'depth', required: false })
+  @ApiQuery({ name: 'effectiveDate', required: false })
   async findHierarchy(
     @Param('parentItemCode') parentItemCode: string,
     @Query('depth') depth?: number,
@@ -105,8 +113,8 @@ export class BomController {
   }
 
   @Get('parent/:parentItemCode')
-  @ApiOperation({ summary: '상위 품목 기준 BOM 조회' })
-  @ApiQuery({ name: 'effectiveDate', required: false, description: '유효일자 (YYYY-MM-DD)' })
+  @ApiOperation({ summary: 'Get BOM rows by parent item' })
+  @ApiQuery({ name: 'effectiveDate', required: false })
   async findByParentId(
     @Param('parentItemCode') parentItemCode: string,
     @Query('effectiveDate') effectiveDate?: string,
@@ -116,38 +124,48 @@ export class BomController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'BOM 목록 조회' })
-  async findAll(@Query() query: BomQueryDto, @Company() company: string, @Plant() plant: string) {
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get BOM list' })
+  async findAll(
+    @Query() query: BomQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
     const result = await this.bomService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'BOM 상세 조회' })
+  @ApiOperation({ summary: 'Get one BOM row' })
   async findById(@Param('id') id: string) {
     const data = await this.bomService.findById(id);
     return ResponseUtil.success(data);
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'BOM 생성' })
-  async create(@Body() dto: CreateBomDto) {
-    const data = await this.bomService.create(dto);
-    return ResponseUtil.success(data, 'BOM이 생성되었습니다.');
+  @ApiOperation({ summary: 'Create BOM row' })
+  async create(
+    @Body() dto: CreateBomDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.bomService.create(dto, company, plant);
+    return ResponseUtil.success(data, 'BOM created');
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'BOM 수정' })
+  @ApiOperation({ summary: 'Update BOM row' })
   async update(@Param('id') id: string, @Body() dto: UpdateBomDto) {
     const data = await this.bomService.update(id, dto);
-    return ResponseUtil.success(data, 'BOM이 수정되었습니다.');
+    return ResponseUtil.success(data, 'BOM updated');
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'BOM 삭제' })
+  @ApiOperation({ summary: 'Delete BOM row' })
   async delete(@Param('id') id: string) {
     await this.bomService.delete(id);
-    return ResponseUtil.success(null, 'BOM이 삭제되었습니다.');
+    return ResponseUtil.success(null, 'BOM deleted');
   }
 }

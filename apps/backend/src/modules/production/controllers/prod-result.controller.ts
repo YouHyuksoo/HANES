@@ -1,28 +1,4 @@
-/**
- * @file src/modules/production/controllers/prod-result.controller.ts
- * @description 생산실적 CRUD 및 집계 API 컨트롤러
- *
- * 초보자 가이드:
- * 1. **엔드포인트**: /api/v1/production/prod-results
- * 2. **Swagger**: @ApiTags, @ApiOperation 등으로 문서화
- * 3. **인증**: 필요시 @UseGuards(JwtAuthGuard) 적용
- *
- * API 구조:
- * - GET    /                        : 생산실적 목록 (페이지네이션)
- * - GET    /:resultNo               : 생산실적 단건 조회 (resultNo 기준)
- * - GET    /job-order/:orderNo   : 작업지시별 실적 목록
- * - POST   /                        : 생산실적 생성
- * - PUT    /:resultNo               : 생산실적 수정
- * - DELETE /:resultNo               : 생산실적 삭제
- * - POST   /:resultNo/complete      : 실적 완료
- * - POST   /:resultNo/cancel        : 실적 취소
- * - GET    /summary/job-order/:id   : 작업지시별 집계
- * - GET    /summary/equip/:id       : 설비별 집계
- * - GET    /summary/worker/:id      : 작업자별 집계
- * - GET    /summary/daily           : 일자별 집계
- */
-
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -54,165 +30,175 @@ import {
 } from '../dto/prod-result.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
-@ApiTags('생산관리 - 생산실적')
+@ApiTags('Production - Prod Results')
 @UseGuards(JwtAuthGuard)
 @Controller('production/prod-results')
 export class ProdResultController {
   constructor(private readonly prodResultService: ProdResultService) {}
 
-  // ===== 기본 CRUD =====
-
   @Get()
-  @ApiOperation({ summary: '생산실적 목록 조회', description: '페이지네이션 및 필터링 지원' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiOperation({ summary: 'List production results' })
+  @ApiResponse({ status: 200, description: 'Success' })
   async findAll(@Query() query: ProdResultQueryDto, @Company() company: string, @Plant() plant: string) {
     const result = await this.prodResultService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get('job-order/:orderNo')
-  @ApiOperation({ summary: '작업지시별 생산실적 목록', description: '특정 작업지시의 모든 생산실적 조회' })
-  @ApiParam({ name: 'orderNo', description: '작업지시 ID' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByJobOrderId(@Param('orderNo') orderNo: string) {
-    const data = await this.prodResultService.findByJobOrderId(orderNo);
+  @ApiOperation({ summary: 'List by job order' })
+  @ApiParam({ name: 'orderNo', description: 'Job order no' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async findByJobOrderId(@Param('orderNo') orderNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodResultService.findByJobOrderId(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get(':resultNo')
-  @ApiOperation({ summary: '생산실적 상세 조회' })
-  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  @ApiResponse({ status: 404, description: '생산실적 없음' })
-  async findById(@Param('resultNo') resultNo: string) {
-    const data = await this.prodResultService.findById(resultNo);
+  @ApiOperation({ summary: 'Get one result' })
+  @ApiParam({ name: 'resultNo', description: 'Result no' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  async findById(@Param('resultNo') resultNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodResultService.findById(resultNo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: '생산실적 생성' })
-  @ApiResponse({ status: 201, description: '생성 성공' })
-  @ApiResponse({ status: 404, description: '작업지시/설비/작업자 없음' })
-  @ApiResponse({ status: 400, description: '완료/취소된 작업지시' })
-  async create(@Body() dto: CreateProdResultDto) {
-    const data = await this.prodResultService.create(dto);
-    return ResponseUtil.success(data, '생산실적이 등록되었습니다.');
+  @ApiOperation({ summary: 'Create production result' })
+  @ApiResponse({ status: 201, description: 'Created' })
+  async create(@Body() dto: CreateProdResultDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodResultService.create(dto, company, plant);
+    return ResponseUtil.success(data, 'Created');
   }
 
   @Put(':resultNo')
-  @ApiOperation({ summary: '생산실적 수정' })
-  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
-  @ApiResponse({ status: 200, description: '수정 성공' })
-  @ApiResponse({ status: 404, description: '생산실적 없음' })
-  @ApiResponse({ status: 400, description: '수정 불가 상태' })
-  async update(@Param('resultNo') resultNo: string, @Body() dto: UpdateProdResultDto) {
-    const data = await this.prodResultService.update(resultNo, dto);
-    return ResponseUtil.success(data, '생산실적이 수정되었습니다.');
+  @ApiOperation({ summary: 'Update production result' })
+  @ApiParam({ name: 'resultNo', description: 'Result no' })
+  @ApiResponse({ status: 200, description: 'Updated' })
+  async update(
+    @Param('resultNo') resultNo: string,
+    @Body() dto: UpdateProdResultDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.prodResultService.update(resultNo, dto, company, plant);
+    return ResponseUtil.success(data, 'Updated');
   }
 
   @Delete(':resultNo')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '생산실적 삭제' })
-  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
-  @ApiResponse({ status: 200, description: '삭제 성공' })
-  @ApiResponse({ status: 404, description: '생산실적 없음' })
-  async delete(@Param('resultNo') resultNo: string) {
-    await this.prodResultService.delete(resultNo);
-    return ResponseUtil.success(null, '생산실적이 삭제되었습니다.');
+  @ApiOperation({ summary: 'Delete production result' })
+  @ApiParam({ name: 'resultNo', description: 'Result no' })
+  @ApiResponse({ status: 200, description: 'Deleted' })
+  async delete(@Param('resultNo') resultNo: string, @Company() company: string, @Plant() plant: string) {
+    await this.prodResultService.delete(resultNo, company, plant);
+    return ResponseUtil.success(null, 'Deleted');
   }
-
-  // ===== 상태 변경 =====
 
   @Post(':resultNo/complete')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '생산실적 완료', description: 'RUNNING -> DONE 상태로 변경' })
-  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
-  @ApiResponse({ status: 200, description: '완료 성공' })
-  @ApiResponse({ status: 400, description: '상태 변경 불가' })
-  async complete(@Param('resultNo') resultNo: string, @Body() dto: CompleteProdResultDto) {
-    const data = await this.prodResultService.complete(resultNo, dto);
-    return ResponseUtil.success(data, '생산실적이 완료되었습니다.');
+  @ApiOperation({ summary: 'Complete production result' })
+  @ApiParam({ name: 'resultNo', description: 'Result no' })
+  @ApiResponse({ status: 200, description: 'Completed' })
+  async complete(
+    @Param('resultNo') resultNo: string,
+    @Body() dto: CompleteProdResultDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.prodResultService.complete(resultNo, dto, company, plant);
+    return ResponseUtil.success(data, 'Completed');
   }
 
   @Post(':resultNo/cancel')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '생산실적 취소' })
-  @ApiParam({ name: 'resultNo', description: '생산실적 번호' })
-  @ApiBody({ schema: { type: 'object', properties: { remark: { type: 'string', description: '취소 사유' } } } })
-  @ApiResponse({ status: 200, description: '취소 성공' })
-  @ApiResponse({ status: 400, description: '이미 취소됨' })
-  async cancel(@Param('resultNo') resultNo: string, @Body('remark') remark?: string) {
-    const data = await this.prodResultService.cancel(resultNo, remark);
-    return ResponseUtil.success(data, '생산실적이 취소되었습니다.');
+  @ApiOperation({ summary: 'Cancel production result' })
+  @ApiParam({ name: 'resultNo', description: 'Result no' })
+  @ApiBody({ schema: { type: 'object', properties: { remark: { type: 'string', description: 'Cancel reason' } } } })
+  @ApiResponse({ status: 200, description: 'Canceled' })
+  async cancel(
+    @Param('resultNo') resultNo: string,
+    @Body('remark') remark?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const data = await this.prodResultService.cancel(resultNo, remark, company, plant);
+    return ResponseUtil.success(data, 'Canceled');
   }
 
-  // ===== 실적 집계 =====
-
   @Get('summary/job-order/:orderNo')
-  @ApiOperation({ summary: '작업지시별 실적 집계', description: '양품/불량 수량, 불량률, 평균 사이클 타임 등' })
-  @ApiParam({ name: 'orderNo', description: '작업지시 ID' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async getSummaryByJobOrder(@Param('orderNo') orderNo: string) {
-    const data = await this.prodResultService.getSummaryByJobOrder(orderNo);
+  @ApiOperation({ summary: 'Summary by job order' })
+  @ApiParam({ name: 'orderNo', description: 'Job order no' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async getSummaryByJobOrder(@Param('orderNo') orderNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.prodResultService.getSummaryByJobOrder(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('summary/equip/:equipCode')
-  @ApiOperation({ summary: '설비별 실적 집계', description: '기간 필터링 지원' })
-  @ApiParam({ name: 'equipCode', description: '설비 ID' })
-  @ApiQuery({ name: 'dateFrom', required: false, description: '시작일 (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'dateTo', required: false, description: '종료일 (YYYY-MM-DD)' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiOperation({ summary: 'Summary by equipment' })
+  @ApiParam({ name: 'equipCode', description: 'Equipment code' })
+  @ApiQuery({ name: 'dateFrom', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'dateTo', required: false, description: 'YYYY-MM-DD' })
+  @ApiResponse({ status: 200, description: 'Success' })
   async getSummaryByEquip(
     @Param('equipCode') equipCode: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getSummaryByEquip(equipCode, dateFrom, dateTo);
+    const data = await this.prodResultService.getSummaryByEquip(equipCode, dateFrom, dateTo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('summary/worker/:workerId')
-  @ApiOperation({ summary: '작업자별 실적 집계', description: '기간 필터링 지원' })
-  @ApiParam({ name: 'workerId', description: '작업자 ID' })
-  @ApiQuery({ name: 'dateFrom', required: false, description: '시작일 (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'dateTo', required: false, description: '종료일 (YYYY-MM-DD)' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiOperation({ summary: 'Summary by worker' })
+  @ApiParam({ name: 'workerId', description: 'Worker id' })
+  @ApiQuery({ name: 'dateFrom', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'dateTo', required: false, description: 'YYYY-MM-DD' })
+  @ApiResponse({ status: 200, description: 'Success' })
   async getSummaryByWorker(
     @Param('workerId') workerId: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getSummaryByWorker(workerId, dateFrom, dateTo);
+    const data = await this.prodResultService.getSummaryByWorker(workerId, dateFrom, dateTo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('summary/daily')
-  @ApiOperation({ summary: '일자별 실적 집계', description: '대시보드용 일별 생산 현황' })
-  @ApiQuery({ name: 'dateFrom', required: true, description: '시작일 (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'dateTo', required: true, description: '종료일 (YYYY-MM-DD)' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiOperation({ summary: 'Daily summary' })
+  @ApiQuery({ name: 'dateFrom', required: true, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'dateTo', required: true, description: 'YYYY-MM-DD' })
+  @ApiResponse({ status: 200, description: 'Success' })
   async getDailySummary(
     @Query('dateFrom') dateFrom: string,
     @Query('dateTo') dateTo: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getDailySummary(dateFrom, dateTo);
+    const data = await this.prodResultService.getDailySummary(dateFrom, dateTo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('summary/by-product')
-  @ApiOperation({ summary: '완제품별 실적 통합 조회', description: '품목별 계획/양품/불량/양품률 통합 집계' })
-  @ApiQuery({ name: 'dateFrom', required: false, description: '시작일 (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'dateTo', required: false, description: '종료일 (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'search', required: false, description: '검색어 (품목코드/품목명)' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiOperation({ summary: 'Summary by product' })
+  @ApiQuery({ name: 'dateFrom', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'dateTo', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search keyword' })
+  @ApiResponse({ status: 200, description: 'Success' })
   async getSummaryByProduct(
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
     @Query('search') search?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.prodResultService.getSummaryByProduct(dateFrom, dateTo, search);
+    const data = await this.prodResultService.getSummaryByProduct(dateFrom, dateTo, search, company, plant);
     return ResponseUtil.success(data);
   }
 }

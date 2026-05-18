@@ -36,6 +36,13 @@ export class ShipOrderService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /** 출하지시 목록 조회 */
   async findAll(query: ShipOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo } = query;
@@ -71,7 +78,7 @@ export class ShipOrderService {
     // 품목 정보 일괄 조회 (N+1 제거)
     const orderNos = data.map((o) => o.shipOrderNo);
     const allItems = orderNos.length > 0
-      ? await this.shipOrderItemRepository.find({ where: { shipOrderNo: In(orderNos) } })
+      ? await this.shipOrderItemRepository.find({ where: { shipOrderNo: In(orderNos), ...this.tenantWhere(company, plant) } })
       : [];
 
     const itemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
@@ -94,15 +101,15 @@ export class ShipOrderService {
   }
 
   /** 출하지시 단건 조회 */
-  async findById(shipOrderNo: string) {
+  async findById(shipOrderNo: string, company?: string, plant?: string) {
     const order = await this.shipOrderRepository.findOne({
-      where: { shipOrderNo },
+      where: { shipOrderNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!order) throw new NotFoundException(`출하지시를 찾을 수 없습니다: ${shipOrderNo}`);
 
     const items = await this.shipOrderItemRepository.find({
-      where: { shipOrderNo: order.shipOrderNo },
+      where: { shipOrderNo: order.shipOrderNo, ...this.tenantWhere(company, plant) },
     });
 
     const itemsWithPart = await Promise.all(
@@ -128,7 +135,7 @@ export class ShipOrderService {
   /** 출하지시 생성 */
   async create(dto: CreateShipOrderDto, company?: string, plant?: string) {
     const existing = await this.shipOrderRepository.findOne({
-      where: { shipOrderNo: dto.shipOrderNo },
+      where: { shipOrderNo: dto.shipOrderNo, ...this.tenantWhere(company, plant) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 출하지시 번호입니다: ${dto.shipOrderNo}`);
 
@@ -170,7 +177,7 @@ export class ShipOrderService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(savedOrder.shipOrderNo);
+      return this.findById(savedOrder.shipOrderNo, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -180,10 +187,15 @@ export class ShipOrderService {
   }
 
   /** 출하지시 수정 */
-  async update(shipOrderNo: string, dto: UpdateShipOrderDto) {
-    const order = await this.findById(shipOrderNo);
+  async update(shipOrderNo: string, dto: UpdateShipOrderDto, company?: string, plant?: string) {
+    const order = await this.findById(shipOrderNo, company, plant);
     if (order.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 수정할 수 있습니다.');
+    }
+    if (dto.status !== undefined) {
+      throw new BadRequestException(
+        `출하지시 상태(${dto.status})는 직접 변경할 수 없습니다. 확정/마감 전용 API를 사용해 주세요.`,
+      );
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -192,7 +204,7 @@ export class ShipOrderService {
 
     try {
       if (dto.items) {
-        await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderNo });
+        await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderNo, ...this.tenantWhere(company, plant) });
 
         const items = dto.items.map((item, idx) =>
           this.shipOrderItemRepository.create({
@@ -213,14 +225,13 @@ export class ShipOrderService {
       if (dto.customerName !== undefined) updateData.customerName = dto.customerName;
       if (dto.dueDate !== undefined) updateData.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
       if (dto.shipDate !== undefined) updateData.shipDate = dto.shipDate ? new Date(dto.shipDate) : null;
-      if (dto.status !== undefined) updateData.status = dto.status;
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-      await queryRunner.manager.update(ShipmentOrder, { shipOrderNo }, updateData);
+      await queryRunner.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, updateData);
 
       await queryRunner.commitTransaction();
 
-      return this.findById(dto.shipOrderNo ?? shipOrderNo);
+      return this.findById(dto.shipOrderNo ?? shipOrderNo, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -230,13 +241,13 @@ export class ShipOrderService {
   }
 
   /** 출하지시 삭제 */
-  async delete(shipOrderNo: string) {
-    const order = await this.findById(shipOrderNo);
+  async delete(shipOrderNo: string, company?: string, plant?: string) {
+    const order = await this.findById(shipOrderNo, company, plant);
     if (order.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipOrderRepository.delete({ shipOrderNo });
+    await this.shipOrderRepository.delete({ shipOrderNo, ...this.tenantWhere(company, plant) });
 
     return { shipOrderNo, deleted: true };
   }
@@ -245,8 +256,8 @@ export class ShipOrderService {
    * 출하지시 확정 (DRAFT -> CONFIRMED)
    * 확정 후 실출하 생성 가능
    */
-  async confirm(shipOrderNo: string) {
-    const order = await this.findById(shipOrderNo);
+  async confirm(shipOrderNo: string, company?: string, plant?: string) {
+    const order = await this.findById(shipOrderNo, company, plant);
     if (order.status !== 'DRAFT') {
       throw new BadRequestException('DRAFT 상태에서만 확정할 수 있습니다.');
     }
@@ -256,10 +267,10 @@ export class ShipOrderService {
     }
 
     await this.shipOrderRepository.update(
-      { shipOrderNo },
+      { shipOrderNo, ...this.tenantWhere(company, plant) },
       { status: 'CONFIRMED' },
     );
 
-    return this.findById(shipOrderNo);
+    return this.findById(shipOrderNo, company, plant);
   }
 }

@@ -27,14 +27,20 @@ export class ShipHistoryService {
     private readonly partRepository: Repository<PartMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /** 출하이력 목록 조회 */
   async findAll(query: ShipHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, shipDateFrom, shipDateTo, customerName } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
-      ...(company && { company }),
-      ...(plant && { plant }),
+      ...this.tenantWhere(company, plant),
       ...(status && { status }),
       ...(customerName && { customerName: ILike(`%${customerName}%`) }),
       ...(search && {
@@ -63,7 +69,9 @@ export class ShipHistoryService {
     // 품목 정보 일괄 조회 (N+1 제거)
     const orderNos = data.map((o) => o.shipOrderNo);
     const allItems = orderNos.length > 0
-      ? await this.shipmentOrderItemRepository.find({ where: { shipOrderNo: In(orderNos) } })
+      ? await this.shipmentOrderItemRepository.find({
+          where: { shipOrderNo: In(orderNos), ...this.tenantWhere(company, plant) },
+        })
       : [];
 
     const itemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
@@ -86,15 +94,18 @@ export class ShipHistoryService {
   }
 
   /** 출하이력 통계 요약 */
-  async getSummary() {
+  async getSummary(company?: string, plant?: string) {
     const [total, byStatus] = await Promise.all([
-      this.shipmentOrderRepository.count({ where: {} }),
-      this.shipmentOrderRepository
-        .createQueryBuilder('order')
-        .select('order.status', 'status')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('order.status')
-        .getRawMany(),
+      this.shipmentOrderRepository.count({ where: this.tenantWhere(company, plant) }),
+      (async () => {
+        const qb = this.shipmentOrderRepository
+          .createQueryBuilder('order')
+          .select('order.status', 'status')
+          .addSelect('COUNT(*)', 'count');
+        if (company) qb.where('order.company = :company', { company });
+        if (plant) qb.andWhere('order.plant = :plant', { plant });
+        return qb.groupBy('order.status').getRawMany();
+      })(),
     ]);
 
     return {

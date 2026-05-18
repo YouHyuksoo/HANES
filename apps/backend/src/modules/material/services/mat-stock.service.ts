@@ -220,7 +220,13 @@ export class MatStockService {
     try {
       // 기존 재고 조회 또는 생성
       let stock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode, ...(matUid && { matUid }) },
+        where: {
+          itemCode,
+          warehouseCode,
+          ...(matUid && { matUid }),
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
 
       const beforeQty = stock?.qty ?? 0;
@@ -230,13 +236,31 @@ export class MatStockService {
         throw new BadRequestException(`재고가 음수가 될 수 없습니다. 현재: ${beforeQty}, 조정: ${adjustQty}`);
       }
 
+      if (stock && afterQty < stock.reservedQty) {
+        throw new BadRequestException(
+          `????(${stock.reservedQty})?? ?? ??? ??? ? ????.`,
+        );
+      }
+
       if (stock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+          {
+            warehouseCode: stock.warehouseCode,
+            itemCode: stock.itemCode,
+            matUid: stock.matUid,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
           { qty: afterQty, availableQty: afterQty - stock.reservedQty },
         );
         stock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+          where: {
+            warehouseCode: stock.warehouseCode,
+            itemCode: stock.itemCode,
+            matUid: stock.matUid,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
         });
       } else {
         if (adjustQty < 0) {
@@ -298,6 +322,15 @@ export class MatStockService {
       }
 
       // 출고 창고 차감
+      if (fromWarehouseCode === toWarehouseCode) {
+        throw new BadRequestException('??? ???? ?? ??? ? ? ????.');
+      }
+      if (fromStock.availableQty < qty) {
+        throw new BadRequestException(
+          `??? ??? ?? ?? ??? ??? ?????. ????: ${fromStock.availableQty}`,
+        );
+      }
+
       await queryRunner.manager.update(MatStock,
         { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, matUid: fromStock.matUid },
         { qty: fromStock.qty - qty, availableQty: fromStock.availableQty - qty },

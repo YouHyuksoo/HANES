@@ -13,6 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In, Like, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
@@ -24,6 +25,8 @@ export class LotMergeService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(MatIssue)
+    private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(StockTransaction)
@@ -121,6 +124,23 @@ export class LotMergeService {
         if (lot.status === 'DEPLETED' || !lotStock || lotStock.qty <= 0) {
           throw new BadRequestException(`재고가 없는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
+        if ((lotStock.reservedQty ?? 0) > 0) {
+          throw new BadRequestException(`예약 수량이 있는 LOT은 병합할 수 없습니다: ${lot.matUid}`);
+        }
+      }
+
+      const issueHistories = await queryRunner.manager.find(MatIssue, {
+        where: { matUid: In(lotMatUids) },
+      });
+      const activeIssueLotNos = [...new Set(
+        issueHistories
+          .filter((issue) => issue.status !== 'CANCELED')
+          .map((issue) => issue.matUid),
+      )];
+      if (activeIssueLotNos.length > 0) {
+        throw new BadRequestException(
+          `이미 자재출고 이력이 있는 LOT은 병합할 수 없습니다. 자재출고부터 먼저 정리해 주세요: ${activeIssueLotNos.join(', ')}`,
+        );
       }
 
       // 대상 LOT 결정 (지정되지 않으면 첫 번째)

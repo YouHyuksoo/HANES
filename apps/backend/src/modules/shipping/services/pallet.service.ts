@@ -53,6 +53,13 @@ export class PalletService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /**
    * 팔레트 목록 조회
    */
@@ -92,9 +99,9 @@ export class PalletService {
   /**
    * 팔레트 단건 조회 (ID)
    */
-  async findById(id: string) {
+  async findById(id: string, company?: string, plant?: string) {
     const pallet = await this.palletRepository.findOne({
-      where: { palletNo: id },
+      where: { palletNo: id, ...this.tenantWhere(company, plant) },
     });
 
     if (!pallet) {
@@ -107,9 +114,9 @@ export class PalletService {
   /**
    * 팔레트 단건 조회 (팔레트번호)
    */
-  async findByPalletNo(palletNo: string) {
+  async findByPalletNo(palletNo: string, company?: string, plant?: string) {
     const pallet = await this.palletRepository.findOne({
-      where: { palletNo },
+      where: { palletNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!pallet) {
@@ -125,7 +132,7 @@ export class PalletService {
   async create(dto: CreatePalletDto, company?: string, plant?: string) {
     // 중복 체크
     const existing = await this.palletRepository.findOne({
-      where: { palletNo: dto.palletNo },
+      where: { palletNo: dto.palletNo, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) {
@@ -147,32 +154,41 @@ export class PalletService {
   /**
    * 팔레트 수정
    */
-  async update(id: string, dto: UpdatePalletDto) {
-    const pallet = await this.findById(id);
+  async update(id: string, dto: UpdatePalletDto, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     // SHIPPED 상태에서는 수정 불가
     if (pallet.status === 'SHIPPED') {
       throw new BadRequestException('출하된 팔레트는 수정할 수 없습니다.');
     }
+    if (dto.status !== undefined) {
+      throw new BadRequestException(
+        `팔레트 상태(${dto.status})는 직접 변경할 수 없습니다. 박스적재/출하할당/출하 전용 API를 사용해 주세요.`,
+      );
+    }
 
     const updateData: any = {};
     if (dto.shipmentId !== undefined) updateData.shipmentId = dto.shipmentId;
-    if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.palletRepository.update({ palletNo: id }, updateData);
+    await this.palletRepository.update({ palletNo: id, ...this.tenantWhere(company, plant) }, updateData);
 
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
   /**
    * 팔레트 삭제
    */
-  async delete(id: string) {
-    const pallet = await this.findById(id);
+  async delete(id: string, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     // SHIPPED 상태에서는 삭제 불가
     if (pallet.status === 'SHIPPED') {
       throw new BadRequestException('출하된 팔레트는 삭제할 수 없습니다.');
+    }
+    if (pallet.status !== 'OPEN') {
+      throw new BadRequestException(
+        '물류 흐름에 들어간 팔레트는 직접 삭제할 수 없습니다. 박스 해제 또는 출하 해제 후 다시 정리해 주세요.',
+      );
     }
 
     // 박스가 있으면 삭제 불가
@@ -185,7 +201,7 @@ export class PalletService {
       throw new BadRequestException('출하에 할당된 팔레트는 삭제할 수 없습니다. 먼저 출하에서 제거해주세요.');
     }
 
-    await this.palletRepository.delete({ palletNo: id });
+    await this.palletRepository.delete({ palletNo: id, ...this.tenantWhere(company, plant) });
 
     return { id, deleted: true };
   }
@@ -195,8 +211,8 @@ export class PalletService {
   /**
    * 팔레트에 박스 추가
    */
-  async addBox(id: string, dto: AddBoxToPalletDto) {
-    const pallet = await this.findById(id);
+  async addBox(id: string, dto: AddBoxToPalletDto, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     // OPEN 상태에서만 박스 추가 가능
     if (pallet.status !== 'OPEN') {
@@ -207,6 +223,7 @@ export class PalletService {
     const boxes = await this.boxRepository.find({
       where: {
         boxNo: In(dto.boxIds),
+        ...this.tenantWhere(company, plant),
       },
     });
 
@@ -222,8 +239,8 @@ export class PalletService {
       throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${invalidBoxes.map(b => b.boxNo).join(', ')}`);
     }
 
-    // OQC 상태 검증: oqcStatus가 FAIL/PENDING이면 적재 불가 (null은 OQC 미대상으로 허용)
-    const oqcBlockedBoxes = boxes.filter(b => b.oqcStatus && b.oqcStatus !== 'PASS');
+    // OQC 상태 검증: PASS가 아닌 박스는 적재 불가
+    const oqcBlockedBoxes = boxes.filter(b => b.oqcStatus !== 'PASS');
     if (oqcBlockedBoxes.length > 0) {
       const blockList = oqcBlockedBoxes.map(b => `${b.boxNo}(${b.oqcStatus})`).join(', ');
       throw new BadRequestException(
@@ -246,7 +263,7 @@ export class PalletService {
       // 박스 업데이트
       await queryRunner.manager.update(
         BoxMaster,
-        { boxNo: In(dto.boxIds) },
+        { boxNo: In(dto.boxIds), ...this.tenantWhere(company, plant) },
         { palletNo: id }
       );
 
@@ -254,13 +271,15 @@ export class PalletService {
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
         .where('box.palletNo = :palletNo', { palletNo: id })
+        .andWhere(company ? 'box.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'box.plant = :plant' : '1=1', { plant })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
 
       const updatedPallet = await queryRunner.manager.update(
         PalletMaster,
-        { palletNo: id },
+        { palletNo: id, ...this.tenantWhere(company, plant) },
         {
           boxCount: parseInt(palletSummary?.count) || 0,
           totalQty: parseInt(palletSummary?.totalQty) || 0,
@@ -269,7 +288,7 @@ export class PalletService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(id);
+      return this.findById(id, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -281,8 +300,8 @@ export class PalletService {
   /**
    * 팔레트에서 박스 제거
    */
-  async removeBox(id: string, dto: RemoveBoxFromPalletDto) {
-    const pallet = await this.findById(id);
+  async removeBox(id: string, dto: RemoveBoxFromPalletDto, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     // OPEN 상태에서만 박스 제거 가능
     if (pallet.status !== 'OPEN') {
@@ -294,6 +313,7 @@ export class PalletService {
       where: {
         boxNo: In(dto.boxIds),
         palletNo: id,
+        ...this.tenantWhere(company, plant),
       },
     });
 
@@ -312,7 +332,7 @@ export class PalletService {
       // 박스 업데이트
       await queryRunner.manager.update(
         BoxMaster,
-        { boxNo: In(dto.boxIds) },
+        { boxNo: In(dto.boxIds), ...this.tenantWhere(company, plant) },
         { palletNo: null }
       );
 
@@ -320,13 +340,15 @@ export class PalletService {
       const palletSummary = await queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
         .where('box.palletNo = :palletNo', { palletNo: id })
+        .andWhere(company ? 'box.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'box.plant = :plant' : '1=1', { plant })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
 
       await queryRunner.manager.update(
         PalletMaster,
-        { palletNo: id },
+        { palletNo: id, ...this.tenantWhere(company, plant) },
         {
           boxCount: parseInt(palletSummary?.count) || 0,
           totalQty: parseInt(palletSummary?.totalQty) || 0,
@@ -335,7 +357,7 @@ export class PalletService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(id);
+      return this.findById(id, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -349,8 +371,8 @@ export class PalletService {
   /**
    * 팔레트 닫기 (OPEN -> CLOSED)
    */
-  async closePallet(id: string) {
-    const pallet = await this.findById(id);
+  async closePallet(id: string, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     if (pallet.status !== 'OPEN') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 팔레트를 닫을 수 없습니다. OPEN 상태여야 합니다.`);
@@ -362,21 +384,21 @@ export class PalletService {
     }
 
     await this.palletRepository.update(
-      { palletNo: id },
+      { palletNo: id, ...this.tenantWhere(company, plant) },
       {
         status: 'CLOSED',
         closeAt: new Date(),
       }
     );
 
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
   /**
    * 팔레트 다시 열기 (CLOSED -> OPEN)
    */
-  async reopenPallet(id: string) {
-    const pallet = await this.findById(id);
+  async reopenPallet(id: string, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     if (pallet.status !== 'CLOSED') {
       throw new BadRequestException(`현재 상태(${pallet.status})에서는 팔레트를 다시 열 수 없습니다. CLOSED 상태여야 합니다.`);
@@ -388,14 +410,14 @@ export class PalletService {
     }
 
     await this.palletRepository.update(
-      { palletNo: id },
+      { palletNo: id, ...this.tenantWhere(company, plant) },
       {
         status: 'OPEN',
         closeAt: null,
       }
     );
 
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
   // ===== 출하 할당 =====
@@ -403,8 +425,8 @@ export class PalletService {
   /**
    * 팔레트를 출하에 할당
    */
-  async assignToShipment(id: string, dto: AssignPalletToShipmentDto) {
-    const pallet = await this.findById(id);
+  async assignToShipment(id: string, dto: AssignPalletToShipmentDto, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     // CLOSED 상태에서만 출하 할당 가능
     if (pallet.status !== 'CLOSED') {
@@ -418,7 +440,7 @@ export class PalletService {
 
     // 출하 존재 및 상태 확인
     const shipment = await this.shipmentRepository.findOne({
-      where: { shipNo: dto.shipmentId },
+      where: { shipNo: dto.shipmentId, ...this.tenantWhere(company, plant) },
     });
 
     if (!shipment) {
@@ -438,7 +460,7 @@ export class PalletService {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
-        { palletNo: id },
+        { palletNo: id, ...this.tenantWhere(company, plant) },
         {
           shipmentId: dto.shipmentId,
           status: 'LOADED',
@@ -449,6 +471,8 @@ export class PalletService {
       const shipmentSummary = await queryRunner.manager
         .createQueryBuilder(PalletMaster, 'pallet')
         .where('pallet.shipmentId = :shipmentId', { shipmentId: dto.shipmentId })
+        .andWhere(company ? 'pallet.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'pallet.plant = :plant' : '1=1', { plant })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(pallet.boxCount)', 'boxCount')
         .addSelect('SUM(pallet.totalQty)', 'totalQty')
@@ -456,7 +480,7 @@ export class PalletService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { shipNo: dto.shipmentId },
+        { shipNo: dto.shipmentId, ...this.tenantWhere(company, plant) },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
@@ -466,7 +490,7 @@ export class PalletService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(id);
+      return this.findById(id, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -478,8 +502,8 @@ export class PalletService {
   /**
    * 팔레트를 출하에서 제거
    */
-  async removeFromShipment(id: string) {
-    const pallet = await this.findById(id);
+  async removeFromShipment(id: string, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     if (!pallet.shipmentId) {
       throw new BadRequestException('출하에 할당되지 않은 팔레트입니다.');
@@ -487,7 +511,7 @@ export class PalletService {
 
     // 출하가 PREPARING 상태일 때만 제거 가능
     const shipment = await this.shipmentRepository.findOne({
-      where: { shipNo: pallet.shipmentId },
+      where: { shipNo: pallet.shipmentId, ...this.tenantWhere(company, plant) },
     });
 
     if (!shipment) {
@@ -509,7 +533,7 @@ export class PalletService {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
-        { palletNo: id },
+        { palletNo: id, ...this.tenantWhere(company, plant) },
         {
           shipmentId: null,
           status: 'CLOSED',
@@ -520,6 +544,8 @@ export class PalletService {
       const shipmentSummary = await queryRunner.manager
         .createQueryBuilder(PalletMaster, 'pallet')
         .where('pallet.shipmentId = :shipmentId', { shipmentId })
+        .andWhere(company ? 'pallet.company = :company' : '1=1', { company })
+        .andWhere(plant ? 'pallet.plant = :plant' : '1=1', { plant })
         .select('COUNT(*)', 'count')
         .addSelect('SUM(pallet.boxCount)', 'boxCount')
         .addSelect('SUM(pallet.totalQty)', 'totalQty')
@@ -527,7 +553,7 @@ export class PalletService {
 
       await queryRunner.manager.update(
         ShipmentLog,
-        { shipNo: shipmentId },
+        { shipNo: shipmentId, ...this.tenantWhere(company, plant) },
         {
           palletCount: parseInt(shipmentSummary?.count) || 0,
           boxCount: parseInt(shipmentSummary?.boxCount) || 0,
@@ -537,7 +563,7 @@ export class PalletService {
 
       await queryRunner.commitTransaction();
 
-      return this.findById(id);
+      return this.findById(id, company, plant);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;
@@ -551,9 +577,9 @@ export class PalletService {
   /**
    * 출하별 팔레트 목록 조회
    */
-  async findByShipmentId(shipmentId: string) {
+  async findByShipmentId(shipmentId: string, company?: string, plant?: string) {
     return this.palletRepository.find({
-      where: { shipmentId },
+      where: { shipmentId, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'ASC' },
     });
   }
@@ -562,9 +588,9 @@ export class PalletService {
    * 팔레트 바코드(팔레트번호)로 하위 박스 목록 조회
    * 반환: { palletNo, status, boxCount, totalQty, boxes: [...] }
    */
-  async findBoxesByPallet(palletBarcode: string) {
+  async findBoxesByPallet(palletBarcode: string, company?: string, plant?: string) {
     const pallet = await this.palletRepository.findOne({
-      where: { palletNo: palletBarcode },
+      where: { palletNo: palletBarcode, ...this.tenantWhere(company, plant) },
     });
 
     if (!pallet) {
@@ -572,7 +598,7 @@ export class PalletService {
     }
 
     const boxes = await this.boxRepository.find({
-      where: { palletNo: palletBarcode },
+      where: { palletNo: palletBarcode, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'ASC' },
     });
 
@@ -598,11 +624,12 @@ export class PalletService {
   /**
    * 미할당 팔레트 목록 조회 (출하에 할당되지 않은 CLOSED 상태)
    */
-  async findUnassignedPallets() {
+  async findUnassignedPallets(company?: string, plant?: string) {
     return this.palletRepository.find({
       where: {
         shipmentId: IsNull(),
         status: 'CLOSED',
+        ...this.tenantWhere(company, plant),
       },
       order: { createdAt: 'ASC' },
     });
@@ -611,8 +638,8 @@ export class PalletService {
   /**
    * 팔레트 요약 정보 조회
    */
-  async getPalletSummary(id: string) {
-    const pallet = await this.findById(id);
+  async getPalletSummary(id: string, company?: string, plant?: string) {
+    const pallet = await this.findById(id, company, plant);
 
     // 품목별 수량 집계 - 박스 기준
     const partSummary = await this.boxRepository
@@ -621,6 +648,8 @@ export class PalletService {
       .addSelect('COUNT(*)', 'boxCount')
       .addSelect('SUM(box.qty)', 'qty')
       .where('box.palletNo = :palletNo', { palletNo: id })
+      .andWhere(company ? 'box.company = :company' : '1=1', { company })
+      .andWhere(plant ? 'box.plant = :plant' : '1=1', { plant })
       .groupBy('box.itemCode')
       .getRawMany();
 

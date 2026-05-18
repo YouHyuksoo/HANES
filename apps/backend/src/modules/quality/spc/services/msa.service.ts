@@ -44,6 +44,13 @@ export class MsaService {
     private readonly calRepo: Repository<CalibrationLog>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   // =============================================
   // 교정번호 자동채번
   // =============================================
@@ -111,8 +118,10 @@ export class MsaService {
   /**
    * 계측기 단건 조회
    */
-  async findGaugeById(gaugeCode: string) {
-    const item = await this.gaugeRepo.findOne({ where: { gaugeCode } });
+  async findGaugeById(gaugeCode: string, company?: string, plant?: string) {
+    const item = await this.gaugeRepo.findOne({
+      where: { gaugeCode, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('계측기를 찾을 수 없습니다.');
     }
@@ -152,8 +161,14 @@ export class MsaService {
   /**
    * 계측기 수정
    */
-  async updateGauge(gaugeCode: string, dto: UpdateGaugeDto, userId: string) {
-    const item = await this.findGaugeById(gaugeCode);
+  async updateGauge(
+    gaugeCode: string,
+    dto: UpdateGaugeDto,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const item = await this.findGaugeById(gaugeCode, company, plant);
     Object.assign(item, dto, { updatedBy: userId });
     return this.gaugeRepo.save(item);
   }
@@ -161,11 +176,11 @@ export class MsaService {
   /**
    * 계측기 삭제
    */
-  async deleteGauge(gaugeCode: string) {
-    const item = await this.findGaugeById(gaugeCode);
+  async deleteGauge(gaugeCode: string, company?: string, plant?: string) {
+    const item = await this.findGaugeById(gaugeCode, company, plant);
 
     const calCount = await this.calRepo.count({
-      where: { gaugeCode: item.gaugeCode },
+      where: { gaugeCode: item.gaugeCode, ...this.tenantWhere(company, plant) },
     });
     if (calCount > 0) {
       throw new BadRequestException(
@@ -237,7 +252,7 @@ export class MsaService {
   ) {
     // 계측기 존재 여부 확인
     const gauge = await this.gaugeRepo.findOne({
-      where: { gaugeCode: dto.gaugeId },
+      where: { gaugeCode: dto.gaugeId, ...this.tenantWhere(company, plant) },
     });
     if (!gauge) {
       throw new NotFoundException('계측기를 찾을 수 없습니다.');
@@ -262,6 +277,8 @@ export class MsaService {
     }
     if (dto.result === 'PASS' || dto.result === 'CONDITIONAL') {
       gauge.status = 'ACTIVE';
+    } else if (dto.result === 'FAIL') {
+      gauge.status = 'EXPIRED';
     }
     gauge.updatedBy = userId;
     await this.gaugeRepo.save(gauge);
@@ -273,12 +290,48 @@ export class MsaService {
   /**
    * 교정 이력 삭제
    */
-  async deleteCalibration(calibrationNo: string) {
-    const item = await this.calRepo.findOne({ where: { calibrationNo } });
+  async deleteCalibration(
+    calibrationNo: string,
+    company?: string,
+    plant?: string,
+    userId: string = 'system',
+  ) {
+    const item = await this.calRepo.findOne({
+      where: { calibrationNo, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('교정 이력을 찾을 수 없습니다.');
     }
     await this.calRepo.remove(item);
+
+    const gauge = await this.gaugeRepo.findOne({
+      where: { gaugeCode: item.gaugeCode, ...this.tenantWhere(company, plant) },
+    });
+    if (!gauge) return;
+
+    const latest = await this.calRepo.findOne({
+      where: { gaugeCode: item.gaugeCode, ...this.tenantWhere(company, plant) },
+      order: { calibrationDate: 'DESC', createdAt: 'DESC' },
+    });
+
+    if (latest) {
+      gauge.lastCalibrationDate = latest.calibrationDate;
+      gauge.nextCalibrationDate = latest.nextDueDate ?? null;
+      gauge.status =
+        latest.result === 'FAIL'
+          ? 'EXPIRED'
+          : latest.result === 'PASS' || latest.result === 'CONDITIONAL'
+            ? 'ACTIVE'
+            : gauge.status;
+    } else {
+      gauge.lastCalibrationDate = null;
+      gauge.nextCalibrationDate = null;
+      if (gauge.status === 'ACTIVE' || gauge.status === 'EXPIRED') {
+        gauge.status = 'EXPIRED';
+      }
+    }
+    gauge.updatedBy = userId;
+    await this.gaugeRepo.save(gauge);
   }
 
   // =============================================

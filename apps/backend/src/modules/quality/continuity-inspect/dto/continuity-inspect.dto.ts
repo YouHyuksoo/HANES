@@ -65,6 +65,12 @@ export class ContinuityInspectDto {
   @IsString()
   @MaxLength(30)
   fgBarcode?: string;
+
+  @ApiPropertyOptional({ description: '?곌껐???앹궛?ㅼ쟻 踰덊샇' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  prodResultNo?: string;
 }
 
 /**

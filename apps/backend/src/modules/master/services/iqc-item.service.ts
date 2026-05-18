@@ -69,8 +69,12 @@ export class IqcItemService {
     return item;
   }
 
-  async create(dto: CreateIqcItemDto) {
-    const entity = this.iqcItemRepository.create(dto);
+  async create(dto: CreateIqcItemDto, company?: string, plant?: string) {
+    const entity = this.iqcItemRepository.create({
+      ...dto,
+      company: company || null,
+      plant: plant || null,
+    });
     const saved = await this.iqcItemRepository.save(entity);
     return saved;
   }

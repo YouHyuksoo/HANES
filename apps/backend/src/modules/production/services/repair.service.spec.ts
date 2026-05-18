@@ -10,7 +10,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { RepairService } from './repair.service';
 import { RepairOrder } from '../../../entities/repair-order.entity';
@@ -254,7 +254,11 @@ describe('RepairService', () => {
       // Assert
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         RepairOrder,
-        expect.anything(),
+        expect.objectContaining({
+          seq: 1,
+          company: 'C',
+          plant: 'P',
+        }),
         expect.objectContaining({ status: 'COMPLETED' }),
       );
     });
@@ -277,7 +281,7 @@ describe('RepairService', () => {
     it('should delete repair order and used parts', async () => {
       // Arrange
       mockQueryRunner.manager.findOne.mockResolvedValue({
-        repairDate: new Date('2026-03-18'), seq: 1,
+        repairDate: new Date('2026-03-18'), seq: 1, status: 'RECEIVED',
       } as any);
       mockQueryRunner.manager.delete.mockResolvedValue({ affected: 1 } as any);
 
@@ -286,7 +290,36 @@ describe('RepairService', () => {
 
       // Assert
       expect(mockQueryRunner.manager.delete).toHaveBeenCalledTimes(2); // parts + order
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
+        RepairUsedPart,
+        expect.objectContaining({
+          seq: 1,
+          company: 'C',
+          plant: 'P',
+        }),
+      );
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
+        RepairOrder,
+        expect.objectContaining({
+          seq: 1,
+          company: 'C',
+          plant: 'P',
+        }),
+      );
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('should block delete when repair already progressed', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        repairDate: new Date('2026-03-18'),
+        seq: 1,
+        status: 'IN_REPAIR',
+      } as any);
+
+      await expect(
+        target.remove('2026-03-18', 1, 'C', 'P'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.delete).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when not found', async () => {
@@ -302,7 +335,7 @@ describe('RepairService', () => {
     it('should rollback on error', async () => {
       // Arrange
       mockQueryRunner.manager.findOne.mockResolvedValue({
-        repairDate: new Date('2026-03-18'), seq: 1,
+        repairDate: new Date('2026-03-18'), seq: 1, status: 'RECEIVED',
       } as any);
       mockQueryRunner.manager.delete.mockRejectedValue(new Error('FK violation'));
 

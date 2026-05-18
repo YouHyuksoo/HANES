@@ -17,7 +17,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('ReceiptCancelService', () => {
@@ -28,7 +28,7 @@ describe('ReceiptCancelService', () => {
   let mockPoItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
-  let mockNumRuleService: DeepMocked<NumRuleService>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
@@ -37,7 +37,7 @@ describe('ReceiptCancelService', () => {
     mockPoItemRepo = createMock<Repository<PurchaseOrderItem>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
-    mockNumRuleService = createMock<NumRuleService>();
+    mockNumbering = createMock<NumberingService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockQueryRunner.connect.mockResolvedValue(undefined);
@@ -54,7 +54,7 @@ describe('ReceiptCancelService', () => {
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPoItemRepo },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: NumRuleService, useValue: mockNumRuleService },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -146,7 +146,7 @@ describe('ReceiptCancelService', () => {
         .mockResolvedValueOnce(originalTx) // 원본 트랜잭션
         .mockResolvedValueOnce(stock); // 재고
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockNumRuleService.nextNumberInTx.mockResolvedValue('CANCEL-001');
+      mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
       mockQueryRunner.manager.create.mockReturnValue(cancelTx);
       mockQueryRunner.manager.save.mockResolvedValue(cancelTx);
 
@@ -154,6 +154,52 @@ describe('ReceiptCancelService', () => {
 
       expect(result.cancelled).toBe(true);
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('뒤 공정이 진행된 LOT는 입고취소를 차단한다', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+        transNo: 'TX-010',
+        cancelRefId: null,
+        transType: 'RECEIPT',
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        qty: 10,
+        toWarehouseId: 'WH-01',
+      } as StockTransaction);
+
+      const matIssueRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          issueNo: 'ISS-001',
+          seq: 1,
+          orderNo: 'JO-001',
+          prodResultNo: 'PR-001',
+          status: 'DONE',
+        }),
+      };
+      const prodResultRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          resultNo: 'PR-001',
+          status: 'DONE',
+          prdUid: 'FG-001',
+        }),
+      };
+      const fgLabelRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          fgBarcode: 'FG-001',
+          status: 'PACKED',
+        }),
+      };
+
+      mockDataSource.getRepository.mockImplementation((entity: any) => {
+        if (entity?.name === 'MatIssue') return matIssueRepo as any;
+        if (entity?.name === 'ProdResult') return prodResultRepo as any;
+        if (entity?.name === 'FgLabel') return fgLabelRepo as any;
+        return createMock<Repository<any>>() as any;
+      });
+
+      await expect(
+        target.cancel({ transactionId: 'TX-010', reason: '취소' } as any),
+      ).rejects.toThrow('자재출고 순서로 역처리 후 다시 입고취소를 진행해 주세요.');
     });
   });
 });

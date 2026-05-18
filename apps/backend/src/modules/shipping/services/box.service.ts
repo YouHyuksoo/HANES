@@ -1,20 +1,3 @@
-/**
- * @file src/modules/shipping/services/box.service.ts
- * @description 박스 관리 비즈니스 로직 서비스
- *
- * 초보자 가이드:
- * 1. **CRUD 메서드**: 생성, 조회, 수정, 삭제 로직 구현
- * 2. **시리얼 관리**: addSerial로 시리얼 번호 추가
- * 3. **상태 관리**: closeBox로 박스 닫기, 팔레트 할당
- * 4. **TypeORM 사용**: Repository 패턴을 통해 DB 접근
- *
- * 실제 DB 스키마 (box_masters 테이블):
- * - boxNo가 유니크 키
- * - status: OPEN, CLOSED, SHIPPED
- * - itemCode로 PartMaster와 연결
- * - palletNo로 PalletMaster와 연결 (nullable)
- */
-
 import {
   Injectable,
   NotFoundException,
@@ -23,13 +6,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, DataSource } from 'typeorm';
-import { In } from 'typeorm';
+import { DataSource, ILike, IsNull, In, Repository } from 'typeorm';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
+import { OqcRequest } from '../../../entities/oqc-request.entity';
+import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import {
   CreateBoxDto,
   UpdateBoxDto,
@@ -54,25 +38,43 @@ export class BoxService {
     private readonly lotRepository: Repository<MatLot>,
     @InjectRepository(FgLabel)
     private readonly fgLabelRepository: Repository<FgLabel>,
+    @InjectRepository(OqcRequest)
+    private readonly oqcRequestRepository: Repository<OqcRequest>,
+    @InjectRepository(OqcRequestBox)
+    private readonly oqcRequestBoxRepository: Repository<OqcRequestBox>,
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * 박스 목록 조회
-   */
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
+  private async nextOqcRequestNo() {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const prefix = `OQC-${dateStr}`;
+
+    const lastReq = await this.oqcRequestRepository
+      .createQueryBuilder('oqc')
+      .where('oqc.requestNo LIKE :prefix', { prefix: `${prefix}%` })
+      .orderBy('oqc.requestNo', 'DESC')
+      .getOne();
+
+    const seq = lastReq
+      ? parseInt(lastReq.requestNo.split('-').pop() || '0', 10) + 1
+      : 1;
+
+    return `${prefix}-${String(seq).padStart(3, '0')}`;
+  }
+
   async findAll(query: BoxQueryDto, company?: string, plant?: string) {
-    const {
-      page = 1,
-      limit = 10,
-      boxNo,
-      itemCode,
-      palletId: palletNo,
-      status,
-      unassigned,
-    } = query;
+    const { page = 1, limit = 10, boxNo, itemCode, palletId: palletNo, status, unassigned } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       ...(company && { company }),
       ...(plant && { plant }),
       ...(boxNo && { boxNo: ILike(`%${boxNo}%`) }),
@@ -95,37 +97,19 @@ export class BoxService {
     return { data, total, page, limit };
   }
 
-  /**
-   * 박스 단건 조회 (ID)
-   */
-  async findById(boxNo: string) {
+  async findById(boxNo: string, company?: string, plant?: string) {
     const box = await this.boxRepository.findOne({
-      where: { boxNo },
+      where: { boxNo, ...this.tenantWhere(company, plant) },
     });
-
     if (!box) {
       throw new NotFoundException(`박스를 찾을 수 없습니다: ${boxNo}`);
     }
-
     return box;
   }
 
-  /**
-   * 박스 단건 조회 (박스번호)
-   */
-  async findByBoxNo(boxNo: string) {
-    const box = await this.boxRepository.findOne({
-      where: { boxNo },
-    });
-
-    if (!box) {
-      throw new NotFoundException(`박스를 찾을 수 없습니다: ${boxNo}`);
-    }
-
-    // 품목 정보 조인하여 반환
-    const part = await this.partRepository.findOne({
-      where: { itemCode: box.itemCode },
-    });
+  async findByBoxNo(boxNo: string, company?: string, plant?: string) {
+    const box = await this.findById(boxNo, company, plant);
+    const part = await this.partRepository.findOne({ where: { itemCode: box.itemCode } });
 
     return {
       ...box,
@@ -140,24 +124,17 @@ export class BoxService {
     };
   }
 
-  /**
-   * 박스 생성
-   */
   async create(dto: CreateBoxDto, company?: string, plant?: string) {
-    // 중복 체크
     const existing = await this.boxRepository.findOne({
-      where: { boxNo: dto.boxNo },
+      where: { boxNo: dto.boxNo, ...this.tenantWhere(company, plant) },
     });
-
     if (existing) {
       throw new ConflictException(`이미 존재하는 박스번호입니다: ${dto.boxNo}`);
     }
 
-    // 품목 존재 확인
     const part = await this.partRepository.findOne({
       where: { itemCode: dto.itemCode },
     });
-
     if (!part) {
       throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
     }
@@ -168,6 +145,7 @@ export class BoxService {
       qty: dto.qty,
       serialList: dto.serialList ? JSON.stringify(dto.serialList) : null,
       status: 'OPEN',
+      oqcStatus: null,
       company: company || null,
       plant: plant || null,
     });
@@ -175,375 +153,408 @@ export class BoxService {
     return this.boxRepository.save(box);
   }
 
-  /**
-   * 박스 수정
-   */
-  async update(id: string, dto: UpdateBoxDto) {
-    const box = await this.findById(id);
-
-    // SHIPPED 상태에서는 수정 불가
+  async update(id: string, dto: UpdateBoxDto, company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
     if (box.status === 'SHIPPED') {
       throw new BadRequestException('출하된 박스는 수정할 수 없습니다.');
     }
+    if (dto.status !== undefined) {
+      throw new BadRequestException(
+        `박스 상태(${dto.status})는 직접 변경할 수 없습니다. 포장/재오픈/적재/출하 전용 API를 사용해 주세요.`,
+      );
+    }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (dto.qty !== undefined) updateData.qty = dto.qty;
     if (dto.serialList !== undefined) updateData.serialList = JSON.stringify(dto.serialList);
     if (dto.palletId !== undefined) updateData.palletNo = dto.palletId;
-    if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.boxRepository.update({ boxNo: id }, updateData);
-
-    return this.findById(id);
+    await this.boxRepository.update({ boxNo: id, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findById(id, company, plant);
   }
 
-  /**
-   * 박스 삭제
-   */
-  async delete(id: string) {
-    const box = await this.findById(id);
+  async delete(id: string, company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
 
-    // SHIPPED 상태에서는 삭제 불가
     if (box.status === 'SHIPPED') {
       throw new BadRequestException('출하된 박스는 삭제할 수 없습니다.');
     }
-
-    // 팔레트에 할당되어 있으면 삭제 불가
+    if (box.status !== 'OPEN') {
+      throw new BadRequestException(
+        '포장된 박스는 직접 삭제할 수 없습니다. 박스 재오픈으로 먼저 정리해 주세요.',
+      );
+    }
     if (box.palletNo) {
-      throw new BadRequestException('팔레트에 할당된 박스는 삭제할 수 없습니다. 먼저 팔레트에서 제거해주세요.');
+      throw new BadRequestException('팔레트에 할당된 박스는 삭제할 수 없습니다.');
+    }
+    const serials = box.serialList ? JSON.parse(box.serialList) : [];
+    if (serials.length > 0 || box.qty > 0) {
+      throw new BadRequestException(
+        '시리얼이 담긴 박스는 직접 삭제할 수 없습니다. 시리얼 제거 후 다시 삭제해 주세요.',
+      );
+    }
+    if (box.oqcStatus) {
+      throw new BadRequestException(
+        'OQC 이력이 있는 박스는 직접 삭제할 수 없습니다. 박스/OQC를 먼저 정리해 주세요.',
+      );
     }
 
-    await this.boxRepository.delete({ boxNo: id });
-
+    await this.boxRepository.delete({ boxNo: id, ...this.tenantWhere(company, plant) });
     return { id, deleted: true };
   }
 
-  // ===== 시리얼 관리 =====
-
-  /**
-   * 박스에 시리얼 추가
-   */
-  async addSerial(id: string, dto: AddSerialToBoxDto) {
-    const box = await this.findById(id);
-
-    // OPEN 상태에서만 시리얼 추가 가능
+  async addSerial(id: string, dto: AddSerialToBoxDto, company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
     if (box.status !== 'OPEN') {
-      throw new BadRequestException(`현재 상태(${box.status})에서는 시리얼을 추가할 수 없습니다. OPEN 상태여야 합니다.`);
+      throw new BadRequestException(`현재 상태(${box.status})에서는 시리얼을 추가할 수 없습니다.`);
     }
 
-    // 기존 시리얼 목록
     const existingSerials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
-
-    // 중복 시리얼 체크
-    const duplicates = dto.serials.filter(s => existingSerials.includes(s));
+    const duplicates = dto.serials.filter((serial) => existingSerials.includes(serial));
     if (duplicates.length > 0) {
       throw new ConflictException(`이미 존재하는 시리얼입니다: ${duplicates.join(', ')}`);
     }
 
-    // 혼입방지: 시리얼(LOT)의 품목이 박스의 품목과 일치하는지 검증 — IN 배치로 N+1 방지
     const lots = dto.serials.length > 0
       ? await this.lotRepository.find({ where: { matUid: In(dto.serials) } })
       : [];
-    const lotMap = new Map(lots.map((l) => [l.matUid, l] as const));
+    const lotMap = new Map(lots.map((lot) => [lot.matUid, lot] as const));
     for (const serial of dto.serials) {
       const lot = lotMap.get(serial);
       if (lot && lot.itemCode !== box.itemCode) {
-        throw new BadRequestException(
-          `혼입방지: 시리얼 "${serial}"의 품목이 박스 품목과 다릅니다.`,
-        );
+        throw new BadRequestException(`시리얼 ${serial}은 박스 품목과 일치하지 않습니다.`);
       }
     }
 
-    // 과포장방지: 품목의 포장단위 초과 검증
     const part = await this.partRepository.findOne({ where: { itemCode: box.itemCode } });
+    const fgLabels = dto.serials.length > 0
+      ? await this.fgLabelRepository.find({ where: { fgBarcode: In(dto.serials) } })
+      : [];
+    const fgLabelMap = new Map(fgLabels.map((label) => [label.fgBarcode, label] as const));
+    const invalidLabels = dto.serials.filter((serial) => {
+      const label = fgLabelMap.get(serial);
+      if (!label) return true;
+      if (label.itemCode !== box.itemCode) return true;
+      if (label.inspectPassYn !== 'Y') return true;
+      return !['ISSUED', 'VISUAL_PASS'].includes(label.status);
+    });
+    if (invalidLabels.length > 0) {
+      throw new BadRequestException(`검사 합격 FG만 포장할 수 있습니다: ${invalidLabels.join(', ')}`);
+    }
+
     const packUnit = part?.packUnit ? parseInt(part.packUnit, 10) : 0;
     if (packUnit > 0 && existingSerials.length + dto.serials.length > packUnit) {
-      throw new BadRequestException(
-        `과포장방지: 포장단위(${packUnit}개)를 초과합니다. 현재 ${existingSerials.length}개 + 추가 ${dto.serials.length}개`,
-      );
+      throw new BadRequestException(`포장단위(${packUnit})를 초과했습니다.`);
     }
 
-    // 새로운 시리얼 목록
     const newSerialList = [...existingSerials, ...dto.serials];
-    const newQty = newSerialList.length;
-
     await this.boxRepository.update(
-      { boxNo: id },
+      { boxNo: id, ...this.tenantWhere(company, plant) },
       {
         serialList: JSON.stringify(newSerialList),
-        qty: newQty,
-      }
+        qty: newSerialList.length,
+      },
     );
 
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
-  /**
-   * 박스에서 시리얼 제거
-   */
-  async removeSerial(id: string, serials: string[]) {
-    const box = await this.findById(id);
-
-    // OPEN 상태에서만 시리얼 제거 가능
+  async removeSerial(id: string, serials: string[], company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
     if (box.status !== 'OPEN') {
-      throw new BadRequestException(`현재 상태(${box.status})에서는 시리얼을 제거할 수 없습니다. OPEN 상태여야 합니다.`);
+      throw new BadRequestException(`현재 상태(${box.status})에서는 시리얼을 제거할 수 없습니다.`);
     }
 
-    // 기존 시리얼 목록
     const existingSerials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
-
-    // 존재하지 않는 시리얼 체크
-    const notFound = serials.filter(s => !existingSerials.includes(s));
+    const notFound = serials.filter((serial) => !existingSerials.includes(serial));
     if (notFound.length > 0) {
       throw new NotFoundException(`존재하지 않는 시리얼입니다: ${notFound.join(', ')}`);
     }
 
-    // 새로운 시리얼 목록
-    const newSerialList = existingSerials.filter(s => !serials.includes(s));
-    const newQty = newSerialList.length;
-
+    const newSerialList = existingSerials.filter((serial) => !serials.includes(serial));
     await this.boxRepository.update(
-      { boxNo: id },
+      { boxNo: id, ...this.tenantWhere(company, plant) },
       {
         serialList: JSON.stringify(newSerialList),
-        qty: newQty,
-      }
+        qty: newSerialList.length,
+      },
     );
 
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
-  // ===== 상태 관리 =====
-
-  /**
-   * 박스 닫기 (OPEN -> CLOSED)
-   */
-  async closeBox(id: string) {
-    const box = await this.findById(id);
+  async closeBox(id: string, company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
 
     if (box.status !== 'OPEN') {
-      throw new BadRequestException(`현재 상태(${box.status})에서는 박스를 닫을 수 없습니다. OPEN 상태여야 합니다.`);
+      throw new BadRequestException(`현재 상태(${box.status})에서는 박스를 닫을 수 없습니다.`);
     }
-
-    // 빈 박스는 닫을 수 없음
     if (box.qty <= 0) {
       throw new BadRequestException('빈 박스는 닫을 수 없습니다.');
     }
 
-    await this.boxRepository.update(
-      { boxNo: id },
-      {
-        status: 'CLOSED',
-        closeAt: new Date(),
-      }
-    );
-
-    // FG_LABEL 상태 → PACKED 일괄 업데이트
-    if (box.serialList) {
-      try {
-        const fgBarcodes: string[] = JSON.parse(box.serialList);
-        if (fgBarcodes.length > 0) {
-          const batchSize = 500;
-          for (let i = 0; i < fgBarcodes.length; i += batchSize) {
-            const batch = fgBarcodes.slice(i, i + batchSize);
-            await this.fgLabelRepository.update(
-              { fgBarcode: In(batch) },
-              { status: 'PACKED' },
-            );
-          }
-        }
-      } catch {
-        this.logger.warn(`박스 ${id} serialList 파싱 실패 — FG_LABEL 상태 업데이트 생략`);
-      }
-    }
-
-    return this.findById(id);
-  }
-
-  /**
-   * 박스 다시 열기 (CLOSED -> OPEN)
-   */
-  async reopenBox(id: string) {
-    const box = await this.findById(id);
-
-    if (box.status !== 'CLOSED') {
-      throw new BadRequestException(`현재 상태(${box.status})에서는 박스를 다시 열 수 없습니다. CLOSED 상태여야 합니다.`);
-    }
-
-    // 팔레트에 할당되어 있으면 다시 열 수 없음
-    if (box.palletNo) {
-      throw new BadRequestException('팔레트에 할당된 박스는 다시 열 수 없습니다.');
-    }
-
-    await this.boxRepository.update(
-      { boxNo: id },
-      {
-        status: 'OPEN',
-        closeAt: null,
-      }
-    );
-
-    // FG_LABEL 상태 → VISUAL_PASS 복원 (PACKED 상태인 것만)
-    if (box.serialList) {
-      try {
-        const fgBarcodes: string[] = JSON.parse(box.serialList);
-        if (fgBarcodes.length > 0) {
-          const batchSize = 500;
-          for (let i = 0; i < fgBarcodes.length; i += batchSize) {
-            const batch = fgBarcodes.slice(i, i + batchSize);
-            await this.fgLabelRepository.update(
-              { fgBarcode: In(batch), status: 'PACKED' },
-              { status: 'VISUAL_PASS' },
-            );
-          }
-        }
-      } catch {
-        this.logger.warn(`박스 ${id} serialList 파싱 실패 — FG_LABEL 상태 복원 생략`);
-      }
-    }
-
-    return this.findById(id);
-  }
-
-  // ===== 팔레트 할당 =====
-
-  /**
-   * 박스를 팔레트에 할당
-   */
-  async assignToPallet(id: string, dto: AssignBoxToPalletDto) {
-    const box = await this.findById(id);
-
-    // CLOSED 상태에서만 팔레트 할당 가능
-    if (box.status !== 'CLOSED') {
-      throw new BadRequestException(`현재 상태(${box.status})에서는 팔레트에 할당할 수 없습니다. CLOSED 상태여야 합니다.`);
-    }
-
-    // 이미 다른 팔레트에 할당되어 있는 경우
-    if (box.palletNo && box.palletNo !== dto.palletId) {
-      throw new BadRequestException('이미 다른 팔레트에 할당된 박스입니다.');
-    }
-
-    // 팔레트 존재 및 상태 확인
-    const pallet = await this.palletRepository.findOne({
-      where: { palletNo: dto.palletId },
-    });
-
-    if (!pallet) {
-      throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${dto.palletId}`);
-    }
-
-    if (pallet.status !== 'OPEN') {
-      throw new BadRequestException(`팔레트 상태(${pallet.status})가 OPEN이 아닙니다. OPEN 상태 팔레트에만 박스를 할당할 수 있습니다.`);
-    }
-
-    // 트랜잭션으로 박스 할당 및 팔레트 집계 업데이트
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 박스 업데이트
-      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletNo: dto.palletId });
+      await queryRunner.manager.update(
+        BoxMaster,
+        { boxNo: id, ...this.tenantWhere(company, plant) },
+        { status: 'CLOSED', closeAt: new Date(), oqcStatus: 'PENDING' },
+      );
 
-      // 팔레트 집계 업데이트
-      const palletSummary = await queryRunner.manager
+      if (box.serialList) {
+        try {
+          const fgBarcodes: string[] = JSON.parse(box.serialList);
+          if (fgBarcodes.length > 0) {
+            const batchSize = 500;
+            for (let i = 0; i < fgBarcodes.length; i += batchSize) {
+              const batch = fgBarcodes.slice(i, i + batchSize);
+              await queryRunner.manager.update(
+                FgLabel,
+                { fgBarcode: In(batch), ...this.tenantWhere(company, plant) },
+                { status: 'PACKED' },
+              );
+            }
+          }
+        } catch {
+          this.logger.warn(`박스 ${id} serialList 파싱 실패 - FG_LABEL 상태 업데이트 생략`);
+        }
+      }
+
+      const requestNo = await this.nextOqcRequestNo();
+      await queryRunner.manager.save(
+        OqcRequest,
+        queryRunner.manager.create(OqcRequest, {
+          requestNo,
+          itemCode: box.itemCode,
+          customer: null,
+          requestDate: new Date(),
+          totalBoxCount: 1,
+          totalQty: box.qty,
+          sampleSize: null,
+          status: 'PENDING',
+          company: box.company,
+          plant: box.plant,
+          remark: `AUTO_CREATED_FROM_BOX:${box.boxNo}`,
+        }),
+      );
+      await queryRunner.manager.save(
+        OqcRequestBox,
+        queryRunner.manager.create(OqcRequestBox, {
+          requestNo,
+          boxNo: box.boxNo,
+          qty: box.qty,
+          isSample: 'N',
+          company: box.company,
+          plant: box.plant,
+        }),
+      );
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    return this.findById(id, company, plant);
+  }
+
+  async reopenBox(id: string, company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
+
+    if (box.status !== 'CLOSED') {
+      throw new BadRequestException(`현재 상태(${box.status})에서는 박스를 다시 열 수 없습니다.`);
+    }
+    if (box.palletNo) {
+      throw new BadRequestException('팔레트에 할당된 박스는 다시 열 수 없습니다.');
+    }
+    if (box.oqcStatus && box.oqcStatus !== 'PENDING') {
+      throw new BadRequestException(
+        `박스 ${box.boxNo} 는 OQC(${box.oqcStatus})가 이미 처리되어 다시 열 수 없습니다. ` +
+          `OQC 단계부터 먼저 정리해 주세요.`,
+      );
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.update(
+        BoxMaster,
+        { boxNo: id, ...this.tenantWhere(company, plant) },
+        { status: 'OPEN', closeAt: null, oqcStatus: null },
+      );
+
+      if (box.serialList) {
+        try {
+          const fgBarcodes: string[] = JSON.parse(box.serialList);
+          if (fgBarcodes.length > 0) {
+            const batchSize = 500;
+            for (let i = 0; i < fgBarcodes.length; i += batchSize) {
+              const batch = fgBarcodes.slice(i, i + batchSize);
+              await queryRunner.manager.update(
+                FgLabel,
+                { fgBarcode: In(batch), status: 'PACKED', ...this.tenantWhere(company, plant) },
+                { status: 'VISUAL_PASS' },
+              );
+            }
+          }
+        } catch {
+          this.logger.warn(`박스 ${id} serialList 파싱 실패 - FG_LABEL 상태 복원 생략`);
+        }
+      }
+
+      const requestBoxes = await queryRunner.manager.find(OqcRequestBox, {
+        where: { boxNo: box.boxNo, ...this.tenantWhere(company, plant) },
+      });
+      const requestNos = requestBoxes.map((requestBox) => requestBox.requestNo);
+      if (requestNos.length > 0) {
+        const requests = await queryRunner.manager.find(OqcRequest, {
+          where: { requestNo: In(requestNos), status: 'PENDING', ...this.tenantWhere(company, plant) },
+        });
+        const autoRequestNos = requests
+          .filter((request) => request.remark === `AUTO_CREATED_FROM_BOX:${box.boxNo}`)
+          .map((request) => request.requestNo);
+
+        if (autoRequestNos.length > 0) {
+          await queryRunner.manager.delete(OqcRequestBox, { requestNo: In(autoRequestNos), ...this.tenantWhere(company, plant) });
+          await queryRunner.manager.delete(OqcRequest, { requestNo: In(autoRequestNos), ...this.tenantWhere(company, plant) });
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+
+    return this.findById(id, company, plant);
+  }
+
+  async assignToPallet(id: string, dto: AssignBoxToPalletDto, company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
+    if (box.status !== 'CLOSED') {
+      throw new BadRequestException(`현재 상태(${box.status})에서는 팔레트에 할당할 수 없습니다.`);
+    }
+    if (box.palletNo && box.palletNo !== dto.palletId) {
+      throw new BadRequestException('이미 다른 팔레트에 할당된 박스입니다.');
+    }
+
+    const pallet = await this.palletRepository.findOne({
+      where: { palletNo: dto.palletId, ...this.tenantWhere(company, plant) },
+    });
+    if (!pallet) {
+      throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${dto.palletId}`);
+    }
+    if (pallet.status !== 'OPEN') {
+      throw new BadRequestException(`팔레트 상태(${pallet.status})가 OPEN이 아닙니다.`);
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      await queryRunner.manager.update(
+        BoxMaster,
+        { boxNo: id, ...this.tenantWhere(company, plant) },
+        { palletNo: dto.palletId },
+      );
+
+      const summaryQb = queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
-        .where('box.palletNo = :palletNo', { palletNo: dto.palletId })
+        .where('box.palletNo = :palletNo', { palletNo: dto.palletId });
+      if (company) summaryQb.andWhere('box.company = :company', { company });
+      if (plant) summaryQb.andWhere('box.plant = :plant', { plant });
+      const palletSummary = await summaryQb
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
 
-      await queryRunner.manager.update(PalletMaster, { palletNo: dto.palletId }, {
+      await queryRunner.manager.update(PalletMaster, { palletNo: dto.palletId, ...this.tenantWhere(company, plant) }, {
         boxCount: parseInt(palletSummary.count) || 0,
         totalQty: parseInt(palletSummary.totalQty) || 0,
       });
 
       await queryRunner.commitTransaction();
-
-      return this.findById(id);
-    } catch (err) {
+      return this.findById(id, company, plant);
+    } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw err;
+      throw error;
     } finally {
       await queryRunner.release();
     }
   }
 
-  /**
-   * 박스를 팔레트에서 제거
-   */
-  async removeFromPallet(id: string) {
-    const box = await this.findById(id);
-
+  async removeFromPallet(id: string, company?: string, plant?: string) {
+    const box = await this.findById(id, company, plant);
     if (!box.palletNo) {
       throw new BadRequestException('팔레트에 할당되지 않은 박스입니다.');
     }
 
-    // 팔레트가 OPEN 상태일 때만 제거 가능
     const pallet = await this.palletRepository.findOne({
-      where: { palletNo: box.palletNo },
+      where: { palletNo: box.palletNo, ...this.tenantWhere(company, plant) },
     });
-
     if (!pallet) {
       throw new NotFoundException('팔레트를 찾을 수 없습니다.');
     }
-
     if (pallet.status !== 'OPEN') {
-      throw new BadRequestException(`팔레트 상태(${pallet.status})가 OPEN이 아닙니다. OPEN 상태 팔레트에서만 박스를 제거할 수 있습니다.`);
+      throw new BadRequestException(`팔레트 상태(${pallet.status})가 OPEN이 아닙니다.`);
     }
 
     const palletNo = box.palletNo;
-
-    // 트랜잭션으로 박스 제거 및 팔레트 집계 업데이트
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // 박스 업데이트
-      await queryRunner.manager.update(BoxMaster, { boxNo: id }, { palletNo: null });
+      await queryRunner.manager.update(
+        BoxMaster,
+        { boxNo: id, ...this.tenantWhere(company, plant) },
+        { palletNo: null },
+      );
 
-      // 팔레트 집계 업데이트
-      const palletSummary = await queryRunner.manager
+      const summaryQb = queryRunner.manager
         .createQueryBuilder(BoxMaster, 'box')
-        .where('box.palletNo = :palletNo', { palletNo })
+        .where('box.palletNo = :palletNo', { palletNo });
+      if (company) summaryQb.andWhere('box.company = :company', { company });
+      if (plant) summaryQb.andWhere('box.plant = :plant', { plant });
+      const palletSummary = await summaryQb
         .select('COUNT(*)', 'count')
         .addSelect('SUM(box.qty)', 'totalQty')
         .getRawOne();
 
-      await queryRunner.manager.update(PalletMaster, { palletNo: palletNo }, {
+      await queryRunner.manager.update(PalletMaster, { palletNo, ...this.tenantWhere(company, plant) }, {
         boxCount: parseInt(palletSummary?.count) || 0,
         totalQty: parseInt(palletSummary?.totalQty) || 0,
       });
 
       await queryRunner.commitTransaction();
-
-      return this.findById(id);
-    } catch (err) {
+      return this.findById(id, company, plant);
+    } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw err;
+      throw error;
     } finally {
       await queryRunner.release();
     }
   }
 
-  // ===== 조회 유틸리티 =====
-
-  /**
-   * 팔레트별 박스 목록 조회
-   */
-  async findByPalletId(palletNo: string) {
+  async findByPalletId(palletNo: string, company?: string, plant?: string) {
     return this.boxRepository.find({
-      where: { palletNo },
+      where: { palletNo, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'ASC' },
     });
   }
 
-  /**
-   * 품목별 박스 목록 조회
-   */
   async findByPartId(itemCode: string, status?: BoxStatus) {
-    const where: any = {
+    const where: Record<string, unknown> = {
       itemCode,
       ...(status && { status }),
     };
@@ -554,14 +565,12 @@ export class BoxService {
     });
   }
 
-  /**
-   * 미할당 박스 목록 조회 (팔레트에 할당되지 않은 CLOSED 상태)
-   */
-  async findUnassignedBoxes() {
+  async findUnassignedBoxes(company?: string, plant?: string) {
     return this.boxRepository.find({
       where: {
         palletNo: IsNull(),
         status: 'CLOSED',
+        ...this.tenantWhere(company, plant),
       },
       order: { createdAt: 'ASC' },
     });

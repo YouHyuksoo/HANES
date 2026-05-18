@@ -52,8 +52,8 @@ export class CustomerOrderController {
   @Get(':id')
   @ApiOperation({ summary: '고객발주 상세 조회' })
   @ApiParam({ name: 'id', description: '고객발주 ID' })
-  async findById(@Param('id') id: string) {
-    const data = await this.customerOrderService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customerOrderService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -69,16 +69,16 @@ export class CustomerOrderController {
   @Put(':id')
   @ApiOperation({ summary: '고객발주 수정' })
   @ApiParam({ name: 'id', description: '고객발주 ID' })
-  async update(@Param('id') id: string, @Body() dto: UpdateCustomerOrderDto) {
-    const data = await this.customerOrderService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateCustomerOrderDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customerOrderService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '고객발주가 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '고객발주 삭제' })
   @ApiParam({ name: 'id', description: '고객발주 ID' })
-  async delete(@Param('id') id: string) {
-    await this.customerOrderService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.customerOrderService.delete(id, company, plant);
     return ResponseUtil.success(null, '고객발주가 삭제되었습니다.');
   }
 }

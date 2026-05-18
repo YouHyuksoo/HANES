@@ -1,79 +1,46 @@
-/**
- * @file src/modules/quality/continuity-inspect/controllers/continuity-inspect.controller.ts
- * @description 통전검사 관리 API 컨트롤러
- *
- * 초보자 가이드:
- * 1. 작업지시 조회 → 검사 등록 → FG_BARCODE 자동 발행 흐름
- * 2. 합격(PASS) 시 FG_LABELS 테이블에 바코드 등록
- * 3. 라벨 재인쇄/취소 기능 제공
- *
- * API:
- * - GET  /quality/continuity-inspect/job-orders         — 작업지시 목록
- * - GET  /quality/continuity-inspect/fg-labels/:orderNo  — 작업지시별 FG 라벨 목록
- * - POST /quality/continuity-inspect/inspect             — 검사 결과 등록 + 바코드 발행
- * - POST /quality/continuity-inspect/auto-inspect       — 장비 자동검사 결과 등록
- * - GET    /quality/continuity-inspect/protocols           — 장비 프로토콜 목록
- * - POST   /quality/continuity-inspect/protocols           — 프로토콜 등록
- * - PUT    /quality/continuity-inspect/protocols/:id       — 프로토콜 수정
- * - DELETE /quality/continuity-inspect/protocols/:id       — 프로토콜 삭제
- * - GET    /quality/continuity-inspect/stats/:orderNo      — 통계
- * - POST /quality/continuity-inspect/pre-issue            — FG 바코드 사전발행
- * - GET  /quality/continuity-inspect/pending/:orderNo     — PENDING 라벨 목록
- * - POST /quality/continuity-inspect/re-inspect/:fgBarcode — 재검사
- * - POST /quality/continuity-inspect/reprint/:fgBarcode  — 라벨 재인쇄
- * - POST /quality/continuity-inspect/void/:fgBarcode     — 라벨 취소
- */
-
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
+﻿import {
   Body,
-  Param,
-  Query,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
   ApiOperation,
-  ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
+import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
-import { ResponseUtil } from '../../../../common/dto/response.dto';
-import { ContinuityInspectService } from '../services/continuity-inspect.service';
 import {
-  ContinuityInspectDto,
   AutoInspectDto,
-  VoidLabelDto,
+  ContinuityInspectDto,
   PreIssueDto,
   ReInspectDto,
+  VoidLabelDto,
 } from '../dto/continuity-inspect.dto';
+import { ContinuityInspectService } from '../services/continuity-inspect.service';
 
-@ApiTags('품질관리 - 통전검사')
+@ApiTags('Quality - Continuity Inspect')
 @UseGuards(JwtAuthGuard)
 @Controller('quality/continuity-inspect')
 export class ContinuityInspectController {
-  constructor(
-    private readonly continuityInspectService: ContinuityInspectService,
-  ) {}
-
-  // ===== 작업지시 목록 =====
+  constructor(private readonly continuityInspectService: ContinuityInspectService) {}
 
   @Get('job-orders')
-  @ApiOperation({
-    summary: '작업지시 목록 조회',
-    description: '통전검사 가능한 작업지시 목록 (IN_PROGRESS/WAITING)',
-  })
-  @ApiQuery({ name: 'lineCode', required: false, description: '라인 코드' })
-  @ApiQuery({ name: 'planDate', required: false, description: '계획일 (YYYY-MM-DD)' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiOperation({ summary: 'List continuity-inspectable job orders' })
+  @ApiQuery({ name: 'lineCode', required: false })
+  @ApiQuery({ name: 'planDate', required: false })
+  @ApiResponse({ status: 200, description: 'Success' })
   async findJobOrders(
     @Company() company: string,
     @Plant() plant: string,
@@ -89,186 +56,139 @@ export class ContinuityInspectController {
     return ResponseUtil.success(data);
   }
 
-  // ===== FG 라벨 조회 =====
-
   @Get('fg-label/:fgBarcode')
-  @ApiOperation({
-    summary: 'FG 바코드로 라벨 단건 조회',
-    description: '바코드 스캔 시 라벨 정보 반환',
-  })
-  @ApiParam({ name: 'fgBarcode', description: 'FG 바코드' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  @ApiResponse({ status: 404, description: '라벨 없음' })
-  async findFgLabel(@Param('fgBarcode') fgBarcode: string) {
-    const data = await this.continuityInspectService.findFgLabel(fgBarcode);
+  @ApiOperation({ summary: 'Get FG label by barcode' })
+  @ApiParam({ name: 'fgBarcode' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async findFgLabel(
+    @Param('fgBarcode') fgBarcode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.findFgLabel(fgBarcode, company, plant);
     return ResponseUtil.success(data);
   }
 
-  // ===== FG 라벨 상태 변경 =====
-
   @Put('fg-label-status/:fgBarcode')
-  @ApiOperation({
-    summary: 'FG 라벨 상태 변경',
-    description: 'ISSUED → VISUAL_PASS/VISUAL_FAIL → PACKED → SHIPPED',
-  })
-  @ApiParam({ name: 'fgBarcode', description: 'FG 바코드' })
-  @ApiResponse({ status: 200, description: '변경 성공' })
+  @ApiOperation({ summary: 'Update FG label status' })
+  @ApiParam({ name: 'fgBarcode' })
+  @ApiResponse({ status: 200, description: 'Updated' })
   async updateFgLabelStatus(
     @Param('fgBarcode') fgBarcode: string,
     @Body() body: { status: string },
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.continuityInspectService.updateFgLabelStatus(fgBarcode, body.status);
-    return ResponseUtil.success(data, '상태가 변경되었습니다.');
+    const data = await this.continuityInspectService.updateFgLabelStatus(
+      fgBarcode,
+      body.status,
+      company,
+      plant,
+    );
+    return ResponseUtil.success(data, 'Status updated');
   }
 
-  // ===== FG 라벨 목록 =====
-
   @Get('fg-labels/:orderNo')
-  @ApiOperation({
-    summary: '작업지시별 FG 라벨 목록',
-    description: '해당 작업지시에서 발행된 FG_BARCODE 라벨 목록',
-  })
-  @ApiParam({ name: 'orderNo', description: '작업지시 번호' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async findFgLabels(@Param('orderNo') orderNo: string) {
-    const data =
-      await this.continuityInspectService.findFgLabelsByOrder(orderNo);
+  @ApiOperation({ summary: 'List FG labels by order' })
+  @ApiParam({ name: 'orderNo' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async findFgLabels(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.findFgLabelsByOrder(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
-  // ===== 검사 등록 =====
-
   @Post('inspect')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: '통전검사 결과 등록',
-    description: 'PASS 시 FG_BARCODE 자동 채번 + FG_LABELS 등록',
-  })
-  @ApiResponse({ status: 201, description: '검사 등록 성공' })
-  @ApiResponse({ status: 404, description: '작업지시 없음' })
+  @ApiOperation({ summary: 'Register continuity inspection' })
+  @ApiResponse({ status: 201, description: 'Created' })
   async inspect(
     @Body() dto: ContinuityInspectDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const result = await this.continuityInspectService.inspect(
-      dto,
-      company,
-      plant,
-    );
-    const message =
-      dto.passYn === 'Y'
-        ? `합격 — FG_BARCODE: ${result.fgBarcode}`
-        : '불합격 처리되었습니다.';
+    const result = await this.continuityInspectService.inspect(dto, company, plant);
+    const message = dto.passYn === 'Y' ? `PASS: ${result.fgBarcode}` : 'FAIL recorded';
     return ResponseUtil.success(result, message);
   }
 
-  // ===== 자동검사 (장비 연동) =====
-
   @Post('auto-inspect')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: '장비 자동검사 결과 등록',
-    description:
-      '장비 게이트웨이에서 전송한 raw 데이터를 프로토콜 설정에 따라 파싱하여 검사 결과 등록',
-  })
-  @ApiResponse({ status: 201, description: '검사 등록 성공' })
+  @ApiOperation({ summary: 'Register auto continuity inspection' })
+  @ApiResponse({ status: 201, description: 'Created' })
   async autoInspect(
     @Body() dto: AutoInspectDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const result = await this.continuityInspectService.autoInspect(
-      dto,
-      company,
-      plant,
-    );
-    const message = result.fgBarcode
-      ? `합격 — FG_BARCODE: ${result.fgBarcode}`
-      : '불합격 처리되었습니다.';
+    const result = await this.continuityInspectService.autoInspect(dto, company, plant);
+    const message = result.fgBarcode ? `PASS: ${result.fgBarcode}` : 'FAIL recorded';
     return ResponseUtil.success(result, message);
   }
 
-  // ===== 프로토콜 CRUD =====
-
   @Get('protocols')
-  @ApiOperation({ summary: '장비 프로토콜 목록 조회' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async findProtocols() {
-    const data = await this.continuityInspectService.findProtocols();
+  @ApiOperation({ summary: 'List equipment protocols' })
+  async findProtocols(@Company() company: string, @Plant() plant: string) {
+    const data = await this.continuityInspectService.findProtocols(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post('protocols')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: '프로토콜 등록' })
-  async createProtocol(@Body() body: any) {
-    const data = await this.continuityInspectService.createProtocol(body);
-    return ResponseUtil.success(data, '프로토콜이 등록되었습니다.');
+  @ApiOperation({ summary: 'Create equipment protocol' })
+  async createProtocol(@Body() body: any, @Company() company: string, @Plant() plant: string) {
+    const data = await this.continuityInspectService.createProtocol(body, company, plant);
+    return ResponseUtil.success(data, 'Created');
   }
 
   @Put('protocols/:protocolId')
-  @ApiOperation({ summary: '프로토콜 수정' })
+  @ApiOperation({ summary: 'Update equipment protocol' })
   async updateProtocol(
     @Param('protocolId') protocolId: string,
     @Body() body: any,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.continuityInspectService.updateProtocol(
-      protocolId,
-      body,
-    );
-    return ResponseUtil.success(data, '프로토콜이 수정되었습니다.');
+    const data = await this.continuityInspectService.updateProtocol(protocolId, body, company, plant);
+    return ResponseUtil.success(data, 'Updated');
   }
 
   @Delete('protocols/:protocolId')
-  @ApiOperation({ summary: '프로토콜 삭제' })
-  async deleteProtocol(@Param('protocolId') protocolId: string) {
-    await this.continuityInspectService.deleteProtocol(protocolId);
-    return ResponseUtil.success(null, '프로토콜이 삭제되었습니다.');
+  @ApiOperation({ summary: 'Delete equipment protocol' })
+  async deleteProtocol(@Param('protocolId') protocolId: string, @Company() company: string, @Plant() plant: string) {
+    await this.continuityInspectService.deleteProtocol(protocolId, company, plant);
+    return ResponseUtil.success(null, 'Deleted');
   }
-
-  // ===== FG 바코드 사전발행 =====
 
   @Post('pre-issue')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'FG 바코드 사전발행',
-    description: 'PRE_ISSUE 모드: 작업지시 기준으로 PENDING 상태 바코드를 미리 채번',
-  })
-  @ApiResponse({ status: 201, description: '사전발행 성공' })
+  @ApiOperation({ summary: 'Pre-issue FG barcodes' })
   async preIssue(
     @Body() dto: PreIssueDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
     const data = await this.continuityInspectService.preIssue(dto, company, plant);
-    return ResponseUtil.success(data, `${data.issued}건 사전발행되었습니다.`);
+    return ResponseUtil.success(data, `${data.issued} issued`);
   }
 
-  // ===== PENDING 라벨 조회 =====
-
   @Get('pending/:orderNo')
-  @ApiOperation({
-    summary: '작업지시별 PENDING FG 라벨 목록',
-    description: 'ON_PRODUCTION/PRE_ISSUE 모드에서 미검사 바코드 목록 조회',
-  })
-  @ApiParam({ name: 'orderNo', description: '작업지시 번호' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async getPendingLabels(@Param('orderNo') orderNo: string) {
-    const data = await this.continuityInspectService.getPendingLabels(orderNo);
+  @ApiOperation({ summary: 'List pending FG labels by order' })
+  async getPendingLabels(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.getPendingLabels(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
-  // ===== 재검사 =====
-
   @Post('re-inspect/:fgBarcode')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'FG 바코드 재검사',
-    description: '불합격(inspectPassYn=N) 바코드에 대한 재검사 결과 등록',
-  })
-  @ApiParam({ name: 'fgBarcode', description: 'FG 바코드' })
-  @ApiResponse({ status: 200, description: '재검사 성공' })
+  @ApiOperation({ summary: 'Re-inspect by FG barcode' })
   async reInspect(
     @Param('fgBarcode') fgBarcode: string,
     @Body() dto: ReInspectDto,
@@ -276,61 +196,48 @@ export class ContinuityInspectController {
     @Plant() plant: string,
   ) {
     const data = await this.continuityInspectService.reInspect(fgBarcode, dto, company, plant);
-    const message = dto.passYn === 'Y'
-      ? `재검사 합격 — FG_BARCODE: ${fgBarcode}`
-      : '재검사 불합격 처리되었습니다.';
+    const message = dto.passYn === 'Y' ? `Re-inspect PASS: ${fgBarcode}` : 'Re-inspect FAIL';
     return ResponseUtil.success(data, message);
   }
 
-  // ===== 통계 =====
-
   @Get('stats/:orderNo')
-  @ApiOperation({
-    summary: '작업지시별 통전검사 통계',
-    description: '합격/불합격 수, 합격률, 라벨 발행 수',
-  })
-  @ApiParam({ name: 'orderNo', description: '작업지시 번호' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async getStats(@Param('orderNo') orderNo: string) {
-    const data = await this.continuityInspectService.getStats(orderNo);
+  @ApiOperation({ summary: 'Get continuity inspect stats by order' })
+  async getStats(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.getStats(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
-  // ===== 라벨 재인쇄 =====
-
   @Post('reprint/:fgBarcode')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'FG 라벨 재인쇄',
-    description: 'reprintCount += 1, 라벨 데이터 반환',
-  })
-  @ApiParam({ name: 'fgBarcode', description: 'FG 바코드' })
-  @ApiResponse({ status: 200, description: '재인쇄 성공' })
-  @ApiResponse({ status: 404, description: '라벨 없음' })
-  async reprintLabel(@Param('fgBarcode') fgBarcode: string) {
-    const data = await this.continuityInspectService.reprintLabel(fgBarcode);
-    return ResponseUtil.success(data, '라벨 재인쇄 처리되었습니다.');
+  @ApiOperation({ summary: 'Reprint FG label' })
+  async reprintLabel(
+    @Param('fgBarcode') fgBarcode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.reprintLabel(fgBarcode, company, plant);
+    return ResponseUtil.success(data, 'Reprinted');
   }
-
-  // ===== 라벨 취소 =====
 
   @Post('void/:fgBarcode')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'FG 라벨 취소',
-    description: 'status → VOIDED, 취소 사유 기록',
-  })
-  @ApiParam({ name: 'fgBarcode', description: 'FG 바코드' })
-  @ApiResponse({ status: 200, description: '취소 성공' })
-  @ApiResponse({ status: 404, description: '라벨 없음' })
+  @ApiOperation({ summary: 'Void FG label' })
   async voidLabel(
     @Param('fgBarcode') fgBarcode: string,
     @Body() dto: VoidLabelDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.continuityInspectService.voidLabel(
       fgBarcode,
       dto.reason,
+      company,
+      plant,
     );
-    return ResponseUtil.success(data, '라벨이 취소되었습니다.');
+    return ResponseUtil.success(data, 'Voided');
   }
 }

@@ -48,8 +48,8 @@ export class ShipReturnController {
   @Get(':id')
   @ApiOperation({ summary: '반품 상세 조회' })
   @ApiParam({ name: 'id', description: '반품번호' })
-  async findById(@Param('id') id: string) {
-    const data = await this.shipReturnService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipReturnService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -65,16 +65,16 @@ export class ShipReturnController {
   @Put(':id')
   @ApiOperation({ summary: '반품 수정' })
   @ApiParam({ name: 'id', description: '반품번호' })
-  async update(@Param('id') id: string, @Body() dto: UpdateShipReturnDto) {
-    const data = await this.shipReturnService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateShipReturnDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.shipReturnService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '반품이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '반품 삭제' })
   @ApiParam({ name: 'id', description: '반품번호' })
-  async delete(@Param('id') id: string) {
-    await this.shipReturnService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.shipReturnService.delete(id, company, plant);
     return ResponseUtil.success(null, '반품이 삭제되었습니다.');
   }
 }

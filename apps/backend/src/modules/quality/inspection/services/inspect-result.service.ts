@@ -17,6 +17,7 @@ import {
   Injectable,
   NotFoundException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, ILike, Between, MoreThanOrEqual, LessThanOrEqual, And, Not } from 'typeorm';
@@ -363,7 +364,18 @@ export class InspectResultService {
    * 검사실적 삭제 (resultNo 기준)
    */
   async delete(resultNo: string) {
-    await this.findById(resultNo); // 존재 확인
+    const result = await this.findById(resultNo); // 존재 확인
+
+    if (result.prodResultNo) {
+      const prodResult = await this.prodResultRepository.findOne({
+        where: { resultNo: result.prodResultNo },
+      });
+      if (prodResult && prodResult.status !== 'CANCELED') {
+        throw new BadRequestException(
+          '검사결과는 연결된 생산실적이 취소된 뒤에만 삭제할 수 있습니다. 생산실적부터 먼저 정리해 주세요.',
+        );
+      }
+    }
 
     await this.inspectResultRepository.delete({ resultNo });
 

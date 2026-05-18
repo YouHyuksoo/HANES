@@ -5,11 +5,14 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, Between } from 'typeorm';
+import { Repository, DataSource, IsNull, Between, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
+import { ProdResult } from '../../../entities/prod-result.entity';
+import { FgLabel } from '../../../entities/fg-label.entity';
 import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-cancel.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 
@@ -78,6 +81,8 @@ export class ReceiptCancelService {
       if (originalTransaction.transType !== 'RECEIPT') {
         throw new BadRequestException('입고 트랜잭션만 취소할 수 있습니다.');
       }
+
+      await this.ensureNoDownstreamProgress(originalTransaction);
 
       const { itemCode, matUid, toWarehouseId, qty } = originalTransaction;
 
@@ -157,5 +162,56 @@ export class ReceiptCancelService {
       await queryRunner.release();
     }
   }
-}
 
+  private async ensureNoDownstreamProgress(originalTransaction: StockTransaction) {
+    if (!originalTransaction.matUid) {
+      return;
+    }
+
+    const matIssueRepo = this.dataSource.getRepository(MatIssue);
+    const prodResultRepo = this.dataSource.getRepository(ProdResult);
+    const fgLabelRepo = this.dataSource.getRepository(FgLabel);
+
+    const latestIssue = await matIssueRepo.findOne({
+      where: { matUid: originalTransaction.matUid, status: 'DONE' },
+      order: { issueDate: 'DESC' },
+    });
+
+    if (!latestIssue) {
+      return;
+    }
+
+    const blockers = [`자재출고=${latestIssue.issueNo}-${latestIssue.seq}`];
+    let prodResult: ProdResult | null = null;
+
+    if (latestIssue.prodResultNo) {
+      prodResult = await prodResultRepo.findOne({
+        where: { resultNo: latestIssue.prodResultNo },
+      });
+    } else if (latestIssue.orderNo) {
+      prodResult = await prodResultRepo.findOne({
+        where: { orderNo: latestIssue.orderNo, status: In(['RUNNING', 'DONE']) },
+        order: { createdAt: 'DESC' },
+      });
+    }
+
+    if (prodResult && prodResult.status !== 'CANCELED') {
+      blockers.push(`생산실적=${prodResult.resultNo}(${prodResult.status})`);
+
+      if (prodResult.prdUid) {
+        const fgLabel = await fgLabelRepo.findOne({
+          where: { fgBarcode: prodResult.prdUid },
+        });
+        if (fgLabel) {
+          blockers.push(`FG=${fgLabel.fgBarcode}(${fgLabel.status})`);
+        }
+      }
+    }
+
+    throw new BadRequestException(
+      `입고취소 ${originalTransaction.transNo} 는 뒤 공정이 이미 진행되어 처리할 수 없습니다. ` +
+        `현재 상태: ${blockers.join(', ')}. ` +
+        `출하 -> 팔레트 -> 박스/OQC -> FG 라벨 -> 생산실적 -> 자재출고 순서로 역처리 후 다시 입고취소를 진행해 주세요.`,
+    );
+  }
+}

@@ -8,7 +8,7 @@
  * 3. 불합격: G6과 동일한 불합격 자동처리 (불용창고 이동)
  * 4. 별도 테이블 없이 기존 IQC_LOGS 재사용 (심플이즈베스트)
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
@@ -65,8 +65,10 @@ export class ShelfLifeReInspectService {
   }
 
   /** 재검사 실적 등록 + 후속처리 */
-  async create(dto: CreateReInspectDto) {
-    const lot = await this.matLotRepo.findOne({ where: { matUid: dto.matUid } });
+  async create(dto: CreateReInspectDto, company?: string, plant?: string) {
+    const lot = await this.matLotRepo.findOne({
+      where: { matUid: dto.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
 
     const part = await this.partMasterRepo.findOne({ where: { itemCode: lot.itemCode } });
@@ -105,11 +107,20 @@ export class ShelfLifeReInspectService {
 
   /** 불합격 처리: 불용창고 자동이동 (G6과 동일 로직) */
   private async handleFail(matUid: string, itemCode: string, company?: string | null, plant?: string | null) {
-    const defectWh = await this.warehouseRepo.findOne({ where: { warehouseType: 'DEFECT', useYn: 'Y' } });
+    const defectWh = await this.warehouseRepo.findOne({
+      where: { warehouseType: 'DEFECT', useYn: 'Y', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
     if (!defectWh) return;
 
-    const stock = await this.matStockRepo.findOne({ where: { matUid, itemCode } });
+    const stock = await this.matStockRepo.findOne({
+      where: { matUid, itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
     if (!stock || stock.qty <= 0) return;
+    if (stock.availableQty < stock.qty) {
+      throw new BadRequestException(
+        `??? ??? ?? ?? FAIL ??? ??? ? ????. ????: ${stock.availableQty}`,
+      );
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -118,16 +129,16 @@ export class ShelfLifeReInspectService {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode, matUid },
+        { warehouseCode: stock.warehouseCode, itemCode, matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         { qty: 0 },
       );
 
       const existing = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: defectWh.warehouseCode, itemCode, matUid },
+        where: { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
       if (existing) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: defectWh.warehouseCode, itemCode, matUid },
+          { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
           { qty: existing.qty + stock.qty },
         );
       } else {

@@ -85,6 +85,21 @@ describe('ProductInventoryService', () => {
     });
   });
 
+  describe('issueStock', () => {
+    it('should throw when source stock is HOLD', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockQueryRunner.manager.findOne.mockResolvedValue({ status: 'HOLD', availableQty: 100 } as any);
+
+      await expect(target.issueStock({
+        warehouseId: 'WH',
+        itemCode: 'IT',
+        qty: 10,
+        transType: 'WIP_OUT',
+      } as any)).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('getStock', () => {
     it('should return empty when no stocks', async () => {
       mockStockRepo.find.mockResolvedValue([]);

@@ -1,14 +1,4 @@
-/**
- * @file src/modules/inventory/controllers/product-physical-inv.controller.ts
- * @description 제품 재고실사 API 컨트롤러
- *
- * 초보자 가이드:
- * 1. GET /inventory/product-physical-inv → 실사 대상 Stock 목록
- * 2. GET /inventory/product-physical-inv/history → 실사 이력
- * 3. POST /inventory/product-physical-inv → 실사 결과 반영
- */
-
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductPhysicalInvService } from '../services/product-physical-inv.service';
@@ -18,8 +8,10 @@ import {
   ProductPhysicalInvHistoryQueryDto,
 } from '../dto/product-physical-inv.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { JwtAuthGuard, AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 
-@ApiTags('재고관리 - 제품 재고실사')
+@ApiTags('재고관리- 제품 재고실사')
+@UseGuards(JwtAuthGuard)
 @Controller('inventory/product-physical-inv')
 export class ProductPhysicalInvController {
   constructor(private readonly productPhysicalInvService: ProductPhysicalInvService) {}
@@ -41,8 +33,14 @@ export class ProductPhysicalInvController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '제품 재고실사 결과 반영' })
-  async apply(@Body() dto: CreateProductPhysicalInvDto) {
-    const data = await this.productPhysicalInvService.applyCount(dto);
+  async apply(
+    @Body() dto: CreateProductPhysicalInvDto,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const actor = dto.createdBy || req.user?.id || 'system';
+    const data = await this.productPhysicalInvService.applyCount(dto, company, plant, actor);
     return ResponseUtil.success(data, '제품 재고실사가 반영되었습니다.');
   }
 }

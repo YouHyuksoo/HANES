@@ -34,8 +34,8 @@ export class ShipHistoryController {
   @Get('summary')
   @ApiOperation({ summary: '출하이력 통계 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getSummary() {
-    const data = await this.shipHistoryService.getSummary();
+  async getSummary(@Company() company: string, @Plant() plant: string) {
+    const data = await this.shipHistoryService.getSummary(company, plant);
     return ResponseUtil.success(data);
   }
 }

@@ -47,6 +47,13 @@ export class ConsumablesService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /** CONSUMABLE_LOGS 테이블 오늘 날짜 기준 다음 SEQ (타임존 안전) */
   private async getNextLogSeq(transDate: Date, qr?: QueryRunner): Promise<number> {
     const manager = qr?.manager ?? this.dataSource.manager;
@@ -116,9 +123,9 @@ export class ConsumablesService {
   /**
    * 소모품 단건 조회 (ID)
    */
-  async findById(id: string) {
+  async findById(id: string, company?: string, plant?: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { consumableCode: id },
+      where: { consumableCode: id, ...this.tenantWhere(company, plant) },
     });
 
     if (!consumable) {
@@ -131,10 +138,10 @@ export class ConsumablesService {
   /**
    * 소모품 생성
    */
-  async create(dto: CreateConsumableDto) {
+  async create(dto: CreateConsumableDto, company?: string, plant?: string) {
     // 중복 코드 확인
     const existing = await this.consumableMasterRepository.findOne({
-      where: { consumableCode: dto.consumableCode },
+      where: { consumableCode: dto.consumableCode, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) {
@@ -154,6 +161,8 @@ export class ConsumablesService {
       currentCount: 0,
       status: 'NORMAL',
       useYn: 'Y',
+      company: company ?? null,
+      plant: plant ?? null,
     });
 
     return this.consumableMasterRepository.save(consumable);
@@ -162,14 +171,15 @@ export class ConsumablesService {
   /**
    * 소모품 수정
    */
-  async update(id: string, dto: UpdateConsumableDto) {
-    await this.findById(id);
+  async update(id: string, dto: UpdateConsumableDto, company?: string, plant?: string) {
+    await this.findById(id, company, plant);
 
     // 코드 변경 시 중복 확인
     if (dto.consumableCode) {
       const existing = await this.consumableMasterRepository.findOne({
         where: {
           consumableCode: dto.consumableCode,
+          ...this.tenantWhere(company, plant),
         },
       });
 
@@ -192,25 +202,28 @@ export class ConsumablesService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.consumableMasterRepository.update({ consumableCode: id }, updateData);
-    return this.findById(id);
+    await this.consumableMasterRepository.update(
+      { consumableCode: id, ...this.tenantWhere(company, plant) },
+      updateData,
+    );
+    return this.findById(id, company, plant);
   }
 
   /**
    * 소모품 삭제 (소프트 삭제)
    */
-  async delete(id: string) {
-    await this.findById(id);
+  async delete(id: string, company?: string, plant?: string) {
+    await this.findById(id, company, plant);
 
-    await this.consumableMasterRepository.delete({ consumableCode: id });
+    await this.consumableMasterRepository.delete({ consumableCode: id, ...this.tenantWhere(company, plant) });
     return { id, deleted: true };
   }
 
   /**
    * 소모품 삭제 (remove - controller 호환용)
    */
-  async remove(id: string) {
-    return this.delete(id);
+  async remove(id: string, company?: string, plant?: string) {
+    return this.delete(id, company, plant);
   }
 
   // =============================================
@@ -220,16 +233,16 @@ export class ConsumablesService {
   /**
    * 소모품 현황 요약
    */
-  async getSummary() {
+  async getSummary(company?: string, plant?: string) {
     const [total, warning, replace] = await Promise.all([
       this.consumableMasterRepository.count({
-        where: { useYn: 'Y' },
+        where: { useYn: 'Y', ...this.tenantWhere(company, plant) },
       }),
       this.consumableMasterRepository.count({
-        where: { status: 'WARNING', useYn: 'Y' },
+        where: { status: 'WARNING', useYn: 'Y', ...this.tenantWhere(company, plant) },
       }),
       this.consumableMasterRepository.count({
-        where: { status: 'REPLACE', useYn: 'Y' },
+        where: { status: 'REPLACE', useYn: 'Y', ...this.tenantWhere(company, plant) },
       }),
     ]);
 
@@ -239,11 +252,12 @@ export class ConsumablesService {
   /**
    * 경고/교체 필요 소모품 목록
    */
-  async getWarningList() {
+  async getWarningList(company?: string, plant?: string) {
     return this.consumableMasterRepository.find({
       where: {
         status: In(['WARNING', 'REPLACE']),
         useYn: 'Y',
+        ...this.tenantWhere(company, plant),
       },
       order: { status: 'DESC', currentCount: 'DESC' },
     });
@@ -252,9 +266,9 @@ export class ConsumablesService {
   /**
    * 소모품 수명 현황
    */
-  async getLifeStatus() {
+  async getLifeStatus(company?: string, plant?: string) {
     const consumables = await this.consumableMasterRepository.find({
-      where: { useYn: 'Y' },
+      where: { useYn: 'Y', ...this.tenantWhere(company, plant) },
     });
 
     let good = 0;
@@ -278,7 +292,7 @@ export class ConsumablesService {
    * 소모품 재고 현황 조회
    * - 검색어 필터링을 DB 레벨 QueryBuilder WHERE/LIKE로 처리
    */
-  async getStockStatus(query?: ConsumableQueryDto) {
+  async getStockStatus(query?: ConsumableQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 10,
@@ -289,6 +303,8 @@ export class ConsumablesService {
 
     const qb = this.consumableMasterRepository.createQueryBuilder('c')
       .where('c.useYn = :useYn', { useYn: 'Y' });
+    if (company) qb.andWhere('c.company = :company', { company });
+    if (plant) qb.andWhere('c.plant = :plant', { plant });
 
     if (category) qb.andWhere('c.category = :category', { category });
 
@@ -325,7 +341,7 @@ export class ConsumablesService {
   /**
    * 입출고 이력 목록 조회
    */
-  async findAllLogs(query?: ConsumableLogQueryDto) {
+  async findAllLogs(query?: ConsumableLogQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
       limit = 10,
@@ -337,7 +353,7 @@ export class ConsumablesService {
     } = query || {};
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { ...this.tenantWhere(company, plant) };
 
     if (consumableId) {
       where.consumableCode = consumableId;
@@ -385,7 +401,11 @@ export class ConsumablesService {
     try {
       // 소모품 존재 확인
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { consumableCode: dto.consumableId },
+        where: {
+          consumableCode: dto.consumableId,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
 
       if (!consumable) {
@@ -442,7 +462,11 @@ export class ConsumablesService {
       // 재고 업데이트
       await queryRunner.manager.update(
         ConsumableMaster,
-        { consumableCode: dto.consumableId },
+        {
+          consumableCode: dto.consumableId,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
         {
           stockQty: consumable.stockQty + stockDelta,
           lastReplaceAt: dto.logType === 'IN' ? new Date() : consumable.lastReplaceAt,
@@ -466,15 +490,18 @@ export class ConsumablesService {
   /**
    * 소모품 이미지 URL 업데이트
    */
-  async updateImage(consumableCode: string, imageUrl: string | null) {
+  async updateImage(consumableCode: string, imageUrl: string | null, company?: string, plant?: string) {
     const consumable = await this.consumableMasterRepository.findOne({
-      where: { consumableCode },
+      where: { consumableCode, ...this.tenantWhere(company, plant) },
     });
     if (!consumable) {
       throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
     }
-    await this.consumableMasterRepository.update(consumableCode, { imageUrl });
-    return this.findById(consumableCode);
+    await this.consumableMasterRepository.update(
+      { consumableCode, ...this.tenantWhere(company, plant) },
+      { imageUrl },
+    );
+    return this.findById(consumableCode, company, plant);
   }
 
   /**
@@ -487,7 +514,11 @@ export class ConsumablesService {
 
     try {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { consumableCode: dto.consumableId },
+        where: {
+          consumableCode: dto.consumableId,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
 
       if (!consumable) {
@@ -504,10 +535,18 @@ export class ConsumablesService {
         newStatus = 'WARNING';
       }
 
-      await queryRunner.manager.update(ConsumableMaster, dto.consumableId, {
-        currentCount: newCount,
-        status: newStatus,
-      });
+      await queryRunner.manager.update(
+        ConsumableMaster,
+        {
+          consumableCode: dto.consumableId,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        {
+          currentCount: newCount,
+          status: newStatus,
+        },
+      );
 
       // 로그 기록 (선택적)
       if (dto.equipCode) {
@@ -557,7 +596,11 @@ export class ConsumablesService {
 
     try {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
-        where: { consumableCode: dto.consumableId },
+        where: {
+          consumableCode: dto.consumableId,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
       });
 
       if (!consumable) {
@@ -585,14 +628,22 @@ export class ConsumablesService {
       await queryRunner.manager.save(ConsumableLog, log);
 
       // 타수 리셋 및 상태 초기화
-      await queryRunner.manager.update(ConsumableMaster, dto.consumableId, {
-        currentCount: 0,
-        status: 'NORMAL',
-        lastReplaceAt: now,
-        nextReplaceAt: consumable.expectedLife
-          ? new Date(now.getTime() + consumable.expectedLife * 24 * 60 * 60 * 1000)
-          : null,
-      });
+      await queryRunner.manager.update(
+        ConsumableMaster,
+        {
+          consumableCode: dto.consumableId,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        {
+          currentCount: 0,
+          status: 'NORMAL',
+          lastReplaceAt: now,
+          nextReplaceAt: consumable.expectedLife
+            ? new Date(now.getTime() + consumable.expectedLife * 24 * 60 * 60 * 1000)
+            : null,
+        },
+      );
 
       await queryRunner.commitTransaction();
 
