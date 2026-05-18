@@ -19,6 +19,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import PartnerFormPanel, { type Partner } from "./components/PartnerFormPanel";
 
+type PanelMode = "create" | "edit";
+
 function PartnerPage() {
   const { t } = useTranslation();
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -29,6 +31,8 @@ function PartnerPage() {
 
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [panelMode, setPanelMode] = useState<PanelMode>("create");
+  const [panelKey, setPanelKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
   const panelAnimateRef = useRef(true);
 
@@ -66,6 +70,7 @@ function PartnerPage() {
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);
     setEditingPartner(null);
+    setPanelMode("create");
     panelAnimateRef.current = true;
   }, []);
 
@@ -73,13 +78,35 @@ function PartnerPage() {
     fetchPartners();
   }, [fetchPartners]);
 
+  const openCreatePanel = useCallback(() => {
+    panelAnimateRef.current = !isPanelOpen;
+    setEditingPartner(null);
+    setPanelMode("create");
+    setPanelKey(k => k + 1);
+    setIsPanelOpen(true);
+  }, [isPanelOpen]);
+
+  const openEditPanel = useCallback((partner: Partner) => {
+    panelAnimateRef.current = !isPanelOpen;
+    setEditingPartner(partner);
+    setPanelMode("edit");
+    setPanelKey(k => k + 1);
+    setIsPanelOpen(true);
+  }, [isPanelOpen]);
+
+  const handleRowClick = useCallback((partner: Partner) => {
+    if (!isPanelOpen || panelMode !== "edit") return;
+    setEditingPartner(partner);
+    setPanelKey(k => k + 1);
+  }, [isPanelOpen, panelMode]);
+
   const columns = useMemo<ColumnDef<Partner>[]>(() => [
     {
       id: "actions", header: t("common.actions"), size: 80,
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingPartner(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); openEditPanel(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
@@ -111,7 +138,7 @@ function PartnerPage() {
         );
       },
     },
-  ], [t, isPanelOpen]);
+  ], [t, openEditPanel]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -127,7 +154,7 @@ function PartnerPage() {
             <Button variant="secondary" size="sm" onClick={fetchPartners}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
-            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPartner(null); setIsPanelOpen(true); }}>
+            <Button size="sm" onClick={openCreatePanel}>
               <Plus className="w-4 h-4 mr-1" />{t("master.partner.addPartner")}
             </Button>
           </div>
@@ -142,7 +169,7 @@ function PartnerPage() {
             enableColumnFilter
             enableExport
             exportFileName={t("master.partner.title")}
-            onRowClick={(row) => { if (isPanelOpen) setEditingPartner(row); }}
+            onRowClick={handleRowClick}
             rowClassName={(row) => row.useYn === "N" ? "!text-red-500 dark:!text-red-400" : ""}
             toolbarLeft={
               <div className="flex gap-2 items-center flex-1 min-w-0">
@@ -165,7 +192,8 @@ function PartnerPage() {
 
       {isPanelOpen && (
         <PartnerFormPanel
-          key={editingPartner?.partnerCode ?? "__new__"}
+          key={`${panelMode}-${panelKey}`}
+          mode={panelMode}
           editingPartner={editingPartner}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

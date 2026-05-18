@@ -32,6 +32,7 @@ interface Partner {
 }
 
 interface Props {
+  mode?: "create" | "edit";
   editingPartner: Partner | null;
   onClose: () => void;
   onSave: () => void;
@@ -40,42 +41,49 @@ interface Props {
 
 export type { Partner };
 
-export default function PartnerFormPanel({ editingPartner, onClose, onSave, animate = true }: Props) {
-  const { t } = useTranslation();
-  const isEdit = !!editingPartner;
+const EMPTY_FORM = {
+  partnerCode: "",
+  partnerName: "",
+  partnerType: "SUPPLIER",
+  bizNo: "",
+  ceoName: "",
+  address: "",
+  tel: "",
+  fax: "",
+  email: "",
+  contactPerson: "",
+  remark: "",
+  useYn: "Y",
+};
 
-  const [form, setForm] = useState({
-    partnerCode: editingPartner?.partnerCode || "",
-    partnerName: editingPartner?.partnerName || "",
-    partnerType: editingPartner?.partnerType || "SUPPLIER",
-    bizNo: editingPartner?.bizNo || "",
-    ceoName: editingPartner?.ceoName || "",
-    address: editingPartner?.address || "",
-    tel: editingPartner?.tel || "",
-    fax: editingPartner?.fax || "",
-    email: editingPartner?.email || "",
-    contactPerson: editingPartner?.contactPerson || "",
-    remark: editingPartner?.remark || "",
-    useYn: editingPartner?.useYn || "Y",
-  });
+const getInitialForm = (partner: Partner | null, isEdit: boolean) => {
+  if (!isEdit || !partner) return EMPTY_FORM;
+  return {
+    partnerCode: partner.partnerCode || "",
+    partnerName: partner.partnerName || "",
+    partnerType: partner.partnerType || "SUPPLIER",
+    bizNo: partner.bizNo || "",
+    ceoName: partner.ceoName || "",
+    address: partner.address || "",
+    tel: partner.tel || "",
+    fax: partner.fax || "",
+    email: partner.email || "",
+    contactPerson: partner.contactPerson || "",
+    remark: partner.remark || "",
+    useYn: partner.useYn || "Y",
+  };
+};
+
+export default function PartnerFormPanel({ mode, editingPartner, onClose, onSave, animate = true }: Props) {
+  const { t } = useTranslation();
+  const isEdit = mode === "edit";
+
+  const [form, setForm] = useState(() => getInitialForm(editingPartner, isEdit));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setForm({
-      partnerCode: editingPartner?.partnerCode || "",
-      partnerName: editingPartner?.partnerName || "",
-      partnerType: editingPartner?.partnerType || "SUPPLIER",
-      bizNo: editingPartner?.bizNo || "",
-      ceoName: editingPartner?.ceoName || "",
-      address: editingPartner?.address || "",
-      tel: editingPartner?.tel || "",
-      fax: editingPartner?.fax || "",
-      email: editingPartner?.email || "",
-      contactPerson: editingPartner?.contactPerson || "",
-      remark: editingPartner?.remark || "",
-      useYn: editingPartner?.useYn || "Y",
-    });
-  }, [editingPartner]);
+    setForm(getInitialForm(editingPartner, isEdit));
+  }, [editingPartner, isEdit]);
 
   const setField = (key: string, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -128,19 +136,19 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.partner.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.partner.partnerCode")} placeholder="101001"
+            <Input label={t("master.partner.partnerCode")}
               value={form.partnerCode} onChange={e => setField("partnerCode", e.target.value)}
               disabled={isEdit} fullWidth />
             <ComCodeSelect groupCode="PARTNER_TYPE" includeAll={false}
               label={t("master.partner.partnerType")}
               value={form.partnerType} onChange={v => setField("partnerType", v)} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.partner.partnerName")} placeholder={t("master.partner.partnerName")}
+              <Input label={t("master.partner.partnerName")}
                 value={form.partnerName} onChange={e => setField("partnerName", e.target.value)} fullWidth />
             </div>
-            <Input label={t("master.partner.bizNo")} placeholder="123-45-67890"
+            <Input label={t("master.partner.bizNo")}
               value={form.bizNo} onChange={e => setField("bizNo", e.target.value)} fullWidth />
-            <Input label={t("master.partner.ceoName")} placeholder={t("master.partner.ceoName")}
+            <Input label={t("master.partner.ceoName")}
               value={form.ceoName} onChange={e => setField("ceoName", e.target.value)} fullWidth />
           </div>
         </div>
@@ -149,22 +157,22 @@ export default function PartnerFormPanel({ editingPartner, onClose, onSave, anim
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.partner.sectionContact", "연락처")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <Input label={t("master.partner.address")} placeholder={t("master.partner.address")}
+              <Input label={t("master.partner.address")}
                 value={form.address} onChange={e => setField("address", e.target.value)} fullWidth />
             </div>
-            <Input label={t("master.partner.tel")} placeholder="02-1234-5678"
+            <Input label={t("master.partner.tel")}
               value={form.tel} onChange={e => setField("tel", e.target.value)} fullWidth />
-            <Input label={t("master.partner.fax")} placeholder="02-1234-5679"
+            <Input label={t("master.partner.fax")}
               value={form.fax} onChange={e => setField("fax", e.target.value)} fullWidth />
-            <Input label={t("master.partner.email")} placeholder="contact@company.com"
+            <Input label={t("master.partner.email")}
               value={form.email} onChange={e => setField("email", e.target.value)} fullWidth />
-            <Input label={t("master.partner.contactPerson")} placeholder={t("master.partner.contactPerson")}
+            <Input label={t("master.partner.contactPerson")}
               value={form.contactPerson} onChange={e => setField("contactPerson", e.target.value)} fullWidth />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
+          <Input label={t("common.remark")}
             value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-text-muted">{t("common.useYn", "사용여부")}</label>
