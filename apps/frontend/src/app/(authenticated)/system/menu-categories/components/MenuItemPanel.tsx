@@ -6,9 +6,24 @@
  * - 현재 소속 카테고리를 표시하고 다른 카테고리로 이동하거나 미배치로 내보냄
  * - 라벨/경로는 menuConfig.ts 코드에서만 변경 가능
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { menuCategoriesApi, type CategoryTreeNode } from '@/services/menuCategoriesApi';
+import { menuConfig, type MenuConfigItem } from '@/config/menuConfig';
+
+function findLeaf(code: string): MenuConfigItem | undefined {
+  const walk = (items: MenuConfigItem[]): MenuConfigItem | undefined => {
+    for (const item of items) {
+      if (item.code === code && item.path) return item;
+      if (item.children) {
+        const hit = walk(item.children);
+        if (hit) return hit;
+      }
+    }
+    return undefined;
+  };
+  return walk(menuConfig);
+}
 
 interface Props {
   menuCode: string;
@@ -20,6 +35,10 @@ export default function MenuItemPanel({ menuCode, tree, onChange }: Props) {
   const { t } = useTranslation();
   const current = tree.find((c) => c.menus.some((m) => m.menuCode === menuCode));
   const [targetCategory, setTargetCategory] = useState(current?.categoryCode ?? '');
+  const leaf = useMemo(() => findLeaf(menuCode), [menuCode]);
+  const currentCategoryLabel = current
+    ? `${t(current.labelKey)} (${current.categoryCode})`
+    : t('menuCategoryAdmin.noCategory');
 
   const apply = async () => {
     await menuCategoriesApi.moveItem({ menuCode, toCategoryCode: targetCategory, sortOrder: 9999 });
@@ -36,15 +55,27 @@ export default function MenuItemPanel({ menuCode, tree, onChange }: Props) {
       <h3 className="text-base font-semibold text-text">{t('menuCategoryAdmin.menuInfo')}</h3>
 
       <div>
+        <div className="text-xs text-text-muted">name</div>
+        <div className="text-sm text-text">
+          {leaf ? t(leaf.labelKey) : menuCode}
+        </div>
+      </div>
+
+      <div>
         <div className="text-xs text-text-muted">menuCode</div>
         <div className="text-sm text-text">{menuCode}</div>
       </div>
 
+      {leaf?.path && (
+        <div>
+          <div className="text-xs text-text-muted">path</div>
+          <div className="text-sm text-text font-mono">{leaf.path}</div>
+        </div>
+      )}
+
       <div>
         <div className="text-xs text-text-muted mt-2">{t('menuCategoryAdmin.currentCategory')}</div>
-        <div className="text-sm text-text">
-          {current?.categoryCode ?? t('menuCategoryAdmin.noCategory')}
-        </div>
+        <div className="text-sm text-text">{currentCategoryLabel}</div>
       </div>
 
       <div className="pt-2">
@@ -57,7 +88,7 @@ export default function MenuItemPanel({ menuCode, tree, onChange }: Props) {
           <option value="">{t('menuCategoryAdmin.selectCategory')}...</option>
           {tree.map((c) => (
             <option key={c.categoryCode} value={c.categoryCode}>
-              {c.categoryCode}
+              {t(c.labelKey)} ({c.categoryCode})
             </option>
           ))}
         </select>

@@ -13,6 +13,20 @@ import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { menuCategoriesApi, type CategoryTreeNode } from '@/services/menuCategoriesApi';
+import { menuConfig, type MenuConfigItem } from '@/config/menuConfig';
+
+/** menuConfig.ts에서 leaf 메뉴 코드 → labelKey lookup 맵 생성 (관리 화면에서 다국어 라벨 표시용) */
+function buildLeafLabelLookup(): Map<string, string> {
+  const map = new Map<string, string>();
+  const walk = (items: MenuConfigItem[]) => {
+    for (const item of items) {
+      if (item.path) map.set(item.code, item.labelKey);
+      if (item.children) walk(item.children);
+    }
+  };
+  walk(menuConfig);
+  return map;
+}
 
 interface Props {
   tree: CategoryTreeNode[];
@@ -60,6 +74,7 @@ export default function MenuTreePanel({ tree, onChange, onSelectCategory, onSele
   const { t } = useTranslation();
   const sorted = useMemo(() => tree.slice().sort((a, b) => a.sortOrder - b.sortOrder), [tree]);
   const categoryIds = sorted.map((c) => `cat:${c.categoryCode}`);
+  const leafLabelMap = useMemo(() => buildLeafLabelLookup(), []);
 
   const onCategoriesDragEnd = async (e: DragEndEvent) => {
     const { active, over } = e;
@@ -116,15 +131,19 @@ export default function MenuTreePanel({ tree, onChange, onSelectCategory, onSele
                     {c.menus
                       .slice()
                       .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .map((m) => (
-                        <SortableRow
-                          key={m.menuCode}
-                          id={`menu:${c.categoryCode}:${m.menuCode}`}
-                          onClick={() => onSelectMenu(m.menuCode)}
-                        >
-                          <span className="text-sm">{m.menuCode}</span>
-                        </SortableRow>
-                      ))}
+                      .map((m) => {
+                        const labelKey = leafLabelMap.get(m.menuCode);
+                        return (
+                          <SortableRow
+                            key={m.menuCode}
+                            id={`menu:${c.categoryCode}:${m.menuCode}`}
+                            onClick={() => onSelectMenu(m.menuCode)}
+                          >
+                            <span className="text-sm">{labelKey ? t(labelKey) : m.menuCode}</span>
+                            <span className="ml-2 text-xs text-text-muted">({m.menuCode})</span>
+                          </SortableRow>
+                        );
+                      })}
                   </SortableContext>
                 </DndContext>
               </div>
