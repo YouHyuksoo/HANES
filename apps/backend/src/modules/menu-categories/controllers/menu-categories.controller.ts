@@ -1,0 +1,123 @@
+/**
+ * @file src/modules/menu-categories/controllers/menu-categories.controller.ts
+ * @description 사이드바 카테고리 CRUD/Tree/Reorder 컨트롤러
+ *
+ * 엔드포인트:
+ * - GET    /menu-categories                  목록
+ * - GET    /menu-categories/tree             사이드바 렌더용 트리(카테고리 + 메뉴 배치)
+ * - GET    /menu-categories/unassigned-menus 미배치 menu 코드 목록
+ * - POST   /menu-categories                  신규 카테고리
+ * - PATCH  /menu-categories/reorder          카테고리 순서 일괄 갱신
+ * - PATCH  /menu-categories/:code            카테고리 수정
+ * - PATCH  /menu-categories/:code/items      카테고리 내 메뉴 순서 일괄 갱신
+ * - DELETE /menu-categories/:code            카테고리 삭제
+ */
+import {
+  Body, Controller, Delete, Get, HttpCode, HttpStatus,
+  Param, Patch, Post, Req,
+} from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { MenuCategoriesService } from '../services/menu-categories.service';
+import { MenuCategoryItemsService } from '../services/menu-category-items.service';
+import {
+  CreateMenuCategoryDto, UpdateMenuCategoryDto, ReorderCategoriesDto,
+} from '../dto/menu-category.dto';
+import { ReorderMenuItemsDto } from '../dto/menu-category-item.dto';
+import { ResponseUtil } from '../../../common/dto/response.dto';
+import { listKnownMenuCodes } from '../utils/menu-code-validator';
+
+@ApiTags('시스템 - 메뉴 카테고리')
+@Controller('menu-categories')
+export class MenuCategoriesController {
+  constructor(
+    private readonly categories: MenuCategoriesService,
+    private readonly items: MenuCategoryItemsService,
+  ) {}
+
+  @Get()
+  @ApiOperation({ summary: '카테고리 목록' })
+  async findAll() {
+    const data = await this.categories.findAll();
+    return ResponseUtil.success(data);
+  }
+
+  @Get('tree')
+  @ApiOperation({ summary: '사이드바 트리 (카테고리 + 메뉴 배치)' })
+  async tree() {
+    const categories = await this.categories.findAll();
+    const tree = await Promise.all(
+      categories.map(async (c) => ({
+        categoryCode: c.categoryCode,
+        labelKey: c.labelKey,
+        iconName: c.iconName,
+        sortOrder: c.sortOrder,
+        isActive: c.isActive,
+        menus: (await this.items.findByCategory(c.categoryCode)).map((i) => ({
+          menuCode: i.menuCode,
+          sortOrder: i.sortOrder,
+        })),
+      })),
+    );
+    return ResponseUtil.success(tree);
+  }
+
+  @Get('unassigned-menus')
+  @ApiOperation({ summary: '어디에도 배치되지 않은 메뉴 코드 목록' })
+  async unassigned() {
+    const all = listKnownMenuCodes();
+    const categories = await this.categories.findAll();
+    const placed = new Set<string>();
+    for (const c of categories) {
+      for (const i of await this.items.findByCategory(c.categoryCode)) {
+        placed.add(i.menuCode);
+      }
+    }
+    const unassigned = all.filter((code) => !placed.has(code));
+    return ResponseUtil.success(unassigned);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '카테고리 생성' })
+  async create(@Body() dto: CreateMenuCategoryDto, @Req() req: any) {
+    const data = await this.categories.create(dto, this.scope(req));
+    return ResponseUtil.success(data);
+  }
+
+  @Patch('reorder')
+  @ApiOperation({ summary: '카테고리 순서 일괄 갱신' })
+  async reorder(@Body() dto: ReorderCategoriesDto) {
+    await this.categories.reorder(dto);
+    return ResponseUtil.success({ ok: true });
+  }
+
+  @Patch(':code')
+  @ApiOperation({ summary: '카테고리 수정' })
+  async update(@Param('code') code: string, @Body() dto: UpdateMenuCategoryDto, @Req() req: any) {
+    const data = await this.categories.update(code, dto, this.scope(req));
+    return ResponseUtil.success(data);
+  }
+
+  @Patch(':code/items')
+  @ApiOperation({ summary: '카테고리 내 메뉴 순서 일괄 갱신' })
+  async reorderItems(@Param('code') code: string, @Body() dto: ReorderMenuItemsDto) {
+    await this.items.reorderInCategory(code, dto);
+    return ResponseUtil.success({ ok: true });
+  }
+
+  @Delete(':code')
+  @ApiOperation({ summary: '카테고리 삭제(빈 카테고리만 가능)' })
+  async delete(@Param('code') code: string) {
+    const data = await this.categories.delete(code);
+    return ResponseUtil.success(data);
+  }
+
+  private scope(req: any) {
+    const user = req.user ?? {};
+    return {
+      company: user.company ?? 'HANES',
+      plantCd: user.plantCd ?? '-',
+      userId: user.userId ?? user.userName ?? 'system',
+    };
+  }
+}
