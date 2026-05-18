@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "保存",
     "cancel": "取消",
@@ -5567,6 +5567,18 @@
     "title": "菜单类别管理",
     "unassigned": "未分配菜单",
     "addCategory": "添加类别",
-    "cannotDeleteWithChildren": "此类别下有 {{count}} 个菜单。请先移动或删除它们。"
+    "cannotDeleteWithChildren": "此类别下有 {{count}} 个菜单。请先移动或删除它们。",
+    "editCategory": "编辑类别",
+    "selectItem": "请选择一个项目",
+    "save": "保存",
+    "delete": "删除",
+    "menuInfo": "菜单信息",
+    "currentCategory": "当前类别",
+    "moveToCategory": "移动到类别",
+    "selectCategory": "选择类别",
+    "move": "移动",
+    "moveToUnassigned": "移到未分配",
+    "noCategory": "(未分配)",
+    "menuCodeHint": "此菜单在代码(menuConfig.ts)中定义，标签和路径只能在代码中更改。"
   }
 }

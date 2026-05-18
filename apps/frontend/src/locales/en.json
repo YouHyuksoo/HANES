@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -5585,6 +5585,18 @@
     "title": "Menu Category Management",
     "unassigned": "Unassigned Menus",
     "addCategory": "Add Category",
-    "cannotDeleteWithChildren": "This category has {{count}} menus. Please move or remove them first."
+    "cannotDeleteWithChildren": "This category has {{count}} menus. Please move or remove them first.",
+    "editCategory": "Edit Category",
+    "selectItem": "Please select an item",
+    "save": "Save",
+    "delete": "Delete",
+    "menuInfo": "Menu Info",
+    "currentCategory": "Current Category",
+    "moveToCategory": "Move to Category",
+    "selectCategory": "Select category",
+    "move": "Move",
+    "moveToUnassigned": "Move to Unassigned",
+    "noCategory": "(Unassigned)",
+    "menuCodeHint": "This menu is defined in code (menuConfig.ts). Labels and paths can only be changed in the code."
   }
 }

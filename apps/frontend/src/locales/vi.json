@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "save": "Lưu",
     "cancel": "Hủy",
@@ -5567,6 +5567,18 @@
     "title": "Quản lý danh mục menu",
     "unassigned": "Menu chưa phân loại",
     "addCategory": "Thêm danh mục",
-    "cannotDeleteWithChildren": "Danh mục này có {{count}} menu. Vui lòng di chuyển hoặc xóa chúng trước."
+    "cannotDeleteWithChildren": "Danh mục này có {{count}} menu. Vui lòng di chuyển hoặc xóa chúng trước.",
+    "editCategory": "Chỉnh sửa danh mục",
+    "selectItem": "Vui lòng chọn một mục",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "menuInfo": "Thông tin menu",
+    "currentCategory": "Danh mục hiện tại",
+    "moveToCategory": "Di chuyển đến danh mục",
+    "selectCategory": "Chọn danh mục",
+    "move": "Di chuyển",
+    "moveToUnassigned": "Chuyển sang chưa phân loại",
+    "noCategory": "(Chưa phân loại)",
+    "menuCodeHint": "Menu này được định nghĩa trong mã (menuConfig.ts). Nhãn và đường dẫn chỉ có thể thay đổi trong mã."
   }
 }
