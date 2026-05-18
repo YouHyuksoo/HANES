@@ -174,7 +174,11 @@ export default function PartPage() {
           SAMPLE: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
           SKIP: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
         };
-        const labels: Record<string, string> = { FULL: t("master.part.inspectFull", "전수"), SAMPLE: t("master.part.inspectSample", "샘플"), SKIP: t("master.part.inspectSkip", "무검사") };
+        const labels: Record<string, string> = {
+          FULL: t("master.part.inspect", "검사"),
+          SAMPLE: t("master.part.inspect", "검사"),
+          SKIP: t("master.part.inspectSkip", "무검사"),
+        };
         return <span className={`px-2 py-0.5 text-xs rounded-full ${colors[v] || ""}`}>{labels[v] || v}</span>;
       },
     },

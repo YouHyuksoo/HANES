@@ -270,8 +270,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             <Select label={t("master.part.inspectMethod", "검사방법")}
               options={[
                 { value: "", label: "-" },
-                { value: "FULL", label: t("master.part.inspectFull", "전수") },
-                { value: "SAMPLE", label: t("master.part.inspectSample", "샘플") },
+                { value: "FULL", label: t("master.part.inspect", "검사") },
                 { value: "SKIP", label: t("master.part.inspectSkip", "무검사") },
               ]}
               value={form.inspectMethod} onChange={v => setField("inspectMethod", v)} fullWidth />
