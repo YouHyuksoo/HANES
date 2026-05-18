@@ -145,36 +145,25 @@ async function seedRoles(): Promise<void> {
     console.log('  Connected successfully.\n');
 
     // ------------------------------------------------------------------
-    // 1) 역할(Role) UPSERT
+    // 1) 역할(Role) UPSERT — CODE 가 PK (자연키)
     // ------------------------------------------------------------------
     console.log('[1/2] Seeding roles...');
-    const roleIdMap: Record<string, number> = {};
 
     for (const role of ROLE_SEEDS) {
-      // code 기준 존재 여부 확인
       const existing = await dataSource.query(
-        `SELECT "ID" FROM "ROLES" WHERE "CODE" = :1 AND "DELETED_AT" IS NULL`,
+        `SELECT "CODE" FROM "ROLES" WHERE "CODE" = :1`,
         [role.code],
       );
 
       if (existing.length > 0) {
-        roleIdMap[role.code] = Number(existing[0].ID);
-        console.log(`  [SKIP] ${role.code} - already exists (id: ${existing[0].ID})`);
+        console.log(`  [SKIP] ${role.code} - already exists`);
       } else {
-        // 새 역할 삽입 (시퀀스 사용)
         await dataSource.query(
-          `INSERT INTO "ROLES" ("ID", "CODE", "NAME", "DESCRIPTION", "IS_SYSTEM", "SORT_ORDER", "CREATED_BY", "UPDATED_BY", "CREATED_AT", "UPDATED_AT")
-           VALUES (SEQ_ROLES.NEXTVAL, :1, :2, :3, :4, :5, 'SEED', 'SEED', SYSTIMESTAMP, SYSTIMESTAMP)`,
+          `INSERT INTO "ROLES" ("CODE", "NAME", "DESCRIPTION", "IS_SYSTEM", "SORT_ORDER", "CREATED_BY", "UPDATED_BY", "CREATED_AT", "UPDATED_AT")
+           VALUES (:1, :2, :3, :4, :5, 'SEED', 'SEED', SYSTIMESTAMP, SYSTIMESTAMP)`,
           [role.code, role.name, role.description, role.isSystem ? 'Y' : 'N', role.sortOrder],
         );
-
-        // 삽입 후 ID 조회
-        const inserted = await dataSource.query(
-          `SELECT "ID" FROM "ROLES" WHERE "CODE" = :1 AND "DELETED_AT" IS NULL`,
-          [role.code],
-        );
-        roleIdMap[role.code] = Number(inserted[0].ID);
-        console.log(`  [INSERT] ${role.code} (id: ${inserted[0].ID})`);
+        console.log(`  [INSERT] ${role.code}`);
       }
     }
 
@@ -182,6 +171,7 @@ async function seedRoles(): Promise<void> {
 
     // ------------------------------------------------------------------
     // 2) 역할-메뉴 권한 매핑 (ADMIN은 생략 — 코드에서 전체 허용)
+    //    (ROLE_CODE, MENU_CODE) 복합 PK
     // ------------------------------------------------------------------
     console.log('[2/2] Seeding role-menu permissions...');
 
@@ -195,28 +185,21 @@ async function seedRoles(): Promise<void> {
     let skippedCount = 0;
 
     for (const [roleCode, menuCodes] of Object.entries(permissionMap)) {
-      const roleId = roleIdMap[roleCode];
-      if (!roleId) {
-        console.log(`  [WARN] Role ${roleCode} not found, skipping permissions.`);
-        continue;
-      }
-
       console.log(`  ${roleCode} (${menuCodes.length} menus):`);
 
       for (const menuCode of menuCodes) {
-        // 중복 확인 (roleId + menuCode)
         const existing = await dataSource.query(
-          `SELECT "ID" FROM "ROLE_MENU_PERMISSIONS" WHERE "ROLE_ID" = :1 AND "MENU_CODE" = :2`,
-          [roleId, menuCode],
+          `SELECT "ROLE_CODE" FROM "ROLE_MENU_PERMISSIONS" WHERE "ROLE_CODE" = :1 AND "MENU_CODE" = :2`,
+          [roleCode, menuCode],
         );
 
         if (existing.length > 0) {
           skippedCount++;
         } else {
           await dataSource.query(
-            `INSERT INTO "ROLE_MENU_PERMISSIONS" ("ID", "ROLE_ID", "MENU_CODE", "CAN_ACCESS", "CREATED_AT", "UPDATED_AT")
-             VALUES (SEQ_ROLE_MENU_PERMS.NEXTVAL, :1, :2, 'Y', SYSTIMESTAMP, SYSTIMESTAMP)`,
-            [roleId, menuCode],
+            `INSERT INTO "ROLE_MENU_PERMISSIONS" ("ROLE_CODE", "MENU_CODE", "CAN_ACCESS", "CREATED_AT", "UPDATED_AT")
+             VALUES (:1, :2, 'Y', SYSTIMESTAMP, SYSTIMESTAMP)`,
+            [roleCode, menuCode],
           );
           insertedCount++;
         }
