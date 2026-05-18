@@ -22,7 +22,6 @@ export interface SelectedProcess {
 }
 
 export interface SelectedEquip {
-  id: string;
   equipCode: string;
   equipName: string;
 }

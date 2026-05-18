@@ -12,12 +12,12 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
-import { Search, Layers, RefreshCw, Calendar } from "lucide-react";
+import { Search, Layers, RefreshCw, Calendar, GitBranch } from "lucide-react";
 import { Card, CardContent, Input, Button } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import BomTab from "./components/BomTab";
-import { ParentPart, RoutingTarget } from "./types";
+import { BomRoutingInfo, ParentPart, RoutingTarget } from "./types";
 
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
 const getToday = () => new Date().toISOString().split("T")[0];
@@ -28,6 +28,8 @@ function BomPage() {
   const [parents, setParents] = useState<ParentPart[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedParent, setSelectedParent] = useState<ParentPart | null>(null);
+  const [routingInfo, setRoutingInfo] = useState<BomRoutingInfo | null>(null);
+  const [routingLoading, setRoutingLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [effectiveDate, setEffectiveDate] = useState(getToday());
   const [typeFilter, setTypeFilter] = useState("");
@@ -59,6 +61,24 @@ function BomPage() {
   }, [searchText, effectiveDate]);
 
   useEffect(() => { fetchParents(); }, [fetchParents]);
+
+  const fetchRoutingInfo = useCallback(async () => {
+    if (!selectedParent) {
+      setRoutingInfo(null);
+      return;
+    }
+    setRoutingLoading(true);
+    try {
+      const res = await api.get(`/master/routing-groups/by-item/${selectedParent.itemCode}`);
+      setRoutingInfo(res.data?.data ?? null);
+    } catch {
+      setRoutingInfo(null);
+    } finally {
+      setRoutingLoading(false);
+    }
+  }, [selectedParent]);
+
+  useEffect(() => { fetchRoutingInfo(); }, [fetchRoutingInfo]);
 
   const handleViewRouting = useCallback((target: RoutingTarget) => {
     const params = new URLSearchParams({ itemCode: target.itemCode });
@@ -224,10 +244,56 @@ function BomPage() {
                   <h2 className="text-sm font-semibold text-text">{t("master.bom.bomStructureTitle")}</h2>
                   <p className="text-xs text-text-muted mt-0.5">{t("master.bom.bomStructureDesc")}</p>
                 </div>
-                <Button variant="secondary" size="sm" onClick={() => router.push("/master/routing")}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => selectedParent ? handleViewRouting(selectedParent) : router.push("/master/routing")}
+                >
                   {t("master.bom.goRoutingManagement")}
                 </Button>
               </div>
+
+              {selectedParent && (
+                <div className="mb-4 shrink-0 rounded border border-border bg-surface/60 px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <GitBranch className="w-4 h-4 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-text">
+                          {t("master.routing.title", { defaultValue: "라우팅정보" })}
+                        </div>
+                        <div className="text-[11px] text-text-muted truncate">
+                          {routingLoading
+                            ? t("common.loading")
+                            : routingInfo
+                              ? `${routingInfo.routingCode} / ${routingInfo.routingName}`
+                              : t("master.bom.noRoutingInfo", { defaultValue: "등록된 라우팅 정보가 없습니다." })}
+                        </div>
+                      </div>
+                    </div>
+                    {routingInfo && (
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                        {routingInfo.processes?.length ?? 0} {t("master.routing.processCount", { defaultValue: "공정" })}
+                      </span>
+                    )}
+                  </div>
+                  {routingInfo?.processes && routingInfo.processes.length > 0 && (
+                    <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5">
+                      {routingInfo.processes.map((process) => (
+                        <div
+                          key={`${process.routingCode}-${process.seq}`}
+                          className="shrink-0 rounded border border-border bg-background px-2 py-1 text-[11px] text-text"
+                        >
+                          <span className="font-mono font-semibold text-primary">{process.seq}</span>
+                          <span className="mx-1 text-text-muted">|</span>
+                          <span className="font-medium">{process.processName}</span>
+                          <span className="ml-1 font-mono text-text-muted">[{process.processCode}]</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex-1 overflow-y-auto min-h-0">
                 <BomTab selectedParent={selectedParent} onViewRouting={handleViewRouting} effectiveDate={effectiveDate} />

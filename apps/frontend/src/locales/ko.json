@@ -76,7 +76,8 @@
     "available": "가용",
     "title": "제목",
     "requester": "요청자",
-    "reject": "반려"
+    "reject": "반려",
+    "deleteMessage": "을(를) 삭제하시겠습니까?"
   },
   "menu": {
     "dashboard": "대시보드",
@@ -307,7 +308,6 @@
     "system.commConfig": "통신설정관리",
     "system.config": "환경설정",
     "system.roles": "역할관리",
-    "system.pdaRoles": "PDA 역할관리",
     "system.pdaRoles": "PDA 역할관리",
     "system.document": "문서관리",
     "system.training": "교육훈련",
@@ -1172,7 +1172,8 @@
       "expiryDate": "유효기간(일)",
       "sectionBasic": "기본정보",
       "sectionQty": "거래처 / 수량관리",
-      "partType": "품목유형"
+      "partType": "품목유형",
+      "itemCode": "????"
     },
     "bom": {
       "title": "BOM관리",
@@ -1215,7 +1216,8 @@
       "selectChildPart": "자품목을 선택하세요",
       "noRoutingData": "라우팅 데이터가 없습니다",
       "routingViewTarget": "라우팅 조회 대상",
-      "viewAllRouting": "전체 라우팅 보기"
+      "viewAllRouting": "전체 라우팅 보기",
+      "childItem": "??"
     },
     "gauge": {
       "title": "계측기 마스터",
@@ -1372,12 +1374,12 @@
       "stepManageConditionDesc": "공정별 검사 기준값과 설비 I/F 여부를 관리합니다.",
       "itemSelectTitle": "라우팅 대상 품목",
       "itemSelectDesc": "완제품 또는 반제품을 선택하면 해당 품목의 라우팅 공정순서를 관리합니다.",
-      "processSequenceTitle": "라우팅 공정순서",
+      "processSequenceTitle": "라우팅 공정 순서",
       "processSequenceDesc": "품목 아래 P 공정을 선택하면 우측에서 양품조건을 편집합니다.",
-      "conditionEditorTitle": "선택 공정의 양품조건",
+      "conditionEditorTitle": "선택 공정 양품조건",
       "conditionEditorDesc": "이 공정을 통과하기 위한 검사 항목, 기준값, 단위를 등록합니다.",
       "processNode": "공정",
-      "editProcess": "공정수정",
+      "editProcess": "공정 수정",
       "equipInterface": "설비 I/F",
       "viewRouting": "라우팅 조회",
       "viewRoutingHint": "품목 행 또는 라우팅 조회 버튼을 클릭하면 라우팅 트리를 조회합니다.",
@@ -1408,7 +1410,15 @@
       "maxValue": "수치(MAX)",
       "unit": "단위",
       "addCondition": "+ 조건추가",
-      "unsavedChanges": "미저장 변경사항"
+      "unsavedChanges": "미저장 변경사항",
+      "routingGroupList": "라우팅 목록",
+      "searchGroupPlaceholder": "라우팅코드/라우팅명/품목 검색...",
+      "materialEditorTitle": "투입자재",
+      "allocQty": "투입수량",
+      "issueMethod": "투입방식",
+      "backflush": "백플러시",
+      "preIssue": "선투입",
+      "noBomMaterial": "이 라우팅 품목에 등록된 BOM 자재가 없습니다."
     },
     "workCalendar": {
       "title": "생산월력관리",
@@ -5595,17 +5605,105 @@
     "subtitle": "업무 프로세스 흐름을 한눈에 파악하고, 각 단계로 바로 이동하세요.",
     "refresh": "새로고침",
     "activeSuffix": "건 진행중",
-    "material": { "title": "자재관리", "arrival": "입하", "label": "입고라벨", "iqc": "IQC", "receive": "입고", "request": "출고요청", "issue": "출고" },
-    "production": { "title": "생산관리", "plan": "월간계획", "simulation": "시뮬레이션", "order": "작업지시", "result": "생산실적", "inspect": "공정검사", "fgReceive": "완제품입고" },
-    "quality": { "title": "품질관리", "iqc": "IQC", "processInspect": "공정검사", "oqc": "OQC", "defect": "불량등록", "rework": "재작업", "reinspect": "재검사", "capa": "CAPA" },
-    "shipping": { "title": "출하관리", "packResult": "포장실적", "pack": "포장", "pallet": "파렛트", "oqc": "OQC", "confirm": "출하확정", "history": "출하이력" },
-    "equipment": { "title": "설비관리", "pmPlan": "PM계획", "pmCalendar": "PM캘린더", "pmResult": "PM결과", "daily": "일상점검", "periodic": "정기점검", "history": "점검이력" },
-    "outsourcing": { "title": "외주관리", "vendor": "외주업체", "order": "외주발주", "receive": "외주입고" },
-    "consumables": { "title": "소모품관리", "receiving": "입고", "label": "라벨", "issuing": "출고", "mount": "장착", "life": "수명" },
-    "status": { "pending": "대기", "active": "진행", "done": "완료", "inspecting": "검사중", "planning": "수립", "simulating": "시뮬레이션", "inputting": "입력중", "reporting": "등록", "requesting": "요청", "issuing": "발행", "packing": "포장중", "palletizing": "적재중", "confirming": "확정", "scheduled": "예정", "executing": "실행", "ordering": "발주", "receiving": "입고중", "master": "마스터", "managing": "관리" },
-    "branch": { "pass": "합격", "fail": "불합격" },
-    "action": { "goTo": "바로가기", "cancelReceipt": "입고취소", "return": "반품", "close": "닫기" },
-    "popover": { "stats": "현황 통계", "recentHistory": "최근 처리 이력", "pendingCnt": "대기", "activeCnt": "진행", "doneCnt": "완료", "reverseCnt": "취소대기" }
+    "material": {
+      "title": "자재관리",
+      "arrival": "입하",
+      "label": "입고라벨",
+      "iqc": "IQC",
+      "receive": "입고",
+      "request": "출고요청",
+      "issue": "출고"
+    },
+    "production": {
+      "title": "생산관리",
+      "plan": "월간계획",
+      "simulation": "시뮬레이션",
+      "order": "작업지시",
+      "result": "생산실적",
+      "inspect": "공정검사",
+      "fgReceive": "완제품입고"
+    },
+    "quality": {
+      "title": "품질관리",
+      "iqc": "IQC",
+      "processInspect": "공정검사",
+      "oqc": "OQC",
+      "defect": "불량등록",
+      "rework": "재작업",
+      "reinspect": "재검사",
+      "capa": "CAPA"
+    },
+    "shipping": {
+      "title": "출하관리",
+      "packResult": "포장실적",
+      "pack": "포장",
+      "pallet": "파렛트",
+      "oqc": "OQC",
+      "confirm": "출하확정",
+      "history": "출하이력"
+    },
+    "equipment": {
+      "title": "설비관리",
+      "pmPlan": "PM계획",
+      "pmCalendar": "PM캘린더",
+      "pmResult": "PM결과",
+      "daily": "일상점검",
+      "periodic": "정기점검",
+      "history": "점검이력"
+    },
+    "outsourcing": {
+      "title": "외주관리",
+      "vendor": "외주업체",
+      "order": "외주발주",
+      "receive": "외주입고"
+    },
+    "consumables": {
+      "title": "소모품관리",
+      "receiving": "입고",
+      "label": "라벨",
+      "issuing": "출고",
+      "mount": "장착",
+      "life": "수명"
+    },
+    "status": {
+      "pending": "대기",
+      "active": "진행",
+      "done": "완료",
+      "inspecting": "검사중",
+      "planning": "수립",
+      "simulating": "시뮬레이션",
+      "inputting": "입력중",
+      "reporting": "등록",
+      "requesting": "요청",
+      "issuing": "발행",
+      "packing": "포장중",
+      "palletizing": "적재중",
+      "confirming": "확정",
+      "scheduled": "예정",
+      "executing": "실행",
+      "ordering": "발주",
+      "receiving": "입고중",
+      "master": "마스터",
+      "managing": "관리"
+    },
+    "branch": {
+      "pass": "합격",
+      "fail": "불합격"
+    },
+    "action": {
+      "goTo": "바로가기",
+      "cancelReceipt": "입고취소",
+      "return": "반품",
+      "close": "닫기"
+    },
+    "popover": {
+      "stats": "현황 통계",
+      "recentHistory": "최근 처리 이력",
+      "pendingCnt": "대기",
+      "activeCnt": "진행",
+      "doneCnt": "완료",
+      "reverseCnt": "취소대기"
+    }
   },
   "menuCategoryAdmin": {
     "title": "메뉴 카테고리 관리",

@@ -38,7 +38,7 @@ interface ManualResult {
   remark: string;
 }
 
-interface EquipOption { id: string; equipCode: string; equipName: string; }
+interface EquipOption { equipCode: string; equipName: string; }
 
 export default function InputManualPage() {
   const { t } = useTranslation();
@@ -110,7 +110,7 @@ export default function InputManualPage() {
   }, [data]);
 
   const equipOptions = useMemo(() =>
-    equips.map(e => ({ value: e.id, label: `${e.equipName} (${e.equipCode})` })),
+    equips.map(e => ({ value: e.equipCode, label: `${e.equipName} (${e.equipCode})` })),
   [equips]);
 
   /** 라인 선택 */
@@ -130,8 +130,8 @@ export default function InputManualPage() {
   /** 설비 선택 + 작업지시 할당 API */
   const handleEquipChange = async (value: string) => {
     if (!value) { setSelectedEquip(null); return; }
-    const eq = equips.find(e => e.id === value);
-    if (eq) setSelectedEquip({ id: eq.id, equipCode: eq.equipCode, equipName: eq.equipName });
+    const eq = equips.find(e => e.equipCode === value);
+    if (eq) setSelectedEquip({ equipCode: eq.equipCode, equipName: eq.equipName });
   };
 
   /** 작업지시 선택 → 설비에 할당 */
@@ -141,7 +141,7 @@ export default function InputManualPage() {
     // 설비에 작업지시 할당
     if (selectedEquip) {
       try {
-        await api.patch(`/equipment/equips/${selectedEquip.id}/job-order`, {
+        await api.patch(`/equipment/equips/${selectedEquip.equipCode}/job-order`, {
           orderNo: jobOrder.orderNo,
         });
       } catch (e) {
@@ -264,7 +264,7 @@ export default function InputManualPage() {
                 <Wrench className="w-3.5 h-3.5 text-green-500 shrink-0" />
                 <Select
                   options={equipOptions}
-                  value={selectedEquip?.id ?? ''}
+                  value={selectedEquip?.equipCode ?? ''}
                   onChange={handleEquipChange}
                   placeholder={t('production.inputManual.clickToSelectEquip')}
                   disabled={!selectedProcess}

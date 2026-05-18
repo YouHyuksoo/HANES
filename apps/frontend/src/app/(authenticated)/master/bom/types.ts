@@ -65,6 +65,27 @@ export interface RoutingTarget {
   breadcrumb?: string;
 }
 
+export interface BomRoutingProcess {
+  routingCode: string;
+  seq: number;
+  processCode: string;
+  processName: string;
+  processType?: string | null;
+  equipType?: string | null;
+  stdTime?: number | null;
+  setupTime?: number | null;
+  useYn: string;
+}
+
+export interface BomRoutingInfo {
+  routingCode: string;
+  routingName: string;
+  itemCode: string | null;
+  description?: string | null;
+  useYn: string;
+  processes?: BomRoutingProcess[];
+}
+
 /** BOM CRUD 폼 데이터 */
 export interface BomFormData {
   parentItemCode: string;

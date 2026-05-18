@@ -76,7 +76,8 @@
     "available": "Available",
     "title": "Title",
     "requester": "Requester",
-    "reject": "Reject"
+    "reject": "Reject",
+    "deleteMessage": "Delete this item?"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -880,7 +881,8 @@
       "expiryDate": "Expiry (days)",
       "sectionBasic": "Basic Info",
       "sectionQty": "Vendor / Qty Management",
-      "partType": "Part Type"
+      "partType": "Part Type",
+      "itemCode": "Item Code"
     },
     "bom": {
       "title": "BOM Management",
@@ -912,7 +914,8 @@
       "routingCount": "processes",
       "effectiveDate": "Effective Date",
       "validFrom": "Valid From",
-      "validTo": "Valid To"
+      "validTo": "Valid To",
+      "childItem": "Material"
     },
     "gauge": {
       "title": "Gauge Master",
@@ -1105,7 +1108,15 @@
       "maxValue": "Max Value",
       "unit": "Unit",
       "addCondition": "+ Add Condition",
-      "unsavedChanges": "Unsaved changes"
+      "unsavedChanges": "Unsaved changes",
+      "routingGroupList": "Routing Groups",
+      "searchGroupPlaceholder": "Search routing code/name/item...",
+      "materialEditorTitle": "Input Materials",
+      "allocQty": "Input Qty",
+      "issueMethod": "Issue Method",
+      "backflush": "Backflush",
+      "preIssue": "Pre-Issue",
+      "noBomMaterial": "No BOM materials are registered for this routing item."
     },
     "workCalendar": {
       "title": "Work Calendar",
@@ -5526,7 +5537,15 @@
     "available": "Available",
     "shortage": "short",
     "surplus": "surplus",
-    "options": { "shift": "Shift", "shift1": "1 Shift", "shift2": "2 Shifts", "shift3": "3 Shifts", "includeOt": "Include OT", "applySetup": "Apply Setup Time", "deductStock": "Deduct Stock" },
+    "options": {
+      "shift": "Shift",
+      "shift1": "1 Shift",
+      "shift2": "2 Shifts",
+      "shift3": "3 Shifts",
+      "includeOt": "Include OT",
+      "applySetup": "Apply Setup Time",
+      "deductStock": "Deduct Stock"
+    },
     "planOrder": "Production Order",
     "emptyGuide": "Select a target month and run the simulation.",
     "planInfo": "Plan Info",
@@ -5569,17 +5588,105 @@
     "subtitle": "View business process flows at a glance and navigate to each step.",
     "refresh": "Refresh",
     "activeSuffix": " active",
-    "material": { "title": "Material", "arrival": "Arrival", "label": "Label", "iqc": "IQC", "receive": "Receive", "request": "Request", "issue": "Issue" },
-    "production": { "title": "Production", "plan": "Plan", "simulation": "Simulation", "order": "Order", "result": "Result", "inspect": "Inspect", "fgReceive": "FG Receive" },
-    "quality": { "title": "Quality", "iqc": "IQC", "processInspect": "Process Insp.", "oqc": "OQC", "defect": "Defect", "rework": "Rework", "reinspect": "Re-inspect", "capa": "CAPA" },
-    "shipping": { "title": "Shipping", "packResult": "Pack Result", "pack": "Pack", "pallet": "Pallet", "oqc": "OQC", "confirm": "Confirm", "history": "History" },
-    "equipment": { "title": "Equipment", "pmPlan": "PM Plan", "pmCalendar": "PM Calendar", "pmResult": "PM Result", "daily": "Daily Insp.", "periodic": "Periodic Insp.", "history": "History" },
-    "outsourcing": { "title": "Outsourcing", "vendor": "Vendor", "order": "Order", "receive": "Receive" },
-    "consumables": { "title": "Consumables", "receiving": "Receive", "label": "Label", "issuing": "Issue", "mount": "Mount", "life": "Life" },
-    "status": { "pending": "Pending", "active": "Active", "done": "Done", "inspecting": "Inspecting", "planning": "Planning", "simulating": "Simulating", "inputting": "Inputting", "reporting": "Reporting", "requesting": "Requesting", "issuing": "Issuing", "packing": "Packing", "palletizing": "Palletizing", "confirming": "Confirming", "scheduled": "Scheduled", "executing": "Executing", "ordering": "Ordering", "receiving": "Receiving", "master": "Master", "managing": "Managing" },
-    "branch": { "pass": "Pass", "fail": "Fail" },
-    "action": { "goTo": "Go to", "cancelReceipt": "Cancel Receipt", "return": "Return", "close": "Close" },
-    "popover": { "stats": "Statistics", "recentHistory": "Recent History", "pendingCnt": "Pending", "activeCnt": "Active", "doneCnt": "Done", "reverseCnt": "Cancel Pending" }
+    "material": {
+      "title": "Material",
+      "arrival": "Arrival",
+      "label": "Label",
+      "iqc": "IQC",
+      "receive": "Receive",
+      "request": "Request",
+      "issue": "Issue"
+    },
+    "production": {
+      "title": "Production",
+      "plan": "Plan",
+      "simulation": "Simulation",
+      "order": "Order",
+      "result": "Result",
+      "inspect": "Inspect",
+      "fgReceive": "FG Receive"
+    },
+    "quality": {
+      "title": "Quality",
+      "iqc": "IQC",
+      "processInspect": "Process Insp.",
+      "oqc": "OQC",
+      "defect": "Defect",
+      "rework": "Rework",
+      "reinspect": "Re-inspect",
+      "capa": "CAPA"
+    },
+    "shipping": {
+      "title": "Shipping",
+      "packResult": "Pack Result",
+      "pack": "Pack",
+      "pallet": "Pallet",
+      "oqc": "OQC",
+      "confirm": "Confirm",
+      "history": "History"
+    },
+    "equipment": {
+      "title": "Equipment",
+      "pmPlan": "PM Plan",
+      "pmCalendar": "PM Calendar",
+      "pmResult": "PM Result",
+      "daily": "Daily Insp.",
+      "periodic": "Periodic Insp.",
+      "history": "History"
+    },
+    "outsourcing": {
+      "title": "Outsourcing",
+      "vendor": "Vendor",
+      "order": "Order",
+      "receive": "Receive"
+    },
+    "consumables": {
+      "title": "Consumables",
+      "receiving": "Receive",
+      "label": "Label",
+      "issuing": "Issue",
+      "mount": "Mount",
+      "life": "Life"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "done": "Done",
+      "inspecting": "Inspecting",
+      "planning": "Planning",
+      "simulating": "Simulating",
+      "inputting": "Inputting",
+      "reporting": "Reporting",
+      "requesting": "Requesting",
+      "issuing": "Issuing",
+      "packing": "Packing",
+      "palletizing": "Palletizing",
+      "confirming": "Confirming",
+      "scheduled": "Scheduled",
+      "executing": "Executing",
+      "ordering": "Ordering",
+      "receiving": "Receiving",
+      "master": "Master",
+      "managing": "Managing"
+    },
+    "branch": {
+      "pass": "Pass",
+      "fail": "Fail"
+    },
+    "action": {
+      "goTo": "Go to",
+      "cancelReceipt": "Cancel Receipt",
+      "return": "Return",
+      "close": "Close"
+    },
+    "popover": {
+      "stats": "Statistics",
+      "recentHistory": "Recent History",
+      "pendingCnt": "Pending",
+      "activeCnt": "Active",
+      "doneCnt": "Done",
+      "reverseCnt": "Cancel Pending"
+    }
   },
   "menuCategoryAdmin": {
     "title": "Menu Category Management",
