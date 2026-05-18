@@ -1,8 +1,19 @@
 /**
  * @file src/entities/menu-category.entity.ts
  * @description 사이드바 카테고리(상위 메뉴) 정의 엔티티
+ *
+ * 초보자 가이드:
+ * 1. CATEGORY_CODE는 자연키 PK (영문 대문자/언더스코어)
+ * 2. 예약어 __ROOT__는 단독 메뉴(DASHBOARD 등) 그룹용
+ * 3. iconName이 NULL이면 사이드바에서 기본 폴더 아이콘 사용
  */
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'MENU_CATEGORIES' })
 export class MenuCategory {
@@ -13,7 +24,7 @@ export class MenuCategory {
   labelKey!: string;
 
   @Column({ name: 'ICON_NAME', type: 'varchar2', length: 50, nullable: true })
-  iconName?: string | null;
+  iconName!: string | null;
 
   @Column({ name: 'SORT_ORDER', type: 'number', default: 0 })
   sortOrder!: number;
@@ -27,13 +38,13 @@ export class MenuCategory {
   @Column({ name: 'PLANT_CD', type: 'varchar2', length: 20 })
   plantCd!: string;
 
-  @Column({ name: 'CREATED_AT', type: 'timestamp' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt!: Date;
 
   @Column({ name: 'CREATED_BY', type: 'varchar2', length: 50 })
   createdBy!: string;
 
-  @Column({ name: 'UPDATED_AT', type: 'timestamp' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt!: Date;
 
   @Column({ name: 'UPDATED_BY', type: 'varchar2', length: 50 })

@@ -1,8 +1,21 @@
 /**
  * @file src/entities/menu-category-item.entity.ts
  * @description 메뉴(leaf) ↔ 카테고리 배치 엔티티
+ *
+ * 초보자 가이드:
+ * 1. MENU_CODE가 PK — 한 메뉴는 하나의 카테고리에만 배치
+ * 2. CATEGORY_CODE는 FK + 일반 컬럼 (TypeORM 표준 패턴, role-menu-permission 참고)
+ * 3. SORT_ORDER는 카테고리 내 표시 순서(10단위 권장)
  */
-import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { MenuCategory } from './menu-category.entity';
 
 @Entity({ name: 'MENU_CATEGORY_ITEMS' })
@@ -26,13 +39,13 @@ export class MenuCategoryItem {
   @Column({ name: 'PLANT_CD', type: 'varchar2', length: 20 })
   plantCd!: string;
 
-  @Column({ name: 'CREATED_AT', type: 'timestamp' })
+  @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt!: Date;
 
   @Column({ name: 'CREATED_BY', type: 'varchar2', length: 50 })
   createdBy!: string;
 
-  @Column({ name: 'UPDATED_AT', type: 'timestamp' })
+  @UpdateDateColumn({ name: 'UPDATED_AT', type: 'timestamp' })
   updatedAt!: Date;
 
   @Column({ name: 'UPDATED_BY', type: 'varchar2', length: 50 })
