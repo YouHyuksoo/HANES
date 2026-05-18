@@ -14,7 +14,7 @@
 import { useState, useCallback, useEffect, useMemo, Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Search, ChevronRight, ChevronDown, Plus, Trash2, RefreshCw, Route,
+  Search, ChevronRight, ChevronDown, Plus, Trash2, RefreshCw, Route, Pencil,
 } from "lucide-react";
 import { Input, Button, ConfirmModal, Modal } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -36,6 +36,9 @@ interface ProcessItem {
   processCode: string;
   processName: string;
   processType: string | null;
+  equipType: string | null;
+  stdTime: number | null;
+  setupTime: number | null;
 }
 
 /** 트리 노드 (품목 + 공정) */
@@ -79,8 +82,10 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
 
   /* 공정 추가 모달 */
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
+  const [processModalMode, setProcessModalMode] = useState<"add" | "edit">("add");
   const [processModalRoutingCode, setProcessModalRoutingCode] = useState("");
   const [processModalItemCode, setProcessModalItemCode] = useState("");
+  const [editingProcessSeq, setEditingProcessSeq] = useState<number | null>(null);
   const [processForm, setProcessForm] = useState({ seq: "10", processCode: "", processName: "", processType: "", equipType: "", stdTime: "", setupTime: "" });
   const [processSaving, setProcessSaving] = useState(false);
   const [processOptions, setProcessOptions] = useState<{ processCode: string; processName: string }[]>([]);
@@ -267,12 +272,54 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
     const maxSeq = currentProcs.length > 0 ? Math.max(...currentProcs.map((p) => p.seq)) : 0;
 
     setProcessModalItemCode(targetItemCode);
+    setProcessModalMode("add");
+    setEditingProcessSeq(null);
     setProcessForm({ seq: String(maxSeq + 10), processCode: "", processName: "", processType: "", equipType: "", stdTime: "", setupTime: "" });
     // 라우팅 그룹 확보
     const rc = await ensureRoutingGroup(targetItemCode, targetItemName);
     if (rc) setProcessModalRoutingCode(rc);
     setIsProcessModalOpen(true);
   }, [treeData, selectedNodeKey, fetchProcessMasters, ensureRoutingGroup]);
+
+  const findSelectedProcess = useCallback((): ProcessItem | null => {
+    if (!treeData || !selectedNodeKey.includes("::")) return null;
+    const [routingCode, seqStr] = selectedNodeKey.split("::");
+    const seq = parseInt(seqStr, 10);
+    let selected: ProcessItem | null = null;
+
+    const visit = (node: TreeNode) => {
+      const proc = node.processes.find((p) => p.routingCode === routingCode && p.seq === seq);
+      if (proc) {
+        selected = proc;
+        return;
+      }
+      node.children.forEach(visit);
+    };
+
+    visit(treeData);
+    return selected;
+  }, [selectedNodeKey, treeData]);
+
+  const handleEditProcess = useCallback(() => {
+    const selected = findSelectedProcess();
+    if (!selected) return;
+
+    fetchProcessMasters();
+    setProcessModalMode("edit");
+    setProcessModalRoutingCode(selected.routingCode);
+    setProcessModalItemCode("");
+    setEditingProcessSeq(selected.seq);
+    setProcessForm({
+      seq: String(selected.seq),
+      processCode: selected.processCode,
+      processName: selected.processName,
+      processType: selected.processType || "",
+      equipType: selected.equipType || "",
+      stdTime: selected.stdTime != null ? String(selected.stdTime) : "",
+      setupTime: selected.setupTime != null ? String(selected.setupTime) : "",
+    });
+    setIsProcessModalOpen(true);
+  }, [fetchProcessMasters, findSelectedProcess]);
 
   const handleProcessCodeSelect = useCallback((code: string) => {
     const found = processOptions.find((p) => p.processCode === code);
@@ -283,7 +330,7 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
     if (!processModalRoutingCode || !processForm.processCode) return;
     setProcessSaving(true);
     try {
-      await api.post(`/master/routing-groups/${processModalRoutingCode}/processes`, {
+      const body = {
         routingCode: processModalRoutingCode,
         seq: Number(processForm.seq),
         processCode: processForm.processCode,
@@ -293,12 +340,18 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
         stdTime: processForm.stdTime ? Number(processForm.stdTime) : undefined,
         setupTime: processForm.setupTime ? Number(processForm.setupTime) : undefined,
         useYn: "Y",
-      });
+      };
+
+      if (processModalMode === "edit" && editingProcessSeq != null) {
+        await api.put(`/master/routing-groups/${processModalRoutingCode}/processes/${editingProcessSeq}`, body);
+      } else {
+        await api.post(`/master/routing-groups/${processModalRoutingCode}/processes`, body);
+      }
       setIsProcessModalOpen(false);
       if (selectedPart) fetchTree(selectedPart);
     } catch { /* */ }
     finally { setProcessSaving(false); }
-  }, [processModalRoutingCode, processForm, selectedPart, fetchTree]);
+  }, [editingProcessSeq, processModalMode, processModalRoutingCode, processForm, selectedPart, fetchTree]);
 
   /** 공정 삭제 */
   const handleDeleteProcess = useCallback(() => {
@@ -448,6 +501,9 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
 
           {/* 공정삭제/공정추가 */}
           <div className="flex gap-2 mb-2 shrink-0">
+            <Button variant="secondary" size="sm" className="flex-1 text-xs" onClick={handleEditProcess} disabled={!selectedNodeKey.includes("::")}>
+              <Pencil className="w-3.5 h-3.5 mr-1" />{t("common.edit")}
+            </Button>
             <Button variant="secondary" size="sm" className="flex-1 text-xs" onClick={handleDeleteProcess} disabled={!selectedNodeKey.includes("::")}>
               <Trash2 className="w-3.5 h-3.5 mr-1" />{t("master.routing.deleteProcess")}
             </Button>
@@ -468,10 +524,10 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
       )}
 
       {/* 공정 추가 모달 */}
-      <Modal isOpen={isProcessModalOpen} onClose={() => setIsProcessModalOpen(false)} title={t("master.routing.addProcess")} size="lg">
+      <Modal isOpen={isProcessModalOpen} onClose={() => setIsProcessModalOpen(false)} title={processModalMode === "edit" ? t("common.edit") : t("master.routing.addProcess")} size="lg">
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <Input label={t("master.routing.seq")} type="number" step="10" value={processForm.seq} onChange={(e) => setProcessForm((f) => ({ ...f, seq: e.target.value }))} fullWidth />
+            <Input label={t("master.routing.seq")} type="number" step="10" value={processForm.seq} onChange={(e) => setProcessForm((f) => ({ ...f, seq: e.target.value }))} disabled={processModalMode === "edit"} fullWidth />
             <div>
               <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">{t("master.routing.processCode")}</label>
               <select value={processForm.processCode} onChange={(e) => handleProcessCodeSelect(e.target.value)} className={selectCls}>
@@ -505,7 +561,7 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setIsProcessModalOpen(false)}>{t("common.cancel")}</Button>
           <Button onClick={saveProcess} disabled={processSaving || !processForm.processCode || !processForm.processName}>
-            {processSaving ? t("common.loading") : t("common.add")}
+            {processSaving ? t("common.loading") : processModalMode === "edit" ? t("common.save") : t("common.add")}
           </Button>
         </div>
       </Modal>
