@@ -38,6 +38,7 @@ import { SystemModule } from './modules/system/system.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { RoleModule } from './modules/role/role.module';
+import { MenuCategoriesModule } from './modules/menu-categories/menu-categories.module';
 import { SharedModule } from './shared/shared.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
@@ -108,6 +109,9 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
     // 역할 관리 (RBAC 역할 정의, 메뉴 권한)
     RoleModule,
+
+    // 메뉴 카테고리 관리 (사이드바 트리 + 카테고리 CRUD + 메뉴 배치)
+    MenuCategoriesModule,
 
     // 공유 모듈 (NumberingService 파사드 + SeqGenerator + NumRule)
     SharedModule,
