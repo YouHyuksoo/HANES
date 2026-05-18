@@ -93,6 +93,7 @@ import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
 import { ProcessQualityCondition } from '../../entities/process-quality-condition.entity';
 import { RoutingGroup } from '../../entities/routing-group.entity';
 import { RoutingProcess } from '../../entities/routing-process.entity';
+import { RoutingMaterial } from '../../entities/routing-material.entity';
 import { User } from '../../entities/user.entity';
 import { ShiftPattern } from '../../entities/shift-pattern.entity';
 import { ProcessCapa } from '../../entities/process-capa.entity';
@@ -131,6 +132,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       ProcessQualityCondition,
       RoutingGroup,
       RoutingProcess,
+      RoutingMaterial,
       User,
       ShiftPattern,
       WorkCalendar,

@@ -57,6 +57,32 @@ export interface EditableCondition {
 }
 
 /** 선택된 공정 */
+export interface RoutingMaterial {
+  routingCode: string;
+  seq: number;
+  childItemCode: string;
+  childItemName: string | null;
+  childItemNo: string | null;
+  childItemType: string | null;
+  unit: string | null;
+  qtyPer: number;
+  selected: boolean;
+  allocQty: number | null;
+  issueMethod: string;
+  useYn: string;
+}
+
+export interface EditableRoutingMaterial {
+  childItemCode: string;
+  childItemName: string;
+  childItemNo: string;
+  unit: string;
+  qtyPer: number;
+  selected: boolean;
+  allocQty: string;
+  issueMethod: string;
+}
+
 export interface SelectedProcess {
   routingCode: string;
   routingName: string;

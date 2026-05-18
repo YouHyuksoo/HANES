@@ -9,15 +9,17 @@
  */
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
+import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import {
   CreateRoutingGroupDto, UpdateRoutingGroupDto, RoutingGroupQueryDto,
   CreateRoutingProcessDto, UpdateRoutingProcessDto,
-  BulkSaveConditionDto,
+  BulkSaveConditionDto, BulkSaveRoutingMaterialDto,
 } from '../dto/routing-group.dto';
 
 @Injectable()
@@ -31,6 +33,10 @@ export class RoutingGroupService {
     private readonly conditionRepo: Repository<ProcessQualityCondition>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
+    @InjectRepository(BomMaster)
+    private readonly bomRepo: Repository<BomMaster>,
+    @InjectRepository(RoutingMaterial)
+    private readonly materialRepo: Repository<RoutingMaterial>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -114,6 +120,7 @@ export class RoutingGroupService {
     await this.findGroupByCode(routingCode);
     await this.dataSource.transaction(async (manager) => {
       await manager.delete(ProcessQualityCondition, { routingCode });
+      await manager.delete(RoutingMaterial, { routingCode });
       await manager.delete(RoutingProcess, { routingCode });
       await manager.delete(RoutingGroup, { routingCode });
     });
@@ -159,6 +166,7 @@ export class RoutingGroupService {
 
     await this.dataSource.transaction(async (manager) => {
       await manager.delete(ProcessQualityCondition, { routingCode, seq });
+      await manager.delete(RoutingMaterial, { routingCode, seq });
       await manager.delete(RoutingProcess, { routingCode, seq });
     });
     return { routingCode, seq };
@@ -214,6 +222,89 @@ export class RoutingGroupService {
         }),
       );
       return manager.save(ProcessQualityCondition, entities);
+    });
+  }
+
+  async findMaterials(routingCode: string, seq: number) {
+    const group = await this.findGroupByCode(routingCode);
+    if (!group.itemCode) return [];
+
+    const bomItems = await this.bomRepo.find({
+      where: { parentItemCode: group.itemCode, useYn: 'Y' },
+      order: { seq: 'ASC' },
+    });
+    if (bomItems.length === 0) return [];
+
+    const childCodes = bomItems.map((b) => b.childItemCode);
+    const [materials, parts] = await Promise.all([
+      this.materialRepo.find({
+        where: { routingCode, seq, useYn: 'Y' },
+      }),
+      this.partRepo.find({
+        where: { itemCode: In(childCodes) },
+        select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'unit'],
+      }),
+    ]);
+
+    const materialMap = new Map(materials.map((m) => [m.childItemCode, m]));
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+    return bomItems.map((bom) => {
+      const material = materialMap.get(bom.childItemCode);
+      const part = partMap.get(bom.childItemCode);
+      return {
+        routingCode,
+        seq,
+        childItemCode: bom.childItemCode,
+        childItemName: part?.itemName ?? null,
+        childItemNo: part?.itemNo ?? null,
+        childItemType: part?.itemType ?? null,
+        unit: part?.unit ?? null,
+        qtyPer: bom.qtyPer,
+        selected: !!material,
+        allocQty: material?.allocQty ?? null,
+        issueMethod: material?.issueMethod ?? 'BACKFLUSH',
+        useYn: material?.useYn ?? 'Y',
+      };
+    });
+  }
+
+  async bulkSaveMaterials(
+    routingCode: string, seq: number,
+    dto: BulkSaveRoutingMaterialDto,
+    company?: string, plant?: string,
+  ) {
+    const group = await this.findGroupByCode(routingCode);
+    if (!group.itemCode) throw new ConflictException(`라우팅 그룹에 품목이 연결되어 있지 않습니다: ${routingCode}`);
+
+    const tenant = await this.resolveProcessTenant(routingCode, seq, company, plant);
+    const bomItems = await this.bomRepo.find({
+      where: { parentItemCode: group.itemCode, useYn: 'Y' },
+      select: ['parentItemCode', 'childItemCode', 'revision'],
+    });
+    const bomChildSet = new Set(bomItems.map((b) => b.childItemCode));
+    const invalid = dto.materials.find((m) => !bomChildSet.has(m.childItemCode));
+    if (invalid) {
+      throw new ConflictException(`BOM에 없는 자재는 공정에 매핑할 수 없습니다: ${invalid.childItemCode}`);
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      await manager.delete(RoutingMaterial, { routingCode, seq, company: tenant.company, plant: tenant.plant });
+      if (dto.materials.length === 0) return [];
+
+      const entities = dto.materials.map((m) =>
+        manager.create(RoutingMaterial, {
+          routingCode,
+          seq,
+          childItemCode: m.childItemCode,
+          allocQty: m.allocQty ?? 0,
+          issueMethod: m.issueMethod ?? 'BACKFLUSH',
+          useYn: 'Y',
+          company: tenant.company,
+          plant: tenant.plant,
+        }),
+      );
+      return manager.save(RoutingMaterial, entities);
     });
   }
 }

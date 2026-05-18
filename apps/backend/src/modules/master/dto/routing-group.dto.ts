@@ -122,3 +122,23 @@ export class BulkSaveConditionDto {
   @IsArray() @ValidateNested({ each: true }) @Type(() => ConditionItemDto)
   conditions: ConditionItemDto[];
 }
+
+export class MaterialItemDto {
+  @ApiProperty()
+  @IsString() @MaxLength(50)
+  childItemCode: string;
+
+  @ApiPropertyOptional()
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
+  allocQty?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional() @IsString() @MaxLength(20)
+  issueMethod?: string;
+}
+
+export class BulkSaveRoutingMaterialDto {
+  @ApiProperty({ type: [MaterialItemDto] })
+  @IsArray() @ValidateNested({ each: true }) @Type(() => MaterialItemDto)
+  materials: MaterialItemDto[];
+}

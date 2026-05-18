@@ -17,7 +17,7 @@ import { RoutingGroupService } from '../services/routing-group.service';
 import {
   CreateRoutingGroupDto, UpdateRoutingGroupDto, RoutingGroupQueryDto,
   CreateRoutingProcessDto, UpdateRoutingProcessDto,
-  BulkSaveConditionDto,
+  BulkSaveConditionDto, BulkSaveRoutingMaterialDto,
 } from '../dto/routing-group.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
@@ -130,6 +130,29 @@ export class RoutingGroupController {
     return ResponseUtil.success(
       await this.svc.bulkSaveConditions(code, seq, dto, co, pl),
       '양품조건이 저장되었습니다.',
+    );
+  }
+
+  @Get(':code/processes/:seq/materials')
+  @ApiOperation({ summary: '공정별 투입자재 목록' })
+  async findMaterials(
+    @Param('code') code: string,
+    @Param('seq', ParseIntPipe) seq: number,
+  ) {
+    return ResponseUtil.success(await this.svc.findMaterials(code, seq));
+  }
+
+  @Put(':code/processes/:seq/materials/bulk')
+  @ApiOperation({ summary: '공정별 투입자재 일괄 저장' })
+  async bulkSaveMaterials(
+    @Param('code') code: string,
+    @Param('seq', ParseIntPipe) seq: number,
+    @Body() dto: BulkSaveRoutingMaterialDto,
+    @Company() co: string, @Plant() pl: string,
+  ) {
+    return ResponseUtil.success(
+      await this.svc.bulkSaveMaterials(code, seq, dto, co, pl),
+      '공정별 투입자재가 저장되었습니다.',
     );
   }
 }

@@ -16,6 +16,8 @@ import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProcessQualityCondition } from '../../../entities/process-quality-condition.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { BomMaster } from '../../../entities/bom-master.entity';
+import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('RoutingGroupService', () => {
@@ -24,6 +26,8 @@ describe('RoutingGroupService', () => {
   let mockProcessRepo: DeepMocked<Repository<RoutingProcess>>;
   let mockConditionRepo: DeepMocked<Repository<ProcessQualityCondition>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
+  let mockBomRepo: DeepMocked<Repository<BomMaster>>;
+  let mockMaterialRepo: DeepMocked<Repository<RoutingMaterial>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockEntityManager: DeepMocked<EntityManager>;
 
@@ -32,6 +36,8 @@ describe('RoutingGroupService', () => {
     mockProcessRepo = createMock<Repository<RoutingProcess>>();
     mockConditionRepo = createMock<Repository<ProcessQualityCondition>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
+    mockBomRepo = createMock<Repository<BomMaster>>();
+    mockMaterialRepo = createMock<Repository<RoutingMaterial>>();
     mockDataSource = createMock<DataSource>();
     mockEntityManager = createMock<EntityManager>();
 
@@ -47,6 +53,8 @@ describe('RoutingGroupService', () => {
         { provide: getRepositoryToken(RoutingProcess), useValue: mockProcessRepo },
         { provide: getRepositoryToken(ProcessQualityCondition), useValue: mockConditionRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
+        { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
+        { provide: getRepositoryToken(RoutingMaterial), useValue: mockMaterialRepo },
         { provide: DataSource, useValue: mockDataSource },
       ],
     })
@@ -138,7 +146,7 @@ describe('RoutingGroupService', () => {
       // Assert
       expect(result).toEqual({ routingCode: 'RG01' });
       expect(mockDataSource.transaction).toHaveBeenCalled();
-      expect(mockEntityManager.delete).toHaveBeenCalledTimes(3);
+      expect(mockEntityManager.delete).toHaveBeenCalledTimes(4);
     });
 
     it('should throw NotFoundException when group not found', async () => {
@@ -227,7 +235,7 @@ describe('RoutingGroupService', () => {
 
       // Assert
       expect(result).toEqual({ routingCode: 'RG01', seq: 10 });
-      expect(mockEntityManager.delete).toHaveBeenCalledTimes(2);
+      expect(mockEntityManager.delete).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -299,6 +307,73 @@ describe('RoutingGroupService', () => {
 
       // Assert
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('routing materials', () => {
+    it('should return BOM candidates with allocated material state', async () => {
+      const group = { routingCode: 'RG01', itemCode: 'FG01' } as RoutingGroup;
+      mockGroupRepo.findOne.mockResolvedValue(group);
+      mockBomRepo.find.mockResolvedValue([
+        { parentItemCode: 'FG01', childItemCode: 'MAT01', qtyPer: 2, useYn: 'Y' },
+      ] as BomMaster[]);
+      mockMaterialRepo.find.mockResolvedValue([
+        { routingCode: 'RG01', seq: 10, childItemCode: 'MAT01', allocQty: 1, issueMethod: 'BACKFLUSH', useYn: 'Y' },
+      ] as RoutingMaterial[]);
+      mockPartRepo.find.mockResolvedValue([
+        { itemCode: 'MAT01', itemName: 'Wire', itemNo: 'W-01', itemType: 'RAW_MATERIAL', unit: 'EA' },
+      ] as PartMaster[]);
+
+      const result = await target.findMaterials('RG01', 10);
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          childItemCode: 'MAT01',
+          childItemName: 'Wire',
+          qtyPer: 2,
+          selected: true,
+          allocQty: 1,
+          issueMethod: 'BACKFLUSH',
+        }),
+      ]);
+    });
+
+    it('should reject material that is not in BOM for routing item', async () => {
+      mockGroupRepo.findOne.mockResolvedValue({ routingCode: 'RG01', itemCode: 'FG01' } as RoutingGroup);
+      mockProcessRepo.findOne.mockResolvedValue({ routingCode: 'RG01', seq: 10, company: 'COMP01', plant: 'PLANT01' } as RoutingProcess);
+      mockBomRepo.find.mockResolvedValue([
+        { parentItemCode: 'FG01', childItemCode: 'MAT01', useYn: 'Y' },
+      ] as BomMaster[]);
+
+      await expect(target.bulkSaveMaterials('RG01', 10, {
+        materials: [{ childItemCode: 'MAT99', allocQty: 1, issueMethod: 'BACKFLUSH' }],
+      } as any)).rejects.toThrow();
+    });
+
+    it('should save selected materials with process tenant fallback', async () => {
+      mockGroupRepo.findOne.mockResolvedValue({ routingCode: 'RG01', itemCode: 'FG01' } as RoutingGroup);
+      mockProcessRepo.findOne.mockResolvedValue({ routingCode: 'RG01', seq: 10, company: 'COMP01', plant: 'PLANT01' } as RoutingProcess);
+      mockBomRepo.find.mockResolvedValue([
+        { parentItemCode: 'FG01', childItemCode: 'MAT01', useYn: 'Y' },
+      ] as BomMaster[]);
+      mockEntityManager.delete.mockResolvedValue({ affected: 0 } as any);
+      mockEntityManager.create.mockImplementation((_entity, value) => value);
+      mockEntityManager.save.mockImplementation(async (_entity, value) => value);
+
+      await target.bulkSaveMaterials('RG01', 10, {
+        materials: [{ childItemCode: 'MAT01', allocQty: 1, issueMethod: 'BACKFLUSH' }],
+      } as any);
+
+      expect(mockEntityManager.delete).toHaveBeenCalledWith(RoutingMaterial, {
+        routingCode: 'RG01',
+        seq: 10,
+        company: 'COMP01',
+        plant: 'PLANT01',
+      });
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        RoutingMaterial,
+        expect.objectContaining({ childItemCode: 'MAT01', company: 'COMP01', plant: 'PLANT01' }),
+      );
     });
   });
 
