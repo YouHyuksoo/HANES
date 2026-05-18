@@ -56,7 +56,7 @@ export default function RoutingPage() {
                 <QualityConditionEditor selectedProcess={selectedProcess} />
               ) : (
                 <div className="flex items-center justify-center h-full text-text-muted dark:text-gray-400 text-sm">
-                  {t("master.routing.selectProcessPrompt")}
+                  {t("master.routing.selectItemPrompt")}
                 </div>
               )}
             </CardContent>

@@ -453,27 +453,33 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
               <table className="w-full text-xs">
                 <thead className="sticky top-0 z-10 bg-surface dark:bg-gray-800">
                   <tr className="border-b border-border dark:border-gray-600 text-text-muted dark:text-gray-400">
-                    <th className="text-center py-1.5 px-1 font-medium w-10"></th>
                     <th className="text-left py-1.5 px-2 font-medium">{t("master.part.partNo")}</th>
                     <th className="text-left py-1.5 px-2 font-medium">{t("master.part.partName")}</th>
                     <th className="text-center py-1.5 px-1 font-medium w-10">{t("master.part.partType")}</th>
+                    <th className="text-center py-1.5 px-1 font-medium w-24">{t("common.manage")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredParts.map((part) => (
                     <tr key={part.itemCode}
-                      className="border-b border-border/50 dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-700 text-text dark:text-gray-200">
-                      <td className="py-1.5 px-1 text-center">
-                        <button onClick={() => handleSelectPart(part)} className="p-1 hover:bg-primary/10 dark:hover:bg-primary/20 rounded transition-colors" title={t("master.routing.viewRouting")}>
-                          <Route className="w-3.5 h-3.5 text-primary" />
-                        </button>
-                      </td>
+                      onClick={() => handleSelectPart(part)}
+                      className="border-b border-border/50 dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-700 text-text dark:text-gray-200 cursor-pointer">
                       <td className="py-1.5 px-2 font-medium whitespace-nowrap">{part.itemNo || part.itemCode}</td>
                       <td className="py-1.5 px-2 truncate max-w-[120px] text-text-muted dark:text-gray-400">{part.itemName}</td>
                       <td className="py-1.5 px-1 text-center">
                         <span className={`px-1.5 py-0.5 text-[10px] rounded-full ${part.itemType === "FINISHED" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
                           {part.itemType === "FINISHED" ? "F" : "S"}
                         </span>
+                      </td>
+                      <td className="py-1.5 px-1 text-center">
+                        <button
+                          onClick={(event) => { event.stopPropagation(); handleSelectPart(part); }}
+                          className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] rounded border border-primary/30 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors"
+                          title={t("master.routing.viewRouting")}
+                        >
+                          <Route className="w-3.5 h-3.5" />
+                          {t("master.routing.viewRouting")}
+                        </button>
                       </td>
                     </tr>
                   ))}
