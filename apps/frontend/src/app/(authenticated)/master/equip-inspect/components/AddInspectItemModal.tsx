@@ -77,7 +77,7 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
 
       <div className="space-y-4">
         <Input label={t("master.equipInspect.itemName")} value={itemName}
-          onChange={e => setItemName(e.target.value)} placeholder={t("master.equipInspect.itemNamePlaceholder", "점검항목명 입력")} fullWidth />
+          onChange={e => setItemName(e.target.value)} fullWidth />
 
         <div className="grid grid-cols-3 gap-4">
           <ComCodeSelect label={t("master.equipInspect.inspectType")} groupCode="INSPECT_TYPE" includeAll={false}
@@ -89,7 +89,7 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
         </div>
 
         <Input label={t("master.equipInspect.criteria")} value={criteria}
-          onChange={e => setCriteria(e.target.value)} placeholder={t("master.equipInspect.criteriaPlaceholder", "판정기준 입력")} fullWidth />
+          onChange={e => setCriteria(e.target.value)} fullWidth />
       </div>
 
       <div className="flex justify-end gap-2 pt-6">

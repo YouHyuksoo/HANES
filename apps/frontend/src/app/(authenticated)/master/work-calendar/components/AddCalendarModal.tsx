@@ -102,7 +102,7 @@ export default function AddCalendarModal({ isOpen, onClose, onSave, processes }:
             <label className="block text-xs font-medium text-text-muted dark:text-gray-400 mb-1">
               {t("master.workCalendar.defaultShifts")}
             </label>
-            <Input value={form.defaultShifts} onChange={(e) => setF("defaultShifts", e.target.value)} placeholder="D,E,N" fullWidth />
+            <Input value={form.defaultShifts} onChange={(e) => setF("defaultShifts", e.target.value)} fullWidth />
           </div>
         </div>
         <div>

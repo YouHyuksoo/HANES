@@ -222,16 +222,16 @@ export default function LocationList({ onHeaderActions }: Props) {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("inventory.location.editLocation") : t("inventory.location.addLocation")} size="lg">
         <div className="grid grid-cols-2 gap-4">
           <Select label={t("inventory.warehouse.warehouseName")} options={whOptions} value={form.warehouseCode} onChange={(v) => setForm((p) => ({ ...p, warehouseCode: v }))} disabled={!!editingItem} fullWidth />
-          <Input label={t("inventory.location.locationCode")} placeholder="A-01-01" value={form.locationCode} onChange={(e) => setForm((p) => ({ ...p, locationCode: e.target.value }))} disabled={!!editingItem} fullWidth />
+          <Input label={t("inventory.location.locationCode")} value={form.locationCode} onChange={(e) => setForm((p) => ({ ...p, locationCode: e.target.value }))} disabled={!!editingItem} fullWidth />
           <div className="col-span-2">
-            <Input label={t("inventory.location.locationName")} placeholder={t("inventory.location.locationName")} value={form.locationName} onChange={(e) => setForm((p) => ({ ...p, locationName: e.target.value }))} fullWidth />
+            <Input label={t("inventory.location.locationName")} value={form.locationName} onChange={(e) => setForm((p) => ({ ...p, locationName: e.target.value }))} fullWidth />
           </div>
-          <Input label={t("inventory.location.zone")} placeholder="A" value={form.zone} onChange={(e) => setForm((p) => ({ ...p, zone: e.target.value }))} fullWidth />
-          <Input label={t("inventory.location.rowNo")} placeholder="01" value={form.rowNo} onChange={(e) => setForm((p) => ({ ...p, rowNo: e.target.value }))} fullWidth />
-          <Input label={t("inventory.location.colNo")} placeholder="01" value={form.colNo} onChange={(e) => setForm((p) => ({ ...p, colNo: e.target.value }))} fullWidth />
-          <Input label={t("inventory.location.levelNo")} placeholder="1" value={form.levelNo} onChange={(e) => setForm((p) => ({ ...p, levelNo: e.target.value }))} fullWidth />
+          <Input label={t("inventory.location.zone")} value={form.zone} onChange={(e) => setForm((p) => ({ ...p, zone: e.target.value }))} fullWidth />
+          <Input label={t("inventory.location.rowNo")} value={form.rowNo} onChange={(e) => setForm((p) => ({ ...p, rowNo: e.target.value }))} fullWidth />
+          <Input label={t("inventory.location.colNo")} value={form.colNo} onChange={(e) => setForm((p) => ({ ...p, colNo: e.target.value }))} fullWidth />
+          <Input label={t("inventory.location.levelNo")} value={form.levelNo} onChange={(e) => setForm((p) => ({ ...p, levelNo: e.target.value }))} fullWidth />
           <div className="col-span-2">
-            <Input label={t("common.remark")} placeholder={t("common.remark")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />
+            <Input label={t("common.remark")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} fullWidth />
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-6">

@@ -334,12 +334,12 @@ export default function GaugeMasterPage() {
                 onChange={e => setField("serialNo", e.target.value)} fullWidth />
               <Input label={t("master.gauge.measureRange")} value={form.measureRange}
                 onChange={e => setField("measureRange", e.target.value)}
-                placeholder="0~150mm" fullWidth />
+                fullWidth />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input label={t("master.gauge.resolution")} value={form.resolution}
                 onChange={e => setField("resolution", e.target.value)}
-                placeholder="0.01" type="number" fullWidth />
+                type="number" fullWidth />
               <Input label={t("master.gauge.calibrationCycle")} value={form.calibrationCycle}
                 onChange={e => setField("calibrationCycle", e.target.value)}
                 type="number" fullWidth />

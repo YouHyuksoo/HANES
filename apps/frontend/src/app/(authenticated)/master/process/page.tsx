@@ -263,7 +263,6 @@ export default function ProcessPage() {
         <div className="grid grid-cols-2 gap-4">
           <Input
             label={t("master.process.processCode")}
-            placeholder="CUT-01"
             value={formData.processCode || ""}
             onChange={(e) =>
               setFormData((p) => ({ ...p, processCode: e.target.value }))
@@ -281,7 +280,6 @@ export default function ProcessPage() {
           <div className="col-span-2">
             <Input
               label={t("master.process.processName")}
-              placeholder={t("master.process.processName")}
               value={formData.processName || ""}
               onChange={(e) =>
                 setFormData((p) => ({ ...p, processName: e.target.value }))
@@ -301,7 +299,6 @@ export default function ProcessPage() {
           <Input
             label={t("master.process.sortOrder")}
             type="number"
-            placeholder="0"
             value={formData.sortOrder?.toString() || "0"}
             onChange={(e) =>
               setFormData((p) => ({
@@ -313,7 +310,6 @@ export default function ProcessPage() {
           />
           <Input
             label={t("common.remark")}
-            placeholder={t("common.remark")}
             value={formData.remark || ""}
             onChange={(e) =>
               setFormData((p) => ({ ...p, remark: e.target.value }))

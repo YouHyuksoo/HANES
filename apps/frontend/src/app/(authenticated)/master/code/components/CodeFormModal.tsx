@@ -102,21 +102,18 @@ export default function CodeFormModal({
           value={form.detailCode}
           onChange={(e) => handleChange("detailCode", e.target.value.toUpperCase())}
           disabled={isEdit}
-          placeholder="DETAIL_CODE"
           fullWidth
         />
         <Input
           label={t("master.code.codeName")}
           value={form.codeName}
           onChange={(e) => handleChange("codeName", e.target.value)}
-          placeholder={t("master.code.codeNamePlaceholder")}
           fullWidth
         />
         <Input
           label={t("master.code.codeNameEn", { defaultValue: "영어명" })}
           value={form.attr3}
           onChange={(e) => handleChange("attr3", e.target.value)}
-          placeholder="English Name"
           fullWidth
         />
         <Input
@@ -141,7 +138,6 @@ export default function CodeFormModal({
             label={t("master.code.codeDesc", { defaultValue: "설명" })}
             value={form.codeDesc}
             onChange={(e) => handleChange("codeDesc", e.target.value)}
-            placeholder={t("master.code.codeDescPlaceholder", { defaultValue: "코드 설명 입력" })}
             fullWidth
           />
         </div>
@@ -150,7 +146,6 @@ export default function CodeFormModal({
             label={t("master.code.attr1", { defaultValue: "배지 색상 (Tailwind)" })}
             value={form.attr1}
             onChange={(e) => handleChange("attr1", e.target.value)}
-            placeholder="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
             fullWidth
           />
           {form.attr1 && (

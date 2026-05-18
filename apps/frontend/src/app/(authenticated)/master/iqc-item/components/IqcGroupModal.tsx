@@ -140,17 +140,17 @@ export default function IqcGroupModal({ isOpen, onClose, onSave, editing }: Prop
           </h3>
           <Input label={t("master.iqcGroup.groupCode", "그룹코드")} value={form.groupCode}
             onChange={e => setForm(p => ({ ...p, groupCode: e.target.value }))}
-            placeholder="IGR-001" fullWidth disabled={!!editing} />
+            fullWidth disabled={!!editing} />
           <Input label={t("master.iqcGroup.groupName", "그룹명")} value={form.groupName}
             onChange={e => setForm(p => ({ ...p, groupName: e.target.value }))}
-            placeholder="전선류 검사" fullWidth />
+            fullWidth />
           <Select label={t("master.iqcGroup.inspectMethod", "검사형태")} options={inspectMethodOptions}
             value={form.inspectMethod}
             onChange={v => setForm(p => ({ ...p, inspectMethod: v }))} fullWidth />
           {form.inspectMethod === "SAMPLE" && (
             <Input label={t("master.iqcGroup.sampleQty", "샘플 수량")} type="number" value={form.sampleQty}
               onChange={e => setForm(p => ({ ...p, sampleQty: e.target.value }))}
-              placeholder="5" fullWidth />
+              fullWidth />
           )}
 
           {/* 선택된 항목 미리보기 */}

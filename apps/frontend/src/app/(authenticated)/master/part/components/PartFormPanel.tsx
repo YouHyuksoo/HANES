@@ -187,18 +187,18 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
             {t("master.part.sectionBasic", "기본정보")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.part.partCode")} placeholder="1111"
+            <Input label={t("master.part.partCode")}
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
               disabled={isEdit} fullWidth />
-            <Input label={t("master.part.partNo", "품번")} placeholder="ECW01331AA"
+            <Input label={t("master.part.partNo", "품번")}
               value={form.itemNo} onChange={e => setField("itemNo", e.target.value)} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.part.partName")} placeholder="HNS ASSY"
+              <Input label={t("master.part.partName")}
                 value={form.itemName} onChange={e => setField("itemName", e.target.value)} fullWidth />
             </div>
-            <Input label={t("master.part.custPartNo", "고객품번")} placeholder="HMC-001"
+            <Input label={t("master.part.custPartNo", "고객품번")}
               value={form.custPartNo} onChange={e => setField("custPartNo", e.target.value)} fullWidth />
-            <Input label={t("master.part.rev", "리비전")} placeholder="A"
+            <Input label={t("master.part.rev", "리비전")}
               value={form.rev} onChange={e => setField("rev", e.target.value)} fullWidth />
             <Select label={t("master.part.type")} options={partTypeOptions}
               value={form.itemType} 
@@ -211,7 +211,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               options={PRODUCT_TYPE_OPTIONS.filter(o => o.value)}
               value={form.productType} onChange={v => setField("productType", v)} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.part.spec")} placeholder="Fuse to Minus Cable"
+              <Input label={t("master.part.spec")}
                 value={form.spec} onChange={e => setField("spec", e.target.value)} fullWidth />
             </div>
             <ComCodeSelect groupCode="UNIT_TYPE" label={t("master.part.unit")} includeAll={false}
@@ -239,20 +239,20 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               value={form.vendor} onChange={v => setField("vendor", v)} fullWidth />
             <Select label={t("master.part.customer")} options={customerOptions}
               value={form.customer} onChange={v => setField("customer", v)} fullWidth />
-            <Input label={t("master.part.boxQty", "박스입수량")} type="number" placeholder="50"
+            <Input label={t("master.part.boxQty", "박스입수량")} type="number"
               value={String(form.boxQty)} onChange={e => setField("boxQty", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.lotUnitQty", "LOT단위수량")} type="number" placeholder="500"
+            <Input label={t("master.part.lotUnitQty", "LOT단위수량")} type="number"
               value={String(form.lotUnitQty)} onChange={e => setField("lotUnitQty", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.safetyStock")} type="number" placeholder="100"
+            <Input label={t("master.part.safetyStock")} type="number"
               value={String(form.safetyStock)} onChange={e => setField("safetyStock", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.tactTime", "택타임(초)")} type="number" placeholder="0"
+            <Input label={t("master.part.tactTime", "택타임(초)")} type="number"
               value={String(form.tactTime)} onChange={e => setField("tactTime", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.expiryDate", "유효기간(일)")} type="number" placeholder="365"
+            <Input label={t("master.part.expiryDate", "유효기간(일)")} type="number"
               value={String(form.expiryDate)} onChange={e => setField("expiryDate", Number(e.target.value))} fullWidth />
-            <Input label={t("master.part.packUnit", "포장단위")} placeholder="EA, BOX, BAG"
+            <Input label={t("master.part.packUnit", "포장단위")}
               value={form.packUnit} onChange={e => setField("packUnit", e.target.value)} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.part.storageLocation", "적재로케이션")} placeholder="A-01-02"
+              <Input label={t("master.part.storageLocation", "적재로케이션")}
                 value={form.storageLocation} onChange={e => setField("storageLocation", e.target.value)} fullWidth />
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
 
         {/* 비고 */}
         <div>
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
+          <Input label={t("common.remark")}
             value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />
         </div>
       </div>

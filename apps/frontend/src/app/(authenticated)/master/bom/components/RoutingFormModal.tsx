@@ -211,8 +211,8 @@ export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem,
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.routing.stdTimeSec")} type="number" step="0.1" value={stdTime} onChange={(e) => setStdTime(e.target.value)} placeholder="5.5" fullWidth />
-          <Input label={t("master.routing.setupTimeSec")} type="number" step="0.1" value={setupTime} onChange={(e) => setSetupTime(e.target.value)} placeholder="10" fullWidth />
+          <Input label={t("master.routing.stdTimeSec")} type="number" step="0.1" value={stdTime} onChange={(e) => setStdTime(e.target.value)} fullWidth />
+          <Input label={t("master.routing.setupTimeSec")} type="number" step="0.1" value={setupTime} onChange={(e) => setSetupTime(e.target.value)} fullWidth />
         </div>
 
         <div className="border-t border-border dark:border-gray-600 pt-3">
@@ -227,7 +227,7 @@ export default function RoutingFormModal({ isOpen, onClose, onSave, editingItem,
           </div>
           <div className="mt-4">
             <Input label={t("master.routing.weldCondition")} value={weldCondition} onChange={(e) => setWeldCondition(e.target.value)}
-              placeholder={t("master.routing.weldConditionPlaceholder")} fullWidth />
+              fullWidth />
           </div>
         </div>
       </div>

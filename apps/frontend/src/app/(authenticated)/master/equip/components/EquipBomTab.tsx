@@ -559,7 +559,6 @@ export default function EquipBomTab() {
               label={t("master.equip.itemCode", "품목코드")}
               value={itemForm.itemCode}
               onChange={(e) => setItemForm({ ...itemForm, itemCode: e.target.value })}
-              placeholder="PART-001"
               fullWidth
               disabled={!!editingItem}
             />
@@ -567,7 +566,6 @@ export default function EquipBomTab() {
               label={t("master.equip.itemName", "품목명")}
               value={itemForm.itemName}
               onChange={(e) => setItemForm({ ...itemForm, itemName: e.target.value })}
-              placeholder={t("master.equip.itemName", "품목명")}
               fullWidth
             />
           </div>
@@ -586,14 +584,12 @@ export default function EquipBomTab() {
               label={t("master.equip.unit", "단위")}
               value={itemForm.unit}
               onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })}
-              placeholder="EA"
               fullWidth
             />
             <Input
               label={t("master.equip.maker", "제조사")}
               value={itemForm.maker}
               onChange={(e) => setItemForm({ ...itemForm, maker: e.target.value })}
-              placeholder={t("master.equip.maker", "제조사")}
               fullWidth
             />
           </div>
@@ -602,7 +598,6 @@ export default function EquipBomTab() {
               label={t("master.equip.spec", "규격")}
               value={itemForm.spec}
               onChange={(e) => setItemForm({ ...itemForm, spec: e.target.value })}
-              placeholder={t("master.equip.spec", "규격")}
               fullWidth
             />
             <Input
@@ -610,7 +605,6 @@ export default function EquipBomTab() {
               type="number"
               value={itemForm.unitPrice}
               onChange={(e) => setItemForm({ ...itemForm, unitPrice: e.target.value })}
-              placeholder="150000"
               fullWidth
             />
           </div>
@@ -620,7 +614,6 @@ export default function EquipBomTab() {
               type="number"
               value={itemForm.replacementCycle}
               onChange={(e) => setItemForm({ ...itemForm, replacementCycle: e.target.value })}
-              placeholder="90"
               fullWidth
             />
             <Input
@@ -628,7 +621,6 @@ export default function EquipBomTab() {
               type="number"
               value={itemForm.stockQty}
               onChange={(e) => setItemForm({ ...itemForm, stockQty: e.target.value })}
-              placeholder="0"
               fullWidth
             />
             <Input
@@ -636,7 +628,6 @@ export default function EquipBomTab() {
               type="number"
               value={itemForm.safetyStock}
               onChange={(e) => setItemForm({ ...itemForm, safetyStock: e.target.value })}
-              placeholder="0"
               fullWidth
             />
           </div>
@@ -675,7 +666,6 @@ export default function EquipBomTab() {
               type="number"
               value={relForm.quantity}
               onChange={(e) => setRelForm({ ...relForm, quantity: e.target.value })}
-              placeholder="1"
               fullWidth
             />
           </div>
@@ -699,7 +689,6 @@ export default function EquipBomTab() {
             label={t("common.remark", "비고")}
             value={relForm.remark}
             onChange={(e) => setRelForm({ ...relForm, remark: e.target.value })}
-            placeholder={t("common.remark", "비고")}
             fullWidth
           />
           <div className="flex justify-end gap-2 pt-4">

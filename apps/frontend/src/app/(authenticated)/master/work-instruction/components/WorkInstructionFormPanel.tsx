@@ -144,15 +144,15 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.workInstruction.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("common.partCode")} placeholder="H-001"
+            <Input label={t("common.partCode")}
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)} fullWidth />
-            <Input label={t("master.workInstruction.processCode")} placeholder="CUT-01"
+            <Input label={t("master.workInstruction.processCode")}
               value={form.processCode} onChange={e => setField("processCode", e.target.value)} fullWidth />
             <div className="col-span-2">
               <Input label={t("master.workInstruction.docTitle")}
                 value={form.title} onChange={e => setField("title", e.target.value)} fullWidth />
             </div>
-            <Input label={t("master.workInstruction.revision")} placeholder="A"
+            <Input label={t("master.workInstruction.revision")}
               value={form.revision} onChange={e => setField("revision", e.target.value)} fullWidth />
           </div>
         </div>
@@ -227,7 +227,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
           {/* URL 직접 입력 토글 */}
           {!form.imageUrl && (
             <div className="mt-2">
-              <Input label={t("master.workInstruction.imageUrl", "또는 URL 직접 입력")} placeholder="https://..."
+              <Input label={t("master.workInstruction.imageUrl", "또는 URL 직접 입력")}
                 value={form.imageUrl} onChange={e => setField("imageUrl", e.target.value)} fullWidth />
             </div>
           )}

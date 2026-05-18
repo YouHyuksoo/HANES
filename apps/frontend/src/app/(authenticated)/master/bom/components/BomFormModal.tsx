@@ -148,7 +148,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
           <Input label={t("master.bom.validFrom")} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} fullWidth />
           <Input label={t("master.bom.validTo")} type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} fullWidth />
         </div>
-        <Input label={t("master.bom.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} placeholder={t("master.bom.remarkPlaceholder")} fullWidth />
+        <Input label={t("master.bom.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} fullWidth />
       </div>
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>

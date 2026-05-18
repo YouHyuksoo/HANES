@@ -115,7 +115,7 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.vendorBarcode.sectionBarcode", "바코드 정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <Input label={t("master.vendorBarcode.vendorBarcode", "제조사 바코드")} placeholder="JST-SVH-21T-P1.1"
+              <Input label={t("master.vendorBarcode.vendorBarcode", "제조사 바코드")}
                 value={form.vendorBarcode} onChange={e => setField("vendorBarcode", e.target.value)} fullWidth />
             </div>
             <Select label={t("master.vendorBarcode.matchType", "매칭 유형")} options={MATCH_TYPE_OPTIONS}
@@ -141,7 +141,7 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
         </div>
 
         <div>
-          <Input label={t("master.vendorBarcode.mappingRule", "매핑 규칙")} placeholder="예: 접두사 JST- → JST 계열 부품"
+          <Input label={t("master.vendorBarcode.mappingRule", "매핑 규칙")}
             value={form.mappingRule} onChange={e => setField("mappingRule", e.target.value)} fullWidth />
         </div>
 

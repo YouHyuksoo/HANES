@@ -220,7 +220,7 @@ export default function WorkCalendarPage() {
               <CardContent className="flex-1 flex flex-col min-h-0 p-3">
                 <div className="flex gap-2 mb-3 shrink-0">
                   <Input value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}
-                    placeholder={t("master.workCalendar.calendarYear")} maxLength={4} fullWidth />
+                    maxLength={4} fullWidth />
                 </div>
                 <div className="flex-1 overflow-y-auto min-h-0 space-y-1">
                   {loading ? (

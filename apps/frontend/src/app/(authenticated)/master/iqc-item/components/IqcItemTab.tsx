@@ -242,18 +242,18 @@ export default function IqcItemTab() {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editing ? t("master.iqcItem.editItem") : t("master.iqcItem.addItem")} size="lg">
         <div className="grid grid-cols-2 gap-4">
-          <Input label={t("master.iqcItem.itemCode", "항목코드")} value={form.itemCode} onChange={e => setForm({ ...form, itemCode: e.target.value })} placeholder="IQC-001" fullWidth disabled={!!editing} />
-          <Input label={t("master.iqcItem.inspectItem")} value={form.itemName} onChange={e => setForm({ ...form, itemName: e.target.value })} placeholder="외관검사" fullWidth />
+          <Input label={t("master.iqcItem.itemCode", "항목코드")} value={form.itemCode} onChange={e => setForm({ ...form, itemCode: e.target.value })} fullWidth disabled={!!editing} />
+          <Input label={t("master.iqcItem.inspectItem")} value={form.itemName} onChange={e => setForm({ ...form, itemName: e.target.value })} fullWidth />
           <Select label={t("master.iqcItem.judgeMethod", "판정방법")} options={judgeOptions} value={form.judgeMethod} onChange={v => setForm({ ...form, judgeMethod: v as "VISUAL" | "MEASURE" })} fullWidth />
-          <Input label={t("master.iqcItem.spec")} value={form.criteria} onChange={e => setForm({ ...form, criteria: e.target.value })} placeholder="규격 이내" fullWidth />
-          <Input label={t("master.iqcItem.revision", "Rev")} type="number" value={form.revision} onChange={e => setForm({ ...form, revision: e.target.value })} placeholder="1" fullWidth />
+          <Input label={t("master.iqcItem.spec")} value={form.criteria} onChange={e => setForm({ ...form, criteria: e.target.value })} fullWidth />
+          <Input label={t("master.iqcItem.revision", "Rev")} type="number" value={form.revision} onChange={e => setForm({ ...form, revision: e.target.value })} fullWidth />
           <Input label={t("common.remark")} value={form.remark} onChange={e => setForm({ ...form, remark: e.target.value })} fullWidth />
         </div>
         {form.judgeMethod === "MEASURE" && (
           <div className="grid grid-cols-3 gap-4 mt-4 p-4 bg-background rounded-lg border border-border">
-            <Input label="LSL" type="number" value={form.lsl} onChange={e => setForm({ ...form, lsl: e.target.value })} placeholder="0.4" fullWidth />
-            <Input label="USL" type="number" value={form.usl} onChange={e => setForm({ ...form, usl: e.target.value })} placeholder="0.6" fullWidth />
-            <Input label={t("common.unit")} value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="mm" fullWidth />
+            <Input label="LSL" type="number" value={form.lsl} onChange={e => setForm({ ...form, lsl: e.target.value })} fullWidth />
+            <Input label="USL" type="number" value={form.usl} onChange={e => setForm({ ...form, usl: e.target.value })} fullWidth />
+            <Input label={t("common.unit")} value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} fullWidth />
           </div>
         )}
         <div className="flex justify-end gap-2 pt-6">

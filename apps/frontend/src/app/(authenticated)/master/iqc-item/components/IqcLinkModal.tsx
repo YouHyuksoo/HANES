@@ -210,7 +210,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
 
         <Input label={t("common.remark")} value={form.remark}
           onChange={e => setForm(p => ({ ...p, remark: e.target.value }))}
-          placeholder={t("master.iqcLink.remarkPlaceholder", "비고 (선택사항)")} fullWidth />
+          fullWidth />
       </div>
 
       <div className="flex justify-end gap-2 pt-6">

@@ -88,7 +88,6 @@ export default function TemplateManager({ category, design, onLoad }: TemplateMa
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            placeholder={t("master.label.templateNamePlaceholder")}
             className="flex-1 px-2 py-1.5 text-sm rounded border border-border bg-surface text-text focus:border-primary focus:outline-none"
           />
           <Button size="sm" onClick={handleSave} disabled={!saveName.trim()}>

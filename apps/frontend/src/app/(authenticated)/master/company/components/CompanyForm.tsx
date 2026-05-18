@@ -162,12 +162,12 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.company.sectionBasic", "기본정보")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input label={t("master.company.companyCode")} placeholder="COMP-001"
+            <Input label={t("master.company.companyCode")}
               value={form.companyCode} onChange={(e) => setField("companyCode", e.target.value)}
               disabled={isEdit} fullWidth />
             <Input label={t("master.company.companyName")}
               value={form.companyName} onChange={(e) => setField("companyName", e.target.value)} fullWidth />
-            <Input label={t("master.company.bizNo")} placeholder="123-45-67890"
+            <Input label={t("master.company.bizNo")}
               value={form.bizNo} onChange={(e) => setField("bizNo", e.target.value)} fullWidth />
             <Input label={t("master.company.ceoName")}
               value={form.ceoName} onChange={(e) => setField("ceoName", e.target.value)} fullWidth />
@@ -182,12 +182,12 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
               <Input label={t("master.company.address")}
                 value={form.address} onChange={(e) => setField("address", e.target.value)} fullWidth />
             </div>
-            <Input label={t("master.company.tel")} placeholder="+84-274-1234-567"
+            <Input label={t("master.company.tel")}
               value={form.tel} onChange={(e) => setField("tel", e.target.value)} fullWidth />
-            <Input label={t("master.company.fax")} placeholder="02-1234-5679"
+            <Input label={t("master.company.fax")}
               value={form.fax} onChange={(e) => setField("fax", e.target.value)} fullWidth />
             <div className="col-span-2">
-              <Input label={t("master.company.email")} placeholder="info@company.com"
+              <Input label={t("master.company.email")}
                 value={form.email} onChange={(e) => setField("email", e.target.value)} fullWidth />
             </div>
           </div>
@@ -195,7 +195,7 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
 
         {/* 비고 */}
         <div>
-          <Input label={t("common.remark")} placeholder={t("common.remarkPlaceholder")}
+          <Input label={t("common.remark")}
             value={form.remark} onChange={(e) => setField("remark", e.target.value)} fullWidth />
         </div>
 
@@ -223,9 +223,9 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
             {/* 사업장 추가 폼 */}
             {addingPlant && (
               <div className="flex items-end gap-2 mb-2 p-2.5 bg-surface rounded-lg border border-border">
-                <Input label={t("master.company.plantCode", "사업장코드")} placeholder="P001"
+                <Input label={t("master.company.plantCode", "사업장코드")}
                   value={newPlant.plantCode} onChange={(e) => setNewPlant((p) => ({ ...p, plantCode: e.target.value }))} fullWidth />
-                <Input label={t("master.company.plantName", "사업장명")} placeholder={t("master.company.plantName", "사업장명")}
+                <Input label={t("master.company.plantName", "사업장명")}
                   value={newPlant.plantName} onChange={(e) => setNewPlant((p) => ({ ...p, plantName: e.target.value }))} fullWidth />
                 <Button size="sm" onClick={handleAddPlant}
                   disabled={!newPlant.plantCode.trim() || !newPlant.plantName.trim()}

@@ -34,7 +34,7 @@ export default function WarehouseForm({ isOpen, isEdit, formData, typeOptions, o
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.warehouseCode')}</label>
-          <Input value={formData.warehouseCode} onChange={(e) => onChange({ ...formData, warehouseCode: e.target.value })} disabled={isEdit} placeholder="WH-RAW" />
+          <Input value={formData.warehouseCode} onChange={(e) => onChange({ ...formData, warehouseCode: e.target.value })} disabled={isEdit} />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t('inventory.warehouse.warehouseName')}</label>

@@ -270,7 +270,6 @@ export default function EquipMasterTab() {
               label={t("master.equip.equipCode", "설비코드")}
               value={form.equipCode}
               onChange={(e) => setForm({ ...form, equipCode: e.target.value })}
-              placeholder="EQ-001"
               fullWidth
               disabled={!!editing}
             />
@@ -278,7 +277,6 @@ export default function EquipMasterTab() {
               label={t("master.equip.equipName", "설비명")}
               value={form.equipName}
               onChange={(e) => setForm({ ...form, equipName: e.target.value })}
-              placeholder={t("master.equip.equipName", "설비명")}
               fullWidth
             />
           </div>
@@ -320,7 +318,6 @@ export default function EquipMasterTab() {
                 label={t("master.equip.ipAddress", "IP 주소")}
                 value={form.ipAddress}
                 onChange={(e) => setForm({ ...form, ipAddress: e.target.value })}
-                placeholder="192.168.1.100"
                 fullWidth
                 leftIcon={<Wifi className="w-4 h-4" />}
               />
@@ -328,7 +325,6 @@ export default function EquipMasterTab() {
                 label={t("master.equip.port", "포트")}
                 value={form.port}
                 onChange={(e) => setForm({ ...form, port: e.target.value })}
-                placeholder={form.commType === "MQTT" ? "1883" : "5000"}
                 fullWidth
               />
               {form.commType === "MQTT" && (
@@ -337,7 +333,6 @@ export default function EquipMasterTab() {
                     label="MQTT Topic"
                     value={form.mqttTopic}
                     onChange={(e) => setForm({ ...form, mqttTopic: e.target.value })}
-                    placeholder="mes/equip/001"
                     fullWidth
                   />
                 </div>
@@ -350,7 +345,6 @@ export default function EquipMasterTab() {
                 label={t("master.equip.serialPort", "시리얼 포트")}
                 value={form.serialPort}
                 onChange={(e) => setForm({ ...form, serialPort: e.target.value })}
-                placeholder="COM3"
                 fullWidth
                 leftIcon={<Settings className="w-4 h-4" />}
               />
@@ -358,7 +352,6 @@ export default function EquipMasterTab() {
                 label="Baud Rate"
                 value={form.baudRate}
                 onChange={(e) => setForm({ ...form, baudRate: e.target.value })}
-                placeholder="9600"
                 fullWidth
               />
             </div>
@@ -368,14 +361,12 @@ export default function EquipMasterTab() {
               label={t("master.equip.maker", "제조사")}
               value={form.maker}
               onChange={(e) => setForm({ ...form, maker: e.target.value })}
-              placeholder={t("master.equip.maker", "제조사")}
               fullWidth
             />
             <Input
               label={t("master.equip.model", "모델명")}
               value={form.modelName}
               onChange={(e) => setForm({ ...form, modelName: e.target.value })}
-              placeholder={t("master.equip.model", "모델명")}
               fullWidth
             />
           </div>
