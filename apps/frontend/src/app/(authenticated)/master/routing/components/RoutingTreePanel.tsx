@@ -431,13 +431,8 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
   return (
     <div className="flex flex-col min-h-0 h-full">
       <div className="shrink-0 space-y-2 mb-2">
-        <div>
-          <div className="text-sm font-semibold text-text dark:text-gray-100">
-            {treeData ? t("master.routing.processSequenceTitle") : t("master.routing.itemSelectTitle")}
-          </div>
-          <div className="text-xs text-text-muted dark:text-gray-400 mt-0.5">
-            {treeData ? t("master.routing.processSequenceDesc") : t("master.routing.itemSelectDesc")}
-          </div>
+        <div className="text-sm font-semibold text-text dark:text-gray-100">
+          {treeData ? t("master.routing.processSequenceTitle") : t("master.routing.itemSelectTitle")}
         </div>
         <Input placeholder={t("master.routing.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
         <div className="flex gap-1 flex-wrap">
@@ -510,12 +505,6 @@ export default function RoutingTreePanel({ selectedProcess, onSelectProcess }: R
               {treeData.itemType === "FINISHED" ? t("master.routing.finished") : t("master.routing.semiProduct")}
             </span>
             <span className="text-xs text-text dark:text-gray-200 font-medium truncate">{treeData.itemName}</span>
-          </div>
-
-          <div className="flex items-center gap-2 mb-2 text-[11px] text-text-muted dark:text-gray-400 shrink-0">
-            <span className="inline-flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center text-[9px] font-bold">F</span>{t("master.routing.finished")}</span>
-            <span className="inline-flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-amber-500 text-white flex items-center justify-center text-[9px] font-bold">S</span>{t("master.routing.semiProduct")}</span>
-            <span className="inline-flex items-center gap-1"><span className="w-4 h-4 rounded-full bg-gray-400 text-white flex items-center justify-center text-[9px] font-bold">P</span>{t("master.routing.processNode")}</span>
           </div>
 
           {/* 공정삭제/공정추가 */}

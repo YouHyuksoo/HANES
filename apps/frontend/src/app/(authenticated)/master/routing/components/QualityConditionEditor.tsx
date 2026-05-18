@@ -111,9 +111,6 @@ export default function QualityConditionEditor({ selectedProcess }: { selectedPr
             <span className="font-medium text-text dark:text-gray-200 truncate">{selectedProcess.processName}</span>
             <span>{selectedProcess.processCode}</span>
           </div>
-          <div className="mt-1 text-xs text-text-muted dark:text-gray-400">
-            {t("master.routing.conditionEditorDesc")}
-          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {isDirty && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">{t("master.routing.unsavedChanges")}</span>}
