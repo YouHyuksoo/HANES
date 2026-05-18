@@ -8,7 +8,7 @@
  * 1. **API 호출**: GET /master/boms/hierarchy/:parentPartId 로 트리 데이터 조회
  * 2. **추가/수정**: BomFormModal 컴포넌트로 분리
  * 3. **삭제**: ConfirmModal로 확인 후 DELETE /master/boms/:id
- * 4. **라우팅 보기**: onViewRouting 콜백으로 partId 전달 → Routing 탭 전환
+ * 4. **라우팅관리 이동**: onViewRouting 콜백으로 품목 전달 → /master/routing 이동
  */
 import { useState, useCallback, useEffect, Fragment } from "react";
 import { useTranslation } from "react-i18next";
@@ -240,7 +240,7 @@ function BomTreeRows({
               <td className="px-4 py-2.5 border-r border-border text-center text-xs text-text font-mono whitespace-nowrap">{validTo}</td>
               <td className="px-4 py-2.5 text-center">
                 <div className="flex justify-center gap-1">
-                  <button onClick={() => onViewRouting(item, itemBreadcrumb)} className="p-1 hover:bg-surface rounded" title="라우팅 보기">
+                  <button onClick={() => onViewRouting(item, itemBreadcrumb)} className="p-1 hover:bg-surface rounded" title={t("master.bom.goRoutingManagement")}>
                     <GitBranch className="w-3.5 h-3.5 text-purple-500" />
                   </button>
                   <button onClick={() => onEdit(item)} className="p-1 hover:bg-surface rounded">

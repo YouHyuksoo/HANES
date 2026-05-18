@@ -2,38 +2,34 @@
 
 /**
  * @file src/app/(authenticated)/master/bom/page.tsx
- * @description BOM + Routing 통합 관리 페이지 - DB API 연동
+ * @description BOM 관리 페이지 - DB API 연동
  *
  * 초보자 가이드:
  * 1. **좌측 패널**: GET /master/boms/parents 로 모품목 목록 조회
- * 2. **우측 패널**: 탭으로 BOM(자재) / Routing(공정순서) 전환
- * 3. **BOM 탭**: GET /master/boms/hierarchy/:id 로 트리 구조 조회
- * 4. **Routing 탭**: GET /master/routings?partId=xxx 로 품목별 공정순서 조회
+ * 2. **우측 패널**: BOM(자재) 구조 조회/관리
+ * 3. **라우팅**: 공정순서는 /master/routing 화면에서 관리
  */
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "next/navigation";
 import { Search, Layers, RefreshCw, Calendar } from "lucide-react";
 import { Card, CardContent, Input, Button } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import BomTab from "./components/BomTab";
-import RoutingTab from "./components/RoutingTab";
 import { ParentPart, RoutingTarget } from "./types";
-
-type TabType = "bom" | "routing";
 
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
 const getToday = () => new Date().toISOString().split("T")[0];
 
 function BomPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [parents, setParents] = useState<ParentPart[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedParent, setSelectedParent] = useState<ParentPart | null>(null);
   const [searchText, setSearchText] = useState("");
   const [effectiveDate, setEffectiveDate] = useState(getToday());
-  const [activeTab, setActiveTab] = useState<TabType>("bom");
-  const [routingTarget, setRoutingTarget] = useState<RoutingTarget | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
   const partTypeOptions = useComCodeOptions("PART_TYPE");
 
@@ -65,21 +61,13 @@ function BomPage() {
   useEffect(() => { fetchParents(); }, [fetchParents]);
 
   const handleViewRouting = useCallback((target: RoutingTarget) => {
-    setRoutingTarget(target);
-    setActiveTab("routing");
-  }, []);
+    const params = new URLSearchParams({ itemCode: target.itemCode });
+    router.push(`/master/routing?${params.toString()}`);
+  }, [router]);
 
   const handleSelectParent = useCallback((parent: ParentPart) => {
     setSelectedParent(parent);
-    setRoutingTarget(null);
   }, []);
-
-  const handleClearRoutingTarget = useCallback(() => { setRoutingTarget(null); }, []);
-
-  const tabs: { key: TabType; label: string }[] = [
-    { key: "bom", label: t("master.bom.tabBom") },
-    { key: "routing", label: t("master.bom.tabRouting") },
-  ];
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -227,33 +215,22 @@ function BomPage() {
           </Card>
         </div>
 
-        {/* 우측: BOM / Routing 탭 전환 */}
+        {/* 우측: BOM 구조 관리 */}
         <div className="col-span-8 flex flex-col min-h-0">
           <Card padding="none" className="flex-1 flex flex-col min-h-0">
             <CardContent className="flex-1 flex flex-col min-h-0 p-4">
-              <div className="flex border-b border-border mb-4 shrink-0">
-                {tabs.map((tab) => (
-                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                    className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                      activeTab === tab.key ? "border-primary text-primary"
-                        : "border-transparent text-text-muted hover:text-text hover:border-border"
-                    }`}>
-                    {tab.label}
-                    {tab.key === "routing" && routingTarget && (
-                      <span className="ml-1.5 px-1.5 py-0.5 text-[10px] rounded bg-primary/10 text-primary">
-                        {routingTarget.itemCode}
-                      </span>
-                    )}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between border-b border-border mb-4 pb-3 shrink-0">
+                <div>
+                  <h2 className="text-sm font-semibold text-text">{t("master.bom.bomStructureTitle")}</h2>
+                  <p className="text-xs text-text-muted mt-0.5">{t("master.bom.bomStructureDesc")}</p>
+                </div>
+                <Button variant="secondary" size="sm" onClick={() => router.push("/master/routing")}>
+                  {t("master.bom.goRoutingManagement")}
+                </Button>
               </div>
 
               <div className="flex-1 overflow-y-auto min-h-0">
-                {activeTab === "bom" ? (
-                  <BomTab selectedParent={selectedParent} onViewRouting={handleViewRouting} effectiveDate={effectiveDate} />
-                ) : (
-                  <RoutingTab selectedParent={selectedParent} routingTarget={routingTarget} onClearTarget={handleClearRoutingTarget} />
-                )}
+                <BomTab selectedParent={selectedParent} onViewRouting={handleViewRouting} effectiveDate={effectiveDate} />
               </div>
             </CardContent>
           </Card>
