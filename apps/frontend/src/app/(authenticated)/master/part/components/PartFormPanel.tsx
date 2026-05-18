@@ -10,8 +10,9 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { ImageIcon, RefreshCw, Trash2, Upload } from "lucide-react";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button, Input, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
@@ -32,6 +33,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   const isEdit = !!editingPart;
   const { options: supplierOptions } = usePartnerOptions("SUPPLIER");
   const { options: customerOptions } = usePartnerOptions("CUSTOMER");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const partTypeOptions = useMemo(() => [
     { value: "RAW_MATERIAL", label: t("inventory.stock.raw", "원자재") },
@@ -84,9 +86,14 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     remark: editingPart?.remark || "",
   }));
   const [saving, setSaving] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(editingPart?.imageUrl ?? null);
 
   // editingPart 변경 시 폼 리셋
   useEffect(() => {
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setForm({
       itemCode: editingPart?.itemCode || "",
       itemName: editingPart?.itemName || "",
@@ -111,12 +118,47 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       storageLocation: editingPart?.storageLocation || "",
       remark: editingPart?.remark || "",
     });
+    setSelectedImageFile(null);
+    setPreviewUrl(editingPart?.imageUrl ?? null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingPart]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
 
 
   const setField = (key: string, value: string | number) => {
     setForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleImageSelect = (file: File) => {
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleImageClear = () => {
+    if (previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedImageFile(null);
+    setPreviewUrl(null);
+  };
+
+  const uploadImage = async (itemCode: string, file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    await api.post(`/master/parts/${encodeURIComponent(itemCode)}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
   };
 
   const handleSubmit = async () => {
@@ -150,8 +192,16 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
       console.log("[PartForm] submitting payload:", JSON.stringify(payload, null, 2));
       if (isEdit && editingPart?.itemCode) {
         await api.put(`/master/parts/${editingPart.itemCode}`, payload);
+        if (selectedImageFile) {
+          await uploadImage(editingPart.itemCode, selectedImageFile);
+        } else if (!previewUrl && editingPart.imageUrl) {
+          await api.delete(`/master/parts/${encodeURIComponent(editingPart.itemCode)}/image`);
+        }
       } else {
         await api.post("/master/parts", payload);
+        if (selectedImageFile) {
+          await uploadImage(form.itemCode, selectedImageFile);
+        }
       }
       onSave();
       onClose();
@@ -259,6 +309,66 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
         </div>
 
         {/* 비고 */}
+        <div>
+          <h3 className="text-xs font-semibold text-text-muted mb-2">
+            {t("master.part.sectionImage", "사진")}
+          </h3>
+          {previewUrl ? (
+            <div className="relative group">
+              <img
+                src={previewUrl}
+                alt={form.itemName || form.itemCode}
+                className="w-full h-44 object-contain rounded-lg border border-border bg-surface"
+              />
+              <button
+                type="button"
+                onClick={handleImageClear}
+                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={saving}
+              className="w-full h-28 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+            >
+              {saving ? (
+                <RefreshCw className="w-6 h-6 text-text-muted animate-spin" />
+              ) : (
+                <ImageIcon className="w-8 h-8 text-text-muted" />
+              )}
+              <span className="text-xs text-text-muted">
+                {t("master.part.imageUploadHint", "클릭하여 품목 사진 선택")}
+              </span>
+            </button>
+          )}
+          {previewUrl && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={saving}
+              className="mt-2 w-full text-xs text-primary hover:text-primary/80 flex items-center justify-center gap-1"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {t("master.part.imageChange", "사진 변경")}
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageSelect(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
         <div>
           <Input label={t("common.remark")}
             value={form.remark} onChange={e => setField("remark", e.target.value)} fullWidth />

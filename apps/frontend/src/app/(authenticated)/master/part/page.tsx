@@ -12,7 +12,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, Search, Package, RefreshCw } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Package, RefreshCw, ImageIcon } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -115,6 +115,22 @@ export default function PartPage() {
       ),
     },
     { accessorKey: "itemNo", header: t("master.part.partNo", "품번"), size: 120, meta: { filterType: "text" as const } },
+    {
+      accessorKey: "imageUrl", header: t("master.part.image", "사진"), size: 55,
+      meta: { align: "center" as const, filterType: "none" as const },
+      cell: ({ getValue, row }) => {
+        const imageUrl = getValue() as string | null | undefined;
+        return imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={row.original.itemName}
+            className="w-8 h-8 object-cover rounded border border-border bg-surface mx-auto"
+          />
+        ) : (
+          <ImageIcon className="w-4 h-4 text-text-muted mx-auto" />
+        );
+      },
+    },
     ...createPartColumns<Part>(t).map(col => ({ ...col, size: 140 })),
     {
       accessorKey: "itemType", header: t("master.part.type"), size: 70,

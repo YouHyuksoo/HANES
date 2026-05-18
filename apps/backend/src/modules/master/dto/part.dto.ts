@@ -160,6 +160,12 @@ export class CreatePartDto {
   @MaxLength(100)
   storageLocation?: string;
 
+  @ApiPropertyOptional({ description: '품목 이미지 URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  imageUrl?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()

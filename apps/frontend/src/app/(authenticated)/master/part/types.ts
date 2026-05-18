@@ -36,6 +36,7 @@ export interface Part {
   packUnit?: string; // 포장단위 (EA, BOX, BAG 등)
   storageLocation?: string; // 적재 로케이션 (창고 내 위치)
   remark?: string; // 비고 (Oracle REMARKS)
+  imageUrl?: string | null;
   useYn: UseYn;
 }
 

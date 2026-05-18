@@ -121,6 +121,22 @@ describe('PartService', () => {
   });
 
   // ─── findByType ───
+  describe('updateImage', () => {
+    it('should update imageUrl and return the part', async () => {
+      const existing = { itemCode: 'ITEM01', imageUrl: null } as PartMaster;
+      const updated = { itemCode: 'ITEM01', imageUrl: '/uploads/parts/item.png' } as PartMaster;
+      mockRepo.findOne.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      const result = await target.updateImage('ITEM01', '/uploads/parts/item.png');
+
+      expect(mockRepo.update).toHaveBeenCalledWith('ITEM01', {
+        imageUrl: '/uploads/parts/item.png',
+      });
+      expect(result).toEqual(updated);
+    });
+  });
+
   describe('findByType', () => {
     it('should return active parts of given type', async () => {
       // Arrange

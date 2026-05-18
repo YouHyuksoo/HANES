@@ -107,6 +107,7 @@ export class PartService {
       expiryDate: dto.expiryDate ?? 0,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
+      imageUrl: dto.imageUrl,
     });
 
     return this.partRepository.save(part);
@@ -122,6 +123,12 @@ export class PartService {
     await this.findById(itemCode);
     await this.partRepository.delete(itemCode);
     return { itemCode };
+  }
+
+  async updateImage(itemCode: string, imageUrl: string | null) {
+    await this.findById(itemCode);
+    await this.partRepository.update(itemCode, { imageUrl });
+    return this.findById(itemCode);
   }
 
   async findByType(itemType: string) {

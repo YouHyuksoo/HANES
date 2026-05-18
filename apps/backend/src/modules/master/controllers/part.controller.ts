@@ -3,9 +3,26 @@
  * @description 품목마스터 CRUD API 컨트롤러
  */
 
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
-import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { PartService } from '../services/part.service';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -36,6 +53,54 @@ export class PartController {
   async findAll(@Query() query: PartQueryDto, @Company() company: string, @Plant() plant: string) {
     const result = await this.partService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Post(':id/image')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: (req: any, file: Express.Multer.File, callback: (error: Error | null, destination: string) => void) => {
+          const uploadPath = './uploads/parts';
+          if (!existsSync(uploadPath)) {
+            mkdirSync(uploadPath, { recursive: true });
+          }
+          callback(null, uploadPath);
+        },
+        filename: (req: any, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, `part-${uniqueSuffix}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req: any, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) => {
+        if (!file.mimetype.match(/\/jpg|jpeg|png|gif|webp$/)) {
+          return callback(new Error('Only image files are allowed!'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  @ApiOperation({ summary: '품목 이미지 업로드' })
+  @ApiConsumes('multipart/form-data')
+  async uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const imageUrl = `/uploads/parts/${file.filename}`;
+    const data = await this.partService.updateImage(id, imageUrl);
+    return ResponseUtil.success(data, '품목 이미지가 업로드되었습니다.');
+  }
+
+  @Delete(':id/image')
+  @ApiOperation({ summary: '품목 이미지 삭제' })
+  async removeImage(@Param('id') id: string) {
+    const existing = await this.partService.findById(id);
+    if (existing.imageUrl) {
+      const filePath = join('.', existing.imageUrl);
+      try { if (existsSync(filePath)) unlinkSync(filePath); } catch { /* ignore */ }
+    }
+    const data = await this.partService.updateImage(id, null);
+    return ResponseUtil.success(data, '품목 이미지가 삭제되었습니다.');
   }
 
   @Get(':id')

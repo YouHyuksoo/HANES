@@ -92,6 +92,9 @@ export class PartMaster {
   @Column({ type: 'varchar2', name: 'STORAGE_LOCATION', length: 100, nullable: true })
   storageLocation: string | null;
 
+  @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
+  imageUrl: string | null;
+
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
