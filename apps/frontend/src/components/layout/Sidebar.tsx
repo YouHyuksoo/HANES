@@ -1,21 +1,32 @@
 "use client";
-
 /**
  * @file src/components/layout/Sidebar.tsx
- * @description 사이드바 네비게이션 - RBAC 권한 기반 메뉴 활성/비활성 처리
+ * @description 사이드바 네비게이션 — DB 머지된 트리 + 코드 fallback
  *
  * 초보자 가이드:
- * 1. **메뉴 구조**: menuConfig에서 가져온 설정 기반 렌더링
- * 2. **접기/펴기**: 우측 가장자리 핸들로 사이드바 축소/확장
- * 3. **접힌 상태**: 아이콘만 표시, 호버 시 툴팁
- * 4. **RBAC**: ADMIN은 전체 메뉴 활성, 일반 사용자는 allowedMenus 기반 활성
+ * 1. useMenuTreeStore.groups가 null이면 코드 menuConfig 그대로 사용 (FOUC fallback)
+ * 2. groups 도착 후 카테고리/순서/소속이 DB 기준으로 머지된 트리로 교체
+ * 3. __ROOT__ 카테고리의 자식은 평탄화하여 사이드바 최상위에 표시 (DASHBOARD/WORKFLOW)
+ * 4. 권한 필터링 로직(allowedMenus + 부모-자식 합)은 그대로 유지
  */
-import { useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import {
+  Folder, LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
+  Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
+} from "lucide-react";
 import { menuConfig, type MenuConfigItem } from "@/config/menuConfig";
 import { useAuthStore } from "@/stores/authStore";
+import { useMenuTreeStore } from "@/stores/menuTreeStore";
 import SidebarMenu from "./SidebarMenu";
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
+  Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
+};
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,12 +35,53 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
-function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps) {
+function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { user, allowedMenus } = useAuthStore();
+  const groups = useMenuTreeStore((s) => s.groups);
+  const loadTree = useMenuTreeStore((s) => s.load);
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["DASHBOARD"]);
   const isAdmin = user?.role === "ADMIN";
+
+  useEffect(() => {
+    if (!groups) loadTree();
+  }, [groups, loadTree]);
+
+  /** DB 머지된 트리를 SidebarMenu가 받는 MenuConfigItem 형식으로 변환. groups가 null이면 코드 menuConfig 사용. */
+  const items: MenuConfigItem[] = useMemo(() => {
+    if (!groups) return menuConfig;
+    const leafLookup = new Map<string, MenuConfigItem>();
+    const walk = (arr: MenuConfigItem[]) => {
+      for (const x of arr) {
+        if (x.path) leafLookup.set(x.code, x);
+        if (x.children) walk(x.children);
+      }
+    };
+    walk(menuConfig);
+
+    const result: MenuConfigItem[] = [];
+    for (const g of groups) {
+      const childrenLeaf = g.children
+        .map((c) => leafLookup.get(c.code))
+        .filter((x): x is MenuConfigItem => !!x);
+
+      if (g.categoryCode === '__ROOT__') {
+        // 단독 메뉴 — 평탄화하여 최상위에 배치
+        for (const leaf of childrenLeaf) {
+          result.push(leaf);
+        }
+        continue;
+      }
+      result.push({
+        code: g.categoryCode,
+        labelKey: g.labelKey,
+        icon: ICON_MAP[g.iconName || ''] ?? Folder,
+        children: childrenLeaf,
+      });
+    }
+    return result;
+  }, [groups]);
 
   const toggleMenu = (menuCode: string) => {
     if (collapsed) return;
@@ -43,15 +95,10 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps)
     return item.children?.some((child) => pathname === child.path);
   };
 
-  /** 메뉴 항목이 비활성(권한 없음) 상태인지 판별 */
   const isMenuDisabled = useCallback(
     (item: MenuConfigItem): boolean => {
       if (isAdmin) return false;
-      // 하위 메뉴가 있는 부모: 하위 중 하나라도 허용되면 활성
-      if (item.children) {
-        return !item.children.some((child) => allowedMenus.includes(child.code));
-      }
-      // 단일 메뉴
+      if (item.children) return !item.children.some((child) => allowedMenus.includes(child.code));
       return !allowedMenus.includes(item.code);
     },
     [isAdmin, allowedMenus],
@@ -61,25 +108,14 @@ function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps)
 
   return (
     <>
-      {/* Mobile Overlay */}
       {isOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={onClose} />}
-
-      {/* Sidebar */}
       <aside
-        className={`
-          fixed top-[var(--header-height)] left-0 z-30
-          h-[calc(100vh-var(--header-height))]
-          bg-surface border-r border-border
-          overflow-y-auto overflow-x-hidden
-          transition-all duration-300 ease-in-out
-          lg:translate-x-0
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
+        className={`fixed top-[var(--header-height)] left-0 z-30 h-[calc(100vh-var(--header-height))] bg-surface border-r border-border overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{ width: sidebarWidth }}
       >
         <nav className="p-3">
           <SidebarMenu
-            items={menuConfig}
+            items={items}
             collapsed={collapsed}
             pathname={pathname}
             expandedMenus={expandedMenus}
