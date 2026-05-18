@@ -308,7 +308,9 @@
     "system.roles": "Role Management",
     "system.pdaRoles": "PDA Role Management",
     "system.document": "Document Control",
-    "system.training": "Training"
+    "system.training": "Training",
+    "system.menuCategory": "Menu Category Management",
+    "root": "Root"
   },
   "header": {
     "theme": "Theme",
@@ -5578,5 +5580,11 @@
     "branch": { "pass": "Pass", "fail": "Fail" },
     "action": { "goTo": "Go to", "cancelReceipt": "Cancel Receipt", "return": "Return", "close": "Close" },
     "popover": { "stats": "Statistics", "recentHistory": "Recent History", "pendingCnt": "Pending", "activeCnt": "Active", "doneCnt": "Done", "reverseCnt": "Cancel Pending" }
+  },
+  "menuCategoryAdmin": {
+    "title": "Menu Category Management",
+    "unassigned": "Unassigned Menus",
+    "addCategory": "Add Category",
+    "cannotDeleteWithChildren": "This category has {{count}} menus. Please move or remove them first."
   }
 }

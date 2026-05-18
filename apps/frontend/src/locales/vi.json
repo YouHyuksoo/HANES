@@ -308,7 +308,9 @@
     "system.roles": "Quản lý vai trò",
     "system.pdaRoles": "Quản lý vai trò PDA",
     "system.document": "Quản lý tài liệu",
-    "system.training": "Quản lý đào tạo"
+    "system.training": "Quản lý đào tạo",
+    "system.menuCategory": "Quản lý danh mục menu",
+    "root": "Cấp cao nhất"
   },
   "header": {
     "theme": "Giao diện",
@@ -5560,5 +5562,11 @@
     "branch": { "pass": "Đạt", "fail": "Không đạt" },
     "action": { "goTo": "Đi đến", "cancelReceipt": "Hủy nhập kho", "return": "Trả hàng", "close": "Đóng" },
     "popover": { "stats": "Thống kê", "recentHistory": "Lịch sử gần đây", "pendingCnt": "Chờ", "activeCnt": "Đang xử lý", "doneCnt": "Hoàn thành", "reverseCnt": "Chờ hủy" }
+  },
+  "menuCategoryAdmin": {
+    "title": "Quản lý danh mục menu",
+    "unassigned": "Menu chưa phân loại",
+    "addCategory": "Thêm danh mục",
+    "cannotDeleteWithChildren": "Danh mục này có {{count}} menu. Vui lòng di chuyển hoặc xóa chúng trước."
   }
 }

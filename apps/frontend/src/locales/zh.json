@@ -308,7 +308,9 @@
     "system.roles": "角色管理",
     "system.pdaRoles": "PDA角色管理",
     "system.document": "文档管理",
-    "system.training": "培训管理"
+    "system.training": "培训管理",
+    "system.menuCategory": "菜单类别管理",
+    "root": "顶级"
   },
   "header": {
     "theme": "主题",
@@ -5560,5 +5562,11 @@
     "branch": { "pass": "合格", "fail": "不合格" },
     "action": { "goTo": "前往", "cancelReceipt": "取消入库", "return": "退货", "close": "关闭" },
     "popover": { "stats": "统计", "recentHistory": "最近记录", "pendingCnt": "待处理", "activeCnt": "进行中", "doneCnt": "完成", "reverseCnt": "待取消" }
+  },
+  "menuCategoryAdmin": {
+    "title": "菜单类别管理",
+    "unassigned": "未分配菜单",
+    "addCategory": "添加类别",
+    "cannotDeleteWithChildren": "此类别下有 {{count}} 个菜单。请先移动或删除它们。"
   }
 }
