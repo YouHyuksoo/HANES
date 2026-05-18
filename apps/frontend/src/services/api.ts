@@ -19,6 +19,46 @@ import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
 import { useAuthStore } from "@/stores/authStore";
 
+const READONLY_HTTP_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const VIEWER_READONLY_MESSAGE = "조회 전용 권한은 데이터를 변경할 수 없습니다.";
+
+const getCurrentUserRole = (): string | undefined => {
+  const storeRole = useAuthStore.getState().user?.role;
+  if (storeRole) {
+    return storeRole;
+  }
+
+  try {
+    const authData = JSON.parse(localStorage.getItem("harness-auth") || "{}");
+    return authData?.state?.user?.role;
+  } catch {
+    return undefined;
+  }
+};
+
+const isViewerMutationRequest = (config: InternalAxiosRequestConfig): boolean => {
+  const method = (config.method || "GET").toUpperCase();
+  return getCurrentUserRole() === "VIEWER" && !READONLY_HTTP_METHODS.has(method);
+};
+
+const createViewerReadonlyError = (config: InternalAxiosRequestConfig): AxiosError<ApiErrorResponse> => {
+  const error = new AxiosError<ApiErrorResponse>(
+    VIEWER_READONLY_MESSAGE,
+    "ERR_VIEWER_READONLY",
+    config,
+  );
+
+  error.response = {
+    data: { message: VIEWER_READONLY_MESSAGE },
+    status: 403,
+    statusText: "Forbidden",
+    headers: {},
+    config,
+  };
+
+  return error;
+};
+
 // Axios 인스턴스 생성
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
@@ -31,6 +71,10 @@ export const api = axios.create({
 // 요청 인터셉터 - 토큰 + X-Company 헤더 추가
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    if (isViewerMutationRequest(config)) {
+      return Promise.reject(createViewerReadonlyError(config));
+    }
+
     const token = localStorage.getItem("harness-token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;

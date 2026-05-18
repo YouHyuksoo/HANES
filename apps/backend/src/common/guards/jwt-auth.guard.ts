@@ -13,12 +13,15 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Request } from 'express';
 import { User } from '../../entities/user.entity';
+
+const READONLY_HTTP_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
  * 인증된 사용자 정보 인터페이스
@@ -86,10 +89,17 @@ export class JwtAuthGuard implements CanActivate {
         plant: resolvedPlant,
       };
 
+      if (
+        user.role === 'VIEWER' &&
+        !READONLY_HTTP_METHODS.has(request.method.toUpperCase())
+      ) {
+        throw new ForbiddenException('VIEWER role is read-only.');
+      }
+
       this.logger.debug(`User authenticated: ${user.email}`);
       return true;
     } catch (error) {
-      if (error instanceof UnauthorizedException) throw error;
+      if (error instanceof UnauthorizedException || error instanceof ForbiddenException) throw error;
       this.logger.warn(`Authentication failed: ${(error as Error).message}`);
       throw new UnauthorizedException('유효하지 않은 토큰입니다.');
     }
