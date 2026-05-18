@@ -75,7 +75,7 @@
     "INTERFACE": ["IF_DASHBOARD", "IF_LOG", "IF_MANUAL"],
     "SYSTEM": [
       "SYS_COMPANY", "SYS_DEPT", "SYS_USER", "SYS_ROLE",
-      "SYS_COMM", "SYS_CONFIG", "SYS_CODE"
+      "SYS_COMM", "SYS_CONFIG", "SYS_CODE", "SYS_MENU_CATEGORY"
     ]
   }
 }
