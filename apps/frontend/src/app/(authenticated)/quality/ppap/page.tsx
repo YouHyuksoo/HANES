@@ -328,7 +328,9 @@ export default function PpapPage() {
           } />
 
       {/* 등록/수정 모달 */}
-      <PpapFormPanel isOpen={isPanelOpen} editData={editTarget}
+      <PpapFormPanel
+        key={editTarget?.ppapNo ?? "__new__"}
+        isOpen={isPanelOpen} editData={editTarget}
         onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
         onSave={fetchData} />
     </div>

@@ -140,6 +140,7 @@ function CompanyPage() {
 
       {isPanelOpen && (
         <CompanyFormPanel
+          key={editingCompany?.companyCode ?? "__new__"}
           editingCompany={editingCompany}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

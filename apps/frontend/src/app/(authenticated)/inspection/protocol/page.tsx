@@ -175,6 +175,7 @@ export default function ProtocolPage() {
       {/* 우측 패널 */}
       {isPanelOpen && (
         <ProtocolFormPanel
+          key={editingProtocol?.protocolId ?? "__new__"}
           editingProtocol={editingProtocol}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

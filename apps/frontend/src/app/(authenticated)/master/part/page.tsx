@@ -249,6 +249,7 @@ export default function PartPage() {
       {/* 우측: 품목 추가/수정 슬라이드 패널 */}
       {isPanelOpen && (
         <PartFormPanel
+          key={editingPart?.itemCode ?? "__new__"}
           editingPart={editingPart}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

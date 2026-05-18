@@ -302,7 +302,9 @@ export default function ComplaintPage() {
 
       {/* 우측 패널: 등록/수정 */}
       {isPanelOpen && (
-        <ComplaintFormPanel editData={editTarget}
+        <ComplaintFormPanel
+          key={editTarget?.complaintNo ?? "__new__"}
+          editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData} />
       )}

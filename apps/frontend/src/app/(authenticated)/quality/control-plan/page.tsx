@@ -223,7 +223,9 @@ export default function ControlPlanPage() {
       </div>
 
       {/* 등록/수정 모달 */}
-      <ControlPlanFormPanel isOpen={isPanelOpen} editData={editTarget}
+      <ControlPlanFormPanel
+        key={editTarget?.planNo ?? "__new__"}
+        isOpen={isPanelOpen} editData={editTarget}
         onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
         onSave={fetchData} />
     </div>

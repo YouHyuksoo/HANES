@@ -404,7 +404,9 @@ export default function ReworkPage() {
 
       {/* 우측 패널: 등록/수정 */}
       {isPanelOpen && (
-        <ReworkFormPanel editData={editTarget}
+        <ReworkFormPanel
+          key={editTarget?.reworkNo ?? "__new__"}
+          editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData} />
       )}

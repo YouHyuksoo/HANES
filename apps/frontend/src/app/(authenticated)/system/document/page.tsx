@@ -237,6 +237,7 @@ export default function DocumentPage() {
       {/* 우측 패널: 등록/수정 */}
       {isPanelOpen && (
         <DocumentFormPanel
+          key={editTarget?.docNo ?? "__new__"}
           editData={editTarget}
           onClose={handlePanelClose}
           onSave={handleSaved}

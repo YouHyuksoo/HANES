@@ -299,7 +299,9 @@ export default function CapaPage() {
 
       {/* 우측 패널: 등록/수정 */}
       {isPanelOpen && (
-        <CapaFormPanel editData={editTarget}
+        <CapaFormPanel
+          key={editTarget?.capaNo ?? "__new__"}
+          editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData} />
       )}

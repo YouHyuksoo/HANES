@@ -227,7 +227,9 @@ export default function FaiPage() {
       </div>
 
       {isPanelOpen && (
-        <FaiFormPanel editData={editTarget}
+        <FaiFormPanel
+          key={editTarget?.faiNo ?? "__new__"}
+          editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData} />
       )}

@@ -209,6 +209,7 @@ function DepartmentPage() {
 
       {isPanelOpen && (
         <DepartmentFormPanel
+          key={editingDept?.deptCode ?? "__new__"}
           editingDept={editingDept}
           departments={departments}
           onClose={handlePanelClose}

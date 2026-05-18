@@ -445,6 +445,7 @@ export default function JobOrderPage() {
       {/* 우측: 패널 */}
       {isPanelOpen && (
         <JobOrderFormPanel
+          key={editingOrder?.orderNo ?? "__new__"}
           editingOrder={editingOrder}
           onClose={handlePanelClose}
           onSave={fetchData}

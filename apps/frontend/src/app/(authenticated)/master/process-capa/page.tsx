@@ -341,6 +341,7 @@ export default function ProcessCapaPage() {
       {/* 우측 폼 패널 */}
       {isPanelOpen && (
         <CapaFormPanel
+          key={editingItem ? `${editingItem.processCode}-${editingItem.itemCode}` : "__new__"}
           editingItem={editingItem}
           onClose={() => {
             setIsPanelOpen(false);

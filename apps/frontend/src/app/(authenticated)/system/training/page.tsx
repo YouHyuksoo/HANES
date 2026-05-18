@@ -294,7 +294,9 @@ export default function TrainingPage() {
       </div>
 
       {/* 등록/수정 모달 */}
-      <TrainingFormPanel isOpen={isPanelOpen} editData={editTarget}
+      <TrainingFormPanel
+        key={editTarget?.planNo ?? "__new__"}
+        isOpen={isPanelOpen} editData={editTarget}
         onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
         onSave={fetchData} />
     </div>

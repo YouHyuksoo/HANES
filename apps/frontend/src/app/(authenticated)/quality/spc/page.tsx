@@ -222,7 +222,9 @@ export default function SpcPage() {
 
       {/* 우측 패널: 등록/수정 */}
       {isPanelOpen && (
-        <SpcFormPanel editData={editTarget}
+        <SpcFormPanel
+          key={editTarget?.chartNo ?? "__new__"}
+          editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData} />
       )}

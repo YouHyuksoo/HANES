@@ -177,6 +177,7 @@ export default function CustomerPoPage() {
 
       {isPanelOpen && (
         <CustomerPoFormPanel
+          key={editingItem?.id ?? "__new__"}
           editingItem={editingItem}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

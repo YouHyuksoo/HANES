@@ -285,7 +285,9 @@ export default function ChangeControlPage() {
 
       {/* 우측 패널: 등록/수정 */}
       {isPanelOpen && (
-        <ChangeFormPanel editData={editTarget}
+        <ChangeFormPanel
+          key={editTarget?.changeNo ?? "__new__"}
+          editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData} />
       )}

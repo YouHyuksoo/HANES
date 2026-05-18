@@ -303,6 +303,7 @@ export default function PmPlanPage() {
       {/* Right Panel */}
       {isPanelOpen && (
         <PmPlanPanel
+          key={editingPlan?.planCode ?? "__new__"}
           editingPlan={editingPlan}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

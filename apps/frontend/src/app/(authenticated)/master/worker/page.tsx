@@ -168,6 +168,7 @@ export default function WorkerPage() {
 
       {isPanelOpen && (
         <WorkerFormPanel
+          key={editingWorker?.workerCode ?? "__new__"}
           editingWorker={editingWorker}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

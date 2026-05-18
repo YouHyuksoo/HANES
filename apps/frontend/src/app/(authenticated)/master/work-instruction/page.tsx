@@ -172,6 +172,7 @@ export default function WorkInstructionPage() {
 
       {panelMode === "edit" && (
         <WorkInstructionFormPanel
+          key={editingItem?.id ?? "__new__"}
           editingItem={editingItem}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

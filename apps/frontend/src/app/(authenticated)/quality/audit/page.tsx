@@ -317,6 +317,7 @@ export default function AuditPage() {
 
       {/* 등록/수정 모달 */}
       <AuditFormPanel
+        key={editTarget?.auditNo ?? "__new__"}
         isOpen={isPanelOpen}
         editData={editTarget}
         onClose={() => {

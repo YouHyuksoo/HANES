@@ -214,6 +214,7 @@ export default function UserPage() {
 
       {isPanelOpen && (
         <UserFormPanel
+          key={editingUser?.id ?? "__new__"}
           editingUser={editingUser}
           onClose={handlePanelClose}
           onSave={fetchUsers}

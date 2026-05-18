@@ -239,6 +239,7 @@ function ConsumableMasterPage() {
       {/* 우측: 소모품 등록/수정 슬라이드 패널 */}
       {isPanelOpen && (
         <ConsumableFormPanel
+          key={editing?.consumableCode ?? "__new__"}
           item={editing}
           onClose={handlePanelClose}
           onSubmit={handleSubmit}

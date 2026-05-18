@@ -183,6 +183,7 @@ export default function VendorBarcodeMappingPage() {
 
       {isPanelOpen && (
         <VendorBarcodeFormPanel
+          key={editingItem?.id ?? "__new__"}
           editingItem={editingItem}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

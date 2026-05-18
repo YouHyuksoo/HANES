@@ -264,6 +264,7 @@ export default function MoldMgmtPage() {
       {/* 우측 슬라이드 패널 */}
       {isPanelOpen && (
         <MoldFormPanel
+          key={editTarget?.moldCode ?? "__new__"}
           editData={editTarget}
           onClose={() => { setIsPanelOpen(false); setEditTarget(null); }}
           onSave={fetchData}

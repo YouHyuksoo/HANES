@@ -165,6 +165,7 @@ function PartnerPage() {
 
       {isPanelOpen && (
         <PartnerFormPanel
+          key={editingPartner?.partnerCode ?? "__new__"}
           editingPartner={editingPartner}
           onClose={handlePanelClose}
           onSave={handlePanelSave}

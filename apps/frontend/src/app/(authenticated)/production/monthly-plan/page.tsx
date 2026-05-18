@@ -233,6 +233,7 @@ export default function MonthlyPlanPage() {
       {/* 우측: 패널 */}
       {isPanelOpen && (
         <PlanFormPanel
+          key={editingPlan?.planNo ?? "__new__"}
           editingPlan={editingPlan}
           defaultMonth={startDate?.slice(0, 7) || new Date().toISOString().slice(0, 7)}
           onClose={handlePanelClose}
