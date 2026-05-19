@@ -56,6 +56,7 @@ export default function LandingHeader({ isAuthenticated, onNavigate }: LandingHe
           <LanguageSwitcher />
           <button
             onClick={onNavigate}
+            suppressHydrationWarning
             className="
               flex items-center gap-2 px-5 py-2.5
               bg-primary text-white rounded-lg

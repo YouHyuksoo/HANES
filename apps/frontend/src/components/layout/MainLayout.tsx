@@ -11,6 +11,7 @@
  * 4. **서버 상태**: API 오류(503 등) 감지 시 ConnectionCheckOverlay 표시
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import TabBar from "./TabBar";
@@ -23,10 +24,14 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [showConnectionCheck, setShowConnectionCheck] = useState(false);
   const errorCountRef = useRef(0);
+  const isKioskWorkView =
+    pathname === "/production/input-kiosk" && searchParams.get("view") === "work";
 
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
@@ -64,30 +69,38 @@ export default function MainLayout({ children }: MainLayoutProps) {
     <div className="h-screen overflow-hidden bg-background">
       {showConnectionCheck && <ConnectionCheckOverlay onReady={handleReady} />}
 
-      <Header
-        onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed(!collapsed)}
-      />
+      {isKioskWorkView ? (
+        <main className="h-screen overflow-hidden bg-background">
+          {children}
+        </main>
+      ) : (
+        <>
+          <Header
+            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed(!collapsed)}
+          />
 
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        collapsed={collapsed}
-        onToggleCollapse={() => setCollapsed(!collapsed)}
-      />
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed(!collapsed)}
+          />
 
-      <main
-        className={`
-          pt-[var(--header-height)] h-screen flex flex-col overflow-hidden transition-all duration-300
-          ${collapsed ? "lg:pl-[var(--sidebar-collapsed-width)]" : "lg:pl-[var(--sidebar-width)]"}
-        `}
-      >
-        <TabBar />
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <KeepAlive>{children}</KeepAlive>
-        </div>
-      </main>
+          <main
+            className={`
+              pt-[var(--header-height)] h-screen flex flex-col overflow-hidden transition-all duration-300
+              ${collapsed ? "lg:pl-[var(--sidebar-collapsed-width)]" : "lg:pl-[var(--sidebar-width)]"}
+            `}
+          >
+            <TabBar />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <KeepAlive>{children}</KeepAlive>
+            </div>
+          </main>
+        </>
+      )}
     </div>
   );
 }

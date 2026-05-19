@@ -2,10 +2,11 @@
 
 /**
  * @file components/WorkHistoryPanel.tsx
- * @description 우측 패널 — 양품조건(자주검사 기준) + 최근 작업이력
+ * @description 우측 패널 — 양품조건(라우팅 기준) + 최근 작업이력
  *
  * 초보자 가이드:
- * - 양품조건: GET /production/self-inspect/items?processCode= (검사기준 표시)
+ * - 양품조건: 작업지시의 itemCode → by-item API로 routingCode+seq 조회 →
+ *             GET /master/routing-groups/:code/processes/:seq/conditions
  * - 작업이력: GET /production/prod-results?equipCode=&limit=10
  * - 10초마다 자동 갱신 (현장 모니터링용)
  */
@@ -14,14 +15,15 @@ import { useTranslation } from 'react-i18next';
 import { History, CheckCircle2, XCircle, Clock, FlaskConical } from 'lucide-react';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
+import { useComCodeList } from '@/hooks/useComCode';
 
-interface InspectItem {
-  id: string;
-  itemName: string;
-  standard: string;
-  inspectMethod: 'DIRECT' | 'DELEGATE';
-  timing: string;
-  isDestructive: boolean;
+interface QualityCondition {
+  conditionSeq: number;
+  conditionCode: string | null;
+  minValue: number | null;
+  maxValue: number | null;
+  unit: string | null;
+  equipInterfaceYn: string;
 }
 
 interface HistoryItem {
@@ -41,18 +43,35 @@ export default function WorkHistoryPanel() {
   const { t } = useTranslation();
   const { selectedEquip, selectedJobOrder } = useKioskStore();
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [inspectItems, setInspectItems] = useState<InspectItem[]>([]);
+  const [conditions, setConditions] = useState<QualityCondition[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const conditionCodes = useComCodeList('QUALITY_CONDITION');
 
-  // 공정별 검사항목(양품조건) 로드
+  // 라우팅 양품조건 로드: itemCode → routing → processCode 매칭 → conditions
   useEffect(() => {
-    if (!selectedJobOrder?.processCode) { setInspectItems([]); return; }
-    api.get('/production/self-inspect/items', {
-      params: { processCode: selectedJobOrder.processCode },
-    })
-      .then(res => setInspectItems(res.data?.data ?? []))
-      .catch(() => setInspectItems([]));
-  }, [selectedJobOrder?.processCode]);
+    if (!selectedJobOrder?.itemCode || !selectedJobOrder?.processCode) {
+      setConditions([]);
+      return;
+    }
+    const itemCode = selectedJobOrder.itemCode;
+    const processCode = selectedJobOrder.processCode;
+
+    api.get(`/master/routing-groups/by-item/${itemCode}`)
+      .then(res => {
+        const routing = res.data?.data;
+        if (!routing) { setConditions([]); return; }
+        const process = (routing.processes ?? []).find(
+          (p: { processCode: string }) => p.processCode === processCode
+        );
+        if (!process) { setConditions([]); return; }
+        return api.get(`/master/routing-groups/${routing.routingCode}/processes/${process.seq}/conditions`);
+      })
+      .then(res => {
+        if (!res) return;
+        setConditions(res.data?.data ?? []);
+      })
+      .catch(() => setConditions([]));
+  }, [selectedJobOrder?.itemCode, selectedJobOrder?.processCode]);
 
   const fetchHistory = () => {
     if (!selectedEquip?.equipCode) { setHistory([]); return; }
@@ -76,36 +95,47 @@ export default function WorkHistoryPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* 양품조건 — 자주검사 항목 기준 */}
+      {/* 양품조건 — 라우팅 공정 기준 */}
       <div className="border-b border-border/50 shrink-0 max-h-48 flex flex-col">
         <div className="sticky top-0 bg-card px-3 py-2 flex items-center gap-1.5 border-b border-border/30">
           <FlaskConical className="w-3.5 h-3.5 text-green-500" />
           <span className="text-xs font-semibold text-text">{t('kiosk.history.qualityCriteria')}</span>
-          {inspectItems.length > 0 && (
-            <span className="ml-auto text-xs text-text-muted">{inspectItems.length}{t('kiosk.material.unit')}</span>
+          {conditions.length > 0 && (
+            <span className="ml-auto text-xs text-text-muted">{conditions.length}{t('kiosk.material.unit')}</span>
           )}
         </div>
         <div className="overflow-y-auto flex-1 min-h-0">
-          {inspectItems.length === 0 ? (
+          {conditions.length === 0 ? (
             <div className="px-3 py-3 text-center">
               <p className="text-xs text-text-muted">{t('kiosk.history.criteriaPlaceholder')}</p>
             </div>
           ) : (
             <ul className="divide-y divide-border/30">
-              {inspectItems.map(item => (
-                <li key={item.id} className="px-3 py-1.5">
-                  <div className="flex items-start gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-text leading-snug">{item.itemName}</p>
-                      <p className="text-xs text-text-muted leading-snug mt-0.5">{item.standard}</p>
+              {conditions.map(cond => {
+                const codeName = conditionCodes.find(c => c.detailCode === cond.conditionCode)?.codeName
+                  ?? cond.conditionCode ?? '-';
+                const hasRange = cond.minValue != null || cond.maxValue != null;
+                return (
+                  <li key={cond.conditionSeq} className="px-3 py-1.5">
+                    <div className="flex items-start gap-1.5">
+                      <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-text leading-snug">{codeName}</p>
+                        {hasRange && (
+                          <p className="text-xs text-text-muted leading-snug mt-0.5 tabular-nums">
+                            {cond.minValue != null ? cond.minValue : '∞'} ~{' '}
+                            {cond.maxValue != null ? cond.maxValue : '∞'}
+                            {cond.unit ? ` ${cond.unit}` : ''}
+                          </p>
+                        )}
+                      </div>
+                      {cond.equipInterfaceYn === 'Y' && (
+                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 rounded shrink-0">설비</span>
+                      )}
                     </div>
-                    {item.inspectMethod === 'DELEGATE' && (
-                      <span className="text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-1 rounded shrink-0">의뢰</span>
-                    )}
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -113,17 +143,17 @@ export default function WorkHistoryPanel() {
 
       {/* 요약 통계 */}
       <div className="grid grid-cols-2 gap-2 px-3 py-2 border-b border-border/50 shrink-0">
-        <div className="bg-green-50 dark:bg-green-900/20 rounded p-2 text-center">
+        <div className="bg-card border border-border rounded p-2 text-center">
           <p className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">
             {totalGood.toLocaleString()}
           </p>
-          <p className="text-xs text-green-600 dark:text-green-400">{t('kiosk.history.goodTotal')}</p>
+          <p className="text-xs text-text-muted">{t('kiosk.history.goodTotal')}</p>
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 rounded p-2 text-center">
-          <p className="text-lg font-bold text-red-600 dark:text-red-400 tabular-nums">
+        <div className="bg-card border border-border rounded p-2 text-center">
+          <p className="text-lg font-bold text-red-500 dark:text-red-400 tabular-nums">
             {totalDefect.toLocaleString()}
           </p>
-          <p className="text-xs text-red-600 dark:text-red-400">{t('kiosk.history.defectTotal')}</p>
+          <p className="text-xs text-text-muted">{t('kiosk.history.defectTotal')}</p>
         </div>
       </div>
 

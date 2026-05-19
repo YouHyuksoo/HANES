@@ -14,12 +14,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EquipInspectItemMaster } from '../../../entities/equip-inspect-item-master.entity';
 import { CreateEquipInspectItemDto, UpdateEquipInspectItemDto, EquipInspectItemQueryDto } from '../dto/equip-inspect.dto';
+import { EquipInspectItemPoolService } from './equip-inspect-item-pool.service';
 
 @Injectable()
 export class EquipInspectService {
   constructor(
     @InjectRepository(EquipInspectItemMaster)
     private readonly equipInspectRepository: Repository<EquipInspectItemMaster>,
+    private readonly poolService: EquipInspectItemPoolService,
   ) {}
 
   async findAll(query: EquipInspectItemQueryDto, company?: string, plant?: string) {
@@ -61,10 +63,21 @@ export class EquipInspectService {
   }
 
   async create(dto: CreateEquipInspectItemDto, company: string, plant: string) {
+    const source = dto.itemCode
+      ? await this.poolService.findByCode(company, plant, dto.itemCode)
+      : null;
+
     const entity = this.equipInspectRepository.create({
-      ...dto,
       company,
       plant,
+      equipCode: dto.equipCode,
+      itemCode: source?.itemCode || dto.itemCode || null,
+      inspectType: source?.inspectType || dto.inspectType,
+      seq: dto.seq,
+      itemName: source?.itemName || dto.itemName,
+      criteria: source?.criteria ?? dto.criteria ?? null,
+      cycle: source?.cycle ?? dto.cycle ?? null,
+      useYn: dto.useYn || 'Y',
     });
     return this.equipInspectRepository.save(entity);
   }

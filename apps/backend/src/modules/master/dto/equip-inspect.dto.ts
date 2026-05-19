@@ -17,10 +17,17 @@ export class CreateEquipInspectItemDto {
   @IsString()
   equipCode: string;
 
+  @ApiPropertyOptional({ description: '점검항목 Pool 코드', example: 'EIP-001' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  itemCode?: string;
+
   @ApiProperty({ description: '점검 유형', enum: ['DAILY', 'PERIODIC', 'PM'] })
+  @IsOptional()
   @IsString()
   @IsIn(['DAILY', 'PERIODIC', 'PM'])
-  inspectType: string;
+  inspectType?: string;
 
   @ApiProperty({ description: '점검 순서', example: 1 })
   @Type(() => Number)
@@ -29,9 +36,10 @@ export class CreateEquipInspectItemDto {
   seq: number;
 
   @ApiProperty({ description: '점검항목명', example: '유압 압력 확인' })
+  @IsOptional()
   @IsString()
   @MaxLength(200)
-  itemName: string;
+  itemName?: string;
 
   @ApiPropertyOptional({ description: '판정기준' })
   @IsOptional()

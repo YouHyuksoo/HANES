@@ -15,9 +15,20 @@ export interface EquipSummary {
   lineCode: string | null;
 }
 
+export interface InspectItemPoolRow {
+  itemCode: string;
+  inspectType: "DAILY" | "PERIODIC" | "PM";
+  itemName: string;
+  criteria: string | null;
+  cycle: string | null;
+  useYn: string;
+  remark: string | null;
+}
+
 /** 점검항목 (DB 엔티티 매핑 - 복합키) */
 export interface InspectItemRow {
   equipCode: string;
+  itemCode: string | null;
   inspectType: "DAILY" | "PERIODIC" | "PM";
   seq: number;
   itemName: string;
@@ -29,6 +40,7 @@ export interface InspectItemRow {
 /** 점검항목 생성/수정 DTO */
 export interface InspectItemFormData {
   equipCode: string;
+  itemCode?: string;
   inspectType: "DAILY" | "PERIODIC" | "PM";
   seq: number;
   itemName: string;

@@ -1,6 +1,6 @@
 /**
  * @file src/components/worker/WorkerSelector.tsx
- * @description 작업자 선택 공통 컴포넌트 - 텍스트 검색 + QR 스캔 입력
+ * @description 작업자 선택 공통 컴포넌트 - 텍스트 검색 + QR 스캔 입력 (실 API 연동)
  *
  * 초보자 가이드:
  * 1. **작업자 검색**: 이름/코드로 텍스트 검색 → 드롭다운 결과
@@ -9,9 +9,10 @@
  */
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ScanLine, X } from "lucide-react";
+import api from "@/services/api";
 
 /** 작업자 인터페이스 */
 export interface Worker {
@@ -29,23 +30,14 @@ interface WorkerSelectorProps {
   label?: string;
 }
 
-/** Mock 작업자 데이터 (WorkerMaster 기준) */
-export const mockWorkers: Worker[] = [
-  { id: "1", workerCode: "W-001", workerName: "김작업", dept: "절단팀", qrCode: "QR-W001", photoUrl: null },
-  { id: "2", workerCode: "W-002", workerName: "이압착", dept: "압착팀", qrCode: "QR-W002", photoUrl: null },
-  { id: "3", workerCode: "W-003", workerName: "박조립", dept: "조립팀", qrCode: "QR-W003", photoUrl: null },
-  { id: "4", workerCode: "W-004", workerName: "최검사", dept: "품질팀", qrCode: "QR-W004", photoUrl: null },
-  { id: "5", workerCode: "W-005", workerName: "정포장", dept: "포장팀", photoUrl: null },
-  { id: "6", workerCode: "W-006", workerName: "한절단", dept: "절단팀", qrCode: "QR-W006", photoUrl: null },
-  { id: "7", workerCode: "W-007", workerName: "오압착", dept: "압착팀", qrCode: "QR-W007", photoUrl: null },
-];
-
 /** 부서별 아바타 배경색 */
 const deptColors: Record<string, string> = {
+  생산1팀: "bg-orange-500",
+  생산2팀: "bg-blue-500",
+  품질팀: "bg-purple-500",
   절단팀: "bg-orange-500",
   압착팀: "bg-blue-500",
   조립팀: "bg-green-500",
-  품질팀: "bg-purple-500",
   포장팀: "bg-teal-500",
 };
 
@@ -70,6 +62,7 @@ export function WorkerAvatar({ name, dept, photoUrl, size = "md" }: { name: stri
 
 function WorkerSelector({ value, onChange, label }: WorkerSelectorProps) {
   const { t } = useTranslation();
+  const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
   const [searchText, setSearchText] = useState("");
   const [qrText, setQrText] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -77,9 +70,24 @@ function WorkerSelector({ value, onChange, label }: WorkerSelectorProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const qrRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    api.get('/master/workers', { params: { limit: 500, useYn: 'Y' } })
+      .then(res => {
+        setAllWorkers((res.data?.data ?? []).map((w: Record<string, unknown>) => ({
+          id: w.workerCode as string,
+          workerCode: w.workerCode as string,
+          workerName: w.workerName as string,
+          dept: (w.dept ?? '') as string,
+          qrCode: w.qrCode as string | undefined,
+          photoUrl: (w.photoUrl ?? null) as string | null,
+        })));
+      })
+      .catch(() => {});
+  }, []);
+
   /** 검색 필터링된 작업자 목록 */
   const filteredWorkers = searchText
-    ? mockWorkers.filter(
+    ? allWorkers.filter(
         (w) =>
           w.workerName.toLowerCase().includes(searchText.toLowerCase()) ||
           w.workerCode.toLowerCase().includes(searchText.toLowerCase())
@@ -96,7 +104,7 @@ function WorkerSelector({ value, onChange, label }: WorkerSelectorProps) {
   /** QR 입력 → Enter → 자동 매칭 */
   const handleQrSubmit = () => {
     if (!qrText.trim()) return;
-    const matched = mockWorkers.find((w) => w.qrCode === qrText.trim());
+    const matched = allWorkers.find((w) => w.qrCode === qrText.trim());
     if (matched) {
       onChange(matched);
       setQrText("");

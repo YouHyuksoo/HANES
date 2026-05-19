@@ -9,11 +9,11 @@
  * 2. API: POST /master/equip-inspect-items
  * 3. seq는 현재 최대값 + 1로 자동 설정
  */
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Input, Modal, Select } from "@/components/ui";
-import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
+import { InspectItemPoolRow } from "../types";
 
 interface Props {
   isOpen: boolean;
@@ -26,33 +26,50 @@ interface Props {
 
 export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipName, currentMaxSeq, onAdded }: Props) {
   const { t } = useTranslation();
-  const [itemName, setItemName] = useState("");
-  const [inspectType, setInspectType] = useState<"DAILY" | "PERIODIC">("DAILY");
-  const [criteria, setCriteria] = useState("");
-  const [cycle, setCycle] = useState("DAILY");
+  const [poolItems, setPoolItems] = useState<InspectItemPoolRow[]>([]);
+  const [selectedItemCode, setSelectedItemCode] = useState("");
   const [seq, setSeq] = useState(String(currentMaxSeq + 1));
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setSeq(String(currentMaxSeq + 1));
+
+    (async () => {
+      try {
+        const res = await api.get("/master/equip-inspect-item-pool", {
+          params: { useYn: "Y", limit: "1000" },
+        });
+        setPoolItems(res.data?.data ?? []);
+      } catch {
+        setPoolItems([]);
+      }
+    })();
+  }, [isOpen, currentMaxSeq]);
+
+  const selectedItem = useMemo(
+    () => poolItems.find(item => item.itemCode === selectedItemCode) || null,
+    [poolItems, selectedItemCode],
+  );
+
+  const poolOptions = useMemo(() => poolItems.map(item => ({
+    value: item.itemCode,
+    label: `${item.itemCode} - ${item.itemName}`,
+  })), [poolItems]);
 
   const resetForm = () => {
-    setItemName("");
-    setInspectType("DAILY");
-    setCriteria("");
-    setCycle("DAILY");
+    setSelectedItemCode("");
     setSeq(String(currentMaxSeq + 1));
   };
 
   const handleSave = async () => {
-    if (!itemName.trim()) return;
+    if (!selectedItem) return;
     setSaving(true);
     try {
       await api.post("/master/equip-inspect-items", {
         equipCode,
-        inspectType,
+        itemCode: selectedItem.itemCode,
         seq: parseInt(seq, 10) || (currentMaxSeq + 1),
-        itemName: itemName.trim(),
-        criteria: criteria.trim() || null,
-        cycle,
         useYn: "Y",
       });
       resetForm();
@@ -76,25 +93,35 @@ export default function AddInspectItemModal({ isOpen, onClose, equipCode, equipN
       </div>
 
       <div className="space-y-4">
-        <Input label={t("master.equipInspect.itemName")} value={itemName}
-          onChange={e => setItemName(e.target.value)} fullWidth />
+        <Select
+          label={t("master.equipInspect.itemName", "점검항목")}
+          placeholder={t("master.equipInspect.selectPoolItem", "점검항목 마스터 선택")}
+          options={poolOptions}
+          value={selectedItemCode}
+          onChange={setSelectedItemCode}
+          fullWidth
+        />
 
         <div className="grid grid-cols-3 gap-4">
-          <ComCodeSelect label={t("master.equipInspect.inspectType")} groupCode="INSPECT_TYPE" includeAll={false}
-            value={inspectType} onChange={v => setInspectType(v as "DAILY" | "PERIODIC")} />
-          <ComCodeSelect label={t("master.equipInspect.cycle")} groupCode="PM_CYCLE_TYPE" includeAll={false}
-            value={cycle} onChange={setCycle} />
+          <Input label={t("master.equipInspect.itemCode", "항목코드")} value={selectedItem?.itemCode || ""}
+            disabled fullWidth />
+          <Input label={t("master.equipInspect.inspectType")} value={selectedItem?.inspectType || ""}
+            disabled fullWidth />
           <Input label={t("master.equipInspect.seq")} type="number" value={seq}
             onChange={e => setSeq(e.target.value)} fullWidth />
         </div>
 
-        <Input label={t("master.equipInspect.criteria")} value={criteria}
-          onChange={e => setCriteria(e.target.value)} fullWidth />
+        <div className="grid grid-cols-2 gap-4">
+          <Input label={t("master.equipInspect.cycle")} value={selectedItem?.cycle || ""}
+            disabled fullWidth />
+          <Input label={t("master.equipInspect.criteria")} value={selectedItem?.criteria || ""}
+            disabled fullWidth />
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={handleClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSave} disabled={!itemName.trim() || saving}>
+        <Button onClick={handleSave} disabled={!selectedItem || saving}>
           {saving ? t("common.saving", "저장 중...") : t("common.add")}
         </Button>
       </div>

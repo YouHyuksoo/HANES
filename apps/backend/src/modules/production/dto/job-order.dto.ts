@@ -167,13 +167,18 @@ export class JobOrderQueryDto extends PaginationQueryDto {
   lineCode?: string;
 
   @ApiPropertyOptional({
-    description: '상태 필터',
+    description: '상태 필터 (단일 값)',
     enum: [...JOB_ORDER_STATUS_VALUES],
   })
   @IsOptional()
   @IsString()
   @IsIn([...JOB_ORDER_STATUS_VALUES])
   status?: JobOrderStatus;
+
+  @ApiPropertyOptional({ description: '상태 다중 필터 (쉼표 구분, 예: WAITING,RUNNING)' })
+  @IsOptional()
+  @IsString()
+  statuses?: string;
 
   @ApiPropertyOptional({ description: '계획일 시작 (YYYY-MM-DD)' })
   @IsOptional()

@@ -65,6 +65,7 @@ export * from './iqc-log.entity';
 export * from './iqc-item-master.entity';
 export * from './iqc-item-pool.entity';
 export * from './equip-inspect-item-master.entity';
+export * from './equip-inspect-item-pool.entity';
 export * from './equip-inspect-log.entity';
 export * from './oqc-request.entity';
 export * from './oqc-request-box.entity';

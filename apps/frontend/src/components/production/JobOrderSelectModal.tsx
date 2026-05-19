@@ -2,15 +2,16 @@
 
 /**
  * @file src/components/production/JobOrderSelectModal.tsx
- * @description 작업지시 선택 모달
+ * @description 작업지시 선택 모달 — 실 API 연동
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Search, Calendar, Package, Check } from 'lucide-react';
+import { X, Search, Check } from 'lucide-react';
 import { Modal, Input, Button } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { ComCodeBadge } from '@/components/ui';
+import api from '@/services/api';
 
 export interface JobOrder {
   id: string;
@@ -37,39 +38,71 @@ interface JobOrderSelectModalProps {
   filterStatus?: string[];
 }
 
-// Mock data - 실제로는 API에서 조회
-const mockJobOrders: JobOrder[] = [
-  { id: '1', orderNo: 'JO-20250217-001', itemCode: 'HNS-001', itemName: '메인 하네스 A', itemType: 'FG', processType: 'CUT', processCode: 'CUT-01', planQty: 1000, completedQty: 500, status: 'IN_PROGRESS', planStartDate: '2025-02-17', planEndDate: '2025-02-18', workDate: '2025-02-17', equipCode: 'EQ-001', equipName: '절단기 1호' },
-  { id: '2', orderNo: 'JO-20250217-002', itemCode: 'HNS-002', itemName: '서브 하네스 B', itemType: 'WIP', processType: 'CRM', processCode: 'CRM-01', planQty: 800, completedQty: 0, status: 'READY', planStartDate: '2025-02-17', planEndDate: '2025-02-17', workDate: '2025-02-17', equipCode: 'EQ-002', equipName: '압착기 1호' },
-  { id: '3', orderNo: 'JO-20250216-001', itemCode: 'HNS-001', itemName: '메인 하네스 A', itemType: 'FG', processType: 'ASM', processCode: 'ASM-01', planQty: 500, completedQty: 500, status: 'COMPLETED', planStartDate: '2025-02-16', planEndDate: '2025-02-16', workDate: '2025-02-16', equipCode: 'EQ-003', equipName: '조립라인 A' },
-  { id: '4', orderNo: 'JO-20250217-003', itemCode: 'HNS-003', itemName: '도어 하네스 C', itemType: 'FG', processType: 'CUT', processCode: 'CUT-02', planQty: 600, completedQty: 200, status: 'IN_PROGRESS', planStartDate: '2025-02-17', planEndDate: '2025-02-19', workDate: '2025-02-17', equipCode: 'EQ-001', equipName: '절단기 1호' },
-  { id: '5', orderNo: 'JO-20250215-001', itemCode: 'HNS-004', itemName: '트렁크 하네스', itemType: 'FG', processType: 'INS', processCode: 'INS-01', planQty: 300, completedQty: 300, status: 'COMPLETED', planStartDate: '2025-02-15', planEndDate: '2025-02-15', workDate: '2025-02-15', equipCode: 'EQ-004', equipName: '검사라인' },
-];
-
 export default function JobOrderSelectModal({
   isOpen,
   onClose,
   onConfirm,
-  filterStatus = ['READY', 'IN_PROGRESS'],
+  filterStatus = ['WAITING', 'RUNNING'],
 }: JobOrderSelectModalProps) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null);
+  const [rawData, setRawData] = useState<JobOrder[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchJobOrders = useCallback(async () => {
+    if (!isOpen) return;
+    setLoading(true);
+    try {
+      const statuses = filterStatus.join(',');
+      const res = await api.get('/production/job-orders', {
+        params: { statuses, limit: 200 },
+      });
+      const items: JobOrder[] = (res.data?.data ?? []).map((jo: Record<string, unknown>) => {
+        const part = jo.part as Record<string, unknown> | undefined;
+        return {
+          id: jo.orderNo as string,
+          orderNo: jo.orderNo as string,
+          itemCode: jo.itemCode as string,
+          itemName: (part?.itemName ?? jo.itemCode) as string,
+          itemType: part?.itemType as string | undefined,
+          processType: jo.processType as string | undefined,
+          processCode: jo.processCode as string | undefined,
+          planQty: jo.planQty as number,
+          completedQty: (jo.goodQty ?? 0) as number,
+          status: jo.status as string,
+          planStartDate: jo.planDate ? String(jo.planDate).slice(0, 10) : '',
+          planEndDate: jo.planDate ? String(jo.planDate).slice(0, 10) : '',
+          workDate: jo.planDate ? String(jo.planDate).slice(0, 10) : undefined,
+        };
+      });
+      setRawData(items);
+    } catch {
+      setRawData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isOpen, filterStatus]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedJobOrder(null);
+      setSearchText('');
+      fetchJobOrders();
+    }
+  }, [isOpen, fetchJobOrders]);
 
   const filteredData = useMemo(() => {
-    return mockJobOrders
-      .filter((item) => filterStatus.includes(item.status))
-      .filter((item) => {
-        if (!searchText) return true;
-        const search = searchText.toLowerCase();
-        return (
-          item.orderNo.toLowerCase().includes(search) ||
-          item.itemCode.toLowerCase().includes(search) ||
-          item.itemName.toLowerCase().includes(search) ||
-          (item.processCode?.toLowerCase().includes(search) ?? false)
-        );
-      });
-  }, [searchText, filterStatus]);
+    if (!searchText) return rawData;
+    const s = searchText.toLowerCase();
+    return rawData.filter(
+      (item) =>
+        item.orderNo.toLowerCase().includes(s) ||
+        item.itemCode.toLowerCase().includes(s) ||
+        item.itemName.toLowerCase().includes(s) ||
+        (item.processCode?.toLowerCase().includes(s) ?? false),
+    );
+  }, [rawData, searchText]);
 
   const handleConfirm = () => {
     if (selectedJobOrder) {
@@ -130,10 +163,7 @@ export default function JobOrderSelectModal({
         header: t('production.order.process'),
         size: 100,
         cell: ({ getValue }) => (
-          <ComCodeBadge
-            groupCode="PROCESS_TYPE"
-            code={getValue() as string}
-          />
+          <ComCodeBadge groupCode="PROCESS_TYPE" code={getValue() as string} />
         ),
       },
       {
@@ -147,7 +177,9 @@ export default function JobOrderSelectModal({
               {row.original.completedQty.toLocaleString()} / {row.original.planQty.toLocaleString()}
             </div>
             <div className="text-xs text-text-muted">
-              {Math.round((row.original.completedQty / row.original.planQty) * 100)}%
+              {row.original.planQty > 0
+                ? Math.round((row.original.completedQty / row.original.planQty) * 100)
+                : 0}%
             </div>
           </div>
         ),
@@ -157,10 +189,7 @@ export default function JobOrderSelectModal({
         header: t('common.status'),
         size: 90,
         cell: ({ getValue }) => (
-          <ComCodeBadge
-            groupCode="JOB_ORDER_STATUS"
-            code={getValue() as string}
-          />
+          <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} />
         ),
       },
       {
@@ -169,19 +198,16 @@ export default function JobOrderSelectModal({
         size: 110,
         meta: { filterType: 'date' },
         cell: ({ row }) => (
-          <span className="text-sm text-text-muted">
-            {row.original.planStartDate} ~ {row.original.planEndDate}
-          </span>
+          <span className="text-sm text-text-muted">{row.original.planStartDate}</span>
         ),
       },
     ],
-    [t, selectedJobOrder]
+    [t, selectedJobOrder],
   );
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={t('production.inputManual.selectJobOrder')} size="xl">
       <div className="space-y-4">
-        {/* 검색 */}
         <div className="flex gap-2">
           <div className="flex-1">
             <Input
@@ -194,16 +220,16 @@ export default function JobOrderSelectModal({
           </div>
         </div>
 
-        {/* 작업지시 목록 */}
         <div className="border border-border rounded-lg overflow-hidden">
-          <DataGrid
-            data={filteredData}
-            columns={columns}
-            pageSize={5}
-          />
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-text-muted text-sm">
+              {t('common.loading', '불러오는 중...')}
+            </div>
+          ) : (
+            <DataGrid data={filteredData} columns={columns} pageSize={5} />
+          )}
         </div>
 
-        {/* 선택된 작업지시 정보 */}
         {selectedJobOrder && (
           <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
@@ -224,10 +250,7 @@ export default function JobOrderSelectModal({
               <div>
                 <span className="text-text-muted">{t('production.order.process')}:</span>
                 <span className="ml-2">
-                  <ComCodeBadge
-                    groupCode="PROCESS_TYPE"
-                    code={selectedJobOrder.processType || ''}
-                  />
+                  <ComCodeBadge groupCode="PROCESS_TYPE" code={selectedJobOrder.processType || ''} />
                 </span>
               </div>
               <div>
@@ -240,7 +263,6 @@ export default function JobOrderSelectModal({
           </div>
         )}
 
-        {/* 버튼 */}
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
           <Button variant="secondary" onClick={handleClose}>
             {t('common.cancel')}

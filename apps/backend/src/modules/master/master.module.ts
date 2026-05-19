@@ -34,6 +34,8 @@ import { IqcPartLinkController } from './controllers/iqc-part-link.controller';
 import { IqcPartLinkService } from './services/iqc-part-link.service';
 import { EquipInspectController } from './controllers/equip-inspect.controller';
 import { EquipInspectService } from './services/equip-inspect.service';
+import { EquipInspectItemPoolController } from './controllers/equip-inspect-item-pool.controller';
+import { EquipInspectItemPoolService } from './services/equip-inspect-item-pool.service';
 import { EquipBomController } from './controllers/equip-bom.controller';
 import { EquipBomService } from './services/equip-bom.service';
 import { WorkInstructionController } from './controllers/work-instruction.controller';
@@ -80,6 +82,7 @@ import { WorkInstruction } from '../../entities/work-instruction.entity';
 import { WorkerMaster } from '../../entities/worker-master.entity';
 import { PartnerMaster } from '../../entities/partner-master.entity';
 import { EquipInspectItemMaster } from '../../entities/equip-inspect-item-master.entity';
+import { EquipInspectItemPool } from '../../entities/equip-inspect-item-pool.entity';
 import { IqcItemMaster } from '../../entities/iqc-item-master.entity';
 import { IqcGroup } from '../../entities/iqc-group.entity';
 import { IqcGroupItem } from '../../entities/iqc-group-item.entity';
@@ -119,6 +122,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       WorkerMaster,
       PartnerMaster,
       EquipInspectItemMaster,
+      EquipInspectItemPool,
       IqcItemMaster,
       IqcGroup,
       IqcGroupItem,
@@ -153,6 +157,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     IqcGroupController,
     IqcPartLinkController,
     EquipInspectController,
+    EquipInspectItemPoolController,
     EquipBomController,
     WorkInstructionController,
     TransferRuleController,
@@ -181,6 +186,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     IqcGroupService,
     IqcPartLinkService,
     EquipInspectService,
+    EquipInspectItemPoolService,
     EquipBomService,
     WorkInstructionService,
     TransferRuleService,
@@ -209,6 +215,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     IqcGroupService,
     IqcPartLinkService,
     EquipInspectService,
+    EquipInspectItemPoolService,
     EquipBomService,
     WorkInstructionService,
     TransferRuleService,

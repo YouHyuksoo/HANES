@@ -50,6 +50,12 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
         </button>
       ),
     },
+    {
+      accessorKey: "itemCode",
+      header: t("master.equipInspect.itemCode", "항목코드"),
+      size: 110,
+      cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>,
+    },
     { accessorKey: "seq", header: t("master.equipInspect.seq"), size: 60 },
     { accessorKey: "itemName", header: t("master.equipInspect.itemName"), size: 200 },
     {

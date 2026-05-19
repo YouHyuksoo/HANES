@@ -229,7 +229,7 @@ export default function InputKioskPage() {
         isOpen={isJobOrderOpen}
         onClose={() => setIsJobOrderOpen(false)}
         onConfirm={handleJobOrderConfirm}
-        filterStatus={['READY', 'IN_PROGRESS']}
+        filterStatus={['WAITING', 'RUNNING']}
       />
       <WorkerSelectModal
         isOpen={isWorkerOpen}

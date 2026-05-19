@@ -17,7 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull } from 'typeorm';
+import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull, In } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -94,7 +94,7 @@ export class JobOrderService {
   async findAll(query: JobOrderQueryDto, company?: string, plant?: string) {
     const {
       page = 1, limit = 50, search, orderNo, itemCode,
-      lineCode, status, planDateFrom, planDateTo, erpSyncYn,
+      lineCode, status, statuses, planDateFrom, planDateTo, erpSyncYn,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -108,7 +108,12 @@ export class JobOrderService {
     if (orderNo) qb.andWhere('jo.orderNo LIKE :orderNo', { orderNo: `%${orderNo.toUpperCase()}%` });
     if (itemCode) qb.andWhere('jo.itemCode = :itemCode', { itemCode });
     if (lineCode) qb.andWhere('jo.lineCode = :lineCode', { lineCode });
-    if (status) qb.andWhere('jo.status = :status', { status });
+    if (statuses) {
+      const statusList = statuses.split(',').map(s => s.trim()).filter(Boolean);
+      if (statusList.length > 0) qb.andWhere('jo.status IN (:...statusList)', { statusList });
+    } else if (status) {
+      qb.andWhere('jo.status = :status', { status });
+    }
     if (erpSyncYn) qb.andWhere('jo.erpSyncYn = :erpSyncYn', { erpSyncYn });
     if (planDateFrom) qb.andWhere('jo.planDate >= :planDateFrom', { planDateFrom: new Date(planDateFrom) });
     if (planDateTo) qb.andWhere('jo.planDate <= :planDateTo', { planDateTo: new Date(planDateTo) });
