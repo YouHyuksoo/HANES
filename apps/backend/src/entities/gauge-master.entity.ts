@@ -27,13 +27,13 @@ export class GaugeMaster {
   @Column({ name: 'GAUGE_TYPE', length: 50 })
   gaugeType: string;
 
-  @Column({ name: 'MANUFACTURER', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'MANUFACTURER', length: 200, nullable: true })
   manufacturer: string;
 
-  @Column({ name: 'MODEL', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'MODEL', length: 100, nullable: true })
   model: string;
 
-  @Column({ name: 'SERIAL_NO', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'SERIAL_NO', length: 100, nullable: true })
   serialNo: string;
 
   @Column({
@@ -45,7 +45,7 @@ export class GaugeMaster {
   })
   resolution: number;
 
-  @Column({ name: 'MEASURE_RANGE', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'MEASURE_RANGE', length: 100, nullable: true })
   measureRange: string;
 
   @Column({ name: 'CALIBRATION_CYCLE', type: 'int' })
@@ -60,10 +60,10 @@ export class GaugeMaster {
   @Column({ name: 'STATUS', length: 20, default: 'ACTIVE' })
   status: string;
 
-  @Column({ name: 'LOCATION', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'LOCATION', length: 200, nullable: true })
   location: string;
 
-  @Column({ name: 'RESPONSIBLE_PERSON', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'RESPONSIBLE_PERSON', length: 50, nullable: true })
   responsiblePerson: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -72,10 +72,10 @@ export class GaugeMaster {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

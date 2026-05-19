@@ -29,19 +29,19 @@ export class ChangeOrder {
   @Column({ name: 'TITLE', length: 200 })
   title: string;
 
-  @Column({ name: 'DESCRIPTION', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 2000, nullable: true })
   description: string;
 
-  @Column({ name: 'REASON', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'REASON', length: 1000, nullable: true })
   reason: string;
 
-  @Column({ name: 'RISK_ASSESSMENT', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'RISK_ASSESSMENT', length: 1000, nullable: true })
   riskAssessment: string;
 
-  @Column({ name: 'AFFECTED_ITEMS', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'AFFECTED_ITEMS', length: 2000, nullable: true })
   affectedItems: string;
 
-  @Column({ name: 'AFFECTED_PROCESSES', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'AFFECTED_PROCESSES', length: 2000, nullable: true })
   affectedProcesses: string;
 
   @Column({ name: 'PRIORITY', length: 20, default: 'MEDIUM' })
@@ -50,28 +50,28 @@ export class ChangeOrder {
   @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
-  @Column({ name: 'REQUESTED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'REQUESTED_BY', length: 50, nullable: true })
   requestedBy: string;
 
   @Column({ name: 'REQUESTED_AT', type: 'timestamp', nullable: true })
   requestedAt: Date;
 
-  @Column({ name: 'REVIEWER_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'REVIEWER_CODE', length: 50, nullable: true })
   reviewerCode: string;
 
   @Column({ name: 'REVIEWED_AT', type: 'timestamp', nullable: true })
   reviewedAt: Date;
 
-  @Column({ name: 'REVIEW_COMMENT', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'REVIEW_COMMENT', length: 1000, nullable: true })
   reviewComment: string;
 
-  @Column({ name: 'APPROVER_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'APPROVER_CODE', length: 50, nullable: true })
   approverCode: string;
 
   @Column({ name: 'APPROVED_AT', type: 'timestamp', nullable: true })
   approvedAt: Date;
 
-  @Column({ name: 'APPROVE_COMMENT', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'APPROVE_COMMENT', length: 1000, nullable: true })
   approveComment: string;
 
   @Column({ name: 'EFFECTIVE_DATE', type: 'date', nullable: true })
@@ -86,10 +86,10 @@ export class ChangeOrder {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

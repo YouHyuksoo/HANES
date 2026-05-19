@@ -34,7 +34,7 @@ export class ControlPlan {
   @JoinColumn({ name: 'ITEM_CODE' })
   part: PartMaster | null;
 
-  @Column({ name: 'ITEM_NAME', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string;
 
   @Column({ name: 'REVISION_NO', type: 'int', default: 1 })
@@ -49,13 +49,13 @@ export class ControlPlan {
   @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
-  @Column({ name: 'APPROVED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'APPROVED_BY', length: 50, nullable: true })
   approvedBy: string;
 
   @Column({ name: 'APPROVED_AT', type: 'timestamp', nullable: true })
   approvedAt: Date;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -64,10 +64,10 @@ export class ControlPlan {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

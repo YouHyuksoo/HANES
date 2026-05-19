@@ -30,7 +30,7 @@ export class CAPAAction {
   @Column({ name: 'ACTION_DESC', length: 1000 })
   actionDesc: string;
 
-  @Column({ name: 'RESPONSIBLE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'RESPONSIBLE_CODE', length: 50, nullable: true })
   responsibleCode: string;
 
   @Column({ name: 'DUE_DATE', type: 'date', nullable: true })
@@ -39,7 +39,7 @@ export class CAPAAction {
   @Column({ name: 'STATUS', length: 20, default: 'PENDING' })
   status: string;
 
-  @Column({ name: 'RESULT', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'RESULT', length: 1000, nullable: true })
   result: string;
 
   @Column({ name: 'COMPLETED_AT', type: 'timestamp', nullable: true })

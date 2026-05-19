@@ -30,13 +30,13 @@ export class PpapSubmission {
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'ITEM_NAME', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string;
 
-  @Column({ name: 'CUSTOMER_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER_CODE', length: 50, nullable: true })
   customerCode: string;
 
-  @Column({ name: 'CUSTOMER_NAME', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER_NAME', length: 200, nullable: true })
   customerName: string;
 
   @Column({ name: 'PPAP_LEVEL', type: 'int', default: 3 })
@@ -54,10 +54,10 @@ export class PpapSubmission {
   @Column({ name: 'APPROVED_AT', type: 'timestamp', nullable: true })
   approvedAt: Date;
 
-  @Column({ name: 'APPROVED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'APPROVED_BY', length: 50, nullable: true })
   approvedBy: string;
 
-  @Column({ name: 'REJECTED_REASON', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'REJECTED_REASON', length: 1000, nullable: true })
   rejectedReason: string;
 
   // =============================================
@@ -122,7 +122,7 @@ export class PpapSubmission {
   // 기타 필드
   // =============================================
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -131,10 +131,10 @@ export class PpapSubmission {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

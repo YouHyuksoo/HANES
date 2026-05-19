@@ -34,7 +34,7 @@ export class AuditFinding {
   @PrimaryColumn({ name: 'FINDING_NO', type: 'int' })
   findingNo: number;
 
-  @Column({ name: 'CLAUSE_REF', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CLAUSE_REF', length: 50, nullable: true })
   clauseRef: string;
 
   @Column({ name: 'CATEGORY', length: 30 })
@@ -43,10 +43,10 @@ export class AuditFinding {
   @Column({ name: 'DESCRIPTION', length: 2000 })
   description: string;
 
-  @Column({ name: 'EVIDENCE', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'EVIDENCE', length: 1000, nullable: true })
   evidence: string;
 
-  @Column({ name: 'CAPA_ID', length: 30, nullable: true })
+  @Column({ type: 'varchar2', name: 'CAPA_ID', length: 30, nullable: true })
   capaId: string;
 
   @Column({ name: 'DUE_DATE', type: 'timestamp', nullable: true })
@@ -58,7 +58,7 @@ export class AuditFinding {
   @Column({ name: 'STATUS', length: 20, default: 'OPEN' })
   status: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -67,7 +67,7 @@ export class AuditFinding {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

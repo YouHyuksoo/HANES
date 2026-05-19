@@ -22,22 +22,22 @@ export class FaiRequest {
   @Column({ name: 'TRIGGER_TYPE', length: 30 })
   triggerType: string;
 
-  @Column({ name: 'TRIGGER_REF', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'TRIGGER_REF', length: 100, nullable: true })
   triggerRef: string;
 
   @Column({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
-  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string;
 
-  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string;
 
   @Column({ name: 'SAMPLE_QTY', type: 'int', default: 1 })
   sampleQty: number;
 
-  @Column({ name: 'INSPECTOR_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECTOR_CODE', length: 50, nullable: true })
   inspectorCode: string;
 
   @Column({ name: 'STATUS', length: 20, default: 'REQUESTED' })
@@ -46,13 +46,13 @@ export class FaiRequest {
   @Column({ name: 'INSPECT_DATE', type: 'date', nullable: true })
   inspectDate: Date;
 
-  @Column({ name: 'RESULT', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'RESULT', length: 20, nullable: true })
   result: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
-  @Column({ name: 'APPROVAL_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'APPROVAL_CODE', length: 50, nullable: true })
   approvalCode: string;
 
   @Column({ name: 'APPROVED_AT', type: 'timestamp', nullable: true })
@@ -64,10 +64,10 @@ export class FaiRequest {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

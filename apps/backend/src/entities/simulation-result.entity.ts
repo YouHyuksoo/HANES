@@ -83,19 +83,19 @@ export class SimulationPlan {
   @PrimaryColumn({ name: 'PLAN_NO', length: 50 })
   planNo: string;
 
-  @Column({ name: 'ITEM_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_CODE', length: 50, nullable: true })
   itemCode: string;
 
-  @Column({ name: 'ITEM_NAME', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 200, nullable: true })
   itemName: string;
 
-  @Column({ name: 'ITEM_TYPE', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_TYPE', length: 20, nullable: true })
   itemType: string;
 
-  @Column({ name: 'CUSTOMER', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER', length: 50, nullable: true })
   customer: string;
 
-  @Column({ name: 'CUSTOMER_NAME', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'CUSTOMER_NAME', length: 200, nullable: true })
   customerName: string;
 
   @Column({ name: 'PLAN_QTY', type: 'number', default: 0 })
@@ -107,10 +107,10 @@ export class SimulationPlan {
   @Column({ name: 'PRIORITY', type: 'number', default: 5 })
   priority: number;
 
-  @Column({ name: 'START_DATE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'START_DATE', length: 10, nullable: true })
   startDate: string;
 
-  @Column({ name: 'END_DATE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'END_DATE', length: 10, nullable: true })
   endDate: string;
 
   @Column({ name: 'ON_TIME', length: 1, default: 'Y' })
@@ -122,7 +122,7 @@ export class SimulationPlan {
   @Column({ name: 'REQUIRED_DAYS', type: 'number', default: 0 })
   requiredDays: number;
 
-  @Column({ name: 'BOTTLENECK_PROCESS', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'BOTTLENECK_PROCESS', length: 100, nullable: true })
   bottleneckProcess: string;
 
   @Column({ name: 'DAILY_CAPA', type: 'number', default: 0 })
@@ -140,13 +140,13 @@ export class SimulationSchedule {
   @PrimaryColumn({ name: 'PROCESS_CODE', length: 50 })
   processCode: string;
 
-  @Column({ name: 'PROCESS_NAME', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_NAME', length: 100, nullable: true })
   processName: string;
 
-  @Column({ name: 'START_DATE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'START_DATE', length: 10, nullable: true })
   startDate: string;
 
-  @Column({ name: 'END_DATE', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'END_DATE', length: 10, nullable: true })
   endDate: string;
 
   @Column({ name: 'TOTAL_QTY', type: 'number', default: 0 })

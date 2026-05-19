@@ -29,13 +29,13 @@ export class AuditPlan {
   @Column({ name: 'AUDIT_SCOPE', length: 500 })
   auditScope: string;
 
-  @Column({ name: 'TARGET_DEPT', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'TARGET_DEPT', length: 100, nullable: true })
   targetDept: string;
 
   @Column({ name: 'AUDITOR', length: 100 })
   auditor: string;
 
-  @Column({ name: 'CO_AUDITOR', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CO_AUDITOR', length: 100, nullable: true })
   coAuditor: string;
 
   @Column({ name: 'SCHEDULED_DATE', type: 'timestamp' })
@@ -47,10 +47,10 @@ export class AuditPlan {
   @Column({ name: 'STATUS', length: 20, default: 'PLANNED' })
   status: string;
 
-  @Column({ name: 'OVERALL_RESULT', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'OVERALL_RESULT', length: 20, nullable: true })
   overallResult: string;
 
-  @Column({ name: 'SUMMARY', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'SUMMARY', length: 2000, nullable: true })
   summary: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -59,10 +59,10 @@ export class AuditPlan {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

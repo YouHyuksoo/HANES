@@ -31,7 +31,7 @@ export class DocumentMaster {
   @Column({ name: 'DOC_TYPE', length: 30 })
   docType: string;
 
-  @Column({ name: 'CATEGORY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CATEGORY', length: 50, nullable: true })
   category: string;
 
   @Column({ name: 'REVISION_NO', type: 'int', default: 1 })
@@ -43,13 +43,13 @@ export class DocumentMaster {
   @Column({ name: 'STATUS', length: 20, default: 'DRAFT' })
   status: string;
 
-  @Column({ name: 'FILE_PATH', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'FILE_PATH', length: 500, nullable: true })
   filePath: string;
 
   @Column({ name: 'FILE_SIZE', type: 'int', nullable: true })
   fileSize: number;
 
-  @Column({ name: 'APPROVED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'APPROVED_BY', length: 50, nullable: true })
   approvedBy: string;
 
   @Column({ name: 'APPROVED_AT', type: 'timestamp', nullable: true })
@@ -61,7 +61,7 @@ export class DocumentMaster {
   @Column({ name: 'EXPIRES_AT', type: 'timestamp', nullable: true })
   expiresAt: Date;
 
-  @Column({ name: 'DESCRIPTION', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 1000, nullable: true })
   description: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -70,10 +70,10 @@ export class DocumentMaster {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

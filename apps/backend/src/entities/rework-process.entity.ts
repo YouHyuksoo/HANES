@@ -40,13 +40,13 @@ export class ReworkProcess {
   @Column({ name: 'STATUS', length: 20, default: 'WAITING' })
   status: string;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 50, nullable: true })
   workerId: string;
 
-  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string;
 
-  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string;
 
   @Column({ name: 'PLAN_QTY', type: 'int', default: 0 })
@@ -61,7 +61,7 @@ export class ReworkProcess {
   @Column({ name: 'END_AT', type: 'timestamp', nullable: true })
   endAt: Date;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -70,10 +70,10 @@ export class ReworkProcess {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

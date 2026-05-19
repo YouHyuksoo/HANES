@@ -30,43 +30,43 @@ export class ControlPlanItem {
   @PrimaryColumn({ name: 'SEQ', type: 'int' })
   seq: number;
 
-  @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string;
 
   @Column({ name: 'PROCESS_NAME', length: 200 })
   processName: string;
 
-  @Column({ name: 'CHARACTERISTIC_NO', length: 30, nullable: true })
+  @Column({ type: 'varchar2', name: 'CHARACTERISTIC_NO', length: 30, nullable: true })
   characteristicNo: string;
 
-  @Column({ name: 'PRODUCT_CHARACTERISTIC', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRODUCT_CHARACTERISTIC', length: 200, nullable: true })
   productCharacteristic: string;
 
-  @Column({ name: 'PROCESS_CHARACTERISTIC', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CHARACTERISTIC', length: 200, nullable: true })
   processCharacteristic: string;
 
-  @Column({ name: 'SPECIAL_CHAR_CLASS', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'SPECIAL_CHAR_CLASS', length: 10, nullable: true })
   specialCharClass: string;
 
-  @Column({ name: 'SPECIFICATION', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'SPECIFICATION', length: 500, nullable: true })
   specification: string;
 
-  @Column({ name: 'EVAL_METHOD', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'EVAL_METHOD', length: 200, nullable: true })
   evalMethod: string;
 
-  @Column({ name: 'SAMPLE_SIZE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'SAMPLE_SIZE', length: 50, nullable: true })
   sampleSize: string;
 
-  @Column({ name: 'SAMPLE_FREQ', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'SAMPLE_FREQ', length: 100, nullable: true })
   sampleFreq: string;
 
-  @Column({ name: 'CONTROL_METHOD', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'CONTROL_METHOD', length: 200, nullable: true })
   controlMethod: string;
 
-  @Column({ name: 'REACTION_PLAN', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REACTION_PLAN', length: 500, nullable: true })
   reactionPlan: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -75,7 +75,7 @@ export class ControlPlanItem {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

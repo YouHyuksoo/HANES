@@ -60,7 +60,7 @@ export class SpcData {
   @Column({ name: 'OUT_OF_CONTROL', type: 'number', default: 0 })
   outOfControl: number;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -69,7 +69,7 @@ export class SpcData {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

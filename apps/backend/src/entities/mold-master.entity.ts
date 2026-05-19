@@ -29,10 +29,10 @@ export class MoldMaster {
   @Column({ name: 'MOLD_NAME', length: 200 })
   moldName: string;
 
-  @Column({ name: 'MOLD_TYPE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'MOLD_TYPE', length: 50, nullable: true })
   moldType: string;
 
-  @Column({ name: 'ITEM_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_CODE', length: 50, nullable: true })
   itemCode: string;
 
   @ManyToOne(() => PartMaster)
@@ -60,16 +60,16 @@ export class MoldMaster {
   @Column({ name: 'STATUS', length: 20, default: 'ACTIVE' })
   status: string;
 
-  @Column({ name: 'LOCATION', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'LOCATION', length: 200, nullable: true })
   location: string;
 
-  @Column({ name: 'MAKER', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'MAKER', length: 200, nullable: true })
   maker: string;
 
   @Column({ name: 'PURCHASE_DATE', type: 'timestamp', nullable: true })
   purchaseDate: Date;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -78,10 +78,10 @@ export class MoldMaster {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

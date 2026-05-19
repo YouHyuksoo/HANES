@@ -27,10 +27,10 @@ export class TrainingPlan {
   @Column({ name: 'TRAINING_TYPE', length: 30 })
   trainingType: string;
 
-  @Column({ name: 'TARGET_ROLE', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'TARGET_ROLE', length: 100, nullable: true })
   targetRole: string;
 
-  @Column({ name: 'INSTRUCTOR', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSTRUCTOR', length: 100, nullable: true })
   instructor: string;
 
   @Column({ name: 'SCHEDULED_DATE', type: 'timestamp', nullable: true })
@@ -45,7 +45,7 @@ export class TrainingPlan {
   @Column({ name: 'STATUS', length: 20, default: 'PLANNED' })
   status: string;
 
-  @Column({ name: 'DESCRIPTION', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 2000, nullable: true })
   description: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -54,10 +54,10 @@ export class TrainingPlan {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

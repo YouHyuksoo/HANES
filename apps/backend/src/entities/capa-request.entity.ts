@@ -22,7 +22,7 @@ export class CAPARequest {
   @Column({ name: 'CAPA_TYPE', length: 20 })
   capaType: string;
 
-  @Column({ name: 'SOURCE_TYPE', length: 30, nullable: true })
+  @Column({ type: 'varchar2', name: 'SOURCE_TYPE', length: 30, nullable: true })
   sourceType: string;
 
   @Column({ name: 'SOURCE_ID', nullable: true })
@@ -31,31 +31,31 @@ export class CAPARequest {
   @Column({ name: 'TITLE', length: 200 })
   title: string;
 
-  @Column({ name: 'DESCRIPTION', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'DESCRIPTION', length: 2000, nullable: true })
   description: string;
 
-  @Column({ name: 'ROOT_CAUSE', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'ROOT_CAUSE', length: 2000, nullable: true })
   rootCause: string;
 
-  @Column({ name: 'ACTION_PLAN', length: 2000, nullable: true })
+  @Column({ type: 'varchar2', name: 'ACTION_PLAN', length: 2000, nullable: true })
   actionPlan: string;
 
   @Column({ name: 'TARGET_DATE', type: 'date', nullable: true })
   targetDate: Date;
 
-  @Column({ name: 'RESPONSIBLE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'RESPONSIBLE_CODE', length: 50, nullable: true })
   responsibleCode: string;
 
   @Column({ name: 'STATUS', length: 20, default: 'OPEN' })
   status: string;
 
-  @Column({ name: 'PRIORITY', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'PRIORITY', length: 20, nullable: true })
   priority: string;
 
-  @Column({ name: 'VERIFICATION_RESULT', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'VERIFICATION_RESULT', length: 1000, nullable: true })
   verificationResult: string;
 
-  @Column({ name: 'VERIFIED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'VERIFIED_BY', length: 50, nullable: true })
   verifiedBy: string;
 
   @Column({ name: 'VERIFIED_AT', type: 'timestamp', nullable: true })
@@ -64,10 +64,10 @@ export class CAPARequest {
   @Column({ name: 'CLOSED_AT', type: 'timestamp', nullable: true })
   closedAt: Date;
 
-  @Column({ name: 'ITEM_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ITEM_CODE', length: 50, nullable: true })
   itemCode: string;
 
-  @Column({ name: 'LINE_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -76,10 +76,10 @@ export class CAPARequest {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

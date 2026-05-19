@@ -32,7 +32,7 @@ export class ReworkInspect {
   @Column({ name: 'INSPECT_AT', type: 'timestamp', nullable: true })
   inspectAt: Date;
 
-  @Column({ name: 'INSPECT_METHOD', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECT_METHOD', length: 500, nullable: true })
   inspectMethod: string;
 
   @Column({ name: 'INSPECT_RESULT', length: 30 })
@@ -44,13 +44,13 @@ export class ReworkInspect {
   @Column({ name: 'FAIL_QTY', type: 'int', default: 0 })
   failQty: number;
 
-  @Column({ name: 'DEFECT_DETAIL', length: 1000, nullable: true })
+  @Column({ type: 'varchar2', name: 'DEFECT_DETAIL', length: 1000, nullable: true })
   defectDetail: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
-  @Column({ name: 'IMAGE_URL', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -59,10 +59,10 @@ export class ReworkInspect {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

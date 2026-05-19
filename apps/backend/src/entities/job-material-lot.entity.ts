@@ -26,15 +26,15 @@ export class JobMaterialLot {
   @Column({ name: 'INIT_QTY', type: 'number', default: 0 })
   initQty: number;
 
-  @Column({ name: 'SCANNED_BY', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'SCANNED_BY', length: 100, nullable: true })
   scannedBy: string | null;
 
   @Column({ name: 'SCANNED_AT', type: 'timestamp', nullable: true })
   scannedAt: Date | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 }

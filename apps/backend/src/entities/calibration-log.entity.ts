@@ -42,13 +42,13 @@ export class CalibrationLog {
   @Column({ name: 'CALIBRATION_TYPE', length: 30 })
   calibrationType: string;
 
-  @Column({ name: 'CALIBRATOR', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CALIBRATOR', length: 100, nullable: true })
   calibrator: string;
 
-  @Column({ name: 'CALIBRATION_ORG', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'CALIBRATION_ORG', length: 200, nullable: true })
   calibrationOrg: string;
 
-  @Column({ name: 'STANDARD_USED', length: 200, nullable: true })
+  @Column({ type: 'varchar2', name: 'STANDARD_USED', length: 200, nullable: true })
   standardUsed: string;
 
   @Column({ name: 'RESULT', length: 20 })
@@ -93,10 +93,10 @@ export class CalibrationLog {
   @Column({ name: 'NEXT_DUE_DATE', type: 'timestamp', nullable: true })
   nextDueDate: Date;
 
-  @Column({ name: 'CERTIFICATE_NO', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CERTIFICATE_NO', length: 100, nullable: true })
   certificateNo: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -105,7 +105,7 @@ export class CalibrationLog {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

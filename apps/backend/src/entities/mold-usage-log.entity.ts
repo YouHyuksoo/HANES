@@ -41,16 +41,16 @@ export class MoldUsageLog {
   @Column({ name: 'SHOT_COUNT', type: 'int' })
   shotCount: number;
 
-  @Column({ name: 'ORDER_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string;
 
-  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string;
 
-  @Column({ name: 'WORKER_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'WORKER_CODE', length: 50, nullable: true })
   workerCode: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -59,7 +59,7 @@ export class MoldUsageLog {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

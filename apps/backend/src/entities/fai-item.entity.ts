@@ -38,13 +38,13 @@ export class FaiItem {
   @Column({ name: 'MEASURED_VALUE', type: 'decimal', precision: 12, scale: 4, nullable: true })
   measuredValue: number;
 
-  @Column({ name: 'UNIT', length: 20, nullable: true })
+  @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
   unit: string;
 
-  @Column({ name: 'RESULT', length: 10, nullable: true })
+  @Column({ type: 'varchar2', name: 'RESULT', length: 10, nullable: true })
   result: string;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })

@@ -44,13 +44,13 @@ export class TrainingResult {
   @Column({ name: 'PASSED', type: 'number', default: 0 })
   passed: number;
 
-  @Column({ name: 'CERTIFICATE_NO', length: 100, nullable: true })
+  @Column({ type: 'varchar2', name: 'CERTIFICATE_NO', length: 100, nullable: true })
   certificateNo: string;
 
   @Column({ name: 'VALID_UNTIL', type: 'timestamp', nullable: true })
   validUntil: Date;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 
   @Column({ name: 'COMPANY', length: 50 })
@@ -59,7 +59,7 @@ export class TrainingResult {
   @Column({ name: 'PLANT', length: 20 })
   plant: string;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
