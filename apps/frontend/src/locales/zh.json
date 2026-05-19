@@ -5734,7 +5734,9 @@
       "lotNotFound": "找不到该LOT",
       "alreadyScanned": "已扫描（批次已替换）",
       "removeLot": "取消批次",
-      "allLotScanned": "所有物料批次登记完成"
+      "allLotScanned": "所有物料批次登记完成",
+      "scanPlaceholder": "请扫描条码...",
+      "remaining": "{{count}} 种未登记"
     },
     "instruction": {
       "title": "作业指导书",

@@ -5734,7 +5734,9 @@
       "lotNotFound": "Không tìm thấy LOT",
       "alreadyScanned": "Đã quét (đã thay thế lô)",
       "removeLot": "Huỷ lô",
-      "allLotScanned": "Đã đăng ký đủ lô vật tư"
+      "allLotScanned": "Đã đăng ký đủ lô vật tư",
+      "scanPlaceholder": "Quét mã vạch...",
+      "remaining": "Còn {{count}} loại"
     },
     "instruction": {
       "title": "Hướng dẫn sản xuất",

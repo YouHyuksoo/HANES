@@ -94,7 +94,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
             value={scanInput}
             onChange={e => setScanInput(e.target.value)}
             onKeyDown={handleScan}
-            placeholder="바코드를 스캔하세요..."
+            placeholder={t('kiosk.material.scanPlaceholder')}
             className="flex-1 bg-transparent text-sm outline-none text-text placeholder:text-text-muted"
           />
         </div>
@@ -102,7 +102,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
         {/* 진행 상황 */}
         <p className="text-sm text-text-muted">
           {unscannedCount > 0
-            ? `${unscannedCount}종 미등록`
+            ? t('kiosk.material.remaining', { count: unscannedCount })
             : t('kiosk.material.allLotScanned')}
         </p>
 
@@ -116,8 +116,8 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
                 className={[
                   'flex items-center gap-2 px-3 py-2 rounded border-2',
                   scanned
-                    ? 'border-green-500 bg-green-50 dark:bg-green-900/10'
-                    : 'border-red-400 bg-red-50 dark:bg-red-900/10',
+                    ? 'border-green-500 bg-card'
+                    : 'border-red-400 bg-card',
                 ].join(' ')}
               >
                 <Package className="w-4 h-4 text-text-muted shrink-0" />
@@ -148,7 +148,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
               onDone();
             }}
           >
-            {allScanned ? t('kiosk.material.allLotScanned') : `${unscannedCount}종 남음`}
+            {allScanned ? t('kiosk.material.allLotScanned') : t('kiosk.material.remaining', { count: unscannedCount })}
           </Button>
         </div>
       </div>

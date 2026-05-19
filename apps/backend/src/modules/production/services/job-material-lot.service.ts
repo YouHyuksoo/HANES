@@ -61,18 +61,32 @@ export class JobMaterialLotService {
       return this.repo.save(existing);
     }
 
-    const record = this.repo.create({
-      jobOrderNo,
-      itemCode: matched.itemCode,
-      seq: matched.seq,
-      matUid: dto.matUid,
-      initQty: matLot.initQty,
-      scannedBy: dto.scannedBy ?? null,
-      scannedAt: new Date(),
-      company: company ?? null,
-      plant: plant ?? null,
-    });
-    return this.repo.save(record);
+    try {
+      const record = this.repo.create({
+        jobOrderNo,
+        itemCode: matched.itemCode,
+        seq: matched.seq,
+        matUid: dto.matUid,
+        initQty: matLot.initQty,
+        scannedBy: dto.scannedBy ?? null,
+        scannedAt: new Date(),
+        company: company ?? null,
+        plant: plant ?? null,
+      });
+      return await this.repo.save(record);
+    } catch (err: unknown) {
+      const dbErr = err as { driverError?: { message?: string }; code?: string };
+      const isUnique = dbErr?.code === 'ORA-00001' ||
+        dbErr?.driverError?.message?.includes('ORA-00001') ||
+        dbErr?.driverError?.message?.includes('unique constraint');
+      if (isUnique) {
+        const conflict = await this.repo.findOne({
+          where: { jobOrderNo, itemCode: matched.itemCode, seq: matched.seq },
+        });
+        if (conflict) return conflict;
+      }
+      throw err;
+    }
   }
 
   /** 특정 BOM 항목의 롯트 등록 취소 */

@@ -5748,7 +5748,9 @@
       "lotNotFound": "LOT not found",
       "alreadyScanned": "Already scanned (lot replaced)",
       "removeLot": "Remove Lot",
-      "allLotScanned": "All material lots registered"
+      "allLotScanned": "All material lots registered",
+      "scanPlaceholder": "Scan barcode...",
+      "remaining": "{{count}} remaining"
     },
     "instruction": {
       "title": "Work Instruction",

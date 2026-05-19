@@ -52,7 +52,7 @@ function lifeTextColor(current: number, max: number): string {
 
 export default function MaterialListPanel() {
   const { t } = useTranslation();
-  const { selectedJobOrder, selectedEquip, scannedMaterialLots, removeScannedMaterialLot, addScannedMaterialLot } = useKioskStore();
+  const { selectedJobOrder, selectedEquip, scannedMaterialLots, removeScannedMaterialLot, addScannedMaterialLot, setInterlock } = useKioskStore();
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
   const [consumables, setConsumables] = useState<ConsumableItem[]>([]);
 
@@ -82,6 +82,15 @@ export default function MaterialListPanel() {
       })
       .catch(() => {});
   }, [selectedJobOrder?.orderNo, addScannedMaterialLot]);
+
+  // BOM이 로드되고 스캔 롯트가 모두 커버하면 인터락 자동 재평가
+  useEffect(() => {
+    if (bomItems.length === 0) return;
+    const allDone = bomItems.every(b =>
+      scannedMaterialLots.some(l => l.itemCode === b.childItemCode && l.seq === b.seq)
+    );
+    setInterlock('materialScanDone', allDone);
+  }, [bomItems, scannedMaterialLots, setInterlock]);
 
   const scannedMap = new Map(
     scannedMaterialLots.map(l => [`${l.itemCode}::${l.seq}`, l])
@@ -127,8 +136,8 @@ export default function MaterialListPanel() {
                   className={[
                     'flex items-center gap-2 px-2 py-1.5 rounded border-2 transition-colors',
                     isScanned
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/10'
-                      : 'border-red-400 bg-red-50 dark:bg-red-900/10',
+                      ? 'border-green-500 bg-card'
+                      : 'border-red-400 bg-card',
                   ].join(' ')}
                 >
                   {/* 이미지 자리 */}
@@ -191,7 +200,7 @@ export default function MaterialListPanel() {
               const ratio = item.maxCount > 0 ? item.currentCount / item.maxCount : 0;
               const isWarning = ratio >= 0.8;
               return (
-                <li key={item.id} className={`px-3 py-2 ${isWarning ? 'bg-orange-50 dark:bg-orange-900/10' : ''}`}>
+                <li key={item.id} className={`px-3 py-2 ${isWarning ? 'border-l-2 border-l-orange-400' : ''}`}>
                   <div className="flex items-center gap-2 mb-1">
                     {ratio >= 1 && <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />}
                     {ratio >= 0.8 && ratio < 1 && <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />}
