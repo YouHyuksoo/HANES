@@ -29,6 +29,7 @@ export interface RoutingProcessItem {
   equipType: string | null;
   stdTime: number | null;
   setupTime: number | null;
+  sampleInspectYn: string;
   useYn: string;
 }
 

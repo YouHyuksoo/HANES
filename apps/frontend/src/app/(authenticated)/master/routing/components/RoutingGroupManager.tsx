@@ -53,7 +53,7 @@ interface RoutingInfo extends RoutingGroupItem {
 }
 
 const EMPTY_GROUP = { routingCode: "", routingName: "", itemCode: "", description: "", useYn: "Y" };
-const EMPTY_PROCESS = { seq: "10", processCode: "", processName: "", processType: "", equipType: "", stdTime: "", setupTime: "" };
+const EMPTY_PROCESS = { seq: "10", processCode: "", processName: "", processType: "", equipType: "", stdTime: "", setupTime: "", sampleInspectYn: "N" };
 
 const partTypeIcon = (itemType?: string) => {
   if (itemType === "FINISHED" || itemType === "FG") return Package;
@@ -273,6 +273,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       equipType: process.equipType || "",
       stdTime: process.stdTime != null ? String(process.stdTime) : "",
       setupTime: process.setupTime != null ? String(process.setupTime) : "",
+      sampleInspectYn: process.sampleInspectYn || "N",
     });
     setProcessModalOpen(true);
   };
@@ -293,6 +294,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       equipType: processForm.equipType || undefined,
       stdTime: processForm.stdTime ? Number(processForm.stdTime) : undefined,
       setupTime: processForm.setupTime ? Number(processForm.setupTime) : undefined,
+      sampleInspectYn: processForm.sampleInspectYn || "N",
       useYn: "Y",
     };
     if (editingProcess) {
@@ -446,6 +448,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                   <th className="text-center py-2 w-14">{t("master.routing.seq")}</th>
                   <th className="text-left py-2">{t("master.routing.processName")}</th>
                   <th className="text-center py-2 w-28">{t("master.routing.processCode")}</th>
+                  <th className="text-center py-2 w-20">{t("master.routing.sampleInspect")}</th>
                   <th className="text-right py-2 px-2 w-24">{t("common.actions")}</th>
                 </tr>
               </thead>
@@ -465,6 +468,15 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                       <td className="py-2 text-center font-mono">{process.seq}</td>
                       <td className="py-2 font-medium truncate">{process.processName}</td>
                       <td className="py-2 text-center font-mono">{process.processCode}</td>
+                      <td className="py-2 text-center">
+                        {process.sampleInspectYn === 'Y' ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            필요
+                          </span>
+                        ) : (
+                          <span className="text-text-muted text-[10px]">-</span>
+                        )}
+                      </td>
                       <td className="py-2 px-2 text-right whitespace-nowrap">
                         <button onClick={(e) => { e.stopPropagation(); openEditProcess(process); }} className="p-1 rounded hover:bg-white/20"><Edit2 className="w-3.5 h-3.5" /></button>
                         <button onClick={(e) => { e.stopPropagation(); setDeleteProcess(process); }} className="p-1 rounded hover:bg-white/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
@@ -536,9 +548,27 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Input label={t("master.routing.stdTimeSec")} type="number" step="0.1" value={processForm.stdTime} onChange={(e) => setProcessForm((f) => ({ ...f, stdTime: e.target.value }))} fullWidth />
             <Input label={t("master.routing.setupTimeSec")} type="number" step="0.1" value={processForm.setupTime} onChange={(e) => setProcessForm((f) => ({ ...f, setupTime: e.target.value }))} fullWidth />
+            <div>
+              <label className="block text-sm font-medium text-text dark:text-gray-300 mb-1">
+                {t("master.routing.sampleInspect")}
+              </label>
+              <label className="flex items-center gap-2 h-10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={processForm.sampleInspectYn === "Y"}
+                  onChange={(e) => setProcessForm((f) => ({ ...f, sampleInspectYn: e.target.checked ? "Y" : "N" }))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-text">
+                  {processForm.sampleInspectYn === "Y"
+                    ? t("master.routing.sampleInspectRequired")
+                    : t("master.routing.sampleInspectNotRequired")}
+                </span>
+              </label>
+            </div>
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-6">
@@ -554,6 +584,8 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     </div>
   );
 }
+
+const RAW_TYPES = new Set(["RAW", "RAW_MATERIAL", "RM", "M"]);
 
 function BomTreeRows({
   items,
@@ -572,9 +604,11 @@ function BomTreeRows({
   depth?: number;
   breadcrumb?: string;
 }) {
+  // 원자재(RAW_MATERIAL 등) 제외: 루트는 항상 표시
+  const filtered = items.filter((item) => item.isRoot || !RAW_TYPES.has(item.itemType));
   return (
     <div className="space-y-1">
-      {items.map((item) => {
+      {filtered.map((item) => {
         const itemCode = item.childItemCode || item.itemCode;
         const itemBreadcrumb = item.isRoot ? itemCode : breadcrumb ? `${breadcrumb} > ${itemCode}` : itemCode;
         const hasChildren = !!item.children?.length;

@@ -88,6 +88,10 @@ export class CreateRoutingProcessDto {
   @IsOptional() @Type(() => Number) @IsNumber()
   setupTime?: number;
 
+  @ApiPropertyOptional({ description: '샘플검사 필요 여부', default: 'N' })
+  @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  sampleInspectYn?: string;
+
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional() @IsString() @IsIn(['Y', 'N'])
   useYn?: string;

@@ -44,6 +44,9 @@ export class RoutingProcess {
   @Column({ name: 'SETUP_TIME', type: 'decimal', precision: 10, scale: 4, nullable: true })
   setupTime: number | null;
 
+  @Column({ type: 'varchar2', name: 'SAMPLE_INSPECT_YN', length: 1, default: 'N', nullable: true })
+  sampleInspectYn: string;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
