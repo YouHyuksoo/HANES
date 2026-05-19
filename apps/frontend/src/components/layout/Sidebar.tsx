@@ -44,9 +44,12 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["DASHBOARD"]);
   const isAdmin = user?.role === "ADMIN";
 
+  // 마운트 시 항상 DB에서 갱신 (persist로 캐시된 값이 있어도 최신화)
+  // 레이아웃 컴포넌트는 클라이언트 내비게이션 시 재마운트되지 않으므로 호출 1회
   useEffect(() => {
-    if (!groups) loadTree();
-  }, [groups, loadTree]);
+    loadTree();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** DB 머지된 트리를 SidebarMenu가 받는 MenuConfigItem 형식으로 변환. groups가 null이면 코드 menuConfig 사용. */
   const items: MenuConfigItem[] = useMemo(() => {

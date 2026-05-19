@@ -7,8 +7,10 @@
  * 2. invalidate(): 관리 화면에서 변경 시 재로딩 트리거
  * 3. 비활성(IS_ACTIVE='N') 카테고리는 사이드바에서 제외
  * 4. 매핑이 없는 leaf는 사이드바에서 제외(미배치 상태)
+ * 5. sessionStorage persist로 첫 렌더 시 코딩 순서 깜빡임(FOUC) 방지
  */
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { menuCategoriesApi, type CategoryTreeNode } from '@/services/menuCategoriesApi';
 import { menuConfig, type MenuConfigItem } from '@/config/menuConfig';
 
@@ -48,39 +50,49 @@ function buildLeafLookup(): Map<string, MergedMenuItem> {
   return map;
 }
 
-export const useMenuTreeStore = create<MenuTreeStore>((set, get) => ({
-  groups: null,
-  loading: false,
-  error: null,
+export const useMenuTreeStore = create<MenuTreeStore>()(
+  persist(
+    (set, get) => ({
+      groups: null,
+      loading: false,
+      error: null,
 
-  load: async () => {
-    set({ loading: true, error: null });
-    try {
-      const tree: CategoryTreeNode[] = await menuCategoriesApi.tree();
-      const leafLookup = buildLeafLookup();
+      load: async () => {
+        set({ loading: true, error: null });
+        try {
+          const tree: CategoryTreeNode[] = await menuCategoriesApi.tree();
+          const leafLookup = buildLeafLookup();
 
-      const active = tree.filter((c) => c.isActive === 'Y');
-      active.sort((a, b) => a.sortOrder - b.sortOrder);
+          const active = tree.filter((c) => c.isActive === 'Y');
+          active.sort((a, b) => a.sortOrder - b.sortOrder);
 
-      const groups: MergedMenuGroup[] = active.map((c) => ({
-        categoryCode: c.categoryCode,
-        labelKey: c.labelKey,
-        iconName: c.iconName,
-        children: c.menus
-          .slice()
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((m) => leafLookup.get(m.menuCode))
-          .filter((x): x is MergedMenuItem => x !== undefined),
-      }));
+          const groups: MergedMenuGroup[] = active.map((c) => ({
+            categoryCode: c.categoryCode,
+            labelKey: c.labelKey,
+            iconName: c.iconName,
+            children: c.menus
+              .slice()
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map((m) => leafLookup.get(m.menuCode))
+              .filter((x): x is MergedMenuItem => x !== undefined),
+          }));
 
-      set({ groups, loading: false });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'failed to load menu tree';
-      set({ loading: false, error: message });
+          set({ groups, loading: false });
+        } catch (e: unknown) {
+          const message = e instanceof Error ? e.message : 'failed to load menu tree';
+          set({ loading: false, error: message });
+        }
+      },
+
+      invalidate: async () => {
+        await get().load();
+      },
+    }),
+    {
+      name: 'hanes-menu-tree',
+      storage: createJSONStorage(() => sessionStorage),
+      // groups만 persist (loading/error는 휘발성)
+      partialize: (state) => ({ groups: state.groups }),
     }
-  },
-
-  invalidate: async () => {
-    await get().load();
-  },
-}));
+  )
+);
