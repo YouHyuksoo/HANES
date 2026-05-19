@@ -8,6 +8,7 @@
  * 상태 관리: Zustand persist로 localStorage에 저장 (페이지 이동 후에도 유지)
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import {
   Search, RefreshCw, Save, HandMetal, Package, CheckCircle, XCircle,
@@ -144,8 +145,11 @@ export default function InputManualPage() {
         await api.patch(`/equipment/equips/${selectedEquip.equipCode}/job-order`, {
           orderNo: jobOrder.orderNo,
         });
-      } catch (e) {
-        console.error('Failed to assign job order to equipment:', e);
+      } catch (e: unknown) {
+        const msg =
+          (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          '작업지시 할당에 실패했습니다.';
+        toast.error(msg);
       }
     }
   };

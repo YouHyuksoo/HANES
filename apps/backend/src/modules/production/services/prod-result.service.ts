@@ -1360,7 +1360,7 @@ export class ProdResultService {
         'SUM(pr.goodQty) AS "totalGoodQty"',
         'SUM(pr.defectQty) AS "totalDefectQty"',
         'COUNT(DISTINCT jo.orderNo) AS "orderCount"',
-        'COUNT(pr."RESULT_NO") AS "resultCount"',
+        'COUNT(pr.resultNo) AS "resultCount"',
       ])
       .where('pr.status != :status', { status: 'CANCELED' })
       .andWhere('pr.startAt >= TO_DATE(:dateFrom, \'YYYY-MM-DD\')', { dateFrom: effectiveDateFrom })

@@ -223,6 +223,7 @@
     "production.result": "생산실적조회",
     "production.progress": "작업지시현황조회",
     "production.inputManual": "실적입력(수작업)",
+    "production.inputKiosk": "실적입력(키오스크)",
     "production.inputMachine": "실적입력(가공)",
     "production.inputInspect": "실적입력(단순검사)",
     "production.inputEquip": "실적입력(검사장비)",
@@ -2994,6 +2995,10 @@
       "clickToSelectEquip": "설비를 선택하세요",
       "pleaseSelectLineProcEquip": "라인, 공정, 설비를 먼저 선택해주세요"
     },
+    "inputKiosk": {
+      "title": "실적입력 (키오스크)",
+      "description": "현장 설비 키오스크에서 생산실적을 입력합니다"
+    },
     "inputMachine": {
       "title": "실적입력 (가공)",
       "description": "가공 공정의 설비별 생산실적을 입력합니다",
@@ -5722,5 +5727,148 @@
     "moveToUnassigned": "미배치로 보내기",
     "noCategory": "(미배치)",
     "menuCodeHint": "이 메뉴는 코드(menuConfig.ts)에 정의되어 있어 라벨/경로는 코드에서만 변경할 수 있습니다."
+  },
+  "kiosk": {
+    "header": {
+      "selectEquip": "설비를 선택하세요",
+      "dailyInspect": "설비일일점검",
+      "workerInspect": "작업자설비점검",
+      "masterSample": "마스터샘플 판정",
+      "selectJobOrder": "작업지시를 선택하세요",
+      "addWorker": "작업자 추가",
+      "workerRequired": "작업자 등록 필요"
+    },
+    "equip": {
+      "modalTitle": "설비 선택",
+      "scanHint": "바코드 스캔",
+      "scanOk": "설비 인식 완료",
+      "scanError": "설비 코드를 찾을 수 없습니다",
+      "scanPlaceholder": "설비 바코드를 스캔하거나 코드를 입력하세요",
+      "scanSubHint": "바코드 스캐너로 스캔하거나 직접 입력 후 Enter",
+      "orManual": "또는 직접 선택",
+      "searchPlaceholder": "설비명 또는 코드 검색...",
+      "noResult": "검색 결과가 없습니다"
+    },
+    "material": {
+      "bomList": "자재리스트",
+      "unit": "종",
+      "noBom": "자재 정보 없음",
+      "consumables": "소모성 설비 부품",
+      "noConsumables": "장착된 소모품 없음"
+    },
+    "instruction": {
+      "title": "작업지도서",
+      "selectJobOrder": "작업지시를 선택하면 작업지도서가 표시됩니다",
+      "noInstruction": "작업지도서 없음",
+      "noInstructionHint": "해당 품목/공정의 작업지도서를 등록해주세요"
+    },
+    "history": {
+      "qualityCriteria": "양품조건",
+      "phase2": "Phase 2 연동 예정",
+      "criteriaPlaceholder": "자주검사 마스터 연동 후 표시됩니다",
+      "goodTotal": "양품 합계",
+      "defectTotal": "불량 합계",
+      "recentHistory": "작업이력",
+      "autoRefresh": "10초 자동갱신",
+      "noHistory": "작업이력 없음"
+    },
+    "input": {
+      "selfInspect": "자주검사 입력",
+      "selfInspectComingSoon": "자주검사 기능은 Phase 3에서 연동됩니다",
+      "defect": "불량입력",
+      "defectComingSoon": "불량입력 기능은 Phase 3에서 연동됩니다",
+      "lotSize": "묶음단위",
+      "totalQty": "작업수",
+      "goodQty": "양품",
+      "defectQty": "불량",
+      "submit": "실적입력",
+      "selectJobOrderFirst": "작업지시 선택 후 표시",
+      "qtyRequired": "수량을 입력해주세요",
+      "saveSuccess": "실적이 저장되었습니다",
+      "saveError": "실적 저장에 실패했습니다"
+    },
+    "jobOrder": {
+      "assignError": "작업지시 할당에 실패했습니다"
+    },
+    "prep": {
+      "allDone": "준비완료",
+      "checkRequired": "준비 점검 필요",
+      "readyToWork": "작업 시작 가능",
+      "dailyInspect": "설비일일점검",
+      "workerInspect": "작업자설비점검",
+      "materialScan": "자재 스캔",
+      "consumableScan": "소모품 스캔",
+      "dailyInspectTitle": "설비 일일점검 입력",
+      "alreadyInspected": "오늘 점검이 이미 완료되었습니다",
+      "noInspectItems": "등록된 점검 항목이 없습니다",
+      "confirmWithoutItems": "항목 없이 완료 처리",
+      "standard": "기준",
+      "failWarning": "NG 항목이 있습니다. 설비 담당자에게 확인 후 저장하세요.",
+      "saveInspect": "점검 저장",
+      "dailyInspectSaved": "일일점검이 저장되었습니다",
+      "dailyInspectError": "일일점검 저장에 실패했습니다",
+      "remark": "비고 입력",
+      "workerInspectTitle": "작업자 설비 자가점검",
+      "workerInspectDesc": "아래 항목을 확인하고 모두 체크하세요",
+      "jobOrder": "작업지시",
+      "inspector": "점검자",
+      "confirmInspect": "점검 확인",
+      "workerInspectDone": "작업자 설비점검이 확인되었습니다",
+      "materialScanTitle": "자재 바코드 스캔 확인",
+      "scanProgress": "스캔 진행률",
+      "scanPlaceholder": "바코드 스캔 또는 코드 입력 후 Enter...",
+      "materialNotInBom": "BOM에 없는 자재입니다: {{code}}",
+      "noBomItems": "BOM 자재가 없습니다",
+      "confirmed": "확인됨",
+      "skipScan": "스캔 생략",
+      "completeScan": "스캔 완료",
+      "materialScanDone": "자재 스캔이 완료되었습니다",
+      "consumableScanTitle": "소모성 부품 바코드 스캔",
+      "consumableScanPlaceholder": "소모품 바코드 스캔 후 Enter...",
+      "consumableLifeExceeded": "{{name}} 수명이 초과되었습니다. 교체 후 사용하세요",
+      "consumableNotFound": "등록되지 않은 소모품입니다: {{code}}",
+      "noConsumables": "장착된 소모품이 없습니다",
+      "lifeExpired": "수명초과",
+      "consumableScanDone": "소모품 스캔이 완료되었습니다"
+    },
+    "workerInspect": {
+      "check1": "설비 전원 및 안전장치 정상 여부",
+      "check2": "작업 지그/금형 정상 장착 여부",
+      "check3": "자재 공급 상태 정상 여부",
+      "check4": "이전 작업 잔여물 제거 여부",
+      "check5": "품질 기준서 비치 여부"
+    },
+    "selfInspect": {
+      "title": "자주검사",
+      "inspect": "검사",
+      "first": "초물",
+      "mid": "중물",
+      "last": "종물",
+      "noItems": "이 공정에 등록된 검사항목이 없습니다",
+      "answerAll": "모든 항목에 결과를 입력하세요",
+      "destructive": "파괴검사",
+      "delegate": "의뢰검사",
+      "requestDelegate": "의뢰 요청",
+      "delegateWarning": "의뢰검사 항목은 품질팀에 의뢰됩니다. 결과 확인 전까지 실적입력이 차단됩니다.",
+      "delegateBlocking": "의뢰검사 결과 대기 중 — 결과 확인 후 실적입력 가능합니다",
+      "delegatePending": "의뢰검사 {{count}}건이 등록되었습니다. 결과 대기 중...",
+      "allPass": "자주검사가 완료되었습니다 (전항목 PASS)",
+      "savedWithFail": "{{count}}개 항목이 FAIL입니다. 품질팀에 확인하세요.",
+      "saveError": "자주검사 저장에 실패했습니다",
+      "save": "검사 완료",
+      "resultCount": "현재 {{count}}번째 실적"
+    },
+    "defect": {
+      "title": "불량입력",
+      "addDefect": "불량 등록",
+      "selectType": "불량 유형 선택",
+      "qtyMin": "수량은 1 이상이어야 합니다",
+      "added": "{{name}} 불량이 추가되었습니다",
+      "registeredList": "등록된 불량 목록",
+      "totalQty": "불량 합계",
+      "empty": "등록된 불량 없음 (실적저장 시 불량 없음으로 처리)",
+      "saveHint": "실적저장 버튼을 누르면 위 불량이 함께 저장됩니다",
+      "confirm": "확인 ({{count}}개)"
+    }
   }
 }

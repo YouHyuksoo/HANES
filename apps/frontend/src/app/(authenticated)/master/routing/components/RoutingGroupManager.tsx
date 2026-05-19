@@ -1,9 +1,9 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Edit2, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
-import { Button, ConfirmModal, Input, Modal } from "@/components/ui";
+import { Boxes, ChevronDown, ChevronRight, CircleDot, Edit2, Package, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Button, Card, CardContent, ConfirmModal, Input, Modal } from "@/components/ui";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import type { RoutingGroupItem, RoutingProcessItem, SelectedProcess } from "../types";
@@ -24,8 +24,42 @@ interface PartOption {
   itemType: string;
 }
 
+interface BomTreeItem {
+  id: string;
+  level: number;
+  itemCode: string;
+  itemNo?: string | null;
+  itemName: string;
+  itemType: string;
+  qtyPer: number;
+  unit: string;
+  revision: string;
+  seq: number;
+  processCode?: string;
+  childItemCode?: string;
+  children?: BomTreeItem[];
+  isRoot?: boolean;
+}
+
+interface BomTarget {
+  itemCode: string;
+  itemName: string;
+  itemType: string;
+  breadcrumb: string;
+}
+
+interface RoutingInfo extends RoutingGroupItem {
+  processes?: RoutingProcessItem[];
+}
+
 const EMPTY_GROUP = { routingCode: "", routingName: "", itemCode: "", description: "", useYn: "Y" };
 const EMPTY_PROCESS = { seq: "10", processCode: "", processName: "", processType: "", equipType: "", stdTime: "", setupTime: "" };
+
+const partTypeIcon = (itemType?: string) => {
+  if (itemType === "FINISHED" || itemType === "FG") return Package;
+  if (itemType === "SEMI_PRODUCT" || itemType === "WIP" || itemType === "S") return Boxes;
+  return CircleDot;
+};
 
 export default function RoutingGroupManager({ selectedProcess, onSelectProcess }: Props) {
   const { t } = useTranslation();
@@ -34,12 +68,17 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
 
   const [groups, setGroups] = useState<RoutingGroupItem[]>([]);
   const [processes, setProcesses] = useState<RoutingProcessItem[]>([]);
+  const [bomTree, setBomTree] = useState<BomTreeItem[]>([]);
   const [processOptions, setProcessOptions] = useState<ProcessOption[]>([]);
   const [partOptions, setPartOptions] = useState<PartOption[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<RoutingGroupItem | null>(null);
+  const [selectedBomItem, setSelectedBomItem] = useState<BomTarget | null>(null);
+  const [routingInfo, setRoutingInfo] = useState<RoutingInfo | null>(null);
   const [search, setSearch] = useState("");
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [loadingBomTree, setLoadingBomTree] = useState(false);
   const [loadingProcesses, setLoadingProcesses] = useState(false);
+  const [expandedBomIds, setExpandedBomIds] = useState<Set<string>>(new Set());
 
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<RoutingGroupItem | null>(null);
@@ -65,23 +104,92 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
     }
   }, [search]);
 
+  const rootBomTree = useMemo<BomTreeItem[]>(() => {
+    if (!selectedGroup?.itemCode) return [];
+    return [{
+      id: `ROOT::${selectedGroup.itemCode}`,
+      level: 0,
+      itemCode: selectedGroup.itemCode,
+      itemName: selectedGroup.itemName || selectedGroup.routingName,
+      itemType: selectedGroup.itemType || "FINISHED",
+      qtyPer: 1,
+      unit: "EA",
+      revision: "-",
+      seq: 0,
+      children: bomTree,
+      isRoot: true,
+    }];
+  }, [bomTree, selectedGroup]);
+
+  const fetchBomTree = useCallback(async () => {
+    if (!selectedGroup?.itemCode) {
+      setBomTree([]);
+      setSelectedBomItem(null);
+      setRoutingInfo(null);
+      setProcesses([]);
+      onSelectProcess(null);
+      return;
+    }
+    setLoadingBomTree(true);
+    try {
+      const res = await api.get(`/master/boms/hierarchy/${selectedGroup.itemCode}`, { params: { depth: 5 } });
+      const data = res.data?.data || [];
+      setBomTree(data);
+      const rootId = `ROOT::${selectedGroup.itemCode}`;
+      setExpandedBomIds(new Set([rootId]));
+      setSelectedBomItem({
+        itemCode: selectedGroup.itemCode,
+        itemName: selectedGroup.itemName || selectedGroup.routingName,
+        itemType: selectedGroup.itemType || "FINISHED",
+        breadcrumb: selectedGroup.itemCode,
+      });
+    } catch {
+      setBomTree([]);
+      setSelectedBomItem({
+        itemCode: selectedGroup.itemCode,
+        itemName: selectedGroup.itemName || selectedGroup.routingName,
+        itemType: selectedGroup.itemType || "FINISHED",
+        breadcrumb: selectedGroup.itemCode,
+      });
+    } finally {
+      setLoadingBomTree(false);
+    }
+  }, [onSelectProcess, selectedGroup]);
+
   const fetchProcesses = useCallback(async () => {
-    if (!selectedGroup) {
+    if (!selectedBomItem?.itemCode) {
+      setRoutingInfo(null);
       setProcesses([]);
       onSelectProcess(null);
       return;
     }
     setLoadingProcesses(true);
     try {
-      const res = await api.get(`/master/routing-groups/${selectedGroup.routingCode}/processes`);
-      setProcesses(res.data?.data || []);
-      onSelectProcess(null);
+      const res = await api.get(`/master/routing-groups/by-item/${selectedBomItem.itemCode}`);
+      const data: RoutingInfo | null = res.data?.data ?? null;
+      const nextProcesses = data?.processes || [];
+      setRoutingInfo(data);
+      setProcesses(nextProcesses);
+      if (data && nextProcesses.length > 0) {
+        const first = nextProcesses[0];
+        onSelectProcess({
+          routingCode: first.routingCode,
+          routingName: data.routingName,
+          seq: first.seq,
+          processCode: first.processCode,
+          processName: first.processName,
+        });
+      } else {
+        onSelectProcess(null);
+      }
     } catch {
+      setRoutingInfo(null);
       setProcesses([]);
+      onSelectProcess(null);
     } finally {
       setLoadingProcesses(false);
     }
-  }, [onSelectProcess, selectedGroup]);
+  }, [onSelectProcess, selectedBomItem]);
 
   const fetchProcessOptions = useCallback(async () => {
     try {
@@ -102,6 +210,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   }, []);
 
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
+  useEffect(() => { fetchBomTree(); }, [fetchBomTree]);
   useEffect(() => { fetchProcesses(); }, [fetchProcesses]);
   useEffect(() => { fetchProcessOptions(); }, [fetchProcessOptions]);
   useEffect(() => { fetchPartOptions(); }, [fetchPartOptions]);
@@ -148,7 +257,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   };
 
   const openNewProcess = () => {
-    if (!selectedGroup) return;
+    if (!routingInfo) return;
     setEditingProcess(null);
     setProcessForm({ ...EMPTY_PROCESS, seq: nextSeq });
     setProcessModalOpen(true);
@@ -174,9 +283,9 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   };
 
   const saveProcess = async () => {
-    if (!selectedGroup || !processForm.processCode || !processForm.processName) return;
+    if (!routingInfo || !processForm.processCode || !processForm.processName) return;
     const body = {
-      routingCode: selectedGroup.routingCode,
+      routingCode: routingInfo.routingCode,
       seq: Number(processForm.seq),
       processCode: processForm.processCode,
       processName: processForm.processName,
@@ -187,9 +296,9 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       useYn: "Y",
     };
     if (editingProcess) {
-      await api.put(`/master/routing-groups/${selectedGroup.routingCode}/processes/${editingProcess.seq}`, body);
+      await api.put(`/master/routing-groups/${routingInfo.routingCode}/processes/${editingProcess.seq}`, body);
     } else {
-      await api.post(`/master/routing-groups/${selectedGroup.routingCode}/processes`, body);
+      await api.post(`/master/routing-groups/${routingInfo.routingCode}/processes`, body);
     }
     setProcessModalOpen(false);
     await fetchProcesses();
@@ -204,59 +313,132 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
   };
 
   const confirmDeleteProcess = async () => {
-    if (!selectedGroup || !deleteProcess) return;
-    await api.delete(`/master/routing-groups/${selectedGroup.routingCode}/processes/${deleteProcess.seq}`);
+    if (!routingInfo || !deleteProcess) return;
+    await api.delete(`/master/routing-groups/${routingInfo.routingCode}/processes/${deleteProcess.seq}`);
     setDeleteProcess(null);
     await fetchProcesses();
+  };
+
+  const selectProcess = (process: RoutingProcessItem) => {
+    onSelectProcess({
+      routingCode: process.routingCode,
+      routingName: routingInfo?.routingName || process.routingCode,
+      seq: process.seq,
+      processCode: process.processCode,
+      processName: process.processName,
+    });
+  };
+
+  const toggleBomNode = (id: string) => {
+    setExpandedBomIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectGroup = (group: RoutingGroupItem) => {
+    setSelectedGroup(group);
+    setSelectedBomItem(null);
+    setRoutingInfo(null);
+    setProcesses([]);
+    onSelectProcess(null);
   };
 
   const selectCls = "w-full px-3 py-2 text-sm border border-border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-text dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary";
 
   return (
-    <div className="grid grid-cols-12 gap-5 h-full min-h-0">
-      <div className="col-span-5 flex flex-col min-h-0">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.routingGroupList")}</div>
-          <Button size="sm" onClick={openNewGroup}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addRouting")}</Button>
-        </div>
-        <Input placeholder={t("master.routing.searchGroupPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth className="mb-2" />
-        <div className="flex-1 overflow-y-auto border border-border dark:border-gray-600 rounded-lg min-h-0">
-          {loadingGroups ? (
-            <div className="flex justify-center py-12"><RefreshCw className="w-6 h-6 text-primary animate-spin" /></div>
-          ) : (
-            <table className="w-full text-xs">
-              <tbody>
-                {groups.map((group) => (
-                  <tr key={group.routingCode} onClick={() => setSelectedGroup(group)}
-                    className={`border-b border-border/50 cursor-pointer ${selectedGroup?.routingCode === group.routingCode ? "bg-primary text-white" : "hover:bg-surface-hover text-text"}`}>
-                    <td className="px-2 py-2 font-mono font-semibold whitespace-nowrap">{group.routingCode}</td>
-                    <td className="px-2 py-2 truncate">
-                      <div className="font-medium truncate">{group.routingName}</div>
-                      <div className="text-[11px] opacity-70 truncate">{group.itemCode || "-"} {group.itemName ? `- ${group.itemName}` : ""}</div>
-                    </td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap">
-                      <button onClick={(e) => { e.stopPropagation(); openEditGroup(group); }} className="p-1 rounded hover:bg-white/20"><Edit2 className="w-3.5 h-3.5" /></button>
-                      <button onClick={(e) => { e.stopPropagation(); setDeleteGroup(group); }} className="p-1 rounded hover:bg-white/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-
-      <div className="col-span-7 flex flex-col min-h-0">
-        <div className="flex items-center justify-between mb-2">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.processSequenceTitle")}</div>
-            {selectedGroup && <div className="text-xs text-text-muted truncate">{selectedGroup.routingCode} - {selectedGroup.routingName}</div>}
+    <div className="grid grid-cols-12 gap-4 h-full min-h-0">
+      <Card padding="none" className="col-span-5 flex flex-col min-h-0 rounded-lg">
+        <CardContent className="flex flex-col min-h-0 h-full p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.routingGroupList")}</div>
+            <Button size="sm" onClick={openNewGroup}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addRouting")}</Button>
           </div>
-          <Button size="sm" onClick={openNewProcess} disabled={!selectedGroup}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addProcess")}</Button>
-        </div>
-        <div className="flex-1 overflow-y-auto border border-border dark:border-gray-600 rounded-lg min-h-0">
+          <Input placeholder={t("master.routing.searchGroupPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth className="mb-3" />
+          <div className="flex-1 overflow-y-auto border border-border dark:border-gray-600 rounded-lg min-h-0">
+            {loadingGroups ? (
+              <div className="flex justify-center py-12"><RefreshCw className="w-6 h-6 text-primary animate-spin" /></div>
+            ) : (
+              <table className="w-full text-xs">
+                <tbody>
+                  {groups.map((group) => (
+                    <tr key={group.routingCode} onClick={() => selectGroup(group)}
+                      className={`border-b border-border/50 cursor-pointer ${selectedGroup?.routingCode === group.routingCode ? "bg-primary text-white" : "hover:bg-surface-hover text-text"}`}>
+                      <td className="px-3 py-3 font-mono font-semibold whitespace-nowrap">{group.routingCode}</td>
+                      <td className="px-2 py-3 truncate">
+                        <div className="font-medium truncate">{group.routingName}</div>
+                        <div className="text-[11px] opacity-70 truncate">{group.itemCode || "-"} {group.itemName ? `- ${group.itemName}` : ""}</div>
+                      </td>
+                      <td className="px-2 py-3 text-right whitespace-nowrap">
+                        <button onClick={(e) => { e.stopPropagation(); openEditGroup(group); }} className="p-1 rounded hover:bg-white/20"><Edit2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeleteGroup(group); }} className="p-1 rounded hover:bg-white/20"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="col-span-7 grid grid-rows-[minmax(0,1fr)_260px] gap-3 min-h-0">
+        <Card padding="none" className="flex flex-col min-h-0 rounded-lg">
+          <CardContent className="flex-1 min-h-0 p-3 overflow-y-auto">
+            {selectedGroup ? (
+              <div className="min-w-[420px]">
+                <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-semibold text-text dark:text-gray-100">
+                  <ChevronDown className="w-4 h-4 shrink-0" />
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white text-xs">
+                    {selectedGroup.itemType?.slice(0, 1) || "P"}
+                  </span>
+                  <span className="truncate">BOM 구조</span>
+                  <span className="font-mono text-xs text-text-muted dark:text-gray-400">[{selectedGroup.itemCode || selectedGroup.routingCode}]</span>
+                </div>
+                <div className="mt-2">
+                  {loadingBomTree ? (
+                    <div className="flex justify-center py-12"><RefreshCw className="w-6 h-6 text-primary animate-spin" /></div>
+                  ) : (
+                    <BomTreeRows
+                      items={rootBomTree}
+                      expanded={expandedBomIds}
+                      onToggle={toggleBomNode}
+                      selectedItemCode={selectedBomItem?.itemCode}
+                      onSelectItem={setSelectedBomItem}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-text-muted dark:text-gray-400">
+                {t("master.routing.selectItemPrompt")}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card padding="none" className="flex flex-col min-h-0 rounded-lg">
+          <CardContent className="flex flex-col min-h-0 h-full p-0">
+            <div className="flex items-center justify-between border-b border-border dark:border-gray-700 px-4 py-2">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.processSequenceTitle")}</div>
+                {selectedBomItem && (
+                  <div className="text-xs text-text-muted truncate">
+                    {selectedBomItem.breadcrumb} {routingInfo ? `- ${routingInfo.routingName}` : "- 라우팅 미등록"}
+                  </div>
+                )}
+              </div>
+              <Button size="sm" onClick={openNewProcess} disabled={!routingInfo}><Plus className="w-4 h-4 mr-1" />{t("master.routing.addProcess")}</Button>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0">
           {loadingProcesses ? (
             <div className="flex justify-center py-12"><RefreshCw className="w-6 h-6 text-primary animate-spin" /></div>
+          ) : !routingInfo ? (
+            <div className="flex h-full items-center justify-center px-4 text-center text-sm text-text-muted dark:text-gray-400">
+              선택한 품목에 등록된 라우팅이 없습니다.
+            </div>
           ) : (
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-surface dark:bg-gray-800">
@@ -268,16 +450,17 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                 </tr>
               </thead>
               <tbody>
+                {processes.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
+                      선택한 품목의 라우팅에 등록된 공정이 없습니다.
+                    </td>
+                  </tr>
+                )}
                 {processes.map((process) => {
                   const isSelected = selectedProcess?.routingCode === process.routingCode && selectedProcess.seq === process.seq;
                   return (
-                    <tr key={`${process.routingCode}-${process.seq}`} onClick={() => onSelectProcess({
-                      routingCode: process.routingCode,
-                      routingName: selectedGroup?.routingName || process.routingCode,
-                      seq: process.seq,
-                      processCode: process.processCode,
-                      processName: process.processName,
-                    })}
+                    <tr key={`${process.routingCode}-${process.seq}`} onClick={() => selectProcess(process)}
                       className={`border-b border-border/50 cursor-pointer ${isSelected ? "bg-primary text-white" : "hover:bg-surface-hover text-text"}`}>
                       <td className="py-2 text-center font-mono">{process.seq}</td>
                       <td className="py-2 font-medium truncate">{process.processName}</td>
@@ -292,7 +475,9 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               </tbody>
             </table>
           )}
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Modal isOpen={groupModalOpen} onClose={() => setGroupModalOpen(false)} title={editingGroup ? t("master.routing.editRouting") : t("master.routing.addRouting")} size="md">
@@ -314,7 +499,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               ))}
             </select>
           </div>
-          <Input label={t("common.description", { defaultValue: "?ㅻ챸" })} value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} fullWidth />
+          <Input label={t("common.description", { defaultValue: "설명" })} value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} fullWidth />
         </div>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setGroupModalOpen(false)}>{t("common.cancel")}</Button>
@@ -363,9 +548,92 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       </Modal>
 
       <ConfirmModal isOpen={!!deleteGroup} onClose={() => setDeleteGroup(null)} onConfirm={confirmDeleteGroup}
-        title={t("common.delete")} message={`${deleteGroup?.routingCode || ""} ${t("common.deleteMessage", { defaultValue: "??瑜? ??젣?섏떆寃좎뒿?덇퉴?" })}`} variant="danger" />
+        title={t("common.delete")} message={`${deleteGroup?.routingCode || ""} ${t("common.deleteMessage", { defaultValue: "항목을 삭제하시겠습니까?" })}`} variant="danger" />
       <ConfirmModal isOpen={!!deleteProcess} onClose={() => setDeleteProcess(null)} onConfirm={confirmDeleteProcess}
         title={t("common.delete")} message={`${deleteProcess?.processName || ""} ${t("master.routing.deleteConfirm")}`} variant="danger" />
+    </div>
+  );
+}
+
+function BomTreeRows({
+  items,
+  expanded,
+  onToggle,
+  selectedItemCode,
+  onSelectItem,
+  depth = 0,
+  breadcrumb = "",
+}: {
+  items: BomTreeItem[];
+  expanded: Set<string>;
+  onToggle: (id: string) => void;
+  selectedItemCode?: string | null;
+  onSelectItem: (item: BomTarget) => void;
+  depth?: number;
+  breadcrumb?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      {items.map((item) => {
+        const itemCode = item.childItemCode || item.itemCode;
+        const itemBreadcrumb = item.isRoot ? itemCode : breadcrumb ? `${breadcrumb} > ${itemCode}` : itemCode;
+        const hasChildren = !!item.children?.length;
+        const isExpanded = expanded.has(item.id);
+        const isSelected = selectedItemCode === itemCode;
+        const Icon = partTypeIcon(item.itemType);
+
+        return (
+          <Fragment key={item.id}>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelectItem({ itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb: itemBreadcrumb })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  onSelectItem({ itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb: itemBreadcrumb });
+                }
+              }}
+              className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors ${
+                isSelected ? "bg-primary text-white" : "hover:bg-surface-hover text-text dark:text-gray-200"
+              }`}
+              style={{ marginLeft: depth * 20 }}
+            >
+              {hasChildren ? (
+                <button
+                  type="button"
+                  onClick={(event) => { event.stopPropagation(); onToggle(item.id); }}
+                  className={`rounded p-0.5 ${isSelected ? "hover:bg-white/15" : "hover:bg-surface"}`}
+                >
+                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+              ) : (
+                <span className="flex w-5 justify-center"><span className="h-1.5 w-1.5 rounded-full bg-border" /></span>
+              )}
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${isSelected ? "bg-white/20" : "bg-surface"}`}>
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+              <span className="min-w-0 flex-1 truncate">
+                <span className="font-medium">{item.itemName}</span>
+                <span className={`ml-2 font-mono ${isSelected ? "text-white/75" : "text-text-muted dark:text-gray-400"}`}>[{itemCode}]</span>
+              </span>
+              <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] ${isSelected ? "bg-white/15 text-white" : "bg-surface text-text-muted"}`}>
+                {item.itemType}
+              </span>
+            </div>
+            {hasChildren && isExpanded && (
+              <BomTreeRows
+                items={item.children!}
+                expanded={expanded}
+                onToggle={onToggle}
+                selectedItemCode={selectedItemCode}
+                onSelectItem={onSelectItem}
+                depth={depth + 1}
+                breadcrumb={itemBreadcrumb}
+              />
+            )}
+          </Fragment>
+        );
+      })}
     </div>
   );
 }

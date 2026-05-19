@@ -1,0 +1,31 @@
+-- 불량유형(Defect Type) ComCode seed 데이터
+-- GROUP_CODE: DEFECT_TYPE
+-- JSHANES 사이트 기준: COMPANY='40', PLANT_CD='1000'
+
+MERGE INTO "COM_CODES" t
+USING (
+  SELECT 'DEFECT_TYPE' AS "GROUP_CODE", 'DIM'    AS "DETAIL_CODE", '치수불량'   AS "CODE_NAME", 1  AS "SORT_ORDER", 'blue'    AS "ATTR1" FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'APP',    '외관불량',   2,  'yellow'  FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'FUNC',   '기능불량',   3,  'orange'  FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'WELD',   '용접불량',   4,  'red'     FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'ASM',    '조립불량',   5,  'purple'  FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'MAT',    '재료불량',   6,  'green'   FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'MARK',   '마킹불량',   7,  'cyan'    FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'CRACK',  '크랙/균열',  8,  'red'     FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'BURR',   '버(BURR)',   9,  'orange'  FROM DUAL UNION ALL
+  SELECT 'DEFECT_TYPE', 'ETC',    '기타불량',   10, 'default' FROM DUAL
+) s ON (
+  t."COMPANY" = '40'
+  AND t."PLANT_CD" = '1000'
+  AND t."GROUP_CODE" = s."GROUP_CODE"
+  AND t."DETAIL_CODE" = s."DETAIL_CODE"
+)
+WHEN NOT MATCHED THEN INSERT (
+  "COMPANY", "PLANT_CD", "GROUP_CODE", "DETAIL_CODE", "CODE_NAME",
+  "SORT_ORDER", "USE_YN", "ATTR1", "CREATED_AT", "UPDATED_AT"
+) VALUES (
+  '40', '1000',
+  s."GROUP_CODE", s."DETAIL_CODE", s."CODE_NAME",
+  s."SORT_ORDER", 'Y', s."ATTR1", SYSDATE, SYSDATE
+);
+COMMIT;

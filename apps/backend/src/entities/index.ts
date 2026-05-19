@@ -68,6 +68,8 @@ export * from './equip-inspect-item-master.entity';
 export * from './equip-inspect-log.entity';
 export * from './oqc-request.entity';
 export * from './oqc-request-box.entity';
+export * from './self-inspect-item.entity';
+export * from './self-inspect-result.entity';
 
 // Shipping
 export * from './box-master.entity';

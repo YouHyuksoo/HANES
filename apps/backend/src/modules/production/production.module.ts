@@ -44,9 +44,11 @@ import { AutoPlanService } from './services/auto-plan.service';
 import { AutoIssueService } from './services/auto-issue.service';
 import { RepairController } from './controllers/repair.controller';
 import { SimulationController } from './controllers/simulation.controller';
+import { SelfInspectController } from './controllers/self-inspect.controller';
 import { RepairService } from './services/repair.service';
 import { SimulationService } from './services/simulation.service';
 import { SimulationDataService } from './services/simulation-data.service';
+import { SelfInspectService } from './services/self-inspect.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SystemModule } from '../system/system.module';
 
@@ -83,10 +85,12 @@ import { WorkCalendar } from '../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
 import { SimulationHeader, SimulationPlan, SimulationSchedule } from '../../entities/simulation-result.entity';
 import { ProductStock } from '../../entities/product-stock.entity';
+import { SelfInspectItem } from '../../entities/self-inspect-item.entity';
+import { SelfInspectResult } from '../../entities/self-inspect-result.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult]),
     InventoryModule,
     SystemModule,
   ],
@@ -99,6 +103,7 @@ import { ProductStock } from '../../entities/product-stock.entity';
     SimulationController,
     ProdPlanController,
     RepairController,
+    SelfInspectController,
   ],
   providers: [
     JobOrderService,
@@ -112,6 +117,7 @@ import { ProductStock } from '../../entities/product-stock.entity';
     RepairService,
     SimulationService,
     SimulationDataService,
+    SelfInspectService,
   ],
   exports: [
     JobOrderService,

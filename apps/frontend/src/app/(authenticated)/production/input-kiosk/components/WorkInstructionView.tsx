@@ -1,0 +1,138 @@
+"use client";
+
+/**
+ * @file components/WorkInstructionView.tsx
+ * @description 중앙 패널 — 작업지도서 이미지/문서 뷰어
+ *
+ * 초보자 가이드:
+ * - API: GET /master/work-instructions?itemCode=&processCode=
+ * - imageUrl이 있으면 이미지 표시, 없으면 플레이스홀더
+ * - 복수 페이지 지원: 목록 상단 탭으로 전환
+ */
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { BookOpen, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
+import api from '@/services/api';
+import { useKioskStore } from '@/stores/kioskStore';
+
+interface WorkInstruction {
+  id: string;
+  title: string;
+  imageUrl?: string;
+  content?: string;
+  revision?: string;
+}
+
+export default function WorkInstructionView() {
+  const { t } = useTranslation();
+  const { selectedJobOrder } = useKioskStore();
+  const [instructions, setInstructions] = useState<WorkInstruction[]>([]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+
+  useEffect(() => {
+    if (!selectedJobOrder?.itemCode) { setInstructions([]); return; }
+    const params: Record<string, string> = {
+      itemCode: selectedJobOrder.itemCode,
+      useYn: 'Y',
+      limit: '20',
+    };
+    if (selectedJobOrder.processCode) params.processCode = selectedJobOrder.processCode;
+    api.get('/master/work-instructions', { params })
+      .then(res => {
+        setInstructions(res.data?.data ?? []);
+        setActiveIdx(0);
+      })
+      .catch(() => setInstructions([]));
+  }, [selectedJobOrder?.itemCode, selectedJobOrder?.processCode]);
+
+  const current = instructions[activeIdx];
+  const backendBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* 탭 헤더 */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50 shrink-0 bg-card">
+        <BookOpen className="w-3.5 h-3.5 text-primary" />
+        <span className="text-xs font-semibold text-text">{t('kiosk.instruction.title')}</span>
+        {instructions.length > 1 && (
+          <div className="flex items-center gap-1 ml-auto">
+            <button onClick={() => setActiveIdx(i => Math.max(0, i - 1))} disabled={activeIdx === 0}
+              className="p-0.5 text-text-muted hover:text-text disabled:opacity-30">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs text-text-muted tabular-nums">
+              {activeIdx + 1} / {instructions.length}
+            </span>
+            <button onClick={() => setActiveIdx(i => Math.min(instructions.length - 1, i + 1))}
+              disabled={activeIdx === instructions.length - 1}
+              className="p-0.5 text-text-muted hover:text-text disabled:opacity-30">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {current?.imageUrl && (
+          <button onClick={() => setZoomed(true)}
+            className="p-1 text-text-muted hover:text-primary transition-colors ml-1">
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* 제목 */}
+      {current?.title && (
+        <div className="px-3 py-1.5 bg-surface/50 border-b border-border/30 shrink-0">
+          <p className="text-xs text-text font-medium truncate">{current.title}</p>
+          {current.revision && (
+            <span className="text-xs text-text-muted">Rev. {current.revision}</span>
+          )}
+        </div>
+      )}
+
+      {/* 이미지 영역 */}
+      <div className="flex-1 overflow-auto flex items-center justify-center bg-surface/20 min-h-0">
+        {!selectedJobOrder ? (
+          <div className="flex flex-col items-center gap-2 text-text-muted">
+            <BookOpen className="w-12 h-12 opacity-20" />
+            <span className="text-sm">{t('kiosk.instruction.selectJobOrder')}</span>
+          </div>
+        ) : instructions.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 text-text-muted">
+            <BookOpen className="w-12 h-12 opacity-20" />
+            <span className="text-sm">{t('kiosk.instruction.noInstruction')}</span>
+            <span className="text-xs opacity-60">{t('kiosk.instruction.noInstructionHint')}</span>
+          </div>
+        ) : current?.imageUrl ? (
+          <img
+            src={`${backendBase}${current.imageUrl}`}
+            alt={current.title}
+            className="max-w-full max-h-full object-contain cursor-zoom-in"
+            onClick={() => setZoomed(true)}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-text-muted p-4 text-center">
+            <BookOpen className="w-10 h-10 opacity-20" />
+            <p className="text-sm font-medium text-text">{current?.title}</p>
+            {current?.content && (
+              <p className="text-xs text-text-muted max-w-sm whitespace-pre-line">{current.content}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 줌 오버레이 */}
+      {zoomed && current?.imageUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-zoom-out"
+          onClick={() => setZoomed(false)}
+        >
+          <img
+            src={`${backendBase}${current.imageUrl}`}
+            alt={current.title}
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+          />
+        </div>
+      )}
+    </div>
+  );
+}

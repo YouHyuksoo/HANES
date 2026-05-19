@@ -30,10 +30,13 @@ const levelColors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-purple
 interface BomTabProps {
   selectedParent: ParentPart | null;
   onViewRouting?: (target: RoutingTarget) => void;
+  onSelectItem?: (target: RoutingTarget) => void;
+  selectedItemCode?: string | null;
   effectiveDate?: string;
+  compact?: boolean;
 }
 
-export default function BomTab({ selectedParent, onViewRouting, effectiveDate }: BomTabProps) {
+export default function BomTab({ selectedParent, onViewRouting, onSelectItem, selectedItemCode, effectiveDate, compact = false }: BomTabProps) {
   const { t } = useTranslation();
   const [bomTree, setBomTree] = useState<BomTreeItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,12 +64,35 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
     setExpanded((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   }, []);
 
+  const rootId = selectedParent ? `ROOT::${selectedParent.itemCode}` : "";
+
+  const treeWithRoot: BomTreeItem[] = selectedParent ? [{
+    id: rootId,
+    level: 0,
+    itemCode: selectedParent.itemCode,
+    itemNo: selectedParent.itemNo || null,
+    itemName: selectedParent.itemName,
+    itemType: selectedParent.itemType,
+    qtyPer: 1,
+    unit: selectedParent.unit || "EA",
+    revision: selectedParent.revisions?.[0] || "-",
+    seq: 0,
+    useYn: "Y",
+    children: bomTree,
+    isRoot: true,
+  }] : [];
+
+  useEffect(() => {
+    if (!rootId) return;
+    setExpanded((prev) => new Set(prev).add(rootId));
+  }, [rootId]);
+
   const expandAll = useCallback(() => {
     const allIds = new Set<string>();
     const collect = (items: BomTreeItem[]) => { items.forEach((item) => { if (item.children?.length) { allIds.add(item.id); collect(item.children); } }); };
-    collect(bomTree);
+    collect(treeWithRoot);
     setExpanded(allIds);
-  }, [bomTree]);
+  }, [treeWithRoot]);
 
   const collapseAll = useCallback(() => setExpanded(new Set()), []);
 
@@ -106,10 +132,10 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
 
   return (
     <>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-3">
-          <p className="text-sm text-text-muted">{selectedParent.itemName} ({countItems(bomTree)}{t("master.bom.materialsCount")})</p>
-          <div className="flex gap-1">
+      <div className={`flex justify-between items-center ${compact ? "mb-2" : "mb-4"}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-sm text-text-muted">{selectedParent.itemName} ({countItems(treeWithRoot)}{t("master.bom.materialsCount")})</p>
+          <div className="flex gap-1 shrink-0">
             <button onClick={expandAll} className="px-2 py-1 text-xs rounded bg-surface hover:bg-border text-text-muted transition-colors">
               {t("master.bom.expandAll", "전체 펼치기")}
             </button>
@@ -118,20 +144,20 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 shrink-0">
           <Button size="sm" variant="ghost" onClick={handleExport}>
             <Download className="w-4 h-4 mr-1" />내보내기
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setUploadModalOpen(true)}>
+          {!compact && <Button size="sm" variant="ghost" onClick={() => setUploadModalOpen(true)}>
             <Upload className="w-4 h-4 mr-1" />엑셀 업로드
-          </Button>
+          </Button>}
           <Button size="sm" onClick={() => { setEditingBom(null); setIsModalOpen(true); }}>
             <Plus className="w-4 h-4 mr-1" />{t("master.bom.addBom")}
           </Button>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-[var(--radius)] border border-border">
+      <div className="overflow-auto rounded-[var(--radius)] border border-border">
         <table className="font-data text-xs min-w-[1160px] table-fixed">
           <thead className="bg-background">
             <tr>
@@ -151,25 +177,26 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
           <tbody>
             {loading ? (
               <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">{t("common.loading")}</td></tr>
-            ) : bomTree.length === 0 ? (
+            ) : treeWithRoot.length === 0 ? (
               <tr><td colSpan={11} className="px-4 py-12 text-center text-text-muted">BOM 데이터가 없습니다.</td></tr>
             ) : (
-              <BomTreeRows items={bomTree} expanded={expanded} onToggle={toggleExpand}
+              <BomTreeRows items={treeWithRoot} expanded={expanded} onToggle={toggleExpand}
                 onEdit={handleEdit} onDelete={setDeletingBom} onViewRouting={handleViewRouting}
+                onSelectItem={onSelectItem} selectedItemCode={selectedItemCode}
                 parentCode={selectedParent.itemCode} t={t} />
             )}
           </tbody>
         </table>
       </div>
 
-      <div className="flex gap-4 mt-3 text-xs text-text-muted">
+      {!compact && <div className="flex gap-4 mt-3 text-xs text-text-muted">
         {Object.entries(partTypeConfig).map(([key, cfg]) => (
           <div key={key} className="flex items-center gap-1.5">
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded ${cfg.bg} ${cfg.color} text-[10px] font-medium`}>{key}</span>
             <span>{t(`comCode.ITEM_TYPE.${key}`, { defaultValue: key })}</span>
           </div>
         ))}
-      </div>
+      </div>}
 
       <BomFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={fetchBomTree}
         editingItem={editingBom} parentItemCode={selectedParent.itemCode} parentItemCodeDisplay={selectedParent.itemCode} />
@@ -187,11 +214,12 @@ export default function BomTab({ selectedParent, onViewRouting, effectiveDate }:
 }
 
 function BomTreeRows({
-  items, expanded, onToggle, onEdit, onDelete, onViewRouting, parentCode, t, depth = 0, breadcrumb = "",
+  items, expanded, onToggle, onEdit, onDelete, onViewRouting, onSelectItem, selectedItemCode, parentCode, t, depth = 0, breadcrumb = "",
 }: {
   items: BomTreeItem[]; expanded: Set<string>; onToggle: (id: string) => void;
   onEdit: (item: BomTreeItem) => void; onDelete: (item: BomTreeItem) => void;
   onViewRouting: (item: BomTreeItem, breadcrumb: string) => void;
+  onSelectItem?: (target: RoutingTarget) => void; selectedItemCode?: string | null;
   parentCode: string; t: any; depth?: number; breadcrumb?: string;
 }) {
   return (
@@ -202,21 +230,28 @@ function BomTreeRows({
         const cfg = partTypeConfig[item.itemType] || partTypeConfig.RAW_MATERIAL;
         const Icon = cfg.icon;
         const levelColor = levelColors[item.level % levelColors.length];
-        const itemBreadcrumb = breadcrumb ? `${breadcrumb} > ${item.itemCode}` : `${parentCode} > ${item.itemCode}`;
+        const itemCode = item.childItemCode || item.itemCode;
+        const itemBreadcrumb = item.isRoot ? itemCode : breadcrumb ? `${breadcrumb} > ${itemCode}` : `${parentCode} > ${itemCode}`;
         const validFrom = item.validFrom ? new Date(item.validFrom).toISOString().split("T")[0] : "-";
         const validTo = item.validTo ? new Date(item.validTo).toISOString().split("T")[0] : "-";
+        const isSelected = selectedItemCode === itemCode;
 
         return (
           <Fragment key={item.id}>
-            <tr className={`border-b border-border last:border-b-0 transition-colors hover:bg-primary/5 ${idx % 2 === 0 ? "bg-surface" : "bg-background/50"}`}>
+            <tr
+              onClick={() => onSelectItem?.({ itemCode, itemName: item.itemName, itemType: item.itemType, breadcrumb: itemBreadcrumb })}
+              className={`border-b border-border last:border-b-0 transition-colors cursor-pointer ${
+                isSelected ? "bg-primary text-white" : idx % 2 === 0 ? "bg-surface hover:bg-primary/5" : "bg-background/50 hover:bg-primary/5"
+              }`}
+            >
               <td className="px-2 py-1.5 border-r border-border whitespace-nowrap">
                 <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold ${levelColor}`}>{item.level}</span>
               </td>
               <td className="px-2 py-1.5 border-r border-border whitespace-nowrap">
                 <div className="flex items-center" style={{ paddingLeft: `${depth * 24}px` }}>
                   {hasChildren ? (
-                    <button onClick={() => onToggle(item.id)} className="mr-2 p-0.5 rounded hover:bg-surface transition-colors">
-                      {isExpanded ? <ChevronDown className="w-4 h-4 text-text-muted" /> : <ChevronRight className="w-4 h-4 text-text-muted" />}
+                    <button onClick={(event) => { event.stopPropagation(); onToggle(item.id); }} className="mr-2 p-0.5 rounded hover:bg-surface transition-colors">
+                      {isExpanded ? <ChevronDown className={`w-4 h-4 ${isSelected ? "text-white/80" : "text-text-muted"}`} /> : <ChevronRight className={`w-4 h-4 ${isSelected ? "text-white/80" : "text-text-muted"}`} />}
                     </button>
                   ) : (
                     <span className="w-5 mr-2 flex justify-center"><span className="w-1.5 h-1.5 rounded-full bg-border" /></span>
@@ -225,36 +260,37 @@ function BomTreeRows({
                   <span className="font-mono text-text font-medium">{item.itemNo || item.itemCode}</span>
                 </div>
               </td>
-              <td className="px-2 py-1.5 border-r border-border text-text whitespace-nowrap truncate" title={item.itemName}>
+              <td className="px-2 py-1.5 border-r border-border whitespace-nowrap truncate" title={item.itemName}>
                 <span className="truncate">{item.itemName}</span>
-                {hasChildren && <span className="ml-1 text-[10px] text-text-muted">({item.children!.length})</span>}
+                {hasChildren && <span className={`ml-1 text-[10px] ${isSelected ? "text-white/70" : "text-text-muted"}`}>({item.children!.length})</span>}
               </td>
               <td className="px-2 py-1.5 border-r border-border text-center whitespace-nowrap">
                 <span className={`inline-flex px-1.5 py-0.5 text-[10px] rounded-full font-medium ${cfg.bg} ${cfg.color}`}>{item.itemType}</span>
               </td>
-              <td className="px-2 py-1.5 border-r border-border text-center text-text-muted font-mono whitespace-nowrap">{item.processCode || "-"}</td>
-              <td className="px-2 py-1.5 border-r border-border text-right font-mono text-text whitespace-nowrap">{item.qtyPer} {item.unit}</td>
-              <td className="px-2 py-1.5 border-r border-border text-center text-text whitespace-nowrap">{item.revision}</td>
-              <td className="px-2 py-1.5 border-r border-border text-center text-text-muted whitespace-nowrap">{item.side || "-"}</td>
-              <td className="px-2 py-1.5 border-r border-border text-center text-text font-mono whitespace-nowrap">{validFrom}</td>
-              <td className="px-2 py-1.5 border-r border-border text-center text-text font-mono whitespace-nowrap">{validTo}</td>
+              <td className={`px-2 py-1.5 border-r border-border text-center font-mono whitespace-nowrap ${isSelected ? "text-white/80" : "text-text-muted"}`}>{item.processCode || "-"}</td>
+              <td className="px-2 py-1.5 border-r border-border text-right font-mono whitespace-nowrap">{item.qtyPer} {item.unit}</td>
+              <td className="px-2 py-1.5 border-r border-border text-center whitespace-nowrap">{item.revision}</td>
+              <td className={`px-2 py-1.5 border-r border-border text-center whitespace-nowrap ${isSelected ? "text-white/80" : "text-text-muted"}`}>{item.side || "-"}</td>
+              <td className="px-2 py-1.5 border-r border-border text-center font-mono whitespace-nowrap">{validFrom}</td>
+              <td className="px-2 py-1.5 border-r border-border text-center font-mono whitespace-nowrap">{validTo}</td>
               <td className="px-2 py-1.5 text-center whitespace-nowrap">
                 <div className="flex justify-center gap-1">
-                  <button onClick={() => onViewRouting(item, itemBreadcrumb)} className="p-1 hover:bg-surface rounded" title={t("master.bom.goRoutingManagement")}>
+                  <button onClick={(event) => { event.stopPropagation(); onViewRouting(item, itemBreadcrumb); }} className="p-1 hover:bg-surface rounded" title={t("master.bom.goRoutingManagement")}>
                     <GitBranch className="w-3.5 h-3.5 text-purple-500" />
                   </button>
-                  <button onClick={() => onEdit(item)} className="p-1 hover:bg-surface rounded">
+                  {!item.isRoot && <button onClick={(event) => { event.stopPropagation(); onEdit(item); }} className="p-1 hover:bg-surface rounded">
                     <Edit2 className="w-3.5 h-3.5 text-primary" />
-                  </button>
-                  <button onClick={() => onDelete(item)} className="p-1 hover:bg-surface rounded">
+                  </button>}
+                  {!item.isRoot && <button onClick={(event) => { event.stopPropagation(); onDelete(item); }} className="p-1 hover:bg-surface rounded">
                     <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                  </button>
+                  </button>}
                 </div>
               </td>
             </tr>
             {hasChildren && isExpanded && (
               <BomTreeRows key={`${item.id}-children`} items={item.children!} expanded={expanded} onToggle={onToggle}
                 onEdit={onEdit} onDelete={onDelete} onViewRouting={onViewRouting}
+                onSelectItem={onSelectItem} selectedItemCode={selectedItemCode}
                 parentCode={parentCode} t={t} depth={depth + 1} breadcrumb={itemBreadcrumb} />
             )}
           </Fragment>

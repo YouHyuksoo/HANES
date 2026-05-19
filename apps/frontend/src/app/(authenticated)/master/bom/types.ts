@@ -55,6 +55,7 @@ export interface BomTreeItem {
   useYn: string;
   childItemCode?: string;
   children?: BomTreeItem[];
+  isRoot?: boolean;
 }
 
 /** BOM에서 라우팅관리 화면으로 연결할 때 사용하는 타겟 정보 */
