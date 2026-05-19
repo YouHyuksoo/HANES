@@ -9,12 +9,27 @@
  * - 작업지시: 설비 선택 후 클릭하여 모달에서 선택
  * - 작업자: 바코드 스캔 또는 모달에서 선택 (다중 등록 가능)
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Barcode, Cpu, ClipboardList, UserPlus, X, CheckCircle, AlertTriangle, ChevronDown } from 'lucide-react';
+import {
+  AlertTriangle,
+  Barcode,
+  CheckCircle,
+  ChevronDown,
+  ClipboardList,
+  Cpu,
+  Maximize2,
+  Minimize2,
+  UserPlus,
+  X,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui';
+import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
 import EquipSelectModal from './EquipSelectModal';
+import type { BomItem } from './MaterialListPanel';
 
 interface EquipOption { equipCode: string; equipName: string; }
 
@@ -26,22 +41,87 @@ interface EquipHeaderProps {
 
 export default function EquipHeader({ equips, onOpenJobOrder, onOpenWorker }: EquipHeaderProps) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isEquipModalOpen, setIsEquipModalOpen] = useState(false);
   const [barcodeValue, setBarcodeValue] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const {
     selectedEquip, selectedJobOrder, selectedWorkers,
     setSelectedEquip, removeWorker,
+    addScannedMaterialLot, setInterlock,
   } = useKioskStore();
+  const isWorkView = searchParams.get('view') === 'work';
+  const [bomItems, setBomItems] = useState<BomItem[]>([]);
+
+  useEffect(() => {
+    if (!selectedJobOrder?.itemCode) { setBomItems([]); return; }
+    api.get(`/master/boms/parent/${selectedJobOrder.itemCode}`)
+      .then(res => setBomItems(res.data?.data ?? []))
+      .catch(() => setBomItems([]));
+  }, [selectedJobOrder?.itemCode]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    handleFullscreenChange();
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const handleEquipSelect = useCallback((equip: EquipOption) => {
     setSelectedEquip({ equipCode: equip.equipCode, equipName: equip.equipName });
   }, [setSelectedEquip]);
 
-  const handleBarcodeSubmit = useCallback(() => {
+  const handleBarcodeSubmit = useCallback(async () => {
     const value = barcodeValue.trim();
-    if (!value) return;
+    if (!value || !selectedJobOrder?.orderNo) { setBarcodeValue(''); return; }
     setBarcodeValue('');
-  }, [barcodeValue]);
+
+    try {
+      const res = await api.post(
+        `/production/job-orders/${selectedJobOrder.orderNo}/material-lots/scan`,
+        {
+          matUid: value,
+          bomItems: bomItems.map(b => ({ itemCode: b.childItemCode, seq: b.seq })),
+        },
+      );
+      const lot = res.data?.data as { itemCode: string; seq: number; matUid: string; initQty: number };
+      addScannedMaterialLot({ itemCode: lot.itemCode, seq: lot.seq, matUid: lot.matUid, initQty: lot.initQty });
+      toast.success(t('kiosk.material.scanOk'));
+
+      // 모든 BOM 항목 스캔 완료 시 인터락 해제
+      const currentLots = useKioskStore.getState().scannedMaterialLots;
+      const allDone = bomItems.every(b =>
+        currentLots.some(l => l.itemCode === b.childItemCode && l.seq === b.seq)
+      );
+      if (allDone) {
+        setInterlock('materialScanDone', true);
+        toast.success(t('kiosk.material.allLotScanned'));
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      if (msg?.includes('오장착')) {
+        toast.error(`${t('kiosk.material.wrongItem')}: ${msg}`);
+      } else if (msg?.includes('LOT를 찾을 수 없습니다')) {
+        toast.error(t('kiosk.material.lotNotFound'));
+      }
+      // 그 외 바코드(소모품, 작업자 등)는 조용히 무시
+    }
+  }, [barcodeValue, selectedJobOrder, bomItems, addScannedMaterialLot, setInterlock, t]);
+
+  const handleToggleWorkView = useCallback(() => {
+    if (isWorkView) {
+      router.push('/production/input-kiosk');
+      if (document.fullscreenElement) {
+        void document.exitFullscreen();
+      }
+      return;
+    }
+    router.push('/production/input-kiosk?view=work');
+    void document.documentElement.requestFullscreen();
+  }, [isWorkView, router]);
 
   const progress = selectedJobOrder
     ? Math.min(Math.round((selectedJobOrder.completedQty / selectedJobOrder.planQty) * 100), 100)
@@ -112,6 +192,24 @@ export default function EquipHeader({ equips, onOpenJobOrder, onOpenWorker }: Eq
             className="text-purple-600 border-purple-300 dark:border-purple-700 text-xs">
             {t('kiosk.header.masterSample')}
           </Button>
+
+          <button
+            type="button"
+            onClick={handleToggleWorkView}
+            title={
+              isWorkView
+                ? t('kiosk.header.menuView', '메뉴 화면으로')
+                : t('kiosk.header.workView', '작업 전체화면')
+            }
+            aria-label={
+              isWorkView
+                ? t('kiosk.header.menuView', '메뉴 화면으로')
+                : t('kiosk.header.workView', '작업 전체화면')
+            }
+            className="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-text-muted transition-colors hover:border-primary hover:text-primary"
+          >
+            {isWorkView || isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
         </div>
 
         {/* 하단 바: 작업지시 + 작업자 + 진행률 */}
