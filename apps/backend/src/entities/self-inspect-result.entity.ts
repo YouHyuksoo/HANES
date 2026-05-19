@@ -24,13 +24,13 @@ export class SelfInspectResult {
   @Column({ name: 'ORDER_NO', length: 50 })
   orderNo: string;
 
-  @Column({ name: 'EQUIP_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 
-  @Column({ name: 'PROCESS_CODE', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
 
-  @Column({ name: 'INSPECT_ITEM_ID', length: 36, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECT_ITEM_ID', length: 36, nullable: true })
   inspectItemId: string | null;
 
   @Column({ name: 'ITEM_NAME', length: 200 })
@@ -51,25 +51,25 @@ export class SelfInspectResult {
   @Column({ name: 'PROD_QTY_AT_INSPECT', type: 'number', nullable: true })
   prodQtyAtInspect: number | null;
 
-  @Column({ name: 'INSPECTOR_ID', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'INSPECTOR_ID', length: 50, nullable: true })
   inspectorId: string | null;
 
-  @Column({ name: 'REMARK', length: 500, nullable: true })
+  @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
   @Column({ name: 'INSPECTED_AT', type: 'timestamp', nullable: true })
   inspectedAt: Date | null;
 
-  @Column({ name: 'COMPANY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
-  @Column({ name: 'PLANT_CD', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
   plant: string | null;
 
-  @Column({ name: 'CREATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
-  @Column({ name: 'UPDATED_BY', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'UPDATED_BY', length: 50, nullable: true })
   updatedBy: string | null;
 
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
