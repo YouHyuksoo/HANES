@@ -87,10 +87,13 @@ import { SimulationHeader, SimulationPlan, SimulationSchedule } from '../../enti
 import { ProductStock } from '../../entities/product-stock.entity';
 import { SelfInspectItem } from '../../entities/self-inspect-item.entity';
 import { SelfInspectResult } from '../../entities/self-inspect-result.entity';
+import { JobMaterialLot } from '../../entities/job-material-lot.entity';
+import { JobMaterialLotController } from './controllers/job-material-lot.controller';
+import { JobMaterialLotService } from './services/job-material-lot.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, PartMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot]),
     InventoryModule,
     SystemModule,
   ],
@@ -104,6 +107,7 @@ import { SelfInspectResult } from '../../entities/self-inspect-result.entity';
     ProdPlanController,
     RepairController,
     SelfInspectController,
+    JobMaterialLotController,
   ],
   providers: [
     JobOrderService,
@@ -118,6 +122,7 @@ import { SelfInspectResult } from '../../entities/self-inspect-result.entity';
     SimulationService,
     SimulationDataService,
     SelfInspectService,
+    JobMaterialLotService,
   ],
   exports: [
     JobOrderService,
