@@ -8,16 +8,16 @@
  * - DELETE /production/job-orders/:orderNo/material-lots/:itemCode/:seq : 등록 취소
  */
 import {
-  Controller, Get, Post, Delete, Param, Body, Request,
+  Controller, Get, Post, Delete, Param, Body, Request, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { JobMaterialLotService } from '../services/job-material-lot.service';
-import { ScanBarcodeDto } from '../dto/job-material-lot.dto';
+import { ScanBarcodeDto, ScanRequestDto } from '../dto/job-material-lot.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
-interface BomItemRef { itemCode: string; seq: number; }
-
+@UseGuards(JwtAuthGuard)
 @ApiTags('생산관리 - 자재롯트 스캔')
 @Controller('production/job-orders/:orderNo/material-lots')
 export class JobMaterialLotController {
@@ -34,7 +34,7 @@ export class JobMaterialLotController {
   @ApiOperation({ summary: '바코드 스캔 — LOT 검증 후 등록' })
   async scan(
     @Param('orderNo') orderNo: string,
-    @Body() body: { matUid: string; bomItems: BomItemRef[]; scannedBy?: string },
+    @Body() body: ScanRequestDto,
     @Company() company: string,
     @Plant() plant: string,
     @Request() req: { user?: { username?: string } },
