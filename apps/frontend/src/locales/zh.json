@@ -312,7 +312,8 @@
     "system.document": "文档管理",
     "system.training": "培训管理",
     "system.menuCategory": "菜单类别管理",
-    "root": "顶级"
+    "root": "顶级",
+    "system.screenRequirements": "界面需求收集"
   },
   "header": {
     "theme": "主题",
@@ -5722,7 +5723,18 @@
       "unit": "种",
       "noBom": "无材料信息",
       "consumables": "消耗性设备零件",
-      "noConsumables": "无已安装消耗品"
+      "noConsumables": "无已安装消耗品",
+      "lotNo": "批次号",
+      "lotQty": "批次数量",
+      "noLot": "未登记批次",
+      "qtyPer": "需求量",
+      "scanOk": "物料批次登记完成",
+      "wrongItem": "错误物料警告",
+      "wrongItemMsg": "BOM中没有该物料",
+      "lotNotFound": "找不到该LOT",
+      "alreadyScanned": "已扫描（批次已替换）",
+      "removeLot": "取消批次",
+      "allLotScanned": "所有物料批次登记完成"
     },
     "instruction": {
       "title": "作业指导书",

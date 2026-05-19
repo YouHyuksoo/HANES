@@ -312,7 +312,8 @@
     "system.document": "Quản lý tài liệu",
     "system.training": "Quản lý đào tạo",
     "system.menuCategory": "Quản lý danh mục menu",
-    "root": "Cấp cao nhất"
+    "root": "Cấp cao nhất",
+    "system.screenRequirements": "Thu thập yêu cầu màn hình"
   },
   "header": {
     "theme": "Giao diện",
@@ -5722,7 +5723,18 @@
       "unit": " loại",
       "noBom": "Không có thông tin vật liệu",
       "consumables": "Phụ tùng tiêu hao",
-      "noConsumables": "Không có phụ tùng được lắp"
+      "noConsumables": "Không có phụ tùng được lắp",
+      "lotNo": "Số lô",
+      "lotQty": "SL lô",
+      "noLot": "Chưa đăng ký lô",
+      "qtyPer": "SL yêu cầu",
+      "scanOk": "Đã đăng ký lô vật tư",
+      "wrongItem": "Cảnh báo sai vật tư",
+      "wrongItemMsg": "Vật tư không có trong BOM",
+      "lotNotFound": "Không tìm thấy LOT",
+      "alreadyScanned": "Đã quét (đã thay thế lô)",
+      "removeLot": "Huỷ lô",
+      "allLotScanned": "Đã đăng ký đủ lô vật tư"
     },
     "instruction": {
       "title": "Hướng dẫn sản xuất",

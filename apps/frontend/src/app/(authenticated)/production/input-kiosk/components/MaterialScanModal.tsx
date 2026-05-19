@@ -33,7 +33,8 @@ interface MaterialScanModalProps {
 
 export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialScanModalProps) {
   const { t } = useTranslation();
-  const { selectedJobOrder, scannedMaterials, addScannedMaterial, setInterlock } = useKioskStore();
+  const { selectedJobOrder, scannedMaterialLots, addScannedMaterialLot, setInterlock } = useKioskStore();
+  const scannedMaterials = scannedMaterialLots.map(l => l.itemCode);
   const [bomItems, setBomItems] = useState<BomItem[]>([]);
   const [scanInput, setScanInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,13 +58,13 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
 
     const matched = bomItems.find(b => b.childItemCode === code || code.includes(b.childItemCode));
     if (matched) {
-      addScannedMaterial(matched.childItemCode);
+      addScannedMaterialLot({ itemCode: matched.childItemCode, seq: 0, matUid: code, initQty: 0 });
       toast.success(`✓ ${matched.childItemCode}`, { duration: 1000 });
     } else {
       toast.error(t('kiosk.prep.materialNotInBom', { code }), { duration: 2000 });
     }
     setScanInput('');
-  }, [scanInput, bomItems, addScannedMaterial, t]);
+  }, [scanInput, bomItems, addScannedMaterialLot, t]);
 
   const handleComplete = useCallback(() => {
     setInterlock('materialScanDone', true);

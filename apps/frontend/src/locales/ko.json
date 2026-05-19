@@ -313,7 +313,8 @@
     "system.document": "문서관리",
     "system.training": "교육훈련",
     "system.menuCategory": "메뉴 카테고리 관리",
-    "root": "최상위"
+    "root": "최상위",
+    "system.screenRequirements": "화면 요구사항 수집"
   },
   "header": {
     "theme": "테마",
@@ -5757,7 +5758,18 @@
       "unit": "종",
       "noBom": "자재 정보 없음",
       "consumables": "소모성 설비 부품",
-      "noConsumables": "장착된 소모품 없음"
+      "noConsumables": "장착된 소모품 없음",
+      "lotNo": "롯트번호",
+      "lotQty": "롯트수량",
+      "noLot": "롯트 미등록",
+      "qtyPer": "소요수량",
+      "scanOk": "자재 롯트 등록 완료",
+      "wrongItem": "오장착 경고",
+      "wrongItemMsg": "BOM에 없는 자재입니다",
+      "lotNotFound": "LOT를 찾을 수 없습니다",
+      "alreadyScanned": "이미 스캔된 자재입니다 (롯트 교체됨)",
+      "removeLot": "롯트 취소",
+      "allLotScanned": "모든 자재 롯트 등록 완료"
     },
     "instruction": {
       "title": "작업지도서",

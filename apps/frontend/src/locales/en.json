@@ -312,7 +312,8 @@
     "system.document": "Document Control",
     "system.training": "Training",
     "system.menuCategory": "Menu Category Management",
-    "root": "Root"
+    "root": "Root",
+    "system.screenRequirements": "Screen Requirements"
   },
   "header": {
     "theme": "Theme",
@@ -5736,7 +5737,18 @@
       "unit": " item(s)",
       "noBom": "No material info",
       "consumables": "Consumable Parts",
-      "noConsumables": "No mounted consumables"
+      "noConsumables": "No mounted consumables",
+      "lotNo": "Lot No.",
+      "lotQty": "Lot Qty",
+      "noLot": "No Lot Assigned",
+      "qtyPer": "Req. Qty",
+      "scanOk": "Material lot registered",
+      "wrongItem": "Wrong Material",
+      "wrongItemMsg": "This material is not in the BOM",
+      "lotNotFound": "LOT not found",
+      "alreadyScanned": "Already scanned (lot replaced)",
+      "removeLot": "Remove Lot",
+      "allLotScanned": "All material lots registered"
     },
     "instruction": {
       "title": "Work Instruction",
