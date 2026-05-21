@@ -8,7 +8,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -73,11 +73,13 @@ export class CreateEquipInspectItemDto {
 
   @ApiPropertyOptional({ description: '하한값 (측정형만)' })
   @IsOptional()
+  @IsNumber()
   @Type(() => Number)
   lslValue?: number;
 
   @ApiPropertyOptional({ description: '상한값 (측정형만)' })
   @IsOptional()
+  @IsNumber()
   @Type(() => Number)
   uslValue?: number;
 

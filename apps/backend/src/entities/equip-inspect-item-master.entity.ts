@@ -6,7 +6,7 @@
  * 초보자 가이드:
  * 1. 복합 PK: company + plant + equipCode + inspectType + seq
  * 2. equipCode: 대상 설비 코드
- * 3. inspectType: 점검 유형 (DAILY, PERIODIC, PM)
+ * 3. inspectType: 점검 유형 (DAILY, PERIODIC, PM, WORKER) — WORKER는 작업자설비점검 항목
  * 4. seq: 항목 순서
  */
 import {
