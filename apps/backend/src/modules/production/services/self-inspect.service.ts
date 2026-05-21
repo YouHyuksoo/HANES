@@ -54,12 +54,16 @@ export class SelfInspectService {
       prodQtyAtInspect?: number;
       inspectorId?: string;
       remark?: string;
+      sampleNo?: number;
+      measureValue?: number;
     },
     company: string,
     plant: string,
   ) {
     const result = this.resultRepo.create({
       ...dto,
+      sampleNo: dto.sampleNo ?? 1,
+      measureValue: dto.measureValue ?? null,
       company,
       plant,
       inspectedAt: dto.status !== 'PENDING' ? new Date() : null,

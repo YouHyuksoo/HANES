@@ -57,6 +57,8 @@ export class SelfInspectController {
       prodQtyAtInspect?: number;
       inspectorId?: string;
       remark?: string;
+      sampleNo?: number;
+      measureValue?: number;
     },
     @Company() company: string,
     @Plant() plant: string,

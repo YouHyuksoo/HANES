@@ -57,6 +57,14 @@ export class SelfInspectResult {
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
+  /** 시료 번호 (1부터 시작; FIRST 초물 N개 시료, MID/LAST는 1) */
+  @Column({ name: 'SAMPLE_NO', type: 'number', default: 1 })
+  sampleNo: number;
+
+  /** 측정값 (MEASURE 타입 항목만; VISUAL은 null) */
+  @Column({ name: 'MEASURE_VALUE', type: 'number', nullable: true })
+  measureValue: number | null;
+
   @Column({ name: 'INSPECTED_AT', type: 'timestamp', nullable: true })
   inspectedAt: Date | null;
 
