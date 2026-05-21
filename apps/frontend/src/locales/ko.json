@@ -5856,7 +5856,9 @@
       "workerQrNotFound": "미등록 QR: {{code}}",
       "workerInspectProgress": "OK {{ok}} / NG {{ng}} / 미완료 {{pending}}",
       "workerInspectSaved": "작업자점검이 저장되었습니다",
-      "workerInspectSaveError": "작업자점검 저장에 실패했습니다"
+      "workerInspectSaveError": "작업자점검 저장에 실패했습니다",
+      "workerQrRequired": "QR 스캔 필요",
+      "loadItemsError": "점검항목을 불러오지 못했습니다"
     },
     "workerInspect": {
       "check1": "설비 전원 및 안전장치 정상 여부",

@@ -42,24 +42,33 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   const [activeSeq, setActiveSeq] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const qrRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen || !selectedEquip) return;
+    const controller = new AbortController();
     setLoading(true);
+    setLoadError(false);
     setResults({});
     setQrInput('');
     setActiveSeq(null);
     api.get('/master/equip-inspect-items', {
       params: { equipCode: selectedEquip.equipCode, inspectType: 'WORKER', limit: '100' },
+      signal: controller.signal,
     }).then(res => {
       const data: WorkerInspectItem[] = res.data?.data ?? [];
       setItems(data);
       const init: Record<number, ItemResult> = {};
       data.forEach(i => { init[i.seq] = ''; });
       setResults(init);
-    }).catch(() => setItems([]))
-      .finally(() => setLoading(false));
+    }).catch((err: unknown) => {
+      if ((err as { name?: string })?.name !== 'CanceledError') {
+        setItems([]);
+        setLoadError(true);
+      }
+    }).finally(() => setLoading(false));
+    return () => controller.abort();
   }, [isOpen, selectedEquip]);
 
   useEffect(() => {
@@ -99,12 +108,11 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
     if (!selectedEquip || !allAnswered) return;
     setSaving(true);
     try {
-      const details: Record<string, string> = {};
-      items.forEach(i => { details[`${i.seq}_${i.itemName}`] = results[i.seq]; });
+      const details = items.map(i => ({ seq: i.seq, itemName: i.itemName, result: results[i.seq] }));
       await api.post('/equipment/daily-inspect', {
         equipCode: selectedEquip.equipCode,
         inspectDate: new Date().toISOString().split('T')[0],
-        inspectorName: selectedWorkers[0]?.workerName ?? '',
+        inspectorName: selectedWorkers.map(w => w.workerName).join(', '),
         inspectType: 'WORKER',
         overallResult: anyNg ? 'FAIL' : 'PASS',
         details,
@@ -122,7 +130,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   }, [selectedEquip, allAnswered, items, results, selectedWorkers, anyNg, setInterlock, onDone, t]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.workerInspectTitle')} size="lg">
+    <Modal isOpen={isOpen} onClose={saving ? () => {} : onClose} title={t('kiosk.prep.workerInspectTitle')} size="lg">
       <div className="space-y-4">
         {/* 설비 + 작업지시 + 작업자 */}
         <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm space-y-1">
@@ -185,6 +193,8 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
         {/* 항목 목록 */}
         {loading ? (
           <div className="py-6 text-center text-text-muted text-sm">{t('common.loading')}</div>
+        ) : loadError ? (
+          <div className="py-6 text-center text-red-600 dark:text-red-400 text-sm">{t('kiosk.prep.loadItemsError')}</div>
         ) : (
           <div className="max-h-[40vh] overflow-y-auto space-y-2">
             {items.map(item => {
@@ -231,7 +241,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                         </button>
                       </div>
                     ) : (
-                      <span className="text-xs text-text-muted">QR 스캔 필요</span>
+                      <span className="text-xs text-text-muted">{t('kiosk.prep.workerQrRequired')}</span>
                     )}
                   </div>
                 </div>

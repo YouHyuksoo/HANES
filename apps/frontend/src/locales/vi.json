@@ -5821,7 +5821,9 @@
       "workerQrNotFound": "QR chưa đăng ký: {{code}}",
       "workerInspectProgress": "OK {{ok}} / NG {{ng}} / Chờ {{pending}}",
       "workerInspectSaved": "Đã lưu kiểm tra thiết bị",
-      "workerInspectSaveError": "Lỗi lưu kiểm tra thiết bị"
+      "workerInspectSaveError": "Lỗi lưu kiểm tra thiết bị",
+      "workerQrRequired": "Cần quét QR",
+      "loadItemsError": "Không thể tải hạng mục kiểm tra"
     },
     "workerInspect": {
       "check1": "Nguồn thiết bị và thiết bị an toàn hoạt động bình thường",

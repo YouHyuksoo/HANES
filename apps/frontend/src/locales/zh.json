@@ -5821,7 +5821,9 @@
       "workerQrNotFound": "未注册QR: {{code}}",
       "workerInspectProgress": "OK {{ok}} / NG {{ng}} / 待检 {{pending}}",
       "workerInspectSaved": "作业者设备点检已保存",
-      "workerInspectSaveError": "作业者设备点检保存失败"
+      "workerInspectSaveError": "作业者设备点检保存失败",
+      "workerQrRequired": "需要QR扫描",
+      "loadItemsError": "无法加载点检项目"
     },
     "workerInspect": {
       "check1": "设备电源及安全装置是否正常",

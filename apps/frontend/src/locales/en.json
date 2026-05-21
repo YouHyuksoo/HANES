@@ -5835,7 +5835,9 @@
       "workerQrNotFound": "Unregistered QR: {{code}}",
       "workerInspectProgress": "OK {{ok}} / NG {{ng}} / Pending {{pending}}",
       "workerInspectSaved": "Worker inspection saved",
-      "workerInspectSaveError": "Failed to save worker inspection"
+      "workerInspectSaveError": "Failed to save worker inspection",
+      "workerQrRequired": "QR Scan Required",
+      "loadItemsError": "Failed to load inspection items"
     },
     "workerInspect": {
       "check1": "Equipment power and safety devices normal",
