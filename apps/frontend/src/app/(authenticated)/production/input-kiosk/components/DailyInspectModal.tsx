@@ -247,8 +247,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                               placeholder={item.unit ?? t('kiosk.prep.measureValue')}
                               className="w-24 px-2 py-1.5 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
                             />
-                            {r === 'PASS' && <span className="text-xs font-bold text-green-600">PASS</span>}
-                            {r === 'FAIL' && <span className="text-xs font-bold text-red-600">FAIL</span>}
+                            {r === 'PASS' && <span className="text-xs font-bold text-green-600 dark:text-green-400">PASS</span>}
+                            {r === 'FAIL' && <span className="text-xs font-bold text-red-600 dark:text-red-400">FAIL</span>}
                           </div>
                         ) : (
                           <div className="flex gap-2 shrink-0">
