@@ -23,10 +23,10 @@ export class CreateEquipInspectItemDto {
   @MaxLength(30)
   itemCode?: string;
 
-  @ApiProperty({ description: '점검 유형', enum: ['DAILY', 'PERIODIC', 'PM'] })
+  @ApiProperty({ description: '점검 유형', enum: ['DAILY', 'PERIODIC', 'PM', 'WORKER'] })
   @IsOptional()
   @IsString()
-  @IsIn(['DAILY', 'PERIODIC', 'PM'])
+  @IsIn(['DAILY', 'PERIODIC', 'PM', 'WORKER'])
   inspectType?: string;
 
   @ApiProperty({ description: '점검 순서', example: 1 })
@@ -58,6 +58,34 @@ export class CreateEquipInspectItemDto {
   @IsString()
   @IsIn(['Y', 'N'])
   useYn?: string;
+
+  @ApiPropertyOptional({ description: '점검 유형 (MEASURE|VISUAL)', default: 'VISUAL' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['MEASURE', 'VISUAL'])
+  itemType?: string;
+
+  @ApiPropertyOptional({ description: '측정 단위 (bar, ℃, mm 등)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  unit?: string;
+
+  @ApiPropertyOptional({ description: '하한값 (측정형만)' })
+  @IsOptional()
+  @Type(() => Number)
+  lslValue?: number;
+
+  @ApiPropertyOptional({ description: '상한값 (측정형만)' })
+  @IsOptional()
+  @Type(() => Number)
+  uslValue?: number;
+
+  @ApiPropertyOptional({ description: '작업자점검 QR 코드값' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  workerQrCode?: string;
 }
 
 export class UpdateEquipInspectItemDto extends PartialType(CreateEquipInspectItemDto) {}
@@ -73,7 +101,7 @@ export class EquipInspectItemQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '점검 유형 필터' })
   @IsOptional()
   @IsString()
-  @IsIn(['DAILY', 'PERIODIC', 'PM'])
+  @IsIn(['DAILY', 'PERIODIC', 'PM', 'WORKER'])
   inspectType?: string;
 
   @ApiPropertyOptional()

@@ -49,6 +49,23 @@ export class EquipInspectItemMaster {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
+  /** MEASURE(측정형) | VISUAL(판정형) */
+  @Column({ name: 'ITEM_TYPE', length: 20, default: 'VISUAL' })
+  itemType: string;
+
+  @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
+  unit: string | null;
+
+  @Column({ name: 'LSL_VALUE', type: 'number', nullable: true })
+  lslValue: number | null;
+
+  @Column({ name: 'USL_VALUE', type: 'number', nullable: true })
+  uslValue: number | null;
+
+  /** 작업자점검 QR 코드 페이로드 (INSPECT_TYPE='WORKER' 항목에만 사용) */
+  @Column({ type: 'varchar2', name: 'WORKER_QR_CODE', length: 50, nullable: true })
+  workerQrCode: string | null;
+
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
