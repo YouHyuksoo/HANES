@@ -5811,7 +5811,17 @@
       "consumableNotFound": "Vật tư chưa đăng ký: {{code}}",
       "noConsumables": "Không có vật tư được lắp",
       "lifeExpired": "Hết tuổi thọ",
-      "consumableScanDone": "Quét vật tư tiêu hao hoàn thành"
+      "consumableScanDone": "Quét vật tư tiêu hao hoàn thành",
+      "measureValue": "Giá trị đo",
+      "unit": "Đơn vị",
+      "lsl": "Giới hạn dưới (LSL)",
+      "usl": "Giới hạn trên (USL)",
+      "workerQrScanner": "Quét QR",
+      "workerQrPlaceholder": "Quét mã QR...",
+      "workerQrNotFound": "QR chưa đăng ký: {{code}}",
+      "workerInspectProgress": "OK {{ok}} / NG {{ng}} / Chờ {{pending}}",
+      "workerInspectSaved": "Đã lưu kiểm tra thiết bị",
+      "workerInspectSaveError": "Lỗi lưu kiểm tra thiết bị"
     },
     "workerInspect": {
       "check1": "Nguồn thiết bị và thiết bị an toàn hoạt động bình thường",
@@ -5838,7 +5848,15 @@
       "savedWithFail": "{{count}} hạng mục FAIL. Vui lòng kiểm tra với QC.",
       "saveError": "Lưu kết quả kiểm tra thất bại",
       "save": "Hoàn thành kiểm tra",
-      "resultCount": "Kết quả thứ {{count}}"
+      "resultCount": "Kết quả thứ {{count}}",
+      "sampleTab": "Mẫu {{n}}",
+      "allSamplesRequired": "Hoàn thành tất cả hạng mục cho mọi mẫu",
+      "reInspect": "Kiểm tra lại NG",
+      "reInspectTitle": "Kiểm tra lại (lần {{n}})",
+      "overallPass": "Tổng hợp PASS",
+      "overallFail": "Tổng hợp FAIL — {{count}} hạng mục không đạt",
+      "midNotify": "Đến thời điểm kiểm tra giữa lô",
+      "midBlock": "Hoàn thành kiểm tra giữa lô để tiếp tục"
     },
     "defect": {
       "title": "Nhập lỗi",

@@ -5811,7 +5811,17 @@
       "consumableNotFound": "未注册的耗材: {{code}}",
       "noConsumables": "无已装载耗材",
       "lifeExpired": "寿命超出",
-      "consumableScanDone": "耗材扫描完成"
+      "consumableScanDone": "耗材扫描完成",
+      "measureValue": "测量值",
+      "unit": "单位",
+      "lsl": "下限(LSL)",
+      "usl": "上限(USL)",
+      "workerQrScanner": "QR扫描",
+      "workerQrPlaceholder": "请扫描QR码...",
+      "workerQrNotFound": "未注册QR: {{code}}",
+      "workerInspectProgress": "OK {{ok}} / NG {{ng}} / 待检 {{pending}}",
+      "workerInspectSaved": "作业者设备点检已保存",
+      "workerInspectSaveError": "作业者设备点检保存失败"
     },
     "workerInspect": {
       "check1": "设备电源及安全装置是否正常",
@@ -5838,7 +5848,15 @@
       "savedWithFail": "{{count}}个项目FAIL，请与质量团队确认。",
       "saveError": "检查结果保存失败",
       "save": "完成检查",
-      "resultCount": "当前第{{count}}次实绩"
+      "resultCount": "当前第{{count}}次实绩",
+      "sampleTab": "样品 {{n}}",
+      "allSamplesRequired": "请完成所有样品的检查项目",
+      "reInspect": "NG复检",
+      "reInspectTitle": "复检 (第{{n}}次)",
+      "overallPass": "综合PASS",
+      "overallFail": "综合FAIL — {{count}}项不合格",
+      "midNotify": "到中间自主检查时间",
+      "midBlock": "完成中间检查后可继续投入"
     },
     "defect": {
       "title": "不良输入",

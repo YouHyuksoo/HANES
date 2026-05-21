@@ -5846,7 +5846,17 @@
       "consumableNotFound": "등록되지 않은 소모품입니다: {{code}}",
       "noConsumables": "장착된 소모품이 없습니다",
       "lifeExpired": "수명초과",
-      "consumableScanDone": "소모품 스캔이 완료되었습니다"
+      "consumableScanDone": "소모품 스캔이 완료되었습니다",
+      "measureValue": "측정값",
+      "unit": "단위",
+      "lsl": "하한(LSL)",
+      "usl": "상한(USL)",
+      "workerQrScanner": "QR 스캔",
+      "workerQrPlaceholder": "QR 코드를 스캔하세요...",
+      "workerQrNotFound": "미등록 QR: {{code}}",
+      "workerInspectProgress": "OK {{ok}} / NG {{ng}} / 미완료 {{pending}}",
+      "workerInspectSaved": "작업자점검이 저장되었습니다",
+      "workerInspectSaveError": "작업자점검 저장에 실패했습니다"
     },
     "workerInspect": {
       "check1": "설비 전원 및 안전장치 정상 여부",
@@ -5873,7 +5883,15 @@
       "savedWithFail": "{{count}}개 항목이 FAIL입니다. 품질팀에 확인하세요.",
       "saveError": "자주검사 저장에 실패했습니다",
       "save": "검사 완료",
-      "resultCount": "현재 {{count}}번째 실적"
+      "resultCount": "현재 {{count}}번째 실적",
+      "sampleTab": "시료 {{n}}",
+      "allSamplesRequired": "모든 시료의 항목을 입력하세요",
+      "reInspect": "NG 재검사",
+      "reInspectTitle": "재검사 ({{n}}차)",
+      "overallPass": "종합 PASS",
+      "overallFail": "종합 FAIL — {{count}}개 항목 불합격",
+      "midNotify": "중물 자주검사 시점입니다",
+      "midBlock": "중물 자주검사 완료 후 실적입력 가능합니다"
     },
     "defect": {
       "title": "불량입력",

@@ -5825,7 +5825,17 @@
       "consumableNotFound": "Unregistered consumable: {{code}}",
       "noConsumables": "No mounted consumables",
       "lifeExpired": "Life Expired",
-      "consumableScanDone": "Consumable scan completed"
+      "consumableScanDone": "Consumable scan completed",
+      "measureValue": "Measured Value",
+      "unit": "Unit",
+      "lsl": "LSL",
+      "usl": "USL",
+      "workerQrScanner": "QR Scan",
+      "workerQrPlaceholder": "Scan QR code...",
+      "workerQrNotFound": "Unregistered QR: {{code}}",
+      "workerInspectProgress": "OK {{ok}} / NG {{ng}} / Pending {{pending}}",
+      "workerInspectSaved": "Worker inspection saved",
+      "workerInspectSaveError": "Failed to save worker inspection"
     },
     "workerInspect": {
       "check1": "Equipment power and safety devices normal",
@@ -5852,7 +5862,15 @@
       "savedWithFail": "{{count}} item(s) FAILED. Please check with QC.",
       "saveError": "Failed to save inspection results",
       "save": "Complete Inspection",
-      "resultCount": "Result #{{count}}"
+      "resultCount": "Result #{{count}}",
+      "sampleTab": "Sample {{n}}",
+      "allSamplesRequired": "Complete all items for every sample",
+      "reInspect": "NG Re-Inspect",
+      "reInspectTitle": "Re-inspect ({{n}})",
+      "overallPass": "Overall PASS",
+      "overallFail": "Overall FAIL — {{count}} items failed",
+      "midNotify": "Time for mid-lot inspection",
+      "midBlock": "Complete mid-lot inspection to continue"
     },
     "defect": {
       "title": "Defect Input",
