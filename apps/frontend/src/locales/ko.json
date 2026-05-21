@@ -5888,6 +5888,7 @@
       "resultCount": "현재 {{count}}번째 실적",
       "sampleTab": "시료 {{n}}",
       "allSamplesRequired": "모든 시료의 항목을 입력하세요",
+      "loadError": "검사항목을 불러오지 못했습니다",
       "reInspect": "NG 재검사",
       "reInspectTitle": "재검사 ({{n}}차)",
       "overallPass": "종합 PASS",

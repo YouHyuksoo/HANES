@@ -5867,6 +5867,7 @@
       "resultCount": "Result #{{count}}",
       "sampleTab": "Sample {{n}}",
       "allSamplesRequired": "Complete all items for every sample",
+      "loadError": "Failed to load inspection items",
       "reInspect": "NG Re-Inspect",
       "reInspectTitle": "Re-inspect ({{n}})",
       "overallPass": "Overall PASS",

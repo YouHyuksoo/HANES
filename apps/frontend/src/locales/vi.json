@@ -5853,6 +5853,7 @@
       "resultCount": "Kết quả thứ {{count}}",
       "sampleTab": "Mẫu {{n}}",
       "allSamplesRequired": "Hoàn thành tất cả hạng mục cho mọi mẫu",
+      "loadError": "Không thể tải hạng mục kiểm tra",
       "reInspect": "Kiểm tra lại NG",
       "reInspectTitle": "Kiểm tra lại (lần {{n}})",
       "overallPass": "Tổng hợp PASS",

@@ -5853,6 +5853,7 @@
       "resultCount": "当前第{{count}}次实绩",
       "sampleTab": "样品 {{n}}",
       "allSamplesRequired": "请完成所有样品的检查项目",
+      "loadError": "无法加载检查项目",
       "reInspect": "NG复检",
       "reInspectTitle": "复检 (第{{n}}次)",
       "overallPass": "综合PASS",

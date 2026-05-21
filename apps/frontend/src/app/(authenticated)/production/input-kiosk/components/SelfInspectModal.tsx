@@ -44,6 +44,7 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
   const [activeTab, setActiveTab] = useState(0);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [reInspectMode, setReInspectMode] = useState(false);
   const [reInspectRound, setReInspectRound] = useState(1);
   const [baseSampleCount, setBaseSampleCount] = useState(1);
@@ -52,7 +53,9 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
 
   useEffect(() => {
     if (!isOpen) return;
+    const controller = new AbortController();
     setLoading(true);
+    setFetchError(false);
     setResults({});
     setActiveTab(0);
     setReInspectMode(false);
@@ -62,6 +65,7 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
         processCode: selectedEquip?.processCode ?? selectedJobOrder?.processCode ?? '',
         timing,
       },
+      signal: controller.signal,
     })
       .then(res => {
         const data: SelfInspectItem[] = (res.data?.data ?? []).map((i: SelfInspectItem) => ({
@@ -78,8 +82,14 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
         }
         setResults(init);
       })
-      .catch(() => setItems([]))
+      .catch((err: unknown) => {
+        if ((err as { name?: string })?.name !== 'CanceledError') {
+          setItems([]);
+          setFetchError(true);
+        }
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [isOpen, timing, selectedEquip, selectedJobOrder]);
 
   const handleResultChange = useCallback((sampleIdx: number, itemId: string, next: SampleItemResult) => {
@@ -241,6 +251,8 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
         {/* 항목 목록 */}
         {loading ? (
           <div className="py-8 text-center text-text-muted text-sm">{t('common.loading')}</div>
+        ) : fetchError ? (
+          <div className="py-8 text-center text-red-600 dark:text-red-400 text-sm">{t('kiosk.selfInspect.loadError')}</div>
         ) : displayItems.length === 0 && !reInspectMode ? (
           <div className="py-8 flex flex-col items-center gap-3 text-text-muted">
             <AlertTriangle className="w-10 h-10 opacity-40" />
