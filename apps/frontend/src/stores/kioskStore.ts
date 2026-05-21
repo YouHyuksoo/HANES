@@ -69,6 +69,8 @@ interface KioskState {
   savedResultCount: number;
   /** 의뢰검사 대기 여부 (true 이면 실적입력 차단) */
   hasPendingDelegate: boolean;
+  /** 중물 자주검사 완료 여부 (진행률 차단 해제용) */
+  midInspectDone: boolean;
 
   setSelectedEquip: (equip: KioskEquip | null) => void;
   setSelectedJobOrder: (jobOrder: JobOrder | null) => void;
@@ -87,6 +89,7 @@ interface KioskState {
   clearPendingDefects: () => void;
   incrementResultCount: () => void;
   setHasPendingDelegate: (value: boolean) => void;
+  setMidInspectDone: (value: boolean) => void;
   clearAll: () => void;
 }
 
@@ -111,6 +114,7 @@ export const useKioskStore = create<KioskState>()(
       pendingDefects: [],
       savedResultCount: 0,
       hasPendingDelegate: false,
+      midInspectDone: false,
 
       setSelectedEquip: (equip) => set({
         selectedEquip: equip,
@@ -123,6 +127,7 @@ export const useKioskStore = create<KioskState>()(
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
+        midInspectDone: false,
       }),
 
       setSelectedJobOrder: (jobOrder) => set({
@@ -135,6 +140,7 @@ export const useKioskStore = create<KioskState>()(
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
+        midInspectDone: false,
       }),
 
       addWorker: (worker) => set((state) => {
@@ -198,6 +204,8 @@ export const useKioskStore = create<KioskState>()(
 
       setHasPendingDelegate: (value) => set({ hasPendingDelegate: value }),
 
+      setMidInspectDone: (value) => set({ midInspectDone: value }),
+
       clearAll: () => set({
         selectedEquip: null,
         selectedJobOrder: null,
@@ -210,6 +218,7 @@ export const useKioskStore = create<KioskState>()(
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
+        midInspectDone: false,
       }),
     }),
     { name: 'harness-kiosk' }
