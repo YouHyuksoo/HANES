@@ -23,6 +23,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { FlaskConical, AlertOctagon } from 'lucide-react';
 import { useKioskStore, isAllInterlockDone, type InspectTiming } from '@/stores/kioskStore';
+import { useComCodeMap } from '@/hooks/useComCode';
 import api from '@/services/api';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
@@ -46,7 +47,7 @@ export default function InputKioskPage() {
   const { t } = useTranslation();
   const {
     selectedEquip, selectedJobOrder, interlock, savedResultCount, hasPendingDelegate,
-    pendingDefects,
+    pendingDefects, midInspectDone,
     addWorker, setSelectedJobOrder, setInterlock, incrementResultCount, setHasPendingDelegate,
   } = useKioskStore();
 
@@ -139,6 +140,16 @@ export default function InputKioskPage() {
 
   const allInterlockDone = isAllInterlockDone(interlock);
 
+  // 중물 알림/차단 임계값 (QC_SELF 공통코드; 없으면 40%/60% fallback)
+  const qcSelfMap = useComCodeMap('QC_SELF');
+  const midNotifyPct = Number(qcSelfMap['QC_MID_NOTIFY_PCT']?.codeDesc ?? 40);
+  const midBlockPct  = Number(qcSelfMap['QC_MID_BLOCK_PCT']?.codeDesc  ?? 60);
+  const progressPct  = selectedJobOrder?.planQty
+    ? (savedResultCount / selectedJobOrder.planQty) * 100
+    : 0;
+  const isMidNotify = progressPct >= midNotifyPct && !midInspectDone;
+  const isMidBlock  = progressPct >= midBlockPct  && !midInspectDone;
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
 
@@ -175,7 +186,9 @@ export default function InputKioskPage() {
               <button
                 onClick={handleOpenSelfInspect}
                 disabled={!allInterlockDone || hasPendingDelegate}
-                className="h-full w-full rounded border border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300 transition-colors group flex flex-col items-center justify-center gap-2"
+                className={`h-full w-full rounded border border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300 transition-colors group flex flex-col items-center justify-center gap-2 ${
+                  isMidNotify ? 'animate-pulse ring-2 ring-blue-400' : ''
+                }`}
               >
                 <FlaskConical className="w-6 h-6 text-blue-600 dark:text-blue-400 group-disabled:text-text-muted" />
                 <span className="text-sm font-semibold group-disabled:text-text-muted whitespace-nowrap">
@@ -203,7 +216,7 @@ export default function InputKioskPage() {
             <div className="min-w-0 overflow-hidden">
               <ProductionInputBar
                 onSaved={handleSaved}
-                interlockDone={allInterlockDone && !hasPendingDelegate}
+                interlockDone={allInterlockDone && !hasPendingDelegate && !isMidBlock}
               />
             </div>
           </div>
@@ -220,6 +233,14 @@ export default function InputKioskPage() {
         <div className="bg-orange-500 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2">
           <span className="animate-pulse">●</span>
           {t('kiosk.selfInspect.delegateBlocking')}
+        </div>
+      )}
+
+      {/* 중물 자주검사 차단 배너 */}
+      {isMidBlock && (
+        <div className="bg-blue-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2">
+          <span className="animate-pulse">●</span>
+          {t('kiosk.selfInspect.midBlock')}
         </div>
       )}
 
