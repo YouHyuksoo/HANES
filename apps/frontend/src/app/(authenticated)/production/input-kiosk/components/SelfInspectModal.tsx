@@ -171,7 +171,6 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
         toast.error(t('kiosk.selfInspect.savedWithFail', { count: failItems.length }), { duration: 5000 });
         if (!reInspectMode) {
           setReInspectMode(true);
-          setReInspectRound(prev => prev + 1);
           setActiveTab(0);
           setResults(prev => ({ ...prev, 0: {} }));
         } else {
