@@ -3729,7 +3729,19 @@
       "overallResult": "Kết quả tổng hợp",
       "searchPlaceholder": "Tìm mã, tên thiết bị...",
       "editTitle": "Sửa kiểm tra hàng ngày",
-      "addTitle": "Đăng ký kiểm tra hàng ngày"
+      "addTitle": "Đăng ký kiểm tra hàng ngày",
+      "pageSubtitle": "Dùng để xử lý hàng loạt thiết bị chưa kiểm tra, bổ sung dữ liệu còn thiếu",
+      "todayTargets": "Đối tượng kiểm tra hôm nay",
+      "sharedNotice": "Chia sẻ dữ liệu với popup màn hình thực tích. Dùng để bổ sung và xử lý hàng loạt.",
+      "noEquipFound": "Không tìm thấy thiết bị phù hợp",
+      "inspectEntry": "Nhập kết quả kiểm tra",
+      "inspectorRequired": "Người kiểm tra (bắt buộc)",
+      "startTime": "Giờ bắt đầu",
+      "selectEquip": "Chọn thiết bị cần kiểm tra từ danh sách bên trái",
+      "noItems": "Chưa đăng ký hạng mục kiểm tra",
+      "savedOk": "Đã lưu kiểm tra hàng ngày (PASS)",
+      "savedNg": "Đã lưu kiểm tra hàng ngày — NG · Yêu cầu bảo trì đã được đăng ký",
+      "saveError": "Lưu kiểm tra hàng ngày thất bại"
     },
     "periodicInspect": {
       "title": "Kiểm tra định kỳ",
@@ -5823,7 +5835,18 @@
       "workerInspectSaved": "Đã lưu kiểm tra thiết bị",
       "workerInspectSaveError": "Lỗi lưu kiểm tra thiết bị",
       "workerQrRequired": "Cần quét QR",
-      "loadItemsError": "Không thể tải hạng mục kiểm tra"
+      "loadItemsError": "Không thể tải hạng mục kiểm tra",
+      "inspectorPlaceholder": "Chọn người kiểm tra...",
+      "itemName": "Hạng mục kiểm tra",
+      "judgeMethod": "Phương pháp",
+      "measureType": "Đo lường",
+      "visualType": "Quan sát",
+      "measureOrJudge": "Giá trị/Đánh giá",
+      "result": "Kết quả",
+      "saveInspectOk": "Lưu (PASS)",
+      "saveInspectNg": "Lưu (NG · Yêu cầu bảo trì)",
+      "ngReasonPlaceholder": "Nhập lý do NG...",
+      "startWork": "Bắt đầu làm việc"
     },
     "workerInspect": {
       "check1": "Nguồn thiết bị và thiết bị an toàn hoạt động bình thường",
@@ -5859,7 +5882,12 @@
       "overallPass": "Tổng hợp PASS",
       "overallFail": "Tổng hợp FAIL — {{count}} hạng mục không đạt",
       "midNotify": "Đến thời điểm kiểm tra giữa lô",
-      "midBlock": "Hoàn thành kiểm tra giữa lô để tiếp tục"
+      "midBlock": "Hoàn thành kiểm tra giữa lô để tiếp tục",
+      "destructiveWarning": "Có hạng mục kiểm tra phá hủy. Vật liệu sẽ bị trừ khi lấy mẫu.",
+      "prevNgSummary": "Kết quả NG SEQ {{n}} trước",
+      "reInspectCount": "Số lượng kiểm tra lại",
+      "nSamples": "{{n}} mẫu",
+      "destructiveDeduct": "Có kiểm tra phá hủy — Sẽ khấu trừ thêm {{n}} bộ vật liệu"
     },
     "defect": {
       "title": "Nhập lỗi",
@@ -5873,5 +5901,25 @@
       "saveHint": "Nhấn Lưu thực tế sẽ lưu các lỗi trên cùng lúc.",
       "confirm": "Xác nhận ({{count}} cái)"
     }
+  },
+  "improvement": {
+    "fabTooltip": "Gửi yêu cầu cải tiến",
+    "modeActive": "Chế độ yêu cầu cải tiến",
+    "selectHint": "Nhấp vào phần tử bạn muốn thay đổi",
+    "exitHint": "Nhấn ESC hoặc nút để thoát",
+    "modalTitle": "Gửi yêu cầu cải tiến",
+    "pageUrl": "Trang",
+    "selectedElement": "Phần tử đã chọn",
+    "screenshot": "Ảnh chụp màn hình",
+    "description": "Nội dung cải tiến",
+    "descriptionPlaceholder": "Mô tả những gì bạn muốn thay đổi",
+    "submit": "Gửi yêu cầu",
+    "submitSuccess": "Yêu cầu cải tiến đã được gửi",
+    "submitError": "Gửi yêu cầu thất bại",
+    "managePage": "Quản lý yêu cầu cải tiến",
+    "statusPending": "Chờ xử lý",
+    "statusInProgress": "Đang xử lý",
+    "statusDone": "Hoàn thành",
+    "noScreenshot": "Không có ảnh chụp"
   }
 }

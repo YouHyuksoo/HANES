@@ -1029,7 +1029,19 @@
       "overallResult": "종합결과",
       "searchPlaceholder": "설비코드, 설비명 검색...",
       "editTitle": "일상점검 수정",
-      "addTitle": "일상점검 등록"
+      "addTitle": "일상점검 등록",
+      "pageSubtitle": "미수행 설비 일괄 확인 · 점검자 일괄 등록 · 사후 보정 입력에 사용합니다",
+      "todayTargets": "금일 점검 대상",
+      "sharedNotice": "작업실적 화면 팝업과 동일한 데이터를 공유합니다. 누락분 보정·일괄 처리에 사용하세요.",
+      "noEquipFound": "해당하는 설비가 없습니다",
+      "inspectEntry": "점검 입력",
+      "inspectorRequired": "점검자 (필수)",
+      "startTime": "시작 시각",
+      "selectEquip": "왼쪽 목록에서 점검할 설비를 선택하세요",
+      "noItems": "등록된 점검항목이 없습니다",
+      "savedOk": "일일점검이 저장되었습니다 (PASS)",
+      "savedNg": "일일점검이 저장되었습니다 — NG · 정비요청이 등록됩니다",
+      "saveError": "일일점검 저장에 실패했습니다"
     },
     "periodicInspect": {
       "title": "정기점검",
@@ -5858,7 +5870,18 @@
       "workerInspectSaved": "작업자점검이 저장되었습니다",
       "workerInspectSaveError": "작업자점검 저장에 실패했습니다",
       "workerQrRequired": "QR 스캔 필요",
-      "loadItemsError": "점검항목을 불러오지 못했습니다"
+      "loadItemsError": "점검항목을 불러오지 못했습니다",
+      "inspectorPlaceholder": "점검자 선택...",
+      "itemName": "점검항목",
+      "judgeMethod": "판정방법",
+      "measureType": "측정형",
+      "visualType": "판정형",
+      "measureOrJudge": "측정값/판정",
+      "result": "결과",
+      "saveInspectOk": "저장 (PASS)",
+      "saveInspectNg": "저장 (NG · 정비요청)",
+      "ngReasonPlaceholder": "NG 사유 입력...",
+      "startWork": "작업 시작"
     },
     "workerInspect": {
       "check1": "설비 전원 및 안전장치 정상 여부",
@@ -5894,7 +5917,12 @@
       "overallPass": "종합 PASS",
       "overallFail": "종합 FAIL — {{count}}개 항목 불합격",
       "midNotify": "중물 자주검사 시점입니다",
-      "midBlock": "중물 자주검사 완료 후 실적입력 가능합니다"
+      "midBlock": "중물 자주검사 완료 후 실적입력 가능합니다",
+      "destructiveWarning": "파괴검사 항목이 포함되어 있습니다. 시료 채취 시 자재가 차감됩니다.",
+      "prevNgSummary": "이전 SEQ {{n}} 결과 (NG)",
+      "reInspectCount": "재검사 수량 선택",
+      "nSamples": "{{n}}개",
+      "destructiveDeduct": "파괴검사 포함 — 자재 {{n}}세트 추가 차감됩니다"
     },
     "defect": {
       "title": "불량입력",
@@ -5908,5 +5936,25 @@
       "saveHint": "실적저장 버튼을 누르면 위 불량이 함께 저장됩니다",
       "confirm": "확인 ({{count}}개)"
     }
+  },
+  "improvement": {
+    "fabTooltip": "개선요청 등록",
+    "modeActive": "개선요청 모드",
+    "selectHint": "변경하고 싶은 요소를 클릭하세요",
+    "exitHint": "ESC 또는 버튼을 눌러 종료",
+    "modalTitle": "개선요청 등록",
+    "pageUrl": "페이지",
+    "selectedElement": "선택한 요소",
+    "screenshot": "스크린샷",
+    "description": "개선 내용",
+    "descriptionPlaceholder": "어떻게 바꾸고 싶으신지 설명해 주세요",
+    "submit": "요청 등록",
+    "submitSuccess": "개선요청이 등록되었습니다",
+    "submitError": "등록 중 오류가 발생했습니다",
+    "managePage": "개선요청 관리",
+    "statusPending": "대기",
+    "statusInProgress": "처리중",
+    "statusDone": "완료",
+    "noScreenshot": "스크린샷 없음"
   }
 }

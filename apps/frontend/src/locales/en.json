@@ -3743,7 +3743,19 @@
       "overallResult": "Overall Result",
       "searchPlaceholder": "Search equip code, name...",
       "editTitle": "Edit Daily Inspection",
-      "addTitle": "Register Daily Inspection"
+      "addTitle": "Register Daily Inspection",
+      "pageSubtitle": "For batch processing, missing entries correction, and inspector assignment",
+      "todayTargets": "Today's Inspection Targets",
+      "sharedNotice": "Shares the same data as the production kiosk popup. Use for corrections and batch processing.",
+      "noEquipFound": "No matching equipment found",
+      "inspectEntry": "Inspection Entry",
+      "inspectorRequired": "Inspector (Required)",
+      "startTime": "Start Time",
+      "selectEquip": "Select equipment from the list on the left",
+      "noItems": "No inspection items registered",
+      "savedOk": "Daily inspection saved (PASS)",
+      "savedNg": "Daily inspection saved — NG · Maintenance request registered",
+      "saveError": "Failed to save daily inspection"
     },
     "periodicInspect": {
       "title": "Periodic Inspection",
@@ -5837,7 +5849,18 @@
       "workerInspectSaved": "Worker inspection saved",
       "workerInspectSaveError": "Failed to save worker inspection",
       "workerQrRequired": "QR Scan Required",
-      "loadItemsError": "Failed to load inspection items"
+      "loadItemsError": "Failed to load inspection items",
+      "inspectorPlaceholder": "Select inspector...",
+      "itemName": "Inspection Item",
+      "judgeMethod": "Method",
+      "measureType": "Measure",
+      "visualType": "Visual",
+      "measureOrJudge": "Value/Judgment",
+      "result": "Result",
+      "saveInspectOk": "Save (PASS)",
+      "saveInspectNg": "Save (NG · Request Maintenance)",
+      "ngReasonPlaceholder": "Enter NG reason...",
+      "startWork": "Start Work"
     },
     "workerInspect": {
       "check1": "Equipment power and safety devices normal",
@@ -5873,7 +5896,12 @@
       "overallPass": "Overall PASS",
       "overallFail": "Overall FAIL — {{count}} items failed",
       "midNotify": "Time for mid-lot inspection",
-      "midBlock": "Complete mid-lot inspection to continue"
+      "midBlock": "Complete mid-lot inspection to continue",
+      "destructiveWarning": "Destructive test items included. Material will be deducted on sampling.",
+      "prevNgSummary": "Previous SEQ {{n}} NG Results",
+      "reInspectCount": "Re-inspect Count",
+      "nSamples": "{{n}} sample(s)",
+      "destructiveDeduct": "Destructive item included — {{n}} material set(s) will be additionally deducted"
     },
     "defect": {
       "title": "Defect Input",
@@ -5887,5 +5915,25 @@
       "saveHint": "Defects above will be saved together when you click Save Result.",
       "confirm": "Confirm ({{count}} ea)"
     }
+  },
+  "improvement": {
+    "fabTooltip": "Submit Improvement Request",
+    "modeActive": "Improvement Request Mode",
+    "selectHint": "Click the element you want to change",
+    "exitHint": "Press ESC or button to exit",
+    "modalTitle": "Submit Improvement Request",
+    "pageUrl": "Page",
+    "selectedElement": "Selected Element",
+    "screenshot": "Screenshot",
+    "description": "Improvement Description",
+    "descriptionPlaceholder": "Describe what you would like to change",
+    "submit": "Submit Request",
+    "submitSuccess": "Improvement request submitted",
+    "submitError": "Failed to submit request",
+    "managePage": "Improvement Requests",
+    "statusPending": "Pending",
+    "statusInProgress": "In Progress",
+    "statusDone": "Done",
+    "noScreenshot": "No Screenshot"
   }
 }

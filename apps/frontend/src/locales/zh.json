@@ -3729,7 +3729,19 @@
       "overallResult": "综合结果",
       "searchPlaceholder": "搜索设备代码、名称...",
       "editTitle": "编辑日常点检",
-      "addTitle": "登记日常点检"
+      "addTitle": "登记日常点检",
+      "pageSubtitle": "用于批量处理未执行设备 · 统一登记点检人 · 事后补录",
+      "todayTargets": "当日点检对象",
+      "sharedNotice": "与生产实绩画面弹窗共享数据，用于漏检补录和批量处理。",
+      "noEquipFound": "无匹配设备",
+      "inspectEntry": "点检录入",
+      "inspectorRequired": "点检人 (必填)",
+      "startTime": "开始时间",
+      "selectEquip": "请从左侧列表选择需要点检的设备",
+      "noItems": "未登记点检项目",
+      "savedOk": "日常点检已保存 (PASS)",
+      "savedNg": "日常点检已保存 — NG · 维修申请已登记",
+      "saveError": "日常点检保存失败"
     },
     "periodicInspect": {
       "title": "定期点检",
@@ -5823,7 +5835,18 @@
       "workerInspectSaved": "作业者设备点检已保存",
       "workerInspectSaveError": "作业者设备点检保存失败",
       "workerQrRequired": "需要QR扫描",
-      "loadItemsError": "无法加载点检项目"
+      "loadItemsError": "无法加载点检项目",
+      "inspectorPlaceholder": "选择检查员...",
+      "itemName": "点检项目",
+      "judgeMethod": "判定方式",
+      "measureType": "测量型",
+      "visualType": "判定型",
+      "measureOrJudge": "测量值/判定",
+      "result": "结果",
+      "saveInspectOk": "保存 (PASS)",
+      "saveInspectNg": "保存 (NG · 申请维修)",
+      "ngReasonPlaceholder": "输入NG原因...",
+      "startWork": "开始作业"
     },
     "workerInspect": {
       "check1": "设备电源及安全装置是否正常",
@@ -5859,7 +5882,12 @@
       "overallPass": "综合PASS",
       "overallFail": "综合FAIL — {{count}}项不合格",
       "midNotify": "到中间自主检查时间",
-      "midBlock": "完成中间检查后可继续投入"
+      "midBlock": "完成中间检查后可继续投入",
+      "destructiveWarning": "包含破坏性检查项目。取样时将扣减材料。",
+      "prevNgSummary": "上次 SEQ {{n}} NG 结果",
+      "reInspectCount": "复检数量",
+      "nSamples": "{{n}} 件",
+      "destructiveDeduct": "含破坏检验 — 将额外扣减 {{n}} 套材料"
     },
     "defect": {
       "title": "不良输入",
@@ -5873,5 +5901,25 @@
       "saveHint": "点击保存实绩时，上述不良将一起保存。",
       "confirm": "确认（{{count}}件）"
     }
+  },
+  "improvement": {
+    "fabTooltip": "提交改善申请",
+    "modeActive": "改善申请模式",
+    "selectHint": "点击您想要更改的元素",
+    "exitHint": "按ESC或按钮退出",
+    "modalTitle": "提交改善申请",
+    "pageUrl": "页面",
+    "selectedElement": "选中的元素",
+    "screenshot": "截图",
+    "description": "改善内容",
+    "descriptionPlaceholder": "请描述您想要的更改内容",
+    "submit": "提交申请",
+    "submitSuccess": "改善申请已提交",
+    "submitError": "提交失败",
+    "managePage": "改善申请管理",
+    "statusPending": "待处理",
+    "statusInProgress": "处理中",
+    "statusDone": "已完成",
+    "noScreenshot": "无截图"
   }
 }
