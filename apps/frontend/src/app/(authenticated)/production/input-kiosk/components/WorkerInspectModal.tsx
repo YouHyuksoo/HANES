@@ -2,27 +2,30 @@
 
 /**
  * @file components/WorkerInspectModal.tsx
- * @description 작업자 설비 자가점검 확인 모달
+ * @description 작업자 설비 자가점검 모달
  *
  * 초보자 가이드:
- * - 작업지시 변경 시 작업자가 설비 상태를 직접 확인하는 체크리스트
- * - 현재는 기본 체크 항목을 표시하고 작업자가 OK 체크 후 서명(이름) 확인
- * - 향후 백엔드 작업자점검 API 연동 예정
+ * - 항목: GET /master/equip-inspect-items?inspectType=WORKER (API 연동)
+ * - QR 스캔: workerQrCode 매칭 → 해당 항목 OK/NG 활성화
+ * - 종합 판정: NG 있으면 작업 시작 차단
+ * - 저장: POST /equipment/daily-inspect (inspectType=WORKER)
  */
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, XCircle, User, Wrench } from 'lucide-react';
-import { Modal, Button } from '@/components/ui';
-import { useKioskStore } from '@/stores/kioskStore';
 import toast from 'react-hot-toast';
+import { CheckCircle2, XCircle, QrCode, Wrench, User } from 'lucide-react';
+import { Modal, Button } from '@/components/ui';
+import api from '@/services/api';
+import { useKioskStore } from '@/stores/kioskStore';
 
-const DEFAULT_CHECK_ITEMS = [
-  'workerInspect.check1',
-  'workerInspect.check2',
-  'workerInspect.check3',
-  'workerInspect.check4',
-  'workerInspect.check5',
-];
+interface WorkerInspectItem {
+  seq: number;
+  itemName: string;
+  criteria?: string | null;
+  workerQrCode?: string | null;
+}
+
+type ItemResult = 'OK' | 'NG' | '';
 
 interface WorkerInspectModalProps {
   isOpen: boolean;
@@ -33,29 +36,95 @@ interface WorkerInspectModalProps {
 export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerInspectModalProps) {
   const { t } = useTranslation();
   const { selectedEquip, selectedJobOrder, selectedWorkers, setInterlock } = useKioskStore();
-  const [checks, setChecks] = useState<Record<string, boolean>>({});
+  const [items, setItems] = useState<WorkerInspectItem[]>([]);
+  const [results, setResults] = useState<Record<number, ItemResult>>({});
+  const [qrInput, setQrInput] = useState('');
+  const [activeSeq, setActiveSeq] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const qrRef = useRef<HTMLInputElement>(null);
 
-  const allChecked = DEFAULT_CHECK_ITEMS.every(key => checks[key]);
+  useEffect(() => {
+    if (!isOpen || !selectedEquip) return;
+    setLoading(true);
+    setResults({});
+    setQrInput('');
+    setActiveSeq(null);
+    api.get('/master/equip-inspect-items', {
+      params: { equipCode: selectedEquip.equipCode, inspectType: 'WORKER', limit: '100' },
+    }).then(res => {
+      const data: WorkerInspectItem[] = res.data?.data ?? [];
+      setItems(data);
+      const init: Record<number, ItemResult> = {};
+      data.forEach(i => { init[i.seq] = ''; });
+      setResults(init);
+    }).catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, [isOpen, selectedEquip]);
 
-  const handleToggle = useCallback((key: string) => {
-    setChecks(prev => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    if (isOpen) setTimeout(() => qrRef.current?.focus(), 100);
+  }, [isOpen]);
+
+  const handleQrScan = useCallback((code: string) => {
+    const matched = items.find(i => i.workerQrCode && i.workerQrCode === code.trim());
+    if (!matched) {
+      toast.error(t('kiosk.prep.workerQrNotFound', { code }));
+      setQrInput('');
+      return;
+    }
+    setActiveSeq(matched.seq);
+    setQrInput('');
+  }, [items, t]);
+
+  const handleQrKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && qrInput.trim()) {
+      handleQrScan(qrInput);
+    }
+  }, [qrInput, handleQrScan]);
+
+  const handleResult = useCallback((seq: number, val: 'OK' | 'NG') => {
+    setResults(prev => ({ ...prev, [seq]: val }));
+    setActiveSeq(null);
+    setTimeout(() => qrRef.current?.focus(), 50);
   }, []);
 
-  const handleConfirm = useCallback(() => {
-    setInterlock('workerInspectDone', true);
-    toast.success(t('kiosk.prep.workerInspectDone'));
-    onDone();
-  }, [setInterlock, onDone, t]);
+  const okCount = items.filter(i => results[i.seq] === 'OK').length;
+  const ngCount = items.filter(i => results[i.seq] === 'NG').length;
+  const pendingCount = items.filter(i => results[i.seq] === '').length;
+  const allAnswered = items.length > 0 && pendingCount === 0;
+  const anyNg = ngCount > 0;
+
+  const handleSave = useCallback(async () => {
+    if (!selectedEquip || !allAnswered) return;
+    setSaving(true);
+    try {
+      const details: Record<string, string> = {};
+      items.forEach(i => { details[`${i.seq}_${i.itemName}`] = results[i.seq]; });
+      await api.post('/equipment/daily-inspect', {
+        equipCode: selectedEquip.equipCode,
+        inspectDate: new Date().toISOString().split('T')[0],
+        inspectorName: selectedWorkers[0]?.workerName ?? '',
+        inspectType: 'WORKER',
+        overallResult: anyNg ? 'FAIL' : 'PASS',
+        details,
+      });
+      setInterlock('workerInspectDone', !anyNg);
+      toast.success(t('kiosk.prep.workerInspectSaved'));
+      if (!anyNg) onDone();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? t('kiosk.prep.workerInspectSaveError');
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  }, [selectedEquip, allAnswered, items, results, selectedWorkers, anyNg, setInterlock, onDone, t]);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={t('kiosk.prep.workerInspectTitle')}
-      size="md"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.workerInspectTitle')} size="lg">
       <div className="space-y-4">
-        {/* 설비 + 작업지시 정보 */}
+        {/* 설비 + 작업지시 + 작업자 */}
         <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm space-y-1">
           <div className="flex items-center gap-2">
             <Wrench className="w-4 h-4 text-primary" />
@@ -63,51 +132,119 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
             <span className="text-text-muted text-xs">({selectedEquip?.equipCode})</span>
           </div>
           {selectedJobOrder && (
-            <div className="flex items-center gap-2 pl-6">
-              <span className="text-text-muted">{t('kiosk.prep.jobOrder')}:</span>
-              <span className="font-mono text-primary text-xs">{selectedJobOrder.orderNo}</span>
+            <div className="flex items-center gap-2 pl-6 text-xs text-text-muted">
+              {t('kiosk.prep.jobOrder')}: <span className="font-mono text-primary">{selectedJobOrder.orderNo}</span>
+            </div>
+          )}
+          {selectedWorkers.length > 0 && (
+            <div className="flex items-center gap-2 pl-6 text-xs">
+              <User className="w-3.5 h-3.5 text-primary" />
+              <span className="text-text-muted">{t('kiosk.prep.inspector')}:</span>
+              <span className="font-medium">{selectedWorkers.map(w => w.workerName).join(', ')}</span>
             </div>
           )}
         </div>
 
-        {/* 작업자 정보 */}
-        {selectedWorkers.length > 0 && (
-          <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border text-sm">
-            <User className="w-4 h-4 text-primary" />
-            <span className="text-text-muted">{t('kiosk.prep.inspector')}:</span>
-            <span className="font-medium">{selectedWorkers.map(w => w.workerName).join(', ')}</span>
+        {/* QR 스캐너 입력 */}
+        {items.some(i => i.workerQrCode) && (
+          <div className="flex items-center gap-2 p-2 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50/40 dark:bg-blue-900/10">
+            <QrCode className="w-4 h-4 text-blue-500 shrink-0" />
+            <input
+              ref={qrRef}
+              type="text"
+              value={qrInput}
+              onChange={e => setQrInput(e.target.value)}
+              onKeyDown={handleQrKeyDown}
+              placeholder={t('kiosk.prep.workerQrPlaceholder')}
+              className="flex-1 text-sm bg-transparent focus:outline-none"
+            />
           </div>
         )}
 
-        {/* 체크 항목 */}
-        <p className="text-xs text-text-muted">{t('kiosk.prep.workerInspectDesc')}</p>
-        <div className="space-y-2">
-          {DEFAULT_CHECK_ITEMS.map(key => (
-            <button
-              key={key}
-              onClick={() => handleToggle(key)}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${
-                checks[key]
-                  ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                  : 'bg-surface border-border hover:bg-surface/80'
-              }`}
-            >
-              {checks[key]
-                ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                : <XCircle className="w-5 h-5 text-text-muted opacity-40 shrink-0" />}
-              <span className={`text-sm ${checks[key] ? 'text-green-700 dark:text-green-300 font-medium' : 'text-text'}`}>
-                {t(key)}
-              </span>
-            </button>
-          ))}
-        </div>
+        {/* 진행 현황 */}
+        {items.length > 0 && (
+          <p className="text-xs text-text-muted text-right">
+            {t('kiosk.prep.workerInspectProgress', { ok: okCount, ng: ngCount, pending: pendingCount })}
+          </p>
+        )}
 
-        {/* 버튼 */}
+        {/* 종합 판정 배너 */}
+        {allAnswered && (
+          <div className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium ${
+            anyNg
+              ? 'animate-pulse bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+              : 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
+          }`}>
+            {anyNg
+              ? <><XCircle className="w-4 h-4" /> {t('kiosk.prep.failWarning')}</>
+              : <><CheckCircle2 className="w-4 h-4" /> {t('kiosk.selfInspect.overallPass')}</>
+            }
+          </div>
+        )}
+
+        {/* 항목 목록 */}
+        {loading ? (
+          <div className="py-6 text-center text-text-muted text-sm">{t('common.loading')}</div>
+        ) : (
+          <div className="max-h-[40vh] overflow-y-auto space-y-2">
+            {items.map(item => {
+              const r = results[item.seq];
+              const isActive = activeSeq === item.seq;
+              return (
+                <div key={item.seq}
+                  className={`p-3 border rounded-lg transition-colors ${
+                    r === 'OK' ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800'
+                    : r === 'NG' ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'
+                    : isActive ? 'border-blue-400 bg-blue-50/40 dark:bg-blue-900/10'
+                    : 'border-border'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                      {item.seq}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text">{item.itemName}</p>
+                      {item.criteria && (
+                        <p className="text-xs text-text-muted">{item.criteria}</p>
+                      )}
+                    </div>
+                    {(isActive || !item.workerQrCode) ? (
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => handleResult(item.seq, 'OK')}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                            r === 'OK'
+                              ? 'bg-green-500 text-white border-green-500'
+                              : 'border-border text-text-muted hover:bg-green-50 hover:border-green-400 hover:text-green-700'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-4 h-4" /> OK
+                        </button>
+                        <button onClick={() => handleResult(item.seq, 'NG')}
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                            r === 'NG'
+                              ? 'bg-red-500 text-white border-red-500'
+                              : 'border-border text-text-muted hover:bg-red-50 hover:border-red-400 hover:text-red-700'
+                          }`}
+                        >
+                          <XCircle className="w-4 h-4" /> NG
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-text-muted">QR 스캔 필요</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex justify-end gap-2 pt-2 border-t border-border">
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button onClick={handleConfirm} disabled={!allChecked}>
+          <Button onClick={handleSave} disabled={!allAnswered || saving}>
             <CheckCircle2 className="w-4 h-4 mr-1" />
-            {t('kiosk.prep.confirmInspect')}
+            {saving ? t('common.saving') : t('kiosk.prep.confirmInspect')}
           </Button>
         </div>
       </div>
