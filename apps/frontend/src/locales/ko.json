@@ -314,7 +314,8 @@
     "system.training": "교육훈련",
     "system.menuCategory": "메뉴 카테고리 관리",
     "root": "최상위",
-    "system.screenRequirements": "화면 요구사항 수집"
+    "system.screenRequirements": "화면 요구사항 수집",
+    "system.improvementRequests": "개선요청 관리"
   },
   "header": {
     "theme": "테마",

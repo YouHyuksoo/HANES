@@ -313,7 +313,8 @@
     "system.training": "Quản lý đào tạo",
     "system.menuCategory": "Quản lý danh mục menu",
     "root": "Cấp cao nhất",
-    "system.screenRequirements": "Thu thập yêu cầu màn hình"
+    "system.screenRequirements": "Thu thập yêu cầu màn hình",
+    "system.improvementRequests": "Quản lý yêu cầu cải tiến"
   },
   "header": {
     "theme": "Giao diện",

@@ -313,7 +313,8 @@
     "system.training": "Training",
     "system.menuCategory": "Menu Category Management",
     "root": "Root",
-    "system.screenRequirements": "Screen Requirements"
+    "system.screenRequirements": "Screen Requirements",
+    "system.improvementRequests": "Improvement Requests"
   },
   "header": {
     "theme": "Theme",

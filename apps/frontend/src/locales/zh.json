@@ -313,7 +313,8 @@
     "system.training": "培训管理",
     "system.menuCategory": "菜单类别管理",
     "root": "顶级",
-    "system.screenRequirements": "界面需求收集"
+    "system.screenRequirements": "界面需求收集",
+    "system.improvementRequests": "改善申请管理"
   },
   "header": {
     "theme": "主题",

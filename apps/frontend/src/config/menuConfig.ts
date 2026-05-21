@@ -309,6 +309,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "SYS_SCHEDULER", labelKey: "scheduler.title", path: "/system/scheduler" },
       { code: "SYS_MENU_CATEGORY", labelKey: "menu.system.menuCategory", path: "/system/menu-categories" },
       { code: "SYS_SCREEN_REQ", labelKey: "menu.system.screenRequirements", path: "/system/screen-requirements" },
+      { code: "SYS_IMPR_REQ", labelKey: "menu.system.improvementRequests", path: "/system/improvement-requests" },
     ],
   },
 ];
