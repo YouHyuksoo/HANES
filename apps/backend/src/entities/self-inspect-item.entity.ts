@@ -47,6 +47,23 @@ export class SelfInspectItem {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
+  /** MEASURE(측정형) | VISUAL(판정형) */
+  @Column({ name: 'ITEM_TYPE', length: 20, default: 'VISUAL' })
+  itemType: string;
+
+  @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
+  unit: string | null;
+
+  @Column({ name: 'LSL_VALUE', type: 'number', nullable: true })
+  lslValue: number | null;
+
+  @Column({ name: 'USL_VALUE', type: 'number', nullable: true })
+  uslValue: number | null;
+
+  /** 초물 시료 수 (FIRST 시점에만 적용, MID/LAST는 항상 1) */
+  @Column({ name: 'SAMPLE_COUNT', type: 'number', default: 1 })
+  sampleCount: number;
+
   @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
   company: string | null;
 
