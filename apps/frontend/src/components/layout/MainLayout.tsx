@@ -18,6 +18,7 @@ import TabBar from "./TabBar";
 import KeepAlive from "./KeepAlive";
 import ConnectionCheckOverlay from "@/app/login/components/ConnectionCheckOverlay";
 import { api } from "@/services/api";
+import ImprovementFAB from "@/components/improvement/ImprovementFAB";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -101,6 +102,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </main>
         </>
       )}
+
+      <ImprovementFAB />
     </div>
   );
 }
