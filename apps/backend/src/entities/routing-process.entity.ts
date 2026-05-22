@@ -50,6 +50,18 @@ export class RoutingProcess {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
+  @Column({ type: 'varchar2', name: 'QC_SELF_YN', length: 1, default: 'N', nullable: true })
+  qcSelfYn: string | null;
+
+  @Column({ type: 'varchar2', name: 'INSPECT_METHOD', length: 20, default: 'DIRECT', nullable: true })
+  inspectMethod: string | null;
+
+  @Column({ type: 'varchar2', name: 'DESTRUCTIVE_YN', length: 1, default: 'N', nullable: true })
+  destructiveYn: string | null;
+
+  @Column({ name: 'SAMPLE_QTY', type: 'number', default: 1, nullable: true })
+  sampleQty: number | null;
+
   @Column({ name: 'COMPANY', length: 50 })
   company: string;
 

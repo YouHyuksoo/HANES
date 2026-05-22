@@ -145,6 +145,10 @@ export class RoutingGroupService {
     const proc = this.processRepo.create({
       ...dto,
       useYn: dto.useYn ?? 'Y',
+      qcSelfYn: dto.qcSelfYn ?? 'N',
+      inspectMethod: dto.inspectMethod ?? 'DIRECT',
+      destructiveYn: dto.destructiveYn ?? 'N',
+      sampleQty: dto.sampleQty ?? 1,
       company,
       plant,
     });

@@ -92,6 +92,30 @@ export class CreateRoutingProcessDto {
   @IsOptional() @IsString() @IsIn(['Y', 'N'])
   sampleInspectYn?: string;
 
+  @ApiPropertyOptional({ description: '자주검사 여부', default: 'N' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  qcSelfYn?: string;
+
+  @ApiPropertyOptional({ description: '기본 검사방법 (DIRECT/DELEGATE)', default: 'DIRECT' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['DIRECT', 'DELEGATE'])
+  inspectMethod?: string;
+
+  @ApiPropertyOptional({ description: '파괴검사 여부', default: 'N' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  destructiveYn?: string;
+
+  @ApiPropertyOptional({ description: '기본 샘플 수량', default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  sampleQty?: number;
+
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional() @IsString() @IsIn(['Y', 'N'])
   useYn?: string;
