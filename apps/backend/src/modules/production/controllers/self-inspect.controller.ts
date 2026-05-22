@@ -12,8 +12,8 @@
  * - GET  /production/self-inspect/delegates  : 의뢰검사 대기 목록 (관리 화면용)
  */
 import {
-  Body, Controller, Get, HttpCode, HttpStatus,
-  Param, Patch, Post, Query, UseGuards,
+  Body, Controller, Delete, Get, HttpCode, HttpStatus,
+  Param, Patch, Post, Put, Query, UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -85,9 +85,9 @@ export class SelfInspectController {
   @ApiOperation({ summary: '의뢰검사 상태 업데이트 (관리 화면용)' })
   async updateStatus(
     @Param('id') id: string,
-    @Body() body: { status: string; remark?: string },
+    @Body() body: { status: string; remark?: string; measureValue?: number },
   ) {
-    const data = await this.svc.updateResultStatus(id, body.status, body.remark);
+    const data = await this.svc.updateResultStatus(id, body.status, body.remark, body.measureValue);
     return ResponseUtil.success(data, `상태가 ${body.status}로 변경되었습니다`);
   }
 
@@ -99,5 +99,106 @@ export class SelfInspectController {
   ) {
     const data = await this.svc.findPendingDelegates(company, plant);
     return ResponseUtil.success(data);
+  }
+
+  @Get('items/all')
+  @ApiOperation({ summary: '자주검사 항목 전체 조회 (관리용, timing 무관)' })
+  @ApiQuery({ name: 'processCode', required: true })
+  async findAllItems(
+    @Query('processCode') processCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.svc.findAllItems(processCode, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Post('items')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '자주검사 항목 생성' })
+  async createItem(
+    @Body() dto: {
+      processCode: string;
+      itemName: string;
+      standard?: string | null;
+      inspectMethod?: string;
+      timing?: string;
+      isDestructive?: boolean;
+      sortOrder?: number;
+      useYn?: string;
+      itemType?: string;
+      unit?: string | null;
+      lslValue?: number | null;
+      uslValue?: number | null;
+      sampleCount?: number;
+    },
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.svc.createItem(dto, company, plant);
+    return ResponseUtil.success(data, '자주검사 항목이 생성되었습니다');
+  }
+
+  @Put('items/:id')
+  @ApiOperation({ summary: '자주검사 항목 수정' })
+  async updateItem(
+    @Param('id') id: string,
+    @Body() dto: {
+      itemName?: string;
+      standard?: string | null;
+      inspectMethod?: string;
+      timing?: string;
+      isDestructive?: boolean;
+      sortOrder?: number;
+      useYn?: string;
+      itemType?: string;
+      unit?: string | null;
+      lslValue?: number | null;
+      uslValue?: number | null;
+      sampleCount?: number;
+    },
+  ) {
+    const data = await this.svc.updateItem(id, dto);
+    return ResponseUtil.success(data, '자주검사 항목이 수정되었습니다');
+  }
+
+  @Delete('items/:id')
+  @ApiOperation({ summary: '자주검사 항목 삭제' })
+  async deleteItem(@Param('id') id: string) {
+    const data = await this.svc.deleteItem(id);
+    return ResponseUtil.success(data, '자주검사 항목이 삭제되었습니다');
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: '자주검사 이력 목록 조회' })
+  @ApiQuery({ name: 'dateFrom', required: false })
+  @ApiQuery({ name: 'dateTo', required: false })
+  @ApiQuery({ name: 'orderNo', required: false })
+  @ApiQuery({ name: 'processCode', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async findHistory(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('orderNo') orderNo?: string,
+    @Query('processCode') processCode?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const result = await this.svc.findHistory(
+      {
+        dateFrom,
+        dateTo,
+        orderNo,
+        processCode,
+        page: page ? parseInt(page, 10) : 1,
+        limit: limit ? parseInt(limit, 10) : 30,
+      },
+      company ?? '',
+      plant ?? '',
+    );
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 }

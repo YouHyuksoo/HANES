@@ -72,11 +72,12 @@ export class SelfInspectService {
   }
 
   /** 의뢰검사 상태 업데이트 (별도 의뢰검사 관리 화면에서 사용) */
-  async updateResultStatus(id: string, status: string, remark?: string) {
+  async updateResultStatus(id: string, status: string, remark?: string, measureValue?: number) {
     const result = await this.resultRepo.findOne({ where: { id } });
     if (!result) throw new NotFoundException(`SelfInspectResult ${id} not found`);
     result.status = status;
-    if (remark) result.remark = remark;
+    if (remark !== undefined) result.remark = remark;
+    if (measureValue !== undefined) result.measureValue = measureValue;
     if (status !== 'PENDING') result.inspectedAt = new Date();
     return this.resultRepo.save(result);
   }
@@ -103,5 +104,105 @@ export class SelfInspectService {
       where: { inspectMethod: 'DELEGATE', status: 'PENDING', company, plant },
       order: { createdAt: 'ASC' },
     });
+  }
+
+  /** 자주검사 항목 전체 조회 (관리 화면용 — timing 필터 없음) */
+  async findAllItems(processCode: string, company?: string, plant?: string) {
+    const qb = this.itemRepo.createQueryBuilder('i')
+      .where('i.processCode = :pc', { pc: processCode })
+      .orderBy('i.sortOrder', 'ASC')
+      .addOrderBy('i.createdAt', 'ASC');
+    if (company) qb.andWhere('(i.company = :company OR i.company IS NULL)', { company });
+    if (plant) qb.andWhere('(i.plant = :plant OR i.plant IS NULL)', { plant });
+    return qb.getMany();
+  }
+
+  /** 자주검사 항목 생성 */
+  async createItem(dto: {
+    processCode: string;
+    itemName: string;
+    standard?: string | null;
+    inspectMethod?: string;
+    timing?: string;
+    isDestructive?: boolean;
+    sortOrder?: number;
+    useYn?: string;
+    itemType?: string;
+    unit?: string | null;
+    lslValue?: number | null;
+    uslValue?: number | null;
+    sampleCount?: number;
+  }, company: string, plant: string) {
+    const item = this.itemRepo.create({
+      ...dto,
+      inspectMethod: dto.inspectMethod ?? 'DIRECT',
+      timing: dto.timing ?? 'MID',
+      isDestructive: dto.isDestructive ?? false,
+      sortOrder: dto.sortOrder ?? 0,
+      useYn: dto.useYn ?? 'Y',
+      itemType: dto.itemType ?? 'VISUAL',
+      sampleCount: dto.sampleCount ?? 1,
+      company,
+      plant,
+    });
+    return this.itemRepo.save(item);
+  }
+
+  /** 자주검사 항목 수정 */
+  async updateItem(id: string, dto: {
+    itemName?: string;
+    standard?: string | null;
+    inspectMethod?: string;
+    timing?: string;
+    isDestructive?: boolean;
+    sortOrder?: number;
+    useYn?: string;
+    itemType?: string;
+    unit?: string | null;
+    lslValue?: number | null;
+    uslValue?: number | null;
+    sampleCount?: number;
+  }) {
+    const item = await this.itemRepo.findOne({ where: { id } });
+    if (!item) throw new NotFoundException(`SelfInspectItem ${id} not found`);
+    Object.assign(item, dto);
+    return this.itemRepo.save(item);
+  }
+
+  /** 자주검사 항목 삭제 */
+  async deleteItem(id: string) {
+    const item = await this.itemRepo.findOne({ where: { id } });
+    if (!item) throw new NotFoundException(`SelfInspectItem ${id} not found`);
+    await this.itemRepo.remove(item);
+    return { id };
+  }
+
+  /** 자주검사 이력 목록 조회 (페이지네이션) */
+  async findHistory(query: {
+    dateFrom?: string;
+    dateTo?: string;
+    orderNo?: string;
+    processCode?: string;
+    page?: number;
+    limit?: number;
+  }, company: string, plant: string) {
+    const { dateFrom, dateTo, orderNo, processCode, page = 1, limit = 30 } = query;
+    const skip = (page - 1) * limit;
+
+    const qb = this.resultRepo.createQueryBuilder('r')
+      .where('r.company = :company AND r.plant = :plant', { company, plant })
+      .orderBy('r.createdAt', 'DESC');
+
+    if (orderNo) qb.andWhere('r.orderNo LIKE :ono', { ono: `%${orderNo}%` });
+    if (processCode) qb.andWhere('r.processCode = :pc', { pc: processCode });
+    if (dateFrom) qb.andWhere('r.createdAt >= :df', { df: new Date(dateFrom) });
+    if (dateTo) {
+      const dt = new Date(dateTo);
+      dt.setDate(dt.getDate() + 1);
+      qb.andWhere('r.createdAt < :dt', { dt });
+    }
+
+    const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    return { data, total, page, limit };
   }
 }
