@@ -254,6 +254,8 @@
     "quality.controlPlan": "Kế hoạch kiểm soát",
     "quality.msa": "Quản lý hiệu chuẩn dụng cụ đo",
     "quality.audit": "Đánh giá nội bộ",
+    "quality.requestInspect": "Nhập kiểm tra uỷ thác",
+    "quality.selfInspectHistory": "Lịch sử tự kiểm",
     "equipment": "Quản lý thiết bị",
     "equipment.master": "Quản lý dữ liệu chính thiết bị",
     "equipment.inspectItemMaster": "Danh mục hạng mục kiểm tra",
@@ -1108,7 +1110,8 @@
       "issueMethod": "Phương thức xuất",
       "backflush": "Backflush",
       "preIssue": "Xuất trước",
-      "noBomMaterial": "Không có vật tư BOM được đăng ký cho mặt hàng định tuyến này."
+      "noBomMaterial": "Không có vật tư BOM được đăng ký cho mặt hàng định tuyến này.",
+      "selfInspectEditorTitle": "Cài đặt tự kiểm"
     },
     "workCalendar": {
       "title": "Quản lý lịch sản xuất",
@@ -5888,7 +5891,11 @@
       "prevNgSummary": "Kết quả NG SEQ {{n}} trước",
       "reInspectCount": "Số lượng kiểm tra lại",
       "nSamples": "{{n}} mẫu",
-      "destructiveDeduct": "Có kiểm tra phá hủy — Sẽ khấu trừ thêm {{n}} bộ vật liệu"
+      "destructiveDeduct": "Có kiểm tra phá hủy — Sẽ khấu trừ thêm {{n}} bộ vật liệu",
+      "addItem": "Thêm mục",
+      "itemName": "Tên mục kiểm tra",
+      "itemNameRequired": "Vui lòng nhập tên mục",
+      "standard": "Tiêu chuẩn (tuỳ chọn)"
     },
     "defect": {
       "title": "Nhập lỗi",
@@ -5902,6 +5909,37 @@
       "saveHint": "Nhấn Lưu thực tế sẽ lưu các lỗi trên cùng lúc.",
       "confirm": "Xác nhận ({{count}} cái)"
     }
+  },
+  "requestInspect": {
+    "title": "Nhập kiểm tra uỷ thác",
+    "subtitle": "Nhập kết quả cho các mục kiểm tra uỷ thác đang chờ",
+    "orderNo": "Lệnh sản xuất",
+    "processCode": "Công đoạn",
+    "itemName": "Tên mục",
+    "timing": "Thời điểm",
+    "requestedAt": "Thời gian yêu cầu",
+    "pendingList": "Danh sách chờ kiểm tra uỷ thác",
+    "selectHint": "Chọn mục từ bên trái",
+    "measureValue": "Giá trị đo",
+    "measureValuePlaceholder": "Nhập giá trị đo (tuỳ chọn)",
+    "remark": "Ghi chú",
+    "remarkPlaceholder": "Nhập ghi chú đặc biệt (tuỳ chọn)",
+    "pass": "Đạt (PASS)",
+    "fail": "Không đạt (FAIL)",
+    "passSuccess": "Đã xử lý đạt",
+    "failSuccess": "Đã xử lý không đạt"
+  },
+  "selfInspectHistory": {
+    "title": "Lịch sử tự kiểm",
+    "subtitle": "Xem lịch sử kết quả tự kiểm",
+    "orderNo": "Lệnh sản xuất",
+    "processCode": "Công đoạn",
+    "itemName": "Tên mục",
+    "timing": "Thời điểm",
+    "status": "Kết quả",
+    "createdAt": "Thời gian đăng ký",
+    "resultList": "Lịch sử kiểm tra",
+    "selectHint": "Chọn lịch sử từ bên trái"
   },
   "improvement": {
     "fabTooltip": "Gửi yêu cầu cải tiến",

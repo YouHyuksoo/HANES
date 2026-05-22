@@ -180,6 +180,8 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "QC_DEFECT", labelKey: "menu.quality.defect", path: "/quality/defect" },
       { code: "QC_REWORK_INSPECT", labelKey: "menu.quality.reworkInspect", path: "/quality/rework-inspect" },
       { code: "QC_INSPECT", labelKey: "menu.quality.inspect", path: "/quality/inspect" },
+      { code: "QC_REQUEST_INSPECT", labelKey: "menu.quality.requestInspect", path: "/quality/request-inspect" },
+      { code: "QC_SELF_INSPECT_HISTORY", labelKey: "menu.quality.selfInspectHistory", path: "/quality/self-inspect-history" },
       { code: "QC_SAMPLE_INSPECT", labelKey: "menu.production.sampleInspect", path: "/production/sample-inspect" },
       { code: "QC_OQC", labelKey: "menu.quality.oqc", path: "/quality/oqc" },
       { code: "QC_OQC_HISTORY", labelKey: "menu.quality.oqcHistory", path: "/quality/oqc-history" },

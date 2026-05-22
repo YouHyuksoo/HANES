@@ -254,6 +254,8 @@
     "quality.controlPlan": "Control Plan",
     "quality.msa": "Gauge Calibration (MSA)",
     "quality.audit": "Internal Audit",
+    "quality.requestInspect": "Request Inspection",
+    "quality.selfInspectHistory": "Self-Inspect History",
     "equipment": "Equipment",
     "equipment.master": "Equipment Master Mgmt",
     "equipment.inspectItemMaster": "Inspect Item Master",
@@ -1122,7 +1124,8 @@
       "issueMethod": "Issue Method",
       "backflush": "Backflush",
       "preIssue": "Pre-Issue",
-      "noBomMaterial": "No BOM materials are registered for this routing item."
+      "noBomMaterial": "No BOM materials are registered for this routing item.",
+      "selfInspectEditorTitle": "Self-Inspect Config"
     },
     "workCalendar": {
       "title": "Work Calendar",
@@ -5902,7 +5905,11 @@
       "prevNgSummary": "Previous SEQ {{n}} NG Results",
       "reInspectCount": "Re-inspect Count",
       "nSamples": "{{n}} sample(s)",
-      "destructiveDeduct": "Destructive item included — {{n}} material set(s) will be additionally deducted"
+      "destructiveDeduct": "Destructive item included — {{n}} material set(s) will be additionally deducted",
+      "addItem": "Add Item",
+      "itemName": "Item Name",
+      "itemNameRequired": "Item name is required",
+      "standard": "Standard/Spec (Optional)"
     },
     "defect": {
       "title": "Defect Input",
@@ -5916,6 +5923,37 @@
       "saveHint": "Defects above will be saved together when you click Save Result.",
       "confirm": "Confirm ({{count}} ea)"
     }
+  },
+  "requestInspect": {
+    "title": "Request Inspection",
+    "subtitle": "Enter results for pending request inspection items",
+    "orderNo": "Work Order",
+    "processCode": "Process",
+    "itemName": "Item Name",
+    "timing": "Timing",
+    "requestedAt": "Requested At",
+    "pendingList": "Pending Request Inspections",
+    "selectHint": "Select an item from the left",
+    "measureValue": "Measured Value",
+    "measureValuePlaceholder": "Enter measured value (optional)",
+    "remark": "Remark",
+    "remarkPlaceholder": "Enter special notes (optional)",
+    "pass": "Pass (PASS)",
+    "fail": "Fail (FAIL)",
+    "passSuccess": "Marked as passed",
+    "failSuccess": "Marked as failed"
+  },
+  "selfInspectHistory": {
+    "title": "Self-Inspect History",
+    "subtitle": "View self-inspection result history",
+    "orderNo": "Work Order",
+    "processCode": "Process",
+    "itemName": "Item Name",
+    "timing": "Timing",
+    "status": "Result",
+    "createdAt": "Registered At",
+    "resultList": "Inspection History",
+    "selectHint": "Select a record from the left"
   },
   "improvement": {
     "fabTooltip": "Submit Improvement Request",

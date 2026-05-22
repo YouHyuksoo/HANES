@@ -254,6 +254,8 @@
     "quality.controlPlan": "控制计划",
     "quality.msa": "量具校准管理",
     "quality.audit": "内部审核",
+    "quality.requestInspect": "委托检查录入",
+    "quality.selfInspectHistory": "自检历史",
     "equipment": "设备管理",
     "equipment.master": "设备主数据管理",
     "equipment.inspectItemMaster": "检查项目主数据",
@@ -1108,7 +1110,8 @@
       "issueMethod": "发料方式",
       "backflush": "倒冲",
       "preIssue": "预发料",
-      "noBomMaterial": "此工艺路线物料没有注册的 BOM 物料。"
+      "noBomMaterial": "此工艺路线物料没有注册的 BOM 物料。",
+      "selfInspectEditorTitle": "自检设置"
     },
     "workCalendar": {
       "title": "生产月历管理",
@@ -5888,7 +5891,11 @@
       "prevNgSummary": "上次 SEQ {{n}} NG 结果",
       "reInspectCount": "复检数量",
       "nSamples": "{{n}} 件",
-      "destructiveDeduct": "含破坏检验 — 将额外扣减 {{n}} 套材料"
+      "destructiveDeduct": "含破坏检验 — 将额外扣减 {{n}} 套材料",
+      "addItem": "添加项目",
+      "itemName": "检查项目名",
+      "itemNameRequired": "请输入检查项目名",
+      "standard": "检查基准（可选）"
     },
     "defect": {
       "title": "不良输入",
@@ -5902,6 +5909,37 @@
       "saveHint": "点击保存实绩时，上述不良将一起保存。",
       "confirm": "确认（{{count}}件）"
     }
+  },
+  "requestInspect": {
+    "title": "委托检查录入",
+    "subtitle": "录入委托检查等待项目的结果",
+    "orderNo": "工单",
+    "processCode": "工序",
+    "itemName": "项目名",
+    "timing": "时间点",
+    "requestedAt": "申请时间",
+    "pendingList": "委托检查等待列表",
+    "selectHint": "请从左侧选择项目",
+    "measureValue": "测量值",
+    "measureValuePlaceholder": "输入测量值（可选）",
+    "remark": "备注",
+    "remarkPlaceholder": "输入特殊说明（可选）",
+    "pass": "合格（PASS）",
+    "fail": "不合格（FAIL）",
+    "passSuccess": "已处理为合格",
+    "failSuccess": "已处理为不合格"
+  },
+  "selfInspectHistory": {
+    "title": "自检历史",
+    "subtitle": "查询自检结果历史",
+    "orderNo": "工单",
+    "processCode": "工序",
+    "itemName": "项目名",
+    "timing": "时间点",
+    "status": "结果",
+    "createdAt": "登记时间",
+    "resultList": "检查历史",
+    "selectHint": "请从左侧选择历史"
   },
   "improvement": {
     "fabTooltip": "提交改善申请",
