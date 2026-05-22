@@ -7,12 +7,13 @@ import { Button, Card, CardContent } from "@/components/ui";
 import RoutingGroupManager from "./components/RoutingGroupManager";
 import QualityConditionEditor from "./components/QualityConditionEditor";
 import RoutingMaterialEditor from "./components/RoutingMaterialEditor";
+import SelfInspectConfigEditor from "./components/SelfInspectConfigEditor";
 import type { SelectedProcess } from "./types";
 
 export default function RoutingPage() {
   const { t } = useTranslation();
   const [selectedProcess, setSelectedProcess] = useState<SelectedProcess | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<"conditions" | "materials">("conditions");
+  const [activeDetailTab, setActiveDetailTab] = useState<"conditions" | "materials" | "selfinspect">("conditions");
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRefresh = useCallback(() => {
@@ -75,12 +76,25 @@ export default function RoutingPage() {
                     >
                       {t("master.routing.materialEditorTitle", { defaultValue: "투입자재" })}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveDetailTab("selfinspect")}
+                      className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+                        activeDetailTab === "selfinspect"
+                          ? "border-primary text-primary"
+                          : "border-transparent text-text-muted dark:text-gray-400 hover:text-text dark:hover:text-gray-200"
+                      }`}
+                    >
+                      {t("master.routing.selfInspectEditorTitle", "자주검사 설정")}
+                    </button>
                   </div>
                   <div className="flex-1 min-h-0">
                     {activeDetailTab === "conditions" ? (
                       <QualityConditionEditor selectedProcess={selectedProcess} />
-                    ) : (
+                    ) : activeDetailTab === "materials" ? (
                       <RoutingMaterialEditor selectedProcess={selectedProcess} />
+                    ) : (
+                      <SelfInspectConfigEditor selectedProcess={selectedProcess} />
                     )}
                   </div>
                 </div>
