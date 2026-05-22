@@ -119,7 +119,7 @@ export default function RequestInspectPage() {
     <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
-          <h1 className="text-lg font-bold text-text dark:text-gray-100 flex items-center gap-2">
+          <h1 className="text-xl font-bold text-text dark:text-gray-100 flex items-center gap-2">
             <ClipboardCheck className="w-6 h-6 text-primary" />
             {t("requestInspect.title", "의뢰검사 입력")}
           </h1>
@@ -196,7 +196,7 @@ export default function RequestInspectPage() {
                       value={measureValue}
                       onChange={(e) => setMeasureValue(e.target.value)}
                       placeholder={t("requestInspect.measureValuePlaceholder", "측정값 입력 (선택)")}
-                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text dark:text-gray-200 placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text dark:text-gray-200 placeholder:text-text-muted dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
@@ -210,7 +210,7 @@ export default function RequestInspectPage() {
                       onChange={(e) => setRemark(e.target.value)}
                       placeholder={t("requestInspect.remarkPlaceholder", "특이사항 입력 (선택)")}
                       rows={3}
-                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text dark:text-gray-200 placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-text dark:text-gray-200 placeholder:text-text-muted dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                     />
                   </div>
 
