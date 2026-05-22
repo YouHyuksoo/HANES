@@ -162,16 +162,16 @@ export class SelfInspectService {
     lslValue?: number | null;
     uslValue?: number | null;
     sampleCount?: number;
-  }) {
-    const item = await this.itemRepo.findOne({ where: { id } });
+  }, company: string, plant: string) {
+    const item = await this.itemRepo.findOne({ where: { id, company, plant } });
     if (!item) throw new NotFoundException(`SelfInspectItem ${id} not found`);
     Object.assign(item, dto);
     return this.itemRepo.save(item);
   }
 
   /** 자주검사 항목 삭제 */
-  async deleteItem(id: string) {
-    const item = await this.itemRepo.findOne({ where: { id } });
+  async deleteItem(id: string, company: string, plant: string) {
+    const item = await this.itemRepo.findOne({ where: { id, company, plant } });
     if (!item) throw new NotFoundException(`SelfInspectItem ${id} not found`);
     await this.itemRepo.remove(item);
     return { id };

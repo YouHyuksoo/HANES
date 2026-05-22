@@ -27,6 +27,18 @@ import { SelfInspectService } from '../services/self-inspect.service';
 export class SelfInspectController {
   constructor(private readonly svc: SelfInspectService) {}
 
+  @Get('items/all')
+  @ApiOperation({ summary: '자주검사 항목 전체 조회 (관리용, timing 무관)' })
+  @ApiQuery({ name: 'processCode', required: true })
+  async findAllItems(
+    @Query('processCode') processCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.svc.findAllItems(processCode, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get('items')
   @ApiOperation({ summary: '자주검사 항목 조회 (공정별)' })
   @ApiQuery({ name: 'processCode', required: false })
@@ -101,18 +113,6 @@ export class SelfInspectController {
     return ResponseUtil.success(data);
   }
 
-  @Get('items/all')
-  @ApiOperation({ summary: '자주검사 항목 전체 조회 (관리용, timing 무관)' })
-  @ApiQuery({ name: 'processCode', required: true })
-  async findAllItems(
-    @Query('processCode') processCode: string,
-    @Company() company: string,
-    @Plant() plant: string,
-  ) {
-    const data = await this.svc.findAllItems(processCode, company, plant);
-    return ResponseUtil.success(data);
-  }
-
   @Post('items')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '자주검사 항목 생성' })
@@ -157,15 +157,21 @@ export class SelfInspectController {
       uslValue?: number | null;
       sampleCount?: number;
     },
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.svc.updateItem(id, dto);
+    const data = await this.svc.updateItem(id, dto, company, plant);
     return ResponseUtil.success(data, '자주검사 항목이 수정되었습니다');
   }
 
   @Delete('items/:id')
   @ApiOperation({ summary: '자주검사 항목 삭제' })
-  async deleteItem(@Param('id') id: string) {
-    const data = await this.svc.deleteItem(id);
+  async deleteItem(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.svc.deleteItem(id, company, plant);
     return ResponseUtil.success(data, '자주검사 항목이 삭제되었습니다');
   }
 
