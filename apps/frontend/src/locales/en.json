@@ -5735,7 +5735,15 @@
       "masterSample": "Master Sample",
       "selectJobOrder": "Select a job order",
       "addWorker": "Add Worker",
-      "workerRequired": "Worker registration required"
+      "workerRequired": "Worker registration required",
+      "prodResult": "Production",
+      "done": "Done",
+      "notDone": "Not done",
+      "notTarget": "Not applicable",
+      "masterSampleNotTarget": "Not applicable (routing-designated process only)",
+      "barcodePlaceholder": "Barcode (material, consumable part, batch serial, etc.)",
+      "menuView": "To menu view",
+      "workView": "Fullscreen work view"
     },
     "equip": {
       "modalTitle": "Select Equipment",
@@ -5909,7 +5917,13 @@
       "addItem": "Add Item",
       "itemName": "Item Name",
       "itemNameRequired": "Item name is required",
-      "standard": "Standard/Spec (Optional)"
+      "standard": "Standard/Spec (Optional)",
+      "pending": "Pending",
+      "colTime": "Time",
+      "colType": "Type/Inspector",
+      "colJudge": "Result",
+      "colSample": "Samples",
+      "noHistory": "No inspection history"
     },
     "defect": {
       "title": "Defect Input",

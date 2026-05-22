@@ -26,7 +26,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-const INSPECT_TYPE = ['DAILY', 'PERIODIC'] as const;
+const INSPECT_TYPE = ['DAILY', 'PERIODIC', 'WORKER'] as const;
 const OVERALL_RESULT = ['PASS', 'FAIL', 'CONDITIONAL'] as const;
 
 /** 설비 점검 생성 DTO */

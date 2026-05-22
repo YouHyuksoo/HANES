@@ -5756,7 +5756,15 @@
       "masterSample": "마스터샘플 판정",
       "selectJobOrder": "작업지시를 선택하세요",
       "addWorker": "작업자 추가",
-      "workerRequired": "작업자 등록 필요"
+      "workerRequired": "작업자 등록 필요",
+      "prodResult": "생산실적",
+      "done": "완료",
+      "notDone": "미완료",
+      "notTarget": "대상 아님",
+      "masterSampleNotTarget": "대상 아님 (라우팅 지정 공정만)",
+      "barcodePlaceholder": "바코드 정보 (자재, 소모성 설비부품, 묶음 시리얼 등...)",
+      "menuView": "메뉴 화면으로",
+      "workView": "작업 전체화면"
     },
     "equip": {
       "modalTitle": "설비 선택",
@@ -5930,7 +5938,13 @@
       "addItem": "항목 추가",
       "itemName": "항목명",
       "itemNameRequired": "항목명을 입력하세요",
-      "standard": "기준/규격 (선택)"
+      "standard": "기준/규격 (선택)",
+      "pending": "대기",
+      "colTime": "시각",
+      "colType": "구분/검사자",
+      "colJudge": "판정",
+      "colSample": "샘플",
+      "noHistory": "검사 이력 없음"
     },
     "defect": {
       "title": "불량입력",

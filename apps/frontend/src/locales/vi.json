@@ -5721,7 +5721,15 @@
       "masterSample": "Phán định mẫu chuẩn",
       "selectJobOrder": "Chọn lệnh sản xuất",
       "addWorker": "Thêm người vận hành",
-      "workerRequired": "Cần đăng ký người vận hành"
+      "workerRequired": "Cần đăng ký người vận hành",
+      "prodResult": "Sản lượng",
+      "done": "Hoàn thành",
+      "notDone": "Chưa xong",
+      "notTarget": "Không áp dụng",
+      "masterSampleNotTarget": "Không áp dụng (chỉ công đoạn được chỉ định trong routing)",
+      "barcodePlaceholder": "Thông tin mã vạch (vật liệu, linh kiện tiêu hao, serial lô, v.v...)",
+      "menuView": "Về màn hình menu",
+      "workView": "Toàn màn hình làm việc"
     },
     "equip": {
       "modalTitle": "Chọn thiết bị",
@@ -5895,7 +5903,13 @@
       "addItem": "Thêm mục",
       "itemName": "Tên mục kiểm tra",
       "itemNameRequired": "Vui lòng nhập tên mục",
-      "standard": "Tiêu chuẩn (tuỳ chọn)"
+      "standard": "Tiêu chuẩn (tuỳ chọn)",
+      "pending": "Chờ",
+      "colTime": "Thời gian",
+      "colType": "Loại/Người KT",
+      "colJudge": "Kết quả",
+      "colSample": "Mẫu",
+      "noHistory": "Không có lịch sử kiểm tra"
     },
     "defect": {
       "title": "Nhập lỗi",

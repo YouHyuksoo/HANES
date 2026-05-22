@@ -5721,7 +5721,15 @@
       "masterSample": "主样品判定",
       "selectJobOrder": "请选择作业指示",
       "addWorker": "添加作业者",
-      "workerRequired": "需要登记作业者"
+      "workerRequired": "需要登记作业者",
+      "prodResult": "生产实绩",
+      "done": "完成",
+      "notDone": "未完成",
+      "notTarget": "非对象",
+      "masterSampleNotTarget": "非对象（仅限路由指定工序）",
+      "barcodePlaceholder": "条码信息（材料、消耗性设备部件、捆绑序列号等...）",
+      "menuView": "返回菜单界面",
+      "workView": "作业全屏"
     },
     "equip": {
       "modalTitle": "选择设备",
@@ -5895,7 +5903,13 @@
       "addItem": "添加项目",
       "itemName": "检查项目名",
       "itemNameRequired": "请输入检查项目名",
-      "standard": "检查基准（可选）"
+      "standard": "检查基准（可选）",
+      "pending": "等待",
+      "colTime": "时刻",
+      "colType": "区分/检查者",
+      "colJudge": "判定",
+      "colSample": "样本",
+      "noHistory": "无检查履历"
     },
     "defect": {
       "title": "不良输入",
