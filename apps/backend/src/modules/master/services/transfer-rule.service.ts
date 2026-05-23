@@ -78,19 +78,26 @@ export class TransferRuleService {
     return { data, total, page, limit };
   }
 
-  async findByCompositeKey(fromWarehouseId: string, toWarehouseId: string) {
+  async findByCompositeKey(fromWarehouseId: string, toWarehouseId: string, company?: string, plant?: string) {
     const rule = await this.transferRuleRepository.findOne({
-      where: { fromWarehouseId, toWarehouseId },
+      where: {
+        fromWarehouseId,
+        toWarehouseId,
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
     });
     if (!rule) throw new NotFoundException(`창고이동규칙을 찾을 수 없습니다: ${fromWarehouseId} → ${toWarehouseId}`);
     return rule;
   }
 
-  async create(dto: CreateTransferRuleDto) {
+  async create(dto: CreateTransferRuleDto, company?: string, plant?: string) {
     const existing = await this.transferRuleRepository.findOne({
       where: {
         fromWarehouseId: dto.fromWarehouseId,
         toWarehouseId: dto.toWarehouseId,
+        ...(company && { company }),
+        ...(plant && { plant }),
       },
     });
     if (existing) throw new ConflictException(`이미 존재하는 창고이동규칙입니다: ${dto.fromWarehouseId} -> ${dto.toWarehouseId}`);
@@ -100,20 +107,32 @@ export class TransferRuleService {
       toWarehouseId: dto.toWarehouseId,
       allowYn: dto.allowYn ?? 'Y',
       remark: dto.remark,
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.transferRuleRepository.save(rule);
   }
 
-  async update(fromWarehouseId: string, toWarehouseId: string, dto: UpdateTransferRuleDto) {
-    await this.findByCompositeKey(fromWarehouseId, toWarehouseId);
-    await this.transferRuleRepository.update({ fromWarehouseId, toWarehouseId }, dto);
-    return this.findByCompositeKey(fromWarehouseId, toWarehouseId);
+  async update(fromWarehouseId: string, toWarehouseId: string, dto: UpdateTransferRuleDto, company?: string, plant?: string) {
+    await this.findByCompositeKey(fromWarehouseId, toWarehouseId, company, plant);
+    await this.transferRuleRepository.update({
+      fromWarehouseId,
+      toWarehouseId,
+      ...(company && { company }),
+      ...(plant && { plant }),
+    }, dto);
+    return this.findByCompositeKey(fromWarehouseId, toWarehouseId, company, plant);
   }
 
-  async delete(fromWarehouseId: string, toWarehouseId: string) {
-    await this.findByCompositeKey(fromWarehouseId, toWarehouseId);
-    await this.transferRuleRepository.delete({ fromWarehouseId, toWarehouseId });
+  async delete(fromWarehouseId: string, toWarehouseId: string, company?: string, plant?: string) {
+    await this.findByCompositeKey(fromWarehouseId, toWarehouseId, company, plant);
+    await this.transferRuleRepository.delete({
+      fromWarehouseId,
+      toWarehouseId,
+      ...(company && { company }),
+      ...(plant && { plant }),
+    });
     return { fromWarehouseId, toWarehouseId };
   }
 }

@@ -15,6 +15,7 @@ import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-cancel.dto';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ReceiptCancelService {
@@ -29,6 +30,7 @@ export class ReceiptCancelService {
     private readonly purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
+    private readonly tx: TransactionService,
   ) {}
   async findCancellable(query: ReceiptCancelQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
@@ -60,11 +62,7 @@ export class ReceiptCancelService {
 
   async cancel(dto: CreateReceiptCancelDto) {
     const { transactionId, reason, workerId } = dto;
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 원본 트랜잭션 조회
       const originalTransaction = await queryRunner.manager.findOne(StockTransaction, {
         where: { transNo: transactionId },
@@ -147,20 +145,13 @@ export class ReceiptCancelService {
         cancelRefId: savedCancelTrans.transNo,
       });
 
-      await queryRunner.commitTransaction();
-
       return {
         transNo: savedCancelTrans.transNo,
         transactionId,
         cancelled: true,
         cancelTransNo: savedCancelTrans.transNo,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private async ensureNoDownstreamProgress(originalTransaction: StockTransaction) {

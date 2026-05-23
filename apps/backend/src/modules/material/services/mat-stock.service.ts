@@ -17,6 +17,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class MatStockService {
@@ -32,6 +33,7 @@ export class MatStockService {
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findAll(query: StockQueryDto, company?: string, plant?: string) {
@@ -213,11 +215,7 @@ export class MatStockService {
   async adjustStock(dto: StockAdjustDto, company?: string, plant?: string) {
     const { itemCode, warehouseCode, locationCode, adjustQty, reason, matUid } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 기존 재고 조회 또는 생성
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: {
@@ -293,25 +291,14 @@ export class MatStockService {
         company: stock?.company ?? company,
         plant: stock?.plant ?? plant,
       });
-
-      await queryRunner.commitTransaction();
       return stock;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   async transferStock(dto: StockTransferDto) {
     const { itemCode, fromWarehouseCode, toWarehouseCode, qty, matUid } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 출고 창고 재고 확인
       const fromStock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode: fromWarehouseCode, ...(matUid && { matUid }) },
@@ -363,13 +350,7 @@ export class MatStockService {
         toStock = await queryRunner.manager.save(newStock);
       }
 
-      await queryRunner.commitTransaction();
       return { fromStock, toStock };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 }

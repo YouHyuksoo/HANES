@@ -1,0 +1,40 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
+import { JobOrder } from '../../../entities/job-order.entity';
+import { MatIssue } from '../../../entities/mat-issue.entity';
+import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
+import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { IssueRequestController } from '../controllers/issue-request.controller';
+import { MatIssueController } from '../controllers/mat-issue.controller';
+import { IssueRequestService } from '../services/issue-request.service';
+import { MatIssueService } from '../services/mat-issue.service';
+import { MatOutRequestService } from '../services/mat-out-request.service';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      JobOrder,
+      MatIssue,
+      MatIssueRequest,
+      MatIssueRequestItem,
+      MatLot,
+      MatStock,
+      PartMaster,
+      StockTransaction,
+    ]),
+  ],
+  controllers: [MatIssueController, IssueRequestController],
+  providers: [
+    InventoryFreezeGuard,
+    MatIssueService,
+    IssueRequestService,
+    MatOutRequestService,
+  ],
+  exports: [MatIssueService, IssueRequestService, MatOutRequestService],
+})
+export class IssueModule {}

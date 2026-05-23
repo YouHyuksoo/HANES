@@ -12,6 +12,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ScrapService', () => {
   let service: ScrapService;
@@ -21,6 +22,7 @@ describe('ScrapService', () => {
   let partMasterRepo: DeepMocked<Repository<PartMaster>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
   let numbering: DeepMocked<NumberingService>;
   let sysConfigService: DeepMocked<SysConfigService>;
@@ -32,11 +34,13 @@ describe('ScrapService', () => {
     partMasterRepo = createMock<Repository<PartMaster>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
     numbering = createMock<NumberingService>();
     sysConfigService = createMock<SysConfigService>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -54,6 +58,7 @@ describe('ScrapService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
         { provide: NumberingService, useValue: numbering },
         { provide: SysConfigService, useValue: sysConfigService },
       ],
@@ -93,7 +98,39 @@ describe('ScrapService', () => {
         service.create({ matUid: 'MAT-001', warehouseId: 'WH-01', qty: 5, reason: '폐기' } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('폐기는 TransactionService로 재고 차감과 폐기 이력을 함께 저장한다', async () => {
+      numbering.nextInTx.mockResolvedValue('TX-001');
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          availableQty: 10,
+        } as MatStock);
+      queryRunner.manager.create.mockReturnValue({ transNo: 'TX-001' } as StockTransaction);
+      queryRunner.manager.save.mockResolvedValue({ transNo: 'TX-001' } as StockTransaction);
+
+      const result = await service.create({
+        matUid: 'MAT-001',
+        warehouseId: 'WH-01',
+        qty: 3,
+        reason: '폐기',
+      } as any);
+
+      expect(result.transNo).toBe('TX-001');
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+        expect.objectContaining({ qty: 7, availableQty: 7 }),
+      );
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 });

@@ -66,6 +66,23 @@ export class ImprRequestService {
       qb.andWhere('r.status = :status', { status: query.status });
     }
 
+    if (query.keyword) {
+      qb.andWhere(
+        '(LOWER(r.description) LIKE :kw OR LOWER(r.pageUrl) LIKE :kw)',
+        { kw: `%${query.keyword.toLowerCase()}%` },
+      );
+    }
+
+    if (query.fromDate) {
+      qb.andWhere('r.createdAt >= :fromDate', { fromDate: new Date(query.fromDate) });
+    }
+
+    if (query.toDate) {
+      const to = new Date(query.toDate);
+      to.setDate(to.getDate() + 1);
+      qb.andWhere('r.createdAt < :toDate', { toDate: to });
+    }
+
     qb.orderBy('r.createdAt', 'DESC').skip(skip).take(limit);
 
     const [data, total] = await qb.getManyAndCount();

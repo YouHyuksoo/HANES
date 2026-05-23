@@ -13,6 +13,7 @@ import { ProductTransaction } from '../../../entities/product-transaction.entity
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProductInventoryService', () => {
   let target: ProductInventoryService;
@@ -22,6 +23,7 @@ describe('ProductInventoryService', () => {
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockTransRepo = createMock<Repository<ProductTransaction>>();
@@ -30,7 +32,9 @@ describe('ProductInventoryService', () => {
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
+    mockTx = createMock<TransactionService>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -45,6 +49,7 @@ describe('ProductInventoryService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWhRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ProductInventoryService>(ProductInventoryService);
@@ -61,7 +66,8 @@ describe('ProductInventoryService', () => {
       mockQueryRunner.manager.findOne.mockResolvedValue(null);
       const r = await target.receiveStock({ warehouseId: 'WH', itemCode: 'IT', qty: 10, transType: 'WIP_IN' } as any);
       expect(r.transNo).toBeDefined();
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should rollback on error', async () => {
@@ -70,7 +76,8 @@ describe('ProductInventoryService', () => {
       mockTransRepo.create.mockReturnValue({} as any);
       mockQueryRunner.manager.save.mockRejectedValue(new Error('DB error'));
       await expect(target.receiveStock({ warehouseId: 'WH', itemCode: 'IT', qty: 10, transType: 'WIP_IN' } as any)).rejects.toThrow('DB error');
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 
@@ -97,6 +104,8 @@ describe('ProductInventoryService', () => {
         qty: 10,
         transType: 'WIP_OUT',
       } as any)).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 

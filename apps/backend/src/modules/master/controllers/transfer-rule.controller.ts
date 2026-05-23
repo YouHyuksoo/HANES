@@ -33,16 +33,18 @@ export class TransferRuleController {
   async findByCompositeKey(
     @Param('fromWarehouseId') fromWarehouseId: string,
     @Param('toWarehouseId') toWarehouseId: string,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.transferRuleService.findByCompositeKey(fromWarehouseId, toWarehouseId);
+    const data = await this.transferRuleService.findByCompositeKey(fromWarehouseId, toWarehouseId, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '창고이동규칙 생성' })
-  async create(@Body() dto: CreateTransferRuleDto) {
-    const data = await this.transferRuleService.create(dto);
+  async create(@Body() dto: CreateTransferRuleDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.transferRuleService.create(dto, company, plant);
     return ResponseUtil.success(data, '창고이동규칙이 생성되었습니다.');
   }
 
@@ -52,8 +54,10 @@ export class TransferRuleController {
     @Param('fromWarehouseId') fromWarehouseId: string,
     @Param('toWarehouseId') toWarehouseId: string,
     @Body() dto: UpdateTransferRuleDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.transferRuleService.update(fromWarehouseId, toWarehouseId, dto);
+    const data = await this.transferRuleService.update(fromWarehouseId, toWarehouseId, dto, company, plant);
     return ResponseUtil.success(data, '창고이동규칙이 수정되었습니다.');
   }
 
@@ -62,8 +66,10 @@ export class TransferRuleController {
   async delete(
     @Param('fromWarehouseId') fromWarehouseId: string,
     @Param('toWarehouseId') toWarehouseId: string,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    await this.transferRuleService.delete(fromWarehouseId, toWarehouseId);
+    await this.transferRuleService.delete(fromWarehouseId, toWarehouseId, company, plant);
     return ResponseUtil.success(null, '창고이동규칙이 삭제되었습니다.');
   }
 }

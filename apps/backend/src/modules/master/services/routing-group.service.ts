@@ -186,17 +186,26 @@ export class RoutingGroupService {
   }
 
   private async resolveProcessTenant(routingCode: string, seq: number, company?: string, plant?: string) {
-    if (company && plant) return { company, plant };
-
     const process = await this.processRepo.findOne({
       where: { routingCode, seq },
       select: ['routingCode', 'seq', 'company', 'plant'],
     });
     if (!process) throw new NotFoundException(`공정순서를 찾을 수 없습니다: ${routingCode}/${seq}`);
 
+    if (company && process.company && company !== process.company) {
+      throw new ConflictException(
+        `요청 회사와 라우팅 공정 회사가 일치하지 않습니다. request=${company}, process=${process.company}`,
+      );
+    }
+    if (plant && process.plant && plant !== process.plant) {
+      throw new ConflictException(
+        `요청 사업장과 라우팅 공정 사업장이 일치하지 않습니다. request=${plant}, process=${process.plant}`,
+      );
+    }
+
     return {
-      company: company || process.company,
-      plant: plant || process.plant,
+      company: company ?? process.company,
+      plant: plant ?? process.plant,
     };
   }
 

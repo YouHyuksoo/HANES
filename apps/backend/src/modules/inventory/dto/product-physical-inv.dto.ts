@@ -63,7 +63,12 @@ export class ProductPhysicalInvQueryDto extends PaginationQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '창고 ID 필터' })
+  @ApiPropertyOptional({ description: '창고 코드 필터' })
+  @IsOptional()
+  @IsString()
+  warehouseCode?: string;
+
+  @ApiPropertyOptional({ description: '창고 코드 필터 (호환용: warehouseCode 사용 권장)' })
   @IsOptional()
   @IsString()
   warehouseId?: string;
@@ -77,7 +82,12 @@ export class ProductPhysicalInvHistoryQueryDto extends PaginationQueryDto {
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ description: '창고 ID 필터' })
+  @ApiPropertyOptional({ description: '창고 코드 필터' })
+  @IsOptional()
+  @IsString()
+  warehouseCode?: string;
+
+  @ApiPropertyOptional({ description: '창고 코드 필터 (호환용: warehouseCode 사용 권장)' })
   @IsOptional()
   @IsString()
   warehouseId?: string;

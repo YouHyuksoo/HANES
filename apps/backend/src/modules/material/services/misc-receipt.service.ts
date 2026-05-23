@@ -1,12 +1,13 @@
 ﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, Like, In } from 'typeorm';
+import { Repository, Between, Like, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class MiscReceiptService {
@@ -21,7 +22,7 @@ export class MiscReceiptService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -134,11 +135,7 @@ export class MiscReceiptService {
   async create(dto: CreateMiscReceiptDto, company?: string, plant?: string) {
     const { warehouseId, itemCode, matUid, qty, remark, workerId } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const warehouse = await queryRunner.manager.findOne(Warehouse, {
         where: {
           warehouseCode: warehouseId,
@@ -230,8 +227,6 @@ export class MiscReceiptService {
       });
       await queryRunner.manager.save(transaction);
 
-      await queryRunner.commitTransaction();
-
       return {
         transNo,
         warehouseId,
@@ -244,12 +239,7 @@ export class MiscReceiptService {
         remark,
         workerId,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private async generateTransNo(): Promise<string> {

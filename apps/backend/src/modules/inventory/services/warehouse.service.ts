@@ -70,7 +70,7 @@ export class WarehouseService {
   /**
    * 창고 생성
    */
-  async create(dto: CreateWarehouseDto) {
+  async create(dto: CreateWarehouseDto, company?: string, plant?: string) {
     // 중복 코드 확인
     const existing = await this.warehouseRepository.findOne({
       where: { warehouseCode: dto.warehouseCode },
@@ -90,6 +90,8 @@ export class WarehouseService {
       vendorId: dto.vendorId || null,
       isDefault: dto.isDefault ? 'Y' : 'N',
       useYn: 'Y',
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.warehouseRepository.save(warehouse);

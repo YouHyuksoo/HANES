@@ -18,6 +18,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { CreateAdjustmentDto, AdjustmentQueryDto } from '../dto/adjustment.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class AdjustmentService {
@@ -33,6 +34,7 @@ export class AdjustmentService {
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findAll(query: AdjustmentQueryDto, company?: string, plant?: string) {
@@ -98,11 +100,7 @@ export class AdjustmentService {
   async createPending(dto: CreateAdjustmentDto, company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode } });
       if (!part) throw new NotFoundException(`?덈ぉ??李얠쓣 ???놁뒿?덈떎: ${itemCode}`);
 
@@ -151,8 +149,6 @@ export class AdjustmentService {
       });
       await queryRunner.manager.save(invAdjLog);
 
-      await queryRunner.commitTransaction();
-
       return {
         adjDate: invAdjLog.adjDate,
         seq: invAdjLog.seq,
@@ -167,12 +163,7 @@ export class AdjustmentService {
         itemName: part.itemName,
         unit: part.unit,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**
@@ -191,11 +182,7 @@ export class AdjustmentService {
 
     const { warehouseCode, itemCode, matUid, afterQty, diffQty, reason } = adjLog;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // ?ш퀬 ?낅뜲?댄듃
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
@@ -268,15 +255,8 @@ export class AdjustmentService {
         approvedAt: new Date(),
       });
 
-      await queryRunner.commitTransaction();
-
       return { adjDate, seq, adjustStatus: 'APPROVED', approvedBy, approvedAt: new Date() };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**
@@ -309,11 +289,7 @@ export class AdjustmentService {
   private async _executeAdjustment(dto: CreateAdjustmentDto, adjustStatus: 'APPROVED', company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // ?덈ぉ ?뺤씤
       const part = await queryRunner.manager.findOne(PartMaster, {
         where: { itemCode },
@@ -426,8 +402,6 @@ export class AdjustmentService {
       });
       await queryRunner.manager.save(stockTransaction);
 
-      await queryRunner.commitTransaction();
-
       return {
         adjDate: invAdjLog.adjDate,
         seq: invAdjLog.seq,
@@ -442,12 +416,7 @@ export class AdjustmentService {
         itemName: part.itemName,
         unit: part.unit,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**

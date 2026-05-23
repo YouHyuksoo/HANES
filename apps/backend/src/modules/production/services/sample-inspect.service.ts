@@ -10,10 +10,11 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { SampleInspectResult } from '../../../entities/sample-inspect-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   CreateSampleInspectDto,
   SampleInspectHistoryQueryDto,
@@ -26,7 +27,7 @@ export class SampleInspectService {
     private readonly sampleInspectRepository: Repository<SampleInspectResult>,
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   /** 샘플검사 일괄 입력 */
@@ -38,11 +39,7 @@ export class SampleInspectService {
       throw new NotFoundException('작업지시를 찾을 수 없습니다.');
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const records: SampleInspectResult[] = [];
       for (const sample of dto.samples) {
         const entity = queryRunner.manager.create(SampleInspectResult, {
@@ -63,15 +60,9 @@ export class SampleInspectService {
       }
 
       const saved = await queryRunner.manager.save(SampleInspectResult, records);
-      await queryRunner.commitTransaction();
 
       return { count: saved.length, data: saved };
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 샘플검사 이력 조회 (작업지시별 그룹핑) */
@@ -84,7 +75,7 @@ export class SampleInspectService {
       .leftJoin(PartMaster, 'p', 'p.itemCode = jo.itemCode')
       .select([
         'si.orderNo AS "orderNo"',
-        'jo.orderNo AS "orderNo"',
+        'jo.orderNo AS "jobOrderNo"',
         'p.itemCode AS "itemCode"',
         'p.itemName AS "itemName"',
         'si.inspectDate AS "inspectDate"',

@@ -9,18 +9,19 @@
  */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { CreateMatLabelsDto, MatLabelResultDto } from '../dto/receive-label.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ReceiveLabelService {
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
     @InjectRepository(MatArrival)
     private readonly arrivalRepo: Repository<MatArrival>,
@@ -109,11 +110,7 @@ export class ReceiveLabelService {
 
     const part = await this.partRepo.findOne({ where: { itemCode: arrival.itemCode } });
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const results: MatLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
@@ -149,13 +146,7 @@ export class ReceiveLabelService {
       });
       await queryRunner.manager.save(log);
 
-      await queryRunner.commitTransaction();
       return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 }

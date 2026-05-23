@@ -17,6 +17,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { CreateMatIssueDto, MatIssueQueryDto } from '../dto/mat-issue.dto';
 import { ScanIssueDto } from '../dto/scan-issue.dto';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class MatIssueService {
@@ -35,6 +36,7 @@ export class MatIssueService {
     private readonly jobOrderRepository: Repository<JobOrder>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
+    private readonly tx: TransactionService,
   ) {}
 
   private sortStocksForIssue(stocks: MatStock[], warehouseCode?: string) {
@@ -147,120 +149,111 @@ export class MatIssueService {
   }
 
   async create(dto: CreateMatIssueDto) {
+    return this.tx.run((queryRunner) => this.createInTx(queryRunner, dto));
+  }
+
+  async createInTx(queryRunner: import('typeorm').QueryRunner, dto: CreateMatIssueDto) {
     const { orderNo, prodResultNo, warehouseCode, issueType, items, remark, workerId } = dto;
+    const results = [];
+    const issueNo = await this.numbering.nextInTx(queryRunner, 'MAT_ISSUE');
+    let seqCounter = 1;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    for (const item of items) {
+      const lot = await queryRunner.manager.findOne(MatLot, {
+        where: { matUid: item.matUid },
+      });
 
-    try {
-      const results = [];
-      const issueNo = await this.numbering.nextInTx(queryRunner, 'MAT_ISSUE');
-      let seqCounter = 1;
+      if (!lot) {
+        throw new BadRequestException(`LOT를 찾을 수 없습니다: ${item.matUid}`);
+      }
 
-      for (const item of items) {
-        const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { matUid: item.matUid },
-        });
+      if (lot.iqcStatus !== 'PASS') {
+        throw new BadRequestException(`IQC 합격 상태가 아닌 LOT입니다: ${lot.matUid}`);
+      }
 
-        if (!lot) {
-          throw new BadRequestException(`LOT를 찾을 수 없습니다: ${item.matUid}`);
-        }
+      if (lot.status === 'HOLD') {
+        throw new BadRequestException(`보류 상태의 LOT는 출고할 수 없습니다: ${lot.matUid}`);
+      }
 
-        if (lot.iqcStatus !== 'PASS') {
-          throw new BadRequestException(`IQC 합격 상태가 아닌 LOT입니다: ${lot.matUid}`);
-        }
+      const stockRows = await queryRunner.manager.find(MatStock, {
+        where: warehouseCode
+          ? { matUid: lot.matUid, warehouseCode }
+          : { matUid: lot.matUid },
+      });
+      const stockQty = stockRows.reduce((sum, stock) => sum + (stock.availableQty ?? stock.qty ?? 0), 0);
 
-        if (lot.status === 'HOLD') {
-          throw new BadRequestException(`보류 상태의 LOT는 출고할 수 없습니다: ${lot.matUid}`);
-        }
+      if (stockQty < item.issueQty) {
+        throw new BadRequestException(`LOT 재고 부족: ${lot.matUid} (현재 ${stockQty}, 요청 ${item.issueQty})`);
+      }
 
-        const stockRows = await queryRunner.manager.find(MatStock, {
-          where: warehouseCode
-            ? { matUid: lot.matUid, warehouseCode }
-            : { matUid: lot.matUid },
-        });
-        const stockQty = stockRows.reduce((sum, stock) => sum + (stock.availableQty ?? stock.qty ?? 0), 0);
+      const currentSeq = seqCounter++;
+      const issue = queryRunner.manager.create(MatIssue, {
+        issueNo,
+        seq: currentSeq,
+        orderNo,
+        prodResultNo: prodResultNo || null,
+        matUid: item.matUid,
+        issueQty: item.issueQty,
+        issueType,
+        workerId,
+        remark,
+        status: 'DONE',
+        company: lot.company,
+        plant: lot.plant,
+      });
+      const savedIssue = await queryRunner.manager.save(issue);
 
-        if (stockQty < item.issueQty) {
-          throw new BadRequestException(`LOT 재고 부족: ${lot.matUid} (현재 ${stockQty}, 요청 ${item.issueQty})`);
-        }
+      let remainingQty = item.issueQty;
+      for (const stock of this.sortStocksForIssue(stockRows, warehouseCode)) {
+        if (remainingQty <= 0) break;
 
-        const currentSeq = seqCounter++;
-        const issue = queryRunner.manager.create(MatIssue, {
-          issueNo,
-          seq: currentSeq,
-          orderNo,
-          prodResultNo: prodResultNo || null,
+        const availableQty = stock.availableQty ?? stock.qty ?? 0;
+        if (availableQty <= 0) continue;
+
+        const issueQty = Math.min(remainingQty, availableQty);
+        const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
+        const stockTx = queryRunner.manager.create(StockTransaction, {
+          transNo,
+          transType: 'MAT_OUT',
+          fromWarehouseId: stock.warehouseCode,
+          itemCode: lot.itemCode,
           matUid: item.matUid,
-          issueQty: item.issueQty,
-          issueType,
+          qty: -issueQty,
+          remark: remark || `자재출고: ${lot.matUid}`,
           workerId,
-          remark,
+          refType: 'MAT_ISSUE',
+          refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
           status: 'DONE',
           company: lot.company,
           plant: lot.plant,
         });
-        const savedIssue = await queryRunner.manager.save(issue);
+        await queryRunner.manager.save(stockTx);
 
-        let remainingQty = item.issueQty;
-        for (const stock of this.sortStocksForIssue(stockRows, warehouseCode)) {
-          if (remainingQty <= 0) break;
+        await queryRunner.manager.update(
+          MatStock,
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+          {
+            qty: Math.max(0, stock.qty - issueQty),
+            availableQty: Math.max(0, stock.availableQty - issueQty),
+          },
+        );
 
-          const availableQty = stock.availableQty ?? stock.qty ?? 0;
-          if (availableQty <= 0) continue;
-
-          const issueQty = Math.min(remainingQty, availableQty);
-          const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
-          const stockTx = queryRunner.manager.create(StockTransaction, {
-            transNo,
-            transType: 'MAT_OUT',
-            fromWarehouseId: stock.warehouseCode,
-            itemCode: lot.itemCode,
-            matUid: item.matUid,
-            qty: -issueQty,
-            remark: remark || `자재출고: ${lot.matUid}`,
-            workerId,
-            refType: 'MAT_ISSUE',
-            refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
-            status: 'DONE',
-            company: lot.company,
-            plant: lot.plant,
-          });
-          await queryRunner.manager.save(stockTx);
-
-          await queryRunner.manager.update(
-            MatStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
-            {
-              qty: Math.max(0, stock.qty - issueQty),
-              availableQty: Math.max(0, stock.availableQty - issueQty),
-            },
-          );
-
-          remainingQty -= issueQty;
-        }
-
-        const remainingStocks = await queryRunner.manager.find(MatStock, {
-          where: { matUid: lot.matUid },
-        });
-        const totalRemainingQty = remainingStocks.reduce((sum, stock) => sum + (stock.qty ?? 0), 0);
-
-        if (totalRemainingQty <= 0) {
-          await queryRunner.manager.update(MatLot, lot.matUid, { status: 'DEPLETED' });
-        }
-
-        results.push(await this.flattenIssue(savedIssue));
+        remainingQty -= issueQty;
       }
 
-      await queryRunner.commitTransaction();
-      return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
+      const remainingStocks = await queryRunner.manager.find(MatStock, {
+        where: { matUid: lot.matUid },
+      });
+      const totalRemainingQty = remainingStocks.reduce((sum, stock) => sum + (stock.qty ?? 0), 0);
+
+      if (totalRemainingQty <= 0) {
+        await queryRunner.manager.update(MatLot, lot.matUid, { status: 'DEPLETED' });
+      }
+
+      results.push(await this.flattenIssue(savedIssue));
     }
+
+    return results;
   }
 
   async scanIssue(dto: ScanIssueDto) {
@@ -326,11 +319,7 @@ export class MatIssueService {
 
     await this.ensureNoDownstreamProgress(rawIssue);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(MatIssue, { issueNo, seq }, { status: 'CANCELED', remark: reason });
 
       const refId = `${issueNo}-${seq}`;
@@ -399,14 +388,8 @@ export class MatIssueService {
         await queryRunner.manager.update(MatLot, rawIssue.matUid, { status: 'NORMAL' });
       }
 
-      await queryRunner.commitTransaction();
       return { issueNo, seq, status: 'CANCELED' };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private async ensureNoDownstreamProgress(issue: MatIssue) {

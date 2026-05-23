@@ -27,6 +27,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
@@ -54,6 +55,7 @@ export class ReceivingService {
     private readonly labelPrintLogRepository: Repository<LabelPrintLog>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
+    private readonly tx: TransactionService,
     private readonly sysConfigService: SysConfigService,
   ) {}
 
@@ -277,11 +279,7 @@ export class ReceivingService {
       await this.checkPoTolerance(lot, item.qty);
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const results = [];
       // 같은 배치의 모든 아이템에 동일한 receiveNo 부여
       const receiveNo = await this.numbering.nextInTx(queryRunner, 'RECEIVE');
@@ -385,14 +383,8 @@ export class ReceivingService {
         results.push({ ...savedTx, receiveNo });
       }
 
-      await queryRunner.commitTransaction();
       return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 입고 이력 조회 (MAT_RECEIVINGS 기반) */

@@ -308,6 +308,21 @@ describe('RoutingGroupService', () => {
       // Assert
       expect(result).toEqual([]);
     });
+
+    it('should throw when request tenant differs from routing process tenant', async () => {
+      const dto = { conditions: [{ conditionSeq: 1, conditionCode: 'TEMP' }] } as any;
+      mockProcessRepo.findOne.mockResolvedValue({
+        routingCode: 'RG01',
+        seq: 10,
+        company: 'COMP01',
+        plant: 'PLANT01',
+      } as RoutingProcess);
+
+      await expect(
+        target.bulkSaveConditions('RG01', 10, dto, 'OTHER', 'PLANT01'),
+      ).rejects.toThrow(ConflictException);
+      expect(mockDataSource.transaction).not.toHaveBeenCalled();
+    });
   });
 
   describe('routing materials', () => {

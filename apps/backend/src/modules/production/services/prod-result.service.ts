@@ -1001,6 +1001,14 @@ export class ProdResultService {
         for (const originalTx of originalTransactions) {
           const restoreQty = Math.abs(Number(originalTx.qty) || 0);
           if (restoreQty <= 0 || !originalTx.fromWarehouseId) continue;
+          this.assertTenantConsistency('자재 자동투입 역분개', {
+            expected: { company, plant },
+            sources: [
+              { label: 'issue', company: issue.company, plant: issue.plant },
+              { label: 'lot', company: lot?.company, plant: lot?.plant },
+              { label: 'originalTx', company: originalTx.company, plant: originalTx.plant },
+            ],
+          });
 
           const stock = await qr.manager.findOne(MatStock, {
             where: {
@@ -1048,14 +1056,22 @@ export class ProdResultService {
             refId: `${issue.issueNo}-${issue.seq}`,
             cancelRefId: originalTx.transNo,
             status: 'DONE',
-            company: originalTx.company || lot?.company || issue.company,
-            plant: originalTx.plant || lot?.plant || issue.plant,
+            company: originalTx.company ?? lot?.company ?? issue.company,
+            plant: originalTx.plant ?? lot?.plant ?? issue.plant,
           });
           await qr.manager.save(StockTransaction, reverseTx);
         }
 
         continue;
       }
+
+      this.assertTenantConsistency('자재 자동투입 역분개', {
+        expected: { company, plant },
+        sources: [
+          { label: 'issue', company: issue.company, plant: issue.plant },
+          { label: 'lot', company: lot?.company, plant: lot?.plant },
+        ],
+      });
 
       const fallbackStock = await qr.manager.findOne(MatStock, {
         where: { matUid: issue.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -1090,13 +1106,44 @@ export class ProdResultService {
         refType: 'MAT_ISSUE_CANCEL',
         refId: `${issue.issueNo}-${issue.seq}`,
         status: 'DONE',
-        company: lot?.company || issue.company,
-        plant: lot?.plant || issue.plant,
+        company: lot?.company ?? issue.company,
+        plant: lot?.plant ?? issue.plant,
       });
       await qr.manager.save(StockTransaction, reverseTx);
     }
 
     this.logger.log(`???? ??? ?? - resultNo: ${resultNo}, ${issues.length}?`);
+  }
+
+  private assertTenantConsistency(
+    context: string,
+    data: {
+      expected?: { company?: string; plant?: string };
+      sources: { label: string; company?: string | null; plant?: string | null }[];
+    },
+  ): void {
+    this.assertSameTenantValue(context, 'company', data.expected?.company, data.sources);
+    this.assertSameTenantValue(context, 'plant', data.expected?.plant, data.sources);
+  }
+
+  private assertSameTenantValue(
+    context: string,
+    field: 'company' | 'plant',
+    expected: string | undefined,
+    sources: { label: string; company?: string | null; plant?: string | null }[],
+  ): void {
+    const values = sources
+      .map((source) => ({ label: source.label, value: source[field] }))
+      .filter((source): source is { label: string; value: string } => Boolean(source.value));
+    const baseline = expected ?? values[0]?.value;
+    const mismatch = values.find((source) => baseline && source.value !== baseline);
+
+    if (mismatch || (expected && values.some((source) => source.value !== expected))) {
+      const details = values.map((source) => `${source.label}=${source.value}`).join(', ');
+      throw new BadRequestException(
+        `${context} ${field} 값이 일치하지 않습니다. expected=${baseline ?? '-'}, ${details}`,
+      );
+    }
   }
 
   private async reverseProductStock(

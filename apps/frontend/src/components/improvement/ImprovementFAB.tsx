@@ -11,14 +11,14 @@
  * 4. selectedElement가 생기면 ImprovementRequestModal 자동 표시
  */
 import { useTranslation } from "react-i18next";
-import { Wrench, X } from "lucide-react";
+import { Wrench, X, LoaderCircle } from "lucide-react";
 import { useImprovementRequestStore } from "@/stores/improvementRequestStore";
 import ImprovementOverlay from "./ImprovementOverlay";
 import ImprovementRequestModal from "./ImprovementRequestModal";
 
 export default function ImprovementFAB() {
   const { t } = useTranslation();
-  const { isActive, selectedElement, activate, deactivate } =
+  const { isActive, isCapturing, selectedElement, activate, deactivate } =
     useImprovementRequestStore();
 
   return (
@@ -31,8 +31,18 @@ export default function ImprovementFAB() {
         </div>
       )}
 
-      {/* 오버레이 (선택 모드 활성 + 모달 미열림 상태에서만) */}
-      {isActive && !selectedElement && <ImprovementOverlay />}
+      {/* 오버레이 (선택 모드 활성 + 캡처 중 아닐 때) */}
+      {isActive && !selectedElement && !isCapturing && <ImprovementOverlay />}
+
+      {/* 캡처 중 로딩 UI */}
+      {isCapturing && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl px-8 py-5 flex flex-col items-center gap-3 shadow-2xl border border-border">
+            <LoaderCircle className="w-8 h-8 text-orange-500 animate-spin" />
+            <p className="text-sm font-medium text-text">{t("improvement.capturing")}</p>
+          </div>
+        </div>
+      )}
 
       {/* 입력 모달 */}
       <ImprovementRequestModal />

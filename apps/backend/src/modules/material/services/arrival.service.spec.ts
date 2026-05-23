@@ -25,6 +25,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('ArrivalService', () => {
@@ -42,6 +43,7 @@ describe('ArrivalService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockPurchaseOrderRepo = createMock<Repository<PurchaseOrder>>();
@@ -57,8 +59,10 @@ describe('ArrivalService', () => {
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
+    mockTx = createMock<TransactionService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -80,6 +84,7 @@ describe('ArrivalService', () => {
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -151,6 +156,84 @@ describe('ArrivalService', () => {
       await expect(
         target.createPoArrival({ poId: 'PO-001', items: [] } as any),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('PO 입하는 TransactionService로 입하, 수불, 재고, PO상태를 함께 저장한다', async () => {
+      mockPurchaseOrderRepo.findOne.mockResolvedValue({
+        poNo: 'PO-001',
+        status: 'CONFIRMED',
+        partnerId: 'V-001',
+        partnerName: 'Vendor',
+        company: 'CO',
+        plant: 'P01',
+      } as PurchaseOrder);
+      mockPurchaseOrderItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem,
+      ]);
+      mockStockTxRepo.find.mockResolvedValue([]);
+      mockPartMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster,
+      ]);
+      mockWarehouseRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse,
+      ]);
+      mockNumbering.nextInTx
+        .mockResolvedValueOnce('ARR-PO-001')
+        .mockResolvedValueOnce('TX-PO-001');
+
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        find: jest.fn().mockResolvedValue([
+          { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
+        ]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      const result = await target.createPoArrival({
+        poId: 'PO-001',
+        items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 10, warehouseId: 'WH-001' }],
+      } as any, 'CO', 'P01');
+
+      expect(result[0].arrivalNo).toBe('ARR-PO-001');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ arrivalNo: 'ARR-PO-001' }));
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-PO-001', transType: 'MAT_IN' }));
+      expect(manager.update).toHaveBeenCalledWith(PurchaseOrder, 'PO-001', { status: 'RECEIVED' });
+    });
+  });
+
+  describe('createManualArrival', () => {
+    it('수동 입하 등록은 TransactionService로 입하, 수불, 재고를 함께 저장한다', async () => {
+      mockNumbering.nextInTx
+        .mockResolvedValueOnce('ARR-001')
+        .mockResolvedValueOnce('TX-001');
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
+
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      const result = await target.createManualArrival({
+        itemCode: 'ITEM-001',
+        qty: 10,
+        warehouseId: 'WH-001',
+        workerId: 'user',
+      } as any, 'CO', 'P01');
+
+      expect(result.arrivalNo).toBe('ARR-001');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ arrivalNo: 'ARR-001' }));
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', transType: 'MAT_IN' }));
     });
   });
 
@@ -225,6 +308,44 @@ describe('ArrivalService', () => {
       await expect(target.cancel({ transactionId: 'TX-002' } as any)).rejects.toThrow(
         '자재출고 순서로 역처리 후 다시 입하를 취소해 주세요.',
       );
+    });
+
+    it('입하 취소는 TransactionService로 원본취소, 역분개, 재고차감을 함께 저장한다', async () => {
+      mockStockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-003',
+        status: 'DONE',
+        transType: 'MAT_IN',
+        matUid: null,
+        itemCode: 'ITEM-001',
+        qty: 10,
+        toWarehouseId: 'WH-001',
+        refType: 'MANUAL',
+        refId: null,
+        company: 'CO',
+        plant: 'P01',
+      } as StockTransaction);
+      mockIqcLogRepo.findOne.mockResolvedValue(null);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
+
+      const manager = {
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1 } as MatArrival)
+          .mockResolvedValueOnce({ warehouseCode: 'WH-001', itemCode: 'ITEM-001', matUid: '*', qty: 10, reservedQty: 0 } as MatStock),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      const result = await target.cancel({ transactionId: 'TX-003', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01');
+
+      expect(result.transNo).toBe('TX-003-C');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(manager.update).toHaveBeenCalledWith(StockTransaction, { transNo: 'TX-003' }, { status: 'CANCELED' });
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-003-C', transType: 'MAT_IN_CANCEL' }));
     });
   });
 

@@ -10,7 +10,7 @@
  */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -18,6 +18,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 interface CreateReInspectDto {
   matUid: string;
@@ -43,7 +44,7 @@ export class ShelfLifeReInspectService {
     private readonly warehouseRepo: Repository<Warehouse>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepo: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
   ) {}
 
@@ -122,10 +123,7 @@ export class ShelfLifeReInspectService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
+    await this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(MatStock,
@@ -161,13 +159,6 @@ export class ShelfLifeReInspectService {
       });
 
       await queryRunner.manager.update(MatLot, matUid, { status: 'SCRAPPED' });
-
-      await queryRunner.commitTransaction();
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 }

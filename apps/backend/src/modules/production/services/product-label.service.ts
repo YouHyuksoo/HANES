@@ -1,16 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { CreatePrdLabelsDto, PrdLabelResultDto } from '../dto/product-label.dto';
 
 @Injectable()
 export class ProductLabelService {
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
     @InjectRepository(ProdResult)
     private readonly prodResultRepo: Repository<ProdResult>,
@@ -70,11 +71,7 @@ export class ProductLabelService {
       ? await this.partRepo.findOne({ where: { itemCode } })
       : null;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const results: PrdLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
@@ -103,14 +100,8 @@ export class ProductLabelService {
       });
       await queryRunner.manager.save(log);
 
-      await queryRunner.commitTransaction();
       return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private enrichWithPartInfo(results: ProdResult[]) {

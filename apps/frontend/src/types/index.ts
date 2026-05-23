@@ -3,6 +3,8 @@
  * @description 전역 타입 정의
  */
 
+import type { JobOrderSelectItem, JobOrderStatusValue } from "@harness/shared";
+
 // ========================================
 // 공통 타입
 // ========================================
@@ -54,26 +56,9 @@ export type UserRole = "admin" | "manager" | "operator" | "viewer";
 // 생산 관련 타입
 // ========================================
 
-export interface JobOrder {
-  orderNo: string;
-  itemCode: string;
-  itemName: string;
-  orderQty: number;
-  completedQty: number;
-  lineCode: string;
-  status: JobOrderStatus;
-  planStartDate: string;
-  planEndDate: string;
-  actualStartDate?: string;
-  actualEndDate?: string;
-}
+export type JobOrder = JobOrderSelectItem;
 
-export type JobOrderStatus =
-  | "WAITING"
-  | "RUNNING"
-  | "HOLD"
-  | "DONE"
-  | "CANCELED";
+export type JobOrderStatus = JobOrderStatusValue;
 
 export interface ProductionResult {
   id: string;

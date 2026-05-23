@@ -263,6 +263,11 @@ export class ContinuityInspectService {
           `작업지시를 찾을 수 없습니다: ${dto.orderNo}`,
         );
       }
+      this.assertTenantMatches('통전검사 작업지시', { company, plant }, {
+        label: 'jobOrder',
+        company: jobOrder.company,
+        plant: jobOrder.plant,
+      });
 
       /** 2. InspectResult 생성 */
       const prodResult = await this.resolveProdResult(
@@ -395,6 +400,23 @@ export class ContinuityInspectService {
     }
   }
 
+  private assertTenantMatches(
+    context: string,
+    expected: { company?: string; plant?: string },
+    actual: { label: string; company?: string | null; plant?: string | null },
+  ): void {
+    if (expected.company && actual.company && expected.company !== actual.company) {
+      throw new BadRequestException(
+        `${context} 회사가 일치하지 않습니다. request=${expected.company}, ${actual.label}=${actual.company}`,
+      );
+    }
+    if (expected.plant && actual.plant && expected.plant !== actual.plant) {
+      throw new BadRequestException(
+        `${context} 사업장이 일치하지 않습니다. request=${expected.plant}, ${actual.label}=${actual.plant}`,
+      );
+    }
+  }
+
   /**
    * FG 바코드 사전발행 (PRE_ISSUE 모드)
    * 작업지시의 planQty에서 기발행수를 뺀 만큼 PENDING 상태 바코드를 생성한다.
@@ -414,6 +436,11 @@ export class ContinuityInspectService {
     if (!jobOrder) {
       throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${dto.orderNo}`);
     }
+    this.assertTenantMatches('FG 바코드 사전발행 작업지시', { company, plant }, {
+      label: 'jobOrder',
+      company: jobOrder.company,
+      plant: jobOrder.plant,
+    });
 
     const alreadyIssued = await this.fgLabelRepo.count({
       where: {
@@ -501,6 +528,11 @@ export class ContinuityInspectService {
     if (!label) {
       throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
     }
+    this.assertTenantMatches('통전 재검사 라벨', { company, plant }, {
+      label: 'fgLabel',
+      company: label.company,
+      plant: label.plant,
+    });
     if (label.inspectPassYn !== 'N') {
       throw new BadRequestException(
         '불합격(inspectPassYn=N) 바코드만 재검사할 수 있습니다.',

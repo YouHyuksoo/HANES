@@ -10,7 +10,7 @@
  * 5. **복합키**: equipCode + inspectType + inspectDate
  */
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
@@ -146,6 +146,7 @@ export class EquipInspectService {
       where: { equipCode: dto.equipCode },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
+    this.assertTenantMatchesEquipment(context, equip);
 
     const log = this.equipInspectLogRepository.create({
       equipCode: dto.equipCode,
@@ -155,8 +156,8 @@ export class EquipInspectService {
       overallResult: dto.overallResult ?? 'PASS',
       details: dto.details ? JSON.stringify(dto.details) : null,
       remark: dto.remark,
-      company: context?.company || equip.company,
-      plant: context?.plant || equip.plant,
+      company: context?.company ?? equip.company,
+      plant: context?.plant ?? equip.plant,
     });
 
     const saved = await this.equipInspectLogRepository.save(log);
@@ -176,6 +177,22 @@ export class EquipInspectService {
         lineCode: equip.lineCode,
       },
     };
+  }
+
+  private assertTenantMatchesEquipment(
+    context: { company: string; plant: string } | undefined,
+    equip: EquipMaster,
+  ): void {
+    if (context?.company && equip.company && context.company !== equip.company) {
+      throw new BadRequestException(
+        `요청 회사와 설비 회사가 일치하지 않습니다. request=${context.company}, equipment=${equip.company}`,
+      );
+    }
+    if (context?.plant && equip.plant && context.plant !== equip.plant) {
+      throw new BadRequestException(
+        `요청 사업장과 설비 사업장이 일치하지 않습니다. request=${context.plant}, equipment=${equip.plant}`,
+      );
+    }
   }
 
   /** 점검 결과 수정 (복합키) */

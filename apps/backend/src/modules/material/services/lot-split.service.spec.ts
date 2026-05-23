@@ -10,6 +10,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('LotSplitService', () => {
   let target: LotSplitService;
@@ -19,6 +20,7 @@ describe('LotSplitService', () => {
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -28,9 +30,11 @@ describe('LotSplitService', () => {
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -46,6 +50,7 @@ describe('LotSplitService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -97,5 +102,50 @@ describe('LotSplitService', () => {
     await expect(
       target.split({ sourceLotId: 'MAT-001', splitQty: 3 } as any),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('splits a LOT through TransactionService', async () => {
+    const sourceLot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      status: 'NORMAL',
+      company: 'C1',
+      plant: 'P1',
+    } as MatLot;
+    const sourceStock = {
+      warehouseCode: 'WH-01',
+      itemCode: 'ITEM-001',
+      matUid: 'MAT-001',
+      qty: 10,
+      availableQty: 10,
+      reservedQty: 0,
+      company: 'C1',
+      plant: 'P1',
+    } as MatStock;
+    const part = { itemCode: 'ITEM-001', itemName: 'PART-A', isSplittable: 'Y' } as PartMaster;
+    const newLot = { matUid: 'MAT-001-S001', itemCode: 'ITEM-001' } as MatLot;
+
+    mockQueryRunner.manager.findOne
+      .mockResolvedValueOnce(sourceLot)
+      .mockResolvedValueOnce(sourceStock)
+      .mockResolvedValueOnce(part)
+      .mockResolvedValueOnce(null);
+    mockQueryRunner.manager.find.mockResolvedValue([]);
+    mockQueryRunner.manager.create
+      .mockReturnValueOnce(newLot)
+      .mockReturnValueOnce({ matUid: 'MAT-001-S001' } as MatStock);
+    mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+    mockQueryRunner.manager.save.mockResolvedValue({} as any);
+    mockStockTxRepo.findOne.mockResolvedValue(null);
+
+    const result = await target.split({
+      sourceLotId: 'MAT-001',
+      splitQty: 3,
+      newLotNo: 'MAT-001-S001',
+    } as any);
+
+    expect(result.newLotNo).toBe('MAT-001-S001');
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 });

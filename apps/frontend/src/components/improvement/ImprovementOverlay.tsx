@@ -22,7 +22,7 @@ const SKIP_TAGS = ["HTML", "BODY", "SCRIPT", "STYLE", "HEAD"];
  * 클릭하면 해당 요소 정보와 스크린샷을 캡처해 개선요청 스토어에 저장한다.
  */
 export default function ImprovementOverlay() {
-  const { setSelectedElement, deactivate } = useImprovementRequestStore();
+  const { setSelectedElement, deactivate, startCapturing } = useImprovementRequestStore();
   const overlayRef = useRef<HTMLDivElement>(null);
   const highlightedElRef = useRef<HTMLElement | null>(null);
 
@@ -75,10 +75,16 @@ export default function ImprovementOverlay() {
       e.stopPropagation();
 
       const target = getTargetElement(e.clientX, e.clientY);
+      const elementInfo = {
+        text: target?.textContent?.trim().slice(0, 500) ?? "",
+        tagName: target?.tagName.toLowerCase() ?? "unknown",
+      };
+
       clearHighlight();
-
       overlay.style.visibility = "hidden";
+      startCapturing();
 
+      let screenshot: string | null = null;
       try {
         const html2canvas = (await import("html2canvas")).default;
         const canvas = await html2canvas(document.body, {
@@ -86,18 +92,12 @@ export default function ImprovementOverlay() {
           useCORS: true,
           logging: false,
         });
-        const screenshot = canvas.toDataURL("image/jpeg", 0.7);
-
-        setSelectedElement(
-          {
-            text: target?.textContent?.trim().slice(0, 500) ?? "",
-            tagName: target?.tagName.toLowerCase() ?? "unknown",
-          },
-          screenshot,
-        );
-      } catch {
-        overlay.style.visibility = "visible";
+        screenshot = canvas.toDataURL("image/jpeg", 0.7);
+      } catch (err) {
+        console.warn("[ImprovementOverlay] 스크린샷 실패, 스크린샷 없이 진행:", err);
       }
+
+      setSelectedElement(elementInfo, screenshot);
     };
 
     /** ESC 키 입력 시 선택 모드를 비활성화한다 */
@@ -118,7 +118,7 @@ export default function ImprovementOverlay() {
       overlay.removeEventListener("click", handleClick);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [setSelectedElement, deactivate]);
+  }, [setSelectedElement, deactivate, startCapturing]);
 
   return (
     <div

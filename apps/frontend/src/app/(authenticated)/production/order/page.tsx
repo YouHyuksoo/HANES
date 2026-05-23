@@ -27,27 +27,9 @@ import api from "@/services/api";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import JobOrderFormPanel from "./components/JobOrderFormPanel";
 import type { JobOrderFormData } from "./components/JobOrderFormPanel";
+import type { ProductionJobOrderRow } from "@harness/shared";
 
-interface JobOrderItem {
-  orderNo: string;
-  parentOrderNo?: string | null;
-  itemCode: string;
-  part?: { itemCode?: string; itemName?: string; itemType?: string };
-  lineCode?: string;
-  routingCode?: string | null;
-  routing?: { routingCode: string; routingName: string } | null;
-  custPoNo?: string | null;
-  planQty: number;
-  goodQty: number;
-  defectQty: number;
-  planDate?: string;
-  priority: number;
-  status: string;
-  startAt?: string;
-  endAt?: string;
-  remark?: string;
-  children?: JobOrderItem[];
-}
+type JobOrderItem = ProductionJobOrderRow;
 
 /** 트리 데이터를 평탄화 (들여쓰기 depth 포함) */
 function flattenTree(items: JobOrderItem[], depth = 0): (JobOrderItem & { _depth: number })[] {
@@ -205,12 +187,12 @@ export default function JobOrderPage() {
     setEditingOrder({
       orderNo: row.orderNo,
       itemCode: row.itemCode,
-      lineCode: row.lineCode,
-      custPoNo: row.custPoNo,
+      lineCode: row.lineCode ?? undefined,
+      custPoNo: row.custPoNo ?? undefined,
       planQty: row.planQty,
-      planDate: row.planDate,
+      planDate: row.planDate ? String(row.planDate).slice(0, 10) : undefined,
       priority: row.priority,
-      remark: row.remark,
+      remark: row.remark ?? undefined,
     });
     setIsPanelOpen(true);
   };

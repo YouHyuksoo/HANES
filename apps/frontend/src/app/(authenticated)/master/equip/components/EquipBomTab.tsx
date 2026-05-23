@@ -22,7 +22,6 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import {
   EquipMaster, EquipBomItem, EquipBomRel,
   BomItemType, BOM_ITEM_TYPE_COLORS, BOM_ITEM_TYPE_LABELS,
-  seedEquipBomItems, seedEquipBomRels, seedEquipments,
 } from "../types";
 import api from "@/services/api";
 
@@ -86,9 +85,9 @@ const EMPTY_REL_FORM: RelFormState = {
 export default function EquipBomTab() {
   const { t } = useTranslation();
   // 데이터 상태
-  const [equipments, setEquipments] = useState<EquipMaster[]>(seedEquipments);
-  const [bomItems, setBomItems] = useState<EquipBomItem[]>(seedEquipBomItems);
-  const [bomRels, setBomRels] = useState<EquipBomRel[]>(seedEquipBomRels);
+  const [equipments, setEquipments] = useState<EquipMaster[]>([]);
+  const [bomItems, setBomItems] = useState<EquipBomItem[]>([]);
+  const [bomRels, setBomRels] = useState<EquipBomRel[]>([]);
   const [loading, setLoading] = useState(false);
   
   // 선택 상태
@@ -120,7 +119,7 @@ export default function EquipBomTab() {
 
   const fetchEquipments = useCallback(async () => {
     try {
-      const res = await api.get("/equipment/equips", { params: { limit: "100", useYn: "Y", company: "40" } });
+      const res = await api.get("/equipment/equips", { params: { limit: "100", useYn: "Y" } });
       if (res.data.success) {
         setEquipments(res.data.data || []);
       }
@@ -131,7 +130,7 @@ export default function EquipBomTab() {
 
   const fetchBomItems = useCallback(async () => {
     try {
-      const res = await api.get("/master/equip-bom/items", { params: { limit: "100", company: "40" } });
+      const res = await api.get("/master/equip-bom/items", { params: { limit: "100" } });
       if (res.data.success) {
         setBomItems(res.data.data || []);
       }

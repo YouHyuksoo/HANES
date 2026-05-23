@@ -10,12 +10,13 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, DataSource, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto } from '../dto/purchase-order.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -28,7 +29,7 @@ export class PurchaseOrderService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(MatArrival)
     private readonly matArrivalRepository: Repository<MatArrival>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findAll(query: PurchaseOrderQueryDto, company?: string, plant?: string) {
@@ -141,11 +142,7 @@ export class PurchaseOrderService {
       return sum + (item.orderQty * (item.unitPrice ?? 0));
     }, 0);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // PO 생성
       const po = queryRunner.manager.create(PurchaseOrder, {
         poNo: dto.poNo,
@@ -176,8 +173,6 @@ export class PurchaseOrderService {
       const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
       const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
-      await queryRunner.commitTransaction();
-
       return {
         ...savedPo,
         items: savedItems.map((item: PurchaseOrderItem) => {
@@ -191,23 +186,14 @@ export class PurchaseOrderService {
           };
         }),
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   async update(poNo: string, dto: UpdatePurchaseOrderDto) {
     await this.findById(poNo);
     const { items, ...poData } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       if (items) {
         // 기존 품목 삭제
         await queryRunner.manager.delete(PurchaseOrderItem, { poNo });
@@ -243,14 +229,7 @@ export class PurchaseOrderService {
 
         await queryRunner.manager.update(PurchaseOrder, poNo, updateData);
       }
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.findById(poNo);
   }

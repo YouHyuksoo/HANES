@@ -12,7 +12,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -28,6 +28,7 @@ import {
   TransactionQueryDto,
 } from '../dto/inventory.dto';
 import { InventoryQueryService } from './inventory-query.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class InventoryService {
@@ -42,8 +43,8 @@ export class InventoryService {
     private readonly warehouseRepository: Repository<Warehouse>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
     private readonly inventoryQueryService: InventoryQueryService,
+    private readonly tx: TransactionService,
   ) {}
 
   // ──────────────────────────────────────────────────────────────
@@ -123,7 +124,7 @@ export class InventoryService {
   /**
    * LOT 생성
    */
-  async createLot(dto: CreateLotDto) {
+  async createLot(dto: CreateLotDto, company?: string, plant?: string) {
     const lot = this.lotRepository.create({
       matUid: dto.matUid,
       itemCode: dto.itemCode,
@@ -134,6 +135,8 @@ export class InventoryService {
       vendor: dto.vendor,
       invoiceNo: dto.invoiceNo,
       poNo: dto.poNo,
+      company: company || null,
+      plant: plant || null,
     });
 
     return this.lotRepository.save(lot);
@@ -186,14 +189,10 @@ export class InventoryService {
   /**
    * 입고 처리
    */
-  async receiveStock(dto: ReceiveStockDto) {
+  async receiveStock(dto: ReceiveStockDto, company?: string, plant?: string) {
     const transNo = await this.generateTransNo();
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 1. 트랜잭션 생성
       const transaction = this.stockTransactionRepository.create({
         transNo,
@@ -210,18 +209,32 @@ export class InventoryService {
         workerId: dto.workerId,
         remark: dto.remark,
         status: 'DONE',
+        company: company || null,
+        plant: plant || null,
       });
 
       const savedTransaction = await queryRunner.manager.save(StockTransaction, transaction);
 
       // 2. 재고 업데이트
       const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: dto.warehouseCode, itemCode: dto.itemCode, matUid: dto.matUid || IsNull() },
+        where: {
+          warehouseCode: dto.warehouseCode,
+          itemCode: dto.itemCode,
+          matUid: dto.matUid || IsNull(),
+          ...(company && { company }),
+          ...(plant && { plant }),
+        },
       });
 
       if (existingStock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, matUid: existingStock.matUid },
+          {
+            warehouseCode: existingStock.warehouseCode,
+            itemCode: existingStock.itemCode,
+            matUid: existingStock.matUid,
+            ...(company && { company }),
+            ...(plant && { plant }),
+          },
           { qty: existingStock.qty + dto.qty, availableQty: existingStock.qty + dto.qty - existingStock.reservedQty },
         );
       } else {
@@ -232,35 +245,33 @@ export class InventoryService {
           qty: dto.qty,
           reservedQty: 0,
           availableQty: dto.qty,
+          company: company || null,
+          plant: plant || null,
         });
       }
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
-      await queryRunner.commitTransaction();
       return savedTransaction;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**
    * 출고 처리
    */
-  async issueStock(dto: IssueStockDto) {
+  async issueStock(dto: IssueStockDto, company?: string, plant?: string) {
     const transNo = await this.generateTransNo();
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: dto.warehouseCode, itemCode: dto.itemCode, matUid: dto.matUid || IsNull() },
+        where: {
+          warehouseCode: dto.warehouseCode,
+          itemCode: dto.itemCode,
+          matUid: dto.matUid || IsNull(),
+          ...(company && { company }),
+          ...(plant && { plant }),
+        },
       });
 
       if (!stock || stock.availableQty < dto.qty) {
@@ -282,25 +293,45 @@ export class InventoryService {
         workerId: dto.workerId,
         remark: dto.remark,
         status: 'DONE',
+        company: company || null,
+        plant: plant || null,
       });
 
       const savedTransaction = await queryRunner.manager.save(StockTransaction, transaction);
 
       // 3. 출고 창고 재고 감소
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+        {
+          warehouseCode: stock.warehouseCode,
+          itemCode: stock.itemCode,
+          matUid: stock.matUid,
+          ...(company && { company }),
+          ...(plant && { plant }),
+        },
         { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
       );
 
       // 4. 이동 대상 창고가 있으면 입고 처리
       if (dto.toWarehouseCode) {
         const targetStock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: dto.toWarehouseCode, itemCode: dto.itemCode, matUid: dto.matUid || IsNull() },
+          where: {
+            warehouseCode: dto.toWarehouseCode,
+            itemCode: dto.itemCode,
+            matUid: dto.matUid || IsNull(),
+            ...(company && { company }),
+            ...(plant && { plant }),
+          },
         });
 
         if (targetStock) {
           await queryRunner.manager.update(MatStock,
-            { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, matUid: targetStock.matUid },
+            {
+              warehouseCode: targetStock.warehouseCode,
+              itemCode: targetStock.itemCode,
+              matUid: targetStock.matUid,
+              ...(company && { company }),
+              ...(plant && { plant }),
+            },
             { qty: targetStock.qty + dto.qty, availableQty: targetStock.qty + dto.qty - targetStock.reservedQty },
           );
         } else {
@@ -311,26 +342,22 @@ export class InventoryService {
             qty: dto.qty,
             reservedQty: 0,
             availableQty: dto.qty,
+            company: company || null,
+            plant: plant || null,
           });
         }
       }
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
-      await queryRunner.commitTransaction();
       return savedTransaction;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**
    * 창고간 이동
    */
-  async transferStock(dto: TransferStockDto) {
+  async transferStock(dto: TransferStockDto, company?: string, plant?: string) {
     return this.issueStock({
       warehouseCode: dto.fromWarehouseCode,
       toWarehouseCode: dto.toWarehouseCode,
@@ -342,16 +369,20 @@ export class InventoryService {
       refId: dto.refId,
       workerId: dto.workerId,
       remark: dto.remark,
-    });
+    }, company, plant);
   }
 
   /**
    * 트랜잭션 취소 (입고취소, 출고취소)
    * 원 트랜잭션의 반대 수량으로 새 트랜잭션 생성
    */
-  async cancelTransaction(dto: CancelTransactionDto) {
+  async cancelTransaction(dto: CancelTransactionDto, company?: string, plant?: string) {
     const originalTrans = await this.stockTransactionRepository.findOne({
-      where: { transNo: dto.transactionId },
+      where: {
+        transNo: dto.transactionId,
+        ...(company && { company }),
+        ...(plant && { plant }),
+      },
     });
 
     if (!originalTrans) {
@@ -366,11 +397,7 @@ export class InventoryService {
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
     const transNo = await this.generateTransNo();
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 1. 원본 트랜잭션 상태 변경
       await queryRunner.manager.update(StockTransaction, { transNo: originalTrans.transNo }, { status: 'CANCELED' });
 
@@ -392,6 +419,8 @@ export class InventoryService {
         workerId: dto.workerId,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,
         status: 'DONE',
+        company: company || null,
+        plant: plant || null,
       });
 
       const savedCancelTrans = await queryRunner.manager.save(StockTransaction, cancelTrans);
@@ -404,6 +433,8 @@ export class InventoryService {
             warehouseCode: originalTrans.toWarehouseId,
             itemCode: originalTrans.itemCode,
             matUid: originalTrans.matUid || IsNull(),
+            ...(company && { company }),
+            ...(plant && { plant }),
           },
         });
 
@@ -413,7 +444,13 @@ export class InventoryService {
             throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
           }
           await queryRunner.manager.update(MatStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+            {
+              warehouseCode: stock.warehouseCode,
+              itemCode: stock.itemCode,
+              matUid: stock.matUid,
+              ...(company && { company }),
+              ...(plant && { plant }),
+            },
             { qty: newQty, availableQty: newQty - stock.reservedQty },
           );
         }
@@ -426,12 +463,20 @@ export class InventoryService {
             warehouseCode: originalTrans.fromWarehouseId,
             itemCode: originalTrans.itemCode,
             matUid: originalTrans.matUid || IsNull(),
+            ...(company && { company }),
+            ...(plant && { plant }),
           },
         });
 
         if (stock) {
           await queryRunner.manager.update(MatStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+            {
+              warehouseCode: stock.warehouseCode,
+              itemCode: stock.itemCode,
+              matUid: stock.matUid,
+              ...(company && { company }),
+              ...(plant && { plant }),
+            },
             { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
           );
         } else {
@@ -442,20 +487,16 @@ export class InventoryService {
             qty: Math.abs(originalTrans.qty),
             reservedQty: 0,
             availableQty: Math.abs(originalTrans.qty),
+            company: company || null,
+            plant: plant || null,
           });
         }
       }
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
-      await queryRunner.commitTransaction();
       return savedCancelTrans;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**

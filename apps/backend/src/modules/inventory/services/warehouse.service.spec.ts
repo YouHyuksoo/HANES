@@ -54,6 +54,25 @@ describe('WarehouseService', () => {
       const r = await target.create({ warehouseCode: 'WH-001', warehouseName: 'Test', warehouseType: 'RM' } as any);
       expect(r.warehouseCode).toBe('WH-001');
     });
+    it('should persist company and plant from tenant context', async () => {
+      mockWhRepo.findOne.mockResolvedValue(null);
+      const saved = { warehouseCode: 'WH-001', company: 'TESTV', plant: 'WAREHOUSES' } as any;
+      mockWhRepo.create.mockReturnValue(saved);
+      mockWhRepo.save.mockResolvedValue(saved);
+
+      const r = await target.create(
+        { warehouseCode: 'WH-001', warehouseName: 'Test', warehouseType: 'RM' } as any,
+        'TESTV',
+        'WAREHOUSES',
+      );
+
+      expect(r).toBe(saved);
+      expect(mockWhRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        warehouseCode: 'WH-001',
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      }));
+    });
     it('should throw ConflictException', async () => {
       mockWhRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001' } as any);
       await expect(target.create({ warehouseCode: 'WH-001' } as any)).rejects.toThrow(ConflictException);

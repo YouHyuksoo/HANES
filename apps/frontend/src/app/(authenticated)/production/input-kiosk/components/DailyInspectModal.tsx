@@ -2,18 +2,18 @@
 
 /**
  * @file components/DailyInspectModal.tsx
- * @description 설비 일일점검 입력 모달 — 테이블 레이아웃
+ * @description 설비 일일점검 입력 모달 — PAGE 11 디자인 기준
  *
  * 초보자 가이드:
  * - MEASURE(측정형): 숫자 입력 → LSL/USL 비교 → PASS/FAIL 자동 판정
- * - VISUAL(판정형): OK/NG 버튼 직접 선택
- * - 점검자 드롭다운: 작업자 목록에서 선택 (설비관리팀 포함)
+ * - VISUAL(판정형): OK/NG 선택(select)
+ * - 점검자 드롭다운: 작업자 목록에서 선택 (필수, 핑크 강조)
  * - 종합 판정: 전항목 PASS=초록, NG 있음=빨간 깜빡임
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { CheckCircle2, XCircle, ClipboardCheck, Save, AlertTriangle, User } from 'lucide-react';
+import { CheckCircle2, XCircle, Save, AlertTriangle } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
@@ -56,14 +56,18 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
   const [results, setResults] = useState<Record<number, ItemResult>>({});
   const [measureValues, setMeasureValues] = useState<Record<number, string>>({});
   const [remarks, setRemarks] = useState<Record<number, string>>({});
-  const [inspectors, setInspectors] = useState<{ id: string; workerName: string }[]>([]);
+  const [inspectors, setInspectors] = useState<{ workerCode: string; workerName: string }[]>([]);
   const [inspectorName, setInspectorName] = useState('');
+  const [inspectTime, setInspectTime] = useState('');
   const [saving, setSaving] = useState(false);
   const [alreadyDone, setAlreadyDone] = useState(false);
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     if (!isOpen) return;
+    const now = new Date();
+    setInspectTime(`${today} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+
     const controller = new AbortController();
 
     api.get('/equipment/daily-inspect/check', {
@@ -87,9 +91,9 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
         itemType: i.itemType || 'VISUAL',
       }));
       setItems(data);
-      const initResults: Record<number, ItemResult> = {};
-      data.forEach(i => { initResults[i.seq] = ''; });
-      setResults(initResults);
+      const init: Record<number, ItemResult> = {};
+      data.forEach(i => { init[i.seq] = ''; });
+      setResults(init);
       setMeasureValues({});
       setRemarks({});
     }).catch(() => setItems([]));
@@ -105,22 +109,20 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
     if (selectedWorkers[0]?.workerName) setInspectorName(selectedWorkers[0].workerName);
   }, [selectedWorkers]);
 
-  const handleVisualResult = useCallback((seq: number, val: 'PASS' | 'FAIL') => {
-    setResults(prev => ({ ...prev, [seq]: val }));
-  }, []);
-
   const handleMeasureChange = useCallback((seq: number, value: string, item: InspectItem) => {
     setMeasureValues(prev => ({ ...prev, [seq]: value }));
-    setResults(prev => ({
-      ...prev,
-      [seq]: judgeByRange(value, item.lslValue, item.uslValue),
-    }));
+    setResults(prev => ({ ...prev, [seq]: judgeByRange(value, item.lslValue, item.uslValue) }));
+  }, []);
+
+  const handleVisualChange = useCallback((seq: number, val: string) => {
+    setResults(prev => ({ ...prev, [seq]: val as ItemResult }));
   }, []);
 
   const allAnswered = items.length > 0 && items.every(i => results[i.seq] !== '');
   const anyFail = items.some(i => results[i.seq] === 'FAIL');
   const okCount = items.filter(i => results[i.seq] === 'PASS').length;
   const ngCount = items.filter(i => results[i.seq] === 'FAIL').length;
+  const answeredCount = okCount + ngCount;
 
   const handleSave = useCallback(async () => {
     if (!selectedEquip) return;
@@ -130,12 +132,9 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       items.forEach(i => {
         const base = `${i.seq}_${i.itemName}`;
         details[base] = results[i.seq] || 'PASS';
-        if (i.itemType === 'MEASURE' && measureValues[i.seq]) {
-          details[`${base}_value`] = measureValues[i.seq];
-        }
+        if (i.itemType === 'MEASURE' && measureValues[i.seq]) details[`${base}_value`] = measureValues[i.seq];
         if (remarks[i.seq]) details[`${base}_remark`] = remarks[i.seq];
       });
-
       await api.post('/equipment/daily-inspect', {
         equipCode: selectedEquip.equipCode,
         inspectDate: today,
@@ -144,7 +143,6 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
         overallResult: anyFail ? 'FAIL' : 'PASS',
         details,
       });
-
       setInterlock('dailyInspectDone', true);
       toast.success(t('kiosk.prep.dailyInspectSaved'));
       onDone();
@@ -156,7 +154,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       setSaving(false);
     }
   }, [selectedEquip, items, results, measureValues, remarks, today, inspectorName,
-      anyFail, setInterlock, onDone, t]);
+    anyFail, setInterlock, onDone, t]);
 
   const handleSkip = useCallback(async () => {
     if (!selectedEquip) return;
@@ -192,27 +190,56 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
         </div>
       ) : (
         <div className="space-y-3">
-          {/* 설비 정보 + 점검자 */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm">
-              <ClipboardCheck className="w-4 h-4 text-primary shrink-0" />
-              <div className="min-w-0">
-                <p className="font-medium truncate">{selectedEquip?.equipName}</p>
-                <p className="text-xs text-text-muted">{selectedEquip?.equipCode} · {today}</p>
+          {/* 상단: 설비정보 / 점검자 */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {/* 왼쪽: 설비 정보 */}
+            <div className="border border-border rounded-lg p-3 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-text-muted">{t('kiosk.prep.equipCode')}</span>
+                <span className="font-mono font-semibold">{selectedEquip?.equipCode}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-text-muted">{t('kiosk.prep.equipName')}</span>
+                <span className="font-semibold truncate max-w-[140px]">{selectedEquip?.equipName}</span>
+              </div>
+              {selectedEquip?.processName && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-text-muted">{t('kiosk.prep.process')}</span>
+                  <span>{selectedEquip.processName}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-text-muted">{t('kiosk.prep.inspectDate')}</span>
+                <span className="font-mono">{today}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 border border-border rounded-lg">
-              <User className="w-4 h-4 text-text-muted shrink-0" />
-              <select
-                value={inspectorName}
-                onChange={e => setInspectorName(e.target.value)}
-                className="flex-1 text-sm bg-transparent focus:outline-none"
-              >
-                <option value="">{t('kiosk.prep.inspectorPlaceholder')}</option>
-                {inspectors.map(w => (
-                  <option key={w.id} value={w.workerName}>{w.workerName}</option>
-                ))}
-              </select>
+
+            {/* 오른쪽: 점검자 (필수 — 핑크 강조) */}
+            <div className="border border-rose-400 bg-rose-50 dark:bg-rose-950/20 rounded-lg p-3 space-y-2">
+              <div className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {t('kiosk.prep.inspectorRequired')}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-muted shrink-0">{t('kiosk.prep.inspector')}</span>
+                <select
+                  value={inspectorName}
+                  onChange={e => setInspectorName(e.target.value)}
+                  className="flex-1 text-sm border border-border rounded px-2 py-1 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-rose-400"
+                >
+                  <option value="">{t('kiosk.prep.inspectorPlaceholder')}</option>
+                  {inspectors.map(w => (
+                    <option key={w.workerCode} value={w.workerName}>{w.workerName}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-between items-center text-xs text-text-muted">
+                <span>{t('kiosk.prep.inspectTime')}</span>
+                <span className="font-mono">{inspectTime}</span>
+              </div>
+              <p className="text-[10px] text-text-muted">
+                ※ {t('kiosk.prep.inspectorHint')}
+              </p>
             </div>
           </div>
 
@@ -226,8 +253,35 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
             </div>
           ) : (
             <>
+              {/* 종합 판정 배너 — 항상 표시 */}
+              <div className={`flex items-center justify-between p-3 rounded-lg border text-sm font-medium transition-colors ${
+                allAnswered && anyFail
+                  ? 'animate-pulse bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
+                  : allAnswered
+                  ? 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
+                  : 'bg-surface border-border text-text-muted'
+              }`}>
+                <div>
+                  <div className="text-xs font-bold opacity-70">{t('kiosk.prep.overallResult')}</div>
+                  <div className="text-xs mt-0.5">
+                    {allAnswered
+                      ? anyFail
+                        ? `${items.length}개 항목 중 ${ngCount}건 NG 발생`
+                        : `전 ${items.length}개 항목 합격`
+                      : `${answeredCount} / ${items.length} 항목 점검 중`}
+                  </div>
+                </div>
+                <div className="text-base font-bold flex items-center gap-1">
+                  {allAnswered
+                    ? anyFail
+                      ? <><XCircle className="w-5 h-5" /> 불합격 (NG)</>
+                      : <><CheckCircle2 className="w-5 h-5" /> 합격 (OK)</>
+                    : '—'}
+                </div>
+              </div>
+
               {/* 점검 테이블 */}
-              <div className="overflow-x-auto max-h-[50vh] overflow-y-auto rounded-lg border border-border">
+              <div className="overflow-x-auto max-h-[44vh] overflow-y-auto rounded-lg border border-border">
                 <table className="w-full text-sm border-collapse">
                   <thead className="sticky top-0 bg-surface z-10">
                     <tr className="border-b border-border">
@@ -247,18 +301,12 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                       const isPass = r === 'PASS';
                       return (
                         <tr key={item.seq} className={`border-b border-border last:border-0 transition-colors ${
-                          isFail ? 'bg-red-50 dark:bg-red-950/30' : isPass ? 'bg-green-50 dark:bg-green-950/30' : ''
+                          isFail ? 'bg-red-50 dark:bg-red-950/30' : isPass ? 'bg-green-50 dark:bg-green-950/20' : ''
                         }`}>
+                          <td className="px-3 py-2 text-center text-xs text-text-muted">{item.seq}</td>
+                          <td className="px-3 py-2 font-medium text-text">{item.itemName}</td>
                           <td className="px-3 py-2 text-center">
-                            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mx-auto">
-                              {item.seq}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <p className="font-medium text-text">{item.itemName}</p>
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
                               item.itemType === 'MEASURE'
                                 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                 : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
@@ -269,14 +317,10 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                           <td className="px-3 py-2 text-center text-xs text-text-muted">
                             {item.itemType === 'MEASURE' && (item.lslValue != null || item.uslValue != null) ? (
                               <span className="text-blue-600 dark:text-blue-400">
-                                {item.lslValue != null ? item.lslValue : '—'}
-                                {' ~ '}
-                                {item.uslValue != null ? item.uslValue : '—'}
+                                {item.lslValue != null ? item.lslValue : '—'}{' ~ '}{item.uslValue != null ? item.uslValue : '—'}
                                 {item.unit ? ` ${item.unit}` : ''}
                               </span>
-                            ) : item.criteria ? (
-                              <span>{item.criteria}</span>
-                            ) : '—'}
+                            ) : item.criteria ? item.criteria : '—'}
                           </td>
                           <td className="px-3 py-2 text-center">
                             {item.itemType === 'MEASURE' ? (
@@ -285,36 +329,33 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                                 value={measureValues[item.seq] ?? ''}
                                 onChange={e => handleMeasureChange(item.seq, e.target.value, item)}
                                 placeholder={item.unit ?? t('kiosk.prep.measureValue')}
-                                className={`w-full px-2 py-1 text-sm border rounded-lg bg-surface focus:outline-none focus:ring-1 ${
-                                  isFail
-                                    ? 'border-red-400 text-red-600 dark:text-red-400 font-bold focus:ring-red-400'
-                                    : 'border-border focus:ring-primary'
+                                className={`w-full px-2 py-1 text-sm text-right border rounded-lg bg-surface focus:outline-none focus:ring-1 ${
+                                  isFail ? 'border-red-400 text-red-600 dark:text-red-400 font-bold focus:ring-red-400' : 'border-border focus:ring-primary'
                                 }`}
                               />
                             ) : (
-                              <div className="flex gap-1 justify-center">
-                                <button
-                                  onClick={() => handleVisualResult(item.seq, 'PASS')}
-                                  className={`px-2 py-1 rounded text-xs font-medium border transition-colors ${
-                                    isPass
-                                      ? 'bg-green-500 text-white border-green-500'
-                                      : 'border-border text-text-muted hover:bg-green-50 dark:hover:bg-green-900/20'
-                                  }`}
-                                >OK</button>
-                                <button
-                                  onClick={() => handleVisualResult(item.seq, 'FAIL')}
-                                  className={`px-2 py-1 rounded text-xs font-medium border transition-colors ${
-                                    isFail
-                                      ? 'bg-red-500 text-white border-red-500'
-                                      : 'border-border text-text-muted hover:bg-red-50 dark:hover:bg-red-900/20'
-                                  }`}
-                                >NG</button>
-                              </div>
+                              <select
+                                value={r || ''}
+                                onChange={e => handleVisualChange(item.seq, e.target.value)}
+                                className={`w-full px-2 py-1 text-sm border rounded-lg bg-surface focus:outline-none focus:ring-1 ${
+                                  isFail ? 'border-red-400 text-red-600 dark:text-red-400 font-bold focus:ring-red-400'
+                                    : isPass ? 'border-green-400 text-green-700 dark:text-green-400 focus:ring-green-400'
+                                    : 'border-border focus:ring-primary'
+                                }`}
+                              >
+                                <option value="">—</option>
+                                <option value="PASS">OK</option>
+                                <option value="FAIL">NG</option>
+                              </select>
                             )}
                           </td>
                           <td className="px-3 py-2 text-center">
-                            {isPass && <span className="text-xs font-bold text-green-600 dark:text-green-400">PASS</span>}
-                            {isFail && <span className="text-xs font-bold text-red-600 dark:text-red-400">FAIL</span>}
+                            {isPass && (
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">OK</span>
+                            )}
+                            {isFail && (
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">NG</span>
+                            )}
                           </td>
                           <td className="px-3 py-2">
                             <input
@@ -332,39 +373,38 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                 </table>
               </div>
 
-              {/* 종합 판정 푸터 */}
-              {allAnswered && (
-                <div className={`flex items-center justify-between p-3 rounded-lg border text-sm font-medium ${
-                  anyFail
-                    ? 'animate-pulse bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300'
-                    : 'bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300'
-                }`}>
-                  <span>
-                    {anyFail
-                      ? <><XCircle className="w-4 h-4 inline mr-1" />{t('kiosk.prep.failWarning')}</>
-                      : <><CheckCircle2 className="w-4 h-4 inline mr-1" />{t('kiosk.selfInspect.overallPass')}</>
-                    }
+              {/* 푸터 */}
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-0.5 rounded font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                    OK {okCount}
                   </span>
-                  <span className="text-xs font-semibold">
-                    OK {okCount} / NG {ngCount}
+                  <span className="px-2 py-0.5 rounded font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400">
+                    NG {ngCount}
                   </span>
+                  {allAnswered && (
+                    <span className="text-text-muted">
+                      → 종합판정 <strong className={anyFail ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
+                        {anyFail ? 'NG' : 'OK'}
+                      </strong>
+                    </span>
+                  )}
                 </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={!allAnswered || saving}
-                  className={anyFail ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
-                >
-                  <Save className="w-4 h-4 mr-1" />
-                  {saving
-                    ? t('common.saving')
-                    : anyFail
-                    ? t('kiosk.prep.saveInspectNg')
-                    : t('kiosk.prep.saveInspectOk')}
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={!allAnswered || !inspectorName || saving}
+                    className={allAnswered && anyFail ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
+                  >
+                    <Save className="w-4 h-4 mr-1" />
+                    {saving
+                      ? t('common.saving')
+                      : allAnswered && anyFail
+                      ? t('kiosk.prep.saveInspectNg')
+                      : t('kiosk.prep.saveInspectOk')}
+                  </Button>
+                </div>
               </div>
             </>
           )}

@@ -11,6 +11,7 @@ import { ProductHoldService } from './product-hold.service';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProductHoldService', () => {
   let target: ProductHoldService;
@@ -18,13 +19,16 @@ describe('ProductHoldService', () => {
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockStockRepo = createMock<Repository<ProductStock>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
+    mockTx = createMock<TransactionService>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -37,6 +41,7 @@ describe('ProductHoldService', () => {
         { provide: getRepositoryToken(ProductStock), useValue: mockStockRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ProductHoldService>(ProductHoldService);
@@ -53,6 +58,8 @@ describe('ProductHoldService', () => {
 
       const r = await target.hold({ stockId: 'WH::IT::LOT1', reason: 'QC hold' } as any, 'CO', 'P01', 'user');
       expect(r.status).toBe('HOLD');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
       });
@@ -84,6 +91,8 @@ describe('ProductHoldService', () => {
 
       const r = await target.release({ stockId: 'WH::IT::LOT1', reason: 'Released' } as any, 'CO', 'P01', 'user');
       expect(r.status).toBe('NORMAL');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
       });

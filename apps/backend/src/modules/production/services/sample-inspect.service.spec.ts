@@ -7,21 +7,25 @@ import { MockLoggerService } from '../../../common/test/mock-logger.service';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { SampleInspectResult } from '../../../entities/sample-inspect-result.entity';
 import { SampleInspectService } from './sample-inspect.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('SampleInspectService', () => {
   let service: SampleInspectService;
   let sampleInspectRepo: DeepMocked<Repository<SampleInspectResult>>;
   let jobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
     sampleInspectRepo = createMock<Repository<SampleInspectResult>>();
     jobOrderRepo = createMock<Repository<JobOrder>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -34,6 +38,7 @@ describe('SampleInspectService', () => {
         { provide: getRepositoryToken(SampleInspectResult), useValue: sampleInspectRepo },
         { provide: getRepositoryToken(JobOrder), useValue: jobOrderRepo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -61,6 +66,8 @@ describe('SampleInspectService', () => {
     expect(jobOrderRepo.findOne).toHaveBeenCalledWith({
       where: { orderNo: 'JO-001', company: 'C1', plant: 'P1' },
     });
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
   it('throws when job order is not found', async () => {
@@ -89,5 +96,28 @@ describe('SampleInspectService', () => {
       where: { orderNo: 'JO-001', company: 'C1', plant: 'P1' },
       order: { inspectDate: 'DESC', sampleNo: 'ASC' },
     });
+  });
+
+  it('does not select two different sources into the same orderNo alias', async () => {
+    const qb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    sampleInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+    await service.findHistory({}, 'C1', 'P1');
+
+    expect(qb.select).toHaveBeenCalledWith(expect.arrayContaining([
+      'si.orderNo AS "orderNo"',
+      'jo.orderNo AS "jobOrderNo"',
+    ]));
+    expect(qb.select).not.toHaveBeenCalledWith(expect.arrayContaining([
+      'jo.orderNo AS "orderNo"',
+    ]));
   });
 });

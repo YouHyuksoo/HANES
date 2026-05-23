@@ -8,11 +8,12 @@
  */
 
 import { Global, Module } from '@nestjs/common';
+import { OracleQueryAdapter } from '../services/oracle-query.adapter';
 import { OracleService } from '../services/oracle.service';
 
 @Global()
 @Module({
-  providers: [OracleService],
-  exports: [OracleService],
+  providers: [OracleService, OracleQueryAdapter],
+  exports: [OracleService, OracleQueryAdapter],
 })
 export class OracleModule {}

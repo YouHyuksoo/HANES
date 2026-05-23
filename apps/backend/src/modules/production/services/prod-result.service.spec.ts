@@ -12,6 +12,9 @@ import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
+import { MatStock } from '../../../entities/mat-stock.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { User } from '../../../entities/user.entity';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
@@ -185,5 +188,46 @@ describe('ProdResultService', () => {
     matIssueRepo.find.mockResolvedValue([] as any);
 
     await expect(service.delete('PR-1', 'C1', 'P1')).rejects.toThrow(BadRequestException);
+  });
+
+  it('blocks auto-issue reversal when tenant values disagree across source rows', async () => {
+    queryRunner.manager.find
+      .mockResolvedValueOnce([
+        {
+          issueNo: 'MI-1',
+          seq: 1,
+          matUid: 'MAT-1',
+          issueQty: 1,
+          company: 'C1',
+          plant: 'P1',
+        },
+      ] as any)
+      .mockResolvedValueOnce([
+        {
+          transNo: 'TX-1',
+          fromWarehouseId: 'WH-1',
+          itemCode: 'ITEM-1',
+          qty: -1,
+          company: 'C2',
+          plant: 'P1',
+        },
+      ] as any);
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ matUid: 'MAT-1', itemCode: 'ITEM-1', company: 'C1', plant: 'P1' } as any)
+      .mockResolvedValueOnce({
+        warehouseCode: 'WH-1',
+        itemCode: 'ITEM-1',
+        matUid: 'MAT-1',
+        qty: 0,
+        availableQty: 0,
+      } as any);
+
+    await expect(
+      (service as any).reverseAutoIssue(queryRunner, 'PR-1', 'C1', 'P1'),
+    ).rejects.toThrow(BadRequestException);
+    expect(queryRunner.manager.create).not.toHaveBeenCalledWith(
+      StockTransaction,
+      expect.objectContaining({ company: 'C2' }),
+    );
   });
 });

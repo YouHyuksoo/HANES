@@ -10,6 +10,7 @@
 
 import { ProcessType, WorkStatus, JobOrderType } from './enums';
 import { Traceability4M } from './traceability';
+import type { JobOrderStatusValue } from '../constants/com-code-values';
 
 /** 작업지시 */
 export interface JobOrder {
@@ -57,6 +58,66 @@ export interface JobOrderDetail {
   planEndTime?: string;
   actualStartTime?: string;
   actualEndTime?: string;
+}
+
+/** 작업지시 API 응답의 품목 요약 */
+export interface JobOrderPartSummary {
+  itemCode?: string;
+  itemName?: string;
+  itemType?: string;
+}
+
+/** 작업지시 API 응답의 라우팅 요약 */
+export interface JobOrderRoutingSummary {
+  routingCode: string;
+  routingName: string;
+}
+
+/** 현재 `/production/job-orders` API row shape */
+export interface ProductionJobOrderRow {
+  orderNo: string;
+  parentOrderNo?: string | null;
+  itemCode: string;
+  part?: JobOrderPartSummary | null;
+  lineCode?: string | null;
+  routingCode?: string | null;
+  routing?: JobOrderRoutingSummary | null;
+  custPoNo?: string | null;
+  planQty: number;
+  goodQty: number;
+  defectQty: number;
+  planDate?: string | Date | null;
+  priority: number;
+  status: JobOrderStatusValue | string;
+  startAt?: string | Date | null;
+  endAt?: string | Date | null;
+  remark?: string | null;
+  children?: ProductionJobOrderRow[];
+}
+
+/** 작업지시 선택 모달에서 사용하는 정규화된 view model */
+export interface JobOrderSelectItem {
+  id: string;
+  orderNo: string;
+  itemCode: string;
+  itemName: string;
+  itemType?: string;
+  processType?: string;
+  processCode?: string;
+  planQty: number;
+  completedQty: number;
+  status: JobOrderStatusValue | string;
+  planStartDate: string;
+  planEndDate: string;
+  workDate?: string;
+  equipCode?: string;
+  equipName?: string;
+}
+
+/** select/dropdown option shape for job orders */
+export interface JobOrderOption {
+  value: string;
+  label: string;
 }
 
 /** 생산실적 */

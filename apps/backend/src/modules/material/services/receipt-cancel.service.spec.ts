@@ -18,6 +18,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('ReceiptCancelService', () => {
@@ -29,6 +30,7 @@ describe('ReceiptCancelService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
@@ -38,8 +40,10 @@ describe('ReceiptCancelService', () => {
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
+    mockTx = createMock<TransactionService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -55,6 +59,7 @@ describe('ReceiptCancelService', () => {
         { provide: getRepositoryToken(PurchaseOrderItem), useValue: mockPoItemRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -153,7 +158,8 @@ describe('ReceiptCancelService', () => {
       const result = await target.cancel({ transactionId: 'TX-001', reason: '취소' } as any);
 
       expect(result.cancelled).toBe(true);
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('뒤 공정이 진행된 LOT는 입고취소를 차단한다', async () => {

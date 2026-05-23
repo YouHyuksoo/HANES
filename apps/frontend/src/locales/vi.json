@@ -5858,7 +5858,15 @@
       "saveInspectOk": "Lưu (PASS)",
       "saveInspectNg": "Lưu (NG · Yêu cầu bảo trì)",
       "ngReasonPlaceholder": "Nhập lý do NG...",
-      "startWork": "Bắt đầu làm việc"
+      "startWork": "Bắt đầu làm việc",
+      "equipCode": "Mã thiết bị",
+      "equipName": "Tên thiết bị",
+      "process": "Quy trình",
+      "inspectDate": "Ngày kiểm tra",
+      "inspectorRequired": "Người kiểm tra (bắt buộc)",
+      "inspectTime": "Thời gian kiểm tra",
+      "inspectorHint": "Vui lòng chọn nhân viên bảo trì",
+      "overallResult": "Kết quả tổng hợp"
     },
     "workerInspect": {
       "check1": "Nguồn thiết bị và thiết bị an toàn hoạt động bình thường",
@@ -5973,6 +5981,7 @@
     "statusPending": "Chờ xử lý",
     "statusInProgress": "Đang xử lý",
     "statusDone": "Hoàn thành",
-    "noScreenshot": "Không có ảnh chụp"
+    "noScreenshot": "Không có ảnh chụp",
+    "capturing": "Đang chụp màn hình..."
   }
 }

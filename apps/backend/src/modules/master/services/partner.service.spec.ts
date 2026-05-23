@@ -143,11 +143,16 @@ describe('PartnerService', () => {
   describe('getStatistics', () => {
     it('should return count statistics', async () => {
       // Arrange
-      mockRepo.count
-        .mockResolvedValueOnce(100) // totalCount
-        .mockResolvedValueOnce(60)  // supplierCount
-        .mockResolvedValueOnce(30)  // customerCount
-        .mockResolvedValueOnce(80); // activeCount
+      const qb = createMock<any>();
+      qb.select.mockReturnThis();
+      qb.addSelect.mockReturnThis();
+      qb.getRawOne.mockResolvedValue({
+        totalCount: '100',
+        supplierCount: '60',
+        customerCount: '30',
+        activeCount: '80',
+      });
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
       const result = await target.getStatistics();

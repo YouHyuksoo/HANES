@@ -47,7 +47,7 @@ describe('NumberingService', () => {
     it.each([
       'MAT_UID', 'PRD_UID', 'CON_UID', 'FG_BARCODE',
       'JOB_ORDER', 'OQC_REQ', 'MAT_REQ', 'SHIPMENT',
-      'SUBCON', 'INSPECT_RESULT',
+      'SUBCON', 'INSPECT_RESULT', 'PROD_RESULT',
     ])('should route %s to SeqGeneratorService', async (type) => {
       // Arrange
       mockSeqGenerator.getNo.mockResolvedValue(`${type}-001`);
@@ -64,8 +64,9 @@ describe('NumberingService', () => {
 
   describe('RULE_TYPES routing', () => {
     it.each([
-      'ARRIVAL', 'RECEIVING', 'MAT_ISSUE', 'PROD_RESULT',
+      'ARRIVAL', 'RECEIVING', 'MAT_ISSUE',
       'SCRAP', 'RECEIPT_CANCEL', 'ISSUE_REQUEST',
+      'STOCK_TX', 'CANCEL_TX', 'RECEIVE',
     ])('should route %s to NumRuleService.nextNumber without qr', async (type) => {
       // Arrange
       mockNumRule.nextNumber.mockResolvedValue(`${type}-001`);

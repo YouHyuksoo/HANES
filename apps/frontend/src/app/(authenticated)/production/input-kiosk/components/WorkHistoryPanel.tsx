@@ -97,7 +97,7 @@ export default function WorkHistoryPanel() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* 양품조건 — 라우팅 공정 기준 */}
       <div className="border-b border-border/50 shrink-0 max-h-48 flex flex-col">
-        <div className="sticky top-0 bg-card px-3 py-2 flex items-center gap-1.5 border-b border-border/30">
+        <div className="sticky top-0 bg-slate-100 dark:bg-slate-800 px-3 py-2 flex items-center gap-1.5 border-b border-border">
           <FlaskConical className="w-3.5 h-3.5 text-green-500" />
           <span className="text-xs font-semibold text-text">{t('kiosk.history.qualityCriteria')}</span>
           {conditions.length > 0 && (
@@ -159,7 +159,7 @@ export default function WorkHistoryPanel() {
 
       {/* 작업이력 목록 */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="sticky top-0 bg-card px-3 py-1.5 border-b border-border/30 flex items-center gap-1.5">
+        <div className="sticky top-0 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border-b border-border flex items-center gap-1.5">
           <History className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-semibold text-text">{t('kiosk.history.recentHistory')}</span>
           <span className="ml-auto text-xs text-text-muted">{t('kiosk.history.autoRefresh')}</span>

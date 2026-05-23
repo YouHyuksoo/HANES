@@ -19,6 +19,7 @@ interface HeaderCheckItemProps {
   notTarget?: boolean;
   notTargetDetail?: string;
   disabled?: boolean;
+  disabledReason?: string;
   onInput: () => void;
 }
 
@@ -29,9 +30,17 @@ export default function HeaderCheckItem({
   notTarget,
   notTargetDetail,
   disabled,
+  disabledReason,
   onInput,
 }: HeaderCheckItemProps) {
   const { t } = useTranslation();
+  const isDisabled = Boolean(disabled || notTarget);
+  const reasonText = notTarget
+    ? (notTargetDetail ?? t('kiosk.header.notTarget', '대상 아님'))
+    : disabledReason;
+  const buttonTitle = isDisabled
+    ? (reasonText ?? t('kiosk.header.inputDisabled', '입력할 수 없습니다.'))
+    : t('common.input', '입력');
 
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5">
@@ -47,19 +56,29 @@ export default function HeaderCheckItem({
             {doneDetail ?? t('kiosk.header.done', '완료')}
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-[11px] font-medium text-orange-500">
-            <XCircle className="h-3 w-3 shrink-0" />
-            {t('kiosk.header.notDone', '미완료')}
-          </div>
+          <>
+            <div className="flex items-center gap-1 text-[11px] font-medium text-orange-500">
+              <XCircle className="h-3 w-3 shrink-0" />
+              {t('kiosk.header.notDone', '미완료')}
+            </div>
+            {disabledReason && (
+              <div className="truncate text-[11px] text-text-muted" title={disabledReason}>
+                {disabledReason}
+              </div>
+            )}
+          </>
         )}
       </div>
-      <button
-        onClick={onInput}
-        disabled={disabled || notTarget}
-        className="shrink-0 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted"
-      >
-        {t('common.input', '입력')}
-      </button>
+      <span className="shrink-0" title={buttonTitle}>
+        <button
+          onClick={onInput}
+          disabled={isDisabled}
+          aria-label={buttonTitle}
+          className="rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted"
+        >
+          {t('common.input', '입력')}
+        </button>
+      </span>
     </div>
   );
 }

@@ -16,7 +16,7 @@ import { SubconOrder } from '../../../entities/subcon-order.entity';
 import { SubconDelivery } from '../../../entities/subcon-delivery.entity';
 import { SubconReceive } from '../../../entities/subcon-receive.entity';
 import { VendorMaster } from '../../../entities/vendor-master.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('OutsourcingService', () => {
@@ -26,7 +26,7 @@ describe('OutsourcingService', () => {
   let mockReceiveRepo: DeepMocked<Repository<SubconReceive>>;
   let mockVendorRepo: DeepMocked<Repository<VendorMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
-  let mockSeqGenerator: DeepMocked<SeqGeneratorService>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockOrderRepo = createMock<Repository<SubconOrder>>();
@@ -34,7 +34,7 @@ describe('OutsourcingService', () => {
     mockReceiveRepo = createMock<Repository<SubconReceive>>();
     mockVendorRepo = createMock<Repository<VendorMaster>>();
     mockDataSource = createMock<DataSource>();
-    mockSeqGenerator = createMock<SeqGeneratorService>();
+    mockNumbering = createMock<NumberingService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,7 +44,7 @@ describe('OutsourcingService', () => {
         { provide: getRepositoryToken(SubconReceive), useValue: mockReceiveRepo },
         { provide: getRepositoryToken(VendorMaster), useValue: mockVendorRepo },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: SeqGeneratorService, useValue: mockSeqGenerator },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -149,7 +149,7 @@ describe('OutsourcingService', () => {
   describe('createOrder', () => {
     it('should create order with generated orderNo', async () => {
       // Arrange
-      mockSeqGenerator.nextSubconNo.mockResolvedValue('SCO20260318-0001');
+      mockNumbering.nextSubconNo.mockResolvedValue('SCO20260318-0001');
       const order = { orderNo: 'SCO20260318-0001' } as SubconOrder;
       mockOrderRepo.create.mockReturnValue(order);
       mockOrderRepo.save.mockResolvedValue(order);

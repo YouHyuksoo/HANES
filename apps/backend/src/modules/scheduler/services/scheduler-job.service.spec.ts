@@ -25,6 +25,7 @@ describe('SchedulerJobService', () => {
   let mockRunnerService: DeepMocked<SchedulerRunnerService>;
   let mockLogService: DeepMocked<SchedulerLogService>;
   let mockDataSource: DeepMocked<DataSource>;
+  let registeredCronJobs: Array<{ stop: () => void }>;
 
   beforeEach(async () => {
     mockJobRepo = createMock<Repository<SchedulerJob>>();
@@ -32,6 +33,10 @@ describe('SchedulerJobService', () => {
     mockRunnerService = createMock<SchedulerRunnerService>();
     mockLogService = createMock<SchedulerLogService>();
     mockDataSource = createMock<DataSource>();
+    registeredCronJobs = [];
+    mockSchedulerRegistry.addCronJob.mockImplementation((_, cronJob: any) => {
+      registeredCronJobs.push(cronJob);
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -50,6 +55,9 @@ describe('SchedulerJobService', () => {
   });
 
   afterEach(() => {
+    for (const cronJob of registeredCronJobs) {
+      cronJob.stop();
+    }
     jest.clearAllMocks();
   });
 

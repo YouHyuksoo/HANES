@@ -121,34 +121,3 @@ export const EQUIP_STATUS_LABELS: Record<EquipStatus, string> = {
   STOP: '가동중지',
 };
 
-// ========================================
-// 설비 마스터 시드 데이터 — 하네스 제조공장 실제 설비
-// DB에서 조회하므로 프론트에서는 참조용으로만 사용
-// ========================================
-
-export const seedEquipments: EquipMaster[] = [];
-
-// ========================================
-// BOM 품목 시드 데이터
-// ========================================
-
-export const seedEquipBomItems: EquipBomItem[] = [
-  { bomItemCode: 'PART-001', itemCode: 'PART-001', itemName: '커팅 블레이드', itemType: 'PART', spec: '100x50x2mm', maker: '日本特殊鋼', unit: 'EA', unitPrice: 150000, replacementCycle: 90, stockQty: 5, safetyStock: 2, useYn: 'Y' },
-  { bomItemCode: 'PART-002', itemCode: 'PART-002', itemName: '압착 다이스', itemType: 'PART', spec: 'AWG 20-22', maker: 'TE Connectivity', unit: 'SET', unitPrice: 250000, replacementCycle: 180, stockQty: 3, safetyStock: 1, useYn: 'Y' },
-  { bomItemCode: 'PART-003', itemCode: 'PART-003', itemName: '서보 모터', itemType: 'PART', spec: '750W AC', maker: 'Mitsubishi', unit: 'EA', unitPrice: 850000, replacementCycle: 365, stockQty: 2, safetyStock: 1, useYn: 'Y' },
-  { bomItemCode: 'PART-004', itemCode: 'PART-004', itemName: 'PLC 모듈', itemType: 'PART', spec: 'FX5U-32MT', maker: 'Mitsubishi', unit: 'EA', unitPrice: 1200000, replacementCycle: 730, stockQty: 1, safetyStock: 1, useYn: 'Y' },
-  { bomItemCode: 'CONS-001', itemCode: 'CONS-001', itemName: '그리스', itemType: 'CONSUMABLE', spec: 'NLGI #2', maker: 'SKF', unit: 'CAN', unitPrice: 35000, replacementCycle: 30, stockQty: 12, safetyStock: 5, useYn: 'Y' },
-  { bomItemCode: 'CONS-002', itemCode: 'CONS-002', itemName: '클리닝 와이프', itemType: 'CONSUMABLE', spec: '300x300mm 무지', maker: '3M', unit: 'BOX', unitPrice: 25000, replacementCycle: 14, stockQty: 20, safetyStock: 10, useYn: 'Y' },
-  { bomItemCode: 'CONS-003', itemCode: 'CONS-003', itemName: '절단유', itemType: 'CONSUMABLE', spec: 'ISO VG 68', maker: 'Shell', unit: 'L', unitPrice: 15000, replacementCycle: 90, stockQty: 50, safetyStock: 20, useYn: 'Y' },
-  { bomItemCode: 'CONS-004', itemCode: 'CONS-004', itemName: '에어 필터', itemType: 'CONSUMABLE', spec: '5μm', maker: 'SMC', unit: 'EA', unitPrice: 8500, replacementCycle: 60, stockQty: 15, safetyStock: 5, useYn: 'Y' },
-];
-
-export const seedEquipBomRels: EquipBomRel[] = [
-  { equipCode: '1', bomItemCode: '1', quantity: 2, installDate: '2024-01-15', remark: '메인 블레이드', useYn: 'Y', bomItem: seedEquipBomItems[0] },
-  { equipCode: '1', bomItemCode: '5', quantity: 1, installDate: '2024-01-15', remark: '주간 점검용', useYn: 'Y', bomItem: seedEquipBomItems[4] },
-  { equipCode: '2', bomItemCode: '1', quantity: 2, installDate: '2024-02-01', remark: '메인 블레이드', useYn: 'Y', bomItem: seedEquipBomItems[0] },
-  { equipCode: '3', bomItemCode: '2', quantity: 1, installDate: '2024-01-20', remark: '압착 다이스 세트', useYn: 'Y', bomItem: seedEquipBomItems[1] },
-  { equipCode: '3', bomItemCode: '6', quantity: 2, installDate: '2024-01-20', useYn: 'Y', bomItem: seedEquipBomItems[5] },
-  { equipCode: '4', bomItemCode: '4', quantity: 1, installDate: '2024-01-10', remark: '제어 모듈', useYn: 'Y', bomItem: seedEquipBomItems[3] },
-  { equipCode: '5', bomItemCode: '4', quantity: 1, installDate: '2024-01-10', remark: '제어 모듈', useYn: 'Y', bomItem: seedEquipBomItems[3] },
-];

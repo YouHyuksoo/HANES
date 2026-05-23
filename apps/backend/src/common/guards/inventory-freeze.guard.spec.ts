@@ -66,7 +66,7 @@ describe('InventoryFreezeGuard (HTTP)', () => {
     expect(dataSourceMock.query.mock.calls[0][1]).toEqual(['HANES', 'P01']);
   });
 
-  it('fails open when freeze status query throws', async () => {
+  it('blocks request when freeze status query throws', async () => {
     dataSourceMock.query.mockRejectedValue(new Error('db unavailable'));
 
     await request(app.getHttpServer())
@@ -74,6 +74,6 @@ describe('InventoryFreezeGuard (HTTP)', () => {
       .set('x-company', 'HANES')
       .set('x-plant', 'P01')
       .send({ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 8 })
-      .expect(201);
+      .expect(400);
   });
 });

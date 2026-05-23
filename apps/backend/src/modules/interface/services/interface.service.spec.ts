@@ -94,12 +94,18 @@ describe('InterfaceService', () => {
 
   // ─── createLog ───
   describe('createLog', () => {
-    it('should create log with PENDING status', async () => {
+    it('should create log with PENDING status inside a locked transaction', async () => {
       // Arrange
-      mockDataSource.query.mockResolvedValue([{ nextSeq: 1 }]);
       const log = { transDate: new Date(), seq: 1, status: 'PENDING' } as InterLog;
-      mockLogRepo.create.mockReturnValue(log);
-      mockLogRepo.save.mockResolvedValue(log);
+      const manager = {
+        query: jest
+          .fn()
+          .mockResolvedValueOnce(undefined)
+          .mockResolvedValueOnce([{ nextSeq: 1 }]),
+        create: jest.fn().mockReturnValue(log),
+        save: jest.fn().mockResolvedValue(log),
+      };
+      mockDataSource.transaction.mockImplementation(async (callback: any) => callback(manager));
 
       // Act
       const result = await target.createLog({
@@ -109,6 +115,15 @@ describe('InterfaceService', () => {
 
       // Assert
       expect(result.status).toBe('PENDING');
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(manager.query).toHaveBeenCalledWith('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
+      expect(manager.query).toHaveBeenCalledWith(
+        expect.stringContaining('NVL(MAX("SEQ"), 0) + 1'),
+        expect.any(Array),
+      );
+      expect(manager.create).toHaveBeenCalledWith(InterLog, expect.objectContaining({ seq: 1, status: 'PENDING' }));
+      expect(manager.save).toHaveBeenCalledWith(InterLog, log);
+      expect(mockDataSource.query).not.toHaveBeenCalled();
     });
   });
 
@@ -217,6 +232,22 @@ describe('InterfaceService', () => {
 
       // Assert
       expect(result).toEqual({ affectedRows: 0 });
+    });
+  });
+
+  // ─── processOutbound ───
+  describe('processOutbound', () => {
+    it('does not fail randomly during outbound processing', async () => {
+      const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+
+      try {
+        await expect(
+          (target as any).processOutbound('PROD_RESULT', { orderNo: 'WO-001' }),
+        ).resolves.toBe(true);
+        expect(randomSpy).not.toHaveBeenCalled();
+      } finally {
+        randomSpy.mockRestore();
+      }
     });
   });
 });

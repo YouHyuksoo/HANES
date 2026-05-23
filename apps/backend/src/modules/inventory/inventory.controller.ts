@@ -69,8 +69,8 @@ export class InventoryController {
    * 창고 생성
    */
   @Post('warehouses')
-  async createWarehouse(@Body() dto: CreateWarehouseDto) {
-    return this.warehouseService.create(dto);
+  async createWarehouse(@Body() dto: CreateWarehouseDto, @Company() company: string, @Plant() plant: string) {
+    return this.warehouseService.create(dto, company, plant);
   }
 
   /**
@@ -128,8 +128,8 @@ export class InventoryController {
    * LOT 생성
    */
   @Post('lots')
-  async createLot(@Body() dto: CreateLotDto) {
-    return this.inventoryService.createLot(dto);
+  async createLot(@Body() dto: CreateLotDto, @Company() company: string, @Plant() plant: string) {
+    return this.inventoryService.createLot(dto, company, plant);
   }
 
   // ============================================================================
@@ -201,24 +201,24 @@ export class InventoryController {
    * 입고 처리
    */
   @Post('receive')
-  async receiveStock(@Body() dto: ReceiveStockDto) {
-    return this.inventoryService.receiveStock(dto);
+  async receiveStock(@Body() dto: ReceiveStockDto, @Company() company: string, @Plant() plant: string) {
+    return this.inventoryService.receiveStock(dto, company, plant);
   }
 
   /**
    * 출고 처리
    */
   @Post('issue')
-  async issueStock(@Body() dto: IssueStockDto) {
-    return this.inventoryService.issueStock(dto);
+  async issueStock(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
+    return this.inventoryService.issueStock(dto, company, plant);
   }
 
   /**
    * 창고간 이동
    */
   @Post('transfer')
-  async transferStock(@Body() dto: TransferStockDto) {
-    return this.inventoryService.transferStock(dto);
+  async transferStock(@Body() dto: TransferStockDto, @Company() company: string, @Plant() plant: string) {
+    return this.inventoryService.transferStock(dto, company, plant);
   }
 
   /**
@@ -234,7 +234,7 @@ export class InventoryController {
     if (dto.source === 'product') {
       return this.productInventoryService.cancelTransaction(dto, company, plant);
     }
-    return this.inventoryService.cancelTransaction(dto);
+    return this.inventoryService.cancelTransaction(dto, company, plant);
   }
 
   // ============================================================================
@@ -245,22 +245,22 @@ export class InventoryController {
    * 원자재 입고
    */
   @Post('material/receive')
-  async receiveMaterial(@Body() dto: ReceiveStockDto) {
+  async receiveMaterial(@Body() dto: ReceiveStockDto, @Company() company: string, @Plant() plant: string) {
     return this.inventoryService.receiveStock({
       ...dto,
       transType: 'MAT_IN' as any,
-    });
+    }, company, plant);
   }
 
   /**
    * 원자재 출고 (생산투입)
    */
   @Post('material/issue')
-  async issueMaterial(@Body() dto: IssueStockDto) {
+  async issueMaterial(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.inventoryService.issueStock({
       ...dto,
       transType: 'MAT_OUT' as any,
-    });
+    }, company, plant);
   }
 
   /**
@@ -343,54 +343,54 @@ export class InventoryController {
    * 외주 자재지급
    */
   @Post('subcon/issue')
-  async issueSubcon(@Body() dto: IssueStockDto) {
+  async issueSubcon(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.inventoryService.issueStock({
       ...dto,
       transType: 'SUBCON_OUT' as any,
-    });
+    }, company, plant);
   }
 
   /**
    * 외주 입고
    */
   @Post('subcon/receive')
-  async receiveSubcon(@Body() dto: ReceiveStockDto) {
+  async receiveSubcon(@Body() dto: ReceiveStockDto, @Company() company: string, @Plant() plant: string) {
     return this.inventoryService.receiveStock({
       ...dto,
       transType: 'SUBCON_IN' as any,
-    });
+    }, company, plant);
   }
 
   /**
    * 재고 조정 (+)
    */
   @Post('adjust/plus')
-  async adjustPlus(@Body() dto: ReceiveStockDto) {
+  async adjustPlus(@Body() dto: ReceiveStockDto, @Company() company: string, @Plant() plant: string) {
     return this.inventoryService.receiveStock({
       ...dto,
       transType: 'ADJ_PLUS' as any,
-    });
+    }, company, plant);
   }
 
   /**
    * 재고 조정 (-)
    */
   @Post('adjust/minus')
-  async adjustMinus(@Body() dto: IssueStockDto) {
+  async adjustMinus(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.inventoryService.issueStock({
       ...dto,
       transType: 'ADJ_MINUS' as any,
-    });
+    }, company, plant);
   }
 
   /**
    * 폐기 처리
    */
   @Post('scrap')
-  async scrap(@Body() dto: IssueStockDto) {
+  async scrap(@Body() dto: IssueStockDto, @Company() company: string, @Plant() plant: string) {
     return this.inventoryService.issueStock({
       ...dto,
       transType: 'SCRAP' as any,
-    });
+    }, company, plant);
   }
 }

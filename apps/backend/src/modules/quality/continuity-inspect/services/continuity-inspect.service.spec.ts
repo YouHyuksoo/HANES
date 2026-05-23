@@ -83,7 +83,7 @@ describe('ContinuityInspectService', () => {
     const manager = {
       findOne: jest
         .fn()
-        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'HANES', plant: 'P01' } as JobOrder),
+        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       increment: jest.fn().mockResolvedValue(undefined),
@@ -116,6 +116,28 @@ describe('ContinuityInspectService', () => {
     );
   });
 
+  it('inspect blocks when request tenant differs from loaded job order tenant', async () => {
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'OTHER', plant: 'P1' } as JobOrder),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
+      increment: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    mockSysConfigService.getValue.mockResolvedValue('ON_INSPECT');
+
+    await expect(target.inspect({
+      orderNo: 'JO-001',
+      itemCode: 'ITEM-001',
+      passYn: 'Y',
+    } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    expect(manager.create).not.toHaveBeenCalled();
+  });
+
   it('getPendingLabels applies tenant scope', async () => {
     mockFgLabelRepo.find.mockResolvedValue([] as FgLabel[]);
 
@@ -126,6 +148,19 @@ describe('ContinuityInspectService', () => {
         where: expect.objectContaining({ orderNo: 'JO-001', status: 'PENDING', company: 'C1', plant: 'P1' }),
       }),
     );
+  });
+
+  it('preIssue blocks when request tenant differs from loaded job order tenant', async () => {
+    mockJobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-001',
+      itemCode: 'ITEM-001',
+      planQty: 10,
+      company: 'OTHER',
+      plant: 'P1',
+    } as JobOrder);
+
+    await expect(target.preIssue({ orderNo: 'JO-001', qty: 1 } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
   it('reInspect keeps the original prod result linkage and restores ISSUED on pass', async () => {
@@ -155,6 +190,19 @@ describe('ContinuityInspectService', () => {
     expect(result.inspectResult.prodResultNo).toBe('PR-001');
     expect(result.fgLabel.status).toBe('ISSUED');
     expect(result.fgLabel.inspectPassYn).toBe('Y');
+  });
+
+  it('reInspect blocks when request tenant differs from label tenant', async () => {
+    mockFgLabelRepo.findOne.mockResolvedValue({
+      fgBarcode: 'FG-001',
+      inspectPassYn: 'N',
+      status: 'VISUAL_FAIL',
+      company: 'OTHER',
+      plant: 'P1',
+    } as FgLabel);
+
+    await expect(target.reInspect('FG-001', { passYn: 'Y' }, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
   it('voidLabel blocks labels that already progressed downstream', async () => {

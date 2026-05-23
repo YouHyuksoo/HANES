@@ -10,13 +10,14 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, Like, FindOptionsWhere } from 'typeorm';
+import { Repository, In, Like, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class LotMergeService {
@@ -31,7 +32,7 @@ export class LotMergeService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findMergeableLots(query: LotMergeQueryDto, company?: string, plant?: string) {
@@ -82,11 +83,7 @@ export class LotMergeService {
   async merge(dto: LotMergeDto) {
     const { sourceLotIds, targetLotId, remark } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 모든 LOT 조회
       const lots = await queryRunner.manager.find(MatLot, {
         where: { matUid: In(sourceLotIds) },
@@ -210,8 +207,6 @@ export class LotMergeService {
         status: 'DONE',
       });
 
-      await queryRunner.commitTransaction();
-
       return {
         targetLotNo: target.matUid,
         mergedLotNos: sources.map(s => s.matUid),
@@ -220,12 +215,7 @@ export class LotMergeService {
         itemCode: part?.itemCode,
         itemName: part?.itemName,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private async generateTransNo(): Promise<string> {

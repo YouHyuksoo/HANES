@@ -1,10 +1,11 @@
 ﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class MatOutRequestService {
@@ -15,7 +16,7 @@ export class MatOutRequestService {
     private readonly matStockRepo: Repository<MatStock>,
     @InjectRepository(MatLot)
     private readonly matLotRepo: Repository<MatLot>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
   ) {}
 
@@ -65,11 +66,7 @@ export class MatOutRequestService {
       throw new BadRequestException('Insufficient available stock.');
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       const tx = queryRunner.manager.create(StockTransaction, {
@@ -103,14 +100,8 @@ export class MatOutRequestService {
         },
       );
 
-      await queryRunner.commitTransaction();
       return tx;
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   async approve(transNo: string, approverId: string) {

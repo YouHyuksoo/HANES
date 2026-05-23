@@ -5858,7 +5858,15 @@
       "saveInspectOk": "保存 (PASS)",
       "saveInspectNg": "保存 (NG · 申请维修)",
       "ngReasonPlaceholder": "输入NG原因...",
-      "startWork": "开始作业"
+      "startWork": "开始作业",
+      "equipCode": "设备编码",
+      "equipName": "设备名称",
+      "process": "工序",
+      "inspectDate": "点检日期",
+      "inspectorRequired": "点检人员 (必填)",
+      "inspectTime": "点检时间",
+      "inspectorHint": "请选择设备维护人员",
+      "overallResult": "综合判定"
     },
     "workerInspect": {
       "check1": "设备电源及安全装置是否正常",
@@ -5973,6 +5981,7 @@
     "statusPending": "待处理",
     "statusInProgress": "处理中",
     "statusDone": "已完成",
-    "noScreenshot": "无截图"
+    "noScreenshot": "无截图",
+    "capturing": "正在截图..."
   }
 }

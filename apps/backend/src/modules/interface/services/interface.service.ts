@@ -10,7 +10,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, MoreThanOrEqual, Between, In } from 'typeorm';
+import { Repository, DataSource, MoreThanOrEqual, Between, In, EntityManager } from 'typeorm';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -41,9 +41,9 @@ export class InterfaceService {
   ) {}
 
   /** 오늘 날짜 기준 다음 SEQ 번호 조회 */
-  private async getNextSeq(transDate: Date): Promise<number> {
+  private async getNextSeq(manager: EntityManager, transDate: Date): Promise<number> {
     const dateStr = transDate.toISOString().slice(0, 10);
-    const result = await this.dataSource.query(
+    const result = await manager.query(
       `SELECT NVL(MAX("SEQ"), 0) + 1 AS "nextSeq" FROM "INTER_LOGS" WHERE "TRANS_DATE" = TO_DATE(:1, 'YYYY-MM-DD')`,
       [dateStr],
     );
@@ -97,19 +97,23 @@ export class InterfaceService {
   async createLog(dto: CreateInterLogDto) {
     const transDate = new Date();
     transDate.setHours(0, 0, 0, 0);
-    const seq = await this.getNextSeq(transDate);
 
-    const log = this.interLogRepository.create({
-      transDate,
-      seq,
-      direction: dto.direction,
-      messageType: dto.messageType,
-      interfaceId: dto.interfaceId,
-      payload: dto.payload ? JSON.stringify(dto.payload) : null,
-      status: 'PENDING',
+    return this.dataSource.transaction(async (manager) => {
+      await manager.query('LOCK TABLE "INTER_LOGS" IN EXCLUSIVE MODE');
+      const seq = await this.getNextSeq(manager, transDate);
+
+      const log = manager.create(InterLog, {
+        transDate,
+        seq,
+        direction: dto.direction,
+        messageType: dto.messageType,
+        interfaceId: dto.interfaceId,
+        payload: dto.payload ? JSON.stringify(dto.payload) : null,
+        status: 'PENDING',
+      });
+
+      return manager.save(InterLog, log);
     });
-
-    return this.interLogRepository.save(log);
   }
 
   async updateLogStatus(transDate: Date, seq: number, status: string, errorMsg?: string) {
@@ -367,7 +371,7 @@ export class InterfaceService {
     });
 
     try {
-      // 실제 ERP 전송 로직 (여기서는 시뮬레이션)
+      // 실제 ERP 전송 로직 자리. 전송 어댑터가 연결되기 전까지는 로그만 남긴다.
       await this.processOutbound('PROD_RESULT', dto);
 
       // 작업지시 동기화 상태 업데이트
@@ -395,13 +399,7 @@ export class InterfaceService {
 
   private async processOutbound(messageType: string, payload: Record<string, any>) {
     // 실제로는 HTTP 요청이나 메시지 큐로 ERP에 전송
-    // 여기서는 시뮬레이션만 수행
     this.logger.log(`[${messageType}] ERP 전송: ${JSON.stringify(payload)}`);
-
-    // 시뮬레이션: 랜덤하게 실패
-    if (Math.random() < 0.1) {
-      throw new Error('ERP 연결 실패 (시뮬레이션)');
-    }
 
     return true;
   }

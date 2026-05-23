@@ -3,11 +3,11 @@
  * @description 워크플로우 서비스 — PKG_WORKFLOW Oracle 패키지 호출
  *
  * 초보자 가이드:
- * 1. OracleService.callProc()로 PKG_WORKFLOW.SP_WORKFLOW_SUMMARY 호출
+ * 1. OracleQueryAdapter로 PKG_WORKFLOW.SP_WORKFLOW_SUMMARY 조회 호출
  * 2. 결과를 workflowId → nodeId → counts 맵으로 변환하여 프론트엔드에 전달
  */
 import { Injectable } from '@nestjs/common';
-import { OracleService } from '../../common/services/oracle.service';
+import { OracleQueryAdapter } from '../../common/services/oracle-query.adapter';
 
 const PKG = 'PKG_WORKFLOW';
 
@@ -20,10 +20,13 @@ export interface NodeCount {
 
 @Injectable()
 export class WorkflowService {
-  constructor(private readonly oracle: OracleService) {}
+  constructor(private readonly oracleQueries: OracleQueryAdapter) {}
 
   async getSummary(): Promise<Record<string, Record<string, NodeCount>>> {
-    const rows = await this.oracle.callProc<any>(PKG, 'SP_WORKFLOW_SUMMARY');
+    const rows = await this.oracleQueries.fetchCursor<any>(
+      PKG,
+      'SP_WORKFLOW_SUMMARY',
+    );
 
     const result: Record<string, Record<string, NodeCount>> = {};
     for (const row of rows) {

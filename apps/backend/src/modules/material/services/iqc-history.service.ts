@@ -11,6 +11,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class IqcHistoryService {
@@ -32,6 +33,7 @@ export class IqcHistoryService {
     private readonly dataSource: DataSource,
     private readonly sysConfigService: SysConfigService,
     private readonly numbering: NumberingService,
+    private readonly tx: TransactionService,
   ) {}
 
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
@@ -188,10 +190,7 @@ export class IqcHistoryService {
     });
     if (!stock || stock.qty <= 0) return;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
+    return this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(
@@ -234,14 +233,7 @@ export class IqcHistoryService {
         company,
         plant,
       });
-
-      await queryRunner.commitTransaction();
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private async autoIssueDestructSample(
@@ -256,10 +248,7 @@ export class IqcHistoryService {
     });
     if (!stock || stock.qty < sampleQty) return;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
+    return this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(
@@ -280,14 +269,7 @@ export class IqcHistoryService {
         company,
         plant,
       });
-
-      await queryRunner.commitTransaction();
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   async uploadCert(inspectDate: string, seq: number, filePath: string) {
@@ -348,11 +330,7 @@ export class IqcHistoryService {
       }
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       if (log.matUid && log.result === 'FAIL') {
         await this.reverseIqcFailMove(queryRunner, log.matUid, log.itemCode, log.company, log.plant);
       }
@@ -374,14 +352,7 @@ export class IqcHistoryService {
           await queryRunner.manager.update(MatLot, lot.matUid, { iqcStatus: 'PENDING' });
         }
       }
-
-      await queryRunner.commitTransaction();
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return { inspectDate, seq, status: 'CANCELED' };
   }

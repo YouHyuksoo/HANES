@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * - findLabelableArrivals: IQC PASS 입하건 조회
  * - createMatLabels: matUid 채번 → MatLot 생성 → 인쇄 로그 저장
- * - SeqGeneratorService.nextMatUid()로 채번
+ * - NumberingService.nextMatUid()로 채번
  * - 실행: `npx jest --testPathPattern="receive-label.service.spec"`
  */
 import { Test, TestingModule } from '@nestjs/testing';
@@ -18,8 +18,9 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
-import { SeqGeneratorService } from '../../../shared/seq-generator.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ReceiveLabelService', () => {
   let target: ReceiveLabelService;
@@ -27,8 +28,9 @@ describe('ReceiveLabelService', () => {
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockPrintLogRepo: DeepMocked<Repository<LabelPrintLog>>;
-  let mockSeqGenerator: DeepMocked<SeqGeneratorService>;
+  let mockNumbering: DeepMocked<NumberingService>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -36,11 +38,13 @@ describe('ReceiveLabelService', () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockPrintLogRepo = createMock<Repository<LabelPrintLog>>();
-    mockSeqGenerator = createMock<SeqGeneratorService>();
+    mockNumbering = createMock<NumberingService>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -51,7 +55,8 @@ describe('ReceiveLabelService', () => {
       providers: [
         ReceiveLabelService,
         { provide: DataSource, useValue: mockDataSource },
-        { provide: SeqGeneratorService, useValue: mockSeqGenerator },
+        { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: mockNumbering },
         { provide: getRepositoryToken(MatArrival), useValue: mockArrivalRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
@@ -126,15 +131,16 @@ describe('ReceiveLabelService', () => {
 
       mockArrivalRepo.findOne.mockResolvedValue(arrival);
       mockPartRepo.findOne.mockResolvedValue(part);
-      mockSeqGenerator.nextMatUid.mockResolvedValue('MAT-20260318-001');
+      mockNumbering.nextMatUid.mockResolvedValue('MAT-20260318-001');
       mockQueryRunner.manager.create.mockReturnValue({} as any);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);
 
       const result = await target.createMatLabels({ arrivalId: 'ARR-001', arrivalSeq: 1, qty: 2 } as any);
 
       expect(result).toHaveLength(2);
-      expect(mockSeqGenerator.nextMatUid).toHaveBeenCalledTimes(2);
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockNumbering.nextMatUid).toHaveBeenCalledTimes(2);
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 });

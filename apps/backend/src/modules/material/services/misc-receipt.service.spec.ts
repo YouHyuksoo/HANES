@@ -10,6 +10,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('MiscReceiptService', () => {
   let service: MiscReceiptService;
@@ -19,6 +20,7 @@ describe('MiscReceiptService', () => {
   let partRepo: DeepMocked<Repository<PartMaster>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -28,9 +30,11 @@ describe('MiscReceiptService', () => {
     partRepo = createMock<Repository<PartMaster>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -46,6 +50,7 @@ describe('MiscReceiptService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: partRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -93,6 +98,8 @@ describe('MiscReceiptService', () => {
         availableQty: 7,
       }),
     );
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
   it('blocks create when matUid lot itemCode mismatches request itemCode', async () => {

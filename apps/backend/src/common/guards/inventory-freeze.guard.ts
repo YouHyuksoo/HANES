@@ -72,11 +72,13 @@ export class InventoryFreezeGuard implements CanActivate {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      // DB 오류 등 예기치 못한 에러는 로그만 남기고 통과 (서비스 중단 방지)
+      // 재고 변경 보호 장치가 불확실하면 데이터 정합성을 위해 차단한다.
       this.logger.error(
-        `InventoryFreezeGuard DB 조회 실패 — 통과 처리: ${(error as Error).message}`,
+        `InventoryFreezeGuard DB 조회 실패 — 차단 처리: ${(error as Error).message}`,
       );
-      return true;
+      throw new BadRequestException(
+        '재고실사 상태를 확인할 수 없어 자재 트랜잭션이 제한됩니다.',
+      );
     }
   }
 

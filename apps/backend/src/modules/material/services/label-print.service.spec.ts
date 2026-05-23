@@ -60,19 +60,19 @@ describe('LabelPrintService', () => {
         zplCode: '^FO10,10^FD{{matUid}}^FS^FO10,30^FD{{itemName}}^FS',
       } as LabelTemplate);
 
-      mockMatLotRepo.findOne.mockResolvedValue({
+      mockMatLotRepo.find.mockResolvedValue([{
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
         initQty: 100,
         vendor: 'VENDOR-A',
         recvDate: new Date('2026-01-01'),
-      } as MatLot);
+      } as MatLot]);
 
-      mockPartMasterRepo.findOne.mockResolvedValue({
+      mockPartMasterRepo.find.mockResolvedValue([{
         itemCode: 'ITEM-001',
         itemName: '커넥터A',
         unit: 'EA',
-      } as PartMaster);
+      } as PartMaster]);
 
       const result = await target.generateZpl({ templateId: 'TEST', matUids: ['MAT-001'] });
 
@@ -106,7 +106,7 @@ describe('LabelPrintService', () => {
         templateName: 'TEST',
         zplCode: '^FD{{matUid}}^FS',
       } as LabelTemplate);
-      mockMatLotRepo.findOne.mockResolvedValue(null);
+      mockMatLotRepo.find.mockResolvedValue([]);
 
       await expect(
         target.generateZpl({ templateId: 'TEST', matUids: ['NONE'] }),
@@ -119,12 +119,12 @@ describe('LabelPrintService', () => {
         category: 'mat_lot',
         zplCode: '^FD{{matUid}}^FS',
       } as LabelTemplate);
-      mockMatLotRepo.findOne.mockResolvedValue({
+      mockMatLotRepo.find.mockResolvedValue([{
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
         initQty: 100,
-      } as MatLot);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster);
+      } as MatLot]);
+      mockPartMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as PartMaster]);
 
       await target.generateZpl({ templateId: 'TEST::mat_lot', matUids: ['MAT-001'] });
 

@@ -18,6 +18,7 @@ import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity'
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('PurchaseOrderService', () => {
   let target: PurchaseOrderService;
@@ -26,6 +27,7 @@ describe('PurchaseOrderService', () => {
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
   let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   const createPo = (overrides: Partial<PurchaseOrder> = {}): PurchaseOrder =>
@@ -46,9 +48,11 @@ describe('PurchaseOrderService', () => {
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
     mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -63,6 +67,7 @@ describe('PurchaseOrderService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
         { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -113,14 +118,40 @@ describe('PurchaseOrderService', () => {
         .mockResolvedValueOnce([]); // 품목 저장
       mockPartMasterRepo.find.mockResolvedValue([]);
 
-      const result = await target.create({
+      await target.create({
         poNo: 'PO-001',
         partnerId: 'V-001',
         partnerName: 'VENDOR-A',
         items: [{ itemCode: 'ITEM-001', orderQty: 100 }],
       } as any);
 
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── update ───
+  describe('update', () => {
+    it('품목 변경이 있는 PO 수정은 TransactionService로 PO와 품목을 함께 저장한다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo());
+      mockPoItemRepo.find.mockResolvedValue([]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
+      mockQueryRunner.manager.save.mockResolvedValue([] as any);
+
+      await target.update('PO-001', {
+        orderDate: '2026-05-23',
+        items: [{ itemCode: 'ITEM-001', orderQty: 2, unitPrice: 1000 }],
+      } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(PurchaseOrderItem, { poNo: 'PO-001' });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        PurchaseOrder,
+        'PO-001',
+        expect.objectContaining({ totalAmount: 2000 }),
+      );
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 

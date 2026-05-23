@@ -5,7 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { EquipInspectService } from './equip-inspect.service';
 import { EquipInspectLog } from '../../../entities/equip-inspect-log.entity';
@@ -47,6 +47,17 @@ describe('EquipInspectService', () => {
     it('should throw when equip not found', async () => {
       mockEquipRepo.findOne.mockResolvedValue(null);
       await expect(target.create({ equipCode: 'X' } as any)).rejects.toThrow(NotFoundException);
+    });
+    it('should throw when context tenant differs from equipment tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+
+      await expect(
+        target.create(
+          { equipCode: 'EQ-001', inspectType: 'DAILY', inspectDate: '2026-03-18', overallResult: 'PASS' } as any,
+          { company: 'OTHER', plant: 'P01' },
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockLogRepo.create).not.toHaveBeenCalled();
     });
     it('should set INTERLOCK on FAIL', async () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);

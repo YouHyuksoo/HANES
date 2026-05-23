@@ -17,21 +17,25 @@ export interface SelectedElement {
 
 interface ImprovementRequestState {
   isActive: boolean;
+  isCapturing: boolean;
   selectedElement: SelectedElement | null;
   screenshot: string | null;
   activate: () => void;
   deactivate: () => void;
-  setSelectedElement: (el: SelectedElement, screenshot: string) => void;
+  startCapturing: () => void;
+  setSelectedElement: (el: SelectedElement, screenshot: string | null) => void;
   reset: () => void;
 }
 
 export const useImprovementRequestStore = create<ImprovementRequestState>((set) => ({
   isActive: false,
+  isCapturing: false,
   selectedElement: null,
   screenshot: null,
-  activate: () => set({ isActive: true, selectedElement: null, screenshot: null }),
-  deactivate: () => set({ isActive: false }),
+  activate: () => set({ isActive: true, isCapturing: false, selectedElement: null, screenshot: null }),
+  deactivate: () => set({ isActive: false, isCapturing: false }),
+  startCapturing: () => set({ isActive: false, isCapturing: true }),
   setSelectedElement: (el, screenshot) =>
-    set({ isActive: false, selectedElement: el, screenshot }),
-  reset: () => set({ isActive: false, selectedElement: null, screenshot: null }),
+    set({ isCapturing: false, isActive: false, selectedElement: el, screenshot }),
+  reset: () => set({ isActive: false, isCapturing: false, selectedElement: null, screenshot: null }),
 }));

@@ -12,6 +12,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
 import type { IssueRequestStatus } from '@/components/material';
+import type { ProductionJobOrderRow } from '@harness/shared';
 
 /** 요청 품목 아이템 */
 export interface RequestItem {
@@ -56,15 +57,9 @@ interface IssueRequestListResponse {
   };
 }
 
-/** 작업지시 레코드 (드롭다운용) */
-interface JobOrderRecord {
-  id: string;
-  orderNo: string;
-}
-
 /** 작업지시 목록 응답 */
 interface JobOrderListResponse {
-  data: JobOrderRecord[];
+  data: ProductionJobOrderRow[];
   total?: number;
 }
 
@@ -155,7 +150,7 @@ export function useIssueRequestData() {
     const list = Array.isArray(raw) ? raw : (raw as JobOrderListResponse)?.data ?? [];
     return [
       { value: '', label: '전체 작업지시' },
-      ...list.map((j) => ({ value: j.orderNo ?? j.id, label: j.orderNo ?? j.id })),
+      ...list.map((j) => ({ value: j.orderNo, label: j.orderNo })),
     ];
   }, [jobOrderData]);
 

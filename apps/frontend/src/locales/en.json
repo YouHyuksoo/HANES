@@ -5872,7 +5872,15 @@
       "saveInspectOk": "Save (PASS)",
       "saveInspectNg": "Save (NG · Request Maintenance)",
       "ngReasonPlaceholder": "Enter NG reason...",
-      "startWork": "Start Work"
+      "startWork": "Start Work",
+      "equipCode": "Equipment Code",
+      "equipName": "Equipment Name",
+      "process": "Process",
+      "inspectDate": "Inspect Date",
+      "inspectorRequired": "Inspector (Required)",
+      "inspectTime": "Inspect Time",
+      "inspectorHint": "Select a maintenance team member",
+      "overallResult": "Overall Result"
     },
     "workerInspect": {
       "check1": "Equipment power and safety devices normal",
@@ -5987,6 +5995,7 @@
     "statusPending": "Pending",
     "statusInProgress": "In Progress",
     "statusDone": "Done",
-    "noScreenshot": "No Screenshot"
+    "noScreenshot": "No Screenshot",
+    "capturing": "Capturing screen..."
   }
 }

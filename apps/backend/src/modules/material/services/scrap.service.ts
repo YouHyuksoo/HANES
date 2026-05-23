@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, In } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -14,6 +14,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateScrapDto, ScrapQueryDto } from '../dto/scrap.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ScrapService {
@@ -28,7 +29,7 @@ export class ScrapService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
   ) {}
@@ -95,11 +96,7 @@ export class ScrapService {
       // CANCEL 모드(베트남): 불출취소 후 폐기 허용 — 별도 체크 없음
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // LOT 조회
       const lot = await queryRunner.manager.findOne(MatLot, {
         where: { matUid: matUid },
@@ -152,8 +149,6 @@ export class ScrapService {
 
       const savedTransaction = await queryRunner.manager.save(transaction);
 
-      await queryRunner.commitTransaction();
-
       return {
         transNo: savedTransaction.transNo,
         matUid,
@@ -162,12 +157,7 @@ export class ScrapService {
         reason,
         transactionId: savedTransaction.transNo,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 }
 

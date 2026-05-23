@@ -20,7 +20,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
-import { NumRuleService } from '../../num-rule/num-rule.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('AutoIssueService', () => {
@@ -32,7 +32,7 @@ describe('AutoIssueService', () => {
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockJobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let mockSysConfigService: DeepMocked<SysConfigService>;
-  let mockNumRuleService: DeepMocked<NumRuleService>;
+  let mockNumbering: DeepMocked<NumberingService>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
@@ -44,7 +44,7 @@ describe('AutoIssueService', () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockJobOrderRepo = createMock<Repository<JobOrder>>();
     mockSysConfigService = createMock<SysConfigService>();
-    mockNumRuleService = createMock<NumRuleService>();
+    mockNumbering = createMock<NumberingService>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
 
@@ -65,7 +65,7 @@ describe('AutoIssueService', () => {
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: SysConfigService, useValue: mockSysConfigService },
-        { provide: NumRuleService, useValue: mockNumRuleService },
+        { provide: NumberingService, useValue: mockNumbering },
         { provide: DataSource, useValue: mockDataSource },
       ],
     })
@@ -88,7 +88,7 @@ describe('AutoIssueService', () => {
       mockSysConfigService.getValue.mockResolvedValue('ON_COMPLETE');
 
       // Act
-      const result = await target.execute('ON_CREATE', 1, 'JO-001', 50);
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50);
 
       // Assert
       expect(result.skipped).toBe(true);
@@ -100,7 +100,7 @@ describe('AutoIssueService', () => {
       mockSysConfigService.getValue.mockResolvedValue(null);
 
       // Act
-      const result = await target.execute('ON_CREATE', 1, 'JO-001', 50);
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50);
 
       // Assert
       expect(result.skipped).toBe(true);
@@ -118,7 +118,7 @@ describe('AutoIssueService', () => {
       mockQueryRunner.manager.query.mockResolvedValue([]); // no BOM
 
       // Act
-      const result = await target.execute('ON_CREATE', 1, 'JO-001', 50, mockQueryRunner);
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner);
 
       // Assert
       expect(result.skipped).toBe(true);
@@ -147,7 +147,7 @@ describe('AutoIssueService', () => {
       ownQR.manager.query.mockResolvedValue([]); // no BOM
 
       // Act
-      const result = await target.execute('ON_CREATE', 1, 'JO-001', 50);
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50);
 
       // Assert
       expect(result.skipped).toBe(true);
@@ -167,7 +167,7 @@ describe('AutoIssueService', () => {
 
       // Act & Assert
       await expect(
-        target.execute('ON_CREATE', 1, 'JO-INVALID', 50, mockQueryRunner),
+        target.execute('ON_CREATE', '1', 'JO-INVALID', 50, mockQueryRunner),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -208,7 +208,7 @@ describe('AutoIssueService', () => {
         .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 200, availableQty: 200, createdAt: new Date() }]) // deductMatStock
         .mockResolvedValueOnce([{ matUid: 'LOT-001', qty: 100 }]); // remaining check
 
-      mockNumRuleService.nextNumberInTx
+      mockNumbering.nextInTx
         .mockResolvedValueOnce('ISS-001') // MatIssue
         .mockResolvedValueOnce('TX-001'); // StockTransaction
 
@@ -217,7 +217,7 @@ describe('AutoIssueService', () => {
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.execute('ON_CREATE', 1, 'JO-001', 50, mockQueryRunner);
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner);
 
       // Assert
       expect(result.skipped).toBe(false);
@@ -251,7 +251,7 @@ describe('AutoIssueService', () => {
 
       // Act & Assert
       await expect(
-        target.execute('ON_CREATE', 1, 'JO-001', 50, mockQueryRunner),
+        target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner),
       ).rejects.toThrow(BadRequestException);
     });
   });

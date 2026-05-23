@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like, In } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProductHoldActionDto, ProductReleaseHoldDto, ProductHoldQueryDto } from '../dto/product-hold.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ProductHoldService {
@@ -12,7 +13,7 @@ export class ProductHoldService {
     private readonly productStockRepository: Repository<ProductStock>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findAll(query: ProductHoldQueryDto, company?: string, plant?: string) {
@@ -74,11 +75,7 @@ export class ProductHoldService {
       ...(plant && { plant }),
     };
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: scopedKey,
       });
@@ -93,14 +90,7 @@ export class ProductHoldService {
         holdBy: userId || null,
         updatedBy: userId || null,
       });
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     const updated = await this.productStockRepository.findOne({ where: scopedKey });
     if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
@@ -125,11 +115,7 @@ export class ProductHoldService {
       ...(plant && { plant }),
     };
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: scopedKey,
       });
@@ -143,14 +129,7 @@ export class ProductHoldService {
         holdBy: null,
         updatedBy: userId || null,
       });
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     const updated = await this.productStockRepository.findOne({ where: scopedKey });
     if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);

@@ -20,6 +20,7 @@ import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('LotMergeService', () => {
   let target: LotMergeService;
@@ -29,6 +30,7 @@ describe('LotMergeService', () => {
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   const createLot = (matUid: string, itemCode = 'ITEM-001', status = 'NORMAL'): MatLot =>
@@ -55,9 +57,11 @@ describe('LotMergeService', () => {
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -73,6 +77,7 @@ describe('LotMergeService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -145,7 +150,8 @@ describe('LotMergeService', () => {
       expect(result.mergedLotNos).toEqual(['MAT-002']);
       expect(result.totalMergedQty).toBe(20);
       expect(result.newTotalQty).toBe(50); // 30 + 20
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 

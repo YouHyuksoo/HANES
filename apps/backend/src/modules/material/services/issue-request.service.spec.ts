@@ -10,6 +10,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('IssueRequestService', () => {
   let service: IssueRequestService;
@@ -19,6 +20,7 @@ describe('IssueRequestService', () => {
   let matIssueService: DeepMocked<MatIssueService>;
   let numbering: DeepMocked<NumberingService>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -28,9 +30,11 @@ describe('IssueRequestService', () => {
     matIssueService = createMock<MatIssueService>();
     numbering = createMock<NumberingService>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -46,6 +50,7 @@ describe('IssueRequestService', () => {
         { provide: MatIssueService, useValue: matIssueService },
         { provide: NumberingService, useValue: numbering },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -59,6 +64,40 @@ describe('IssueRequestService', () => {
   });
 
   describe('issueFromRequest', () => {
+    it('요청 품목 갱신과 실제 출고를 같은 트랜잭션에서 처리한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        jobOrderId: 'WO-001',
+        issueType: 'PRODUCTION',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.findOne.mockResolvedValue({
+        requestId: 'REQ-001',
+        seq: 1,
+        requestQty: 10,
+        issuedQty: 2,
+      } as MatIssueRequestItem);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, requestQty: 10, issuedQty: 2 } as MatIssueRequestItem,
+      ]);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        issueType: 'PRODUCTION',
+        workerId: 'user',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 8 }],
+      });
+
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect((matIssueService as any).createInTx).toHaveBeenCalledWith(queryRunner, expect.objectContaining({
+        warehouseCode: 'WH-01',
+        items: [{ matUid: 'MAT-001', issueQty: 8 }],
+      }));
+      expect(matIssueService.create).not.toHaveBeenCalled();
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
     it('요청 항목을 찾을 수 없으면 출고를 차단한다', async () => {
       requestRepo.findOne.mockResolvedValue({
         requestNo: 'REQ-001',
@@ -66,7 +105,7 @@ describe('IssueRequestService', () => {
         jobOrderId: null,
         issueType: 'PRODUCTION',
       } as MatIssueRequest);
-      matIssueService.create.mockResolvedValue({ issueNo: 'ISSUE-001' } as any);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue({ issueNo: 'ISSUE-001' } as any);
       requestItemRepo.findOne.mockResolvedValue(null);
 
       await expect(
@@ -76,7 +115,8 @@ describe('IssueRequestService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('남은 요청 수량을 초과하면 출고를 차단한다', async () => {
@@ -86,7 +126,7 @@ describe('IssueRequestService', () => {
         jobOrderId: null,
         issueType: 'PRODUCTION',
       } as MatIssueRequest);
-      matIssueService.create.mockResolvedValue({ issueNo: 'ISSUE-001' } as any);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue({ issueNo: 'ISSUE-001' } as any);
       requestItemRepo.findOne.mockResolvedValue({
         requestId: 'REQ-001',
         seq: 1,
@@ -101,7 +141,8 @@ describe('IssueRequestService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 });

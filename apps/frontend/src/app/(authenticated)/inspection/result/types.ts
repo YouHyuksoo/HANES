@@ -8,17 +8,15 @@
  * 3. InspectStats: 검사 통계 (합격/불합격 수, 합격률)
  */
 
+import type { ProductionJobOrderRow } from "@harness/shared";
+
 /** 작업지시 목록 행 */
-export interface JobOrderRow {
-  orderNo: string;
-  itemCode: string;
+export type JobOrderRow = Pick<
+  ProductionJobOrderRow,
+  'orderNo' | 'itemCode' | 'lineCode' | 'planQty' | 'goodQty' | 'defectQty' | 'status'
+> & {
   itemName?: string;
-  lineCode?: string;
-  planQty: number;
-  goodQty: number;
-  defectQty: number;
-  status: string;
-}
+};
 
 /** FG 바코드 발행 이력 행 */
 export interface FgLabelRow {

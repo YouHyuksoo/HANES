@@ -5,13 +5,14 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like, In } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class LotSplitService {
@@ -26,7 +27,7 @@ export class LotSplitService {
     private readonly partMasterRepository: Repository<PartMaster>,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findSplittableLots(query: LotSplitQueryDto, company?: string, plant?: string) {
@@ -81,11 +82,7 @@ export class LotSplitService {
   async split(dto: LotSplitDto) {
     const { sourceLotId, splitQty, newLotNo, remark } = dto;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 원본 LOT 조회
       const sourceLot = await queryRunner.manager.findOne(MatLot, {
         where: { matUid: sourceLotId },
@@ -235,8 +232,6 @@ export class LotSplitService {
         plant: sourceLot.plant,
       });
 
-      await queryRunner.commitTransaction();
-
       return {
         matUid: newLot.matUid,
         parentLotNo: sourceLotId,
@@ -247,12 +242,7 @@ export class LotSplitService {
         itemName: part.itemName,
         sourceRemainingQty: newSourceStockQty,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**

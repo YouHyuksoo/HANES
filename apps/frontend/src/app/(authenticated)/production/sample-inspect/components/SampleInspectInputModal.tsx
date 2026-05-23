@@ -16,11 +16,7 @@ import { Plus, Minus } from "lucide-react";
 import { Modal, Button, Input, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
-
-interface JobOrderOption {
-  value: string;
-  label: string;
-}
+import type { JobOrderOption } from "@harness/shared";
 
 interface SampleRow {
   sampleNo: number;

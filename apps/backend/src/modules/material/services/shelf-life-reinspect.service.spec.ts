@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { ShelfLifeReInspectService } from './shelf-life-reinspect.service';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -12,6 +12,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ShelfLifeReInspectService', () => {
   let service: ShelfLifeReInspectService;
@@ -22,6 +23,8 @@ describe('ShelfLifeReInspectService', () => {
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let partMasterRepo: DeepMocked<Repository<PartMaster>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
+  let queryRunner: DeepMocked<QueryRunner>;
   let numbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
@@ -32,7 +35,12 @@ describe('ShelfLifeReInspectService', () => {
     warehouseRepo = createMock<Repository<Warehouse>>();
     partMasterRepo = createMock<Repository<PartMaster>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
+    queryRunner = createMock<QueryRunner>();
     numbering = createMock<NumberingService>();
+    dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
+    numbering.nextInTx.mockResolvedValue('TX-001');
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,6 +52,7 @@ describe('ShelfLifeReInspectService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: getRepositoryToken(PartMaster), useValue: partMasterRepo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
         { provide: NumberingService, useValue: numbering },
       ],
     })
@@ -84,6 +93,42 @@ describe('ShelfLifeReInspectService', () => {
       await expect(
         service.create({ matUid: 'MAT-001', result: 'FAIL' }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('재검 FAIL 자동 이동은 TransactionService로 재고 이동과 이력을 함께 저장한다', async () => {
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot);
+      iqcLogRepo.create.mockReturnValue({} as IqcLog);
+      iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
+      matStockRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        qty: 10,
+        availableQty: 10,
+        reservedQty: 0,
+        warehouseCode: 'WH-01',
+      } as MatStock);
+      warehouseRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-DEF',
+        warehouseType: 'DEFECT',
+        useYn: 'Y',
+      } as Warehouse);
+      queryRunner.manager.findOne.mockResolvedValue(null);
+      queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      queryRunner.manager.save.mockResolvedValue({} as any);
+
+      await service.create({ matUid: 'MAT-001', result: 'FAIL' });
+
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(queryRunner.manager.save).toHaveBeenCalledWith(
+        StockTransaction,
+        expect.objectContaining({ transType: 'MAT_MOVE', matUid: 'MAT-001' }),
+      );
     });
   });
 });

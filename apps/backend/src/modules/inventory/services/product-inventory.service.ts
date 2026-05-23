@@ -9,11 +9,12 @@
  */
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull, In, QueryRunner } from 'typeorm';
+import { Repository, IsNull, In, QueryRunner } from 'typeorm';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   ProductReceiveStockDto,
   ProductIssueStockDto,
@@ -35,7 +36,7 @@ export class ProductInventoryService {
     private readonly warehouseRepository: Repository<Warehouse>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   /** 제품 트랜잭션 번호 생성 (PTX20260224XXXXX 형식) */
@@ -63,11 +64,7 @@ export class ProductInventoryService {
   async receiveStock(dto: ProductReceiveStockDto) {
     const transNo = await this.generateTransNo();
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 1. 트랜잭션 생성
       const transaction = this.transactionRepository.create({
         transNo,
@@ -120,14 +117,8 @@ export class ProductInventoryService {
         });
       }
 
-      await queryRunner.commitTransaction();
       return savedTransaction;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**
@@ -195,11 +186,7 @@ export class ProductInventoryService {
   async issueStock(dto: ProductIssueStockDto) {
     const transNo = await this.generateTransNo();
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, prdUid: dto.prdUid || IsNull() },
@@ -272,14 +259,8 @@ export class ProductInventoryService {
         }
       }
 
-      await queryRunner.commitTransaction();
       return savedTransaction;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**
@@ -388,11 +369,7 @@ export class ProductInventoryService {
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
     const transNo = await this.generateTransNo();
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 1. 원본 트랜잭션 상태 변경
       await queryRunner.manager.update(ProductTransaction, { transNo: originalTrans.transNo }, { status: 'CANCELED' });
 
@@ -478,14 +455,8 @@ export class ProductInventoryService {
         }
       }
 
-      await queryRunner.commitTransaction();
       return savedCancelTrans;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 취소 트랜잭션 유형 결정 */

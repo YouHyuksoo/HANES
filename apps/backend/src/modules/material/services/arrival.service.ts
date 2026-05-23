@@ -36,6 +36,7 @@ import {
   CancelArrivalDto,
 } from '../dto/arrival.dto';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ArrivalService {
@@ -62,6 +63,7 @@ export class ArrivalService {
     private readonly iqcLogRepository: Repository<IqcLog>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
+    private readonly tx: TransactionService,
   ) {}
 
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
@@ -212,11 +214,7 @@ export class ArrivalService {
     const partMap = new Map(allParts.map((p) => [p.itemCode, p] as const));
     const whMap = new Map(allWarehouses.map((w) => [w.warehouseCode, w] as const));
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const results = [];
       const arrivalNo = await this.numbering.nextInTx(queryRunner, 'ARRIVAL');
       let arrivalSeq = 1;
@@ -294,23 +292,13 @@ export class ArrivalService {
       // 5. PO 상태 재계산
       await this.updatePOStatus(queryRunner.manager, po.poNo);
 
-      await queryRunner.commitTransaction();
       return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 수동 입하 등록 */
   async createManualArrival(dto: CreateManualArrivalDto, company?: string, plant?: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const arrivalNo = await this.numbering.nextInTx(queryRunner, 'ARRIVAL');
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
@@ -361,8 +349,6 @@ export class ArrivalService {
         where: { warehouseCode: dto.warehouseId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
 
-      await queryRunner.commitTransaction();
-
       return {
         ...savedTx,
         arrivalNo,
@@ -373,12 +359,7 @@ export class ArrivalService {
         warehouseCode: warehouse?.warehouseCode,
         warehouseName: warehouse?.warehouseName,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 입하 이력 조회 (MAT_IN + MAT_IN_CANCEL) */
@@ -500,11 +481,7 @@ export class ArrivalService {
 
     const cancelTransNo = `${original.transNo}-C`;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 1. 원본 CANCELED 처리
       await queryRunner.manager.update(StockTransaction, { transNo: original.transNo }, { status: 'CANCELED' });
 
@@ -582,8 +559,6 @@ export class ArrivalService {
           : null,
       ]);
 
-      await queryRunner.commitTransaction();
-
       return {
         ...savedCancelTx,
         itemCode: part?.itemCode,
@@ -594,12 +569,7 @@ export class ArrivalService {
         warehouseCode: toWarehouse?.warehouseCode,
         warehouseName: toWarehouse?.warehouseName,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   private async ensureNoDownstreamProgress(original: StockTransaction, company?: string, plant?: string) {

@@ -2,12 +2,13 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { ProductLabelService } from './product-label.service';
 
 describe('ProductLabelService', () => {
@@ -15,13 +16,19 @@ describe('ProductLabelService', () => {
   let prodResultRepo: DeepMocked<Repository<ProdResult>>;
   let partRepo: DeepMocked<Repository<PartMaster>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
+  let queryRunner: DeepMocked<QueryRunner>;
   let numbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     prodResultRepo = createMock<Repository<ProdResult>>();
     partRepo = createMock<Repository<PartMaster>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
+    queryRunner = createMock<QueryRunner>();
     numbering = createMock<NumberingService>();
+    dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -30,6 +37,7 @@ describe('ProductLabelService', () => {
         { provide: getRepositoryToken(PartMaster), useValue: partRepo },
         { provide: getRepositoryToken(LabelPrintLog), useValue: createMock<Repository<LabelPrintLog>>() },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
         { provide: NumberingService, useValue: numbering },
       ],
     })
@@ -81,5 +89,27 @@ describe('ProductLabelService', () => {
         where: expect.objectContaining({ resultNo: '1', company: 'C1', plant: 'P1' }),
       }),
     );
+  });
+
+  it('creates product labels through TransactionService', async () => {
+    prodResultRepo.findOne.mockResolvedValue({
+      resultNo: '1',
+      prdUid: null,
+      company: 'C1',
+      plant: 'P1',
+      jobOrder: { itemCode: 'FG-001' },
+    } as ProdResult);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', itemName: 'Finished Good' } as PartMaster);
+    numbering.nextPrdUid.mockResolvedValue('PRD-001');
+    queryRunner.manager.create.mockReturnValue({ category: 'prd_uid' } as LabelPrintLog);
+    queryRunner.manager.save.mockResolvedValue({} as LabelPrintLog);
+    queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+    const result = await service.createPrdLabels({ sourceId: 1, source: 'PROD_RESULT' as any, qty: 1 }, 'C1', 'P1');
+
+    expect(result).toEqual([{ prdUid: 'PRD-001', itemCode: 'FG-001', itemName: 'Finished Good' }]);
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(ProdResult, '1', { prdUid: 'PRD-001' });
   });
 });

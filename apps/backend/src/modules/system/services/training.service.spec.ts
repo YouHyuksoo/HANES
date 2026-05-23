@@ -10,26 +10,46 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { TrainingService } from './training.service';
 import { TrainingPlan } from '../../../entities/training-plan.entity';
 import { TrainingResult } from '../../../entities/training-result.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('TrainingService', () => {
   let target: TrainingService;
   let mockPlanRepo: DeepMocked<Repository<TrainingPlan>>;
   let mockResultRepo: DeepMocked<Repository<TrainingResult>>;
+  let mockDataSource: {
+    transaction: jest.Mock;
+  };
+  let mockNumbering: {
+    next: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockPlanRepo = createMock<Repository<TrainingPlan>>();
     mockResultRepo = createMock<Repository<TrainingResult>>();
+    mockDataSource = {
+      transaction: jest.fn(async (callback) =>
+        callback({
+          delete: jest.fn(),
+          remove: jest.fn(),
+        }),
+      ),
+    };
+    mockNumbering = {
+      next: jest.fn().mockResolvedValue('TRN-20260318-001'),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TrainingService,
         { provide: getRepositoryToken(TrainingPlan), useValue: mockPlanRepo },
         { provide: getRepositoryToken(TrainingResult), useValue: mockResultRepo },
+        { provide: DataSource, useValue: mockDataSource },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -69,13 +89,6 @@ describe('TrainingService', () => {
   describe('create', () => {
     it('should create plan with PLANNED status', async () => {
       // Arrange
-      const qb = createMock<any>();
-      qb.where.mockReturnThis();
-      qb.andWhere.mockReturnThis();
-      qb.orderBy.mockReturnThis();
-      qb.getOne.mockResolvedValue(null);
-      mockPlanRepo.createQueryBuilder.mockReturnValue(qb);
-
       const dto = { title: 'Test Training' } as any;
       const entity = { planNo: 'TRN-20260318-001', status: 'PLANNED', ...dto } as TrainingPlan;
       mockPlanRepo.create.mockReturnValue(entity);
@@ -86,6 +99,11 @@ describe('TrainingService', () => {
 
       // Assert
       expect(result.status).toBe('PLANNED');
+      expect(mockNumbering.next).toHaveBeenCalledWith(
+        'TRAINING_PLAN',
+        undefined,
+        'user',
+      );
     });
   });
 
@@ -110,16 +128,23 @@ describe('TrainingService', () => {
     it('should delete plan and associated results', async () => {
       // Arrange
       const plan = { planNo: 'TRN-001', status: 'PLANNED' } as TrainingPlan;
+      const manager = {
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        remove: jest.fn().mockResolvedValue(plan),
+      };
+      mockDataSource.transaction.mockImplementationOnce(async (callback) =>
+        callback(manager),
+      );
       mockPlanRepo.findOne.mockResolvedValue(plan);
-      mockResultRepo.delete.mockResolvedValue({ affected: 0 } as any);
-      mockPlanRepo.remove.mockResolvedValue(plan);
 
       // Act
       await target.delete('TRN-001');
 
       // Assert
-      expect(mockResultRepo.delete).toHaveBeenCalledWith({ planNo: 'TRN-001' });
-      expect(mockPlanRepo.remove).toHaveBeenCalledWith(plan);
+      expect(manager.delete).toHaveBeenCalledWith(TrainingResult, {
+        planNo: 'TRN-001',
+      });
+      expect(manager.remove).toHaveBeenCalledWith(TrainingPlan, plan);
     });
   });
 

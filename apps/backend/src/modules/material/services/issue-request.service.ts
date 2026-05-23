@@ -12,12 +12,13 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   CreateIssueRequestDto,
   IssueRequestQueryDto,
@@ -36,7 +37,7 @@ export class IssueRequestService {
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly matIssueService: MatIssueService,
     private readonly numbering: NumberingService,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   /** 통합 채번 서비스를 통한 요청번호 생성 */
@@ -71,10 +72,7 @@ export class IssueRequestService {
 
   /** 출고요청 생성 (헤더 + 품목 일괄 저장) */
   async create(dto: CreateIssueRequestDto) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
+    return this.tx.run(async (queryRunner) => {
       const requestNo = await this.generateRequestNo(queryRunner);
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
@@ -98,14 +96,8 @@ export class IssueRequestService {
         }),
       );
       await queryRunner.manager.save(items);
-      await queryRunner.commitTransaction();
       return this.findByRequestNo(saved.requestNo);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 출고요청 목록 조회 (페이지네이션 + 필터) */
@@ -210,11 +202,8 @@ export class IssueRequestService {
       throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED만 가능): ${request.status}`);
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
-      const issueResult = await this.matIssueService.create({
+    return this.tx.run(async (queryRunner) => {
+      const issueResult = await this.matIssueService.createInTx(queryRunner, {
         orderNo: request.jobOrderId ?? undefined,
         warehouseCode: dto.warehouseCode,
         issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
@@ -259,13 +248,7 @@ export class IssueRequestService {
         await queryRunner.manager.update(MatIssueRequest, { requestNo }, { status: 'COMPLETED' });
       }
 
-      await queryRunner.commitTransaction();
       return { request: await this.findByRequestNo(requestNo), issueResult };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 }

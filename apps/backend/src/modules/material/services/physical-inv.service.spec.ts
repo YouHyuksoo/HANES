@@ -13,6 +13,7 @@ import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-det
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('PhysicalInvService', () => {
   let service: PhysicalInvService;
@@ -24,6 +25,7 @@ describe('PhysicalInvService', () => {
   let countDetailRepo: DeepMocked<Repository<PhysicalInvCountDetail>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -35,10 +37,12 @@ describe('PhysicalInvService', () => {
     countDetailRepo = createMock<Repository<PhysicalInvCountDetail>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     dataSource.getRepository.mockReturnValue(createMock<Repository<StockTransaction>>() as any);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -57,6 +61,7 @@ describe('PhysicalInvService', () => {
         { provide: getRepositoryToken(PhysicalInvCountDetail), useValue: countDetailRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -189,7 +194,7 @@ describe('PhysicalInvService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('skips records with no diff and commits', async () => {
+    it('skips records with no diff through TransactionService', async () => {
       sessionRepo.findOne.mockResolvedValue({
         sessionDate: new Date('2026-03-18'),
         seq: 1,
@@ -216,7 +221,8 @@ describe('PhysicalInvService', () => {
       });
 
       expect(result).toHaveLength(0);
-      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('blocks when counted qty is lower than reserved qty', async () => {

@@ -38,13 +38,13 @@ export const improvementRequestService = {
   create: (payload: CreateImprRequestPayload): Promise<ImprRequestItem> =>
     api.post('/system/improvement-requests', payload).then((r) => unwrap<ImprRequestItem>(r as any)),
 
-  list: (params?: { status?: string; page?: number; limit?: number }) =>
+  list: (params?: { status?: string; keyword?: string; fromDate?: string; toDate?: string; page?: number; limit?: number }) =>
     api
-      .get<{ data: { data: ImprRequestItem[]; total: number; page: number; limit: number } }>(
+      .get<{ data: ImprRequestItem[]; meta: { total: number; page: number; limit: number } }>(
         '/system/improvement-requests',
         { params },
       )
-      .then((r) => r.data.data),
+      .then((r) => ({ data: r.data.data, total: r.data.meta.total, page: r.data.meta.page, limit: r.data.meta.limit })),
 
   detail: (id: string): Promise<ImprRequestItem> =>
     api

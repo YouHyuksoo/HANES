@@ -73,7 +73,7 @@ export default function EquipMasterTab() {
   const fetchEquipments = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "100", company: "40" };
+      const params: Record<string, string> = { limit: "100" };
       if (searchText) params.search = searchText;
       if (typeFilter) params.equipType = typeFilter;
       if (lineFilter) params.lineCode = lineFilter;

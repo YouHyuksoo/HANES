@@ -14,6 +14,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProductPhysicalInvService', () => {
   let target: ProductPhysicalInvService;
@@ -23,6 +24,7 @@ describe('ProductPhysicalInvService', () => {
   let mockWhRepo: DeepMocked<Repository<Warehouse>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -32,8 +34,10 @@ describe('ProductPhysicalInvService', () => {
     mockWhRepo = createMock<Repository<Warehouse>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -49,11 +53,53 @@ describe('ProductPhysicalInvService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWhRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ProductPhysicalInvService>(ProductPhysicalInvService);
   });
   afterEach(() => jest.clearAllMocks());
+
+  const createRawQueryBuilderMock = () => ({
+    leftJoin: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
+    offset: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    getCount: jest.fn().mockResolvedValue(0),
+    getRawMany: jest.fn().mockResolvedValue([]),
+  });
+
+  describe('findStocks', () => {
+    it('uses warehouseCode as the canonical warehouse filter and response field', async () => {
+      const qb = createRawQueryBuilderMock();
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findStocks({ warehouseCode: 'WH-01', page: 1, limit: 50 } as any, 'CO', 'P01');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('s.warehouseCode = :warehouseCode', { warehouseCode: 'WH-01' });
+      expect(qb.select).toHaveBeenCalledWith(expect.arrayContaining([
+        's.warehouseCode AS "warehouseCode"',
+      ]));
+    });
+  });
+
+  describe('findHistory', () => {
+    it('uses warehouseCode as the canonical warehouse filter and response field', async () => {
+      const qb = createRawQueryBuilderMock();
+      mockAdjRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findHistory({ warehouseCode: 'WH-01', page: 1, limit: 50 } as any, 'CO', 'P01');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('log.warehouseCode = :warehouseCode', { warehouseCode: 'WH-01' });
+      expect(qb.select).toHaveBeenCalledWith(expect.arrayContaining([
+        'log.warehouseCode AS "warehouseCode"',
+      ]));
+    });
+  });
 
   describe('applyCount', () => {
     it('should apply count and create adj log', async () => {
@@ -69,7 +115,8 @@ describe('ProductPhysicalInvService', () => {
       } as any, 'CO', 'P01', 'user');
 
       expect(r).toHaveLength(1);
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
       });
@@ -81,7 +128,7 @@ describe('ProductPhysicalInvService', () => {
         items: [{ stockId: 'WH::IT::LOT1', countedQty: 90 }],
         createdBy: 'user',
       } as any, 'CO', 'P01', 'user')).rejects.toThrow(NotFoundException);
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
     });
 
     it('should throw on invalid stockId format', async () => {

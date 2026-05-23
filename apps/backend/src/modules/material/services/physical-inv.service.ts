@@ -20,6 +20,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   CreatePhysicalInvDto,
   PhysicalInvQueryDto,
@@ -48,6 +49,7 @@ export class PhysicalInvService {
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   // ??? ?ㅼ궗 ?몄뀡 愿由?????????????????????????????????????????????????
@@ -584,11 +586,7 @@ export class PhysicalInvService {
       throw new BadRequestException('?? ?? ???? ??? ?? ?? ??? ? ? ????.');
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // IN 諛곗튂 ?좎“?뚮줈 N+1 諛⑹? ??stockId ?뚯떛 ???쇨큵 議고쉶
       const stockKeys = items.map((item) => {
         const [whCode, itCode, ltNo] = item.stockId.split('::');
@@ -681,14 +679,8 @@ export class PhysicalInvService {
         results.push(savedLog);
       }
 
-      await queryRunner.commitTransaction();
       return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** ?ㅼ궗 ?몃옖??뀡 踰덊샇 梨꾨쾲 (PHCyyyyMMdd + 4?먮━ seq) */

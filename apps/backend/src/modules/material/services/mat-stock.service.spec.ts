@@ -18,6 +18,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('MatStockService', () => {
@@ -29,6 +30,7 @@ describe('MatStockService', () => {
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  let mockTx: DeepMocked<TransactionService>;
 
   const createStock = (overrides: Partial<MatStock> = {}): MatStock =>
     ({
@@ -52,8 +54,10 @@ describe('MatStockService', () => {
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
+    mockTx = createMock<TransactionService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -69,6 +73,7 @@ describe('MatStockService', () => {
         { provide: getRepositoryToken(InvAdjLog), useValue: mockInvAdjLogRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -174,7 +179,8 @@ describe('MatStockService', () => {
         reason: '???',
       } as any);
 
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('????? ????? ??? BadRequestException', async () => {
@@ -190,7 +196,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('????? ??? ?????? ??? ?????? BadRequestException', async () => {
@@ -205,7 +212,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('?????? ?? ??? ???? ????', async () => {
@@ -221,7 +229,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 
@@ -243,7 +252,8 @@ describe('MatStockService', () => {
         qty: 20,
       } as any);
 
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('출고 창고 재고 부족이면 BadRequestException', async () => {
@@ -259,7 +269,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('출고 창고에 재고가 없으면 BadRequestException', async () => {
@@ -274,7 +285,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
     it('??? ??? ?? ??? ???? ????', async () => {
       const fromStock = createStock({ warehouseCode: 'WH-01', qty: 50, availableQty: 50 });
@@ -289,7 +301,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('??? ??? ??? ?? ??? ????', async () => {
@@ -305,7 +318,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('??? ??? ?? ??? ???? ????', async () => {
@@ -321,7 +335,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('??? ??? ??? ?? ??? ????', async () => {
@@ -337,7 +352,8 @@ describe('MatStockService', () => {
         } as any),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
   });

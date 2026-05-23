@@ -12,24 +12,9 @@ import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { ComCodeBadge } from '@/components/ui';
 import api from '@/services/api';
+import type { JobOrderSelectItem } from '@harness/shared';
 
-export interface JobOrder {
-  id: string;
-  orderNo: string;
-  itemCode: string;
-  itemName: string;
-  itemType?: string;
-  processType?: string;
-  processCode?: string;
-  planQty: number;
-  completedQty: number;
-  status: string;
-  planStartDate: string;
-  planEndDate: string;
-  workDate?: string;
-  equipCode?: string;
-  equipName?: string;
-}
+export type JobOrder = JobOrderSelectItem;
 
 interface JobOrderSelectModalProps {
   isOpen: boolean;

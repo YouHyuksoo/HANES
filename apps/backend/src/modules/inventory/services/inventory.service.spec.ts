@@ -19,6 +19,8 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { InventoryQueryService } from './inventory-query.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('InventoryService', () => {
   let target: InventoryService;
@@ -29,6 +31,8 @@ describe('InventoryService', () => {
   let mockPartMasterRepo: DeepMocked<Repository<PartMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  let mockInventoryQueryService: DeepMocked<InventoryQueryService>;
+  let mockTransactionService: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockStockTransRepo = createMock<Repository<StockTransaction>>();
@@ -38,6 +42,8 @@ describe('InventoryService', () => {
     mockPartMasterRepo = createMock<Repository<PartMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
+    mockInventoryQueryService = createMock<InventoryQueryService>();
+    mockTransactionService = createMock<TransactionService>();
 
     // QueryRunner 체인 모킹
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
@@ -46,6 +52,7 @@ describe('InventoryService', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    mockTransactionService.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -56,6 +63,8 @@ describe('InventoryService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartMasterRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: InventoryQueryService, useValue: mockInventoryQueryService },
+        { provide: TransactionService, useValue: mockTransactionService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -128,6 +137,32 @@ describe('InventoryService', () => {
       );
       expect(mockLotRepo.save).toHaveBeenCalledTimes(1);
     });
+
+    it('persists company and plant from tenant context', async () => {
+      // Arrange
+      const dto = {
+        matUid: 'RM202603180001',
+        itemCode: 'PART-001',
+        initQty: 100,
+        recvDate: '2026-03-18',
+        vendor: 'VENDOR-A',
+      };
+      const savedLot = { ...dto, company: 'TESTV', plant: 'WAREHOUSES' } as any;
+      mockLotRepo.create.mockReturnValue(savedLot);
+      mockLotRepo.save.mockResolvedValue(savedLot);
+
+      // Act
+      const result = await (target as any).createLot(dto, 'TESTV', 'WAREHOUSES');
+
+      // Assert
+      expect(result).toEqual(savedLot);
+      expect(mockLotRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        matUid: 'RM202603180001',
+        itemCode: 'PART-001',
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      }));
+    });
   });
 
   // ─────────────────────────────────────────────
@@ -162,9 +197,32 @@ describe('InventoryService', () => {
 
       // Assert — transNo는 모킹된 create 반환값에서 옴
       expect(result.transNo).toBeDefined();
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalledTimes(1);
-      expect(mockQueryRunner.release).toHaveBeenCalledTimes(1);
+      expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2); // transaction + stock
+    });
+
+    it('persists company and plant on transaction and new stock', async () => {
+      // Arrange
+      const savedTrans = { transNo: 'TRX202603180001', ...receiveDto, company: 'TESTV', plant: 'WAREHOUSES' } as any;
+      mockStockTransRepo.create.mockReturnValue(savedTrans);
+      mockQueryRunner.manager.save.mockResolvedValue(savedTrans);
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+
+      // Act
+      await (target as any).receiveStock(receiveDto, 'TESTV', 'WAREHOUSES');
+
+      // Assert
+      expect(mockStockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      }));
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(MatStock, expect.objectContaining({
+        warehouseCode: 'WH-RM',
+        itemCode: 'PART-001',
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      }));
     });
 
     it('should update existing stock qty on receive', async () => {
@@ -192,7 +250,7 @@ describe('InventoryService', () => {
         { warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: 'RM202603180001' },
         { qty: 150, availableQty: 140 }, // 50+100=150, 150-10=140
       );
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+      expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
     });
 
     it('should rollback on error', async () => {
@@ -202,8 +260,7 @@ describe('InventoryService', () => {
 
       // Act & Assert
       await expect(target.receiveStock(receiveDto as any)).rejects.toThrow('DB error');
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
-      expect(mockQueryRunner.release).toHaveBeenCalledTimes(1);
+      expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -250,7 +307,33 @@ describe('InventoryService', () => {
         { warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: 'RM202603180001' },
         { qty: 70, availableQty: 70 }, // 100-30, 100-30
       );
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+      expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('persists company and plant on issue transaction', async () => {
+      // Arrange
+      const existingStock = {
+        warehouseCode: 'WH-RM',
+        itemCode: 'PART-001',
+        matUid: 'RM202603180001',
+        qty: 100,
+        reservedQty: 0,
+        availableQty: 100,
+      };
+      const savedTrans = { transNo: 'TRX202603180001', qty: -30, company: 'TESTV', plant: 'WAREHOUSES' } as any;
+      mockStockTransRepo.create.mockReturnValue(savedTrans);
+      mockQueryRunner.manager.findOne.mockResolvedValue(existingStock);
+      mockQueryRunner.manager.save.mockResolvedValue(savedTrans);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Act
+      await (target as any).issueStock(issueDto, 'TESTV', 'WAREHOUSES');
+
+      // Assert
+      expect(mockStockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      }));
     });
 
     it('should throw BadRequestException when insufficient stock', async () => {
@@ -267,7 +350,7 @@ describe('InventoryService', () => {
 
       // Act & Assert
       await expect(target.issueStock(issueDto as any)).rejects.toThrow(BadRequestException);
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
+      expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
     });
 
     it('should throw BadRequestException when no stock exists', async () => {
@@ -304,7 +387,38 @@ describe('InventoryService', () => {
 
       // Assert — save가 2번 호출됨 (트랜잭션 + 대상창고 신규 재고)
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2);
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+      expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('persists company and plant on transfer target stock when newly created', async () => {
+      // Arrange
+      const issueDtoWithTarget = { ...issueDto, toWarehouseCode: 'WH-WIP' };
+      const sourceStock = {
+        warehouseCode: 'WH-RM',
+        itemCode: 'PART-001',
+        matUid: 'RM202603180001',
+        qty: 100,
+        reservedQty: 0,
+        availableQty: 100,
+      };
+      const savedTrans = { transNo: 'TRX202603180001', qty: -30, company: 'TESTV', plant: 'WAREHOUSES' } as any;
+      mockStockTransRepo.create.mockReturnValue(savedTrans);
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(sourceStock)
+        .mockResolvedValueOnce(null);
+      mockQueryRunner.manager.save.mockResolvedValue(savedTrans);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      // Act
+      await (target as any).issueStock(issueDtoWithTarget, 'TESTV', 'WAREHOUSES');
+
+      // Assert
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(MatStock, expect.objectContaining({
+        warehouseCode: 'WH-WIP',
+        itemCode: 'PART-001',
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      }));
     });
   });
 
@@ -355,7 +469,7 @@ describe('InventoryService', () => {
 
       // Assert
       expect(result.transType).toBe('MAT_IN_CANCEL');
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalledTimes(1);
+      expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
     });
 
     it('should throw NotFoundException when original transaction not found', async () => {
@@ -386,84 +500,18 @@ describe('InventoryService', () => {
   // getStock
   // ─────────────────────────────────────────────
   describe('getStock', () => {
-    it('should return flattened stock data with related info', async () => {
-      // Arrange
-      const stocks = [
-        { warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: 'RM001', qty: 100, reservedQty: 10, availableQty: 90 },
-      ] as MatStock[];
-      mockStockRepo.find.mockResolvedValue(stocks);
-      mockWarehouseRepo.find.mockResolvedValue([
-        { warehouseCode: 'WH-RM', warehouseName: '원자재창고', warehouseType: 'RM' } as Warehouse,
-      ]);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'PART-001', itemName: '부품A', itemType: 'RM', unit: 'EA' } as PartMaster,
-      ]);
-      mockLotRepo.find.mockResolvedValue([
-        { matUid: 'RM001', status: 'ACTIVE' } as MatLot,
-      ]);
+    it('delegates to InventoryQueryService with tenant context', async () => {
+      const expected = [{ warehouseCode: 'WH-RM' }];
+      mockInventoryQueryService.getStock.mockResolvedValue(expected as any);
 
-      // Act
-      const result = await target.getStock({} as any);
+      const result = await target.getStock({ warehouseCode: 'WH-RM' } as any, 'TESTV', 'WAREHOUSES');
 
-      // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        warehouseId: 'WH-RM',
-        itemCode: 'PART-001',
-        matUid: 'RM001',
-        qty: 100,
-        reservedQty: 10,
-        availableQty: 90,
-        itemName: '부품A',
-        itemType: 'RM',
-        unit: 'EA',
-        warehouseCode: 'WH-RM',
-        warehouseName: '원자재창고',
-        warehouseType: 'RM',
-        lotStatus: 'ACTIVE',
-      });
-    });
-
-    it('should exclude zero qty stocks by default', async () => {
-      // Arrange
-      const stocks = [
-        { warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: null, qty: 0, reservedQty: 0, availableQty: 0 },
-      ] as MatStock[];
-      mockStockRepo.find.mockResolvedValue(stocks);
-
-      // Act
-      const result = await target.getStock({} as any);
-
-      // Assert
-      expect(result).toEqual([]);
-    });
-
-    it('should include zero qty stocks when includeZero is true', async () => {
-      // Arrange
-      const stocks = [
-        { warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: null, qty: 0, reservedQty: 0, availableQty: 0 },
-      ] as MatStock[];
-      mockStockRepo.find.mockResolvedValue(stocks);
-      mockWarehouseRepo.find.mockResolvedValue([]);
-      mockPartMasterRepo.find.mockResolvedValue([]);
-      mockLotRepo.find.mockResolvedValue([]);
-
-      // Act
-      const result = await target.getStock({ includeZero: true } as any);
-
-      // Assert
-      expect(result).toHaveLength(1);
-    });
-
-    it('should return empty array when no stocks found', async () => {
-      // Arrange
-      mockStockRepo.find.mockResolvedValue([]);
-
-      // Act
-      const result = await target.getStock({} as any);
-
-      // Assert
-      expect(result).toEqual([]);
+      expect(result).toBe(expected);
+      expect(mockInventoryQueryService.getStock).toHaveBeenCalledWith(
+        { warehouseCode: 'WH-RM' },
+        'TESTV',
+        'WAREHOUSES',
+      );
     });
   });
 
@@ -471,31 +519,14 @@ describe('InventoryService', () => {
   // getLotById
   // ─────────────────────────────────────────────
   describe('getLotById', () => {
-    it('should return lot with related data', async () => {
-      // Arrange
-      const lot = { matUid: 'RM001', itemCode: 'PART-001' } as MatLot;
-      mockLotRepo.findOne.mockResolvedValue(lot);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', itemName: '부품A' } as PartMaster);
-      mockStockRepo.find.mockResolvedValue([]);
-      mockStockTransRepo.find.mockResolvedValue([]);
-      mockWarehouseRepo.find.mockResolvedValue([]);
+    it('delegates to InventoryQueryService', async () => {
+      const expected = { matUid: 'RM001' };
+      mockInventoryQueryService.getLotById.mockResolvedValue(expected as any);
 
-      // Act
       const result = await target.getLotById('RM001');
 
-      // Assert
-      expect(result.matUid).toBe('RM001');
-      expect(result.part?.itemName).toBe('부품A');
-      expect(result.stocks).toEqual([]);
-      expect(result.transactions).toEqual([]);
-    });
-
-    it('should throw NotFoundException when lot not found', async () => {
-      // Arrange
-      mockLotRepo.findOne.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(target.getLotById('INVALID')).rejects.toThrow(NotFoundException);
+      expect(result).toBe(expected);
+      expect(mockInventoryQueryService.getLotById).toHaveBeenCalledWith('RM001');
     });
   });
 
@@ -503,40 +534,14 @@ describe('InventoryService', () => {
   // getTransactionById
   // ─────────────────────────────────────────────
   describe('getTransactionById', () => {
-    it('should return transaction with related data', async () => {
-      // Arrange
-      const trans = {
-        transNo: 'TRX001',
-        transType: 'MAT_IN',
-        fromWarehouseId: null,
-        toWarehouseId: 'WH-RM',
-        itemCode: 'PART-001',
-        matUid: 'RM001',
-        cancelRefId: null,
-      } as any;
-      mockStockTransRepo.findOne
-        .mockResolvedValueOnce(trans) // 메인 조회
-        .mockResolvedValue(null);     // canceledByTrans
+    it('delegates to InventoryQueryService', async () => {
+      const expected = { transNo: 'TRX001' };
+      mockInventoryQueryService.getTransactionById.mockResolvedValue(expected as any);
 
-      mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-RM', warehouseName: '원자재창고' } as Warehouse);
-      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', itemName: '부품A' } as PartMaster);
-      mockLotRepo.findOne.mockResolvedValue({ matUid: 'RM001' } as MatLot);
-
-      // Act
       const result = await target.getTransactionById('TRX001');
 
-      // Assert
-      expect(result.transNo).toBe('TRX001');
-      expect(result.toWarehouse?.warehouseName).toBe('원자재창고');
-      expect(result.part?.itemName).toBe('부품A');
-    });
-
-    it('should throw NotFoundException when transaction not found', async () => {
-      // Arrange
-      mockStockTransRepo.findOne.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(target.getTransactionById('INVALID')).rejects.toThrow(NotFoundException);
+      expect(result).toBe(expected);
+      expect(mockInventoryQueryService.getTransactionById).toHaveBeenCalledWith('TRX001');
     });
   });
 
@@ -544,40 +549,14 @@ describe('InventoryService', () => {
   // getStockSummary
   // ─────────────────────────────────────────────
   describe('getStockSummary', () => {
-    it('should return grouped summary by itemCode', async () => {
-      // Arrange
-      const stocks = [
-        { warehouseCode: 'WH-RM', itemCode: 'PART-001', qty: 100 },
-        { warehouseCode: 'WH-WIP', itemCode: 'PART-001', qty: 50 },
-      ] as MatStock[];
-      mockStockRepo.find.mockResolvedValue(stocks);
-      mockWarehouseRepo.find.mockResolvedValue([
-        { warehouseCode: 'WH-RM', warehouseName: '원자재', warehouseType: 'RM' } as Warehouse,
-        { warehouseCode: 'WH-WIP', warehouseName: '재공', warehouseType: 'WIP' } as Warehouse,
-      ]);
-      mockPartMasterRepo.find.mockResolvedValue([
-        { itemCode: 'PART-001', itemName: '부품A', itemType: 'RM' } as PartMaster,
-      ]);
+    it('delegates to InventoryQueryService', async () => {
+      const expected = [{ itemCode: 'PART-001', totalQty: 150 }];
+      mockInventoryQueryService.getStockSummary.mockResolvedValue(expected as any);
 
-      // Act
-      const result = await target.getStockSummary({});
+      const result = await target.getStockSummary({ warehouseType: 'RM' });
 
-      // Assert
-      expect(result).toHaveLength(1);
-      expect(result[0].itemCode).toBe('PART-001');
-      expect(result[0].totalQty).toBe(150);
-      expect(result[0].warehouses).toHaveLength(2);
-    });
-
-    it('should return empty array when no stocks', async () => {
-      // Arrange
-      mockStockRepo.find.mockResolvedValue([]);
-
-      // Act
-      const result = await target.getStockSummary({});
-
-      // Assert
-      expect(result).toEqual([]);
+      expect(result).toBe(expected);
+      expect(mockInventoryQueryService.getStockSummary).toHaveBeenCalledWith({ warehouseType: 'RM' });
     });
   });
 });

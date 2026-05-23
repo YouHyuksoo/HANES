@@ -9,6 +9,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('MatOutRequestService', () => {
   let service: MatOutRequestService;
@@ -16,6 +17,7 @@ describe('MatOutRequestService', () => {
   let matStockRepo: DeepMocked<Repository<MatStock>>;
   let matLotRepo: DeepMocked<Repository<MatLot>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
   let numbering: DeepMocked<NumberingService>;
 
@@ -24,10 +26,12 @@ describe('MatOutRequestService', () => {
     matStockRepo = createMock<Repository<MatStock>>();
     matLotRepo = createMock<Repository<MatLot>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
     numbering = createMock<NumberingService>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -43,6 +47,7 @@ describe('MatOutRequestService', () => {
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: NumberingService, useValue: numbering },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -94,6 +99,8 @@ describe('MatOutRequestService', () => {
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
         expect.objectContaining({ reservedQty: 5, availableQty: 5 }),
       );
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('blocks request when availableQty is insufficient', async () => {

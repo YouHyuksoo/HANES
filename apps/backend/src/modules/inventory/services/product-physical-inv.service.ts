@@ -6,6 +6,7 @@ import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   CreateProductPhysicalInvDto,
   ProductPhysicalInvQueryDto,
@@ -26,10 +27,12 @@ export class ProductPhysicalInvService {
     @InjectRepository(PartMaster)
     private readonly partMasterRepository: Repository<PartMaster>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   async findStocks(query: ProductPhysicalInvQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, search, warehouseId } = query;
+    const { page = 1, limit = 50, search } = query;
+    const warehouseCode = query.warehouseCode ?? query.warehouseId;
     const skip = (page - 1) * limit;
 
     const qb = this.stockRepository
@@ -39,6 +42,7 @@ export class ProductPhysicalInvService {
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode')
       .select([
         's.warehouseCode || \'::\' || s.itemCode || \'::\' || s.prdUid AS "id"',
+        's.warehouseCode AS "warehouseCode"',
         's.warehouseCode AS "warehouseId"',
         'w.warehouseName AS "warehouseName"',
         's.itemCode AS "itemCode"',
@@ -55,7 +59,7 @@ export class ProductPhysicalInvService {
 
     if (company) qb.andWhere('s.company = :company', { company });
     if (plant) qb.andWhere('s.plant = :plant', { plant });
-    if (warehouseId) qb.andWhere('s.warehouseCode = :warehouseId', { warehouseId });
+    if (warehouseCode) qb.andWhere('s.warehouseCode = :warehouseCode', { warehouseCode });
 
     if (search) {
       qb.andWhere(
@@ -73,7 +77,8 @@ export class ProductPhysicalInvService {
   }
 
   async findHistory(query: ProductPhysicalInvHistoryQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, search, warehouseId, startDate, endDate } = query;
+    const { page = 1, limit = 50, search, startDate, endDate } = query;
+    const warehouseCode = query.warehouseCode ?? query.warehouseId;
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
@@ -83,6 +88,7 @@ export class ProductPhysicalInvService {
       .select([
         'log.adjDate AS "adjDate"',
         'log.seq AS "seq"',
+        'log.warehouseCode AS "warehouseCode"',
         'log.warehouseCode AS "warehouseId"',
         'wh.warehouseName AS "warehouseName"',
         'log.itemCode AS "itemCode"',
@@ -100,7 +106,7 @@ export class ProductPhysicalInvService {
 
     if (company) qb.andWhere('log.company = :company', { company });
     if (plant) qb.andWhere('log.plant = :plant', { plant });
-    if (warehouseId) qb.andWhere('log.warehouseCode = :warehouseId', { warehouseId });
+    if (warehouseCode) qb.andWhere('log.warehouseCode = :warehouseCode', { warehouseCode });
     if (startDate) qb.andWhere('log.createdAt >= :startDate', { startDate: new Date(startDate) });
     if (endDate) {
       const end = new Date(endDate);
@@ -126,11 +132,7 @@ export class ProductPhysicalInvService {
     const { items, countMonth, countType } = dto;
     const createdBy = actor || dto.createdBy || 'system';
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const results = [];
 
       for (const item of items) {
@@ -195,13 +197,7 @@ export class ProductPhysicalInvService {
         results.push(savedLog);
       }
 
-      await queryRunner.commitTransaction();
       return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 }

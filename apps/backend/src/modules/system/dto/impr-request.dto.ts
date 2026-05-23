@@ -46,6 +46,22 @@ export class ImprRequestQueryDto {
   @IsIn(['PENDING', 'IN_PROGRESS', 'DONE', 'ALL'])
   status?: string;
 
+  @ApiPropertyOptional({ description: 'description/pageUrl 키워드 검색' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  keyword?: string;
+
+  @ApiPropertyOptional({ description: '등록일 시작 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: '등록일 종료 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsString()
+  toDate?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   page?: number;

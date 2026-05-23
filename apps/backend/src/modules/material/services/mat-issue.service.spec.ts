@@ -12,6 +12,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('MatIssueService', () => {
   let target: MatIssueService;
@@ -24,6 +25,7 @@ describe('MatIssueService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
@@ -35,8 +37,10 @@ describe('MatIssueService', () => {
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
+    mockTx = createMock<TransactionService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -54,6 +58,7 @@ describe('MatIssueService', () => {
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -102,6 +107,8 @@ describe('MatIssueService', () => {
       items: [{ matUid: 'MAT-001', issueQty: 5 }],
     } as any);
 
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', qty: -3 }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-002', qty: -2 }));
     expect(manager.update).toHaveBeenCalledWith(
@@ -162,6 +169,8 @@ describe('MatIssueService', () => {
 
     await target.cancel('ISS-001', 1, 'cancel');
 
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.update).toHaveBeenCalledWith(
       MatStock,
       { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001' },
