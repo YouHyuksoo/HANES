@@ -40,6 +40,15 @@ describe('EquipMasterService', () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001' } as any);
       expect((await target.findById('EQ-001')).equipCode).toBe('EQ-001');
     });
+    it('should find equip by id within tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+
+      await target.findById('EQ-001', 'CO', 'P01');
+
+      expect(mockEquipRepo.findOne).toHaveBeenCalledWith({
+        where: { equipCode: 'EQ-001', company: 'CO', plant: 'P01' },
+      });
+    });
     it('should throw NotFoundException', async () => {
       mockEquipRepo.findOne.mockResolvedValue(null);
       await expect(target.findById('X')).rejects.toThrow(NotFoundException);
@@ -55,6 +64,21 @@ describe('EquipMasterService', () => {
       const r = await target.create({ equipCode: 'EQ-001', equipName: 'Test' } as any);
       expect(r.equipCode).toBe('EQ-001');
     });
+    it('should check duplicate and create equip within tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue(null);
+      const saved = { equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any;
+      mockEquipRepo.create.mockReturnValue(saved);
+      mockEquipRepo.save.mockResolvedValue(saved);
+
+      await target.create({ equipCode: 'EQ-001', equipName: 'Test' } as any, 'CO', 'P01');
+
+      expect(mockEquipRepo.findOne).toHaveBeenCalledWith({
+        where: { equipCode: 'EQ-001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockEquipRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' }),
+      );
+    });
     it('should throw ConflictException', async () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001' } as any);
       await expect(target.create({ equipCode: 'EQ-001' } as any)).rejects.toThrow(ConflictException);
@@ -68,12 +92,35 @@ describe('EquipMasterService', () => {
       const r = await target.delete('EQ-001');
       expect(r.deleted).toBe(true);
     });
+    it('should delete equip within tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+      mockEquipRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.delete('EQ-001', 'CO', 'P01');
+
+      expect(mockEquipRepo.delete).toHaveBeenCalledWith({
+        equipCode: 'EQ-001',
+        company: 'CO',
+        plant: 'P01',
+      });
+    });
   });
 
   describe('assignJobOrder', () => {
     it('should throw when equip status is INTERLOCK', async () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', status: 'INTERLOCK' } as any);
       await expect(target.assignJobOrder('EQ-001', { orderNo: 'JO-001' } as any)).rejects.toThrow(ConflictException);
+    });
+    it('should assign job order within tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', status: 'NORMAL', company: 'CO', plant: 'P01' } as any);
+      mockEquipRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.assignJobOrder('EQ-001', { orderNo: 'JO-001' } as any, 'CO', 'P01');
+
+      expect(mockEquipRepo.update).toHaveBeenCalledWith(
+        { equipCode: 'EQ-001', company: 'CO', plant: 'P01' },
+        { currentJobOrderId: 'JO-001' },
+      );
     });
   });
 });

@@ -20,6 +20,13 @@ export class MatOutRequestService {
     private readonly numbering: NumberingService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findPending(query: { page?: number; limit?: number }, company?: string, plant?: string) {
     const { page = 1, limit = 20 } = query;
     const where: any = {
@@ -104,20 +111,27 @@ export class MatOutRequestService {
     });
   }
 
-  async approve(transNo: string, approverId: string) {
-    const tx = await this.stockTxRepo.findOne({ where: { transNo } });
+  async approve(transNo: string, approverId: string, company?: string, plant?: string) {
+    const tx = await this.stockTxRepo.findOne({ where: { transNo, ...this.tenantWhere(company, plant) } });
     if (!tx) throw new NotFoundException('Stock transaction not found.');
     if (tx.status !== 'PENDING_APPROVAL') throw new BadRequestException('Transaction is not pending approval.');
 
+    const txTenantWhere = this.tenantWhere(tx.company, tx.plant);
+
     if (tx.matUid) {
-      const lot = await this.matLotRepo.findOne({ where: { matUid: tx.matUid } });
+      const lot = await this.matLotRepo.findOne({ where: { matUid: tx.matUid, ...txTenantWhere } });
       if (lot?.status === 'HOLD') {
         throw new BadRequestException(`Cannot approve material-out for HOLD lot: ${tx.matUid}`);
       }
     }
 
     const stock = await this.matStockRepo.findOne({
-      where: { matUid: tx.matUid ?? undefined, itemCode: tx.itemCode },
+      where: {
+        ...(tx.fromWarehouseId ? { warehouseCode: tx.fromWarehouseId } : {}),
+        ...(tx.matUid ? { matUid: tx.matUid } : {}),
+        itemCode: tx.itemCode,
+        ...txTenantWhere,
+      },
     });
     if (!stock) throw new NotFoundException('Material stock not found.');
 
@@ -127,7 +141,12 @@ export class MatOutRequestService {
     }
 
     await this.matStockRepo.update(
-      { warehouseCode: stock.warehouseCode, itemCode: tx.itemCode, matUid: tx.matUid ?? '' },
+      {
+        warehouseCode: stock.warehouseCode,
+        itemCode: tx.itemCode,
+        ...(tx.matUid ? { matUid: tx.matUid } : {}),
+        ...txTenantWhere,
+      },
       {
         qty: stock.qty - absQty,
         reservedQty: Math.max(0, (stock.reservedQty ?? 0) - absQty),
@@ -136,7 +155,7 @@ export class MatOutRequestService {
     );
 
     await this.stockTxRepo.update(
-      { transNo },
+      { transNo, ...txTenantWhere },
       {
         status: 'DONE',
         approverId,
@@ -147,14 +166,14 @@ export class MatOutRequestService {
     return { transNo, status: 'DONE' };
   }
 
-  async reject(transNo: string, approverId: string) {
-    const tx = await this.stockTxRepo.findOne({ where: { transNo } });
+  async reject(transNo: string, approverId: string, company?: string, plant?: string) {
+    const tx = await this.stockTxRepo.findOne({ where: { transNo, ...this.tenantWhere(company, plant) } });
     if (!tx) throw new NotFoundException('Stock transaction not found.');
     if (tx.status !== 'PENDING_APPROVAL') throw new BadRequestException('Transaction is not pending approval.');
 
     await this.unlockStock(tx);
     await this.stockTxRepo.update(
-      { transNo },
+      { transNo, ...this.tenantWhere(tx.company, tx.plant) },
       {
         status: 'REJECTED',
         approverId,
@@ -165,15 +184,15 @@ export class MatOutRequestService {
     return { transNo, status: 'REJECTED' };
   }
 
-  async cancel(transNo: string) {
-    const tx = await this.stockTxRepo.findOne({ where: { transNo } });
+  async cancel(transNo: string, company?: string, plant?: string) {
+    const tx = await this.stockTxRepo.findOne({ where: { transNo, ...this.tenantWhere(company, plant) } });
     if (!tx) throw new NotFoundException('Stock transaction not found.');
     if (tx.status !== 'PENDING_APPROVAL') {
       throw new BadRequestException('Only pending approval transaction can be canceled.');
     }
 
     await this.unlockStock(tx);
-    await this.stockTxRepo.update({ transNo }, { status: 'CANCELED' });
+    await this.stockTxRepo.update({ transNo, ...this.tenantWhere(tx.company, tx.plant) }, { status: 'CANCELED' });
     return { transNo, status: 'CANCELED' };
   }
 
@@ -181,14 +200,24 @@ export class MatOutRequestService {
     if (!tx.matUid) return;
 
     const stock = await this.matStockRepo.findOne({
-      where: { matUid: tx.matUid, itemCode: tx.itemCode },
+      where: {
+        ...(tx.fromWarehouseId ? { warehouseCode: tx.fromWarehouseId } : {}),
+        matUid: tx.matUid,
+        itemCode: tx.itemCode,
+        ...this.tenantWhere(tx.company, tx.plant),
+      },
     });
 
     if (!stock) return;
 
     const absQty = Math.abs(tx.qty);
     await this.matStockRepo.update(
-      { warehouseCode: stock.warehouseCode, itemCode: tx.itemCode, matUid: tx.matUid },
+      {
+        warehouseCode: stock.warehouseCode,
+        itemCode: tx.itemCode,
+        matUid: tx.matUid,
+        ...this.tenantWhere(tx.company, tx.plant),
+      },
       {
         reservedQty: Math.max(0, (stock.reservedQty ?? 0) - absQty),
         availableQty: stock.qty - Math.max(0, (stock.reservedQty ?? 0) - absQty),

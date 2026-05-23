@@ -81,13 +81,17 @@ export class ArrivalService {
 
     // PO 아이템 조회
     const poNos = pos.map((po) => po.poNo);
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const items = await this.purchaseOrderItemRepository.find({
-      where: { poNo: In(poNos) },
+      where: { poNo: In(poNos), ...tenantWhere },
     });
 
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -105,7 +109,7 @@ export class ArrivalService {
       const enrichedItems = poItems.map((item) => ({
         ...item,
         remainingQty: item.orderQty - item.receivedQty,
-        itemCode: partMap.get(item.itemCode)?.itemCode,
+        itemCode: partMap.get(item.itemCode)?.itemCode ?? item.itemCode,
         itemName: partMap.get(item.itemCode)?.itemName,
         unit: partMap.get(item.itemCode)?.unit,
       }));
@@ -134,7 +138,9 @@ export class ArrivalService {
 
     const itemCodes = items.map((item: PurchaseOrderItem) => item.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({
+        where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      })
       : [];
     const partMap = new Map(parts.map((p: PartMaster) => [p.itemCode, p]));
 
@@ -144,7 +150,7 @@ export class ArrivalService {
         .map((item: PurchaseOrderItem) => ({
           ...item,
           remainingQty: item.orderQty - item.receivedQty,
-          itemCode: partMap.get(item.itemCode)?.itemCode,
+          itemCode: partMap.get(item.itemCode)?.itemCode ?? item.itemCode,
           itemName: partMap.get(item.itemCode)?.itemName,
           unit: partMap.get(item.itemCode)?.unit,
         }))
@@ -205,11 +211,15 @@ export class ArrivalService {
     // 품목/창고 일괄 선조회 (트랜잭션 밖, N+1 제거)
     const itemCodes = [...new Set(dto.items.map((i) => i.itemCode).filter(Boolean))];
     const whCodes = [...new Set(dto.items.map((i) => i.warehouseId).filter(Boolean))];
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const allParts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const allWarehouses = whCodes.length > 0
-      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes) } })
+      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(allParts.map((p) => [p.itemCode, p] as const));
     const whMap = new Map(allWarehouses.map((w) => [w.warehouseCode, w] as const));
@@ -270,7 +280,12 @@ export class ArrivalService {
         // 4. PurchaseOrderItem.receivedQty 증가
         const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
         if (poItem) {
-          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq }, {
+          await queryRunner.manager.update(PurchaseOrderItem, {
+            poNo: poItem.poNo,
+            seq: poItem.seq,
+            ...(po.company ? { company: po.company } : {}),
+            ...(po.plant ? { plant: po.plant } : {}),
+          }, {
             receivedQty: poItem.receivedQty + item.receivedQty,
           });
         }
@@ -280,17 +295,17 @@ export class ArrivalService {
         results.push({
           ...savedTx,
           arrivalNo,
-          itemCode: part?.itemCode,
-          itemName: part?.itemName,
-          itemType: part?.itemType,
-          unit: part?.unit,
-          warehouseCode: warehouse?.warehouseCode,
-          warehouseName: warehouse?.warehouseName,
+          itemCode: item.itemCode,
+          itemName: part?.itemName ?? null,
+          itemType: part?.itemType ?? null,
+          unit: part?.unit ?? null,
+          warehouseCode: item.warehouseId,
+          warehouseName: warehouse?.warehouseName ?? null,
         });
       }
 
       // 5. PO 상태 재계산
-      await this.updatePOStatus(queryRunner.manager, po.poNo);
+      await this.updatePOStatus(queryRunner.manager, po.poNo, po.company, po.plant);
 
       return results;
     });
@@ -299,11 +314,15 @@ export class ArrivalService {
   /** 수동 입하 등록 */
   async createManualArrival(dto: CreateManualArrivalDto, company?: string, plant?: string) {
     return this.tx.run(async (queryRunner) => {
+      const tenantWhere = {
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      };
       const arrivalNo = await this.numbering.nextInTx(queryRunner, 'ARRIVAL');
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       // 품목 정보 조회
-      const part = await this.partMasterRepository.findOne({ where: { itemCode: dto.itemCode } });
+      const part = await this.partMasterRepository.findOne({ where: { itemCode: dto.itemCode, ...tenantWhere } });
 
       // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
       const arrival = queryRunner.manager.create(MatArrival, {
@@ -346,18 +365,18 @@ export class ArrivalService {
 
       // warehouse 정보 조회 (part는 이미 위에서 조회)
       const warehouse = await this.warehouseRepository.findOne({
-        where: { warehouseCode: dto.warehouseId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        where: { warehouseCode: dto.warehouseId, ...tenantWhere },
       });
 
       return {
         ...savedTx,
         arrivalNo,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        itemType: part?.itemType,
-        unit: part?.unit,
-        warehouseCode: warehouse?.warehouseCode,
-        warehouseName: warehouse?.warehouseName,
+        itemCode: dto.itemCode,
+        itemName: part?.itemName ?? null,
+        itemType: part?.itemType ?? null,
+        unit: part?.unit ?? null,
+        warehouseCode: dto.warehouseId,
+        warehouseName: warehouse?.warehouseName ?? null,
       };
     });
   }
@@ -408,11 +427,15 @@ export class ArrivalService {
     const itemCodes = data.map((item) => item.itemCode).filter(Boolean);
     const matUids = data.map((item) => item.matUid).filter(Boolean) as string[];
     const warehouseIds = data.map((item) => item.toWarehouseId).filter(Boolean) as string[];
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
 
     const [parts, lots, warehouses] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
-      warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds) } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
+      warehouseIds.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseIds), ...tenantWhere } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -422,7 +445,7 @@ export class ArrivalService {
     // MatArrival 정보 조회 (인보이스번호, 거래처 등) — arrivalNo 기준으로 조회
     // NOTE: MatArrival에는 matUid 필드가 없음. itemCode 기준으로 매칭
     const arrivalRecords = itemCodes.length > 0
-      ? await this.matArrivalRepository.find({ where: { itemCode: In(itemCodes), status: 'DONE' } })
+      ? await this.matArrivalRepository.find({ where: { itemCode: In(itemCodes), status: 'DONE', ...tenantWhere } })
       : [];
     const arrivalByItemCode = new Map(arrivalRecords.map((a) => [a.itemCode, a]));
 
@@ -436,11 +459,11 @@ export class ArrivalService {
         ...item,
         // flat 필드 (하위 호환)
         itemCode: part?.itemCode ?? item.itemCode,
-        itemName: part?.itemName,
-        itemType: part?.itemType,
-        unit: part?.unit,
-        warehouseCode: warehouse?.warehouseCode,
-        warehouseName: warehouse?.warehouseName,
+        itemName: part?.itemName ?? null,
+        itemType: part?.itemType ?? null,
+        unit: part?.unit ?? null,
+        warehouseCode: item.toWarehouseId,
+        warehouseName: warehouse?.warehouseName ?? null,
         arrivalNo: arrival?.arrivalNo,
         invoiceNo: arrival?.invoiceNo,
         vendorId: arrival?.vendorId,
@@ -467,9 +490,13 @@ export class ArrivalService {
     if (original.transType !== 'MAT_IN') throw new BadRequestException('입하 트랜잭션만 취소할 수 있습니다.');
 
     // G3: 입하 취소 조건 제한 — IQC 판정 이후 취소 불가 (무검사품은 입고 전)
+    const tenantWhere = {
+      ...(original.company ? { company: original.company } : company ? { company } : {}),
+      ...(original.plant ? { plant: original.plant } : plant ? { plant } : {}),
+    };
     if (original.itemCode) {
       const iqcRecord = await this.iqcLogRepository.findOne({
-        where: { arrivalNo: original.refId ?? undefined, itemCode: original.itemCode },
+        where: { arrivalNo: original.refId ?? undefined, itemCode: original.itemCode, ...tenantWhere },
         order: { inspectDate: 'DESC' },
       });
       if (iqcRecord && (iqcRecord.result === 'PASS' || iqcRecord.result === 'FAIL')) {
@@ -483,23 +510,28 @@ export class ArrivalService {
 
     return this.tx.run(async (queryRunner) => {
       // 1. 원본 CANCELED 처리
-      await queryRunner.manager.update(StockTransaction, { transNo: original.transNo }, { status: 'CANCELED' });
+      await queryRunner.manager.update(StockTransaction, { transNo: original.transNo, ...tenantWhere }, { status: 'CANCELED' });
 
       // 1-1. MatArrival도 CANCELED 처리 (matUid → LOT.arrivalNo FK 기준)
+      let canceledArrival: MatArrival | null = null;
       if (original.matUid) {
         // matUid → MatLot.arrivalNo로 정확한 입하 건 식별
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: original.matUid } });
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid: original.matUid, ...tenantWhere } });
         if (lot?.arrivalNo) {
-          await queryRunner.manager.update(MatArrival, { arrivalNo: lot.arrivalNo, seq: lot.arrivalSeq ?? 1 }, { status: 'CANCELED' });
+          canceledArrival = await queryRunner.manager.findOne(MatArrival, {
+            where: { arrivalNo: lot.arrivalNo, seq: lot.arrivalSeq ?? 1, ...tenantWhere },
+          });
+          await queryRunner.manager.update(MatArrival, { arrivalNo: lot.arrivalNo, seq: lot.arrivalSeq ?? 1, ...tenantWhere }, { status: 'CANCELED' });
         }
       } else if (original.itemCode) {
         // matUid 없는 레거시 데이터 — 기존 로직 유지
         const arrivalRecord = await queryRunner.manager.findOne(MatArrival, {
-          where: { itemCode: original.itemCode, status: 'DONE' },
+          where: { itemCode: original.itemCode, status: 'DONE', ...tenantWhere },
           order: { arrivalDate: 'DESC' },
         });
         if (arrivalRecord) {
-          await queryRunner.manager.update(MatArrival, { arrivalNo: arrivalRecord.arrivalNo, seq: arrivalRecord.seq }, { status: 'CANCELED' });
+          canceledArrival = arrivalRecord;
+          await queryRunner.manager.update(MatArrival, { arrivalNo: arrivalRecord.arrivalNo, seq: arrivalRecord.seq, ...tenantWhere }, { status: 'CANCELED' });
         }
       }
 
@@ -531,43 +563,46 @@ export class ArrivalService {
 
       // 5. PO receivedQty 감소 + PO status 재계산
       if (original.refType === 'PO' && original.refId) {
-        // refId는 seq 번호 — 해당 PO + seq로 품목 조회
-        const refSeq = Number(original.refId);
-        const poItem = !isNaN(refSeq)
-          ? await queryRunner.manager.findOne(PurchaseOrderItem, { where: { poNo: original.itemCode ? undefined : original.refId, seq: refSeq } })
+        const poItemId = canceledArrival?.poItemId ?? original.refId;
+        const refSeq = Number(poItemId);
+        const poNoFromComposite = String(poItemId).match(/^(.+)-(\d+)$/);
+        const poNo = canceledArrival?.poNo ?? canceledArrival?.poId ?? poNoFromComposite?.[1];
+        const poSeq = !isNaN(refSeq) ? refSeq : poNoFromComposite ? Number(poNoFromComposite[2]) : NaN;
+        const poItem = poNo && !isNaN(poSeq)
+          ? await queryRunner.manager.findOne(PurchaseOrderItem, { where: { poNo, seq: poSeq, ...tenantWhere } })
           : null;
         if (poItem) {
-          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq }, {
+          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq, ...tenantWhere }, {
             receivedQty: Math.max(0, poItem.receivedQty - original.qty),
           });
-          await this.updatePOStatus(queryRunner.manager, poItem.poNo);
+          await this.updatePOStatus(queryRunner.manager, poItem.poNo, original.company, original.plant);
         }
       }
 
       // part, lot, warehouse 정보 조회
       const [part, lot, toWarehouse] = await Promise.all([
-        this.partMasterRepository.findOne({ where: { itemCode: original.itemCode } }),
+        this.partMasterRepository.findOne({ where: { itemCode: original.itemCode, ...tenantWhere } }),
         original.matUid
           ? this.matLotRepository.findOne({
-              where: { matUid: original.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+              where: { matUid: original.matUid, ...tenantWhere },
             })
           : null,
         original.toWarehouseId
           ? this.warehouseRepository.findOne({
-              where: { warehouseCode: original.toWarehouseId, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+              where: { warehouseCode: original.toWarehouseId, ...tenantWhere },
             })
           : null,
       ]);
 
       return {
         ...savedCancelTx,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        itemType: part?.itemType,
-        unit: part?.unit,
-        matUid: lot?.matUid,
-        warehouseCode: toWarehouse?.warehouseCode,
-        warehouseName: toWarehouse?.warehouseName,
+        itemCode: original.itemCode,
+        itemName: part?.itemName ?? null,
+        itemType: part?.itemType ?? null,
+        unit: part?.unit ?? null,
+        matUid: original.matUid,
+        warehouseCode: original.toWarehouseId,
+        warehouseName: toWarehouse?.warehouseName ?? null,
       };
     });
   }
@@ -703,17 +738,20 @@ export class ArrivalService {
     // 관련 ID 수집 (MatArrival에는 matUid 없음 — itemCode 기준으로 조회)
     const itemCodes = [...new Set(arrivals.map((a) => a.itemCode))];
     const warehouseCodes = [...new Set(arrivals.map((a) => a.warehouseCode))];
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
 
     // 병렬 조회
     const [parts, warehouses, stocks] = await Promise.all([
-      this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }),
-      this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes) } }),
+      this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }),
+      this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }),
       this.matStockRepository.find({
         where: {
           itemCode: In(itemCodes),
           warehouseCode: In(warehouseCodes),
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
+          ...tenantWhere,
         },
       }),
     ]);
@@ -740,9 +778,9 @@ export class ArrivalService {
         invoiceNo: a.invoiceNo,
         poNo: a.poNo,
         vendorName: a.vendorName,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
+        itemCode: a.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
         arrivalQty: a.qty,
         currentStock,
         warehouseName: warehouse?.warehouseName || a.warehouseCode,
@@ -798,7 +836,7 @@ export class ArrivalService {
     // 2차 시도: VendorBarcodeMapping에서 itemCode 매핑
     if (!arrival) {
       const mapping = await this.vendorBarcodeMappingRepository.findOne({
-        where: { vendorBarcode: barcode, useYn: 'Y' },
+        where: { vendorBarcode: barcode, useYn: 'Y', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
 
       if (mapping) {
@@ -815,7 +853,7 @@ export class ArrivalService {
 
     // 품목 정보 조회
     const part = await this.partMasterRepository.findOne({
-      where: { itemCode: arrival.itemCode },
+      where: { itemCode: arrival.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
     const iqcYn = part?.iqcYn ?? 'Y';
@@ -848,7 +886,7 @@ export class ArrivalService {
       const poItemSeq = Number(arrival.poItemId);
       const poItem = !isNaN(poItemSeq)
         ? await this.purchaseOrderItemRepository.findOne({
-            where: { poNo: arrival.poNo || arrival.poId, seq: poItemSeq },
+            where: { poNo: arrival.poNo || arrival.poId, seq: poItemSeq, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
           })
         : null;
       if (poItem) {
@@ -871,9 +909,13 @@ export class ArrivalService {
   }
 
   /** PO 상태 재계산 */
-  private async updatePOStatus(manager: any, poNo: string) {
+  private async updatePOStatus(manager: any, poNo: string, company?: string | null, plant?: string | null) {
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const poItems = await manager.find(PurchaseOrderItem, {
-      where: { poNo },
+      where: { poNo, ...tenantWhere },
     });
 
     const allReceived = poItems.every(
@@ -892,7 +934,7 @@ export class ArrivalService {
       newStatus = 'CONFIRMED';
     }
 
-    await manager.update(PurchaseOrder, poNo, { status: newStatus });
+    await manager.update(PurchaseOrder, { poNo, ...tenantWhere }, { status: newStatus });
   }
 
   /** MatStock upsert (현재고 증감) */

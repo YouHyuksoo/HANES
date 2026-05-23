@@ -72,12 +72,13 @@ export class ImprRequestController {
   }
 
   private extractMeta(req: Request) {
+    const user = (req as Request & { user?: { company?: string; plant?: string } }).user ?? {};
     const auth = req.headers.authorization ?? '';
     const [, token] = auth.split(' ');
     const userId = token || 'unknown';
     const userName = (req.headers['x-user-name'] as string) ?? null;
-    const company = (req.headers['x-company'] as string) ?? 'JSHANES';
-    const plantCd = (req.headers['x-plant'] as string) ?? 'JSHANES';
+    const company = (req.headers['x-company'] as string) ?? user.company ?? 'JSHANES';
+    const plantCd = (req.headers['x-plant'] as string) ?? user.plant ?? 'JSHANES';
     return { userId, userName, company, plantCd };
   }
 }

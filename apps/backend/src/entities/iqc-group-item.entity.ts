@@ -1,10 +1,10 @@
 /**
  * @file iqc-group-item.entity.ts
  * @description IQC 검사그룹-항목 매핑 엔티티 - 그룹에 포함된 검사항목과 순서
- *              groupCode + inspItemCode 복합 PK를 사용한다.
+ *              company + plant + groupCode + inspItemCode 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. GROUP_ID + INSP_ITEM_ID가 복합 PK (자연키)
+ * 1. COMPANY + PLANT_CD + GROUP_ID + INSP_ITEM_ID가 복합 PK (자연키)
  * 2. SEQ로 검사 순서 관리
  */
 import {
@@ -23,6 +23,12 @@ import { IqcItemPool } from './iqc-item-pool.entity';
 @Entity({ name: 'IQC_GROUP_ITEMS' })
 @Index(['groupCode'])
 export class IqcGroupItem {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'GROUP_ID', length: 20 })
   groupCode: string;
 
@@ -31,12 +37,6 @@ export class IqcGroupItem {
 
   @Column({ name: 'SEQ', type: 'int', default: 1 })
   seq: number;
-
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
-
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
@@ -51,10 +51,18 @@ export class IqcGroupItem {
   updatedAt: Date;
 
   @ManyToOne(() => IqcGroup, (group) => group.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'GROUP_ID', referencedColumnName: 'groupCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'GROUP_ID', referencedColumnName: 'groupCode' },
+  ])
   group: IqcGroup;
 
   @ManyToOne(() => IqcItemPool, { eager: false })
-  @JoinColumn({ name: 'INSP_ITEM_ID', referencedColumnName: 'inspItemCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'INSP_ITEM_ID', referencedColumnName: 'inspItemCode' },
+  ])
   inspItem: IqcItemPool;
 }

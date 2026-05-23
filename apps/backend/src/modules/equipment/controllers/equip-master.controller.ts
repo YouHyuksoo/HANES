@@ -43,6 +43,7 @@ import {
 } from '../dto/equip-master.dto';
 import { EQUIP_TYPE_VALUES, EQUIP_STATUS_VALUES } from '@harness/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('설비관리 - 설비마스터')
 @Controller('equipment/equips')
@@ -56,64 +57,88 @@ export class EquipMasterController {
   @Get('stats')
   @ApiOperation({ summary: '설비 현황 통계' })
   @SwaggerResponse({ status: 200, description: '설비 현황 통계 조회 성공' })
-  async getStats() {
-    const data = await this.equipMasterService.getEquipmentStats();
+  async getStats(@Company() company: string, @Plant() plant: string) {
+    const data = await this.equipMasterService.getEquipmentStats(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('maintenance')
   @ApiOperation({ summary: '정비중/중지 설비 목록 조회' })
   @SwaggerResponse({ status: 200, description: '정비중/중지 설비 목록 조회 성공' })
-  async getMaintenanceEquipments() {
-    const data = await this.equipMasterService.getMaintenanceEquipments();
+  async getMaintenanceEquipments(@Company() company: string, @Plant() plant: string) {
+    const data = await this.equipMasterService.getMaintenanceEquipments(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('line/:lineCode')
   @ApiOperation({ summary: '라인별 설비 목록 조회' })
   @ApiParam({ name: 'lineCode', description: '라인 코드', example: 'LINE-01' })
-  async findByLineCode(@Param('lineCode') lineCode: string) {
-    const data = await this.equipMasterService.findByLineCode(lineCode);
+  async findByLineCode(
+    @Param('lineCode') lineCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.findByLineCode(lineCode, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('type/:equipType')
   @ApiOperation({ summary: '설비 유형별 목록 조회' })
   @ApiParam({ name: 'equipType', description: '설비 유형', enum: EQUIP_TYPE_VALUES })
-  async findByType(@Param('equipType') equipType: string) {
-    const data = await this.equipMasterService.findByType(equipType);
+  async findByType(
+    @Param('equipType') equipType: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.findByType(equipType, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('status/:status')
   @ApiOperation({ summary: '설비 상태별 목록 조회' })
   @ApiParam({ name: 'status', description: '설비 상태', enum: EQUIP_STATUS_VALUES })
-  async findByStatus(@Param('status') status: string) {
-    const data = await this.equipMasterService.findByStatus(status);
+  async findByStatus(
+    @Param('status') status: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.findByStatus(status, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('code/:equipCode')
   @ApiOperation({ summary: '설비 코드로 조회' })
   @ApiParam({ name: 'equipCode', description: '설비 코드', example: 'EQ-001' })
-  async findByCode(@Param('equipCode') equipCode: string) {
-    const data = await this.equipMasterService.findByCode(equipCode);
+  async findByCode(
+    @Param('equipCode') equipCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.findByCode(equipCode, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get()
   @ApiOperation({ summary: '설비 목록 조회' })
   @SwaggerResponse({ status: 200, description: '설비 목록 조회 성공' })
-  async findAll(@Query() query: EquipMasterQueryDto) {
-    const result = await this.equipMasterService.findAll(query);
+  async findAll(
+    @Query() query: EquipMasterQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.equipMasterService.findAll({ ...query, company, plant });
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '설비 상세 조회' })
   @ApiParam({ name: 'id', description: '설비 ID' })
-  async findById(@Param('id') id: string) {
-    const data = await this.equipMasterService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -126,8 +151,12 @@ export class EquipMasterController {
   @ApiOperation({ summary: '설비 생성' })
   @SwaggerResponse({ status: 201, description: '설비 생성 성공' })
   @SwaggerResponse({ status: 409, description: '중복된 설비 코드' })
-  async create(@Body() dto: CreateEquipMasterDto) {
-    const data = await this.equipMasterService.create(dto);
+  async create(
+    @Body() dto: CreateEquipMasterDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.create(dto, company, plant);
     return ResponseUtil.success(data, '설비가 생성되었습니다.');
   }
 
@@ -136,8 +165,13 @@ export class EquipMasterController {
   @ApiParam({ name: 'id', description: '설비 ID' })
   @SwaggerResponse({ status: 200, description: '설비 수정 성공' })
   @SwaggerResponse({ status: 404, description: '설비를 찾을 수 없음' })
-  async update(@Param('id') id: string, @Body() dto: UpdateEquipMasterDto) {
-    const data = await this.equipMasterService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateEquipMasterDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '설비가 수정되었습니다.');
   }
 
@@ -146,8 +180,12 @@ export class EquipMasterController {
   @ApiParam({ name: 'id', description: '설비 ID' })
   @SwaggerResponse({ status: 200, description: '설비 삭제 성공' })
   @SwaggerResponse({ status: 404, description: '설비를 찾을 수 없음' })
-  async delete(@Param('id') id: string) {
-    await this.equipMasterService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.equipMasterService.delete(id, company, plant);
     return ResponseUtil.success(null, '설비가 삭제되었습니다.');
   }
 
@@ -160,8 +198,13 @@ export class EquipMasterController {
   @ApiParam({ name: 'id', description: '설비 ID' })
   @SwaggerResponse({ status: 200, description: '설비 상태 변경 성공' })
   @SwaggerResponse({ status: 404, description: '설비를 찾을 수 없음' })
-  async changeStatus(@Param('id') id: string, @Body() dto: ChangeEquipStatusDto) {
-    const data = await this.equipMasterService.changeStatus(id, dto);
+  async changeStatus(
+    @Param('id') id: string,
+    @Body() dto: ChangeEquipStatusDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.changeStatus(id, dto, company, plant);
     return ResponseUtil.success(data, '설비 상태가 변경되었습니다.');
   }
 
@@ -170,8 +213,13 @@ export class EquipMasterController {
   @ApiParam({ name: 'id', description: '설비 ID' })
   @SwaggerResponse({ status: 200, description: '작업지시 할당/해제 성공' })
   @SwaggerResponse({ status: 404, description: '설비를 찾을 수 없음' })
-  async assignJobOrder(@Param('id') id: string, @Body() dto: AssignJobOrderDto) {
-    const data = await this.equipMasterService.assignJobOrder(id, dto);
+  async assignJobOrder(
+    @Param('id') id: string,
+    @Body() dto: AssignJobOrderDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.assignJobOrder(id, dto, company, plant);
     return ResponseUtil.success(data, dto.orderNo ? '작업지시가 할당되었습니다.' : '작업지시가 해제되었습니다.');
   }
 
@@ -182,16 +230,16 @@ export class EquipMasterController {
   @Get('metadata/lines')
   @ApiOperation({ summary: '라인 목록 조회 (설비 선택용)' })
   @SwaggerResponse({ status: 200, description: '라인 목록 조회 성공' })
-  async getLines() {
-    const data = await this.equipMasterService.getLines();
+  async getLines(@Company() company: string, @Plant() plant: string) {
+    const data = await this.equipMasterService.getLines(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('metadata/processes')
   @ApiOperation({ summary: '공정 목록 조회 (설비 선택용)' })
   @SwaggerResponse({ status: 200, description: '공정 목록 조회 성공' })
-  async getProcesses() {
-    const data = await this.equipMasterService.getProcesses();
+  async getProcesses(@Company() company: string, @Plant() plant: string) {
+    const data = await this.equipMasterService.getProcesses(company, plant);
     return ResponseUtil.success(data);
   }
 }

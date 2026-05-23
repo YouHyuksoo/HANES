@@ -70,8 +70,8 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주처 상세 조회' })
   @ApiParam({ name: 'id', description: '외주처 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findVendorById(@Param('id') id: string) {
-    const data = await this.outsourcingService.findVendorById(id);
+  async findVendorById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.findVendorById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -79,8 +79,8 @@ export class OutsourcingController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '외주처 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createVendor(@Body() dto: CreateVendorDto) {
-    const data = await this.outsourcingService.createVendor(dto);
+  async createVendor(@Body() dto: CreateVendorDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.createVendor(dto, company, plant);
     return ResponseUtil.success(data, '외주처가 등록되었습니다.');
   }
 
@@ -88,8 +88,13 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주처 수정' })
   @ApiParam({ name: 'id', description: '외주처 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
-  async updateVendor(@Param('id') id: string, @Body() dto: UpdateVendorDto) {
-    const data = await this.outsourcingService.updateVendor(id, dto);
+  async updateVendor(
+    @Param('id') id: string,
+    @Body() dto: UpdateVendorDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.outsourcingService.updateVendor(id, dto, company, plant);
     return ResponseUtil.success(data, '외주처가 수정되었습니다.');
   }
 
@@ -98,8 +103,8 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주처 삭제' })
   @ApiParam({ name: 'id', description: '외주처 ID' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteVendor(@Param('id') id: string) {
-    await this.outsourcingService.deleteVendor(id);
+  async deleteVendor(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.outsourcingService.deleteVendor(id, company, plant);
     return ResponseUtil.success(null, '외주처가 삭제되었습니다.');
   }
 
@@ -117,8 +122,8 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주발주 상세 조회' })
   @ApiParam({ name: 'id', description: '외주발주 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findOrderById(@Param('id') id: string) {
-    const data = await this.outsourcingService.findOrderById(id);
+  async findOrderById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.findOrderById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -126,8 +131,8 @@ export class OutsourcingController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '외주발주 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createOrder(@Body() dto: CreateSubconOrderDto) {
-    const data = await this.outsourcingService.createOrder(dto);
+  async createOrder(@Body() dto: CreateSubconOrderDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.createOrder(dto, company, plant);
     return ResponseUtil.success(data, '외주발주가 등록되었습니다.');
   }
 
@@ -135,8 +140,13 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주발주 수정' })
   @ApiParam({ name: 'id', description: '외주발주 ID' })
   @ApiResponse({ status: 200, description: '수정 성공' })
-  async updateOrder(@Param('id') id: string, @Body() dto: UpdateSubconOrderDto) {
-    const data = await this.outsourcingService.updateOrder(id, dto);
+  async updateOrder(
+    @Param('id') id: string,
+    @Body() dto: UpdateSubconOrderDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.outsourcingService.updateOrder(id, dto, company, plant);
     return ResponseUtil.success(data, '외주발주가 수정되었습니다.');
   }
 
@@ -145,8 +155,8 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주발주 취소' })
   @ApiParam({ name: 'id', description: '외주발주 ID' })
   @ApiResponse({ status: 200, description: '취소 성공' })
-  async cancelOrder(@Param('id') id: string) {
-    const data = await this.outsourcingService.cancelOrder(id);
+  async cancelOrder(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.cancelOrder(id, company, plant);
     return ResponseUtil.success(data, '외주발주가 취소되었습니다.');
   }
 
@@ -156,8 +166,8 @@ export class OutsourcingController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '외주 출고 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createDelivery(@Body() dto: CreateSubconDeliveryDto) {
-    const data = await this.outsourcingService.createDelivery(dto);
+  async createDelivery(@Body() dto: CreateSubconDeliveryDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.createDelivery(dto, company, plant);
     return ResponseUtil.success(data, '외주 출고가 등록되었습니다.');
   }
 
@@ -165,8 +175,12 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주발주별 출고 이력' })
   @ApiParam({ name: 'orderId', description: '외주발주 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findDeliveriesByOrderId(@Param('orderId') orderId: string) {
-    const data = await this.outsourcingService.findDeliveriesByOrderId(orderId);
+  async findDeliveriesByOrderId(
+    @Param('orderId') orderId: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.outsourcingService.findDeliveriesByOrderId(orderId, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -174,8 +188,8 @@ export class OutsourcingController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '외주 입고 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createReceive(@Body() dto: CreateSubconReceiveDto) {
-    const data = await this.outsourcingService.createReceive(dto);
+  async createReceive(@Body() dto: CreateSubconReceiveDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.createReceive(dto, company, plant);
     return ResponseUtil.success(data, '외주 입고가 등록되었습니다.');
   }
 
@@ -183,8 +197,12 @@ export class OutsourcingController {
   @ApiOperation({ summary: '외주발주별 입고 이력' })
   @ApiParam({ name: 'orderId', description: '외주발주 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findReceivesByOrderId(@Param('orderId') orderId: string) {
-    const data = await this.outsourcingService.findReceivesByOrderId(orderId);
+  async findReceivesByOrderId(
+    @Param('orderId') orderId: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.outsourcingService.findReceivesByOrderId(orderId, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -193,16 +211,16 @@ export class OutsourcingController {
   @Get('summary')
   @ApiOperation({ summary: '외주관리 현황 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getSummary() {
-    const data = await this.outsourcingService.getSummary();
+  async getSummary(@Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.getSummary(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('vendor-stock')
   @ApiOperation({ summary: '외주처별 재고 현황' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getVendorStock() {
-    const data = await this.outsourcingService.getVendorStock();
+  async getVendorStock(@Company() company: string, @Plant() plant: string) {
+    const data = await this.outsourcingService.getVendorStock(company, plant);
     return ResponseUtil.success(data);
   }
 }

@@ -43,6 +43,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
@@ -79,6 +80,7 @@ export class ProdResultService {
     private readonly sysConfigService: SysConfigService,
     @InjectRepository(ShiftPattern)
     private readonly shiftPatternRepo: Repository<ShiftPattern>,
+    private readonly tx: TransactionService,
   ) {
     this.shiftResolver = new ShiftResolver(this.shiftPatternRepo);
   }
@@ -214,7 +216,9 @@ export class ProdResultService {
 
     const itemCodes = lots.map((l: any) => l.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({
+          where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
@@ -223,10 +227,10 @@ export class ProdResultService {
       const part = lot ? partMap.get(lot.itemCode) : null;
       return {
         ...issue,
-        matUid: lot?.matUid,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
+        matUid: issue.matUid,
+        itemCode: lot?.itemCode ?? null,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
       };
     });
   }
@@ -283,13 +287,13 @@ export class ProdResultService {
 
     // 설비에 장착된 BOM 부품 조회
     const equipBomRels = await this.equipBomRelRepository.find({
-      where: { equipCode, useYn: 'Y' },
+      where: { equipCode, useYn: 'Y', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (equipBomRels.length === 0) return; // 설비 BOM 미설정 시 체크 불필요
 
     const bomItemCodes = equipBomRels.map(rel => rel.bomItemCode);
     const bomItems = await this.equipBomItemRepository.find({
-      where: { bomItemCode: In(bomItemCodes), useYn: 'Y' },
+      where: { bomItemCode: In(bomItemCodes), useYn: 'Y', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
     // 설비 BOM 품목 코드 목록
@@ -389,7 +393,7 @@ export class ProdResultService {
     // 설비 존재 확인 (옵션)
     if (dto.equipCode) {
       const equip = await this.equipMasterRepository.findOne({
-        where: { equipCode: dto.equipCode },
+        where: { equipCode: dto.equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
       if (!equip) {
         throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
@@ -406,12 +410,8 @@ export class ProdResultService {
       }
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    let savedResultNo: string;
-    try {
+    let savedResultNo!: string;
+    await this.tx.run(async (queryRunner) => {
       const resultNo = await this.numbering.next('PROD_RESULT', queryRunner);
       const prodResult = queryRunner.manager.create(ProdResult, {
         resultNo,
@@ -484,14 +484,7 @@ export class ProdResultService {
           this.logger.warn(`자동차감 경고: ${autoResult.warnings.join(', ')}`);
         }
       }
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.prodResultRepository.findOne({
       where: { resultNo: savedResultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -537,11 +530,7 @@ export class ProdResultService {
     const newTotalQty = newGoodQty + newDefectQty;
     const qtyChanged = (dto.goodQty !== undefined || dto.defectQty !== undefined) && oldTotalQty !== newTotalQty;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       const updateData: any = {};
       if (dto.equipCode !== undefined) updateData.equipCode = dto.equipCode;
       if (dto.workerId !== undefined) updateData.workerId = dto.workerId ?? null;
@@ -573,14 +562,7 @@ export class ProdResultService {
           `실적 수량 변경 자동차감 재계산: ${resultNo} (${oldTotalQty} → ${newTotalQty})`,
         );
       }
-
-      await queryRunner.commitTransaction();
-    } catch (err: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.prodResultRepository.findOne({
       where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -638,11 +620,7 @@ export class ProdResultService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 1. 실적 상태 → DONE
       const updateData: any = {
         status: 'DONE',
@@ -799,14 +777,7 @@ export class ProdResultService {
           }
         }
       }
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.prodResultRepository.findOne({
       where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -843,21 +814,23 @@ export class ProdResultService {
 
     await this.ensureNoDownstreamProgress(prodResult, company, plant);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       const updateData: any = { status: 'CANCELED' };
       if (remark) updateData.remark = remark;
 
-      await queryRunner.manager.update(ProdResult, prodResult.resultNo, updateData);
+      await queryRunner.manager.update(
+        ProdResult,
+        { resultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        updateData,
+      );
 
       // 설비의 현재 작업지시번호 해제
       if (prodResult.equipCode) {
-        await queryRunner.manager.update(EquipMaster, { equipCode: prodResult.equipCode }, {
-          currentJobOrderId: null,
-        });
+        await queryRunner.manager.update(
+          EquipMaster,
+          { equipCode: prodResult.equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+          { currentJobOrderId: null },
+        );
         this.logger.log(`설비 작업지시 해제 (취소): ${prodResult.equipCode}`);
       }
 
@@ -866,14 +839,7 @@ export class ProdResultService {
 
       // 공정재고 자동 적재 역분개 — PROD_RESULT 참조 트랜잭션 찾아서 취소
       await this.reverseProductStock(queryRunner, prodResult.resultNo, company, plant);
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.prodResultRepository.findOne({
       where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },

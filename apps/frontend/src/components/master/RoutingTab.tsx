@@ -71,8 +71,8 @@ export default function RoutingTab({ onHeaderActions }: Props) {
     try {
       const res = await api.get("/master/parts", { params: { limit: 5000 } });
       const parts = res.data?.data ?? [];
-      setPartOptions(parts.map((p: { id: string; itemCode: string; itemName: string }) => ({
-        value: p.id,
+      setPartOptions(parts.map((p: { itemCode: string; itemName: string }) => ({
+        value: p.itemCode,
         label: `${p.itemCode} ${p.itemName}`,
       })));
     } catch { /* ignore */ }

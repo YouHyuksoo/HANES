@@ -79,6 +79,41 @@ describe('ProductInventoryService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
+
+    it('should update existing stock within dto tenant only', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'WH',
+        itemCode: 'IT',
+        prdUid: 'LOT1',
+        qty: 20,
+        reservedQty: 5,
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      await target.receiveStock({
+        warehouseId: 'WH',
+        itemCode: 'IT',
+        prdUid: 'LOT1',
+        qty: 10,
+        transType: 'WIP_IN',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
+        where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ProductStock,
+        { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 30, availableQty: 25 }),
+      );
+    });
   });
 
   describe('cancelTransaction', () => {
@@ -89,6 +124,50 @@ describe('ProductInventoryService', () => {
     it('should throw BadRequestException when already canceled', async () => {
       mockTransRepo.findOne.mockResolvedValue({ transNo: 'PTX001', status: 'CANCELED' } as any);
       await expect(target.cancelTransaction({ transactionId: 'PTX001' } as any)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should cancel transaction and restore stock within original tenant only', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.findOne.mockResolvedValue({
+        transNo: 'PTX001',
+        transType: 'FG_OUT',
+        status: 'DONE',
+        fromWarehouseId: 'WH',
+        itemCode: 'FG',
+        itemType: 'FINISHED',
+        prdUid: 'LOT1',
+        qty: -10,
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX002' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX002' } as any);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'WH',
+        itemCode: 'FG',
+        prdUid: 'LOT1',
+        qty: 20,
+        availableQty: 20,
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      await target.cancelTransaction({ transactionId: 'PTX001' } as any, 'C1', 'P1');
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ProductTransaction,
+        { transNo: 'PTX001', company: 'C1', plant: 'P1' },
+        { status: 'CANCELED' },
+      );
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
+        where: { warehouseCode: 'WH', itemCode: 'FG', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ProductStock,
+        { warehouseCode: 'WH', itemCode: 'FG', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 30, availableQty: 30 }),
+      );
     });
   });
 
@@ -107,6 +186,62 @@ describe('ProductInventoryService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
+
+    it('should move stock within dto tenant only', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-FROM',
+          itemCode: 'IT',
+          prdUid: 'LOT1',
+          qty: 50,
+          availableQty: 50,
+          reservedQty: 0,
+          company: 'C1',
+          plant: 'P1',
+        } as any)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-TO',
+          itemCode: 'IT',
+          prdUid: 'LOT1',
+          qty: 5,
+          availableQty: 5,
+          reservedQty: 0,
+          company: 'C1',
+          plant: 'P1',
+        } as any);
+
+      await target.issueStock({
+        warehouseId: 'WH-FROM',
+        toWarehouseId: 'WH-TO',
+        itemCode: 'IT',
+        prdUid: 'LOT1',
+        qty: 10,
+        transType: 'WIP_OUT',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, ProductStock, {
+        where: { warehouseCode: 'WH-FROM', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ProductStock,
+        { warehouseCode: 'WH-FROM', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 40, availableQty: 40 }),
+      );
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, ProductStock, {
+        where: { warehouseCode: 'WH-TO', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ProductStock,
+        { warehouseCode: 'WH-TO', itemCode: 'IT', prdUid: 'LOT1', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 15, availableQty: 15 }),
+      );
+    });
   });
 
   describe('getStock', () => {
@@ -114,6 +249,52 @@ describe('ProductInventoryService', () => {
       mockStockRepo.find.mockResolvedValue([]);
       const r = await target.getStock({} as any);
       expect(r).toEqual([]);
+    });
+
+    it('제품 현재고 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'FG-001', itemType: 'FG', prdUid: 'FGUID-001', qty: 10, reservedQty: 0, availableQty: 10, company: 'C1', plant: 'P1' } as ProductStock,
+      ]);
+      mockWhRepo.find.mockResolvedValue([]);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      await target.getStock({} as any, 'C1', 'P1');
+
+      expect(mockWhRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+        select: ['warehouseCode', 'warehouseName', 'warehouseType'],
+      });
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+        select: ['itemCode', 'itemName', 'itemType', 'unit'],
+      });
+    });
+  });
+
+  describe('getTransactions', () => {
+    it('제품 수불 이력 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { transNo: 'PTX-001', itemCode: 'FG-001', fromWarehouseId: 'WH-01', toWarehouseId: 'WH-02', company: 'C1', plant: 'P1' } as ProductTransaction,
+        ]),
+      };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb as any);
+      mockWhRepo.find.mockResolvedValue([]);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      await target.getTransactions({} as any, 'C1', 'P1');
+
+      expect(mockWhRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
     });
   });
 });

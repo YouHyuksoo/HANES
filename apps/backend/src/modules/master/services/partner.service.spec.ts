@@ -46,10 +46,13 @@ describe('PartnerService', () => {
       mockRepo.findOne.mockResolvedValue(partner);
 
       // Act
-      const result = await target.findById('P01');
+      const result = await target.findById('P01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(partner);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { partnerCode: 'P01', company: 'C1', plant: 'P1' },
+      });
     });
 
     it('should throw NotFoundException when not found', async () => {
@@ -72,10 +75,17 @@ describe('PartnerService', () => {
       mockRepo.save.mockResolvedValue(created);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(created);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { partnerCode: 'P01', company: 'C1', plant: 'P1' },
+      });
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'C1',
+        plant: 'P1',
+      }));
     });
 
     it('should throw ConflictException when partner code exists', async () => {
@@ -97,10 +107,14 @@ describe('PartnerService', () => {
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('P01', { partnerName: 'New' } as any);
+      const result = await target.update('P01', { partnerName: 'New' } as any, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(existing);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { partnerCode: 'P01', company: 'C1', plant: 'P1' },
+        { partnerName: 'New' },
+      );
     });
   });
 
@@ -113,10 +127,11 @@ describe('PartnerService', () => {
       mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.delete('P01');
+      const result = await target.delete('P01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ partnerCode: 'P01' });
+      expect(mockRepo.delete).toHaveBeenCalledWith({ partnerCode: 'P01', company: 'C1', plant: 'P1' });
     });
   });
 
@@ -128,12 +143,12 @@ describe('PartnerService', () => {
       mockRepo.find.mockResolvedValue(partners);
 
       // Act
-      const result = await target.findByType('SUPPLIER');
+      const result = await target.findByType('SUPPLIER', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(partners);
       expect(mockRepo.find).toHaveBeenCalledWith({
-        where: { partnerType: 'SUPPLIER', useYn: 'Y' },
+        where: { partnerType: 'SUPPLIER', useYn: 'Y', company: 'C1', plant: 'P1' },
         order: { partnerCode: 'asc' },
       });
     });
@@ -155,9 +170,11 @@ describe('PartnerService', () => {
       mockRepo.createQueryBuilder.mockReturnValue(qb);
 
       // Act
-      const result = await target.getStatistics();
+      const result = await target.getStatistics('C1', 'P1');
 
       // Assert
+      expect(qb.andWhere).toHaveBeenCalledWith('p.company = :company', { company: 'C1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('p.plant = :plant', { plant: 'P1' });
       expect(result).toEqual({
         totalCount: 100,
         supplierCount: 60,

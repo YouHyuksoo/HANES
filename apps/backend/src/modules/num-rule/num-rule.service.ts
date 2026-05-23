@@ -13,7 +13,8 @@
  */
 
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { DataSource, QueryRunner } from 'typeorm';
+import { QueryRunner } from 'typeorm';
+import { TransactionService } from '../../shared/transaction.service';
 
 interface NumRule {
   PATTERN: string;
@@ -27,7 +28,7 @@ interface NumRule {
 
 @Injectable()
 export class NumRuleService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly tx: TransactionService) {}
 
   /**
    * 독립 트랜잭션으로 다음 번호 생성 (트랜잭션 없이 호출 가능)
@@ -35,19 +36,7 @@ export class NumRuleService {
    * — 결번 허용 (롤백해도 번호는 소비됨)
    */
   async nextNumber(ruleType: string, userId: string = 'SYSTEM'): Promise<string> {
-    const qr = this.dataSource.createQueryRunner();
-    await qr.connect();
-    await qr.startTransaction();
-    try {
-      const result = await this.generateNumber(qr, ruleType, userId);
-      await qr.commitTransaction();
-      return result;
-    } catch (err) {
-      await qr.rollbackTransaction();
-      throw err;
-    } finally {
-      await qr.release();
-    }
+    return this.tx.run((qr) => this.generateNumber(qr, ruleType, userId));
   }
 
   /**

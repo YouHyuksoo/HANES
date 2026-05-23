@@ -15,12 +15,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And } from 'typeorm';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateShipReturnDto, UpdateShipReturnDto, ShipReturnQueryDto } from '../dto/ship-return.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ShipReturnService {
@@ -33,7 +34,7 @@ export class ShipReturnService {
     private readonly shipOrderRepository: Repository<ShipmentOrder>,
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -52,7 +53,7 @@ export class ShipReturnService {
     const itemsWithPart = await Promise.all(
       items.map(async (item) => {
         const part = await this.partRepository.findOne({
-          where: { itemCode: item.itemCode },
+          where: { itemCode: item.itemCode, ...this.tenantWhere(company, plant) },
           select: ['itemCode', 'itemName'],
         });
         return {
@@ -151,11 +152,8 @@ export class ShipReturnService {
     });
     if (existing) throw new ConflictException(`이미 존재하는 반품 번호입니다: ${dto.returnNo}`);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    let savedReturnNo!: string;
+    await this.tx.run(async (queryRunner) => {
       const shipReturn = this.shipReturnRepository.create({
         returnNo: dto.returnNo,
         shipmentId: dto.shipmentId,
@@ -168,6 +166,7 @@ export class ShipReturnService {
       });
 
       const savedReturn = await queryRunner.manager.save(shipReturn);
+      savedReturnNo = savedReturn.returnNo;
 
       // 품목 생성
       if (dto.items && dto.items.length > 0) {
@@ -183,16 +182,9 @@ export class ShipReturnService {
         );
         await queryRunner.manager.save(items);
       }
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(savedReturn.returnNo, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(savedReturnNo, company, plant);
   }
 
   /** 반품 수정 */
@@ -207,11 +199,7 @@ export class ShipReturnService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       if (dto.items) {
         await queryRunner.manager.delete(ShipmentReturnItem, { returnNo, ...this.tenantWhere(company, plant) });
 
@@ -236,16 +224,9 @@ export class ShipReturnService {
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
       await queryRunner.manager.update(ShipmentReturn, { returnNo, ...this.tenantWhere(company, plant) }, updateData);
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(returnNo, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(returnNo, company, plant);
   }
 
   /** 반품 삭제 */

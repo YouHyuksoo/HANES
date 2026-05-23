@@ -69,8 +69,8 @@ export class CustomsController {
   @ApiOperation({ summary: '수입신고 상세 조회' })
   @ApiParam({ name: 'id', description: '수입신고번호 (entryNo)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findEntryById(@Param('id') id: string) {
-    const data = await this.customsService.findEntryById(id);
+  async findEntryById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customsService.findEntryById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -78,8 +78,8 @@ export class CustomsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '수입신고 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createEntry(@Body() dto: CreateCustomsEntryDto) {
-    const data = await this.customsService.createEntry(dto);
+  async createEntry(@Body() dto: CreateCustomsEntryDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customsService.createEntry(dto, company, plant);
     return ResponseUtil.success(data, '수입신고가 등록되었습니다.');
   }
 
@@ -87,8 +87,13 @@ export class CustomsController {
   @ApiOperation({ summary: '수입신고 수정' })
   @ApiParam({ name: 'id', description: '수입신고번호 (entryNo)' })
   @ApiResponse({ status: 200, description: '수정 성공' })
-  async updateEntry(@Param('id') id: string, @Body() dto: UpdateCustomsEntryDto) {
-    const data = await this.customsService.updateEntry(id, dto);
+  async updateEntry(
+    @Param('id') id: string,
+    @Body() dto: UpdateCustomsEntryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.customsService.updateEntry(id, dto, company, plant);
     return ResponseUtil.success(data, '수입신고가 수정되었습니다.');
   }
 
@@ -97,8 +102,8 @@ export class CustomsController {
   @ApiOperation({ summary: '수입신고 삭제' })
   @ApiParam({ name: 'id', description: '수입신고번호 (entryNo)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async deleteEntry(@Param('id') id: string) {
-    await this.customsService.deleteEntry(id);
+  async deleteEntry(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.customsService.deleteEntry(id, company, plant);
     return ResponseUtil.success(null, '수입신고가 삭제되었습니다.');
   }
 
@@ -108,8 +113,8 @@ export class CustomsController {
   @ApiOperation({ summary: '수입신고별 보세자재 LOT 목록' })
   @ApiParam({ name: 'entryId', description: '수입신고번호' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findLotsByEntryId(@Param('entryId') entryId: string) {
-    const data = await this.customsService.findLotsByEntryId(entryId);
+  async findLotsByEntryId(@Param('entryId') entryId: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customsService.findLotsByEntryId(entryId, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -118,8 +123,13 @@ export class CustomsController {
   @ApiParam({ name: 'entryNo', description: '수입신고번호' })
   @ApiParam({ name: 'matUid', description: '자재 UID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findLotByKey(@Param('entryNo') entryNo: string, @Param('matUid') matUid: string) {
-    const data = await this.customsService.findLotByKey(entryNo, matUid);
+  async findLotByKey(
+    @Param('entryNo') entryNo: string,
+    @Param('matUid') matUid: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.customsService.findLotByKey(entryNo, matUid, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -127,8 +137,8 @@ export class CustomsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '보세자재 LOT 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createLot(@Body() dto: CreateCustomsLotDto) {
-    const data = await this.customsService.createLot(dto);
+  async createLot(@Body() dto: CreateCustomsLotDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customsService.createLot(dto, company, plant);
     return ResponseUtil.success(data, '보세자재 LOT이 등록되었습니다.');
   }
 
@@ -141,8 +151,10 @@ export class CustomsController {
     @Param('entryNo') entryNo: string,
     @Param('matUid') matUid: string,
     @Body() dto: UpdateCustomsLotDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.customsService.updateLot(entryNo, matUid, dto);
+    const data = await this.customsService.updateLot(entryNo, matUid, dto, company, plant);
     return ResponseUtil.success(data, '보세자재 LOT이 수정되었습니다.');
   }
 
@@ -160,8 +172,8 @@ export class CustomsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '사용신고 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async createUsageReport(@Body() dto: CreateUsageReportDto) {
-    const data = await this.customsService.createUsageReport(dto);
+  async createUsageReport(@Body() dto: CreateUsageReportDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.customsService.createUsageReport(dto, company, plant);
     return ResponseUtil.success(data, '사용신고가 등록되었습니다.');
   }
 
@@ -169,8 +181,13 @@ export class CustomsController {
   @ApiOperation({ summary: '사용신고 상태 변경' })
   @ApiParam({ name: 'reportNo', description: '사용신고 번호' })
   @ApiResponse({ status: 200, description: '수정 성공' })
-  async updateUsageReport(@Param('reportNo') reportNo: string, @Body() dto: UpdateUsageReportDto) {
-    const data = await this.customsService.updateUsageReport(reportNo, dto);
+  async updateUsageReport(
+    @Param('reportNo') reportNo: string,
+    @Body() dto: UpdateUsageReportDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.customsService.updateUsageReport(reportNo, dto, company, plant);
     return ResponseUtil.success(data, '사용신고가 수정되었습니다.');
   }
 
@@ -179,8 +196,8 @@ export class CustomsController {
   @Get('summary')
   @ApiOperation({ summary: '보세관리 현황 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getCustomsSummary() {
-    const data = await this.customsService.getCustomsSummary();
+  async getCustomsSummary(@Company() company: string, @Plant() plant: string) {
+    const data = await this.customsService.getCustomsSummary(company, plant);
     return ResponseUtil.success(data);
   }
 }

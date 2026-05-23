@@ -24,8 +24,8 @@ export class TransferRuleService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.transferRuleRepository.createQueryBuilder('rule')
-      .leftJoin('WAREHOUSES', 'fw', 'fw.WAREHOUSE_CODE = rule.fromWarehouseId')
-      .leftJoin('WAREHOUSES', 'tw', 'tw.WAREHOUSE_CODE = rule.toWarehouseId')
+      .leftJoin('WAREHOUSES', 'fw', 'fw.WAREHOUSE_CODE = rule.fromWarehouseId AND fw.COMPANY = rule.company AND fw.PLANT_CD = rule.plant')
+      .leftJoin('WAREHOUSES', 'tw', 'tw.WAREHOUSE_CODE = rule.toWarehouseId AND tw.COMPANY = rule.company AND tw.PLANT_CD = rule.plant')
       .addSelect('fw.WAREHOUSE_CODE', 'fromWarehouseCode')
       .addSelect('fw.WAREHOUSE_NAME', 'fromWarehouseName')
       .addSelect('tw.WAREHOUSE_CODE', 'toWarehouseCode')

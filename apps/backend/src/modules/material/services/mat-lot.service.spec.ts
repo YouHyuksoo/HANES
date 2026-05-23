@@ -115,6 +115,35 @@ describe('MatLotService', () => {
 
       expect(mockMatLotRepo.find).toHaveBeenCalled();
     });
+
+    it('품목 마스터가 누락되어도 LOT 원본 itemCode는 유지한다', async () => {
+      mockMatLotRepo.find.mockResolvedValue([createMatLot({ itemCode: 'ITEM-MISSING' })]);
+      mockMatLotRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('LOT 목록 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockMatLotRepo.find.mockResolvedValue([createMatLot({ company: 'C1', plant: 'P1' })]);
+      mockMatLotRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
   });
 
   // ─── findById ───
@@ -136,6 +165,36 @@ describe('MatLotService', () => {
 
       await expect(target.findById('NONE')).rejects.toThrow(NotFoundException);
     });
+
+    it('품목 마스터가 누락되어도 LOT 상세의 원본 itemCode는 유지한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot({ itemCode: 'ITEM-MISSING' }));
+      mockPartMasterRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.findById('MAT-001');
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('LOT 상세 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot({ company: 'C1', plant: 'P1' }));
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster({ company: 'C1', plant: 'P1' } as Partial<PartMaster>));
+
+      await target.findById('MAT-001', 'C1', 'P1');
+
+      expect(mockMatLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
+    });
   });
 
   // ─── findByMatUid ───
@@ -154,6 +213,20 @@ describe('MatLotService', () => {
       mockMatLotRepo.findOne.mockResolvedValue(null);
 
       await expect(target.findByMatUid('NONE')).rejects.toThrow(NotFoundException);
+    });
+
+    it('matUid 별칭 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot({ company: 'C1', plant: 'P1' }));
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster({ company: 'C1', plant: 'P1' } as Partial<PartMaster>));
+
+      await target.findByMatUid('MAT-001', 'C1', 'P1');
+
+      expect(mockMatLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
     });
   });
 
@@ -184,6 +257,53 @@ describe('MatLotService', () => {
         target.create({ matUid: 'MAT-001', itemCode: 'ITEM-001', initQty: 100 } as any),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('품목 마스터가 누락되어도 생성된 LOT의 원본 itemCode는 유지한다', async () => {
+      const lot = createMatLot({ itemCode: 'ITEM-MISSING' });
+      mockMatLotRepo.findOne.mockResolvedValue(null);
+      mockMatLotRepo.create.mockReturnValue(lot);
+      mockMatLotRepo.save.mockResolvedValue(lot);
+      mockPartMasterRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.create({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-MISSING',
+        initQty: 100,
+      } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('LOT 생성도 중복/품목 보강 조회를 요청 테넌트 범위로 제한하고 테넌트를 저장한다', async () => {
+      const lot = createMatLot({ company: 'C1', plant: 'P1' });
+      mockMatLotRepo.findOne.mockResolvedValue(null);
+      mockMatLotRepo.create.mockReturnValue(lot);
+      mockMatLotRepo.save.mockResolvedValue(lot);
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster({ company: 'C1', plant: 'P1' } as Partial<PartMaster>));
+
+      await target.create({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        initQty: 100,
+      } as any, 'C1', 'P1');
+
+      expect(mockMatLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockMatLotRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ matUid: 'MAT-001', company: 'C1', plant: 'P1' }),
+      );
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
+    });
   });
 
   // ─── update ───
@@ -210,6 +330,23 @@ describe('MatLotService', () => {
         BadRequestException,
       );
     });
+
+    it('LOT 수정도 요청 테넌트 범위로 제한한다', async () => {
+      const lot = createMatLot({ company: 'C1', plant: 'P1' });
+      mockMatLotRepo.findOne.mockResolvedValue(lot);
+      mockMatLotRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster({ company: 'C1', plant: 'P1' } as Partial<PartMaster>));
+
+      await target.update('MAT-001', { iqcStatus: 'FAIL' } as any, 'C1', 'P1');
+
+      expect(mockMatLotRepo.update).toHaveBeenCalledWith(
+        { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+        { iqcStatus: 'FAIL' },
+      );
+      expect(mockMatLotRepo.findOne).toHaveBeenLastCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+    });
   });
 
   // ─── delete ───
@@ -224,7 +361,7 @@ describe('MatLotService', () => {
       const result = await target.delete('MAT-001');
 
       expect(result.matUid).toBe('MAT-001');
-      expect(mockMatLotRepo.delete).toHaveBeenCalledWith('MAT-001');
+      expect(mockMatLotRepo.delete).toHaveBeenCalledWith({ matUid: 'MAT-001' });
     });
 
     it('재고가 남아 있으면 LOT 삭제를 차단한다', async () => {
@@ -248,6 +385,24 @@ describe('MatLotService', () => {
 
       await expect(target.delete('MAT-001')).rejects.toThrow(BadRequestException);
       expect(mockMatLotRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it('LOT 삭제 전 재고/출고 이력 확인도 요청 테넌트 범위로 제한한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot({ company: 'C1', plant: 'P1' }));
+      mockPartMasterRepo.findOne.mockResolvedValue(createPartMaster({ company: 'C1', plant: 'P1' } as Partial<PartMaster>));
+      mockMatStockRepo.find.mockResolvedValue([]);
+      mockMatIssueRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.delete('MAT-001', 'C1', 'P1');
+
+      expect(mockMatStockRepo.find).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockMatIssueRepo.find).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', status: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockMatLotRepo.delete).toHaveBeenCalledWith({ matUid: 'MAT-001', company: 'C1', plant: 'P1' });
     });
 
     it('존재하지 않는 LOT이면 NotFoundException', async () => {

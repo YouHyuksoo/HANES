@@ -40,8 +40,10 @@ export class IqcItemController {
   async findByCompositeKey(
     @Param('itemCode') itemCode: string,
     @Param('seq') seq: string,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.iqcItemService.findByCompositeKey(itemCode, +seq);
+    const data = await this.iqcItemService.findByCompositeKey(itemCode, +seq, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -63,15 +65,22 @@ export class IqcItemController {
     @Param('itemCode') itemCode: string,
     @Param('seq') seq: string,
     @Body() dto: UpdateIqcItemDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.iqcItemService.update(itemCode, +seq, dto);
+    const data = await this.iqcItemService.update(itemCode, +seq, dto, company, plant);
     return ResponseUtil.success(data, 'IQC item updated');
   }
 
   @Delete(':itemCode/:seq')
   @ApiOperation({ summary: 'Delete IQC item' })
-  async delete(@Param('itemCode') itemCode: string, @Param('seq') seq: string) {
-    await this.iqcItemService.delete(itemCode, +seq);
+  async delete(
+    @Param('itemCode') itemCode: string,
+    @Param('seq') seq: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.iqcItemService.delete(itemCode, +seq, company, plant);
     return ResponseUtil.success(null, 'IQC item deleted');
   }
 }

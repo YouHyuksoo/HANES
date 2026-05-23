@@ -17,7 +17,7 @@ export interface EquipSummary {
 
 export interface InspectItemPoolRow {
   itemCode: string;
-  inspectType: "DAILY" | "PERIODIC" | "PM";
+  inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
   itemName: string;
   criteria: string | null;
   cycle: string | null;
@@ -29,7 +29,7 @@ export interface InspectItemPoolRow {
 export interface InspectItemRow {
   equipCode: string;
   itemCode: string | null;
-  inspectType: "DAILY" | "PERIODIC" | "PM";
+  inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
   seq: number;
   itemName: string;
   criteria: string | null;
@@ -41,7 +41,7 @@ export interface InspectItemRow {
 export interface InspectItemFormData {
   equipCode: string;
   itemCode?: string;
-  inspectType: "DAILY" | "PERIODIC" | "PM";
+  inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
   seq: number;
   itemName: string;
   criteria?: string;
@@ -53,6 +53,7 @@ export const INSPECT_TYPE_COLORS: Record<string, string> = {
   DAILY: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
   PERIODIC: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
   PM: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+  WORKER: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
 };
 
 export const EQUIP_TYPE_COLORS: Record<string, string> = {

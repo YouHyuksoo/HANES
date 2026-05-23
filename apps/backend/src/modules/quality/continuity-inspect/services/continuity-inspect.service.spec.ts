@@ -12,6 +12,7 @@ import { ProdResult } from '../../../../entities/prod-result.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
 import { MockLoggerService } from '../../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 
 describe('ContinuityInspectService', () => {
   let target: ContinuityInspectService;
@@ -23,6 +24,7 @@ describe('ContinuityInspectService', () => {
   let mockSeqGen: DeepMocked<SeqGeneratorService>;
   let mockSysConfigService: DeepMocked<SysConfigService>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -34,9 +36,11 @@ describe('ContinuityInspectService', () => {
     mockSeqGen = createMock<SeqGeneratorService>();
     mockSysConfigService = createMock<SysConfigService>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -54,6 +58,7 @@ describe('ContinuityInspectService', () => {
         { provide: SeqGeneratorService, useValue: mockSeqGen },
         { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -114,6 +119,10 @@ describe('ContinuityInspectService', () => {
       { resultNo: 'PR-001' },
       { prdUid: 'FG-001' },
     );
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
   it('inspect blocks when request tenant differs from loaded job order tenant', async () => {
@@ -136,6 +145,8 @@ describe('ContinuityInspectService', () => {
       passYn: 'Y',
     } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
     expect(manager.create).not.toHaveBeenCalled();
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
   it('getPendingLabels applies tenant scope', async () => {
@@ -161,6 +172,29 @@ describe('ContinuityInspectService', () => {
 
     await expect(target.preIssue({ orderNo: 'JO-001', qty: 1 } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockTx.run).not.toHaveBeenCalled();
+  });
+
+  it('preIssue creates pending labels through TransactionService', async () => {
+    mockJobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-001',
+      itemCode: 'ITEM-001',
+      planQty: 2,
+      company: 'C1',
+      plant: 'P1',
+    } as JobOrder);
+    mockFgLabelRepo.count.mockResolvedValue(0);
+    mockSeqGen.nextFgBarcode.mockResolvedValueOnce('FG-001').mockResolvedValueOnce('FG-002');
+    mockQueryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+    mockQueryRunner.manager.save.mockImplementation(async (_entity, payload) => payload as any);
+
+    const result = await target.preIssue({ orderNo: 'JO-001', qty: 2 } as any, 'C1', 'P1');
+
+    expect(result).toEqual({ issued: 2, barcodes: ['FG-001', 'FG-002'] });
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
   it('reInspect keeps the original prod result linkage and restores ISSUED on pass', async () => {
@@ -190,6 +224,10 @@ describe('ContinuityInspectService', () => {
     expect(result.inspectResult.prodResultNo).toBe('PR-001');
     expect(result.fgLabel.status).toBe('ISSUED');
     expect(result.fgLabel.inspectPassYn).toBe('Y');
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
   it('reInspect blocks when request tenant differs from label tenant', async () => {
@@ -203,6 +241,7 @@ describe('ContinuityInspectService', () => {
 
     await expect(target.reInspect('FG-001', { passYn: 'Y' }, 'C1', 'P1')).rejects.toThrow(BadRequestException);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockTx.run).not.toHaveBeenCalled();
   });
 
   it('voidLabel blocks labels that already progressed downstream', async () => {

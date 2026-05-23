@@ -1,10 +1,10 @@
 /**
  * @file iqc-group.entity.ts
  * @description IQC 검사그룹 마스터 엔티티 - 검사항목 묶음 + 검사형태(전수/샘플/무검사)
- *              GROUP_CODE 자연키 PK 사용.
+ *              COMPANY + PLANT_CD + GROUP_CODE 복합키 사용.
  *
  * 초보자 가이드:
- * 1. GROUP_CODE가 자연키 PK (IGR-001 등)
+ * 1. COMPANY + PLANT_CD + GROUP_CODE가 자연키 PK (IGR-001 등)
  * 2. INSPECT_METHOD: FULL(전수), SAMPLE(샘플), SKIP(무검사)
  * 4. SAMPLE일 때만 SAMPLE_QTY 사용
  * 5. IQC_GROUP_ITEMS 테이블과 OneToMany 관계
@@ -21,6 +21,12 @@ import { IqcGroupItem } from './iqc-group-item.entity';
 
 @Entity({ name: 'IQC_GROUPS' })
 export class IqcGroup {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'GROUP_CODE', length: 20 })
   groupCode: string;
 
@@ -35,12 +41,6 @@ export class IqcGroup {
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
-
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
-
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

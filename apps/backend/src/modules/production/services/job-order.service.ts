@@ -17,7 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, FindOptionsSelect, IsNull, In } from 'typeorm';
+import { Repository, QueryRunner, FindOptionsSelect, IsNull, In } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -26,6 +26,7 @@ import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import {
@@ -68,7 +69,7 @@ export class JobOrderService {
     private readonly prodPlanRepo: Repository<ProdPlan>,
     private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private async resolveRoutingCodeByItem(itemCode: string, company?: string | null, plant?: string | null): Promise<string | null> {
@@ -158,7 +159,12 @@ export class JobOrderService {
     // 라우팅 공정순서 조회
     const routingProcesses = jobOrder.routingCode
       ? await this.routingProcessRepository.find({
-          where: { routingCode: jobOrder.routingCode, useYn: 'Y' },
+          where: {
+            routingCode: jobOrder.routingCode,
+            useYn: 'Y',
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
           order: { seq: 'ASC' },
         })
       : [];
@@ -183,23 +189,19 @@ export class JobOrderService {
     }
 
     const existing = await this.jobOrderRepository.findOne({
-      where: { orderNo: dto.orderNo },
+      where: { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 작업지시번호입니다: ${dto.orderNo}`);
 
     const part = await this.partMasterRepository.findOne({
-      where: { itemCode: dto.itemCode },
+      where: { itemCode: dto.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
 
     // 품목 기반 라우팅 자동 조회
     const routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const jobOrder = queryRunner.manager.create(JobOrder, {
         orderNo: dto.orderNo,
         itemCode: dto.itemCode,
@@ -222,17 +224,11 @@ export class JobOrderService {
         await this.createChildOrders(queryRunner, saved, dto);
       }
 
-      await queryRunner.commitTransaction();
       return this.jobOrderRepository.findOne({
         where: { orderNo: saved.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         relations: ['part', 'routing', 'children', 'children.part', 'children.routing'],
       });
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** BOM 기반 반제품 작업지시 자동생성 (트랜잭션 내에서 일괄 저장) */
@@ -435,11 +431,7 @@ export class JobOrderService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       const summaryQb = queryRunner.manager
         .createQueryBuilder(ProdResult, 'pr')
         .select('SUM(pr.goodQty)', 'totalGoodQty')
@@ -455,13 +447,7 @@ export class JobOrderService {
         goodQty: summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0,
         defectQty: summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0,
       });
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.findOneWithSelect(id, company, plant);
   }

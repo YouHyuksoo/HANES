@@ -28,15 +28,15 @@ export class MatIssueController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '바코드 스캔 출고 (LOT 전량)' })
-  async scanIssue(@Body() dto: ScanIssueDto) {
-    const data = await this.matIssueService.scanIssue(dto);
+  async scanIssue(@Body() dto: ScanIssueDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matIssueService.scanIssue(dto, company, plant);
     return ResponseUtil.success(data, '스캔 출고가 완료되었습니다.');
   }
 
   @Get(':issueNo/:seq')
   @ApiOperation({ summary: '출고 상세 조회' })
-  async findById(@Param('issueNo') issueNo: string, @Param('seq') seq: string) {
-    const data = await this.matIssueService.findById(issueNo, Number(seq));
+  async findById(@Param('issueNo') issueNo: string, @Param('seq') seq: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matIssueService.findById(issueNo, Number(seq), company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -44,16 +44,16 @@ export class MatIssueController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '자재 출고' })
-  async create(@Body() dto: CreateMatIssueDto) {
-    const data = await this.matIssueService.create(dto);
+  async create(@Body() dto: CreateMatIssueDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matIssueService.create(dto, company, plant);
     return ResponseUtil.success(data, '자재가 출고되었습니다.');
   }
 
   @Post(':issueNo/:seq/cancel')
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '출고 취소' })
-  async cancel(@Param('issueNo') issueNo: string, @Param('seq') seq: string, @Body('reason') reason?: string) {
-    const data = await this.matIssueService.cancel(issueNo, Number(seq), reason);
+  async cancel(@Param('issueNo') issueNo: string, @Param('seq') seq: string, @Body('reason') reason: string | undefined, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matIssueService.cancel(issueNo, Number(seq), reason, company, plant);
     return ResponseUtil.success(data, '출고가 취소되었습니다.');
   }
 }

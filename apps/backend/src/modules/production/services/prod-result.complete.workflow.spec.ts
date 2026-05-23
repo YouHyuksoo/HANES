@@ -18,21 +18,25 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProdResultService complete workflow', () => {
   let target: ProdResultService;
   let prodResultRepo: DeepMocked<Repository<ProdResult>>;
   let matIssueRepo: DeepMocked<Repository<MatIssue>>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
     prodResultRepo = createMock<Repository<ProdResult>>();
     matIssueRepo = createMock<Repository<MatIssue>>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -57,6 +61,7 @@ describe('ProdResultService complete workflow', () => {
         { provide: NumberingService, useValue: createMock<NumberingService>() },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
         { provide: getRepositoryToken(ShiftPattern), useValue: createMock<Repository<ShiftPattern>>() },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -129,5 +134,7 @@ describe('ProdResultService complete workflow', () => {
       expect.objectContaining({ orderNo: 'JO-100', company: 'C1', plant: 'P1' }),
       expect.objectContaining({ status: 'DONE', goodQty: 10, defectQty: 1 }),
     );
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 });

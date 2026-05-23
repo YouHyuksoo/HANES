@@ -38,6 +38,29 @@ describe('HoldService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    it('품목 마스터가 누락되어도 HOLD 목록의 LOT 원본 itemCode는 유지한다', async () => {
+      matLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-MISSING', itemCode: 'ITEM-MISSING', status: 'HOLD' } as MatLot,
+      ]);
+      matLotRepo.count.mockResolvedValue(1);
+      partRepo.find.mockResolvedValue([]);
+      matStockRepo.find.mockResolvedValue([]);
+
+      const result = await service.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-MISSING',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+          warehouseCode: null,
+        }),
+      );
+    });
+  });
+
   describe('hold', () => {
     it('throws when lot does not exist', async () => {
       matLotRepo.findOne.mockResolvedValue(null);
@@ -63,6 +86,23 @@ describe('HoldService', () => {
       expect(result.status).toBe('HOLD');
       expect(result.itemCode).toBe('ITEM-001');
     });
+
+    it('품목 마스터가 누락되어도 HOLD 결과의 LOT 원본 itemCode는 유지한다', async () => {
+      matLotRepo.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING', status: 'NORMAL' } as MatLot)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING', status: 'HOLD' } as MatLot);
+      partRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.hold({ matUid: 'MAT-001', reason: 'test' });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+        }),
+      );
+    });
   });
 
   describe('release', () => {
@@ -83,6 +123,23 @@ describe('HoldService', () => {
       expect(matLotRepo.update).toHaveBeenCalledWith({ matUid: 'MAT-001' }, { status: 'NORMAL' });
       expect(result.status).toBe('NORMAL');
       expect(result.itemCode).toBe('ITEM-001');
+    });
+
+    it('품목 마스터가 누락되어도 HOLD 해제 결과의 LOT 원본 itemCode는 유지한다', async () => {
+      matLotRepo.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING', status: 'HOLD' } as MatLot)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING', status: 'NORMAL' } as MatLot);
+      partRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.release({ matUid: 'MAT-001' });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+        }),
+      );
     });
 
     it('applies tenant scope when releasing', async () => {

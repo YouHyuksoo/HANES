@@ -61,8 +61,12 @@ export class SensorMonitorController {
   @Get('sensor-data')
   @ApiOperation({ summary: '센서 데이터 이력 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async querySensorData(@Query() query: SensorDataQueryDto) {
-    const result = await this.sensorMonitorService.querySensorData(query);
+  async querySensorData(
+    @Query() query: SensorDataQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.sensorMonitorService.querySensorData(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -71,8 +75,12 @@ export class SensorMonitorController {
   @Get('condition-rules')
   @ApiOperation({ summary: '조건 감시 규칙 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAllRules(@Query() query: ConditionRuleQueryDto) {
-    const result = await this.sensorMonitorService.findAllRules(query);
+  async findAllRules(
+    @Query() query: ConditionRuleQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.sensorMonitorService.findAllRules(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -95,16 +103,22 @@ export class SensorMonitorController {
   async updateRule(
     @Param('id') id: string,
     @Body() dto: UpdateConditionRuleDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.sensorMonitorService.updateRule(Number(id), dto);
+    const data = await this.sensorMonitorService.updateRule(Number(id), dto, company, plant);
     return ResponseUtil.success(data, '조건 규칙이 수정되었습니다.');
   }
 
   @Delete('condition-rules/:id')
   @ApiOperation({ summary: '조건 감시 규칙 삭제' })
   @ApiParam({ name: 'id', description: '규칙 ID' })
-  async deleteRule(@Param('id') id: string) {
-    await this.sensorMonitorService.deleteRule(Number(id));
+  async deleteRule(
+    @Param('id') id: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.sensorMonitorService.deleteRule(Number(id), company, plant);
     return ResponseUtil.success(null, '조건 규칙이 삭제되었습니다.');
   }
 }

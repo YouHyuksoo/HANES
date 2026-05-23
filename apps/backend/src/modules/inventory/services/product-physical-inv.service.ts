@@ -37,9 +37,9 @@ export class ProductPhysicalInvService {
 
     const qb = this.stockRepository
       .createQueryBuilder('s')
-      .leftJoin(PartMaster, 'p', 'p.itemCode = s.itemCode')
-      .leftJoin(MatLot, 'l', 'l.matUid = s.prdUid')
-      .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode')
+      .leftJoin(PartMaster, 'p', 'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant')
+      .leftJoin(MatLot, 'l', 'l.matUid = s.prdUid AND l.company = s.company AND l.plant = s.plant')
+      .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode AND w.company = s.company AND w.plant = s.plant')
       .select([
         's.warehouseCode || \'::\' || s.itemCode || \'::\' || s.prdUid AS "id"',
         's.warehouseCode AS "warehouseCode"',
@@ -82,9 +82,9 @@ export class ProductPhysicalInvService {
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
-      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
-      .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid')
-      .leftJoin(Warehouse, 'wh', 'wh.warehouseCode = log.warehouseCode')
+      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid AND lot.company = log.company AND lot.plant = log.plant')
+      .leftJoin(Warehouse, 'wh', 'wh.warehouseCode = log.warehouseCode AND wh.company = log.company AND wh.plant = log.plant')
       .select([
         'log.adjDate AS "adjDate"',
         'log.seq AS "seq"',

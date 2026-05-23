@@ -41,15 +41,24 @@ export class PmPlanService {
     private readonly equipMasterRepo: Repository<EquipMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   // ─── PM Plan CRUD ────────────────────────────────────────
 
   /** PM 계획 목록 조회 */
-  async findAllPlans(query: PmPlanQueryDto) {
+  async findAllPlans(query: PmPlanQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, equipCode, pmType, search, dueDateFrom, dueDateTo } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.pmPlanRepo.createQueryBuilder('plan');
 
+    if (company) qb.andWhere('plan.company = :company', { company });
+    if (plant) qb.andWhere('plan.plant = :plant', { plant });
     if (equipCode) qb.andWhere('plan.equipCode = :equipCode', { equipCode });
     if (pmType) qb.andWhere('plan.pmType = :pmType', { pmType });
     if (search) {
@@ -81,7 +90,7 @@ export class PmPlanService {
 
     const equips = equipIds.length > 0
       ? await this.equipMasterRepo.find({
-          where: { equipCode: In(equipIds) },
+          where: { equipCode: In(equipIds), ...this.tenantWhere(company, plant) },
           select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
         })
       : [];
@@ -119,15 +128,23 @@ export class PmPlanService {
   }
 
   /** PM 계획 상세 조회 (items 포함) */
-  async findPlanById(planCode: string) {
+  async findPlanById(planCode: string, company?: string, plant?: string) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { planCode },
+      where: {
+        planCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       relations: ['items'],
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
 
     const equip = await this.equipMasterRepo.findOne({
-      where: { equipCode: plan.equipCode },
+      where: {
+        equipCode: plan.equipCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
     });
 
@@ -139,9 +156,13 @@ export class PmPlanService {
   }
 
   /** PM 계획 생성 */
-  async createPlan(dto: CreatePmPlanDto) {
+  async createPlan(dto: CreatePmPlanDto, company?: string, plant?: string) {
     const equip = await this.equipMasterRepo.findOne({
-      where: { equipCode: dto.equipCode },
+      where: {
+        equipCode: dto.equipCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
 
@@ -166,6 +187,8 @@ export class PmPlanService {
       usageField: dto.usageField ?? null,
       usageThreshold: dto.usageThreshold ?? null,
       nextDueAt,
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
     });
 
     const saved = await this.pmPlanRepo.save(plan);
@@ -187,13 +210,13 @@ export class PmPlanService {
       await this.pmPlanItemRepo.save(items);
     }
 
-    return this.findPlanById(saved.planCode);
+    return this.findPlanById(saved.planCode, company, plant);
   }
 
   /** PM 계획 수정 */
-  async updatePlan(planCode: string, dto: UpdatePmPlanDto) {
+  async updatePlan(planCode: string, dto: UpdatePmPlanDto, company?: string, plant?: string) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { planCode },
+      where: { planCode, ...this.tenantWhere(company, plant) },
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
 
@@ -240,16 +263,16 @@ export class PmPlanService {
       }
     }
 
-    return this.findPlanById(planCode);
+    return this.findPlanById(planCode, company, plant);
   }
 
   /** PM 계획 삭제 (소프트) */
-  async deletePlan(planCode: string) {
+  async deletePlan(planCode: string, company?: string, plant?: string) {
     const plan = await this.pmPlanRepo.findOne({
-      where: { planCode },
+      where: { planCode, ...this.tenantWhere(company, plant) },
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
-    await this.pmPlanRepo.delete(planCode);
+    await this.pmPlanRepo.delete({ planCode, ...this.tenantWhere(company, plant) });
     return { planCode, deleted: true };
   }
 
@@ -351,9 +374,9 @@ export class PmPlanService {
   }
 
   /** WO 수동 생성 */
-  async createWorkOrder(dto: CreatePmWorkOrderDto) {
+  async createWorkOrder(dto: CreatePmWorkOrderDto, company?: string, plant?: string) {
     const equip = await this.equipMasterRepo.findOne({
-      where: { equipCode: dto.equipCode },
+      where: { equipCode: dto.equipCode, ...this.tenantWhere(company, plant) },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
 
@@ -370,6 +393,7 @@ export class PmPlanService {
       status: 'PLANNED',
       priority: dto.priority || 'MEDIUM',
       assignedWorkerCode: dto.assignedWorkerId || null,
+      ...this.tenantWhere(company, plant),
     });
 
     const saved = await this.pmWorkOrderRepo.save(wo);
@@ -377,9 +401,9 @@ export class PmPlanService {
   }
 
   /** WO 실행 */
-  async executeWorkOrder(workOrderNo: string, dto: ExecutePmWorkOrderDto) {
+  async executeWorkOrder(workOrderNo: string, dto: ExecutePmWorkOrderDto, company?: string, plant?: string) {
     const wo = await this.pmWorkOrderRepo.findOne({
-      where: { workOrderNo },
+      where: { workOrderNo, ...this.tenantWhere(company, plant) },
     });
     if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${workOrderNo}`);
 
@@ -415,14 +439,14 @@ export class PmPlanService {
     // FAIL 결과 시 설비 자동 INTERLOCK (일상점검과 동일 정책)
     if (dto.overallResult === 'FAIL' && wo.equipCode) {
       await this.equipMasterRepo.update(
-        { equipCode: wo.equipCode },
+        { equipCode: wo.equipCode, ...this.tenantWhere(company, plant) },
         { status: 'INTERLOCK' },
       );
     }
 
     if (wo.pmPlanCode) {
       const plan = await this.pmPlanRepo.findOne({
-        where: { planCode: wo.pmPlanCode },
+        where: { planCode: wo.pmPlanCode, ...this.tenantWhere(company, plant) },
       });
       if (plan) {
         plan.lastExecutedAt = new Date();
@@ -440,9 +464,9 @@ export class PmPlanService {
   }
 
   /** WO 취소 */
-  async cancelWorkOrder(workOrderNo: string) {
+  async cancelWorkOrder(workOrderNo: string, company?: string, plant?: string) {
     const wo = await this.pmWorkOrderRepo.findOne({
-      where: { workOrderNo },
+      where: { workOrderNo, ...this.tenantWhere(company, plant) },
     });
     if (!wo) throw new NotFoundException(`Work Order를 찾을 수 없습니다: ${workOrderNo}`);
 
@@ -456,12 +480,14 @@ export class PmPlanService {
   }
 
   /** WO 목록 조회 */
-  async findAllWorkOrders(query: PmWorkOrderQueryDto) {
+  async findAllWorkOrders(query: PmWorkOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, equipCode, status, search } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo');
 
+    if (company) qb.andWhere('wo.company = :company', { company });
+    if (plant) qb.andWhere('wo.plant = :plant', { plant });
     if (equipCode) qb.andWhere('wo.equipCode = :equipCode', { equipCode });
     if (status) qb.andWhere('wo.status = :status', { status });
     if (search) {
@@ -480,7 +506,7 @@ export class PmPlanService {
     const equipIds = [...new Set(workOrders.map((wo) => wo.equipCode))];
     const equips = equipIds.length > 0
       ? await this.equipMasterRepo.find({
-          where: { equipCode: In(equipIds) },
+          where: { equipCode: In(equipIds), ...this.tenantWhere(company, plant) },
           select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
         })
       : [];
@@ -510,15 +536,23 @@ export class PmPlanService {
     month: number,
     lineCode?: string,
     equipType?: string,
+    company?: string,
+    plant?: string,
   ) {
     const daysInMonth = new Date(year, month, 0).getDate();
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
-      .leftJoin(EquipMaster, 'equip', 'wo.equipCode = equip.equipCode')
+      .leftJoin(
+        EquipMaster,
+        'equip',
+        'wo.equipCode = equip.equipCode AND wo.company = equip.company AND wo.plant = equip.plant',
+      )
       .where('wo.scheduledDate BETWEEN :startDate AND :endDate', { startDate, endDate });
 
+    if (company) qb.andWhere('wo.company = :company', { company });
+    if (plant) qb.andWhere('wo.plant = :plant', { plant });
     if (lineCode) qb.andWhere('equip.lineCode = :lineCode', { lineCode });
     if (equipType) qb.andWhere('equip.equipType = :equipType', { equipType });
 
@@ -567,7 +601,7 @@ export class PmPlanService {
   }
 
   /** 캘린더 일별 WO 스케줄 */
-  async getDaySchedule(date: string, lineCode?: string, equipType?: string) {
+  async getDaySchedule(date: string, lineCode?: string, equipType?: string, company?: string, plant?: string) {
     const dateObj = new Date(date);
     const dayStart = new Date(dateObj);
     dayStart.setHours(0, 0, 0, 0);
@@ -577,8 +611,14 @@ export class PmPlanService {
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo')
       .where('wo.scheduledDate BETWEEN :dayStart AND :dayEnd', { dayStart, dayEnd });
 
+    if (company) qb.andWhere('wo.company = :company', { company });
+    if (plant) qb.andWhere('wo.plant = :plant', { plant });
     if (lineCode || equipType) {
-      qb.leftJoin(EquipMaster, 'equip', 'wo.equipCode = equip.equipCode');
+      qb.leftJoin(
+        EquipMaster,
+        'equip',
+        'wo.equipCode = equip.equipCode AND wo.company = equip.company AND wo.plant = equip.plant',
+      );
       if (lineCode) qb.andWhere('equip.lineCode = :lineCode', { lineCode });
       if (equipType) qb.andWhere('equip.equipType = :equipType', { equipType });
     }
@@ -588,7 +628,7 @@ export class PmPlanService {
     const equipIds = [...new Set(workOrders.map((wo) => wo.equipCode))];
     const equips = equipIds.length > 0
       ? await this.equipMasterRepo.find({
-          where: { equipCode: In(equipIds) },
+          where: { equipCode: In(equipIds), ...this.tenantWhere(company, plant) },
           select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
         })
       : [];
@@ -611,7 +651,10 @@ export class PmPlanService {
     // PM 계획 + 계획항목 일괄 선조회 (N+1 제거)
     const pmPlanCodes = [...new Set(workOrders.map((wo) => wo.pmPlanCode).filter(Boolean))];
     const allPlans = pmPlanCodes.length > 0
-      ? await this.pmPlanRepo.find({ where: { planCode: In(pmPlanCodes) }, select: ['planCode', 'planName'] })
+      ? await this.pmPlanRepo.find({
+          where: { planCode: In(pmPlanCodes), ...this.tenantWhere(company, plant) },
+          select: ['planCode', 'planName'],
+        })
       : [];
     const planNameMap = new Map(allPlans.map((p) => [p.planCode, p.planName]));
 

@@ -34,13 +34,17 @@ export class EquipInspectService {
     equipCode: string,
     inspectDate: string,
     inspectType: string,
+    company?: string,
+    plant?: string,
   ): Promise<boolean> {
-    const count = await this.equipInspectLogRepository
+    const queryBuilder = this.equipInspectLogRepository
       .createQueryBuilder('log')
       .where('log.equipCode = :equipCode', { equipCode })
       .andWhere('log.inspectType = :inspectType', { inspectType })
-      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
-      .getCount();
+      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
+    if (company) queryBuilder.andWhere('log.company = :company', { company });
+    if (plant) queryBuilder.andWhere('log.plant = :plant', { plant });
+    const count = await queryBuilder.getCount();
     return count > 0;
   }
 
@@ -53,7 +57,11 @@ export class EquipInspectService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.equipInspectLogRepository.createQueryBuilder('log')
-      .leftJoinAndSelect(EquipMaster, 'equip', 'log.equipCode = equip.equipCode')
+      .leftJoinAndSelect(
+        EquipMaster,
+        'equip',
+        'log.equipCode = equip.equipCode AND log.company = equip.company AND log.plant = equip.plant',
+      )
       .select([
         'log',
         'equip.equipCode AS equip_code',
@@ -112,27 +120,39 @@ export class EquipInspectService {
   }
 
   /** 점검 단건 조회 (복합키) */
-  async findByKey(equipCode: string, inspectType: string, inspectDate: string) {
+  async findByKey(
+    equipCode: string,
+    inspectType: string,
+    inspectDate: string,
+    company?: string,
+    plant?: string,
+  ) {
     const log = await this.equipInspectLogRepository
       .createQueryBuilder('log')
       .where('log.equipCode = :equipCode', { equipCode })
       .andWhere('log.inspectType = :inspectType', { inspectType })
-      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
-      .getOne();
+      .andWhere('log.inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND log.inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
+    if (company) log.andWhere('log.company = :company', { company });
+    if (plant) log.andWhere('log.plant = :plant', { plant });
+    const foundLog = await log.getOne();
 
-    if (!log) {
+    if (!foundLog) {
       throw new NotFoundException(
         `점검 기록을 찾을 수 없습니다: ${equipCode}/${inspectType}/${inspectDate}`,
       );
     }
 
     const equip = await this.equipMasterRepository.findOne({
-      where: { equipCode: log.equipCode },
+      where: {
+        equipCode: foundLog.equipCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       select: ['equipCode', 'equipName', 'lineCode'],
     });
 
     return {
-      ...log,
+      ...foundLog,
       equip: equip || null,
     };
   }
@@ -143,7 +163,11 @@ export class EquipInspectService {
     context?: { company: string; plant: string },
   ) {
     const equip = await this.equipMasterRepository.findOne({
-      where: { equipCode: dto.equipCode },
+      where: {
+        equipCode: dto.equipCode,
+        ...(context?.company ? { company: context.company } : {}),
+        ...(context?.plant ? { plant: context.plant } : {}),
+      },
     });
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
     this.assertTenantMatchesEquipment(context, equip);
@@ -164,7 +188,11 @@ export class EquipInspectService {
 
     if (saved.overallResult && saved.overallResult.toUpperCase().includes('FAIL')) {
       await this.equipMasterRepository.update(
-        { equipCode: equip.equipCode },
+        {
+          equipCode: equip.equipCode,
+          ...(context?.company ? { company: context.company } : {}),
+          ...(context?.plant ? { plant: context.plant } : {}),
+        },
         { status: 'INTERLOCK' },
       );
     }
@@ -196,8 +224,15 @@ export class EquipInspectService {
   }
 
   /** 점검 결과 수정 (복합키) */
-  async update(equipCode: string, inspectType: string, inspectDate: string, dto: UpdateEquipInspectDto) {
-    const log = await this.findByKey(equipCode, inspectType, inspectDate);
+  async update(
+    equipCode: string,
+    inspectType: string,
+    inspectDate: string,
+    dto: UpdateEquipInspectDto,
+    company?: string,
+    plant?: string,
+  ) {
+    const log = await this.findByKey(equipCode, inspectType, inspectDate, company, plant);
 
     const updateData: Partial<EquipInspectLog> = {};
 
@@ -206,26 +241,36 @@ export class EquipInspectService {
     if (dto.details !== undefined) updateData.details = dto.details ? JSON.stringify(dto.details) : null;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.equipInspectLogRepository
+    const updateBuilder = this.equipInspectLogRepository
       .createQueryBuilder()
       .update(EquipInspectLog)
       .set(updateData)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
-      .execute();
+      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate });
+    if (company) updateBuilder.andWhere('company = :company', { company });
+    if (plant) updateBuilder.andWhere('plant = :plant', { plant });
+    await updateBuilder.execute();
 
     const equip = await this.equipMasterRepository.findOne({
-      where: { equipCode },
+      where: {
+        equipCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       select: ['equipCode', 'equipName', 'lineCode'],
     });
 
-    const updated = await this.findByKey(equipCode, inspectType, inspectDate);
+    const updated = await this.findByKey(equipCode, inspectType, inspectDate, company, plant);
 
     const finalResult = updated?.overallResult ?? '';
     if (finalResult.toUpperCase().includes('FAIL')) {
       await this.equipMasterRepository.update(
-        { equipCode },
+        {
+          equipCode,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
         { status: 'INTERLOCK' },
       );
     }
@@ -237,16 +282,24 @@ export class EquipInspectService {
   }
 
   /** 점검 결과 삭제 (복합키) */
-  async deleteByKey(equipCode: string, inspectType: string, inspectDate: string) {
-    await this.findByKey(equipCode, inspectType, inspectDate);
-    await this.equipInspectLogRepository
+  async deleteByKey(
+    equipCode: string,
+    inspectType: string,
+    inspectDate: string,
+    company?: string,
+    plant?: string,
+  ) {
+    await this.findByKey(equipCode, inspectType, inspectDate, company, plant);
+    const deleteBuilder = this.equipInspectLogRepository
       .createQueryBuilder()
       .delete()
       .from(EquipInspectLog)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate })
-      .execute();
+      .andWhere('TRUNC(inspectDate) = TO_DATE(:inspectDate, \'YYYY-MM-DD\')', { inspectDate });
+    if (company) deleteBuilder.andWhere('company = :company', { company });
+    if (plant) deleteBuilder.andWhere('plant = :plant', { plant });
+    await deleteBuilder.execute();
     return { equipCode, inspectType, inspectDate, deleted: true };
   }
 
@@ -263,13 +316,22 @@ export class EquipInspectService {
   }
 
   /** 캘린더 월별 요약 조회 */
-  async getCalendarSummary(year: number, month: number, processCode?: string, inspectType: string = 'DAILY') {
+  async getCalendarSummary(
+    year: number,
+    month: number,
+    processCode?: string,
+    inspectType: string = 'DAILY',
+    company?: string,
+    plant?: string,
+  ) {
     const daysInMonth = new Date(year, month, 0).getDate();
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month - 1, daysInMonth, 23, 59, 59);
 
     const equipWhere: Record<string, unknown> = { useYn: 'Y' };
     if (processCode) equipWhere.processCode = processCode;
+    if (company) equipWhere.company = company;
+    if (plant) equipWhere.plant = plant;
     const equips = await this.equipMasterRepository.find({ where: equipWhere, select: ['equipCode', 'lineCode'] });
     const equipIds = equips.map((e) => e.equipCode);
     if (equipIds.length === 0) {
@@ -284,10 +346,12 @@ export class EquipInspectService {
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
       .andWhere('item.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
-      .getMany();
+    if (company) allItems.andWhere('item.company = :company', { company });
+    if (plant) allItems.andWhere('item.plant = :plant', { plant });
+    const foundItems = await allItems.getMany();
 
     const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
-    for (const item of allItems) {
+    for (const item of foundItems) {
       const list = itemsByEquip.get(item.equipCode) || [];
       list.push(item);
       itemsByEquip.set(item.equipCode, list);
@@ -299,11 +363,13 @@ export class EquipInspectService {
       .andWhere('log.inspectDate BETWEEN :start AND :end', {
         start: startDate, end: endDate,
       })
-      .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
-      .getMany();
+      .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds });
+    if (company) logs.andWhere('log.company = :company', { company });
+    if (plant) logs.andWhere('log.plant = :plant', { plant });
+    const foundLogs = await logs.getMany();
 
     const logsByDate = new Map<string, EquipInspectLog[]>();
-    for (const log of logs) {
+    for (const log of foundLogs) {
       const d = new Date(log.inspectDate);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const list = logsByDate.get(key) || [];
@@ -351,11 +417,19 @@ export class EquipInspectService {
   }
 
   /** 캘린더 일별 설비 점검 스케줄 조회 */
-  async getDaySchedule(date: string, processCode?: string, inspectType: string = 'DAILY') {
+  async getDaySchedule(
+    date: string,
+    processCode?: string,
+    inspectType: string = 'DAILY',
+    company?: string,
+    plant?: string,
+  ) {
     const dateObj = new Date(date);
 
     const equipWhere: Record<string, unknown> = { useYn: 'Y' };
     if (processCode) equipWhere.processCode = processCode;
+    if (company) equipWhere.company = company;
+    if (plant) equipWhere.plant = plant;
     const equips = await this.equipMasterRepository.find({
       where: equipWhere,
       select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
@@ -369,11 +443,13 @@ export class EquipInspectService {
       .where('item.inspectType = :type', { type: inspectType })
       .andWhere('item.useYn = :yn', { yn: 'Y' })
       .andWhere('item.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
-      .orderBy('item.seq', 'ASC')
-      .getMany();
+      .orderBy('item.seq', 'ASC');
+    if (company) allItems.andWhere('item.company = :company', { company });
+    if (plant) allItems.andWhere('item.plant = :plant', { plant });
+    const foundItems = await allItems.getMany();
 
     const itemsByEquip = new Map<string, EquipInspectItemMaster[]>();
-    for (const item of allItems) {
+    for (const item of foundItems) {
       const list = itemsByEquip.get(item.equipCode) || [];
       list.push(item);
       itemsByEquip.set(item.equipCode, list);
@@ -388,11 +464,13 @@ export class EquipInspectService {
       .createQueryBuilder('log')
       .where('log.inspectType = :type', { type: inspectType })
       .andWhere('log.inspectDate BETWEEN :start AND :end', { start: dayStart, end: dayEnd })
-      .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds })
-      .getMany();
+      .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds });
+    if (company) logs.andWhere('log.company = :company', { company });
+    if (plant) logs.andWhere('log.plant = :plant', { plant });
+    const foundLogs = await logs.getMany();
 
     const logByEquip = new Map<string, EquipInspectLog>();
-    for (const log of logs) {
+    for (const log of foundLogs) {
       logByEquip.set(log.equipCode, log);
     }
 

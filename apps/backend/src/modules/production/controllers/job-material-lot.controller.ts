@@ -25,8 +25,8 @@ export class JobMaterialLotController {
 
   @Get()
   @ApiOperation({ summary: '작업지시 자재 롯트 목록' })
-  async findAll(@Param('orderNo') orderNo: string) {
-    const data = await this.svc.findByJobOrder(orderNo);
+  async findAll(@Param('orderNo') orderNo: string, @Company() company?: string, @Plant() plant?: string) {
+    const data = await this.svc.findByJobOrder(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -55,8 +55,10 @@ export class JobMaterialLotController {
     @Param('orderNo') orderNo: string,
     @Param('itemCode') itemCode: string,
     @Param('seq') seq: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    await this.svc.remove(orderNo, itemCode, Number(seq));
+    await this.svc.remove(orderNo, itemCode, Number(seq), company, plant);
     return ResponseUtil.success(null, '롯트 등록이 취소되었습니다.');
   }
 }

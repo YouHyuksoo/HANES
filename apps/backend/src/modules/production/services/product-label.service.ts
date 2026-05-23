@@ -68,7 +68,13 @@ export class ProductLabelService {
 
     const itemCode = prodResult.jobOrder?.itemCode ?? '';
     const part = itemCode
-      ? await this.partRepo.findOne({ where: { itemCode } })
+      ? await this.partRepo.findOne({
+          where: {
+            itemCode,
+            ...(company ? { company } : {}),
+            ...(plant ? { plant } : {}),
+          },
+        })
       : null;
 
     return this.tx.run(async (queryRunner) => {

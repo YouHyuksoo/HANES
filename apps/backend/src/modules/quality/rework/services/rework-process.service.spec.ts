@@ -35,6 +35,19 @@ describe('ReworkProcessService', () => {
   });
   afterEach(() => jest.clearAllMocks());
 
+  describe('findProcesses', () => {
+    it('should find processes within tenant', async () => {
+      mockProcessRepo.find.mockResolvedValue([]);
+
+      await target.findProcesses('RW-001', 'CO', 'P01');
+
+      expect(mockProcessRepo.find).toHaveBeenCalledWith({
+        where: { reworkOrderId: 'RW-001', company: 'CO', plant: 'P01' },
+        order: { seq: 'ASC' },
+      });
+    });
+  });
+
   describe('startProcess', () => {
     it('should start WAITING process', async () => {
       const proc = { reworkOrderId: 1, processCode: 'P01', status: 'WAITING' } as any;
@@ -48,6 +61,22 @@ describe('ReworkProcessService', () => {
     it('should throw when not WAITING', async () => {
       mockProcessRepo.findOne.mockResolvedValue({ status: 'COMPLETED' } as any);
       await expect(target.startProcess(1, 'P01', 'user')).rejects.toThrow(BadRequestException);
+    });
+    it('should start process within tenant', async () => {
+      const proc = { reworkOrderId: 'RW-001', processCode: 'P01', status: 'WAITING', company: 'CO', plant: 'P01' } as any;
+      mockProcessRepo.findOne.mockResolvedValue(proc);
+      mockProcessRepo.save.mockResolvedValue({ ...proc, status: 'IN_PROGRESS' });
+      mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-001', status: 'APPROVED', company: 'CO', plant: 'P01' } as any);
+      mockReworkRepo.save.mockResolvedValue({} as any);
+
+      await target.startProcess('RW-001', 'P01', 'user', 'CO', 'P01');
+
+      expect(mockProcessRepo.findOne).toHaveBeenCalledWith({
+        where: { reworkOrderId: 'RW-001', processCode: 'P01', company: 'CO', plant: 'P01' },
+      });
+      expect(mockReworkRepo.findOne).toHaveBeenCalledWith({
+        where: { reworkNo: 'RW-001', company: 'CO', plant: 'P01' },
+      });
     });
   });
 
@@ -74,6 +103,34 @@ describe('ReworkProcessService', () => {
       mockReworkRepo.save.mockResolvedValue({} as any);
       const r = await target.skipProcess(1, 'P01', 'user');
       expect(r.status).toBe('SKIPPED');
+    });
+  });
+
+  describe('createResult', () => {
+    it('should count and aggregate results within tenant', async () => {
+      const proc = { reworkOrderId: 'RW-001', processCode: 'P01', status: 'IN_PROGRESS', company: 'CO', plant: 'P01' } as any;
+      mockProcessRepo.findOne.mockResolvedValue(proc);
+      mockResultRepo.count.mockResolvedValue(0);
+      mockResultRepo.create.mockReturnValue({ reworkOrderId: 'RW-001', processCode: 'P01', seq: 1, resultQty: 5 } as any);
+      mockResultRepo.save.mockResolvedValue({ reworkOrderId: 'RW-001', processCode: 'P01', seq: 1, resultQty: 5 } as any);
+      mockResultRepo.find.mockResolvedValue([{ resultQty: 5 } as any]);
+
+      await target.createResult(
+        { reworkOrderId: 'RW-001', processCode: 'P01', resultQty: 5 } as any,
+        'CO',
+        'P01',
+        'user',
+      );
+
+      expect(mockProcessRepo.findOne).toHaveBeenCalledWith({
+        where: { reworkOrderId: 'RW-001', processCode: 'P01', company: 'CO', plant: 'P01' },
+      });
+      expect(mockResultRepo.count).toHaveBeenCalledWith({
+        where: { reworkOrderId: 'RW-001', processCode: 'P01', company: 'CO', plant: 'P01' },
+      });
+      expect(mockResultRepo.find).toHaveBeenCalledWith({
+        where: { reworkOrderId: 'RW-001', processCode: 'P01', company: 'CO', plant: 'P01' },
+      });
     });
   });
 });

@@ -20,7 +20,7 @@ import api from "@/services/api";
 
 interface InspectItemRow {
   equipCode: string;
-  inspectType: "DAILY" | "PERIODIC" | "PM";
+  inspectType: "DAILY" | "PERIODIC" | "PM" | "WORKER";
   seq: number;
   itemName: string;
   criteria: string | null;
@@ -28,10 +28,13 @@ interface InspectItemRow {
   useYn: string;
 }
 
+type InspectType = InspectItemRow["inspectType"];
+
 const INSPECT_TYPE_COLORS: Record<string, string> = {
   DAILY: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
   PERIODIC: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
   PM: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+  WORKER: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
 };
 
 export default function EquipInspectItemPage() {
@@ -47,7 +50,7 @@ export default function EquipInspectItemPage() {
   /* ── 폼 상태 ── */
   const [formEquipCode, setFormEquipCode] = useState("");
   const [formItemName, setFormItemName] = useState("");
-  const [formInspectType, setFormInspectType] = useState<"DAILY" | "PERIODIC" | "PM">("DAILY");
+  const [formInspectType, setFormInspectType] = useState<InspectType>("DAILY");
   const [formCriteria, setFormCriteria] = useState("");
   const [formCycle, setFormCycle] = useState("DAILY");
   const [formSeq, setFormSeq] = useState("1");
@@ -84,13 +87,15 @@ export default function EquipInspectItemPage() {
     { value: "", label: `${t("master.equipInspect.inspectType")}: ${t("common.all")}` },
     { value: "DAILY", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeDaily")}` },
     { value: "PERIODIC", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typePeriodic")}` },
-    { value: "PM", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typePM", "예방보전")}` },
+    { value: "PM", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typePM")}` },
+    { value: "WORKER", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeWorker")}` },
   ], [t]);
 
   const typeOptions = useMemo(() => [
     { value: "DAILY", label: t("master.equipInspect.typeDaily") },
     { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
-    { value: "PM", label: t("master.equipInspect.typePM", "예방보전") },
+    { value: "PM", label: t("master.equipInspect.typePM") },
+    { value: "WORKER", label: t("master.equipInspect.typeWorker") },
   ], [t]);
 
   const cycleOptions = useMemo(() => [
@@ -105,7 +110,8 @@ export default function EquipInspectItemPage() {
   const inspectTypeLabels = useMemo<Record<string, string>>(() => ({
     DAILY: t("master.equipInspect.typeDaily"),
     PERIODIC: t("master.equipInspect.typePeriodic"),
-    PM: t("master.equipInspect.typePM", "예방보전"),
+    PM: t("master.equipInspect.typePM"),
+    WORKER: t("master.equipInspect.typeWorker"),
   }), [t]);
 
   const cycleLabels = useMemo<Record<string, string>>(() => ({
@@ -119,8 +125,9 @@ export default function EquipInspectItemPage() {
     const daily = items.filter(i => i.inspectType === "DAILY").length;
     const periodic = items.filter(i => i.inspectType === "PERIODIC").length;
     const pm = items.filter(i => i.inspectType === "PM").length;
+    const worker = items.filter(i => i.inspectType === "WORKER").length;
     const equipSet = new Set(items.map(i => i.equipCode));
-    return { total: items.length, daily, periodic, pm, equipCount: equipSet.size };
+    return { total: items.length, daily, periodic, pm, worker, equipCount: equipSet.size };
   }, [items]);
 
   /* ── CRUD ── */
@@ -238,11 +245,12 @@ export default function EquipInspectItemPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-5 gap-3 flex-shrink-0">
+      <div className="grid grid-cols-6 gap-3 flex-shrink-0">
         <StatCard label={t("master.equipInspectItem.statTotal", "전체 항목")} value={stats.total} icon={ClipboardList} color="blue" />
-        <StatCard label={t("master.equipInspect.typeDaily")} value={stats.daily} icon={ClipboardList} color="green" />
+        <StatCard label={t("master.equipInspect.typeDaily")} value={stats.daily} icon={ClipboardList} color="blue" />
         <StatCard label={t("master.equipInspect.typePeriodic")} value={stats.periodic} icon={ClipboardList} color="orange" />
-        <StatCard label={t("master.equipInspect.typePM", "예방보전")} value={stats.pm} icon={ClipboardList} color="purple" />
+        <StatCard label={t("master.equipInspect.typePM")} value={stats.pm} icon={ClipboardList} color="purple" />
+        <StatCard label={t("master.equipInspect.typeWorker")} value={stats.worker} icon={ClipboardList} color="green" />
         <StatCard label={t("master.equipInspectItem.statEquips", "설비 수")} value={stats.equipCount} icon={ClipboardList} color="gray" />
       </div>
 
@@ -280,7 +288,7 @@ export default function EquipInspectItemPage() {
             onChange={e => setFormItemName(e.target.value)} fullWidth />
           <div className="grid grid-cols-3 gap-4">
             <Select label={t("master.equipInspect.inspectType")} options={typeOptions}
-              value={formInspectType} onChange={v => setFormInspectType(v as "DAILY" | "PERIODIC" | "PM")} />
+              value={formInspectType} onChange={v => setFormInspectType(v as InspectType)} />
             <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
               value={formCycle} onChange={setFormCycle} />
             <Input label={t("master.equipInspect.seq")} type="number" value={formSeq}

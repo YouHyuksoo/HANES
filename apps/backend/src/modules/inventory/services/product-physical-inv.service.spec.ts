@@ -85,6 +85,29 @@ describe('ProductPhysicalInvService', () => {
         's.warehouseCode AS "warehouseCode"',
       ]));
     });
+
+    it('joins reference tables by tenant-scoped keys', async () => {
+      const qb = createRawQueryBuilderMock();
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findStocks({ page: 1, limit: 50 } as any, 'CO', 'P01');
+
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        PartMaster,
+        'p',
+        'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant',
+      );
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        MatLot,
+        'l',
+        'l.matUid = s.prdUid AND l.company = s.company AND l.plant = s.plant',
+      );
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        Warehouse,
+        'w',
+        'w.warehouseCode = s.warehouseCode AND w.company = s.company AND w.plant = s.plant',
+      );
+    });
   });
 
   describe('findHistory', () => {
@@ -98,6 +121,29 @@ describe('ProductPhysicalInvService', () => {
       expect(qb.select).toHaveBeenCalledWith(expect.arrayContaining([
         'log.warehouseCode AS "warehouseCode"',
       ]));
+    });
+
+    it('joins history reference tables by tenant-scoped keys', async () => {
+      const qb = createRawQueryBuilderMock();
+      mockAdjRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findHistory({ page: 1, limit: 50 } as any, 'CO', 'P01');
+
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        PartMaster,
+        'part',
+        'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant',
+      );
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        MatLot,
+        'lot',
+        'lot.matUid = log.matUid AND lot.company = log.company AND lot.plant = log.plant',
+      );
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        Warehouse,
+        'wh',
+        'wh.warehouseCode = log.warehouseCode AND wh.company = log.company AND wh.plant = log.plant',
+      );
     });
   });
 

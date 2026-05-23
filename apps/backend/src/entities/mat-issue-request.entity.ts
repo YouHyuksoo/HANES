@@ -19,7 +19,7 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'MAT_ISSUE_REQUESTS' })
-@Index(['jobOrderId'])
+@Index(['orderNo'])
 @Index(['status'])
 @Index(['requestDate'])
 export class MatIssueRequest {
@@ -27,7 +27,7 @@ export class MatIssueRequest {
   requestNo: string;
 
   @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
-  jobOrderId: string | null;
+  orderNo: string | null;
 
   @Column({ name: 'REQUEST_DATE', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   requestDate: Date;

@@ -13,9 +13,9 @@ export class CreateEquipInspectItemPoolDto {
   @MaxLength(200)
   itemName: string;
 
-  @ApiProperty({ description: '점검유형', enum: ['DAILY', 'PERIODIC', 'PM'] })
+  @ApiProperty({ description: '점검유형', enum: ['DAILY', 'PERIODIC', 'PM', 'WORKER'] })
   @IsString()
-  @IsIn(['DAILY', 'PERIODIC', 'PM'])
+  @IsIn(['DAILY', 'PERIODIC', 'PM', 'WORKER'])
   inspectType: string;
 
   @ApiPropertyOptional({ description: '판정기준' })
@@ -54,7 +54,7 @@ export class EquipInspectItemPoolQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '점검유형' })
   @IsOptional()
   @IsString()
-  @IsIn(['DAILY', 'PERIODIC', 'PM'])
+  @IsIn(['DAILY', 'PERIODIC', 'PM', 'WORKER'])
   inspectType?: string;
 
   @ApiPropertyOptional({ description: '사용여부' })

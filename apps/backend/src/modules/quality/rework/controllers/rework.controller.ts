@@ -101,8 +101,8 @@ export class ReworkController {
   @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '재작업 지시 없음' })
-  async findById(@Param('id') reworkNo: string) {
-    const data = await this.reworkService.findById(reworkNo);
+  async findById(@Param('id') reworkNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.reworkService.findById(reworkNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -133,11 +133,15 @@ export class ReworkController {
     @Param('id') reworkNo: string,
     @Body() dto: UpdateReworkOrderDto,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.reworkService.update(
       reworkNo,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '재작업이 수정되었습니다.');
   }
@@ -147,8 +151,8 @@ export class ReworkController {
   @ApiOperation({ summary: '재작업 삭제' })
   @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
-  async delete(@Param('id') reworkNo: string) {
-    await this.reworkService.delete(reworkNo);
+  async delete(@Param('id') reworkNo: string, @Company() company: string, @Plant() plant: string) {
+    await this.reworkService.delete(reworkNo, company, plant);
     return ResponseUtil.success(null, '재작업이 삭제되었습니다.');
   }
 
@@ -161,10 +165,14 @@ export class ReworkController {
   async requestApproval(
     @Param('id') reworkNo: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.reworkService.requestQcApproval(
       reworkNo,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '승인 요청이 완료되었습니다.');
   }
@@ -177,11 +185,15 @@ export class ReworkController {
     @Param('id') reworkNo: string,
     @Body() dto: ApproveReworkDto,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.reworkService.qcApprove(
       reworkNo,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data);
   }
@@ -194,11 +206,15 @@ export class ReworkController {
     @Param('id') reworkNo: string,
     @Body() dto: ApproveReworkDto,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.reworkService.prodApprove(
       reworkNo,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data);
   }
@@ -210,10 +226,14 @@ export class ReworkController {
   async start(
     @Param('id') reworkNo: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.reworkService.start(
       reworkNo,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '작업이 시작되었습니다.');
   }
@@ -226,11 +246,15 @@ export class ReworkController {
     @Param('id') reworkNo: string,
     @Body() dto: CompleteReworkDto,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
     const data = await this.reworkService.complete(
       reworkNo,
       dto,
       req.user?.id ?? 'system',
+      company,
+      plant,
     );
     return ResponseUtil.success(data, '작업이 완료되었습니다.');
   }
@@ -240,9 +264,9 @@ export class ReworkController {
   @Get(':id/processes')
   @ApiOperation({ summary: '공정 목록 조회', description: '재작업 지시의 공정별 작업 목록' })
   @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
-  async findProcesses(@Param('id') reworkNo: string) {
-    const order = await this.reworkService.findById(reworkNo);
-    const data = await this.reworkProcessService.findProcesses(order.reworkNo);
+  async findProcesses(@Param('id') reworkNo: string, @Company() company: string, @Plant() plant: string) {
+    const order = await this.reworkService.findById(reworkNo, company, plant);
+    const data = await this.reworkProcessService.findProcesses(order.reworkNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -254,8 +278,16 @@ export class ReworkController {
     @Param('orderId') orderId: string,
     @Param('processCode') processCode: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.reworkProcessService.startProcess(orderId, processCode, req.user?.id ?? 'system');
+    const data = await this.reworkProcessService.startProcess(
+      orderId,
+      processCode,
+      req.user?.id ?? 'system',
+      company,
+      plant,
+    );
     return ResponseUtil.success(data, '공정 작업이 시작되었습니다.');
   }
 
@@ -268,8 +300,17 @@ export class ReworkController {
     @Param('processCode') processCode: string,
     @Body() body: { resultQty: number },
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.reworkProcessService.completeProcess(orderId, processCode, body.resultQty ?? 0, req.user?.id ?? 'system');
+    const data = await this.reworkProcessService.completeProcess(
+      orderId,
+      processCode,
+      body.resultQty ?? 0,
+      req.user?.id ?? 'system',
+      company,
+      plant,
+    );
     return ResponseUtil.success(data, '공정 작업이 완료되었습니다.');
   }
 
@@ -281,8 +322,16 @@ export class ReworkController {
     @Param('orderId') orderId: string,
     @Param('processCode') processCode: string,
     @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.reworkProcessService.skipProcess(orderId, processCode, req.user?.id ?? 'system');
+    const data = await this.reworkProcessService.skipProcess(
+      orderId,
+      processCode,
+      req.user?.id ?? 'system',
+      company,
+      plant,
+    );
     return ResponseUtil.success(data, '공정을 건너뛰었습니다.');
   }
 
@@ -293,8 +342,10 @@ export class ReworkController {
   async findResults(
     @Param('orderId') orderId: string,
     @Param('processCode') processCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.reworkProcessService.findResults(orderId, processCode);
+    const data = await this.reworkProcessService.findResults(orderId, processCode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -338,8 +389,10 @@ export class ReworkController {
   async findInspectById(
     @Param('orderId') orderId: string,
     @Param('seq', ParseIntPipe) seq: number,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.reworkService.findInspectById(orderId, seq);
+    const data = await this.reworkService.findInspectById(orderId, seq, company, plant);
     return ResponseUtil.success(data);
   }
 

@@ -32,8 +32,8 @@ export class MatStockController {
   @Get('summary/:itemCode')
   @ApiOperation({ summary: '품목별 재고 요약' })
   @ApiParam({ name: 'itemCode', description: '품목 ID' })
-  async getSummary(@Param('itemCode') itemCode: string) {
-    const data = await this.matStockService.getStockSummary(itemCode);
+  async getSummary(@Param('itemCode') itemCode: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matStockService.getStockSummary(itemCode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -53,8 +53,8 @@ export class MatStockController {
 
   @Post('transfer')
   @ApiOperation({ summary: '재고 이동' })
-  async transfer(@Body() dto: StockTransferDto) {
-    const data = await this.matStockService.transferStock(dto);
+  async transfer(@Body() dto: StockTransferDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matStockService.transferStock(dto, company, plant);
     return ResponseUtil.success(data, '재고가 이동되었습니다.');
   }
 }

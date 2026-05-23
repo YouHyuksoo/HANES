@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource, QueryRunner, Like } from 'typeorm';
 import { InventoryService } from './inventory.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -53,6 +53,7 @@ describe('InventoryService', () => {
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
     mockTransactionService.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
+    mockLotRepo.findOne.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -103,6 +104,25 @@ describe('InventoryService', () => {
 
       // Assert
       expect(result).toBe(`${prefix}0043`);
+    });
+
+    it('searches the last UID within tenant context when tenant is provided', async () => {
+      // Arrange
+      const today = new Date();
+      const prefix = `RM${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+      mockLotRepo.findOne.mockResolvedValue({ matUid: `${prefix}0007` } as MatLot);
+
+      // Act
+      const result = await target.generateMatUid('RM', 'TESTV', 'WAREHOUSES');
+
+      // Assert
+      expect(result).toBe(`${prefix}0008`);
+      expect(mockLotRepo.findOne).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          company: 'TESTV',
+          plant: 'WAREHOUSES',
+        }),
+      }));
     });
   });
 
@@ -163,6 +183,28 @@ describe('InventoryService', () => {
         plant: 'WAREHOUSES',
       }));
     });
+
+    it('rejects duplicate matUid only within the same tenant', async () => {
+      // Arrange
+      const dto = {
+        matUid: 'RM202603180001',
+        itemCode: 'PART-001',
+        initQty: 100,
+        recvDate: '2026-03-18',
+      };
+      mockLotRepo.findOne.mockResolvedValue({ matUid: 'RM202603180001', company: 'TESTV', plant: 'WAREHOUSES' } as MatLot);
+
+      // Act & Assert
+      await expect(target.createLot(dto as any, 'TESTV', 'WAREHOUSES')).rejects.toThrow(BadRequestException);
+      expect(mockLotRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          matUid: 'RM202603180001',
+          company: 'TESTV',
+          plant: 'WAREHOUSES',
+        },
+      });
+      expect(mockLotRepo.save).not.toHaveBeenCalled();
+    });
   });
 
   // ─────────────────────────────────────────────
@@ -200,6 +242,28 @@ describe('InventoryService', () => {
       expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2); // transaction + stock
+    });
+
+    it('uses existing transaction number prefix to generate the next sequence', async () => {
+      // Arrange
+      const today = new Date();
+      const prefix = `TRX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+      mockStockTransRepo.findOne.mockResolvedValue({ transNo: `${prefix}00007` } as StockTransaction);
+      mockStockTransRepo.create.mockImplementation((value: any) => value);
+      mockQueryRunner.manager.save.mockImplementation(async (_entity: any, value: any) => value);
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+
+      // Act
+      await target.receiveStock(receiveDto as any);
+
+      // Assert
+      expect(mockStockTransRepo.findOne).toHaveBeenCalledWith({
+        where: { transNo: Like(`${prefix}%`) },
+        order: { transNo: 'DESC' },
+      });
+      expect(mockStockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        transNo: `${prefix}00008`,
+      }));
     });
 
     it('persists company and plant on transaction and new stock', async () => {
@@ -494,6 +558,40 @@ describe('InventoryService', () => {
         target.cancelTransaction({ transactionId: 'TRX202603180001' } as any),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('marks original transaction canceled within the original tenant only', async () => {
+      const originalTrans = {
+        transNo: 'TRX202603180001',
+        transType: 'MAT_OUT',
+        fromWarehouseId: 'WH-RM',
+        itemCode: 'PART-001',
+        matUid: 'RM202603180001',
+        qty: -10,
+        status: 'DONE',
+        company: 'TESTV',
+        plant: 'WAREHOUSES',
+      };
+      const cancelTrans = { transNo: 'TRX202603180002', transType: 'MAT_OUT_CANCEL', qty: 10 } as any;
+      mockStockTransRepo.findOne.mockResolvedValueOnce(originalTrans as any);
+      mockStockTransRepo.findOne.mockResolvedValue(null);
+      mockStockTransRepo.create.mockReturnValue(cancelTrans);
+      mockQueryRunner.manager.save.mockResolvedValue(cancelTrans);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'WH-RM',
+        itemCode: 'PART-001',
+        matUid: 'RM202603180001',
+        qty: 20,
+        availableQty: 20,
+      } as any);
+
+      await target.cancelTransaction({ transactionId: 'TRX202603180001' } as any, 'TESTV', 'WAREHOUSES');
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        StockTransaction,
+        { transNo: 'TRX202603180001', company: 'TESTV', plant: 'WAREHOUSES' },
+        { status: 'CANCELED' },
+      );
+    });
   });
 
   // ─────────────────────────────────────────────
@@ -519,14 +617,14 @@ describe('InventoryService', () => {
   // getLotById
   // ─────────────────────────────────────────────
   describe('getLotById', () => {
-    it('delegates to InventoryQueryService', async () => {
+    it('delegates to InventoryQueryService with tenant context', async () => {
       const expected = { matUid: 'RM001' };
       mockInventoryQueryService.getLotById.mockResolvedValue(expected as any);
 
-      const result = await target.getLotById('RM001');
+      const result = await target.getLotById('RM001', 'TESTV', 'WAREHOUSES');
 
       expect(result).toBe(expected);
-      expect(mockInventoryQueryService.getLotById).toHaveBeenCalledWith('RM001');
+      expect(mockInventoryQueryService.getLotById).toHaveBeenCalledWith('RM001', 'TESTV', 'WAREHOUSES');
     });
   });
 
@@ -534,14 +632,14 @@ describe('InventoryService', () => {
   // getTransactionById
   // ─────────────────────────────────────────────
   describe('getTransactionById', () => {
-    it('delegates to InventoryQueryService', async () => {
+    it('delegates to InventoryQueryService with tenant context', async () => {
       const expected = { transNo: 'TRX001' };
       mockInventoryQueryService.getTransactionById.mockResolvedValue(expected as any);
 
-      const result = await target.getTransactionById('TRX001');
+      const result = await target.getTransactionById('TRX001', 'TESTV', 'WAREHOUSES');
 
       expect(result).toBe(expected);
-      expect(mockInventoryQueryService.getTransactionById).toHaveBeenCalledWith('TRX001');
+      expect(mockInventoryQueryService.getTransactionById).toHaveBeenCalledWith('TRX001', 'TESTV', 'WAREHOUSES');
     });
   });
 
@@ -549,14 +647,14 @@ describe('InventoryService', () => {
   // getStockSummary
   // ─────────────────────────────────────────────
   describe('getStockSummary', () => {
-    it('delegates to InventoryQueryService', async () => {
+    it('delegates to InventoryQueryService with tenant context', async () => {
       const expected = [{ itemCode: 'PART-001', totalQty: 150 }];
       mockInventoryQueryService.getStockSummary.mockResolvedValue(expected as any);
 
-      const result = await target.getStockSummary({ warehouseType: 'RM' });
+      const result = await target.getStockSummary({ warehouseType: 'RM' }, 'TESTV', 'WAREHOUSES');
 
       expect(result).toBe(expected);
-      expect(mockInventoryQueryService.getStockSummary).toHaveBeenCalledWith({ warehouseType: 'RM' });
+      expect(mockInventoryQueryService.getStockSummary).toHaveBeenCalledWith({ warehouseType: 'RM' }, 'TESTV', 'WAREHOUSES');
     });
   });
 });

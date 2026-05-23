@@ -74,6 +74,201 @@ describe('PhysicalInvService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findStocks', () => {
+    it('품목/LOT 마스터가 누락되어도 재고 원본 itemCode와 matUid는 유지한다', async () => {
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        clone: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          {
+            warehouseCode: 'WH-01',
+            itemCode: 'ITEM-MISSING',
+            matUid: 'MAT-MISSING',
+            qty: 10,
+          } as MatStock,
+        ]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      partMasterRepo.find.mockResolvedValue([]);
+      matLotRepo.find.mockResolvedValue([]);
+
+      const result = await service.findStocks({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          matUid: 'MAT-MISSING',
+        }),
+      );
+    });
+
+    it('실사 재고 목록 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        clone: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          {
+            warehouseCode: 'WH-01',
+            itemCode: 'ITEM-001',
+            matUid: 'MAT-001',
+            qty: 10,
+            company: 'C1',
+            plant: 'P1',
+          } as MatStock,
+        ]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      partMasterRepo.find.mockResolvedValue([]);
+      matLotRepo.find.mockResolvedValue([]);
+
+      await service.findStocks({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(partMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(matLotRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+
+    it('검색용 품목 조인도 재고 테넌트와 같은 범위로 제한한다', async () => {
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        clone: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+
+      await service.findStocks({ page: 1, limit: 10, search: 'ITEM' } as any, 'C1', 'P1');
+
+      expect(queryBuilder.leftJoin).toHaveBeenCalledWith(
+        PartMaster,
+        'part',
+        'part.itemCode = stock.itemCode AND part.company = stock.company AND part.plant = stock.plant',
+      );
+    });
+  });
+
+  describe('findHistory', () => {
+    it('이력 조회의 품목/LOT 조인도 이력 테넌트와 같은 범위로 제한한다', async () => {
+      const queryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+      invAdjLogRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+
+      await service.findHistory({ page: 1, limit: 50 } as any, 'C1', 'P1');
+
+      expect(queryBuilder.leftJoin).toHaveBeenCalledWith(
+        PartMaster,
+        'part',
+        'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant',
+      );
+      expect(queryBuilder.leftJoin).toHaveBeenCalledWith(
+        MatLot,
+        'lot',
+        'lot.matUid = log.matUid AND lot.company = log.company AND lot.plant = log.plant',
+      );
+    });
+  });
+
+  describe('getLocationItems', () => {
+    it('PDA 로케이션 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      matStockRepo.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-01',
+          locationCode: 'LOC-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          company: 'C1',
+          plant: 'P1',
+        } as MatStock,
+      ]);
+      partMasterRepo.find.mockResolvedValue([]);
+      countDetailRepo.find.mockResolvedValue([]);
+
+      await service.getLocationItems('2026-05-23', 1, 'LOC-01', 'C1', 'P1');
+
+      expect(partMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+
+    it('PDA 로케이션 기존 실사수량 조회도 요청 테넌트 범위로 제한한다', async () => {
+      matStockRepo.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH-01',
+          locationCode: 'LOC-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          company: 'C1',
+          plant: 'P1',
+        } as MatStock,
+      ]);
+      partMasterRepo.find.mockResolvedValue([]);
+      countDetailRepo.find.mockResolvedValue([]);
+
+      await service.getLocationItems('2026-05-23', 1, 'LOC-01', 'C1', 'P1');
+
+      expect(countDetailRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          sessionDate: new Date('2026-05-23'),
+          seq: 1,
+          locationCode: 'LOC-01',
+          company: 'C1',
+          plant: 'P1',
+        }),
+      });
+    });
+  });
+
+  describe('getActiveSession', () => {
+    it('활성 실사 세션의 창고명 조회도 세션 테넌트 범위로 제한한다', async () => {
+      sessionRepo.findOne.mockResolvedValue({
+        sessionDate: new Date('2026-05-23'),
+        seq: 1,
+        status: 'IN_PROGRESS',
+        invType: 'MATERIAL',
+        warehouseCode: 'WH-01',
+        countMonth: '2026-05',
+        company: 'C1',
+        plant: 'P1',
+      } as PhysicalInvSession);
+      warehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-01', warehouseName: 'Raw WH' } as Warehouse);
+
+      const result = await service.getActiveSession('C1', 'P1');
+
+      expect(result?.warehouseName).toBe('Raw WH');
+      expect(warehouseRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-01', company: 'C1', plant: 'P1' },
+      });
+    });
+  });
+
   describe('scanCount', () => {
     it('blocks when session does not exist', async () => {
       const sessionQb = {
@@ -179,6 +374,153 @@ describe('PhysicalInvService', () => {
           barcode: 'MAT-001',
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('PDA 스캔 조인도 재고 테넌트와 같은 범위로 제한한다', async () => {
+      const sessionQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ status: 'IN_PROGRESS' }),
+      };
+      sessionRepo.createQueryBuilder.mockReturnValue(sessionQb as any);
+
+      const stockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue(null),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
+
+      await expect(
+        service.scanCount({
+          sessionDate: '2026-03-18',
+          seq: 1,
+          locationCode: 'LOC-01',
+          barcode: 'MAT-001',
+        }, 'C1', 'P1'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(stockQb.innerJoin).toHaveBeenCalledWith(
+        'MAT_LOTS',
+        'l',
+        's.itemCode = l.ITEM_CODE AND s.matUid = l.MAT_UID AND s.company = l.COMPANY AND s.plant = l.PLANT_CD',
+      );
+      expect(stockQb.leftJoin).toHaveBeenCalledWith(
+        'ITEM_MASTERS',
+        'p',
+        's.itemCode = p.ITEM_CODE AND s.company = p.COMPANY AND s.plant = p.PLANT_CD',
+      );
+    });
+  });
+
+  describe('findStocksWithCounts', () => {
+    it('PC 실사 재고 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      sessionRepo.find.mockResolvedValue([
+        {
+          sessionDate: new Date('2026-05-23'),
+          seq: 1,
+          countMonth: '2026-05',
+          status: 'IN_PROGRESS',
+          company: 'C1',
+          plant: 'P1',
+        } as PhysicalInvSession,
+      ]);
+      const stockQb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          {
+            warehouseCode: 'WH-01',
+            itemCode: 'ITEM-001',
+            matUid: 'MAT-001',
+            qty: 10,
+            company: 'C1',
+            plant: 'P1',
+          } as MatStock,
+        ]),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
+      partMasterRepo.find.mockResolvedValue([]);
+      warehouseRepo.find.mockResolvedValue([]);
+      countDetailRepo.find.mockResolvedValue([]);
+
+      await service.findStocksWithCounts({ countMonth: '2026-05' }, 'C1', 'P1');
+
+      expect(partMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(warehouseRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+
+    it('PC 실사 누적수량 상세 조회도 세션 테넌트 범위로 제한한다', async () => {
+      sessionRepo.find.mockResolvedValue([
+        {
+          sessionDate: new Date('2026-05-23'),
+          seq: 1,
+          countMonth: '2026-05',
+          status: 'IN_PROGRESS',
+          company: 'C1',
+          plant: 'P1',
+        } as PhysicalInvSession,
+      ]);
+      const stockQb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          {
+            warehouseCode: 'WH-01',
+            itemCode: 'ITEM-001',
+            matUid: 'MAT-001',
+            qty: 10,
+            company: 'C1',
+            plant: 'P1',
+          } as MatStock,
+        ]),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
+      partMasterRepo.find.mockResolvedValue([]);
+      warehouseRepo.find.mockResolvedValue([]);
+      countDetailRepo.find.mockResolvedValue([]);
+
+      await service.findStocksWithCounts({ countMonth: '2026-05' }, 'C1', 'P1');
+
+      expect(countDetailRepo.find).toHaveBeenCalledWith({
+        where: [
+          expect.objectContaining({
+            sessionDate: new Date('2026-05-23'),
+            seq: 1,
+            company: 'C1',
+            plant: 'P1',
+          }),
+        ],
+      });
+    });
+
+    it('PC 실사 검색용 품목 조인도 재고 테넌트와 같은 범위로 제한한다', async () => {
+      sessionRepo.find.mockResolvedValue([]);
+      const stockQb = {
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
+
+      await service.findStocksWithCounts({ countMonth: '2026-05', search: 'ITEM' } as any, 'C1', 'P1');
+
+      expect(stockQb.leftJoin).toHaveBeenCalledWith(
+        PartMaster,
+        'sp',
+        'sp.itemCode = stock.itemCode AND sp.company = stock.company AND sp.plant = stock.plant',
+      );
     });
   });
 
@@ -342,11 +684,20 @@ describe('PhysicalInvService', () => {
       await service.applyCount({
         items: [{ stockId: 'WH-01::ITEM-001::MAT-001', countedQty: 8 }],
         createdBy: 'admin',
-      });
+      }, 'HANES', 'P01');
 
+      expect(queryRunner.manager.find).toHaveBeenCalledWith(MatStock, {
+        where: [{
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          company: 'HANES',
+          plant: 'P01',
+        }],
+      });
       expect(queryRunner.manager.update).toHaveBeenCalledWith(
         MatStock,
-        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
         expect.objectContaining({ qty: 8, availableQty: 8 }),
       );
     });

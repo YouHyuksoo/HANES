@@ -12,7 +12,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, Search, Package, RefreshCw, ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Package, RefreshCw, ImageIcon, Download } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -33,6 +33,8 @@ export default function PartPage() {
   const [partTypeFilter, setPartTypeFilter] = useState("");
   const [useYnFilter, setUseYnFilter] = useState("");
 
+  const [erpSyncing, setErpSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ ok: boolean; msg: string } | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
@@ -214,6 +216,21 @@ export default function PartPage() {
     fetchParts();
   }, [fetchParts]);
 
+  const handleErpSync = useCallback(async () => {
+    setErpSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await api.post("/interface/inbound/item-master");
+      const { insert, update } = res.data.data ?? {};
+      setSyncResult({ ok: true, msg: `동기화 완료 — 신규 ${insert ?? 0}건, 변경 ${update ?? 0}건` });
+      fetchParts();
+    } catch (e: any) {
+      setSyncResult({ ok: false, msg: `동기화 실패: ${e?.response?.data?.message ?? e.message}` });
+    } finally {
+      setErpSyncing(false);
+    }
+  }, [fetchParts]);
+
   return (
     <div className="flex h-full animate-fade-in">
       {/* 좌측: 메인 콘텐츠 */}
@@ -225,7 +242,15 @@ export default function PartPage() {
             </h1>
             <p className="text-text-muted mt-1">{t("master.part.subtitle")} ({total}건)</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {syncResult && (
+              <span className={`text-xs px-3 py-1.5 rounded border ${syncResult.ok ? "bg-green-50 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700" : "bg-red-50 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700"}`}>
+                {syncResult.msg}
+              </span>
+            )}
+            <Button variant="secondary" size="sm" onClick={handleErpSync} disabled={erpSyncing}>
+              <Download className={`w-4 h-4 mr-1 ${erpSyncing ? "animate-bounce" : ""}`} />ERP 동기화
+            </Button>
             <Button variant="secondary" size="sm" onClick={() => { fetchParts(); }}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>

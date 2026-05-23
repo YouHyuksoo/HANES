@@ -83,13 +83,54 @@ describe('ReceivingService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  it('findAll 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+    const queryBuilder = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          receiveNo: 'RCV-001',
+          seq: 1,
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          warehouseCode: 'WH-01',
+          qty: 5,
+          status: 'DONE',
+          receiveDate: new Date('2026-05-23'),
+          company: 'C1',
+          plant: 'P1',
+        } as MatReceiving,
+      ]),
+      getCount: jest.fn().mockResolvedValue(1),
+    };
+    mockMatReceivingRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockMatLotRepo.find.mockResolvedValue([]);
+    mockWarehouseRepo.find.mockResolvedValue([]);
+
+    await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+    expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+    });
+    expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+      where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+    });
+    expect(mockWarehouseRepo.find).toHaveBeenCalledWith({
+      where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+    });
+  });
+
   it('findReceivable prefers the actual arrival warehouse over the default warehouse', async () => {
     mockMatLotRepo.createQueryBuilder.mockReturnValue({
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([
-        { matUid: 'MAT-001', itemCode: 'ITEM-001', initQty: 100 } as MatLot,
+        { matUid: 'MAT-001', itemCode: 'ITEM-001', initQty: 100, arrivalNo: 'ARR-001', arrivalSeq: 1 } as MatLot,
       ]),
     } as any);
     mockStockTxRepo.createQueryBuilder.mockReturnValue({
@@ -102,7 +143,7 @@ describe('ReceivingService', () => {
     } as any);
     mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'DEF', warehouseName: 'Default' } as Warehouse);
     mockMatArrivalRepo.find.mockResolvedValue([
-      { itemCode: 'ITEM-001', warehouseCode: 'ARR' } as MatArrival,
+      { arrivalNo: 'ARR-001', seq: 1, itemCode: 'ITEM-001', warehouseCode: 'ARR' } as MatArrival,
     ]);
     mockWarehouseRepo.find.mockResolvedValue([
       { warehouseCode: 'ARR', warehouseName: 'Arrival' } as Warehouse,
@@ -121,6 +162,128 @@ describe('ReceivingService', () => {
 
     expect(result[0].arrivalWarehouseCode).toBe('ARR');
     expect(result[0].arrivalWarehouseName).toBe('Arrival');
+  });
+
+  it('findReceivable 입고수량 집계도 요청 테넌트 범위로 제한한다', async () => {
+    const receiveTxQb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    mockMatLotRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        { matUid: 'MAT-001', itemCode: 'ITEM-001', initQty: 100, company: 'C1', plant: 'P1' } as MatLot,
+      ]),
+    } as any);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue(receiveTxQb as any);
+    mockMatArrivalRepo.find.mockResolvedValue([]);
+    mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'DEF', warehouseName: 'Default', company: 'C1', plant: 'P1' } as Warehouse);
+    mockWarehouseRepo.find.mockResolvedValue([]);
+    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockLabelPrintLogRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    } as any);
+
+    await target.findReceivable('C1', 'P1');
+
+    expect(receiveTxQb.andWhere).toHaveBeenCalledWith('tx.company = :company', { company: 'C1' });
+    expect(receiveTxQb.andWhere).toHaveBeenCalledWith('tx.plant = :plant', { plant: 'P1' });
+  });
+
+  it('findReceivable는 같은 품목의 다른 입하창고가 아니라 LOT의 입하번호/순번 창고를 사용한다', async () => {
+    mockMatLotRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-001',
+          initQty: 100,
+          arrivalNo: 'ARR-LOT',
+          arrivalSeq: 2,
+          company: 'C1',
+          plant: 'P1',
+        } as MatLot,
+      ]),
+    } as any);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    } as any);
+    mockMatArrivalRepo.find.mockResolvedValue([
+      { arrivalNo: 'ARR-OTHER', seq: 1, itemCode: 'ITEM-001', warehouseCode: 'WRONG' } as MatArrival,
+      { arrivalNo: 'ARR-LOT', seq: 2, itemCode: 'ITEM-001', warehouseCode: 'RIGHT' } as MatArrival,
+    ]);
+    mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'DEF', warehouseName: 'Default' } as Warehouse);
+    mockWarehouseRepo.find.mockResolvedValue([
+      { warehouseCode: 'RIGHT', warehouseName: 'Right Warehouse' } as Warehouse,
+      { warehouseCode: 'WRONG', warehouseName: 'Wrong Warehouse' } as Warehouse,
+    ]);
+    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockLabelPrintLogRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    } as any);
+
+    const result = await target.findReceivable('C1', 'P1');
+
+    expect(mockMatArrivalRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.arrayContaining([
+        expect.objectContaining({ arrivalNo: 'ARR-LOT', seq: 2, itemCode: 'ITEM-001', company: 'C1', plant: 'P1' }),
+      ]),
+    }));
+    expect(result[0].arrivalWarehouseCode).toBe('RIGHT');
+    expect(result[0].arrivalWarehouseName).toBe('Right Warehouse');
+  });
+
+  it('findReceivable 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+    mockMatLotRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        { matUid: 'MAT-001', itemCode: 'ITEM-001', initQty: 100, company: 'C1', plant: 'P1' } as MatLot,
+      ]),
+    } as any);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    } as any);
+    mockMatArrivalRepo.find.mockResolvedValue([]);
+    mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'DEF', warehouseName: 'Default', company: 'C1', plant: 'P1' } as Warehouse);
+    mockPartMasterRepo.find.mockResolvedValue([]);
+    mockLabelPrintLogRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    } as any);
+
+    await target.findReceivable('C1', 'P1');
+
+    expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+      where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+    });
   });
 
   it('createBulkReceive uses TransactionService for receiving, stock, and transaction writes', async () => {
@@ -167,5 +330,81 @@ describe('ReceivingService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ receiveNo: 'RCV-001' }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', transType: 'RECEIVE' }));
+  });
+
+  it('createBulkReceive는 PO 허용오차와 제조일 갱신도 LOT 회사/공장 범위로 처리한다', async () => {
+    const lot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      initQty: 10,
+      iqcStatus: 'PASS',
+      poNo: 'PO-001',
+      arrivalNo: 'ARR-001',
+      arrivalSeq: 1,
+      company: 'CO',
+      plant: 'P01',
+    } as MatLot;
+    const stockTxQb = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
+    };
+    mockMatLotRepo.findOne.mockResolvedValue(lot);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue(stockTxQb as any);
+    mockPurchaseOrderRepo.findOne.mockResolvedValue({ poNo: 'PO-001', company: 'CO', plant: 'P01' } as PurchaseOrder);
+    mockPurchaseOrderItemRepo.findOne.mockResolvedValue({
+      poNo: 'PO-001',
+      itemCode: 'ITEM-001',
+      orderQty: 10,
+      company: 'CO',
+      plant: 'P01',
+    } as PurchaseOrderItem);
+    mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', toleranceRate: 5, expiryDate: 10 } as any);
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('RCV-001')
+      .mockResolvedValueOnce('TX-001');
+
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce(lot)
+        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH' } as MatArrival)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.createBulkReceive({
+      workerId: 'user',
+      items: [{
+        matUid: 'MAT-001',
+        qty: 5,
+        warehouseId: 'MAIN-WH',
+        manufactureDate: '2026-05-01',
+      }],
+    } as any, 'CO', 'P01');
+
+    expect(mockPurchaseOrderRepo.findOne).toHaveBeenCalledWith({
+      where: { poNo: 'PO-001', company: 'CO', plant: 'P01' },
+    });
+    expect(mockPurchaseOrderItemRepo.findOne).toHaveBeenCalledWith({
+      where: { poNo: 'PO-001', itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
+    });
+    expect(mockPartMasterRepo.findOne).toHaveBeenNthCalledWith(1, {
+      where: { itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
+      select: ['itemCode', 'toleranceRate'],
+    });
+    expect(mockPartMasterRepo.findOne).toHaveBeenNthCalledWith(2, {
+      where: { itemCode: 'ITEM-001', company: 'CO', plant: 'P01' },
+    });
+    expect(manager.update).toHaveBeenCalledWith(
+      MatLot,
+      { matUid: 'MAT-001', company: 'CO', plant: 'P01' },
+      expect.objectContaining({ manufactureDate: new Date('2026-05-01') }),
+    );
   });
 });

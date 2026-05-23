@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, ILike, IsNull, In, Repository } from 'typeorm';
+import { ILike, IsNull, In, Repository } from 'typeorm';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
@@ -22,6 +22,7 @@ import {
   AssignBoxToPalletDto,
   BoxStatus,
 } from '../dto/box.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class BoxService {
@@ -42,7 +43,7 @@ export class BoxService {
     private readonly oqcRequestRepository: Repository<OqcRequest>,
     @InjectRepository(OqcRequestBox)
     private readonly oqcRequestBoxRepository: Repository<OqcRequestBox>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -109,7 +110,9 @@ export class BoxService {
 
   async findByBoxNo(boxNo: string, company?: string, plant?: string) {
     const box = await this.findById(boxNo, company, plant);
-    const part = await this.partRepository.findOne({ where: { itemCode: box.itemCode } });
+    const part = await this.partRepository.findOne({
+      where: { itemCode: box.itemCode, ...this.tenantWhere(company, plant) },
+    });
 
     return {
       ...box,
@@ -133,7 +136,7 @@ export class BoxService {
     }
 
     const part = await this.partRepository.findOne({
-      where: { itemCode: dto.itemCode },
+      where: { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
     });
     if (!part) {
       throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
@@ -216,7 +219,7 @@ export class BoxService {
     }
 
     const lots = dto.serials.length > 0
-      ? await this.lotRepository.find({ where: { matUid: In(dto.serials) } })
+      ? await this.lotRepository.find({ where: { matUid: In(dto.serials), ...this.tenantWhere(company, plant) } })
       : [];
     const lotMap = new Map(lots.map((lot) => [lot.matUid, lot] as const));
     for (const serial of dto.serials) {
@@ -226,9 +229,11 @@ export class BoxService {
       }
     }
 
-    const part = await this.partRepository.findOne({ where: { itemCode: box.itemCode } });
+    const part = await this.partRepository.findOne({
+      where: { itemCode: box.itemCode, ...this.tenantWhere(company, plant) },
+    });
     const fgLabels = dto.serials.length > 0
-      ? await this.fgLabelRepository.find({ where: { fgBarcode: In(dto.serials) } })
+      ? await this.fgLabelRepository.find({ where: { fgBarcode: In(dto.serials), ...this.tenantWhere(company, plant) } })
       : [];
     const fgLabelMap = new Map(fgLabels.map((label) => [label.fgBarcode, label] as const));
     const invalidLabels = dto.serials.filter((serial) => {
@@ -293,11 +298,7 @@ export class BoxService {
       throw new BadRequestException('빈 박스는 닫을 수 없습니다.');
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: id, ...this.tenantWhere(company, plant) },
@@ -351,14 +352,7 @@ export class BoxService {
           plant: box.plant,
         }),
       );
-
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.findById(id, company, plant);
   }
@@ -379,11 +373,7 @@ export class BoxService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: id, ...this.tenantWhere(company, plant) },
@@ -426,14 +416,7 @@ export class BoxService {
           await queryRunner.manager.delete(OqcRequest, { requestNo: In(autoRequestNos), ...this.tenantWhere(company, plant) });
         }
       }
-
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.findById(id, company, plant);
   }
@@ -457,11 +440,7 @@ export class BoxService {
       throw new BadRequestException(`팔레트 상태(${pallet.status})가 OPEN이 아닙니다.`);
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: id, ...this.tenantWhere(company, plant) },
@@ -482,15 +461,9 @@ export class BoxService {
         boxCount: parseInt(palletSummary.count) || 0,
         totalQty: parseInt(palletSummary.totalQty) || 0,
       });
+    });
 
-      await queryRunner.commitTransaction();
-      return this.findById(id, company, plant);
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   async removeFromPallet(id: string, company?: string, plant?: string) {
@@ -510,11 +483,7 @@ export class BoxService {
     }
 
     const palletNo = box.palletNo;
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: id, ...this.tenantWhere(company, plant) },
@@ -535,15 +504,9 @@ export class BoxService {
         boxCount: parseInt(palletSummary?.count) || 0,
         totalQty: parseInt(palletSummary?.totalQty) || 0,
       });
+    });
 
-      await queryRunner.commitTransaction();
-      return this.findById(id, company, plant);
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   async findByPalletId(palletNo: string, company?: string, plant?: string) {

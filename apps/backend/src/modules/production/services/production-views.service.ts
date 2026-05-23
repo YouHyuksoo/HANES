@@ -152,7 +152,7 @@ export class ProductionViewsService {
 
     const qb = this.boxMasterRepository
       .createQueryBuilder('bm')
-      .leftJoin('ITEM_MASTERS', 'im', 'im.ITEM_CODE = bm.ITEM_CODE')
+      .leftJoin('ITEM_MASTERS', 'im', 'im.ITEM_CODE = bm.ITEM_CODE AND im.COMPANY = bm.COMPANY AND im.PLANT_CD = bm.PLANT_CD')
       .select([
         'bm.BOX_NO AS "boxNo"',
         'bm.ITEM_CODE AS "itemCode"',

@@ -21,13 +21,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
 import {
   ContinuityInspectDto,
@@ -53,7 +54,7 @@ export class ContinuityInspectService {
     private readonly prodResultRepo: Repository<ProdResult>,
     private readonly seqGenerator: SeqGeneratorService,
     private readonly sysConfigService: SysConfigService,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private async resolveProdResult(
@@ -245,11 +246,7 @@ export class ContinuityInspectService {
     /** 0. 바코드 발행 타이밍 조회 */
     const timing = (await this.sysConfigService.getValue('FG_BARCODE_ISSUE_TIMING')) ?? 'ON_INSPECT';
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    const result = await this.tx.run(async (queryRunner) => {
       /** 1. 작업지시 존재 확인 */
       const jobOrder = await queryRunner.manager.findOne(JobOrder, {
         where: {
@@ -385,19 +382,13 @@ export class ContinuityInspectService {
         }
 
       }
-
-      await queryRunner.commitTransaction();
       this.logger.log(
         `통전검사 완료: orderNo=${dto.orderNo}, pass=${dto.passYn}, fgBarcode=${fgBarcode}, timing=${timing}`,
       );
 
       return { inspectResult: savedInspect, fgBarcode };
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
+    return result;
   }
 
   private assertTenantMatches(
@@ -459,11 +450,7 @@ export class ContinuityInspectService {
 
     const qty = dto.qty ? Math.min(dto.qty, remaining) : remaining;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    const result = await this.tx.run(async (queryRunner) => {
       const barcodes: string[] = [];
       for (let i = 0; i < qty; i++) {
         const fgBarcode = await this.seqGenerator.nextFgBarcode(queryRunner);
@@ -480,17 +467,12 @@ export class ContinuityInspectService {
         barcodes.push(fgBarcode);
       }
 
-      await queryRunner.commitTransaction();
       this.logger.log(
         `FG 바코드 사전발행: orderNo=${dto.orderNo}, qty=${qty}`,
       );
       return { issued: qty, barcodes };
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
+    return result;
   }
 
   /**
@@ -539,11 +521,7 @@ export class ContinuityInspectService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    const result = await this.tx.run(async (queryRunner) => {
       let prodResultNo: string | null = null;
 
       if (label.inspectResultId) {
@@ -589,17 +567,12 @@ export class ContinuityInspectService {
       }
       const savedLabel = await queryRunner.manager.save(FgLabel, label);
 
-      await queryRunner.commitTransaction();
       this.logger.log(
         `재검사 완료: fgBarcode=${fgBarcode}, passYn=${dto.passYn}`,
       );
       return { inspectResult: savedInspect, fgLabel: savedLabel };
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
+    return result;
   }
 
   /**

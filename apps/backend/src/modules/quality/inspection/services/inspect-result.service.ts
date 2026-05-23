@@ -49,6 +49,13 @@ export class InspectResultService {
     private readonly seqGenerator: SeqGeneratorService,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   /**
    * 검사실적 목록 조회 (페이지네이션)
    */
@@ -100,9 +107,9 @@ export class InspectResultService {
   /**
    * 검사실적 단건 조회 (resultNo 기준)
    */
-  async findById(resultNo: string) {
+  async findById(resultNo: string, company?: string, plant?: string) {
     const result = await this.inspectResultRepository.findOne({
-      where: { resultNo },
+      where: { resultNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!result) {
@@ -115,9 +122,9 @@ export class InspectResultService {
   /**
    * 시리얼 번호로 검사 이력 조회
    */
-  async findBySerialNo(serialNo: string) {
+  async findBySerialNo(serialNo: string, company?: string, plant?: string) {
     const results = await this.inspectResultRepository.find({
-      where: { serialNo },
+      where: { serialNo, ...this.tenantWhere(company, plant) },
       order: { inspectAt: 'DESC' },
     });
 
@@ -127,9 +134,9 @@ export class InspectResultService {
   /**
    * 생산실적별 검사 이력 조회
    */
-  async findByProdResultNo(prodResultNo: string) {
+  async findByProdResultNo(prodResultNo: string, company?: string, plant?: string) {
     const results = await this.inspectResultRepository.find({
-      where: { prodResultNo },
+      where: { prodResultNo, ...this.tenantWhere(company, plant) },
       order: { inspectAt: 'ASC' },
     });
 
@@ -142,7 +149,7 @@ export class InspectResultService {
   async create(dto: CreateInspectResultDto, company?: string, plant?: string) {
     // 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { resultNo: dto.prodResultNo },
+      where: { resultNo: dto.prodResultNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!prodResult) {
@@ -178,7 +185,7 @@ export class InspectResultService {
   async createByBarcode(dto: BarcodeInspectDto, company?: string, plant?: string): Promise<BarcodeInspectResponseDto> {
     // 1. 바코드로 TraceLog에서 생산실적 정보 조회
     const traceLog = await this.traceLogRepository.findOne({
-      where: { serialNo: dto.barcode },
+      where: { serialNo: dto.barcode, ...this.tenantWhere(company, plant) },
       order: { traceTime: 'DESC' },
     });
 
@@ -202,7 +209,7 @@ export class InspectResultService {
     if (!prodResultNo && traceLog.prdUid) {
       // prdUid로 생산실적 검색
       const prodResult = await this.prodResultRepository.findOne({
-        where: { prdUid: traceLog.prdUid },
+        where: { prdUid: traceLog.prdUid, ...this.tenantWhere(company, plant) },
         order: { createdAt: 'DESC' },
       });
       if (prodResult) {
@@ -216,7 +223,7 @@ export class InspectResultService {
 
     // 4. 생산실적 존재 확인
     const prodResult = await this.prodResultRepository.findOne({
-      where: { resultNo: prodResultNo },
+      where: { resultNo: prodResultNo, ...this.tenantWhere(company, plant) },
       relations: ['jobOrder', 'jobOrder.part'],
     });
 
@@ -261,9 +268,9 @@ export class InspectResultService {
   /**
    * 바코드로 제품 정보 조회 (검사 전 확인용)
    */
-  async getProductByBarcode(barcode: string) {
+  async getProductByBarcode(barcode: string, company?: string, plant?: string) {
     const traceLog = await this.traceLogRepository.findOne({
-      where: { serialNo: barcode },
+      where: { serialNo: barcode, ...this.tenantWhere(company, plant) },
       order: { traceTime: 'DESC' },
     });
 
@@ -281,7 +288,7 @@ export class InspectResultService {
         const rawProdResultNo = eventData.prodResultNo || eventData.prodResultNo || eventData.productionResultId;
         if (rawProdResultNo) {
           prodResult = await this.prodResultRepository.findOne({
-            where: { resultNo: String(rawProdResultNo) },
+            where: { resultNo: String(rawProdResultNo), ...this.tenantWhere(company, plant) },
             relations: ['jobOrder', 'jobOrder.part'],
           });
         }
@@ -293,7 +300,7 @@ export class InspectResultService {
     // prdUid로 생산실적 검색
     if (!prodResult && traceLog.prdUid) {
       prodResult = await this.prodResultRepository.findOne({
-        where: { prdUid: traceLog.prdUid },
+        where: { prdUid: traceLog.prdUid, ...this.tenantWhere(company, plant) },
         order: { createdAt: 'DESC' },
         relations: ['jobOrder', 'jobOrder.part'],
       });
@@ -301,7 +308,7 @@ export class InspectResultService {
 
     // 이전 검사 이력 조회
     const previousInspects = await this.inspectResultRepository.find({
-      where: { serialNo: barcode },
+      where: { serialNo: barcode, ...this.tenantWhere(company, plant) },
       order: { inspectAt: 'DESC' },
       take: 5,
     });
@@ -340,8 +347,8 @@ export class InspectResultService {
   /**
    * 검사실적 수정 (resultNo 기준)
    */
-  async update(resultNo: string, dto: UpdateInspectResultDto) {
-    await this.findById(resultNo); // 존재 확인
+  async update(resultNo: string, dto: UpdateInspectResultDto, company?: string, plant?: string) {
+    await this.findById(resultNo, company, plant); // 존재 확인
 
     const updateData: any = {};
 
@@ -355,20 +362,21 @@ export class InspectResultService {
     if (dto.inspectAt !== undefined) updateData.inspectAt = new Date(dto.inspectAt);
     if (dto.inspectorId !== undefined) updateData.inspectorId = dto.inspectorId;
 
-    await this.inspectResultRepository.update({ resultNo }, updateData);
+    await this.inspectResultRepository.update({ resultNo, ...this.tenantWhere(company, plant) }, updateData);
 
-    return this.findById(resultNo);
+    return this.findById(resultNo, company, plant);
   }
 
   /**
    * 검사실적 삭제 (resultNo 기준)
    */
-  async delete(resultNo: string) {
-    const result = await this.findById(resultNo); // 존재 확인
+  async delete(resultNo: string, company?: string, plant?: string) {
+    const result = await this.findById(resultNo, company, plant); // 존재 확인
+    const resultTenantWhere = this.tenantWhere(result.company ?? company, result.plant ?? plant);
 
     if (result.prodResultNo) {
       const prodResult = await this.prodResultRepository.findOne({
-        where: { resultNo: result.prodResultNo },
+        where: { resultNo: result.prodResultNo, ...resultTenantWhere },
       });
       if (prodResult && prodResult.status !== 'CANCELED') {
         throw new BadRequestException(
@@ -377,7 +385,7 @@ export class InspectResultService {
       }
     }
 
-    await this.inspectResultRepository.delete({ resultNo });
+    await this.inspectResultRepository.delete({ resultNo, ...resultTenantWhere });
 
     return { resultNo, deleted: true };
   }

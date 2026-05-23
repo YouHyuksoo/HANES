@@ -67,6 +67,30 @@ describe('ShelfLifeReInspectService', () => {
   });
 
   describe('create', () => {
+    it('재검 PASS는 LOT의 회사/공장 범위에서 품목 기준과 LOT 만료일을 갱신한다', async () => {
+      const expireDate = new Date('2026-01-01T00:00:00.000Z');
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        expireDate,
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot);
+      partMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', extendShelfDays: 30 } as any);
+      iqcLogRepo.create.mockReturnValue({} as IqcLog);
+      iqcLogRepo.save.mockResolvedValue({ inspectNo: 'IQC-001' } as any);
+
+      await service.create({ matUid: 'MAT-001', result: 'PASS' }, 'HANES', 'P01');
+
+      expect(partMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(matLotRepo.update).toHaveBeenCalledWith(
+        { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+        { expireDate: new Date('2026-01-31T00:00:00.000Z') },
+      );
+    });
+
     it('예약된 수량이 남아 있으면 재검 FAIL 이동을 차단한다', async () => {
       matLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
@@ -128,6 +152,11 @@ describe('ShelfLifeReInspectService', () => {
       expect(queryRunner.manager.save).toHaveBeenCalledWith(
         StockTransaction,
         expect.objectContaining({ transType: 'MAT_MOVE', matUid: 'MAT-001' }),
+      );
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatLot,
+        { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+        { status: 'SCRAPPED' },
       );
     });
   });

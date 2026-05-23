@@ -37,15 +37,15 @@ export class RoutingGroupController {
 
   @Get('by-item/:itemCode')
   @ApiOperation({ summary: '품목코드로 라우팅 그룹+공정 조회 (BOM 페이지용)' })
-  async findByItem(@Param('itemCode') itemCode: string) {
-    const data = await this.svc.findByItemCode(itemCode);
+  async findByItem(@Param('itemCode') itemCode: string, @Company() co: string, @Plant() pl: string) {
+    const data = await this.svc.findByItemCode(itemCode, co, pl);
     return ResponseUtil.success(data);
   }
 
   @Get(':code')
   @ApiOperation({ summary: '라우팅 그룹 상세' })
-  async findOne(@Param('code') code: string) {
-    return ResponseUtil.success(await this.svc.findGroupByCode(code));
+  async findOne(@Param('code') code: string, @Company() co: string, @Plant() pl: string) {
+    return ResponseUtil.success(await this.svc.findGroupByCode(code, co, pl));
   }
 
   @Post()
@@ -57,14 +57,14 @@ export class RoutingGroupController {
 
   @Put(':code')
   @ApiOperation({ summary: '라우팅 그룹 수정' })
-  async update(@Param('code') code: string, @Body() dto: UpdateRoutingGroupDto) {
-    return ResponseUtil.success(await this.svc.updateGroup(code, dto), '라우팅 그룹이 수정되었습니다.');
+  async update(@Param('code') code: string, @Body() dto: UpdateRoutingGroupDto, @Company() co: string, @Plant() pl: string) {
+    return ResponseUtil.success(await this.svc.updateGroup(code, dto, co, pl), '라우팅 그룹이 수정되었습니다.');
   }
 
   @Delete(':code')
   @ApiOperation({ summary: '라우팅 그룹 삭제 (하위 공정+양품조건 포함)' })
-  async delete(@Param('code') code: string) {
-    await this.svc.deleteGroup(code);
+  async delete(@Param('code') code: string, @Company() co: string, @Plant() pl: string) {
+    await this.svc.deleteGroup(code, co, pl);
     return ResponseUtil.success(null, '라우팅 그룹이 삭제되었습니다.');
   }
 
@@ -72,8 +72,8 @@ export class RoutingGroupController {
 
   @Get(':code/processes')
   @ApiOperation({ summary: '공정순서 목록' })
-  async findProcesses(@Param('code') code: string) {
-    return ResponseUtil.success(await this.svc.findProcesses(code));
+  async findProcesses(@Param('code') code: string, @Company() co: string, @Plant() pl: string) {
+    return ResponseUtil.success(await this.svc.findProcesses(code, co, pl));
   }
 
   @Post(':code/processes')
@@ -94,8 +94,10 @@ export class RoutingGroupController {
     @Param('code') code: string,
     @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: UpdateRoutingProcessDto,
+    @Company() co: string,
+    @Plant() pl: string,
   ) {
-    return ResponseUtil.success(await this.svc.updateProcess(code, seq, dto), '공정이 수정되었습니다.');
+    return ResponseUtil.success(await this.svc.updateProcess(code, seq, dto, co, pl), '공정이 수정되었습니다.');
   }
 
   @Delete(':code/processes/:seq')
@@ -103,8 +105,10 @@ export class RoutingGroupController {
   async deleteProcess(
     @Param('code') code: string,
     @Param('seq', ParseIntPipe) seq: number,
+    @Company() co: string,
+    @Plant() pl: string,
   ) {
-    await this.svc.deleteProcess(code, seq);
+    await this.svc.deleteProcess(code, seq, co, pl);
     return ResponseUtil.success(null, '공정이 삭제되었습니다.');
   }
 
@@ -115,8 +119,10 @@ export class RoutingGroupController {
   async findConditions(
     @Param('code') code: string,
     @Param('seq', ParseIntPipe) seq: number,
+    @Company() co: string,
+    @Plant() pl: string,
   ) {
-    return ResponseUtil.success(await this.svc.findConditions(code, seq));
+    return ResponseUtil.success(await this.svc.findConditions(code, seq, co, pl));
   }
 
   @Put(':code/processes/:seq/conditions/bulk')
@@ -138,8 +144,10 @@ export class RoutingGroupController {
   async findMaterials(
     @Param('code') code: string,
     @Param('seq', ParseIntPipe) seq: number,
+    @Company() co: string,
+    @Plant() pl: string,
   ) {
-    return ResponseUtil.success(await this.svc.findMaterials(code, seq));
+    return ResponseUtil.success(await this.svc.findMaterials(code, seq, co, pl));
   }
 
   @Put(':code/processes/:seq/materials/bulk')

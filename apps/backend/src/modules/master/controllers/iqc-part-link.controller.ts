@@ -32,8 +32,8 @@ export class IqcPartLinkController {
 
   @Get(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 상세 조회' })
-  async findByCompositeKey(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string) {
-    const data = await this.iqcPartLinkService.findByCompositeKey(itemCode, this.resolvePartnerId(partnerId));
+  async findByCompositeKey(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcPartLinkService.findByCompositeKey(itemCode, this.resolvePartnerId(partnerId), company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -51,15 +51,17 @@ export class IqcPartLinkController {
     @Param('itemCode') itemCode: string,
     @Param('partnerId') partnerId: string,
     @Body() dto: UpdateIqcPartLinkDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.iqcPartLinkService.update(itemCode, this.resolvePartnerId(partnerId), dto);
+    const data = await this.iqcPartLinkService.update(itemCode, this.resolvePartnerId(partnerId), dto, company, plant);
     return ResponseUtil.success(data, 'IQC 연결이 수정되었습니다.');
   }
 
   @Delete(':itemCode/:partnerId')
   @ApiOperation({ summary: 'IQC 연결 삭제' })
-  async delete(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string) {
-    await this.iqcPartLinkService.delete(itemCode, this.resolvePartnerId(partnerId));
+  async delete(@Param('itemCode') itemCode: string, @Param('partnerId') partnerId: string, @Company() company: string, @Plant() plant: string) {
+    await this.iqcPartLinkService.delete(itemCode, this.resolvePartnerId(partnerId), company, plant);
     return ResponseUtil.success(null, 'IQC 연결이 삭제되었습니다.');
   }
 

@@ -40,12 +40,17 @@ export class WarehouseLocationController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateWarehouseLocationDto) {
-    return this.service.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateWarehouseLocationDto,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    return this.service.update(id, dto, company, plant);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.service.remove(id, company, plant);
   }
 }

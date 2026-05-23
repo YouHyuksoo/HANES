@@ -58,8 +58,8 @@ export class EquipBomController {
 
   @Get('items/:id')
   @ApiOperation({ summary: 'BOM 품목 상세 조회' })
-  async findItemById(@Param('id') id: string) {
-    const data = await this.equipBomService.findItemById(id);
+  async findItemById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.equipBomService.findItemById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -73,15 +73,15 @@ export class EquipBomController {
 
   @Put('items/:id')
   @ApiOperation({ summary: 'BOM 품목 수정' })
-  async updateItem(@Param('id') id: string, @Body() dto: UpdateEquipBomItemDto) {
-    const data = await this.equipBomService.updateItem(id, dto);
+  async updateItem(@Param('id') id: string, @Body() dto: UpdateEquipBomItemDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.equipBomService.updateItem(id, dto, company, plant);
     return ResponseUtil.success(data, 'BOM 품목이 수정되었습니다.');
   }
 
   @Delete('items/:id')
   @ApiOperation({ summary: 'BOM 품목 삭제' })
-  async deleteItem(@Param('id') id: string) {
-    await this.equipBomService.deleteItem(id);
+  async deleteItem(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.equipBomService.deleteItem(id, company, plant);
     return ResponseUtil.success(null, 'BOM 품목이 삭제되었습니다.');
   }
 
@@ -91,22 +91,22 @@ export class EquipBomController {
 
   @Get('rels')
   @ApiOperation({ summary: '설비-BOM 연결 목록 조회' })
-  async findAllRels(@Query() query: EquipBomRelQueryDto) {
-    const result = await this.equipBomService.findAllRels(query);
+  async findAllRels(@Query() query: EquipBomRelQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.equipBomService.findAllRels(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get('rels/:equipCode/:bomItemCode')
   @ApiOperation({ summary: '설비-BOM 연결 상세 조회' })
-  async findRelByCompositeKey(@Param('equipCode') equipCode: string, @Param('bomItemCode') bomItemCode: string) {
-    const data = await this.equipBomService.findRelByCompositeKey(equipCode, bomItemCode);
+  async findRelByCompositeKey(@Param('equipCode') equipCode: string, @Param('bomItemCode') bomItemCode: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.equipBomService.findRelByCompositeKey(equipCode, bomItemCode, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('equip/:equipCode')
   @ApiOperation({ summary: '특정 설비의 BOM 목록 조회' })
-  async getEquipBomList(@Param('equipCode') equipCode: string) {
-    const data = await this.equipBomService.getEquipBomList(equipCode);
+  async getEquipBomList(@Param('equipCode') equipCode: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.equipBomService.getEquipBomList(equipCode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -124,15 +124,17 @@ export class EquipBomController {
     @Param('equipCode') equipCode: string,
     @Param('bomItemCode') bomItemCode: string,
     @Body() dto: UpdateEquipBomRelDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.equipBomService.updateRel(equipCode, bomItemCode, dto);
+    const data = await this.equipBomService.updateRel(equipCode, bomItemCode, dto, company, plant);
     return ResponseUtil.success(data, '설비-BOM 연결이 수정되었습니다.');
   }
 
   @Delete('rels/:equipCode/:bomItemCode')
   @ApiOperation({ summary: '설비-BOM 연결 삭제' })
-  async deleteRel(@Param('equipCode') equipCode: string, @Param('bomItemCode') bomItemCode: string) {
-    await this.equipBomService.deleteRel(equipCode, bomItemCode);
+  async deleteRel(@Param('equipCode') equipCode: string, @Param('bomItemCode') bomItemCode: string, @Company() company: string, @Plant() plant: string) {
+    await this.equipBomService.deleteRel(equipCode, bomItemCode, company, plant);
     return ResponseUtil.success(null, '설비-BOM 연결이 삭제되었습니다.');
   }
 }

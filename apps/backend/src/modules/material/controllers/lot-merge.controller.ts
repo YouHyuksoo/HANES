@@ -31,8 +31,8 @@ export class LotMergeController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: 'LOT 병합 실행' })
-  async merge(@Body() dto: LotMergeDto) {
-    const data = await this.lotMergeService.merge(dto);
+  async merge(@Body() dto: LotMergeDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.lotMergeService.merge(dto, company, plant);
     return ResponseUtil.success(data, 'LOT이 병합되었습니다.');
   }
 }

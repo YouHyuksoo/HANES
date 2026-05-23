@@ -85,10 +85,10 @@ export class HoldService {
       const stock = stockMap.get(lot.matUid);
       return {
         ...lot,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
-        warehouseCode: stock?.warehouseCode,
+        itemCode: lot.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        warehouseCode: stock?.warehouseCode ?? null,
       };
     });
 
@@ -128,8 +128,8 @@ export class HoldService {
       id: matUid,
       status: 'HOLD',
       matUid: updatedLot?.matUid,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
+      itemCode: updatedLot?.itemCode,
+      itemName: part?.itemName ?? null,
       reason,
     };
   }
@@ -163,8 +163,8 @@ export class HoldService {
       id: matUid,
       status: 'NORMAL',
       matUid: updatedLot?.matUid,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
+      itemCode: updatedLot?.itemCode,
+      itemName: part?.itemName ?? null,
       reason,
     };
   }

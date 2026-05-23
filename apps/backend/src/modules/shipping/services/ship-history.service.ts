@@ -76,7 +76,10 @@ export class ShipHistoryService {
 
     const itemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.partRepository.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName'] })
+      ? await this.partRepository.find({
+          where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
+          select: ['itemCode', 'itemName'],
+        })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 

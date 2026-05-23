@@ -5,7 +5,7 @@
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { BoxMaster } from '../../../../entities/box-master.entity';
 import { OqcRequestBox } from '../../../../entities/oqc-request-box.entity';
 import { OqcRequest } from '../../../../entities/oqc-request.entity';
@@ -16,6 +16,7 @@ import {
   OqcRequestQueryDto,
   UpdateOqcResultDto,
 } from '../dto/oqc.dto';
+import { TransactionService } from '../../../../shared/transaction.service';
 
 @Injectable()
 export class OqcService {
@@ -30,8 +31,15 @@ export class OqcService {
     private readonly boxRepo: Repository<BoxMaster>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
+
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
 
   async findAll(query: OqcRequestQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, status, customer, fromDate, toDate } = query;
@@ -63,9 +71,10 @@ export class OqcService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(id: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { requestNo: id },
+      where: { requestNo: id, ...tenantWhere },
       relations: ['boxes'],
     });
 
@@ -73,7 +82,7 @@ export class OqcService {
       throw new NotFoundException(`OQC ?붿껌??李얠쓣 ???놁뒿?덈떎: ${id}`);
     }
 
-    const part = await this.partRepo.findOne({ where: { itemCode: oqcRequest.itemCode } });
+    const part = await this.partRepo.findOne({ where: { itemCode: oqcRequest.itemCode, ...tenantWhere } });
     return { ...oqcRequest, part };
   }
 
@@ -114,11 +123,8 @@ export class OqcService {
     const requestNo = `${prefix}-${String(seq).padStart(3, '0')}`;
     const totalQty = boxes.reduce((sum, box) => sum + box.qty, 0);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    let savedRequestNo!: string;
+    await this.tx.run(async (queryRunner) => {
       const oqcRequest = queryRunner.manager.create(OqcRequest, {
         requestNo,
         itemCode,
@@ -133,6 +139,7 @@ export class OqcService {
         createdBy: createdBy || null,
       });
       const saved = await queryRunner.manager.save(OqcRequest, oqcRequest);
+      savedRequestNo = saved.requestNo;
 
       const requestBoxes = boxes.map((box) =>
         queryRunner.manager.create(OqcRequestBox, {
@@ -149,20 +156,14 @@ export class OqcService {
         { boxNo: In(boxIds) },
         { oqcStatus: 'PENDING' },
       );
-
-      await queryRunner.commitTransaction();
-      return this.findById(saved.requestNo);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
+    return this.findById(savedRequestNo, company, plant);
   }
 
-  async executeInspection(id: string, dto: ExecuteOqcInspectionDto, updatedBy?: string) {
+  async executeInspection(id: string, dto: ExecuteOqcInspectionDto, updatedBy?: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { requestNo: id },
+      where: { requestNo: id, ...tenantWhere },
       relations: ['boxes'],
     });
 
@@ -187,22 +188,18 @@ export class OqcService {
       }
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       if (dto.sampleBoxIds && dto.sampleBoxIds.length > 0) {
         await queryRunner.manager.update(
           OqcRequestBox,
-          { requestNo: id, boxNo: In(dto.sampleBoxIds) },
+          { requestNo: id, boxNo: In(dto.sampleBoxIds), ...tenantWhere },
           { isSample: 'Y' },
         );
       }
 
       await queryRunner.manager.update(
         OqcRequest,
-        { requestNo: id },
+        { requestNo: id, ...tenantWhere },
         {
           status: dto.result,
           result: dto.result,
@@ -220,20 +217,14 @@ export class OqcService {
           { oqcStatus: dto.result },
         );
       }
-
-      await queryRunner.commitTransaction();
-      return this.findById(id);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
+    return this.findById(id, company, plant);
   }
 
-  async updateResult(id: string, dto: UpdateOqcResultDto, updatedBy?: string) {
+  async updateResult(id: string, dto: UpdateOqcResultDto, updatedBy?: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const oqcRequest = await this.oqcRequestRepo.findOne({
-      where: { requestNo: id },
+      where: { requestNo: id, ...tenantWhere },
       relations: ['boxes'],
     });
 
@@ -263,12 +254,8 @@ export class OqcService {
     if (dto.inspectorName !== undefined) updateData.inspectorName = dto.inspectorName;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      await queryRunner.manager.update(OqcRequest, { requestNo: id }, updateData);
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.update(OqcRequest, { requestNo: id, ...tenantWhere }, updateData);
 
       if (dto.result) {
         const boxNos = oqcRequest.boxes.map((box) => box.boxNo);
@@ -280,15 +267,8 @@ export class OqcService {
           );
         }
       }
-
-      await queryRunner.commitTransaction();
-      return this.findById(id);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
+    return this.findById(id, company, plant);
   }
 
   async getAvailableBoxes(itemCode?: string, company?: string, plant?: string) {

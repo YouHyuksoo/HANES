@@ -56,4 +56,42 @@ describe('ProcessService equipment assignments', () => {
       expect.objectContaining({ processCode: 'PROC-B', equipCode: 'EQ-001' }),
     );
   });
+
+  it('assigns equipment using process, equipment, and existing assignment within tenant only', async () => {
+    processRepo.findOne.mockResolvedValue({ processCode: 'PROC-A', company: 'C1', plant: 'P1' } as ProcessMaster);
+    equipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'C1', plant: 'P1' } as EquipMaster);
+    assignmentRepo.findOne.mockResolvedValue(null);
+    assignmentRepo.create.mockImplementation((value) => value as ProcessEquipment);
+    assignmentRepo.save.mockImplementation(async (value) => value as ProcessEquipment);
+
+    await target.assignEquipment('PROC-A', 'EQ-001', 'C1', 'P1');
+
+    expect(processRepo.findOne).toHaveBeenCalledWith({
+      where: { processCode: 'PROC-A', company: 'C1', plant: 'P1' },
+    });
+    expect(equipRepo.findOne).toHaveBeenCalledWith({
+      where: { equipCode: 'EQ-001', company: 'C1', plant: 'P1' },
+    });
+    expect(assignmentRepo.findOne).toHaveBeenCalledWith({
+      where: { processCode: 'PROC-A', equipCode: 'EQ-001' },
+    });
+    expect(assignmentRepo.create).toHaveBeenCalledWith({
+      processCode: 'PROC-A',
+      equipCode: 'EQ-001',
+      useYn: 'Y',
+    });
+  });
+
+  it('finds assigned equipment within tenant only', async () => {
+    processRepo.findOne.mockResolvedValue({ processCode: 'PROC-A', company: 'C1', plant: 'P1' } as ProcessMaster);
+    assignmentRepo.find.mockResolvedValue([]);
+
+    await target.findEquipments('PROC-A', 'C1', 'P1');
+
+    expect(assignmentRepo.find).toHaveBeenCalledWith({
+      where: { processCode: 'PROC-A', useYn: 'Y' },
+      relations: ['equipment'],
+      order: { equipCode: 'ASC' },
+    });
+  });
 });

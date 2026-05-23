@@ -48,6 +48,41 @@ describe('InspectResultService', () => {
       mockInspectRepo.findOne.mockResolvedValue(null);
       await expect(target.findById('X')).rejects.toThrow(NotFoundException);
     });
+    it('should find inspect result within tenant only', async () => {
+      mockInspectRepo.findOne.mockResolvedValue({ resultNo: 'IR-001', company: 'C1', plant: 'P1' } as any);
+
+      await target.findById('IR-001', 'C1', 'P1');
+
+      expect(mockInspectRepo.findOne).toHaveBeenCalledWith({
+        where: { resultNo: 'IR-001', company: 'C1', plant: 'P1' },
+      });
+    });
+  });
+
+  describe('findBySerialNo', () => {
+    it('should find serial inspection history within tenant only', async () => {
+      mockInspectRepo.find.mockResolvedValue([]);
+
+      await target.findBySerialNo('SER-001', 'C1', 'P1');
+
+      expect(mockInspectRepo.find).toHaveBeenCalledWith({
+        where: { serialNo: 'SER-001', company: 'C1', plant: 'P1' },
+        order: { inspectAt: 'DESC' },
+      });
+    });
+  });
+
+  describe('findByProdResultNo', () => {
+    it('should find production result inspection history within tenant only', async () => {
+      mockInspectRepo.find.mockResolvedValue([]);
+
+      await target.findByProdResultNo('PR-001', 'C1', 'P1');
+
+      expect(mockInspectRepo.find).toHaveBeenCalledWith({
+        where: { prodResultNo: 'PR-001', company: 'C1', plant: 'P1' },
+        order: { inspectAt: 'ASC' },
+      });
+    });
   });
 
   describe('create', () => {
@@ -60,9 +95,52 @@ describe('InspectResultService', () => {
       const r = await target.create({ prodResultNo: '1', passYn: 'Y' } as any);
       expect(r.passYn).toBe('Y');
     });
+    it('should validate production result within tenant only', async () => {
+      mockProdResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-001', company: 'C1', plant: 'P1' } as any);
+      mockSeqGen.getNo.mockResolvedValue('IR-001');
+      const saved = { resultNo: 'IR-001', passYn: 'Y', company: 'C1', plant: 'P1' } as any;
+      mockInspectRepo.create.mockReturnValue(saved);
+      mockInspectRepo.save.mockResolvedValue(saved);
+
+      await target.create({ prodResultNo: 'PR-001', passYn: 'Y' } as any, 'C1', 'P1');
+
+      expect(mockProdResultRepo.findOne).toHaveBeenCalledWith({
+        where: { resultNo: 'PR-001', company: 'C1', plant: 'P1' },
+      });
+    });
     it('should throw when prodResult not found', async () => {
       mockProdResultRepo.findOne.mockResolvedValue(null);
       await expect(target.create({ prodResultNo: '999' } as any)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('createByBarcode', () => {
+    it('should resolve trace log and production result within tenant only', async () => {
+      mockTraceLogRepo.findOne.mockResolvedValue({
+        serialNo: 'BC-001',
+        prdUid: 'PRD-001',
+        eventData: JSON.stringify({ prodResultNo: 'PR-001' }),
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockProdResultRepo.findOne.mockResolvedValue({
+        resultNo: 'PR-001',
+        jobOrder: { part: { itemCode: 'ITEM-001', itemName: 'Part A' }, orderNo: 'JO-001' },
+      } as any);
+      mockSeqGen.getNo.mockResolvedValue('IR-001');
+      mockInspectRepo.create.mockReturnValue({ resultNo: 'IR-001', passYn: 'Y', inspectAt: new Date() } as any);
+      mockInspectRepo.save.mockResolvedValue({ resultNo: 'IR-001', passYn: 'Y', inspectAt: new Date() } as any);
+
+      await target.createByBarcode({ barcode: 'BC-001', passYn: 'Y' } as any, 'C1', 'P1');
+
+      expect(mockTraceLogRepo.findOne).toHaveBeenCalledWith({
+        where: { serialNo: 'BC-001', company: 'C1', plant: 'P1' },
+        order: { traceTime: 'DESC' },
+      });
+      expect(mockProdResultRepo.findOne).toHaveBeenCalledWith({
+        where: { resultNo: 'PR-001', company: 'C1', plant: 'P1' },
+        relations: ['jobOrder', 'jobOrder.part'],
+      });
     });
   });
 
@@ -79,6 +157,29 @@ describe('InspectResultService', () => {
       mockInspectRepo.delete.mockResolvedValue({ affected: 1 } as any);
       const r = await target.delete('IR-001');
       expect(r.deleted).toBe(true);
+    });
+
+    it('should delete inspect result within tenant only', async () => {
+      mockInspectRepo.findOne.mockResolvedValue({
+        resultNo: 'IR-001',
+        prodResultNo: 'PR-001',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockProdResultRepo.findOne.mockResolvedValue({
+        resultNo: 'PR-001',
+        status: 'CANCELED',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockInspectRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.delete('IR-001', 'C1', 'P1');
+
+      expect(mockProdResultRepo.findOne).toHaveBeenCalledWith({
+        where: { resultNo: 'PR-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockInspectRepo.delete).toHaveBeenCalledWith({ resultNo: 'IR-001', company: 'C1', plant: 'P1' });
     });
 
     it('should block delete while linked production result is still active', async () => {

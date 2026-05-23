@@ -63,6 +63,27 @@ describe('ProductHoldService', () => {
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
       });
+      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'IT', company: 'CO', plant: 'P01' },
+      });
+    });
+
+    it('품목 마스터가 누락되어도 HOLD 결과의 제품재고 원본 itemCode는 유지한다', async () => {
+      const stock = { warehouseCode: 'WH', itemCode: 'ITEM-MISSING', prdUid: 'FG-001', status: 'NORMAL', qty: 100 } as any;
+      mockQueryRunner.manager.findOne.mockResolvedValue(stock);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'HOLD' });
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.hold({ stockId: 'WH::ITEM-MISSING::FG-001', reason: 'QC hold' } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: 'HOLD',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+        }),
+      );
     });
 
     it('should throw when already HOLD', async () => {
@@ -96,6 +117,27 @@ describe('ProductHoldService', () => {
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', company: 'CO', plant: 'P01' },
       });
+      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'IT', company: 'CO', plant: 'P01' },
+      });
+    });
+
+    it('품목 마스터가 누락되어도 HOLD 해제 결과의 제품재고 원본 itemCode는 유지한다', async () => {
+      const stock = { warehouseCode: 'WH', itemCode: 'ITEM-MISSING', prdUid: 'FG-001', status: 'HOLD', qty: 100 } as any;
+      mockQueryRunner.manager.findOne.mockResolvedValue(stock);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'NORMAL' });
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.release({ stockId: 'WH::ITEM-MISSING::FG-001', reason: 'Released' } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          status: 'NORMAL',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+        }),
+      );
     });
 
     it('should throw when not HOLD', async () => {
@@ -110,6 +152,59 @@ describe('ProductHoldService', () => {
       mockStockRepo.count.mockResolvedValue(0);
       const r = await target.findAll({} as any);
       expect(r.data).toEqual([]);
+    });
+
+    it('품목 마스터가 누락되어도 제품재고 원본 itemCode와 prdUid는 유지한다', async () => {
+      mockStockRepo.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH',
+          itemCode: 'ITEM-MISSING',
+          prdUid: 'FG-001',
+          itemType: 'FINISHED',
+          qty: 100,
+          status: 'HOLD',
+        } as ProductStock,
+      ]);
+      mockStockRepo.count.mockResolvedValue(1);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          warehouseCode: 'WH',
+          itemCode: 'ITEM-MISSING',
+          prdUid: 'FG-001',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('제품 HOLD 목록 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockStockRepo.find.mockResolvedValue([
+        {
+          warehouseCode: 'WH',
+          itemCode: 'ITEM-001',
+          prdUid: 'FG-001',
+          itemType: 'FINISHED',
+          qty: 100,
+          status: 'HOLD',
+          company: 'C1',
+          plant: 'P1',
+        } as ProductStock,
+      ]);
+      mockStockRepo.count.mockResolvedValue(1);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          company: 'C1',
+          plant: 'P1',
+        }),
+      });
     });
   });
 

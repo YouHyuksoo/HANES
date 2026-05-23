@@ -28,10 +28,10 @@ export class SubconOrder {
   vendorId: string;
 
   @Column({ name: 'ITEM_CODE', length: 255 })
-  partCode: string;
+  itemCode: string;
 
   @Column({ type: 'varchar2', name: 'ITEM_NAME', length: 255, nullable: true })
-  partName: string | null;
+  itemName: string | null;
 
   @Column({ name: 'ORDER_QTY', type: 'int' })
   orderQty: number;

@@ -81,15 +81,23 @@ export class SelfInspectController {
 
   @Get('results/:orderNo')
   @ApiOperation({ summary: '작업지시별 자주검사 결과 이력' })
-  async findResults(@Param('orderNo') orderNo: string) {
-    const data = await this.svc.findResults(orderNo);
+  async findResults(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.svc.findResults(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('pending/:orderNo')
   @ApiOperation({ summary: '의뢰검사 대기 여부 확인' })
-  async hasPending(@Param('orderNo') orderNo: string) {
-    const data = await this.svc.hasPendingDelegate(orderNo);
+  async hasPending(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.svc.hasPendingDelegate(orderNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -98,8 +106,17 @@ export class SelfInspectController {
   async updateStatus(
     @Param('id') id: string,
     @Body() body: { status: string; remark?: string; measureValue?: number },
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.svc.updateResultStatus(id, body.status, body.remark, body.measureValue);
+    const data = await this.svc.updateResultStatus(
+      id,
+      body.status,
+      body.remark,
+      body.measureValue,
+      company,
+      plant,
+    );
     return ResponseUtil.success(data, `상태가 ${body.status}로 변경되었습니다`);
   }
 

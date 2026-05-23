@@ -61,8 +61,8 @@ export class InventoryController {
    * 창고 상세 조회
    */
   @Get('warehouses/:id')
-  async getWarehouse(@Param('id') id: string) {
-    return this.warehouseService.findOne(id);
+  async getWarehouse(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.warehouseService.findOne(id, company, plant);
   }
 
   /**
@@ -80,24 +80,26 @@ export class InventoryController {
   async updateWarehouse(
     @Param('id') id: string,
     @Body() dto: UpdateWarehouseDto,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    return this.warehouseService.update(id, dto);
+    return this.warehouseService.update(id, dto, company, plant);
   }
 
   /**
    * 창고 삭제 (소프트 삭제)
    */
   @Delete('warehouses/:id')
-  async deleteWarehouse(@Param('id') id: string) {
-    return this.warehouseService.remove(id);
+  async deleteWarehouse(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.warehouseService.remove(id, company, plant);
   }
 
   /**
    * 기본 창고 초기화
    */
   @Post('warehouses/init')
-  async initWarehouses() {
-    return this.warehouseService.initDefaultWarehouses();
+  async initWarehouses(@Company() company?: string, @Plant() plant?: string) {
+    return this.warehouseService.initDefaultWarehouses(company, plant);
   }
 
   // ============================================================================
@@ -112,16 +114,18 @@ export class InventoryController {
     @Query('itemCode') itemCode?: string,
     @Query('itemType') itemType?: string,
     @Query('status') status?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    return this.inventoryService.getLots({ itemCode, itemType, status });
+    return this.inventoryService.getLots({ itemCode, itemType, status }, company, plant);
   }
 
   /**
    * LOT 상세 조회
    */
   @Get('lots/:id')
-  async getLot(@Param('id') id: string) {
-    return this.inventoryService.getLotById(id);
+  async getLot(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.inventoryService.getLotById(id, company, plant);
   }
 
   /**
@@ -151,16 +155,18 @@ export class InventoryController {
   async getStockSummary(
     @Query('warehouseType') warehouseType?: string,
     @Query('itemType') itemType?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    return this.inventoryService.getStockSummary({ warehouseType, itemType });
+    return this.inventoryService.getStockSummary({ warehouseType, itemType }, company, plant);
   }
 
   /**
    * 특정 품목의 창고별 재고
    */
   @Get('stocks/by-part/:itemCode')
-  async getStockByPart(@Param('itemCode') itemCode: string) {
-    return this.inventoryService.getStock({ itemCode });
+  async getStockByPart(@Param('itemCode') itemCode: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.inventoryService.getStock({ itemCode }, company, plant);
   }
 
   /**
@@ -170,11 +176,13 @@ export class InventoryController {
   async getStockByWarehouse(
     @Param('warehouseId') warehouseId: string,
     @Query('includeZero') includeZero?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
     return this.inventoryService.getStock({
       warehouseCode: warehouseId,
       includeZero: includeZero === 'true',
-    });
+    }, company, plant);
   }
 
   // ============================================================================
@@ -193,8 +201,8 @@ export class InventoryController {
    * 트랜잭션 상세 조회
    */
   @Get('transactions/:id')
-  async getTransaction(@Param('id') id: string) {
-    return this.inventoryService.getTransactionById(id);
+  async getTransaction(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    return this.inventoryService.getTransactionById(id, company, plant);
   }
 
   /**

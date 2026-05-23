@@ -32,6 +32,14 @@ export class ReceiptCancelService {
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
   ) {}
+
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findCancellable(query: ReceiptCancelQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -60,12 +68,12 @@ export class ReceiptCancelService {
     return { data, total, page, limit };
   }
 
-  async cancel(dto: CreateReceiptCancelDto) {
+  async cancel(dto: CreateReceiptCancelDto, company?: string, plant?: string) {
     const { transactionId, reason, workerId } = dto;
     return this.tx.run(async (queryRunner) => {
       // 원본 트랜잭션 조회
       const originalTransaction = await queryRunner.manager.findOne(StockTransaction, {
-        where: { transNo: transactionId },
+        where: { transNo: transactionId, ...this.tenantWhere(company, plant) },
       });
 
       if (!originalTransaction) {
@@ -83,6 +91,7 @@ export class ReceiptCancelService {
       await this.ensureNoDownstreamProgress(originalTransaction);
 
       const { itemCode, matUid, toWarehouseId, qty } = originalTransaction;
+      const txTenantWhere = this.tenantWhere(originalTransaction.company, originalTransaction.plant);
 
       if (!toWarehouseId) {
         throw new BadRequestException('입고 창고 정보가 없습니다.');
@@ -90,7 +99,7 @@ export class ReceiptCancelService {
 
       // 재고 확인 및 차감
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode: toWarehouseId, ...(matUid && { matUid }) },
+        where: { itemCode, warehouseCode: toWarehouseId, ...(matUid && { matUid }), ...txTenantWhere },
       });
 
       if (!stock || stock.qty < qty) {
@@ -99,7 +108,7 @@ export class ReceiptCancelService {
 
       // 재고 차감
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...txTenantWhere },
         { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
       );
 
@@ -111,12 +120,12 @@ export class ReceiptCancelService {
         // refId를 seq로 해석 — 해당 품목의 PO 품목 조회
         const poItem = !isNaN(refSeq)
           ? await queryRunner.manager.findOne(PurchaseOrderItem, {
-              where: { seq: refSeq },
+              where: { seq: refSeq, ...txTenantWhere },
             })
           : null;
 
         if (poItem) {
-          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq }, {
+          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq, ...txTenantWhere }, {
             receivedQty: Math.max(0, poItem.receivedQty - qty),
           });
         }
@@ -136,12 +145,14 @@ export class ReceiptCancelService {
         refId: originalTransaction.transNo,
         workerId,
         remark: reason,
+        company: originalTransaction.company,
+        plant: originalTransaction.plant,
       });
 
       const savedCancelTrans = await queryRunner.manager.save(cancelTransaction);
 
       // 원본 트랜잭션에 취소 참조 설정
-      await queryRunner.manager.update(StockTransaction, { transNo: originalTransaction.transNo }, {
+      await queryRunner.manager.update(StockTransaction, { transNo: originalTransaction.transNo, ...txTenantWhere }, {
         cancelRefId: savedCancelTrans.transNo,
       });
 
@@ -164,7 +175,11 @@ export class ReceiptCancelService {
     const fgLabelRepo = this.dataSource.getRepository(FgLabel);
 
     const latestIssue = await matIssueRepo.findOne({
-      where: { matUid: originalTransaction.matUid, status: 'DONE' },
+      where: {
+        matUid: originalTransaction.matUid,
+        status: 'DONE',
+        ...this.tenantWhere(originalTransaction.company, originalTransaction.plant),
+      },
       order: { issueDate: 'DESC' },
     });
 
@@ -177,11 +192,18 @@ export class ReceiptCancelService {
 
     if (latestIssue.prodResultNo) {
       prodResult = await prodResultRepo.findOne({
-        where: { resultNo: latestIssue.prodResultNo },
+        where: {
+          resultNo: latestIssue.prodResultNo,
+          ...this.tenantWhere(originalTransaction.company, originalTransaction.plant),
+        },
       });
     } else if (latestIssue.orderNo) {
       prodResult = await prodResultRepo.findOne({
-        where: { orderNo: latestIssue.orderNo, status: In(['RUNNING', 'DONE']) },
+        where: {
+          orderNo: latestIssue.orderNo,
+          status: In(['RUNNING', 'DONE']),
+          ...this.tenantWhere(originalTransaction.company, originalTransaction.plant),
+        },
         order: { createdAt: 'DESC' },
       });
     }
@@ -191,7 +213,10 @@ export class ReceiptCancelService {
 
       if (prodResult.prdUid) {
         const fgLabel = await fgLabelRepo.findOne({
-          where: { fgBarcode: prodResult.prdUid },
+          where: {
+            fgBarcode: prodResult.prdUid,
+            ...this.tenantWhere(originalTransaction.company, originalTransaction.plant),
+          },
         });
         if (fgLabel) {
           blockers.push(`FG=${fgLabel.fgBarcode}(${fgLabel.status})`);

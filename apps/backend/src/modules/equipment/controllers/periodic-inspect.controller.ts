@@ -34,6 +34,7 @@ import {
   InspectCalendarQueryDto, InspectDayScheduleQueryDto,
 } from '../dto/equip-inspect.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('설비관리 - 정기점검')
 @Controller('equipment/periodic-inspect')
@@ -43,24 +44,49 @@ export class PeriodicInspectController {
   @Get('calendar')
   @ApiOperation({ summary: '정기점검 캘린더 월별 요약' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getCalendarSummary(@Query() query: InspectCalendarQueryDto) {
-    const data = await this.equipInspectService.getCalendarSummary(query.year, query.month, query.processCode, 'PERIODIC');
+  async getCalendarSummary(
+    @Query() query: InspectCalendarQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipInspectService.getCalendarSummary(
+      query.year,
+      query.month,
+      query.processCode,
+      'PERIODIC',
+      company,
+      plant,
+    );
     return ResponseUtil.success(data);
   }
 
   @Get('calendar/day')
   @ApiOperation({ summary: '정기점검 캘린더 일별 스케줄' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async getDaySchedule(@Query() query: InspectDayScheduleQueryDto) {
-    const data = await this.equipInspectService.getDaySchedule(query.date, query.processCode, 'PERIODIC');
+  async getDaySchedule(
+    @Query() query: InspectDayScheduleQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipInspectService.getDaySchedule(
+      query.date,
+      query.processCode,
+      'PERIODIC',
+      company,
+      plant,
+    );
     return ResponseUtil.success(data);
   }
 
   @Get()
   @ApiOperation({ summary: '정기점검 목록 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findAll(@Query() query: EquipInspectQueryDto) {
-    const result = await this.equipInspectService.findAll({ ...query, inspectType: 'PERIODIC' });
+  async findAll(
+    @Query() query: EquipInspectQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.equipInspectService.findAll({ ...query, inspectType: 'PERIODIC' }, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
@@ -71,8 +97,10 @@ export class PeriodicInspectController {
   async findByKey(
     @Param('equipCode') equipCode: string,
     @Param('inspectDate') inspectDate: string,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.equipInspectService.findByKey(equipCode, 'PERIODIC', inspectDate);
+    const data = await this.equipInspectService.findByKey(equipCode, 'PERIODIC', inspectDate, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -80,8 +108,15 @@ export class PeriodicInspectController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '정기점검 등록' })
   @ApiResponse({ status: 201, description: '등록 성공' })
-  async create(@Body() dto: CreateEquipInspectDto) {
-    const data = await this.equipInspectService.create({ ...dto, inspectType: 'PERIODIC' });
+  async create(
+    @Body() dto: CreateEquipInspectDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipInspectService.create(
+      { ...dto, inspectType: 'PERIODIC' },
+      { company, plant },
+    );
     return ResponseUtil.success(data, '정기점검이 등록되었습니다.');
   }
 
@@ -93,8 +128,10 @@ export class PeriodicInspectController {
     @Param('equipCode') equipCode: string,
     @Param('inspectDate') inspectDate: string,
     @Body() dto: UpdateEquipInspectDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.equipInspectService.update(equipCode, 'PERIODIC', inspectDate, dto);
+    const data = await this.equipInspectService.update(equipCode, 'PERIODIC', inspectDate, dto, company, plant);
     return ResponseUtil.success(data, '정기점검이 수정되었습니다.');
   }
 
@@ -105,8 +142,10 @@ export class PeriodicInspectController {
   async delete(
     @Param('equipCode') equipCode: string,
     @Param('inspectDate') inspectDate: string,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    await this.equipInspectService.deleteByKey(equipCode, 'PERIODIC', inspectDate);
+    await this.equipInspectService.deleteByKey(equipCode, 'PERIODIC', inspectDate, company, plant);
     return ResponseUtil.success(null, '정기점검이 삭제되었습니다.');
   }
 }

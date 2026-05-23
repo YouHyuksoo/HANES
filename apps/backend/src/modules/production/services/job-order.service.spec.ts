@@ -28,6 +28,7 @@ import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('JobOrderService', () => {
   let target: JobOrderService;
@@ -42,6 +43,7 @@ describe('JobOrderService', () => {
   let mockNumbering: DeepMocked<NumberingService>;
   let mockSysConfigService: DeepMocked<SysConfigService>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -56,9 +58,11 @@ describe('JobOrderService', () => {
     mockNumbering = createMock<NumberingService>();
     mockSysConfigService = createMock<SysConfigService>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -79,6 +83,7 @@ describe('JobOrderService', () => {
         { provide: NumberingService, useValue: mockNumbering },
         { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -113,6 +118,37 @@ describe('JobOrderService', () => {
 
       // Act & Assert
       await expect(target.findById('INVALID')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findByIdWithResults', () => {
+    it('loads routing processes within the job order tenant', async () => {
+      // Arrange
+      const jobOrder = {
+        orderNo: 'JO-001',
+        routingCode: 'RT-001',
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder;
+      const mockQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockJobOrderRepo.findOne.mockResolvedValue(jobOrder);
+      mockProdResultRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+      mockRoutingProcessRepo.find.mockResolvedValue([]);
+
+      // Act
+      await target.findByIdWithResults('JO-001', 'C1', 'P1');
+
+      // Assert
+      expect(mockRoutingProcessRepo.find).toHaveBeenCalledWith({
+        where: { routingCode: 'RT-001', useYn: 'Y', company: 'C1', plant: 'P1' },
+        order: { seq: 'ASC' },
+      });
     });
   });
 
@@ -171,8 +207,31 @@ describe('JobOrderService', () => {
 
       // Assert
       expect(mockNumbering.nextJobOrderNo).toHaveBeenCalled();
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('checks duplicate order and item existence within tenant when creating', async () => {
+      // Arrange
+      const dto = { ...createDto, orderNo: 'JO-001' };
+      mockJobOrderRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C1', plant: 'P1' } as PartMaster);
+      mockRoutingGroupRepo.findOne.mockResolvedValue(null);
+      mockQueryRunner.manager.create.mockReturnValue({ orderNo: 'JO-001' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ orderNo: 'JO-001' } as any);
+
+      // Act
+      await target.create(dto, 'C1', 'P1');
+
+      // Assert
+      expect(mockJobOrderRepo.findOne).toHaveBeenNthCalledWith(1, {
+        where: { orderNo: 'JO-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'PART-001', company: 'C1', plant: 'P1' },
+      });
     });
 
     it('should throw ConflictException when orderNo already exists', async () => {
@@ -206,8 +265,8 @@ describe('JobOrderService', () => {
 
       // Act & Assert
       await expect(target.create(createDto)).rejects.toThrow('DB error');
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 
@@ -421,7 +480,8 @@ describe('JobOrderService', () => {
         { orderNo: 'JO-001' },
         expect.objectContaining({ status: 'DONE', goodQty: 80, defectQty: 5 }),
       );
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when not RUNNING', async () => {

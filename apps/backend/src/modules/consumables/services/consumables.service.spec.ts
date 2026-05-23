@@ -15,17 +15,20 @@ import { ConsumablesService } from './consumables.service';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ConsumablesService', () => {
   let target: ConsumablesService;
   let mockMasterRepo: DeepMocked<Repository<ConsumableMaster>>;
   let mockLogRepo: DeepMocked<Repository<ConsumableLog>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockMasterRepo = createMock<Repository<ConsumableMaster>>();
     mockLogRepo = createMock<Repository<ConsumableLog>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,6 +36,7 @@ describe('ConsumablesService', () => {
         { provide: getRepositoryToken(ConsumableMaster), useValue: mockMasterRepo },
         { provide: getRepositoryToken(ConsumableLog), useValue: mockLogRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -221,13 +225,15 @@ describe('ConsumablesService', () => {
           query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // Act
       const result = await target.createLog({ consumableId: 'C001', logType: 'IN', qty: 5 } as any);
 
       // Assert
-      expect(mockQr.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when stock insufficient for OUT', async () => {
@@ -243,12 +249,15 @@ describe('ConsumablesService', () => {
           query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // Act & Assert
       await expect(
         target.createLog({ consumableId: 'C001', logType: 'OUT', qty: 5 } as any),
       ).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.rollbackTransaction).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when consumable not found', async () => {
@@ -263,12 +272,15 @@ describe('ConsumablesService', () => {
           findOne: jest.fn().mockResolvedValue(null),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // Act & Assert
       await expect(
         target.createLog({ consumableId: 'NONE', logType: 'IN', qty: 1 } as any),
       ).rejects.toThrow(NotFoundException);
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.rollbackTransaction).not.toHaveBeenCalled();
     });
   });
 
@@ -296,7 +308,7 @@ describe('ConsumablesService', () => {
           query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // Act
       const result = await target.updateShotCount({
@@ -307,6 +319,8 @@ describe('ConsumablesService', () => {
       // Assert
       expect(result.currentCount).toBe(95);
       expect(result.currentStatus).toBe('WARNING');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should change status to REPLACE when exceeding expectedLife', async () => {
@@ -331,7 +345,7 @@ describe('ConsumablesService', () => {
           query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // Act
       const result = await target.updateShotCount({
@@ -342,6 +356,8 @@ describe('ConsumablesService', () => {
       // Assert
       expect(result.currentCount).toBe(105);
       expect(result.currentStatus).toBe('REPLACE');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 
@@ -368,7 +384,7 @@ describe('ConsumablesService', () => {
           query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // Act
       const result = await target.resetShotCount({
@@ -378,6 +394,8 @@ describe('ConsumablesService', () => {
       // Assert
       expect(result.currentCount).toBe(0);
       expect(result.currentStatus).toBe('NORMAL');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 

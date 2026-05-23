@@ -25,37 +25,37 @@ export class MatLotController {
   @Get('by-uid/:matUid')
   @ApiOperation({ summary: '자재시리얼(matUid)로 조회' })
   @ApiParam({ name: 'matUid', description: '자재시리얼' })
-  async findByMatUid(@Param('matUid') matUid: string) {
-    const data = await this.matLotService.findByMatUid(matUid);
+  async findByMatUid(@Param('matUid') matUid: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matLotService.findByMatUid(matUid, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'LOT 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.matLotService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matLotService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'LOT 생성 (입고)' })
-  async create(@Body() dto: CreateMatLotDto) {
-    const data = await this.matLotService.create(dto);
+  async create(@Body() dto: CreateMatLotDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matLotService.create(dto, company, plant);
     return ResponseUtil.success(data, 'LOT이 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'LOT 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdateMatLotDto) {
-    const data = await this.matLotService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateMatLotDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.matLotService.update(id, dto, company, plant);
     return ResponseUtil.success(data, 'LOT이 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'LOT 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.matLotService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.matLotService.delete(id, company, plant);
     return ResponseUtil.success(null, 'LOT이 삭제되었습니다.');
   }
 

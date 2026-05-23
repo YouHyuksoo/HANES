@@ -31,6 +31,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   CreateShipmentDto,
   UpdateShipmentDto,
@@ -57,6 +58,7 @@ export class ShipmentService {
     @InjectRepository(FgLabel)
     private readonly fgLabelRepository: Repository<FgLabel>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly productInventoryService: ProductInventoryService,
   ) {}
 
@@ -289,11 +291,7 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 팔레트 적재 및 출하 집계 업데이트
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
@@ -324,16 +322,9 @@ export class ShipmentService {
           totalQty: parseInt(shipmentSummary?.totalQty) || 0,
         }
       );
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(id, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   /**
@@ -363,11 +354,7 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 팔레트 하차 및 출하 집계 업데이트
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
@@ -398,16 +385,9 @@ export class ShipmentService {
           totalQty: parseInt(shipmentSummary?.totalQty) || 0,
         }
       );
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(id, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   // ===== 상태 관리 =====
@@ -495,11 +475,7 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 출하 상태 및 팔레트/박스 상태 업데이트
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 1. 팔레트 상태 업데이트
       await queryRunner.manager.update(
         PalletMaster,
@@ -592,14 +568,7 @@ export class ShipmentService {
           plant: shipment.plant,
         });
       }
-
-      await queryRunner.commitTransaction();
-    } catch (err: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     return this.findById(id, company, plant);
   }
@@ -633,11 +602,7 @@ export class ShipmentService {
     }
 
     // 트랜잭션으로 출하 취소 및 팔레트/박스 상태 복원
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 팔레트 상태 복원 (CLOSED로)
       await queryRunner.manager.update(
         PalletMaster,
@@ -662,16 +627,9 @@ export class ShipmentService {
         { shipNo: typeof id === 'string' ? id : String(id), ...this.tenantWhere(company, plant) },
         updateData
       );
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(id, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   /**
@@ -719,11 +677,7 @@ export class ShipmentService {
     }
 
     // 1. 상태 복원 트랜잭션
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 팔레트 상태 → LOADED
       await queryRunner.manager.update(
         PalletMaster,
@@ -763,14 +717,7 @@ export class ShipmentService {
           );
         }
       }
-
-      await queryRunner.commitTransaction();
-    } catch (err: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
 
     // 2. 제품 재고 역분개 (FG_OUT → FG_OUT_CANCEL)
     //    해당 출하의 PRODUCT_TRANSACTION을 찾아서 cancelTransaction 호출
@@ -1025,7 +972,7 @@ export class ShipmentService {
     // 품목별 수량 집계
     const boxesWithParts = await this.boxRepository
       .createQueryBuilder('box')
-      .innerJoin(PalletMaster, 'pallet', 'box.palletNo = pallet.palletNo')
+      .innerJoin(PalletMaster, 'pallet', 'box.palletNo = pallet.palletNo AND box.company = pallet.company AND box.plant = pallet.plant')
       .where('pallet.shipmentId = :shipmentId', { shipmentId: id })
       .andWhere(company ? 'box.company = :company' : '1=1', { company })
       .andWhere(plant ? 'box.plant = :plant' : '1=1', { plant })

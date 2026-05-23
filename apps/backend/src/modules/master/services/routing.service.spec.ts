@@ -57,6 +57,22 @@ describe('RoutingService', () => {
       expect(result.itemName).toBe('Part1');
     });
 
+    it('should find routing and part name within tenant only', async () => {
+      const routing = { itemCode: 'ITEM01', seq: 10, processCode: 'PROC01', company: 'C1', plant: 'P1' } as ProcessMap;
+      mockRoutingRepo.findOne.mockResolvedValue(routing);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM01', itemName: 'Part1' } as PartMaster);
+
+      await target.findByKey('ITEM01', 10, 'C1', 'P1');
+
+      expect(mockRoutingRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM01', seq: 10, company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+        select: ['itemCode', 'itemName'],
+      });
+    });
+
     it('should throw NotFoundException when not found', async () => {
       // Arrange
       mockRoutingRepo.findOne.mockResolvedValue(null);
@@ -83,6 +99,23 @@ describe('RoutingService', () => {
       expect(result).toEqual(created);
     });
 
+    it('should create routing within tenant and check duplicates within tenant only', async () => {
+      const dto = { itemCode: 'ITEM01', seq: 10, processCode: 'PROC01' } as any;
+      const created = { ...dto, useYn: 'Y', company: 'C1', plant: 'P1' } as ProcessMap;
+      mockRoutingRepo.findOne.mockResolvedValue(null);
+      mockRoutingRepo.create.mockReturnValue(created);
+      mockRoutingRepo.save.mockResolvedValue(created);
+
+      await target.create(dto, 'C1', 'P1');
+
+      expect(mockRoutingRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM01', seq: 10, company: 'C1', plant: 'P1' },
+      });
+      expect(mockRoutingRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ itemCode: 'ITEM01', seq: 10, company: 'C1', plant: 'P1' }),
+      );
+    });
+
     it('should throw ConflictException when routing exists', async () => {
       // Arrange
       const dto = { itemCode: 'ITEM01', seq: 10 } as any;
@@ -103,11 +136,11 @@ describe('RoutingService', () => {
       mockRoutingRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('ITEM01', 10, { processName: 'Updated' } as any);
+      const result = await target.update('ITEM01', 10, { processName: 'Updated' } as any, 'C1', 'P1');
 
       // Assert
       expect(mockRoutingRepo.update).toHaveBeenCalledWith(
-        { itemCode: 'ITEM01', seq: 10 },
+        { itemCode: 'ITEM01', seq: 10, company: 'C1', plant: 'P1' },
         expect.objectContaining({ processName: 'Updated' }),
       );
     });
@@ -123,10 +156,11 @@ describe('RoutingService', () => {
       mockRoutingRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.delete('ITEM01', 10);
+      const result = await target.delete('ITEM01', 10, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ itemCode: 'ITEM01', seq: 10 });
+      expect(mockRoutingRepo.delete).toHaveBeenCalledWith({ itemCode: 'ITEM01', seq: 10, company: 'C1', plant: 'P1' });
     });
   });
 });

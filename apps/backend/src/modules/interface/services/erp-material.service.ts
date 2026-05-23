@@ -16,6 +16,7 @@ import { InterLog } from '../../../entities/inter-log.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 /** ERP PO 수신 데이터 구조 */
 interface ErpPoData {
@@ -61,6 +62,7 @@ export class ErpMaterialService {
     private readonly poItemRepo: Repository<PurchaseOrderItem>,
     private readonly dataSource: DataSource,
     private readonly sysConfigService: SysConfigService,
+    private readonly tx: TransactionService,
   ) {}
 
   // ==========================================================================
@@ -71,16 +73,17 @@ export class ErpMaterialService {
   async importPurchaseOrder(data: ErpPoData) {
     const transDate = new Date();
     const seq = await this.getNextSeq(transDate);
+    const tenantWhere = {
+      ...(data.company ? { company: data.company } : {}),
+      ...(data.plant ? { plant: data.plant } : {}),
+    };
 
     try {
-      const queryRunner = this.dataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      try {
+      await this.tx.run(async (queryRunner) => {
         // PO upsert
-        let po = await queryRunner.manager.findOne(PurchaseOrder, { where: { poNo: data.poNo } });
+        let po = await queryRunner.manager.findOne(PurchaseOrder, { where: { poNo: data.poNo, ...tenantWhere } });
         if (po) {
-          await queryRunner.manager.update(PurchaseOrder, { poNo: data.poNo }, {
+          await queryRunner.manager.update(PurchaseOrder, { poNo: data.poNo, ...tenantWhere }, {
             orderDate: new Date(data.orderDate),
             partnerId: data.partnerId,
             partnerName: data.partnerName,
@@ -100,14 +103,14 @@ export class ErpMaterialService {
 
         // PO Items upsert — 기존 항목 일괄 선조회로 N+1 제거
         const existingItems = await queryRunner.manager.find(PurchaseOrderItem, {
-          where: { poNo: data.poNo },
+          where: { poNo: data.poNo, ...tenantWhere },
         });
         const existingItemMap = new Map(existingItems.map((ei) => [ei.seq, ei]));
 
         for (const item of data.items) {
           if (existingItemMap.has(item.seq)) {
             await queryRunner.manager.update(PurchaseOrderItem,
-              { poNo: data.poNo, seq: item.seq },
+              { poNo: data.poNo, seq: item.seq, ...tenantWhere },
               { orderQty: item.orderQty },
             );
           } else {
@@ -123,14 +126,7 @@ export class ErpMaterialService {
             });
           }
         }
-
-        await queryRunner.commitTransaction();
-      } catch (error: unknown) {
-        await queryRunner.rollbackTransaction();
-        throw error;
-      } finally {
-        await queryRunner.release();
-      }
+      });
 
       // 성공 로그
       await this.logInterface(transDate, seq, 'INBOUND', 'ERP_PO_IMPORT', 'SUCCESS', data.poNo, JSON.stringify(data));

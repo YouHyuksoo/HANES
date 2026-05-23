@@ -52,6 +52,13 @@ export class PhysicalInvService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   // ??? ?ㅼ궗 ?몄뀡 愿由?????????????????????????????????????????????????
 
   /**
@@ -163,7 +170,7 @@ export class PhysicalInvService {
     // 寃?됱뼱媛 ?덉쑝硫?DB?먯꽌 ?꾪꽣 (硫붾え由??꾪꽣 ?쒓굅)
     if (search) {
       const upper = search.toUpperCase();
-      qb.leftJoin(PartMaster, 'part', 'part.itemCode = stock.itemCode')
+      qb.leftJoin(PartMaster, 'part', 'part.itemCode = stock.itemCode AND part.company = stock.company AND part.plant = stock.plant')
         .andWhere(
           '(stock.itemCode LIKE :search OR part.itemName LIKE :searchRaw)',
           { search: `%${upper}%`, searchRaw: `%${search}%` },
@@ -180,10 +187,14 @@ export class PhysicalInvService {
     // part, lot ?뺣낫 議고쉶
     const itemCodes = data.map((stock) => stock.itemCode).filter(Boolean);
     const matUids = data.map((stock) => stock.matUid).filter(Boolean) as string[];
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
 
     const [parts, lots] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -194,9 +205,9 @@ export class PhysicalInvService {
       const lot = stock.matUid ? lotMap.get(stock.matUid) : null;
       return {
         ...stock,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        matUid: lot?.matUid,
+        itemCode: stock.itemCode,
+        itemName: part?.itemName ?? null,
+        matUid: stock.matUid,
       };
     });
 
@@ -208,8 +219,8 @@ export class PhysicalInvService {
 
     const qb = this.invAdjLogRepository
       .createQueryBuilder('log')
-      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode')
-      .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid')
+      .leftJoin(PartMaster, 'part', 'part.itemCode = log.itemCode AND part.company = log.company AND part.plant = log.plant')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = log.matUid AND lot.company = log.company AND lot.plant = log.plant')
       .select([
         'log.adjDate AS "adjDate"',
         'log.seq AS "seq"',
@@ -280,7 +291,7 @@ export class PhysicalInvService {
     let warehouseName = '';
     if (session.warehouseCode) {
       const wh = await this.warehouseRepository.findOne({
-        where: { warehouseCode: session.warehouseCode },
+        where: { warehouseCode: session.warehouseCode, ...this.tenantWhere(company, plant) },
       });
       warehouseName = wh?.warehouseName ?? session.warehouseCode;
     } else {
@@ -322,13 +333,21 @@ export class PhysicalInvService {
     const itemCodes = stocks.map(s => s.itemCode).filter(Boolean);
 
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({
+        where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
     // 湲곗〈 移댁슫???곸꽭 議고쉶
     const details = await this.countDetailRepository.find({
-      where: { sessionDate: new Date(sessionDate), seq, locationCode },
+      where: {
+        sessionDate: new Date(sessionDate),
+        seq,
+        locationCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
     const detailMap = new Map(
       details.map(d => [`${d.warehouseCode}::${d.itemCode}::${d.matUid}`, d]),
@@ -380,8 +399,8 @@ export class PhysicalInvService {
     // lot + stock + part瑜?JOIN 1?뚮줈 議고쉶 (湲곗〈 4????1??
     const qb = this.matStockRepository
       .createQueryBuilder('s')
-      .innerJoin('MAT_LOTS', 'l', 's.itemCode = l.ITEM_CODE AND s.matUid = l.MAT_UID')
-      .leftJoin('ITEM_MASTERS', 'p', 's.itemCode = p.ITEM_CODE')
+      .innerJoin('MAT_LOTS', 'l', 's.itemCode = l.ITEM_CODE AND s.matUid = l.MAT_UID AND s.company = l.COMPANY AND s.plant = l.PLANT_CD')
+      .leftJoin('ITEM_MASTERS', 'p', 's.itemCode = p.ITEM_CODE AND s.company = p.COMPANY AND s.plant = p.PLANT_CD')
       .select([
         's.warehouseCode AS "warehouseCode"',
         's.itemCode AS "itemCode"',
@@ -472,7 +491,7 @@ export class PhysicalInvService {
 
     if (search) {
       const upper = search.toUpperCase();
-      stockQb.leftJoin(PartMaster, 'sp', 'sp.itemCode = stock.itemCode')
+      stockQb.leftJoin(PartMaster, 'sp', 'sp.itemCode = stock.itemCode AND sp.company = stock.company AND sp.plant = stock.plant')
         .andWhere(
           '(stock.itemCode LIKE :search OR sp.itemName LIKE :searchRaw)',
           { search: `%${upper}%`, searchRaw: `%${search}%` },
@@ -486,15 +505,19 @@ export class PhysicalInvService {
 
     // ?덈ぉ ?뺣낫
     const itemCodes = [...new Set(stocks.map(s => s.itemCode).filter(Boolean))];
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
     // 李쎄퀬紐?議고쉶
     const whCodes = [...new Set(stocks.map(s => s.warehouseCode).filter(Boolean))];
     const warehouses = whCodes.length > 0
-      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes) } })
+      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes), ...tenantWhere } })
       : [];
     const whMap = new Map(warehouses.map(w => [w.warehouseCode, w.warehouseName]));
 
@@ -502,7 +525,12 @@ export class PhysicalInvService {
     const detailMap = new Map<string, { countedQty: number; countedAt: Date | null }>();
     if (sessions.length > 0) {
       const allDetails = await this.countDetailRepository.find({
-        where: sessions.map(s => ({ sessionDate: s.sessionDate, seq: s.seq })),
+        where: sessions.map(s => ({
+          sessionDate: s.sessionDate,
+          seq: s.seq,
+          ...(s.company ? { company: s.company } : tenantWhere.company ? { company: tenantWhere.company } : {}),
+          ...(s.plant ? { plant: s.plant } : tenantWhere.plant ? { plant: tenantWhere.plant } : {}),
+        })),
       });
       for (const d of allDetails) {
         const key = `${d.warehouseCode}::${d.itemCode}::${d.matUid}`;
@@ -592,12 +620,14 @@ export class PhysicalInvService {
         const [whCode, itCode, ltNo] = item.stockId.split('::');
         return { warehouseCode: whCode, itemCode: itCode, matUid: ltNo || '' };
       });
+      const tenantWhere = this.tenantWhere(company, plant);
       const allStocks = stockKeys.length > 0
         ? await queryRunner.manager.find(MatStock, {
             where: stockKeys.map((k) => ({
               warehouseCode: k.warehouseCode,
               itemCode: k.itemCode,
               matUid: k.matUid,
+              ...tenantWhere,
             })),
           })
         : [];
@@ -636,7 +666,7 @@ export class PhysicalInvService {
 
         // 1) MatStock ?낅뜲?댄듃
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
           { qty: afterQty, availableQty: afterQty - reservedQty, lastCountAt: new Date() },
         );
 

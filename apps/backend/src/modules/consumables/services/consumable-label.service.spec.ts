@@ -18,6 +18,7 @@ import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ConsumableLabelService', () => {
   let target: ConsumableLabelService;
@@ -27,6 +28,7 @@ describe('ConsumableLabelService', () => {
   let mockPrintLogRepo: DeepMocked<Repository<LabelPrintLog>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockMasterRepo = createMock<Repository<ConsumableMaster>>();
@@ -35,6 +37,7 @@ describe('ConsumableLabelService', () => {
     mockPrintLogRepo = createMock<Repository<LabelPrintLog>>();
     mockDataSource = createMock<DataSource>();
     mockNumbering = createMock<NumberingService>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -45,6 +48,7 @@ describe('ConsumableLabelService', () => {
         { provide: getRepositoryToken(LabelPrintLog), useValue: mockPrintLogRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -107,7 +111,7 @@ describe('ConsumableLabelService', () => {
           save: jest.fn().mockResolvedValue({} as any),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
       mockNumbering.nextConUid.mockResolvedValueOnce('CON001').mockResolvedValueOnce('CON002');
 
       // Act
@@ -121,6 +125,9 @@ describe('ConsumableLabelService', () => {
       expect(result).toHaveLength(2);
       expect(result[0].conUid).toBe('CON001');
       expect(result[1].conUid).toBe('CON002');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when master not found', async () => {
@@ -131,6 +138,7 @@ describe('ConsumableLabelService', () => {
       await expect(
         target.createConLabels({ consumableCode: 'NONE', qty: 1 } as any),
       ).rejects.toThrow(NotFoundException);
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 
@@ -205,7 +213,7 @@ describe('ConsumableLabelService', () => {
           query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
         },
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
       mockMasterRepo.findOne.mockResolvedValue({ consumableCode: 'C001', consumableName: 'Test' } as ConsumableMaster);
 
       // Act
@@ -215,6 +223,9 @@ describe('ConsumableLabelService', () => {
 
       // Assert
       expect(result).toHaveLength(1);
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
     });
   });
 });

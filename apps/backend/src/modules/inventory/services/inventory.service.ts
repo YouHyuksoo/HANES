@@ -12,7 +12,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, Like } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -47,6 +47,13 @@ export class InventoryService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
+  }
+
   // ──────────────────────────────────────────────────────────────
   // 조회 위임 (컨트롤러 하위 호환성 유지 — 실제 로직은 InventoryQueryService)
   // ──────────────────────────────────────────────────────────────
@@ -59,24 +66,24 @@ export class InventoryService {
     return this.inventoryQueryService.getTransactions(query, company, plant);
   }
 
-  async getLots(query: { itemCode?: string; itemType?: string; status?: string }) {
-    return this.inventoryQueryService.getLots(query);
+  async getLots(query: { itemCode?: string; itemType?: string; status?: string }, company?: string, plant?: string) {
+    return this.inventoryQueryService.getLots(query, company, plant);
   }
 
-  async getLotById(id: string) {
-    return this.inventoryQueryService.getLotById(id);
+  async getLotById(id: string, company?: string, plant?: string) {
+    return this.inventoryQueryService.getLotById(id, company, plant);
   }
 
-  async getTransactionById(transNo: string) {
-    return this.inventoryQueryService.getTransactionById(transNo);
+  async getTransactionById(transNo: string, company?: string, plant?: string) {
+    return this.inventoryQueryService.getTransactionById(transNo, company, plant);
   }
 
-  async getTransaction(id: string) {
-    return this.inventoryQueryService.getTransaction(id);
+  async getTransaction(id: string, company?: string, plant?: string) {
+    return this.inventoryQueryService.getTransaction(id, company, plant);
   }
 
-  async getStockSummary(query: { warehouseType?: string; itemType?: string }) {
-    return this.inventoryQueryService.getStockSummary(query);
+  async getStockSummary(query: { warehouseType?: string; itemType?: string }, company?: string, plant?: string) {
+    return this.inventoryQueryService.getStockSummary(query, company, plant);
   }
 
   /**
@@ -87,7 +94,7 @@ export class InventoryService {
     const prefix = `TRX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
     const lastTrans = await this.stockTransactionRepository.findOne({
-      where: { transNo: prefix },
+      where: { transNo: Like(`${prefix}%`) },
       order: { transNo: 'DESC' },
     });
 
@@ -103,12 +110,12 @@ export class InventoryService {
   /**
    * 자재 UID 생성
    */
-  async generateMatUid(itemType: string): Promise<string> {
+  async generateMatUid(itemType: string, company?: string, plant?: string): Promise<string> {
     const today = new Date();
     const prefix = `${itemType}${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
 
     const lastLot = await this.lotRepository.findOne({
-      where: { matUid: prefix },
+      where: { matUid: Like(`${prefix}%`), ...this.tenantWhere(company, plant) },
       order: { matUid: 'DESC' },
     });
 
@@ -125,6 +132,15 @@ export class InventoryService {
    * LOT 생성
    */
   async createLot(dto: CreateLotDto, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const existingLot = await this.lotRepository.findOne({
+      where: { matUid: dto.matUid, ...tenantWhere },
+    });
+
+    if (existingLot) {
+      throw new BadRequestException(`이미 등록된 LOT입니다: ${dto.matUid}`);
+    }
+
     const lot = this.lotRepository.create({
       matUid: dto.matUid,
       itemCode: dto.itemCode,
@@ -140,50 +156,6 @@ export class InventoryService {
     });
 
     return this.lotRepository.save(lot);
-  }
-
-  /**
-   * 재고 업데이트 (내부 함수)
-   */
-  private async updateStock(
-    warehouseCode: string,
-    itemCode: string,
-    matUid: string | null,
-    qtyDelta: number,
-  ) {
-    // 기존 재고 조회
-    const existingStock = await this.stockRepository.findOne({
-      where: { warehouseCode, itemCode, matUid: matUid || IsNull() },
-    });
-
-    if (existingStock) {
-      // 재고 업데이트
-      const newQty = existingStock.qty + qtyDelta;
-      if (newQty < 0) {
-        throw new BadRequestException(`재고 부족: 현재 ${existingStock.qty}, 요청 ${Math.abs(qtyDelta)}`);
-      }
-
-      return this.stockRepository.update(
-        { warehouseCode: existingStock.warehouseCode, itemCode: existingStock.itemCode, matUid: existingStock.matUid },
-        { qty: newQty, availableQty: newQty - existingStock.reservedQty },
-      );
-    } else {
-      // 신규 재고 생성 (입고 시에만)
-      if (qtyDelta < 0) {
-        throw new BadRequestException('재고가 존재하지 않습니다.');
-      }
-
-      const newStock = this.stockRepository.create({
-        warehouseCode,
-        itemCode,
-        matUid: matUid || null,
-        qty: qtyDelta,
-        reservedQty: 0,
-        availableQty: qtyDelta,
-      });
-
-      return this.stockRepository.save(newStock);
-    }
   }
 
   /**
@@ -396,10 +368,14 @@ export class InventoryService {
     // 취소 트랜잭션 유형 결정
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
     const transNo = await this.generateTransNo();
+    const txTenantWhere = {
+      ...(originalTrans.company && { company: originalTrans.company }),
+      ...(originalTrans.plant && { plant: originalTrans.plant }),
+    };
 
     return this.tx.run(async (queryRunner) => {
       // 1. 원본 트랜잭션 상태 변경
-      await queryRunner.manager.update(StockTransaction, { transNo: originalTrans.transNo }, { status: 'CANCELED' });
+      await queryRunner.manager.update(StockTransaction, { transNo: originalTrans.transNo, ...txTenantWhere }, { status: 'CANCELED' });
 
       // 2. 취소 트랜잭션 생성 (반대 수량)
       const cancelTrans = this.stockTransactionRepository.create({
@@ -419,8 +395,8 @@ export class InventoryService {
         workerId: dto.workerId,
         remark: dto.remark || `취소: ${originalTrans.transNo}`,
         status: 'DONE',
-        company: company || null,
-        plant: plant || null,
+        company: originalTrans.company || company || null,
+        plant: originalTrans.plant || plant || null,
       });
 
       const savedCancelTrans = await queryRunner.manager.save(StockTransaction, cancelTrans);
@@ -433,8 +409,7 @@ export class InventoryService {
             warehouseCode: originalTrans.toWarehouseId,
             itemCode: originalTrans.itemCode,
             matUid: originalTrans.matUid || IsNull(),
-            ...(company && { company }),
-            ...(plant && { plant }),
+            ...txTenantWhere,
           },
         });
 
@@ -448,8 +423,7 @@ export class InventoryService {
               warehouseCode: stock.warehouseCode,
               itemCode: stock.itemCode,
               matUid: stock.matUid,
-              ...(company && { company }),
-              ...(plant && { plant }),
+              ...txTenantWhere,
             },
             { qty: newQty, availableQty: newQty - stock.reservedQty },
           );
@@ -463,8 +437,7 @@ export class InventoryService {
             warehouseCode: originalTrans.fromWarehouseId,
             itemCode: originalTrans.itemCode,
             matUid: originalTrans.matUid || IsNull(),
-            ...(company && { company }),
-            ...(plant && { plant }),
+            ...txTenantWhere,
           },
         });
 
@@ -474,8 +447,7 @@ export class InventoryService {
               warehouseCode: stock.warehouseCode,
               itemCode: stock.itemCode,
               matUid: stock.matUid,
-              ...(company && { company }),
-              ...(plant && { plant }),
+              ...txTenantWhere,
             },
             { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
           );
@@ -487,8 +459,8 @@ export class InventoryService {
             qty: Math.abs(originalTrans.qty),
             reservedQty: 0,
             availableQty: Math.abs(originalTrans.qty),
-            company: company || null,
-            plant: plant || null,
+            company: originalTrans.company || company || null,
+            plant: originalTrans.plant || plant || null,
           });
         }
       }

@@ -50,6 +50,13 @@ export class CustomsService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   // ============================================================================
   // 수입신고 (Customs Entry)
   // ============================================================================
@@ -63,7 +70,7 @@ export class CustomsService {
       .leftJoinAndSelect(
         'customs_lot',
         'cl',
-        'cl.ENTRY_NO = ce.ENTRY_NO',
+        'cl.ENTRY_NO = ce.ENTRY_NO AND cl.COMPANY = ce.COMPANY AND cl.PLANT_CD = ce.PLANT_CD',
       )
       .select([
         'ce.entryNo',
@@ -121,6 +128,12 @@ export class CustomsService {
     const countQuery = this.customsEntryRepository
       .createQueryBuilder('ce')
 
+    if (company) {
+      countQuery.andWhere('ce.company = :company', { company });
+    }
+    if (plant) {
+      countQuery.andWhere('ce.plant = :plant', { plant });
+    }
     if (status) {
       countQuery.andWhere('ce.status = :status', { status });
     }
@@ -149,7 +162,7 @@ export class CustomsService {
     const entryNos = entries.map((e) => e.entryNo);
     const lots = entryNos.length > 0
       ? await this.customsLotRepository.find({
-          where: { entryNo: In(entryNos) },
+          where: { entryNo: In(entryNos), ...this.tenantWhere(company, plant) },
           select: ['entryNo', 'matUid', 'itemCode', 'qty', 'usedQty', 'remainQty', 'status'],
         })
       : [];
@@ -168,9 +181,9 @@ export class CustomsService {
     return { data, total, page, limit };
   }
 
-  async findEntryById(entryNo: string) {
+  async findEntryById(entryNo: string, company?: string, plant?: string) {
     const entry = await this.customsEntryRepository.findOne({
-      where: { entryNo },
+      where: { entryNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!entry) {
@@ -178,14 +191,18 @@ export class CustomsService {
     }
 
     const lots = await this.customsLotRepository.find({
-      where: { entryNo },
+      where: { entryNo, ...this.tenantWhere(company, plant) },
     });
 
     // 일괄 조회로 N+1 방지: lotEntryNo + lotMatUid 복합키로 조회
     const lotKeys = lots.map((l) => ({ lotEntryNo: l.entryNo, lotMatUid: l.matUid }));
     const reports = lotKeys.length > 0
       ? await this.customsUsageReportRepository.find({
-          where: lotKeys.map((k) => ({ lotEntryNo: k.lotEntryNo, lotMatUid: k.lotMatUid })),
+          where: lotKeys.map((k) => ({
+            lotEntryNo: k.lotEntryNo,
+            lotMatUid: k.lotMatUid,
+            ...this.tenantWhere(company, plant),
+          })),
         })
       : [];
 
@@ -204,9 +221,9 @@ export class CustomsService {
     return { ...entry, customsLots: lotsWithReports };
   }
 
-  async createEntry(dto: CreateCustomsEntryDto) {
+  async createEntry(dto: CreateCustomsEntryDto, company?: string, plant?: string) {
     const existing = await this.customsEntryRepository.findOne({
-      where: { entryNo: dto.entryNo },
+      where: { entryNo: dto.entryNo, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) {
@@ -224,13 +241,14 @@ export class CustomsService {
       totalAmount: dto.totalAmount,
       currency: dto.currency,
       remark: dto.remark,
+      ...this.tenantWhere(company, plant),
     });
 
     return this.customsEntryRepository.save(entry);
   }
 
-  async updateEntry(entryNo: string, dto: UpdateCustomsEntryDto) {
-    await this.findEntryById(entryNo);
+  async updateEntry(entryNo: string, dto: UpdateCustomsEntryDto, company?: string, plant?: string) {
+    await this.findEntryById(entryNo, company, plant);
 
     const updateData: Partial<CustomsEntry> = {};
     if (dto.blNo !== undefined) updateData.blNo = dto.blNo;
@@ -244,14 +262,14 @@ export class CustomsService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.customsEntryRepository.update({ entryNo }, updateData);
-    return this.findEntryById(entryNo);
+    await this.customsEntryRepository.update({ entryNo, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findEntryById(entryNo, company, plant);
   }
 
-  async deleteEntry(entryNo: string) {
-    await this.findEntryById(entryNo);
+  async deleteEntry(entryNo: string, company?: string, plant?: string) {
+    await this.findEntryById(entryNo, company, plant);
 
-    await this.customsEntryRepository.delete({ entryNo });
+    await this.customsEntryRepository.delete({ entryNo, ...this.tenantWhere(company, plant) });
     return { entryNo };
   }
 
@@ -259,9 +277,9 @@ export class CustomsService {
   // 보세자재 LOT (Customs Lot) - 복합 PK: entryNo + matUid
   // ============================================================================
 
-  async findLotsByEntryId(entryNo: string) {
+  async findLotsByEntryId(entryNo: string, company?: string, plant?: string) {
     const lots = await this.customsLotRepository.find({
-      where: { entryNo },
+      where: { entryNo, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
 
@@ -269,7 +287,11 @@ export class CustomsService {
     const lotKeys = lots.map((l) => ({ lotEntryNo: l.entryNo, lotMatUid: l.matUid }));
     const reports = lotKeys.length > 0
       ? await this.customsUsageReportRepository.find({
-          where: lotKeys.map((k) => ({ lotEntryNo: k.lotEntryNo, lotMatUid: k.lotMatUid })),
+          where: lotKeys.map((k) => ({
+            lotEntryNo: k.lotEntryNo,
+            lotMatUid: k.lotMatUid,
+            ...this.tenantWhere(company, plant),
+          })),
         })
       : [];
 
@@ -286,9 +308,9 @@ export class CustomsService {
     }));
   }
 
-  async findLotByKey(entryNo: string, matUid: string) {
+  async findLotByKey(entryNo: string, matUid: string, company?: string, plant?: string) {
     const lot = await this.customsLotRepository.findOne({
-      where: { entryNo, matUid },
+      where: { entryNo, matUid, ...this.tenantWhere(company, plant) },
     });
 
     if (!lot) {
@@ -296,19 +318,19 @@ export class CustomsService {
     }
 
     const entry = await this.customsEntryRepository.findOne({
-      where: { entryNo: lot.entryNo },
+      where: { entryNo: lot.entryNo, ...this.tenantWhere(company, plant) },
     });
 
     const reports = await this.customsUsageReportRepository.find({
-      where: { lotEntryNo: entryNo, lotMatUid: matUid },
+      where: { lotEntryNo: entryNo, lotMatUid: matUid, ...this.tenantWhere(company, plant) },
     });
 
     return { ...lot, entry, usageReports: reports };
   }
 
-  async createLot(dto: CreateCustomsLotDto) {
+  async createLot(dto: CreateCustomsLotDto, company?: string, plant?: string) {
     const existing = await this.customsLotRepository.findOne({
-      where: { entryNo: dto.entryNo, matUid: dto.matUid },
+      where: { entryNo: dto.entryNo, matUid: dto.matUid, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) {
@@ -324,19 +346,20 @@ export class CustomsService {
       qty: dto.qty,
       remainQty: dto.qty,
       unitPrice: dto.unitPrice,
+      ...this.tenantWhere(company, plant),
     });
 
     return this.customsLotRepository.save(lot);
   }
 
-  async updateLot(entryNo: string, matUid: string, dto: UpdateCustomsLotDto) {
-    await this.findLotByKey(entryNo, matUid);
+  async updateLot(entryNo: string, matUid: string, dto: UpdateCustomsLotDto, company?: string, plant?: string) {
+    await this.findLotByKey(entryNo, matUid, company, plant);
 
     const updateData: Partial<CustomsLot> = {};
     if (dto.status !== undefined) updateData.status = dto.status;
 
-    await this.customsLotRepository.update({ entryNo, matUid }, updateData);
-    return this.findLotByKey(entryNo, matUid);
+    await this.customsLotRepository.update({ entryNo, matUid, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findLotByKey(entryNo, matUid, company, plant);
   }
 
   // ============================================================================
@@ -354,7 +377,11 @@ export class CustomsService {
         'cl',
         'cl.ENTRY_NO = cur.LOT_ENTRY_NO AND cl.MAT_UID = cur.LOT_MAT_UID',
       )
-      .leftJoinAndSelect(CustomsEntry, 'ce', 'ce.ENTRY_NO = cl.ENTRY_NO')
+      .leftJoinAndSelect(
+        CustomsEntry,
+        'ce',
+        'ce.ENTRY_NO = cl.ENTRY_NO AND ce.COMPANY = cl.COMPANY AND ce.PLANT_CD = cl.PLANT_CD',
+      )
       .where('1=1');
 
     if (company) {
@@ -398,14 +425,14 @@ export class CustomsService {
 
     const lots = lotKeysArr.length > 0
       ? await this.customsLotRepository.find({
-          where: lotKeysArr.map((k) => ({ entryNo: k.entryNo, matUid: k.matUid })),
+          where: lotKeysArr.map((k) => ({ entryNo: k.entryNo, matUid: k.matUid, ...this.tenantWhere(company, plant) })),
         })
       : [];
     const lotMap = new Map(lots.map((l) => [lotKey(l.entryNo, l.matUid), l]));
 
     const entryNos = [...new Set(lots.map((l) => l.entryNo).filter(Boolean))];
     const entries = entryNos.length > 0
-      ? await this.customsEntryRepository.find({ where: { entryNo: In(entryNos) } })
+      ? await this.customsEntryRepository.find({ where: { entryNo: In(entryNos), ...this.tenantWhere(company, plant) } })
       : [];
     const entryMap = new Map(entries.map((e) => [e.entryNo, e]));
 
@@ -420,8 +447,8 @@ export class CustomsService {
     return { data, total, page, limit };
   }
 
-  async createUsageReport(dto: CreateUsageReportDto) {
-    const lot = await this.findLotByKey(dto.lotEntryNo, dto.lotMatUid);
+  async createUsageReport(dto: CreateUsageReportDto, company?: string, plant?: string) {
+    const lot = await this.findLotByKey(dto.lotEntryNo, dto.lotMatUid, company, plant);
 
     if (lot.remainQty < dto.usageQty) {
       throw new BadRequestException(
@@ -444,9 +471,11 @@ export class CustomsService {
         reportNo,
         lotEntryNo: dto.lotEntryNo,
         lotMatUid: dto.lotMatUid,
+        orderNo: dto.orderNo ?? null,
         usageQty: dto.usageQty,
         workerId: dto.workerId,
         remark: dto.remark,
+        ...this.tenantWhere(company, plant),
       });
 
       await manager.save(report);
@@ -458,7 +487,7 @@ export class CustomsService {
 
       await manager.update(
         CustomsLot,
-        { entryNo: dto.lotEntryNo, matUid: dto.lotMatUid },
+        { entryNo: dto.lotEntryNo, matUid: dto.lotMatUid, ...this.tenantWhere(company, plant) },
         {
           usedQty: newUsedQty,
           remainQty: newRemainQty,
@@ -470,9 +499,9 @@ export class CustomsService {
     });
   }
 
-  async updateUsageReport(reportNo: string, dto: UpdateUsageReportDto) {
+  async updateUsageReport(reportNo: string, dto: UpdateUsageReportDto, company?: string, plant?: string) {
     const report = await this.customsUsageReportRepository.findOne({
-      where: { reportNo },
+      where: { reportNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!report) {
@@ -484,21 +513,23 @@ export class CustomsService {
     if (dto.status === 'REPORTED') updateData.reportDate = new Date();
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.customsUsageReportRepository.update({ reportNo }, updateData);
-    return this.customsUsageReportRepository.findOne({ where: { reportNo } });
+    await this.customsUsageReportRepository.update({ reportNo, ...this.tenantWhere(company, plant) }, updateData);
+    return this.customsUsageReportRepository.findOne({
+      where: { reportNo, ...this.tenantWhere(company, plant) },
+    });
   }
 
   // ============================================================================
   // 통계 및 대시보드
   // ============================================================================
 
-  async getCustomsSummary() {
+  async getCustomsSummary(company?: string, plant?: string) {
     const [totalEntries, pendingEntries, bondedLots, totalBondedQty] = await Promise.all([
-      this.customsEntryRepository.count({ where: {} }),
+      this.customsEntryRepository.count({ where: this.tenantWhere(company, plant) }),
       this.customsEntryRepository.count({
-        where: { status: 'PENDING' },
+        where: { status: 'PENDING', ...this.tenantWhere(company, plant) },
       }),
-      this.customsLotRepository.count({ where: { status: 'BONDED' } }),
+      this.customsLotRepository.count({ where: { status: 'BONDED', ...this.tenantWhere(company, plant) } }),
       this.customsLotRepository
         .createQueryBuilder('cl')
         .select('SUM(cl.remainQty)', 'total')

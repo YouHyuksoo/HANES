@@ -160,6 +160,8 @@ export class TraceService {
       const processes = await this.processMasterRepo
         .createQueryBuilder('pm')
         .where('pm.processCode IN (:...codes)', { codes: processCodes })
+        .andWhere('pm.company = :company', { company })
+        .andWhere('pm.plant = :plant', { plant })
         .getMany();
       for (const p of processes) {
         processMap.set(p.processCode, p.processName);
@@ -181,6 +183,8 @@ export class TraceService {
       const equips = await this.equipMasterRepo
         .createQueryBuilder('em')
         .where('em.equipCode IN (:...codes)', { codes: equipCodes })
+        .andWhere('em.company = :company', { company })
+        .andWhere('em.plant = :plant', { plant })
         .getMany();
       for (const e of equips) {
         equipMap.set(e.equipCode, e);
@@ -202,6 +206,8 @@ export class TraceService {
       const workers = await this.workerMasterRepo
         .createQueryBuilder('wm')
         .where('wm.workerCode IN (:...codes)', { codes: workerIds })
+        .andWhere('wm.company = :company', { company })
+        .andWhere('wm.plant = :plant', { plant })
         .getMany();
       for (const w of workers) {
         workerMap.set(w.workerCode, w);
@@ -325,13 +331,13 @@ export class TraceService {
       // 자재 LOT + 품목 일괄 조회 (N+1 제거)
       const matUids = [...new Set(matIssues.map((mi) => mi.matUid).filter(Boolean))];
       const allMatLots = matUids.length > 0
-        ? await this.matLotRepo.find({ where: { matUid: In(matUids) } })
+        ? await this.matLotRepo.find({ where: { matUid: In(matUids), company, plant } })
         : [];
       const matLotMap = new Map(allMatLots.map((l) => [l.matUid, l]));
 
       const matItemCodes = [...new Set(allMatLots.map((l) => l.itemCode).filter(Boolean))];
       const matParts = matItemCodes.length > 0
-        ? await this.partMasterRepo.find({ where: { itemCode: In(matItemCodes) } })
+        ? await this.partMasterRepo.find({ where: { itemCode: In(matItemCodes), company, plant } })
         : [];
       const matPartMap = new Map(matParts.map((p) => [p.itemCode, p]));
 
@@ -354,7 +360,7 @@ export class TraceService {
     if (fgLabel.itemCode) {
       const controlPlanItems = await this.controlPlanItemRepo
         .createQueryBuilder('cpi')
-        .innerJoin(ControlPlan, 'cp', 'cp.planNo = cpi.controlPlanId')
+        .innerJoin(ControlPlan, 'cp', 'cp.planNo = cpi.controlPlanId AND cp.company = cpi.company AND cp.plant = cpi.plant')
         .where('cp.itemCode = :itemCode', { itemCode: fgLabel.itemCode })
         .andWhere('cp.company = :company', { company })
         .andWhere('cp.plant = :plant', { plant })

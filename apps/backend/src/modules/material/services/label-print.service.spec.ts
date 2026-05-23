@@ -90,6 +90,54 @@ describe('LabelPrintService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('품목 마스터가 누락되어도 LOT 원본 itemCode는 라벨과 상세에 유지한다', async () => {
+      mockTemplateRepo.findOne.mockResolvedValue({
+        templateName: 'TEST',
+        zplCode: '^FD{{itemCode}}^FS',
+      } as LabelTemplate);
+      mockMatLotRepo.find.mockResolvedValue([{
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-MISSING',
+        initQty: 100,
+      } as MatLot]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.generateZpl({ templateId: 'TEST', matUids: ['MAT-001'] });
+
+      expect(result.zplDataList[0]).toContain('ITEM-MISSING');
+      expect(result.lotDetails[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: '',
+          unit: 'EA',
+        }),
+      );
+    });
+
+    it('ZPL 생성은 LOT와 품목마스터를 요청 테넌트 범위에서 조회한다', async () => {
+      mockTemplateRepo.findOne.mockResolvedValue({
+        templateName: 'TEST',
+        zplCode: '^FD{{matUid}} {{itemName}}^FS',
+      } as LabelTemplate);
+      mockMatLotRepo.find.mockResolvedValue([{
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        initQty: 100,
+        company: 'C1',
+        plant: 'P1',
+      } as MatLot]);
+      mockPartMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part', unit: 'EA' } as PartMaster]);
+
+      await target.generateZpl({ templateId: 'TEST', matUids: ['MAT-001'] }, 'C1', 'P1');
+
+      expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+        where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+    });
+
     it('ZPL 코드가 없는 템플릿이면 BadRequestException', async () => {
       mockTemplateRepo.findOne.mockResolvedValue({
         templateName: 'TEST',

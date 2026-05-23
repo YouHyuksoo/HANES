@@ -49,6 +49,7 @@ import {
   UnmountFromEquipDto,
   SetRepairDto,
 } from '../dto/consumable.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ConsumableService {
@@ -66,6 +67,7 @@ export class ConsumableService {
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepository: Repository<EquipMaster>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   /** 로컬 타임존 안전한 YYYY-MM-DD 문자열 */
@@ -322,11 +324,7 @@ export class ConsumableService {
   async registerReplacement(consumableCode: string, dto: RegisterReplacementDto) {
     const consumable = await this.findById(consumableCode);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 소모품 정보 업데이트
       await queryRunner.manager.update(ConsumableMaster, consumableCode, {
         currentCount: 0,
@@ -348,20 +346,13 @@ export class ConsumableService {
         workerId: dto.workerId,
         remark: dto.remark ?? '교체 입고',
       });
+    });
 
-      await queryRunner.commitTransaction();
+    this.logger.log(
+      `소모품 교체 등록: ${consumable.consumableCode}, 이전 사용 횟수: ${consumable.currentCount}`
+    );
 
-      this.logger.log(
-        `소모품 교체 등록: ${consumable.consumableCode}, 이전 사용 횟수: ${consumable.currentCount}`
-      );
-
-      return this.findById(consumableCode);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(consumableCode);
   }
 
   /**
@@ -601,11 +592,7 @@ export class ConsumableService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(ConsumableMaster, consumableCode, {
         operStatus: 'MOUNTED',
         mountedEquipCode: dto.equipCode,
@@ -625,20 +612,13 @@ export class ConsumableService {
         company: consumable.company,
         plant: consumable.plant,
       });
+    });
 
-      await queryRunner.commitTransaction();
+    this.logger.log(
+      `금형 장착: ${consumable.consumableCode} → 설비 ${dto.equipCode}`,
+    );
 
-      this.logger.log(
-        `금형 장착: ${consumable.consumableCode} → 설비 ${dto.equipCode}`,
-      );
-
-      return this.findById(consumableCode);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(consumableCode);
   }
 
   /**
@@ -661,11 +641,7 @@ export class ConsumableService {
 
     const previousEquipCode = consumable.mountedEquipCode;
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(ConsumableMaster, consumableCode, {
         operStatus: 'WAREHOUSE',
         mountedEquipCode: null,
@@ -685,20 +661,13 @@ export class ConsumableService {
         company: consumable.company,
         plant: consumable.plant,
       });
+    });
 
-      await queryRunner.commitTransaction();
+    this.logger.log(
+      `금형 해제: ${consumable.consumableCode} ← 설비 ${previousEquipCode}`,
+    );
 
-      this.logger.log(
-        `금형 해제: ${consumable.consumableCode} ← 설비 ${previousEquipCode}`,
-      );
-
-      return this.findById(consumableCode);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(consumableCode);
   }
 
   /**
@@ -713,11 +682,7 @@ export class ConsumableService {
       throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 장착 상태면 먼저 해제 로그 기록
       if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipCode) {
         const mountDate = new Date();
@@ -740,20 +705,13 @@ export class ConsumableService {
         operStatus: 'REPAIR',
         mountedEquipCode: null,
       });
+    });
 
-      await queryRunner.commitTransaction();
+    this.logger.log(
+      `금형 수리 전환: ${consumable.consumableCode} (이전 상태: ${consumable.operStatus})`,
+    );
 
-      this.logger.log(
-        `금형 수리 전환: ${consumable.consumableCode} (이전 상태: ${consumable.operStatus})`,
-      );
-
-      return this.findById(consumableCode);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(consumableCode);
   }
 
   /**

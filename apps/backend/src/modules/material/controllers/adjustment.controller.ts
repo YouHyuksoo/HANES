@@ -56,8 +56,10 @@ export class AdjustmentController {
     @Param('adjDate') adjDate: string,
     @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: ApproveAdjustmentDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.adjustmentService.approve(adjDate, seq, dto.approvedBy);
+    const data = await this.adjustmentService.approve(adjDate, seq, dto.approvedBy, company, plant);
     return ResponseUtil.success(data, '보정이 승인되었습니다. 재고에 반영되었습니다.');
   }
 
@@ -69,8 +71,10 @@ export class AdjustmentController {
     @Param('adjDate') adjDate: string,
     @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: ApproveAdjustmentDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.adjustmentService.reject(adjDate, seq, dto.approvedBy);
+    const data = await this.adjustmentService.reject(adjDate, seq, dto.approvedBy, company, plant);
     return ResponseUtil.success(data, '보정 요청이 반려되었습니다.');
   }
 }

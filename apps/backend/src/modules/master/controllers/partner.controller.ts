@@ -18,23 +18,27 @@ export class PartnerController {
 
   @Get('statistics')
   @ApiOperation({ summary: '거래처 통계 조회' })
-  async getStatistics() {
-    const data = await this.partnerService.getStatistics();
+  async getStatistics(@Company() company: string, @Plant() plant: string) {
+    const data = await this.partnerService.getStatistics(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('types/:type')
   @ApiOperation({ summary: '거래처 유형별 목록 조회' })
   @ApiParam({ name: 'type', enum: PARTNER_TYPE_VALUES })
-  async findByType(@Param('type') type: string) {
-    const data = await this.partnerService.findByType(type);
+  async findByType(@Param('type') type: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.partnerService.findByType(type, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Get('code/:partnerCode')
   @ApiOperation({ summary: '거래처 코드로 조회' })
-  async findByCode(@Param('partnerCode') partnerCode: string) {
-    const data = await this.partnerService.findByCode(partnerCode);
+  async findByCode(
+    @Param('partnerCode') partnerCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.partnerService.findByCode(partnerCode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -47,30 +51,35 @@ export class PartnerController {
 
   @Get(':id')
   @ApiOperation({ summary: '거래처 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.partnerService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.partnerService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '거래처 생성' })
-  async create(@Body() dto: CreatePartnerDto) {
-    const data = await this.partnerService.create(dto);
+  async create(@Body() dto: CreatePartnerDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.partnerService.create(dto, company, plant);
     return ResponseUtil.success(data, '거래처가 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: '거래처 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdatePartnerDto) {
-    const data = await this.partnerService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePartnerDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.partnerService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '거래처가 수정되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '거래처 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.partnerService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.partnerService.delete(id, company, plant);
     return ResponseUtil.success(null, '거래처가 삭제되었습니다.');
   }
 }

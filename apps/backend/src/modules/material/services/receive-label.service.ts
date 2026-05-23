@@ -33,19 +33,32 @@ export class ReceiveLabelService {
     private readonly printLogRepo: Repository<LabelPrintLog>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /** IQC PASS + 라벨 미발행 입하건 조회 */
-  async findLabelableArrivals() {
-    const arrivals = await this.arrivalRepo
+  async findLabelableArrivals(company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const queryBuilder = this.arrivalRepo
       .createQueryBuilder('a')
       .where('a.iqcStatus = :status', { status: 'PASS' })
-      .andWhere('a.status != :cancelled', { cancelled: 'CANCELLED' })
+      .andWhere('a.status != :cancelled', { cancelled: 'CANCELLED' });
+
+    if (company) queryBuilder.andWhere('a.company = :company', { company });
+    if (plant) queryBuilder.andWhere('a.plant = :plant', { plant });
+
+    const arrivals = await queryBuilder
       .orderBy('a.createdAt', 'DESC')
       .getMany();
 
     // 필요한 itemCodes만 IN 배치 조회
     const neededItemCodes = [...new Set(arrivals.map((a) => a.itemCode).filter(Boolean))];
     const parts = neededItemCodes.length > 0
-      ? await this.partRepo.find({ where: { itemCode: In(neededItemCodes) } })
+      ? await this.partRepo.find({ where: { itemCode: In(neededItemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
 
@@ -69,7 +82,7 @@ export class ReceiveLabelService {
     const labeledArrivalKeys = new Set<string>();
     const neededMatUids = [...printedUids];
     const lots = neededMatUids.length > 0
-      ? await this.matLotRepo.find({ where: { matUid: In(neededMatUids) } })
+      ? await this.matLotRepo.find({ where: { matUid: In(neededMatUids), ...tenantWhere } })
       : [];
     for (const lot of lots) {
       if (printedUids.has(lot.matUid)) {
@@ -101,14 +114,15 @@ export class ReceiveLabelService {
   }
 
   /** matUid 채번 + MatLot 생성 + 라벨 인쇄 로그 */
-  async createMatLabels(dto: CreateMatLabelsDto): Promise<MatLabelResultDto[]> {
-    const arrival = await this.arrivalRepo.findOne({ where: { arrivalNo: dto.arrivalId, seq: dto.arrivalSeq ?? 1 } });
+  async createMatLabels(dto: CreateMatLabelsDto, company?: string, plant?: string): Promise<MatLabelResultDto[]> {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const arrival = await this.arrivalRepo.findOne({ where: { arrivalNo: dto.arrivalId, seq: dto.arrivalSeq ?? 1, ...tenantWhere } });
     if (!arrival) throw new NotFoundException('입하건을 찾을 수 없습니다.');
     if (arrival.iqcStatus !== 'PASS') {
       throw new NotFoundException('IQC 합격 상태가 아닙니다.');
     }
 
-    const part = await this.partRepo.findOne({ where: { itemCode: arrival.itemCode } });
+    const part = await this.partRepo.findOne({ where: { itemCode: arrival.itemCode, ...tenantWhere } });
 
     return this.tx.run(async (queryRunner) => {
       const results: MatLabelResultDto[] = [];

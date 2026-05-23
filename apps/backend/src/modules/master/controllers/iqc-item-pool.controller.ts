@@ -49,8 +49,12 @@ export class IqcItemPoolController {
 
   @Get(':inspItemCode')
   @ApiOperation({ summary: 'IQC 검사항목 상세 조회' })
-  async findByCode(@Param('inspItemCode') inspItemCode: string) {
-    const data = await this.service.findByCode(inspItemCode);
+  async findByCode(
+    @Param('inspItemCode') inspItemCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.service.findByCode(inspItemCode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -64,15 +68,24 @@ export class IqcItemPoolController {
 
   @Put(':inspItemCode')
   @ApiOperation({ summary: 'IQC 검사항목 수정' })
-  async update(@Param('inspItemCode') inspItemCode: string, @Body() dto: UpdateIqcItemPoolDto) {
-    const data = await this.service.update(inspItemCode, dto);
+  async update(
+    @Param('inspItemCode') inspItemCode: string,
+    @Body() dto: UpdateIqcItemPoolDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.service.update(inspItemCode, dto, company, plant);
     return ResponseUtil.success(data, '검사항목이 수정되었습니다.');
   }
 
   @Delete(':inspItemCode')
   @ApiOperation({ summary: 'IQC 검사항목 삭제' })
-  async delete(@Param('inspItemCode') inspItemCode: string) {
-    await this.service.delete(inspItemCode);
+  async delete(
+    @Param('inspItemCode') inspItemCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.service.delete(inspItemCode, company, plant);
     return ResponseUtil.success(null, '검사항목이 삭제되었습니다.');
   }
 }

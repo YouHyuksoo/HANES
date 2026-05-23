@@ -57,14 +57,18 @@ export class PoStatusService {
 
     // PO 품목 정보 조회 및 입고율 계산
     const poNos = orders.map((o) => o.poNo);
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const items = await this.purchaseOrderItemRepository.find({
-      where: poNos.length > 0 ? { poNo: In(poNos) } : {},
+      where: poNos.length > 0 ? { poNo: In(poNos), ...tenantWhere } : tenantWhere,
     });
 
     // part 정보 조회
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -87,10 +91,10 @@ export class PoStatusService {
         const part = partMap.get(item.itemCode);
         return {
           ...item,
-          itemCode: part?.itemCode,
-          itemName: part?.itemName,
-          spec: part?.spec,
-          unit: part?.unit,
+          itemCode: item.itemCode,
+          itemName: part?.itemName ?? null,
+          spec: part?.spec ?? null,
+          unit: part?.unit ?? null,
           receiveRate: item.orderQty > 0 ? Math.round((item.receivedQty / item.orderQty) * 100) : 0,
         };
       });

@@ -25,6 +25,13 @@ export class IqcItemPoolService {
     private readonly repo: Repository<IqcItemPool>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: IqcItemPoolQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, judgeMethod, useYn } = query;
 
@@ -61,9 +68,9 @@ export class IqcItemPoolService {
     return { data, total, page, limit };
   }
 
-  async findByCode(inspItemCode: string) {
+  async findByCode(inspItemCode: string, company?: string, plant?: string) {
     const item = await this.repo.findOne({
-      where: { inspItemCode },
+      where: { inspItemCode, ...this.tenantWhere(company, plant) },
     });
     if (!item) {
       throw new NotFoundException('검사항목을 찾을 수 없습니다.');
@@ -73,7 +80,7 @@ export class IqcItemPoolService {
 
   async create(dto: CreateIqcItemPoolDto, company?: string, plant?: string) {
     const existing = await this.repo.findOne({
-      where: { inspItemCode: dto.inspItemCode },
+      where: { inspItemCode: dto.inspItemCode, ...this.tenantWhere(company, plant) },
     });
     if (existing) {
       throw new ConflictException(`이미 존재하는 항목코드입니다: ${dto.inspItemCode}`);
@@ -87,8 +94,8 @@ export class IqcItemPoolService {
     return this.repo.save(entity);
   }
 
-  async update(inspItemCode: string, dto: UpdateIqcItemPoolDto) {
-    const item = await this.findByCode(inspItemCode);
+  async update(inspItemCode: string, dto: UpdateIqcItemPoolDto, company?: string, plant?: string) {
+    const item = await this.findByCode(inspItemCode, company, plant);
 
     // PK인 inspItemCode는 변경 불가 — dto에서 제거
     const { inspItemCode: _ignore, ...updateData } = dto as any;
@@ -96,8 +103,8 @@ export class IqcItemPoolService {
     return this.repo.save(item);
   }
 
-  async delete(inspItemCode: string) {
-    const item = await this.findByCode(inspItemCode);
+  async delete(inspItemCode: string, company?: string, plant?: string) {
+    const item = await this.findByCode(inspItemCode, company, plant);
     await this.repo.remove(item);
     return { inspItemCode, deleted: true };
   }

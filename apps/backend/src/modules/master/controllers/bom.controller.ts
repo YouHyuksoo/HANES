@@ -107,8 +107,10 @@ export class BomController {
     @Param('parentItemCode') parentItemCode: string,
     @Query('depth') depth?: number,
     @Query('effectiveDate') effectiveDate?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.bomService.findHierarchy(parentItemCode, depth ?? 3, effectiveDate);
+    const data = await this.bomService.findHierarchy(parentItemCode, depth ?? 3, effectiveDate, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -118,8 +120,10 @@ export class BomController {
   async findByParentId(
     @Param('parentItemCode') parentItemCode: string,
     @Query('effectiveDate') effectiveDate?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
-    const data = await this.bomService.findByParentId(parentItemCode, effectiveDate);
+    const data = await this.bomService.findByParentId(parentItemCode, effectiveDate, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -137,8 +141,8 @@ export class BomController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get one BOM row' })
-  async findById(@Param('id') id: string) {
-    const data = await this.bomService.findById(id);
+  async findById(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    const data = await this.bomService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -157,15 +161,15 @@ export class BomController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update BOM row' })
-  async update(@Param('id') id: string, @Body() dto: UpdateBomDto) {
-    const data = await this.bomService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateBomDto, @Company() company?: string, @Plant() plant?: string) {
+    const data = await this.bomService.update(id, dto, company, plant);
     return ResponseUtil.success(data, 'BOM updated');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete BOM row' })
-  async delete(@Param('id') id: string) {
-    await this.bomService.delete(id);
+  async delete(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    await this.bomService.delete(id, company, plant);
     return ResponseUtil.success(null, 'BOM deleted');
   }
 }

@@ -80,6 +80,60 @@ describe('PurchaseOrderService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    it('품목 마스터가 누락되어도 PO 품목 원본 itemCode는 유지한다', async () => {
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([createPo()]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockPoRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      mockPoItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 100 } as PurchaseOrderItem,
+      ]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0].items[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          spec: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('PO 목록 품목과 품목마스터 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([createPo({ company: 'C1', plant: 'P1' })]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockPoRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      mockPoItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
+      ]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
+
+      expect(mockPoItemRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+  });
+
   // ─── findById ───
   describe('findById', () => {
     it('PO를 poNo로 찾아 반환한다', async () => {
@@ -96,6 +150,45 @@ describe('PurchaseOrderService', () => {
       mockPoRepo.findOne.mockResolvedValue(null);
 
       await expect(target.findById('NONE')).rejects.toThrow(NotFoundException);
+    });
+
+    it('품목 마스터가 누락되어도 PO 상세 품목 원본 itemCode는 유지한다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo());
+      mockPoItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 100 } as PurchaseOrderItem,
+      ]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findById('PO-001');
+
+      expect(result.items[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          spec: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('PO 상세 품목과 품목마스터 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ company: 'C1', plant: 'P1' }));
+      mockPoItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
+      ]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findById('PO-001', 'C1', 'P1');
+
+      expect(mockPoRepo.findOne).toHaveBeenCalledWith({
+        where: { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPoItemRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
     });
   });
 
@@ -128,6 +221,62 @@ describe('PurchaseOrderService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
+
+    it('품목 마스터가 누락되어도 생성 응답의 PO 품목 원본 itemCode는 유지한다', async () => {
+      const po = createPo();
+      const savedItems = [
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 100 } as PurchaseOrderItem,
+      ];
+      mockPoRepo.findOne.mockResolvedValue(null);
+      mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
+      mockQueryRunner.manager.save
+        .mockResolvedValueOnce(po)
+        .mockResolvedValueOnce(savedItems);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.create({
+        poNo: 'PO-001',
+        partnerId: 'V-001',
+        partnerName: 'VENDOR-A',
+        items: [{ itemCode: 'ITEM-MISSING', orderQty: 100 }],
+      } as any);
+
+      expect(result.items[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          spec: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('PO 생성 응답 품목마스터 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const po = createPo({ company: 'C1', plant: 'P1' });
+      const savedItems = [
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 100, company: 'C1', plant: 'P1' } as PurchaseOrderItem,
+      ];
+      mockPoRepo.findOne.mockResolvedValue(null);
+      mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
+      mockQueryRunner.manager.save
+        .mockResolvedValueOnce(po)
+        .mockResolvedValueOnce(savedItems);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.create({
+        poNo: 'PO-001',
+        partnerId: 'V-001',
+        partnerName: 'VENDOR-A',
+        items: [{ itemCode: 'ITEM-001', orderQty: 100 }],
+      } as any, 'C1', 'P1');
+
+      expect(mockPoRepo.findOne).toHaveBeenCalledWith({
+        where: { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
   });
 
   // ─── update ───
@@ -148,10 +297,37 @@ describe('PurchaseOrderService', () => {
       expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(PurchaseOrderItem, { poNo: 'PO-001' });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         PurchaseOrder,
-        'PO-001',
+        { poNo: 'PO-001' },
         expect.objectContaining({ totalAmount: 2000 }),
       );
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('PO 수정은 헤더와 품목 교체를 요청 테넌트 범위로 제한한다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ company: 'C1', plant: 'P1' }));
+      mockPoItemRepo.find.mockResolvedValue([]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
+      mockQueryRunner.manager.save.mockResolvedValue([] as any);
+
+      await target.update('PO-001', {
+        items: [{ itemCode: 'ITEM-001', orderQty: 2, unitPrice: 1000 }],
+      } as any, 'C1', 'P1');
+
+      expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(PurchaseOrderItem, {
+        poNo: 'PO-001',
+        company: 'C1',
+        plant: 'P1',
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        PurchaseOrder,
+        { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ totalAmount: 2000 }),
+      );
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(PurchaseOrderItem, expect.objectContaining({
+        company: 'C1',
+        plant: 'P1',
+      }));
     });
   });
 
@@ -164,9 +340,15 @@ describe('PurchaseOrderService', () => {
       mockPoItemRepo.find.mockResolvedValue([]);
       mockPartMasterRepo.find.mockResolvedValue([]);
 
-      const result = await target.confirm('PO-001');
+      const result = await target.confirm('PO-001', 'C1', 'P1');
 
-      expect(mockPoRepo.update).toHaveBeenCalledWith('PO-001', { status: 'CONFIRMED' });
+      expect(mockPoRepo.findOne).toHaveBeenCalledWith({
+        where: { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPoRepo.update).toHaveBeenCalledWith(
+        { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+        { status: 'CONFIRMED' },
+      );
     });
 
     it('DRAFT가 아닌 상태이면 BadRequestException', async () => {
@@ -191,9 +373,15 @@ describe('PurchaseOrderService', () => {
       mockPoItemRepo.find.mockResolvedValue([]);
       mockPartMasterRepo.find.mockResolvedValue([]);
 
-      await target.close('PO-001');
+      await target.close('PO-001', 'C1', 'P1');
 
-      expect(mockPoRepo.update).toHaveBeenCalledWith('PO-001', { status: 'CLOSED' });
+      expect(mockPoRepo.findOne).toHaveBeenCalledWith({
+        where: { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPoRepo.update).toHaveBeenCalledWith(
+        { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+        { status: 'CLOSED' },
+      );
     });
 
     it('마감 불가 상태이면 BadRequestException', async () => {
@@ -212,9 +400,13 @@ describe('PurchaseOrderService', () => {
       mockMatArrivalRepo.find.mockResolvedValue([]);
       mockPoRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
-      const result = await target.delete('PO-001');
+      const result = await target.delete('PO-001', 'C1', 'P1');
 
       expect(result.poNo).toBe('PO-001');
+      expect(mockMatArrivalRepo.find).toHaveBeenCalledWith({
+        where: { poNo: 'PO-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPoRepo.delete).toHaveBeenCalledWith({ poNo: 'PO-001', company: 'C1', plant: 'P1' });
     });
 
     it('DRAFT가 아니면 PO 삭제를 차단한다', async () => {

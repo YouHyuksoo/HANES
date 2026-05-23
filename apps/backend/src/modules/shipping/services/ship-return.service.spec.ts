@@ -13,6 +13,7 @@ import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entit
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ShipReturnService', () => {
   let target: ShipReturnService;
@@ -21,6 +22,8 @@ describe('ShipReturnService', () => {
   let mockShipOrderRepo: DeepMocked<Repository<ShipmentOrder>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
+  let mockQr: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
     mockReturnRepo = createMock<Repository<ShipmentReturn>>();
@@ -28,8 +31,10 @@ describe('ShipReturnService', () => {
     mockShipOrderRepo = createMock<Repository<ShipmentOrder>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockDataSource = createMock<DataSource>();
-    const mockQr = createMock<QueryRunner>();
+    mockTx = createMock<TransactionService>();
+    mockQr = createMock<QueryRunner>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQr);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQr));
     mockQr.connect.mockResolvedValue(undefined);
     mockQr.startTransaction.mockResolvedValue(undefined);
     mockQr.commitTransaction.mockResolvedValue(undefined);
@@ -44,6 +49,7 @@ describe('ShipReturnService', () => {
         { provide: getRepositoryToken(ShipmentOrder), useValue: mockShipOrderRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ShipReturnService>(ShipReturnService);
@@ -60,6 +66,25 @@ describe('ShipReturnService', () => {
     it('should throw NotFoundException', async () => {
       mockReturnRepo.findOne.mockResolvedValue(null);
       await expect(target.findById('X')).rejects.toThrow(NotFoundException);
+    });
+    it('should enrich return items with part names within tenant only', async () => {
+      mockReturnRepo.findOne.mockResolvedValue({
+        returnNo: 'SR-001',
+        shipmentId: null,
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockReturnItemRepo.find.mockResolvedValue([
+        { returnNo: 'SR-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as ShipmentReturnItem,
+      ]);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as PartMaster);
+
+      await target.findById('SR-001', 'C1', 'P1');
+
+      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+        select: ['itemCode', 'itemName'],
+      });
     });
   });
 
@@ -79,6 +104,21 @@ describe('ShipReturnService', () => {
   });
 
   describe('update', () => {
+    it('should update through TransactionService', async () => {
+      mockReturnRepo.findOne
+        .mockResolvedValueOnce({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null } as any)
+        .mockResolvedValueOnce({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null } as any);
+      mockReturnItemRepo.find.mockResolvedValue([]);
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      await target.update('SR-001', { remark: 'Updated' } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
     it('should block direct status changes', async () => {
       mockReturnRepo.findOne.mockResolvedValue({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null } as any);
       mockReturnItemRepo.find.mockResolvedValue([]);
@@ -86,6 +126,31 @@ describe('ShipReturnService', () => {
       await expect(target.update('SR-001', { status: 'CONFIRMED' } as any)).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('create', () => {
+    it('should create through TransactionService', async () => {
+      mockReturnRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null } as any);
+      mockReturnRepo.create.mockReturnValue({ returnNo: 'SR-001' } as any);
+      mockReturnItemRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save
+        .mockResolvedValueOnce({ returnNo: 'SR-001' } as any)
+        .mockResolvedValueOnce([] as any);
+      mockReturnItemRepo.find.mockResolvedValue([]);
+      mockPartRepo.findOne.mockResolvedValue(null);
+
+      await target.create({
+        returnNo: 'SR-001',
+        items: [{ itemCode: 'ITEM-1', returnQty: 1 }],
+      } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
     });
   });
 });

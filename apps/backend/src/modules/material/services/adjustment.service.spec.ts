@@ -63,6 +63,56 @@ describe('AdjustmentService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    it('품목 마스터가 누락되어도 보정 이력의 원본 itemCode는 유지한다', async () => {
+      invAdjLogRepo.find.mockResolvedValue([
+        {
+          adjDate: new Date('2026-04-11'),
+          seq: 1,
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-MISSING',
+          beforeQty: 10,
+          afterQty: 12,
+          diffQty: 2,
+          reason: '보정',
+        } as InvAdjLog,
+      ]);
+      invAdjLogRepo.count.mockResolvedValue(1);
+      partMasterRepo.find.mockResolvedValue([]);
+
+      const result = await service.findAll({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('보정 이력 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      invAdjLogRepo.find.mockResolvedValue([
+        {
+          adjDate: new Date('2026-04-11'),
+          seq: 1,
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          company: 'C1',
+          plant: 'P1',
+        } as InvAdjLog,
+      ]);
+      invAdjLogRepo.count.mockResolvedValue(1);
+      partMasterRepo.find.mockResolvedValue([]);
+
+      await service.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
+
+      expect(partMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+  });
+
   describe('createPending', () => {
     it('승인대기 보정 요청은 TransactionService로 보정이력 저장을 처리한다', async () => {
       const invAdjLog = {
@@ -94,6 +144,38 @@ describe('AdjustmentService', () => {
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(queryRunner.manager.save).toHaveBeenCalledWith(invAdjLog);
+    });
+
+    it('승인대기 보정 요청은 품목과 LOT를 요청 테넌트 범위에서 확인한다', async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', company: 'HANES', plant: 'P01' } as MatLot)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: 0,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatStock);
+      queryRunner.manager.create.mockReturnValue({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog);
+      queryRunner.manager.save.mockResolvedValue({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog);
+
+      await service.createPending({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        afterQty: 12,
+        reason: '보정',
+      } as any, 'HANES', 'P01');
+
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(1, PartMaster, {
+        where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatLot, {
+        where: { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      });
     });
 
     it('예약수량보다 적게 보정 요청하면 차단한다', async () => {
@@ -153,9 +235,67 @@ describe('AdjustmentService', () => {
       expect(result.adjustStatus).toBe('APPROVED');
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
-      expect(queryRunner.manager.update).toHaveBeenCalledWith(InvAdjLog, { adjDate: new Date('2026-04-11'), seq: 1 }, expect.objectContaining({
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(InvAdjLog, {
+        adjDate: new Date('2026-04-11'),
+        seq: 1,
+        company: 'HANES',
+        plant: 'P01',
+      }, expect.objectContaining({
         adjustStatus: 'APPROVED',
       }));
+    });
+
+    it('승인 반영은 보정 이력 회사/공장 범위에서 재고와 LOT 상태를 갱신한다', async () => {
+      invAdjLogRepo.findOne.mockResolvedValue({
+        adjDate: new Date('2026-04-11'),
+        seq: 1,
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        afterQty: 0,
+        diffQty: -10,
+        reason: '보정',
+        adjustStatus: 'PENDING',
+        company: 'HANES',
+        plant: 'P01',
+      } as InvAdjLog);
+      queryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 0,
+        company: 'HANES',
+        plant: 'P01',
+      } as MatStock);
+      stockTxRepo.findOne.mockResolvedValue(null);
+      queryRunner.manager.create.mockReturnValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+      queryRunner.manager.save.mockResolvedValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+
+      await service.approve('2026-04-11', 1, 'admin', 'HANES', 'P01');
+
+      expect(invAdjLogRepo.findOne).toHaveBeenCalledWith({
+        where: { adjDate: new Date('2026-04-11'), seq: 1, company: 'HANES', plant: 'P01' },
+      });
+      expect(queryRunner.manager.findOne).toHaveBeenCalledWith(MatStock, {
+        where: {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          company: 'HANES',
+          plant: 'P01',
+        },
+      });
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatLot,
+        { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+        { status: 'DEPLETED' },
+      );
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        InvAdjLog,
+        { adjDate: new Date('2026-04-11'), seq: 1, company: 'HANES', plant: 'P01' },
+        expect.objectContaining({ adjustStatus: 'APPROVED' }),
+      );
     });
 
     it('예약수량보다 적게 승인 반영하면 차단한다', async () => {
@@ -220,6 +360,43 @@ describe('AdjustmentService', () => {
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(queryRunner.manager.save).toHaveBeenCalledWith(invAdjLog);
+    });
+
+    it('즉시승인 보정은 품목과 LOT를 요청 테넌트 범위에서 확인한다', async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as PartMaster)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', company: 'HANES', plant: 'P01' } as MatLot)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          reservedQty: 0,
+          company: 'HANES',
+          plant: 'P01',
+        } as MatStock);
+      stockTxRepo.findOne.mockResolvedValue(null);
+      queryRunner.manager.create
+        .mockReturnValueOnce({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog)
+        .mockReturnValueOnce({ transNo: 'ADJ2026041100001' } as StockTransaction);
+      queryRunner.manager.save
+        .mockResolvedValueOnce({ adjDate: new Date('2026-04-11'), seq: 1 } as InvAdjLog)
+        .mockResolvedValueOnce({ transNo: 'ADJ2026041100001' } as StockTransaction);
+
+      await service.create({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        afterQty: 12,
+        reason: '보정',
+      } as any, 'HANES', 'P01');
+
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(1, PartMaster, {
+        where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatLot, {
+        where: { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      });
     });
   });
 });

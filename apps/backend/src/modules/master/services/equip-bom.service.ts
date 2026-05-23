@@ -72,8 +72,17 @@ export class EquipBomService {
     return { data, total, page, limit };
   }
 
-  async findItemById(bomItemCode: string): Promise<EquipBomItem> {
-    const item = await this.bomItemRepo.findOne({ where: { bomItemCode } });
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  async findItemById(bomItemCode: string, company?: string, plant?: string): Promise<EquipBomItem> {
+    const item = await this.bomItemRepo.findOne({
+      where: { bomItemCode, ...this.tenantWhere(company, plant) },
+    });
     if (!item) {
       throw new NotFoundException('BOM 품목을 찾을 수 없습니다.');
     }
@@ -85,14 +94,14 @@ export class EquipBomService {
     return this.bomItemRepo.save(item);
   }
 
-  async updateItem(id: string, dto: UpdateEquipBomItemDto): Promise<EquipBomItem> {
-    const item = await this.findItemById(id);
+  async updateItem(id: string, dto: UpdateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
+    const item = await this.findItemById(id, company, plant);
     Object.assign(item, dto);
     return this.bomItemRepo.save(item);
   }
 
-  async deleteItem(id: string): Promise<void> {
-    const item = await this.findItemById(id);
+  async deleteItem(id: string, company?: string, plant?: string): Promise<void> {
+    const item = await this.findItemById(id, company, plant);
     await this.bomItemRepo.remove(item);
   }
 
@@ -100,7 +109,7 @@ export class EquipBomService {
   // 설비-BOM 연결 CRUD
   // ========================================
 
-  async findAllRels(query: EquipBomRelQueryDto) {
+  async findAllRels(query: EquipBomRelQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 20, equipCode, bomItemId, itemType, useYn } = query;
 
     const queryBuilder = this.bomRelRepo
@@ -123,6 +132,12 @@ export class EquipBomService {
     if (useYn) {
       queryBuilder.andWhere('rel.useYn = :useYn', { useYn });
     }
+    if (company) {
+      queryBuilder.andWhere('rel.company = :company', { company });
+    }
+    if (plant) {
+      queryBuilder.andWhere('rel.plant = :plant', { plant });
+    }
 
     const [data, total] = await queryBuilder
       .orderBy('rel.createdAt', 'DESC')
@@ -133,9 +148,9 @@ export class EquipBomService {
     return { data, total, page, limit };
   }
 
-  async findRelByCompositeKey(equipCode: string, bomItemCode: string): Promise<EquipBomRel> {
+  async findRelByCompositeKey(equipCode: string, bomItemCode: string, company?: string, plant?: string): Promise<EquipBomRel> {
     const rel = await this.bomRelRepo.findOne({
-      where: { equipCode, bomItemCode },
+      where: { equipCode, bomItemCode, ...this.tenantWhere(company, plant) },
       relations: ['equipment', 'bomItem'],
     });
     if (!rel) {
@@ -144,9 +159,9 @@ export class EquipBomService {
     return rel;
   }
 
-  async findRelsByEquipId(equipCode: string): Promise<EquipBomRel[]> {
+  async findRelsByEquipId(equipCode: string, company?: string, plant?: string): Promise<EquipBomRel[]> {
     return this.bomRelRepo.find({
-      where: { equipCode, useYn: 'Y' },
+      where: { equipCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
       relations: ['bomItem'],
       order: { createdAt: 'DESC' },
     });
@@ -167,8 +182,8 @@ export class EquipBomService {
     return this.bomRelRepo.save(rel);
   }
 
-  async updateRel(equipCode: string, bomItemCode: string, dto: UpdateEquipBomRelDto): Promise<EquipBomRel> {
-    const rel = await this.findRelByCompositeKey(equipCode, bomItemCode);
+  async updateRel(equipCode: string, bomItemCode: string, dto: UpdateEquipBomRelDto, company?: string, plant?: string): Promise<EquipBomRel> {
+    const rel = await this.findRelByCompositeKey(equipCode, bomItemCode, company, plant);
     if (dto.quantity !== undefined) rel.quantity = dto.quantity;
     if (dto.installDate !== undefined) rel.installDate = dto.installDate ? new Date(dto.installDate) : null;
     if (dto.expireDate !== undefined) rel.expireDate = dto.expireDate ? new Date(dto.expireDate) : null;
@@ -177,8 +192,8 @@ export class EquipBomService {
     return this.bomRelRepo.save(rel);
   }
 
-  async deleteRel(equipCode: string, bomItemCode: string): Promise<void> {
-    const rel = await this.findRelByCompositeKey(equipCode, bomItemCode);
+  async deleteRel(equipCode: string, bomItemCode: string, company?: string, plant?: string): Promise<void> {
+    const rel = await this.findRelByCompositeKey(equipCode, bomItemCode, company, plant);
     await this.bomRelRepo.remove(rel);
   }
 
@@ -186,9 +201,9 @@ export class EquipBomService {
   // 특정 설비의 BOM 목록 조회
   // ========================================
 
-  async getEquipBomList(equipCode: string) {
+  async getEquipBomList(equipCode: string, company?: string, plant?: string) {
     const rels = await this.bomRelRepo.find({
-      where: { equipCode, useYn: 'Y' },
+      where: { equipCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
       relations: ['bomItem'],
       order: { createdAt: 'DESC' },
     });

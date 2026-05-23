@@ -31,6 +31,13 @@ export class MatLotService {
     private readonly matIssueRepository: Repository<MatIssue>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: MatLotQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, matUid, vendor, iqcStatus, status } = query;
     const skip = (page - 1) * limit;
@@ -58,7 +65,9 @@ export class MatLotService {
     // part 정보 조회 및 중첩 객체 평면화
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({
+        where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) },
+      })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -66,52 +75,55 @@ export class MatLotService {
       const part = partMap.get(lot.itemCode);
       return {
         ...lot,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
+        itemCode: lot.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
       };
     });
 
     return { data: flattenedData, total, page, limit };
   }
 
-  async findById(matUid: string) {
+  async findById(matUid: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const lot = await this.matLotRepository.findOne({
-      where: { matUid },
+      where: { matUid, ...tenantWhere },
     });
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
 
-    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
+    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
 
     return {
       ...lot,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
-      unit: part?.unit,
+      itemCode: lot.itemCode,
+      itemName: part?.itemName ?? null,
+      unit: part?.unit ?? null,
     };
   }
 
-  async findByMatUid(matUid: string) {
+  async findByMatUid(matUid: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const lot = await this.matLotRepository.findOne({
-      where: { matUid },
+      where: { matUid, ...tenantWhere },
     });
 
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
 
-    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
+    const part = lot.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
 
     return {
       ...lot,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
-      unit: part?.unit,
+      itemCode: lot.itemCode,
+      itemName: part?.itemName ?? null,
+      unit: part?.unit ?? null,
     };
   }
 
-  async create(dto: CreateMatLotDto) {
+  async create(dto: CreateMatLotDto, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const existing = await this.matLotRepository.findOne({
-      where: { matUid: dto.matUid },
+      where: { matUid: dto.matUid, ...tenantWhere },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 자재 UID입니다: ${dto.matUid}`);
@@ -128,21 +140,24 @@ export class MatLotService {
       poNo: dto.poNo,
       iqcStatus: dto.iqcStatus ?? 'PENDING',
       status: dto.status ?? 'NORMAL',
+      company,
+      plant,
     });
 
     const saved = await this.matLotRepository.save(lot);
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: saved.itemCode } });
+    const part = await this.partMasterRepository.findOne({ where: { itemCode: saved.itemCode, ...tenantWhere } });
 
     return {
       ...saved,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
-      unit: part?.unit,
+      itemCode: saved.itemCode,
+      itemName: part?.itemName ?? null,
+      unit: part?.unit ?? null,
     };
   }
 
-  async update(matUid: string, dto: UpdateMatLotDto) {
-    await this.findById(matUid);
+  async update(matUid: string, dto: UpdateMatLotDto, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    await this.findById(matUid, company, plant);
     if (dto.status) {
       throw new BadRequestException(
         `LOT 상태(${dto.status})는 직접 변경할 수 없습니다. HOLD/해제/폐기/소진 전용 처리 API를 사용해 주세요.`,
@@ -155,23 +170,24 @@ export class MatLotService {
     if (dto.vendor) updateData.vendor = dto.vendor;
     if (dto.origin) updateData.origin = dto.origin;
 
-    await this.matLotRepository.update(matUid, updateData);
+    await this.matLotRepository.update({ matUid, ...tenantWhere }, updateData);
 
-    const lot = await this.matLotRepository.findOne({ where: { matUid } });
-    const part = lot?.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }) : null;
+    const lot = await this.matLotRepository.findOne({ where: { matUid, ...tenantWhere } });
+    const part = lot?.itemCode ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }) : null;
 
     return {
       ...lot,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
-      unit: part?.unit,
+      itemCode: lot?.itemCode,
+      itemName: part?.itemName ?? null,
+      unit: part?.unit ?? null,
     };
   }
 
-  async delete(matUid: string) {
-    const lot = await this.findById(matUid);
+  async delete(matUid: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const lot = await this.findById(matUid, company, plant);
 
-    const stocks = await this.matStockRepository.find({ where: { matUid } });
+    const stocks = await this.matStockRepository.find({ where: { matUid, ...tenantWhere } });
     const hasStock = stocks.some((stock) => (stock.qty ?? 0) > 0 || (stock.availableQty ?? 0) > 0);
     if (hasStock) {
       throw new BadRequestException(
@@ -180,7 +196,7 @@ export class MatLotService {
     }
 
     const issues = await this.matIssueRepository.find({
-      where: { matUid, status: Not('CANCELED') },
+      where: { matUid, status: Not('CANCELED'), ...tenantWhere },
     });
     if (issues.length > 0) {
       throw new BadRequestException(
@@ -188,7 +204,7 @@ export class MatLotService {
       );
     }
 
-    await this.matLotRepository.delete(matUid);
+    await this.matLotRepository.delete({ matUid, ...tenantWhere });
     return { matUid };
   }
 }

@@ -69,6 +69,184 @@ describe('MatIssueService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  describe('findAll', () => {
+    it('LOT 마스터가 누락되어도 출고 이력의 원본 matUid는 유지한다', async () => {
+      mockMatIssueRepo.find.mockResolvedValue([
+        {
+          issueNo: 'ISS-001',
+          seq: 1,
+          matUid: 'MAT-MISSING',
+          issueQty: 5,
+          issueType: 'PROD',
+          status: 'DONE',
+        } as MatIssue,
+      ]);
+      mockMatIssueRepo.count.mockResolvedValue(1);
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockJobOrderRepo.find.mockResolvedValue([]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          issueNo: 'ISS-001',
+          matUid: 'MAT-MISSING',
+          itemCode: null,
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('출고 이력 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockMatIssueRepo.find.mockResolvedValue([
+        {
+          issueNo: 'ISS-001',
+          seq: 1,
+          matUid: 'MAT-001',
+          orderNo: 'JO-001',
+          issueQty: 5,
+          issueType: 'PROD',
+          status: 'DONE',
+          company: 'C1',
+          plant: 'P1',
+        } as MatIssue,
+      ]);
+      mockMatIssueRepo.count.mockResolvedValue(1);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as MatLot,
+      ]);
+      mockJobOrderRepo.find.mockResolvedValue([{ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockJobOrderRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+  });
+
+  describe('findById', () => {
+    it('LOT 마스터가 누락되어도 출고 상세의 원본 matUid는 유지한다', async () => {
+      mockMatIssueRepo.findOne.mockResolvedValue({
+        issueNo: 'ISS-001',
+        seq: 1,
+        matUid: 'MAT-MISSING',
+        issueQty: 5,
+        issueType: 'PROD',
+        status: 'DONE',
+      } as MatIssue);
+      mockMatLotRepo.findOne.mockResolvedValue(null);
+      mockJobOrderRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.findById('ISS-001', 1);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          issueNo: 'ISS-001',
+          matUid: 'MAT-MISSING',
+          itemCode: null,
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+  });
+
+  describe('scanIssue', () => {
+    it('품목 마스터가 누락되어도 스캔 출고 결과의 LOT 원본 itemCode는 유지한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-MISSING',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-MISSING', matUid: 'MAT-001', qty: 5, availableQty: 5 } as MatStock,
+      ]);
+      mockPartMasterRepo.findOne.mockResolvedValue(null);
+
+      jest.spyOn(target, 'create').mockResolvedValue([
+        {
+          issueNo: 'ISS-001',
+          seq: 1,
+          matUid: 'MAT-001',
+          issueQty: 5,
+          itemCode: null,
+          itemName: null,
+          unit: null,
+        } as any,
+      ]);
+
+      const result = await target.scanIssue({
+        matUid: 'MAT-001',
+        issueType: 'PROD',
+        workerId: 'worker',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          issuedQty: 5,
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('스캔 출고의 LOT/재고/품목 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'C1',
+        plant: 'P1',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
+      ]);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      jest.spyOn(target, 'create').mockResolvedValue([
+        {
+          issueNo: 'ISS-001',
+          seq: 1,
+          matUid: 'MAT-001',
+          issueQty: 5,
+          itemCode: 'ITEM-001',
+          itemName: 'Item',
+          unit: 'EA',
+        } as any,
+      ]);
+
+      await target.scanIssue({
+        matUid: 'MAT-001',
+        warehouseCode: 'WH-01',
+        issueType: 'PROD',
+        workerId: 'worker',
+      }, 'C1', 'P1');
+
+      expect(mockMatLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockMatStockRepo.find).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', warehouseCode: 'WH-01', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
+    });
+  });
+
   it('create splits manual issue across multiple stock rows', async () => {
     const manager = {
       findOne: jest.fn().mockResolvedValueOnce({
@@ -167,19 +345,29 @@ describe('MatIssueService', () => {
       .mockResolvedValueOnce('CANCEL-001')
       .mockResolvedValueOnce('CANCEL-002');
 
-    await target.cancel('ISS-001', 1, 'cancel');
+    await target.cancel('ISS-001', 1, 'cancel', 'HANES', 'P01');
 
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.update).toHaveBeenCalledWith(
       MatStock,
-      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 3, availableQty: 3 },
     );
     expect(manager.update).toHaveBeenCalledWith(
       MatStock,
-      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 4, availableQty: 4 },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      StockTransaction,
+      { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+      { status: 'CANCELED' },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      StockTransaction,
+      { transNo: 'TX-002', company: 'HANES', plant: 'P01' },
+      { status: 'CANCELED' },
     );
   });
 

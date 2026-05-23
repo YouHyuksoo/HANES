@@ -42,6 +42,13 @@ export class SensorMonitorService {
     private readonly pmWorkOrderRepo: Repository<PmWorkOrder>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   // ─── 센서 데이터 수신 ────────────────────────────────────
 
   /** 센서 데이터 일괄 수신 + 규칙 평가 + USAGE_BASED 업데이트 */
@@ -80,13 +87,17 @@ export class SensorMonitorService {
     const equipCodes = [...new Set(items.map((i) => i.equipCode))];
     const sensorTypes = [...new Set(items.map((i) => i.sensorType))];
 
-    const allRules = equipCodes.length > 0
-      ? await this.ruleRepo
+    const allRulesQuery = equipCodes.length > 0
+      ? this.ruleRepo
           .createQueryBuilder('r')
           .where('r.equipCode IN (:...equipCodes)', { equipCodes })
           .andWhere('r.sensorType IN (:...sensorTypes)', { sensorTypes })
           .andWhere('r.useYn = :yn', { yn: 'Y' })
-          .getMany()
+      : null;
+    if (allRulesQuery && company) allRulesQuery.andWhere('r.company = :company', { company });
+    if (allRulesQuery && plant) allRulesQuery.andWhere('r.plant = :plant', { plant });
+    const allRules = allRulesQuery
+      ? await allRulesQuery.getMany()
       : [];
 
     // 규칙을 키별로 그룹핑
@@ -144,7 +155,10 @@ export class SensorMonitorService {
           if (rule.actionType === 'INTERLOCK') {
             try {
               await this.equipMasterRepo.update(
-                { equipCode: rule.equipCode },
+                {
+                  equipCode: rule.equipCode,
+                  ...this.tenantWhere(rule.company ?? company, rule.plant ?? plant),
+                },
                 { status: 'INTERLOCK' },
               );
               interlocked++;
@@ -158,11 +172,17 @@ export class SensorMonitorService {
 
       // 3. USAGE_BASED PM 계획 업데이트
       const usagePlans = await this.pmPlanRepo.find({
-        where: { equipCode, pmType: 'USAGE_BASED', usageField: sensorType, useYn: 'Y' },
+        where: {
+          equipCode,
+          pmType: 'USAGE_BASED',
+          usageField: sensorType,
+          useYn: 'Y',
+          ...this.tenantWhere(company, plant),
+        },
       });
       for (const plan of usagePlans) {
         await this.pmPlanRepo.update(
-          { planCode: plan.planCode },
+          { planCode: plan.planCode, ...this.tenantWhere(company, plant) },
           { currentUsage: value },
         );
       }
@@ -174,12 +194,14 @@ export class SensorMonitorService {
   // ─── 센서 데이터 조회 ────────────────────────────────────
 
   /** 센서 데이터 이력 조회 */
-  async querySensorData(query: SensorDataQueryDto) {
+  async querySensorData(query: SensorDataQueryDto, company?: string, plant?: string) {
     const { equipCode, sensorType, from, to, page = 1, limit = 50 } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.sensorDataRepo.createQueryBuilder('s');
 
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
     if (equipCode) qb.andWhere('s.equipCode = :equipCode', { equipCode });
     if (sensorType) qb.andWhere('s.sensorType = :sensorType', { sensorType });
     if (from) qb.andWhere('s.measuredAt >= :from', { from: new Date(from) });
@@ -202,12 +224,14 @@ export class SensorMonitorService {
   // ─── 조건 규칙 CRUD ────────────────────────────────────
 
   /** 규칙 목록 조회 */
-  async findAllRules(query: ConditionRuleQueryDto) {
+  async findAllRules(query: ConditionRuleQueryDto, company?: string, plant?: string) {
     const { equipCode, sensorType, page = 1, limit = 50 } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.ruleRepo.createQueryBuilder('r');
 
+    if (company) qb.andWhere('r.company = :company', { company });
+    if (plant) qb.andWhere('r.plant = :plant', { plant });
     if (equipCode) qb.andWhere('r.equipCode = :equipCode', { equipCode });
     if (sensorType) qb.andWhere('r.sensorType = :sensorType', { sensorType });
 
@@ -238,8 +262,8 @@ export class SensorMonitorService {
   }
 
   /** 규칙 수정 */
-  async updateRule(ruleId: number, dto: UpdateConditionRuleDto) {
-    const rule = await this.ruleRepo.findOne({ where: { ruleId } });
+  async updateRule(ruleId: number, dto: UpdateConditionRuleDto, company?: string, plant?: string) {
+    const rule = await this.ruleRepo.findOne({ where: { ruleId, ...this.tenantWhere(company, plant) } });
     if (!rule) throw new NotFoundException(`규칙을 찾을 수 없습니다: ${ruleId}`);
 
     if (dto.warningValue !== undefined) rule.warningValue = dto.warningValue;
@@ -253,10 +277,10 @@ export class SensorMonitorService {
   }
 
   /** 규칙 삭제 */
-  async deleteRule(ruleId: number) {
-    const rule = await this.ruleRepo.findOne({ where: { ruleId } });
+  async deleteRule(ruleId: number, company?: string, plant?: string) {
+    const rule = await this.ruleRepo.findOne({ where: { ruleId, ...this.tenantWhere(company, plant) } });
     if (!rule) throw new NotFoundException(`규칙을 찾을 수 없습니다: ${ruleId}`);
-    await this.ruleRepo.delete({ ruleId });
+    await this.ruleRepo.delete({ ruleId, ...this.tenantWhere(company, plant) });
     return { ruleId, deleted: true };
   }
 

@@ -101,7 +101,11 @@ describe('ProductionViewsService', () => {
     const result = await service.getPackResult({ page: 1, limit: 10 } as any, 'C1', 'P1');
 
     expect(result.total).toBe(0);
-    expect(qb.leftJoin).toHaveBeenCalled();
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      'ITEM_MASTERS',
+      'im',
+      'im.ITEM_CODE = bm.ITEM_CODE AND im.COMPANY = bm.COMPANY AND im.PLANT_CD = bm.PLANT_CD',
+    );
     expect(qb.andWhere).toHaveBeenCalledWith('bm.COMPANY = :company', { company: 'C1' });
     expect(qb.andWhere).toHaveBeenCalledWith('bm.PLANT_CD = :plant', { plant: 'P1' });
   });

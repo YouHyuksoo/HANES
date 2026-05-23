@@ -31,6 +31,13 @@ export class InventoryQueryService {
     private readonly partMasterRepository: Repository<PartMaster>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /**
    * 현재고 조회
    * @returns 평면화된 재고 데이터 (중첩 객체 → 평면 필드)
@@ -58,17 +65,18 @@ export class InventoryQueryService {
     const whCodes = [...new Set(filtered.map((s) => s.warehouseCode).filter(Boolean))];
     const itemCodes = [...new Set(filtered.map((s) => s.itemCode).filter(Boolean))];
     const matUids = [...new Set(filtered.map((s) => s.matUid).filter(Boolean))];
+    const tenantWhere = this.tenantWhere(company, plant);
 
     const warehouses = whCodes.length > 0 ? await this.warehouseRepository.find({
-      where: { warehouseCode: In(whCodes) },
+      where: { warehouseCode: In(whCodes), ...tenantWhere },
       select: ['warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
     const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
-      where: { itemCode: In(itemCodes) },
+      where: { itemCode: In(itemCodes), ...tenantWhere },
       select: ['itemCode', 'itemName', 'itemType', 'unit'],
     }) : [];
     const lots = matUids.length > 0 ? await this.lotRepository.find({
-      where: { matUid: In(matUids as string[]) },
+      where: { matUid: In(matUids as string[]), ...tenantWhere },
       select: ['matUid', 'status'],
     }) : [];
 
@@ -149,10 +157,11 @@ export class InventoryQueryService {
     const whIds = [...new Set(transactions.flatMap((t) => [t.fromWarehouseId, t.toWarehouseId].filter(Boolean)))];
     const itemCodes = [...new Set(transactions.map((t) => t.itemCode).filter(Boolean))];
     const matUids = [...new Set(transactions.map((t) => t.matUid).filter(Boolean))];
+    const tenantWhere = this.tenantWhere(company, plant);
 
-    const warehouses = whIds.length > 0 ? await this.warehouseRepository.find({ where: { warehouseCode: In(whIds as string[]) } }) : [];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes as string[]) } }) : [];
-    const lots = matUids.length > 0 ? await this.lotRepository.find({ where: { matUid: In(matUids as string[]) } }) : [];
+    const warehouses = whIds.length > 0 ? await this.warehouseRepository.find({ where: { warehouseCode: In(whIds as string[]), ...tenantWhere } }) : [];
+    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes as string[]), ...tenantWhere } }) : [];
+    const lots = matUids.length > 0 ? await this.lotRepository.find({ where: { matUid: In(matUids as string[]), ...tenantWhere } }) : [];
 
     const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -170,8 +179,8 @@ export class InventoryQueryService {
   /**
    * LOT 목록 조회
    */
-  async getLots(query: { itemCode?: string; itemType?: string; status?: string }) {
-    const where: any = {};
+  async getLots(query: { itemCode?: string; itemType?: string; status?: string }, company?: string, plant?: string) {
+    const where: any = this.tenantWhere(company, plant);
     if (query.itemCode) where.itemCode = query.itemCode;
     if (query.status) where.status = query.status;
 
@@ -184,7 +193,7 @@ export class InventoryQueryService {
 
     const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -197,9 +206,10 @@ export class InventoryQueryService {
   /**
    * LOT 상세 조회
    */
-  async getLotById(id: string) {
+  async getLotById(id: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const lot = await this.lotRepository.findOne({
-      where: { matUid: id },
+      where: { matUid: id, ...tenantWhere },
     });
 
     if (!lot) {
@@ -207,10 +217,10 @@ export class InventoryQueryService {
     }
 
     const [part, stocks, transactions] = await Promise.all([
-      this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } }),
-      this.stockRepository.find({ where: { matUid: id } }),
+      this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } }),
+      this.stockRepository.find({ where: { matUid: id, ...tenantWhere } }),
       this.stockTransactionRepository.find({
-        where: { matUid: id },
+        where: { matUid: id, ...tenantWhere },
         order: { transDate: 'DESC' },
         take: 20,
       }),
@@ -219,7 +229,7 @@ export class InventoryQueryService {
     // stock에 warehouse 정보 추가
     const whCodes = [...new Set(stocks.map((s) => s.warehouseCode).filter(Boolean))];
     const warehouses = whCodes.length > 0
-      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes) } })
+      ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes), ...tenantWhere } })
       : [];
     const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
@@ -234,9 +244,10 @@ export class InventoryQueryService {
   /**
    * 트랜잭션 상세 조회 (transNo)
    */
-  async getTransactionById(transNo: string) {
+  async getTransactionById(transNo: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const transaction = await this.stockTransactionRepository.findOne({
-      where: { transNo },
+      where: { transNo, ...tenantWhere },
     });
 
     if (!transaction) {
@@ -245,12 +256,12 @@ export class InventoryQueryService {
 
     // 관련 데이터 일괄 조회
     const [fromWarehouse, toWarehouse, part, lot, cancelRef, canceledByTrans] = await Promise.all([
-      transaction.fromWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.fromWarehouseId } }) : null,
-      transaction.toWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.toWarehouseId } }) : null,
-      this.partMasterRepository.findOne({ where: { itemCode: transaction.itemCode } }),
-      transaction.matUid ? this.lotRepository.findOne({ where: { matUid: transaction.matUid } }) : null,
-      transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { transNo: transaction.cancelRefId } }) : null,
-      this.stockTransactionRepository.findOne({ where: { cancelRefId: transNo } }),
+      transaction.fromWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.fromWarehouseId, ...tenantWhere } }) : null,
+      transaction.toWarehouseId ? this.warehouseRepository.findOne({ where: { warehouseCode: transaction.toWarehouseId, ...tenantWhere } }) : null,
+      this.partMasterRepository.findOne({ where: { itemCode: transaction.itemCode, ...tenantWhere } }),
+      transaction.matUid ? this.lotRepository.findOne({ where: { matUid: transaction.matUid, ...tenantWhere } }) : null,
+      transaction.cancelRefId ? this.stockTransactionRepository.findOne({ where: { transNo: transaction.cancelRefId, ...tenantWhere } }) : null,
+      this.stockTransactionRepository.findOne({ where: { cancelRefId: transNo, ...tenantWhere } }),
     ]);
 
     return {
@@ -267,16 +278,17 @@ export class InventoryQueryService {
   /**
    * 트랜잭션 상세 조회 (alias)
    */
-  async getTransaction(id: string) {
-    return this.getTransactionById(id);
+  async getTransaction(id: string, company?: string, plant?: string) {
+    return this.getTransactionById(id, company, plant);
   }
 
   /**
    * 재고 집계
    */
-  async getStockSummary(query: { warehouseType?: string; itemType?: string }) {
+  async getStockSummary(query: { warehouseType?: string; itemType?: string }, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     let stocks = await this.stockRepository.find({
-      where: { qty: MoreThan(0) },
+      where: { qty: MoreThan(0), ...tenantWhere },
       select: ['warehouseCode', 'itemCode', 'qty'],
     });
 
@@ -286,11 +298,11 @@ export class InventoryQueryService {
     const itemCodes = [...new Set(stocks.map((s) => s.itemCode).filter(Boolean))];
 
     const warehouses = whCodes.length > 0 ? await this.warehouseRepository.find({
-      where: { warehouseCode: In(whCodes) },
+      where: { warehouseCode: In(whCodes), ...tenantWhere },
       select: ['warehouseCode', 'warehouseName', 'warehouseType'],
     }) : [];
     const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({
-      where: { itemCode: In(itemCodes) },
+      where: { itemCode: In(itemCodes), ...tenantWhere },
       select: ['itemCode', 'itemName', 'itemType'],
     }) : [];
 

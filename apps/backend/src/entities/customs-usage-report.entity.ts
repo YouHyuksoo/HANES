@@ -32,7 +32,7 @@ export class CustomsUsageReport {
   lotMatUid: string;
 
   @Column({ type: 'varchar2', name: 'ORDER_NO', length: 36, nullable: true })
-  jobOrderId: string | null;
+  orderNo: string | null;
 
   @Column({ name: 'USAGE_QTY', type: 'int' })
   usageQty: number;

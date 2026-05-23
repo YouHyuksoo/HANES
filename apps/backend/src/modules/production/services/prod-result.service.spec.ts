@@ -22,6 +22,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProdResultService', () => {
   let service: ProdResultService;
@@ -40,6 +41,7 @@ describe('ProdResultService', () => {
   let numbering: DeepMocked<NumberingService>;
   let sysConfigService: DeepMocked<SysConfigService>;
   let shiftPatternRepo: DeepMocked<Repository<ShiftPattern>>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -58,9 +60,11 @@ describe('ProdResultService', () => {
     numbering = createMock<NumberingService>();
     sysConfigService = createMock<SysConfigService>();
     shiftPatternRepo = createMock<Repository<ShiftPattern>>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -85,6 +89,7 @@ describe('ProdResultService', () => {
         { provide: NumberingService, useValue: numbering },
         { provide: SysConfigService, useValue: sysConfigService },
         { provide: getRepositoryToken(ShiftPattern), useValue: shiftPatternRepo },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -109,6 +114,86 @@ describe('ProdResultService', () => {
     await expect(service.findById('X')).rejects.toThrow(NotFoundException);
   });
 
+  it('findMatIssues keeps issue matUid when LOT master is missing', async () => {
+    matIssueRepo.find.mockResolvedValue([
+      {
+        issueNo: 'ISS-001',
+        seq: 1,
+        prodResultNo: 'PR-1',
+        matUid: 'MAT-MISSING',
+        issueQty: 2,
+        status: 'DONE',
+      } as MatIssue,
+    ]);
+    dataSource.getRepository.mockReturnValue({
+      find: jest.fn().mockResolvedValue([]),
+    } as any);
+    partMasterRepo.find.mockResolvedValue([]);
+
+    const result = await service.findMatIssues('PR-1', 'C1', 'P1');
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        issueNo: 'ISS-001',
+        matUid: 'MAT-MISSING',
+        itemCode: null,
+        itemName: null,
+        unit: null,
+      }),
+    );
+  });
+
+  it('findMatIssues resolves material part within tenant from lot itemCode', async () => {
+    matIssueRepo.find.mockResolvedValue([
+      {
+        issueNo: 'ISS-001',
+        seq: 1,
+        prodResultNo: 'PR-1',
+        matUid: 'MAT-001',
+        issueQty: 2,
+        status: 'DONE',
+      } as MatIssue,
+    ]);
+    dataSource.getRepository.mockReturnValue({
+      find: jest.fn().mockResolvedValue([{ matUid: 'MAT-001', itemCode: 'RM-001' }]),
+    } as any);
+    partMasterRepo.find.mockResolvedValue([{ itemCode: 'RM-001', itemName: 'Raw Material', unit: 'EA' }] as any);
+
+    await service.findMatIssues('PR-1', 'C1', 'P1');
+
+    expect(partMasterRepo.find).toHaveBeenCalledWith({
+      where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+    });
+  });
+
+  it('findMatIssues keeps LOT itemCode when part master is missing', async () => {
+    matIssueRepo.find.mockResolvedValue([
+      {
+        issueNo: 'ISS-001',
+        seq: 1,
+        prodResultNo: 'PR-1',
+        matUid: 'MAT-001',
+        issueQty: 2,
+        status: 'DONE',
+      } as MatIssue,
+    ]);
+    dataSource.getRepository.mockReturnValue({
+      find: jest.fn().mockResolvedValue([{ matUid: 'MAT-001', itemCode: 'RM-MISSING' }]),
+    } as any);
+    partMasterRepo.find.mockResolvedValue([]);
+
+    const result = await service.findMatIssues('PR-1', 'C1', 'P1');
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        matUid: 'MAT-001',
+        itemCode: 'RM-MISSING',
+        itemName: null,
+        unit: null,
+      }),
+    );
+  });
+
   it('create persists result', async () => {
     jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, company: 'C1', plant: 'P1' } as any);
 
@@ -130,8 +215,47 @@ describe('ProdResultService', () => {
 
     const result = await service.create({ orderNo: 'JO-1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1');
 
-    expect(queryRunner.commitTransaction).toHaveBeenCalled();
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(result?.resultNo).toBe('PR-1');
+  });
+
+  it('validates equipment and equipment BOM within tenant when creating result', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1',
+      status: 'RUNNING',
+      planQty: 100,
+      part: { itemCode: 'FG-001' },
+      company: 'C1',
+      plant: 'P1',
+    } as any);
+    equipBomRelRepo.find.mockResolvedValue([]);
+    equipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'C1', plant: 'P1' } as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+
+    await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1');
+
+    expect(equipBomRelRepo.find).toHaveBeenCalledWith({
+      where: { equipCode: 'EQ-001', useYn: 'Y', company: 'C1', plant: 'P1' },
+    });
+    expect(equipMasterRepo.findOne).toHaveBeenCalledWith({
+      where: { equipCode: 'EQ-001', company: 'C1', plant: 'P1' },
+    });
   });
 
   it('create promotes job-order status from WAITING to RUNNING', async () => {
@@ -166,6 +290,33 @@ describe('ProdResultService', () => {
       expect.objectContaining({ orderNo: 'JO-2', company: 'C1', plant: 'P1' }),
       expect.objectContaining({ status: 'RUNNING' }),
     );
+  });
+
+  it('update persists editable fields through TransactionService', async () => {
+    prodResultRepo.findOne
+      .mockResolvedValueOnce({
+        resultNo: 'PR-1',
+        status: 'RUNNING',
+        goodQty: 1,
+        defectQty: 0,
+        orderNo: 'JO-1',
+        inspectResults: [],
+        defectLogs: [],
+      } as any)
+      .mockResolvedValueOnce({ resultNo: 'PR-1', remark: 'updated' } as any);
+    matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+    const result = await service.update('PR-1', { remark: 'updated' } as any, 'C1', 'P1');
+
+    expect(result?.resultNo).toBe('PR-1');
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      ProdResult,
+      'PR-1',
+      expect.objectContaining({ remark: 'updated' }),
+    );
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
   it('update blocks direct status change', async () => {

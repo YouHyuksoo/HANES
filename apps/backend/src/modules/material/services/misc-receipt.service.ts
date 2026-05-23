@@ -120,12 +120,12 @@ export class MiscReceiptService {
       const warehouse = trans.toWarehouseId ? warehouseMap.get(trans.toWarehouseId) : null;
       return {
         ...trans,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
-        matUid: lot?.matUid,
-        warehouseCode: warehouse?.warehouseCode,
-        warehouseName: warehouse?.warehouseName,
+        itemCode: trans.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        matUid: trans.matUid ?? null,
+        warehouseCode: trans.toWarehouseId ?? null,
+        warehouseName: warehouse?.warehouseName ?? null,
       };
     });
 

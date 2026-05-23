@@ -71,8 +71,8 @@ export class SampleInspectService {
 
     const qb = this.sampleInspectRepository
       .createQueryBuilder('si')
-      .leftJoin(JobOrder, 'jo', 'jo.orderNo = si.orderNo')
-      .leftJoin(PartMaster, 'p', 'p.itemCode = jo.itemCode')
+      .leftJoin(JobOrder, 'jo', 'jo.orderNo = si.orderNo AND jo.company = si.company AND jo.plant = si.plant')
+      .leftJoin(PartMaster, 'p', 'p.itemCode = jo.itemCode AND p.company = jo.company AND p.plant = jo.plant')
       .select([
         'si.orderNo AS "orderNo"',
         'jo.orderNo AS "jobOrderNo"',

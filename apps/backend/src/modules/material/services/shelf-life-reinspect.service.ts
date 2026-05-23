@@ -48,6 +48,13 @@ export class ShelfLifeReInspectService {
     private readonly numbering: NumberingService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /** 재검사 이력 조회 (inspectType = RETEST) */
   async findAll(query: { page?: number; limit?: number }, company?: string, plant?: string) {
     const { page = 1, limit = 20 } = query;
@@ -68,11 +75,12 @@ export class ShelfLifeReInspectService {
   /** 재검사 실적 등록 + 후속처리 */
   async create(dto: CreateReInspectDto, company?: string, plant?: string) {
     const lot = await this.matLotRepo.findOne({
-      where: { matUid: dto.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      where: { matUid: dto.matUid, ...this.tenantWhere(company, plant) },
     });
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
 
-    const part = await this.partMasterRepo.findOne({ where: { itemCode: lot.itemCode } });
+    const lotTenant = this.tenantWhere(lot.company, lot.plant);
+    const part = await this.partMasterRepo.findOne({ where: { itemCode: lot.itemCode, ...lotTenant } });
 
     // IqcLog에 RETEST로 기록
     const log = this.iqcLogRepo.create({
@@ -95,7 +103,7 @@ export class ShelfLifeReInspectService {
       const extendDays = (part as any)?.extendShelfDays ?? 90;
       const prevExpiry = new Date(lot.expireDate);
       const newExpiry = new Date(prevExpiry.getTime() + extendDays * 24 * 60 * 60 * 1000);
-      await this.matLotRepo.update(lot.matUid, { expireDate: newExpiry });
+      await this.matLotRepo.update({ matUid: lot.matUid, ...lotTenant }, { expireDate: newExpiry });
     }
 
     // 불합격: 불용창고 자동이동
@@ -108,13 +116,14 @@ export class ShelfLifeReInspectService {
 
   /** 불합격 처리: 불용창고 자동이동 (G6과 동일 로직) */
   private async handleFail(matUid: string, itemCode: string, company?: string | null, plant?: string | null) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const defectWh = await this.warehouseRepo.findOne({
-      where: { warehouseType: 'DEFECT', useYn: 'Y', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      where: { warehouseType: 'DEFECT', useYn: 'Y', ...tenantWhere },
     });
     if (!defectWh) return;
 
     const stock = await this.matStockRepo.findOne({
-      where: { matUid, itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      where: { matUid, itemCode, ...tenantWhere },
     });
     if (!stock || stock.qty <= 0) return;
     if (stock.availableQty < stock.qty) {
@@ -127,16 +136,16 @@ export class ShelfLifeReInspectService {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode, matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { warehouseCode: stock.warehouseCode, itemCode, matUid, ...tenantWhere },
         { qty: 0 },
       );
 
       const existing = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        where: { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...tenantWhere },
       });
       if (existing) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+          { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...tenantWhere },
           { qty: existing.qty + stock.qty },
         );
       } else {
@@ -158,7 +167,7 @@ export class ShelfLifeReInspectService {
         company, plant,
       });
 
-      await queryRunner.manager.update(MatLot, matUid, { status: 'SCRAPPED' });
+      await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: 'SCRAPPED' });
     });
   }
 }

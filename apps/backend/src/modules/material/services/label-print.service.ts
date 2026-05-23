@@ -52,12 +52,19 @@ export class LabelPrintService {
     private readonly partMasterRepo: Repository<PartMaster>,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /**
    * ZPL 변수 치환 - 템플릿의 변수 플레이스홀더를 LOT 실제 데이터로 교체
    * @param dto templateId + matUids
    * @returns zplDataList(치환된 ZPL 배열), lotDetails(LOT 정보 배열)
    */
-  async generateZpl(dto: GenerateZplDto) {
+  async generateZpl(dto: GenerateZplDto, company?: string, plant?: string) {
     // templateId는 "templateName::category" 형식
     const parts = dto.templateId.includes('::') ? dto.templateId.split('::') : [dto.templateId, undefined];
     const where: any = parts[1]
@@ -77,7 +84,8 @@ export class LabelPrintService {
 
     // 배치 선조회: matUids → MatLot Map
     const matUids = dto.matUids as readonly string[];
-    const lots = await this.matLotRepo.find({ where: { matUid: In([...matUids]) } });
+    const tenantWhere = this.tenantWhere(company, plant);
+    const lots = await this.matLotRepo.find({ where: { matUid: In([...matUids]), ...tenantWhere } });
     const lotMap = new Map(lots.map((l) => [l.matUid, l] as const));
 
     // 누락 검사
@@ -90,7 +98,7 @@ export class LabelPrintService {
     // 배치 선조회: itemCodes → PartMaster Map
     const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const partsList = itemCodes.length > 0
-      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepo.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(partsList.map((p) => [p.itemCode, p] as const));
 
@@ -104,7 +112,7 @@ export class LabelPrintService {
       // 변수 치환 맵
       const vars: Record<string, string> = {
         '{{matUid}}': lot.matUid,
-        '{{itemCode}}': part?.itemCode ?? '',
+        '{{itemCode}}': lot.itemCode,
         '{{itemName}}': part?.itemName ?? '',
         '{{qty}}': String(lot.initQty),
         '{{unit}}': part?.unit ?? 'EA',
@@ -126,7 +134,7 @@ export class LabelPrintService {
       zplDataList.push(zpl);
       lotDetails.push({
         matUid: lot.matUid,
-        itemCode: part?.itemCode ?? '',
+        itemCode: lot.itemCode,
         itemName: part?.itemName ?? '',
         qty: lot.initQty,
         unit: part?.unit ?? 'EA',

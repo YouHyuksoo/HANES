@@ -52,6 +52,17 @@ describe('PartService', () => {
       expect(result).toEqual(part);
     });
 
+    it('should find part within tenant only', async () => {
+      const part = { itemCode: 'ITEM01', itemName: 'Part1', company: 'C1', plant: 'P1' } as PartMaster;
+      mockRepo.findOne.mockResolvedValue(part);
+
+      await target.findById('ITEM01', 'C1', 'P1');
+
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+      });
+    });
+
     it('should throw NotFoundException when not found', async () => {
       // Arrange
       mockRepo.findOne.mockResolvedValue(null);
@@ -72,10 +83,13 @@ describe('PartService', () => {
       mockRepo.save.mockResolvedValue(created);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(created);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+      });
     });
 
     it('should throw ConflictException when item code exists', async () => {
@@ -97,10 +111,14 @@ describe('PartService', () => {
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('ITEM01', { itemName: 'New' } as any);
+      const result = await target.update('ITEM01', { itemName: 'New' } as any, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(existing);
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ itemName: 'New' }),
+      );
     });
   });
 
@@ -113,10 +131,11 @@ describe('PartService', () => {
       mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.delete('ITEM01');
+      const result = await target.delete('ITEM01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ itemCode: 'ITEM01' });
+      expect(mockRepo.delete).toHaveBeenCalledWith({ itemCode: 'ITEM01', company: 'C1', plant: 'P1' });
     });
   });
 
@@ -128,11 +147,12 @@ describe('PartService', () => {
       mockRepo.findOne.mockResolvedValueOnce(existing).mockResolvedValueOnce(updated);
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
-      const result = await target.updateImage('ITEM01', '/uploads/parts/item.png');
+      const result = await target.updateImage('ITEM01', '/uploads/parts/item.png', 'C1', 'P1');
 
-      expect(mockRepo.update).toHaveBeenCalledWith('ITEM01', {
-        imageUrl: '/uploads/parts/item.png',
-      });
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+        { imageUrl: '/uploads/parts/item.png' },
+      );
       expect(result).toEqual(updated);
     });
   });
@@ -144,12 +164,12 @@ describe('PartService', () => {
       mockRepo.find.mockResolvedValue(parts);
 
       // Act
-      const result = await target.findByType('RM');
+      const result = await target.findByType('RM', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(parts);
       expect(mockRepo.find).toHaveBeenCalledWith({
-        where: { itemType: 'RM', useYn: 'Y' },
+        where: { itemType: 'RM', useYn: 'Y', company: 'C1', plant: 'P1' },
         order: { itemCode: 'asc' },
       });
     });

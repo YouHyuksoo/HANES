@@ -27,8 +27,8 @@ export class LotSplitController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: 'LOT 분할 실행' })
-  async split(@Body() dto: LotSplitDto) {
-    const data = await this.lotSplitService.split(dto);
+  async split(@Body() dto: LotSplitDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.lotSplitService.split(dto, company, plant);
     return ResponseUtil.success(data, 'LOT이 분할되었습니다.');
   }
 }

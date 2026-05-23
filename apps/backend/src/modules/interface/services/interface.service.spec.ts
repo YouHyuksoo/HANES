@@ -17,6 +17,7 @@ import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { OracleService } from '../../../common/services/oracle.service';
 
 describe('InterfaceService', () => {
   let target: InterfaceService;
@@ -25,6 +26,7 @@ describe('InterfaceService', () => {
   let mockBomRepo: DeepMocked<Repository<BomMaster>>;
   let mockJobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockOracleService: DeepMocked<OracleService>;
 
   beforeEach(async () => {
     mockLogRepo = createMock<Repository<InterLog>>();
@@ -32,6 +34,7 @@ describe('InterfaceService', () => {
     mockBomRepo = createMock<Repository<BomMaster>>();
     mockJobOrderRepo = createMock<Repository<JobOrder>>();
     mockDataSource = createMock<DataSource>();
+    mockOracleService = createMock<OracleService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -41,6 +44,7 @@ describe('InterfaceService', () => {
         { provide: getRepositoryToken(BomMaster), useValue: mockBomRepo },
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: OracleService, useValue: mockOracleService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -232,6 +236,91 @@ describe('InterfaceService', () => {
 
       // Assert
       expect(result).toEqual({ affectedRows: 0 });
+    });
+  });
+
+  describe('tenant-scoped inbound processing', () => {
+    beforeEach(() => {
+      jest.spyOn(target, 'createLog').mockResolvedValue({ transDate: new Date('2026-01-01'), seq: 1 } as InterLog);
+      jest.spyOn(target, 'updateLogStatus').mockResolvedValue({ transDate: new Date('2026-01-01'), seq: 1 } as InterLog);
+    });
+
+    it('receives job order using part lookup and created job order within tenant', async () => {
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'FG-001' } as PartMaster);
+      mockJobOrderRepo.create.mockImplementation((value) => value as JobOrder);
+      mockJobOrderRepo.save.mockImplementation(async (value) => value as JobOrder);
+
+      await target.receiveJobOrder({
+        erpOrderNo: 'ERP-001',
+        itemCode: 'FG-001',
+        planQty: 10,
+      } as any, 'C1', 'P1');
+
+      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'FG-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockJobOrderRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ orderNo: 'ERP-001', itemCode: 'FG-001', company: 'C1', plant: 'P1' }),
+      );
+    });
+
+    it('syncs bom using part and existing bom lookup within tenant', async () => {
+      mockPartRepo.find.mockResolvedValue([
+        { itemCode: 'FG-001' },
+        { itemCode: 'RM-001' },
+      ] as PartMaster[]);
+      mockBomRepo.find.mockResolvedValue([]);
+      mockBomRepo.create.mockImplementation((value) => value as BomMaster);
+      mockBomRepo.save.mockResolvedValue({ parentItemCode: 'FG-001', childItemCode: 'RM-001' } as BomMaster);
+
+      await target.syncBom([{ parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2 } as any], 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockBomRepo.find).toHaveBeenCalledWith({
+        where: [{ parentItemCode: 'FG-001', childItemCode: 'RM-001', revision: 'A', company: 'C1', plant: 'P1' }],
+      });
+      expect(mockBomRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ parentItemCode: 'FG-001', childItemCode: 'RM-001', company: 'C1', plant: 'P1' }),
+      );
+    });
+
+    it('syncs parts using existing part lookup and updates within tenant', async () => {
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'FG-001' }] as PartMaster[]);
+      mockPartRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.syncPart([{ itemCode: 'FG-001', itemName: 'Finished', itemType: 'FINISHED' } as any], 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartRepo.update).toHaveBeenCalledWith(
+        { itemCode: 'FG-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ itemName: 'Finished' }),
+      );
+    });
+  });
+
+  describe('tenant-scoped outbound processing', () => {
+    beforeEach(() => {
+      jest.spyOn(target, 'createLog').mockResolvedValue({ transDate: new Date('2026-01-01'), seq: 1 } as InterLog);
+      jest.spyOn(target, 'updateLogStatus').mockResolvedValue({ transDate: new Date('2026-01-01'), seq: 1 } as InterLog);
+    });
+
+    it('marks only the tenant-scoped job order as ERP synced after sending production result', async () => {
+      mockJobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder);
+      mockJobOrderRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.sendProdResult({ orderNo: 'JO-001', goodQty: 10, defectQty: 0 } as any, 'C1', 'P1');
+
+      expect(mockJobOrderRepo.findOne).toHaveBeenCalledWith({
+        where: { orderNo: 'JO-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockJobOrderRepo.update).toHaveBeenCalledWith(
+        { orderNo: 'JO-001', company: 'C1', plant: 'P1' },
+        { erpSyncYn: 'Y' },
+      );
     });
   });
 

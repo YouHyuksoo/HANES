@@ -16,21 +16,25 @@ import { RepairService } from './repair.service';
 import { RepairOrder } from '../../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../../entities/repair-used-part.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('RepairService', () => {
   let target: RepairService;
   let mockRepairOrderRepo: DeepMocked<Repository<RepairOrder>>;
   let mockRepairUsedPartRepo: DeepMocked<Repository<RepairUsedPart>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
     mockRepairOrderRepo = createMock<Repository<RepairOrder>>();
     mockRepairUsedPartRepo = createMock<Repository<RepairUsedPart>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -43,6 +47,7 @@ describe('RepairService', () => {
         { provide: getRepositoryToken(RepairOrder), useValue: mockRepairOrderRepo },
         { provide: getRepositoryToken(RepairUsedPart), useValue: mockRepairUsedPartRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -167,8 +172,9 @@ describe('RepairService', () => {
 
       // Assert
       expect(result.seq).toBe(4); // maxSeq(3) + 1
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2); // order + parts
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should create repair order without used parts', async () => {
@@ -206,8 +212,8 @@ describe('RepairService', () => {
       await expect(
         target.create({ itemCode: 'PART', qty: 1 } as any, 'C', 'P'),
       ).rejects.toThrow('DB error');
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 
@@ -235,7 +241,8 @@ describe('RepairService', () => {
       expect(result.seq).toBe(1);
       expect(mockQueryRunner.manager.delete).toHaveBeenCalled(); // old parts deleted
       expect(mockQueryRunner.manager.save).toHaveBeenCalled(); // new parts saved
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should mark as COMPLETED when disposition is set', async () => {
@@ -306,7 +313,8 @@ describe('RepairService', () => {
           plant: 'P',
         }),
       );
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should block delete when repair already progressed', async () => {
@@ -343,7 +351,8 @@ describe('RepairService', () => {
       await expect(
         target.remove('2026-03-18', 1, 'C', 'P'),
       ).rejects.toThrow('FK violation');
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 

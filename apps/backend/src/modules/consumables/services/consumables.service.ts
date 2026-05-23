@@ -34,6 +34,7 @@ import {
   UpdateShotCountDto,
   ResetShotCountDto,
 } from '../dto/consumables.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ConsumablesService {
@@ -45,6 +46,7 @@ export class ConsumablesService {
     @InjectRepository(ConsumableLog)
     private readonly consumableLogRepository: Repository<ConsumableLog>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -394,11 +396,7 @@ export class ConsumablesService {
    * 입출고 이력 등록
    */
   async createLog(dto: CreateConsumableLogDto, company?: string, plant?: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       // 소모품 존재 확인
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
         where: {
@@ -473,14 +471,8 @@ export class ConsumablesService {
         },
       );
 
-      await queryRunner.commitTransaction();
       return savedLog;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   // =============================================
@@ -508,11 +500,7 @@ export class ConsumablesService {
    * 타수 업데이트 (사용 횟수 증가)
    */
   async updateShotCount(dto: UpdateShotCountDto, company?: string, plant?: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
         where: {
           consumableCode: dto.consumableId,
@@ -568,8 +556,6 @@ export class ConsumablesService {
         await queryRunner.manager.save(ConsumableLog, log);
       }
 
-      await queryRunner.commitTransaction();
-
       return {
         success: true,
         consumableId: dto.consumableId,
@@ -578,23 +564,14 @@ export class ConsumablesService {
         previousStatus: consumable.status,
         currentStatus: newStatus,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /**
    * 타수 리셋 (교체 시)
    */
   async resetShotCount(dto: ResetShotCountDto, company?: string, plant?: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
         where: {
           consumableCode: dto.consumableId,
@@ -645,8 +622,6 @@ export class ConsumablesService {
         },
       );
 
-      await queryRunner.commitTransaction();
-
       return {
         success: true,
         consumableId: dto.consumableId,
@@ -656,11 +631,6 @@ export class ConsumablesService {
         currentStatus: 'NORMAL',
         replacedAt: now,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 }

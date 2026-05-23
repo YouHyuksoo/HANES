@@ -11,6 +11,7 @@ import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProdPlanService', () => {
   let service: ProdPlanService;
@@ -21,6 +22,7 @@ describe('ProdPlanService', () => {
   let bomMasterRepo: DeepMocked<Repository<BomMaster>>;
   let numbering: DeepMocked<NumberingService>;
   let dataSource: DeepMocked<DataSource>;
+  let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -31,9 +33,11 @@ describe('ProdPlanService', () => {
     bomMasterRepo = createMock<Repository<BomMaster>>();
     numbering = createMock<NumberingService>();
     dataSource = createMock<DataSource>();
+    tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
+    tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
     queryRunner.connect.mockResolvedValue(undefined);
     queryRunner.startTransaction.mockResolvedValue(undefined);
     queryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -50,6 +54,7 @@ describe('ProdPlanService', () => {
         { provide: getRepositoryToken(BomMaster), useValue: bomMasterRepo },
         { provide: NumberingService, useValue: numbering },
         { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -80,6 +85,30 @@ describe('ProdPlanService', () => {
     } as any, 'C1', 'P1');
 
     expect(result?.planNo).toBe('PP-202603-001');
+  });
+
+  it('validates part within tenant when creating plan', async () => {
+    partRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-1', company: 'C1', plant: 'P1' } as any);
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    } as any;
+    planRepo.createQueryBuilder.mockReturnValue(qb);
+    planRepo.create.mockReturnValue({ planNo: 'PP-202603-001' } as any);
+    planRepo.save.mockResolvedValue({ planNo: 'PP-202603-001' } as any);
+    planRepo.findOne.mockResolvedValue({ planNo: 'PP-202603-001' } as any);
+
+    await service.create({
+      planMonth: '2026-03',
+      itemCode: 'ITEM-1',
+      itemType: 'FINISHED',
+      planQty: 10,
+    } as any, 'C1', 'P1');
+
+    expect(partRepo.findOne).toHaveBeenCalledWith({
+      where: { itemCode: 'ITEM-1', company: 'C1', plant: 'P1' },
+    });
   });
 
   it('throws when part missing', async () => {
@@ -119,6 +148,61 @@ describe('ProdPlanService', () => {
 
     expect(result.count).toBe(1);
     expect(qb.andWhere).toHaveBeenCalled();
+  });
+
+  it('bulkCreate uses TransactionService for item validation and plan saves', async () => {
+    queryRunner.manager.find.mockResolvedValue([{ itemCode: 'ITEM-1' }] as any);
+    const planNoRepo = createMock<Repository<ProdPlan>>();
+    planNoRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    } as any);
+    queryRunner.manager.getRepository.mockReturnValue(planNoRepo);
+    queryRunner.manager.create.mockReturnValue({ planNo: 'PP-202603-001' } as any);
+    queryRunner.manager.save.mockResolvedValue({ planNo: 'PP-202603-001' } as any);
+
+    const result = await service.bulkCreate({
+      planMonth: '2026-03',
+      items: [{ itemCode: 'ITEM-1', itemType: 'FINISHED', planQty: 10 }],
+    } as any, 'C1', 'P1');
+
+    expect(result.count).toBe(1);
+    expect(queryRunner.manager.find).toHaveBeenCalledWith(
+      PartMaster,
+      { where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' }, select: ['itemCode'] },
+    );
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+  });
+
+  it('issueJobOrder uses TransactionService for job order creation and plan quantity update', async () => {
+    planRepo.findOne.mockResolvedValue({
+      planNo: 'PP-1',
+      itemCode: 'ITEM-1',
+      lineCode: 'LINE-1',
+      status: 'CONFIRMED',
+      planQty: 10,
+      orderQty: 2,
+      priority: 5,
+    } as any);
+    routingGroupRepo.findOne.mockResolvedValue(null);
+    numbering.nextJobOrderNo.mockResolvedValue('JO-001');
+    queryRunner.manager.create.mockReturnValue({ orderNo: 'JO-001', planQty: 3 } as any);
+    queryRunner.manager.save.mockResolvedValue({ orderNo: 'JO-001', planQty: 3 } as any);
+    queryRunner.manager.createQueryBuilder.mockReturnValue({
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    } as any);
+
+    const result = await service.issueJobOrder('PP-1', { issueQty: 3 } as any, 'C1', 'P1');
+
+    expect(result).toEqual({ orderNo: 'JO-001', planNo: 'PP-1', issueQty: 3, remainQty: 5 });
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
   it('close rejects non-confirmed', async () => {

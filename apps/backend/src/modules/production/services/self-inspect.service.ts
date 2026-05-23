@@ -72,8 +72,21 @@ export class SelfInspectService {
   }
 
   /** 의뢰검사 상태 업데이트 (별도 의뢰검사 관리 화면에서 사용) */
-  async updateResultStatus(id: string, status: string, remark?: string, measureValue?: number) {
-    const result = await this.resultRepo.findOne({ where: { id } });
+  async updateResultStatus(
+    id: string,
+    status: string,
+    remark?: string,
+    measureValue?: number,
+    company?: string,
+    plant?: string,
+  ) {
+    const result = await this.resultRepo.findOne({
+      where: {
+        id,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
     if (!result) throw new NotFoundException(`SelfInspectResult ${id} not found`);
     result.status = status;
     if (remark !== undefined) result.remark = remark;
@@ -83,17 +96,31 @@ export class SelfInspectService {
   }
 
   /** 특정 작업지시의 의뢰검사 대기 여부 확인 */
-  async hasPendingDelegate(orderNo: string): Promise<{ hasPending: boolean; pendingCount: number }> {
+  async hasPendingDelegate(
+    orderNo: string,
+    company?: string,
+    plant?: string,
+  ): Promise<{ hasPending: boolean; pendingCount: number }> {
     const count = await this.resultRepo.count({
-      where: { orderNo, inspectMethod: 'DELEGATE', status: 'PENDING' },
+      where: {
+        orderNo,
+        inspectMethod: 'DELEGATE',
+        status: 'PENDING',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
     });
     return { hasPending: count > 0, pendingCount: count };
   }
 
   /** 작업지시별 자주검사 결과 이력 */
-  async findResults(orderNo: string) {
+  async findResults(orderNo: string, company?: string, plant?: string) {
     return this.resultRepo.find({
-      where: { orderNo },
+      where: {
+        orderNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       order: { createdAt: 'DESC' },
     });
   }

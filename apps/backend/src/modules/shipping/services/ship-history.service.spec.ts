@@ -56,6 +56,23 @@ describe('ShipHistoryService', () => {
       expect(result.data).toHaveLength(1);
     });
 
+    it('should enrich shipment items with part names within tenant only', async () => {
+      const order = { shipOrderNo: 'SO-001', company: 'C1', plant: 'P1' } as ShipmentOrder;
+      mockShipmentOrderRepo.find.mockResolvedValue([order]);
+      mockShipmentOrderRepo.count.mockResolvedValue(1);
+      mockShipmentOrderItemRepo.find.mockResolvedValue([
+        { shipOrderNo: 'SO-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as ShipmentOrderItem,
+      ]);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part A' } as PartMaster]);
+
+      await target.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+        select: ['itemCode', 'itemName'],
+      });
+    });
+
     it('should return empty data when no orders', async () => {
       mockShipmentOrderRepo.find.mockResolvedValue([]);
       mockShipmentOrderRepo.count.mockResolvedValue(0);

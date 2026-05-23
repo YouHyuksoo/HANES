@@ -109,7 +109,7 @@ export default function IqcLinkModal({ isOpen, onClose, onSave, editing }: Props
   }, [isOpen, editing, fetchDropdowns]);
 
   const partOptions = useMemo(() =>
-    parts.map(p => ({ value: p.id, label: `${p.itemCode} - ${p.itemName}` })),
+    parts.map(p => ({ value: p.itemCode, label: `${p.itemCode} - ${p.itemName}` })),
   [parts]);
 
   const partnerOptions = useMemo(() => [

@@ -14,6 +14,7 @@ import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entit
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { User } from '../../../entities/user.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ConsumableService', () => {
   let target: ConsumableService;
@@ -23,6 +24,8 @@ describe('ConsumableService', () => {
   let mockUserRepo: DeepMocked<Repository<User>>;
   let mockEquipRepo: DeepMocked<Repository<EquipMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
+  let mockQr: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
     mockConsumableRepo = createMock<Repository<ConsumableMaster>>();
@@ -31,9 +34,11 @@ describe('ConsumableService', () => {
     mockUserRepo = createMock<Repository<User>>();
     mockEquipRepo = createMock<Repository<EquipMaster>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockDataSource.manager = { query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]) } as any;
-    const mockQr = createMock<QueryRunner>();
+    mockQr = createMock<QueryRunner>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQr);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQr));
     mockQr.connect.mockResolvedValue(undefined);
     mockQr.startTransaction.mockResolvedValue(undefined);
     mockQr.commitTransaction.mockResolvedValue(undefined);
@@ -50,6 +55,7 @@ describe('ConsumableService', () => {
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: getRepositoryToken(EquipMaster), useValue: mockEquipRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ConsumableService>(ConsumableService);
@@ -82,6 +88,87 @@ describe('ConsumableService', () => {
     it('should throw ConflictException', async () => {
       mockConsumableRepo.findOne.mockResolvedValue({ consumableCode: 'C-001' } as any);
       await expect(target.create({ consumableCode: 'C-001' } as any)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('transactional workflows', () => {
+    const mockRecentLogs = () => {
+      const qb: any = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb);
+    };
+
+    it('registerReplacement uses TransactionService', async () => {
+      mockRecentLogs();
+      mockConsumableRepo.findOne.mockResolvedValue({
+        consumableCode: 'C-001',
+        currentCount: 100,
+      } as any);
+
+      const result = await target.registerReplacement('C-001', { workerId: 'u1' } as any);
+
+      expect(result.consumableCode).toBe('C-001');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('mountToEquip uses TransactionService', async () => {
+      mockRecentLogs();
+      mockConsumableRepo.findOne.mockResolvedValue({
+        consumableCode: 'C-001',
+        operStatus: 'WAREHOUSE',
+        company: 'CO',
+        plant: 'P01',
+      } as any);
+
+      await target.mountToEquip('C-001', { equipCode: 'EQ-1', workerId: 'u1' } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('unmountFromEquip uses TransactionService', async () => {
+      mockRecentLogs();
+      mockConsumableRepo.findOne.mockResolvedValue({
+        consumableCode: 'C-001',
+        operStatus: 'MOUNTED',
+        mountedEquipCode: 'EQ-1',
+        company: 'CO',
+        plant: 'P01',
+      } as any);
+
+      await target.unmountFromEquip('C-001', { workerId: 'u1' } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('setRepairStatus uses TransactionService', async () => {
+      mockRecentLogs();
+      mockConsumableRepo.findOne.mockResolvedValue({
+        consumableCode: 'C-001',
+        operStatus: 'MOUNTED',
+        mountedEquipCode: 'EQ-1',
+        company: 'CO',
+        plant: 'P01',
+      } as any);
+
+      await target.setRepairStatus('C-001', { workerId: 'u1' } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
     });
   });
 });

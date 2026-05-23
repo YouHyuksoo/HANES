@@ -21,12 +21,14 @@ import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ProdResultService cancel flow', () => {
   let target: ProdResultService;
   let mockProdResultRepo: DeepMocked<Repository<ProdResult>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
 
@@ -34,10 +36,12 @@ describe('ProdResultService cancel flow', () => {
     mockProdResultRepo = createMock<Repository<ProdResult>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -62,6 +66,7 @@ describe('ProdResultService cancel flow', () => {
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -104,27 +109,66 @@ describe('ProdResultService cancel flow', () => {
       .mockResolvedValueOnce('REV-001')
       .mockResolvedValueOnce('REV-002');
 
-    await target.cancel('PR-001', 'rollback');
+    await target.cancel('PR-001', 'rollback', 'HANES', 'P01');
 
     expect(manager.update).toHaveBeenCalledWith(
       MatStock,
-      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 2, availableQty: 2 },
     );
     expect(manager.update).toHaveBeenCalledWith(
       MatStock,
-      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 2, availableQty: 2 },
     );
     expect(manager.update).toHaveBeenCalledWith(
       StockTransaction,
-      { transNo: 'TX-001' },
+      { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
     );
     expect(manager.update).toHaveBeenCalledWith(
       StockTransaction,
-      { transNo: 'TX-002' },
+      { transNo: 'TX-002', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
+    );
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+  });
+
+  it('updates production result and equipment within tenant on cancel', async () => {
+    mockProdResultRepo.findOne
+      .mockResolvedValueOnce({
+        resultNo: 'PR-001',
+        status: 'DONE',
+        equipCode: 'EQ-001',
+        inspectResults: [],
+        defectLogs: [],
+        company: 'HANES',
+        plant: 'P01',
+      } as any)
+      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'CANCELED', company: 'HANES', plant: 'P01' } as any);
+    mockMatIssueRepo.find.mockResolvedValue([]);
+
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      findOne: jest.fn().mockResolvedValue(null),
+      find: jest.fn().mockResolvedValue([]),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.cancel('PR-001', 'rollback', 'HANES', 'P01');
+
+    expect(manager.update).toHaveBeenCalledWith(
+      ProdResult,
+      { resultNo: 'PR-001', company: 'HANES', plant: 'P01' },
+      { status: 'CANCELED', remark: 'rollback' },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      EquipMaster,
+      { equipCode: 'EQ-001', company: 'HANES', plant: 'P01' },
+      { currentJobOrderId: null },
     );
   });
 

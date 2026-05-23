@@ -16,6 +16,13 @@ export class PartService {
     private readonly partRepository: Repository<PartMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: PartQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 20, itemType, search, customer, useYn } = query;
     const skip = (page - 1) * limit;
@@ -62,25 +69,25 @@ export class PartService {
     return { data, total, page, limit };
   }
 
-  async findById(itemCode: string) {
+  async findById(itemCode: string, company?: string, plant?: string) {
     const part = await this.partRepository.findOne({
-      where: { itemCode },
+      where: { itemCode, ...this.tenantWhere(company, plant) },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
     return part;
   }
 
-  async findByCode(itemCode: string) {
+  async findByCode(itemCode: string, company?: string, plant?: string) {
     const part = await this.partRepository.findOne({
-      where: { itemCode },
+      where: { itemCode, ...this.tenantWhere(company, plant) },
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
     return part;
   }
 
-  async create(dto: CreatePartDto) {
+  async create(dto: CreatePartDto, company?: string, plant?: string) {
     const existing = await this.partRepository.findOne({
-      where: { itemCode: dto.itemCode },
+      where: { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 품목 코드입니다: ${dto.itemCode}`);
@@ -108,32 +115,34 @@ export class PartService {
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
       imageUrl: dto.imageUrl,
+      company,
+      plant,
     });
 
     return this.partRepository.save(part);
   }
 
-  async update(itemCode: string, dto: UpdatePartDto) {
-    await this.findById(itemCode);
-    await this.partRepository.update(itemCode, dto);
-    return this.findById(itemCode);
+  async update(itemCode: string, dto: UpdatePartDto, company?: string, plant?: string) {
+    await this.findById(itemCode, company, plant);
+    await this.partRepository.update({ itemCode, ...this.tenantWhere(company, plant) }, dto);
+    return this.findById(itemCode, company, plant);
   }
 
-  async delete(itemCode: string) {
-    await this.findById(itemCode);
-    await this.partRepository.delete(itemCode);
+  async delete(itemCode: string, company?: string, plant?: string) {
+    await this.findById(itemCode, company, plant);
+    await this.partRepository.delete({ itemCode, ...this.tenantWhere(company, plant) });
     return { itemCode };
   }
 
-  async updateImage(itemCode: string, imageUrl: string | null) {
-    await this.findById(itemCode);
-    await this.partRepository.update(itemCode, { imageUrl });
-    return this.findById(itemCode);
+  async updateImage(itemCode: string, imageUrl: string | null, company?: string, plant?: string) {
+    await this.findById(itemCode, company, plant);
+    await this.partRepository.update({ itemCode, ...this.tenantWhere(company, plant) }, { imageUrl });
+    return this.findById(itemCode, company, plant);
   }
 
-  async findByType(itemType: string) {
+  async findByType(itemType: string, company?: string, plant?: string) {
     return this.partRepository.find({
-      where: { itemType, useYn: 'Y' },
+      where: { itemType, useYn: 'Y', ...this.tenantWhere(company, plant) },
       order: { itemCode: 'asc' },
     });
   }

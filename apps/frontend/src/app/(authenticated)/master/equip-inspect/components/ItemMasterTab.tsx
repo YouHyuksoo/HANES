@@ -9,10 +9,12 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { InspectItemPoolRow, INSPECT_TYPE_COLORS } from "../types";
 
+type InspectType = InspectItemPoolRow["inspectType"];
+
 const EMPTY_FORM = {
   itemCode: "",
   itemName: "",
-  inspectType: "DAILY" as "DAILY" | "PERIODIC" | "PM",
+  inspectType: "DAILY" as InspectType,
   criteria: "",
   cycle: "DAILY",
   useYn: "Y",
@@ -52,12 +54,14 @@ export default function ItemMasterTab() {
     { value: "DAILY", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeDaily")}` },
     { value: "PERIODIC", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typePeriodic")}` },
     { value: "PM", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typePM", "예방보전")}` },
+    { value: "WORKER", label: `${t("master.equipInspect.inspectType")}: ${t("master.equipInspect.typeWorker", "작업자점검")}` },
   ], [t]);
 
   const typeOptions = useMemo(() => [
     { value: "DAILY", label: t("master.equipInspect.typeDaily") },
     { value: "PERIODIC", label: t("master.equipInspect.typePeriodic") },
     { value: "PM", label: t("master.equipInspect.typePM", "예방보전") },
+    { value: "WORKER", label: t("master.equipInspect.typeWorker", "작업자점검") },
   ], [t]);
 
   const cycleOptions = useMemo(() => [
@@ -73,6 +77,7 @@ export default function ItemMasterTab() {
     DAILY: t("master.equipInspect.typeDaily"),
     PERIODIC: t("master.equipInspect.typePeriodic"),
     PM: t("master.equipInspect.typePM", "예방보전"),
+    WORKER: t("master.equipInspect.typeWorker", "작업자점검"),
   }), [t]);
 
   const cycleLabels = useMemo<Record<string, string>>(() => ({
@@ -254,7 +259,7 @@ export default function ItemMasterTab() {
               label={t("master.equipInspect.inspectType")}
               options={typeOptions}
               value={form.inspectType}
-              onChange={value => setForm(prev => ({ ...prev, inspectType: value as "DAILY" | "PERIODIC" | "PM" }))}
+              onChange={value => setForm(prev => ({ ...prev, inspectType: value as InspectType }))}
               fullWidth
             />
           </div>

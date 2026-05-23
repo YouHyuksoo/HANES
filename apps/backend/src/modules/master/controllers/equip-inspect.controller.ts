@@ -25,8 +25,7 @@ export class EquipInspectController {
   @Get()
   @ApiOperation({ summary: '설비점검항목 목록 조회' })
   async findAll(@Query() query: EquipInspectItemQueryDto, @Req() req: Request) {
-    const company = (req.headers['x-company'] as string) || '';
-    const plant = (req.headers['x-plant'] as string) || '';
+    const { company, plant } = this.tenant(req);
     const result = await this.equipInspectService.findAll(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
@@ -35,8 +34,7 @@ export class EquipInspectController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '설비점검항목 생성' })
   async create(@Body() dto: CreateEquipInspectItemDto, @Req() req: Request) {
-    const company = (req.headers['x-company'] as string) || '';
-    const plant = (req.headers['x-plant'] as string) || '';
+    const { company, plant } = this.tenant(req);
     const data = await this.equipInspectService.create(dto, company, plant);
     return ResponseUtil.success(data, '설비점검항목이 생성되었습니다.');
   }
@@ -50,8 +48,7 @@ export class EquipInspectController {
     @Body() dto: UpdateEquipInspectItemDto,
     @Req() req: Request,
   ) {
-    const company = (req.headers['x-company'] as string) || '';
-    const plant = (req.headers['x-plant'] as string) || '';
+    const { company, plant } = this.tenant(req);
     const data = await this.equipInspectService.update(company, plant, equipCode, inspectType, +seq, dto);
     return ResponseUtil.success(data, '설비점검항목이 수정되었습니다.');
   }
@@ -64,9 +61,16 @@ export class EquipInspectController {
     @Param('seq') seq: string,
     @Req() req: Request,
   ) {
-    const company = (req.headers['x-company'] as string) || '';
-    const plant = (req.headers['x-plant'] as string) || '';
+    const { company, plant } = this.tenant(req);
     await this.equipInspectService.delete(company, plant, equipCode, inspectType, +seq);
     return ResponseUtil.success(null, '설비점검항목이 삭제되었습니다.');
+  }
+
+  private tenant(req: Request) {
+    const user = (req as Request & { user?: { company?: string; plant?: string } }).user ?? {};
+    return {
+      company: (req.headers['x-company'] as string) || user.company || '',
+      plant: (req.headers['x-plant'] as string) || user.plant || '',
+    };
   }
 }

@@ -162,6 +162,77 @@ describe('ReceiptCancelService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
+    it('입고취소는 원거래 회사/공장 범위에서 재고와 원거래를 갱신한다', async () => {
+      const originalTx = {
+        transNo: 'TX-001',
+        cancelRefId: null,
+        transType: 'RECEIPT',
+        toWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        refType: null,
+        refId: null,
+        company: 'HANES',
+        plant: 'P01',
+      } as StockTransaction;
+      const stock = {
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 50,
+        availableQty: 50,
+        company: 'HANES',
+        plant: 'P01',
+      } as MatStock;
+      const cancelTx = { transNo: 'CANCEL-001' } as StockTransaction;
+      const matIssueRepo = { findOne: jest.fn().mockResolvedValue(null) };
+
+      mockDataSource.getRepository.mockReturnValue(matIssueRepo as any);
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(originalTx)
+        .mockResolvedValueOnce(stock);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
+      mockQueryRunner.manager.create.mockReturnValue(cancelTx);
+      mockQueryRunner.manager.save.mockResolvedValue(cancelTx);
+
+      await (target as any).cancel({ transactionId: 'TX-001', reason: '취소' }, 'HANES', 'P01');
+
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, StockTransaction, {
+        where: { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatStock, {
+        where: {
+          itemCode: 'ITEM-001',
+          warehouseCode: 'WH-01',
+          matUid: 'MAT-001',
+          company: 'HANES',
+          plant: 'P01',
+        },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          company: 'HANES',
+          plant: 'P01',
+        },
+        { qty: 40, availableQty: 40 },
+      );
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        StockTransaction,
+        expect.objectContaining({ company: 'HANES', plant: 'P01' }),
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        StockTransaction,
+        { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+        { cancelRefId: 'CANCEL-001' },
+      );
+    });
+
     it('뒤 공정이 진행된 LOT는 입고취소를 차단한다', async () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce({
         transNo: 'TX-010',

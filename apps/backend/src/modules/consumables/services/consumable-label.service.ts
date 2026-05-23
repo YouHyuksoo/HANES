@@ -11,7 +11,7 @@
  */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
@@ -23,11 +23,12 @@ import {
   BulkConfirmConReceivingDto,
   ConLabelResultDto,
 } from '../dto/consumable-label.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ConsumableLabelService {
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
     @InjectRepository(ConsumableMaster)
     private readonly masterRepo: Repository<ConsumableMaster>,
@@ -99,11 +100,7 @@ export class ConsumableLabelService {
     });
     if (!master) throw new NotFoundException('소모품 마스터를 찾을 수 없습니다.');
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const results: ConLabelResultDto[] = [];
 
       for (let i = 0; i < dto.qty; i++) {
@@ -139,14 +136,8 @@ export class ConsumableLabelService {
       });
       await queryRunner.manager.save(log);
 
-      await queryRunner.commitTransaction();
       return results;
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** PENDING 상태 UID 목록 */
@@ -186,11 +177,7 @@ export class ConsumableLabelService {
       throw new BadRequestException(`UID ${dto.conUid}는 이미 입고된 상태입니다. (${stock.status})`);
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       stock.status = 'ACTIVE';
       stock.recvDate = new Date();
       stock.location = dto.location ?? stock.location;
@@ -232,8 +219,6 @@ export class ConsumableLabelService {
       });
       await queryRunner.manager.save(log);
 
-      await queryRunner.commitTransaction();
-
       const master = await this.masterRepo.findOne({
         where: { consumableCode: stock.consumableCode, ...this.masterTenantWhere(company, plant) },
       });
@@ -245,12 +230,7 @@ export class ConsumableLabelService {
         status: stock.status,
         recvDate: stock.recvDate,
       };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 다건 입고 확정 */

@@ -43,7 +43,9 @@ export class ShelfLifeService {
     // part 정보 조회
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({
+        where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) },
+      })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -74,9 +76,9 @@ export class ShelfLifeService {
 
       return {
         ...lot,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
+        itemCode: lot.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
         expiryStatus: status,
         daysUntilExpiry,
       };
@@ -94,11 +96,10 @@ export class ShelfLifeService {
         (item) =>
           item.matUid?.toLowerCase().includes(searchLower) ||
           item.itemCode.toLowerCase().includes(searchLower) ||
-          item.itemName.toLowerCase().includes(searchLower),
+          (item.itemName ?? '').toLowerCase().includes(searchLower),
       );
     }
 
     return { data: result, total, page, limit };
   }
 }
-

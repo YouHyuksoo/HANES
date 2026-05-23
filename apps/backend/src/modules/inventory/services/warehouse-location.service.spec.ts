@@ -31,6 +31,43 @@ describe('WarehouseLocationService', () => {
   });
   afterEach(() => jest.clearAllMocks());
 
+  describe('findAll', () => {
+    it('should preserve location WAREHOUSE_CODE even when warehouse master is missing', async () => {
+      mockLocRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-MISSING', locationCode: 'A-01', locationName: 'A-01' } as WarehouseLocation,
+      ]);
+      mockWhRepo.find.mockResolvedValue([]);
+
+      const r = await target.findAll();
+
+      expect(r.data[0]).toEqual(
+        expect.objectContaining({
+          warehouseCode: 'WH-MISSING',
+          warehouseName: '',
+        }),
+      );
+    });
+
+    it('should lookup warehouse names within the same tenant as locations', async () => {
+      mockLocRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-001', locationCode: 'A-01', locationName: 'A-01', company: 'C1', plant: 'P1' } as WarehouseLocation,
+      ]);
+      mockWhRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-001', warehouseName: 'Main', company: 'C1', plant: 'P1' } as Warehouse,
+      ]);
+
+      await target.findAll(undefined, 'C1', 'P1');
+
+      expect(mockLocRepo.find).toHaveBeenCalledWith({
+        where: { company: 'C1', plant: 'P1' },
+        order: { locationCode: 'ASC' },
+      });
+      expect(mockWhRepo.find).toHaveBeenCalledWith({
+        where: { warehouseCode: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+    });
+  });
+
   describe('create', () => {
     it('should create location', async () => {
       mockLocRepo.findOne.mockResolvedValue(null);
@@ -39,6 +76,18 @@ describe('WarehouseLocationService', () => {
       mockLocRepo.save.mockResolvedValue(saved);
       const r = await target.create({ warehouseCode: 'WH-001', locationCode: 'A-01' } as any);
       expect(r.success).toBe(true);
+    });
+    it('should check duplicate location within tenant only', async () => {
+      mockLocRepo.findOne.mockResolvedValue(null);
+      const saved = { warehouseCode: 'WH-001', locationCode: 'A-01', company: 'C1', plant: 'P1' } as any;
+      mockLocRepo.create.mockReturnValue(saved);
+      mockLocRepo.save.mockResolvedValue(saved);
+
+      await target.create({ warehouseCode: 'WH-001', locationCode: 'A-01' } as any, 'C1', 'P1');
+
+      expect(mockLocRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-001', locationCode: 'A-01', company: 'C1', plant: 'P1' },
+      });
     });
     it('should throw ConflictException', async () => {
       mockLocRepo.findOne.mockResolvedValue({ locationCode: 'A-01' } as any);
@@ -54,6 +103,22 @@ describe('WarehouseLocationService', () => {
       const r = await target.update('WH-001::A-01', {} as any);
       expect(r.success).toBe(true);
     });
+    it('should update location within tenant only', async () => {
+      const loc = { warehouseCode: 'WH-001', locationCode: 'A-01', company: 'C1', plant: 'P1' } as any;
+      mockLocRepo.findOne.mockResolvedValue(loc);
+      mockLocRepo.save.mockResolvedValue(loc);
+
+      await target.update('WH-001::A-01', { locationName: 'Changed' } as any, 'C1', 'P1');
+
+      expect(mockLocRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-001', locationCode: 'A-01', company: 'C1', plant: 'P1' },
+      });
+      expect(mockLocRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+        warehouseCode: 'WH-001',
+        locationCode: 'A-01',
+        locationName: 'Changed',
+      }));
+    });
     it('should throw NotFoundException', async () => {
       mockLocRepo.findOne.mockResolvedValue(null);
       await expect(target.update('WH-001::X', {} as any)).rejects.toThrow(NotFoundException);
@@ -66,6 +131,17 @@ describe('WarehouseLocationService', () => {
       mockLocRepo.remove.mockResolvedValue({} as any);
       const r = await target.remove('WH-001::A-01');
       expect(r.success).toBe(true);
+    });
+    it('should remove location within tenant only', async () => {
+      const loc = { warehouseCode: 'WH-001', locationCode: 'A-01', company: 'C1', plant: 'P1' } as any;
+      mockLocRepo.findOne.mockResolvedValue(loc);
+      mockLocRepo.remove.mockResolvedValue(loc);
+
+      await target.remove('WH-001::A-01', 'C1', 'P1');
+
+      expect(mockLocRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-001', locationCode: 'A-01', company: 'C1', plant: 'P1' },
+      });
     });
     it('should throw NotFoundException', async () => {
       mockLocRepo.findOne.mockResolvedValue(null);

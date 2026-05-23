@@ -159,6 +159,67 @@ describe('MatOutRequestService', () => {
 
       await expect(service.approve('TX-001', 'approver')).rejects.toThrow(BadRequestException);
     });
+
+    it('approve는 요청 트랜잭션의 회사/공장/출고창고 범위에서 재고를 차감한다', async () => {
+      stockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-001',
+        status: 'PENDING_APPROVAL',
+        fromWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: -3,
+        company: 'HANES',
+        plant: 'P01',
+      } as StockTransaction);
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        status: 'NORMAL',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot);
+      matStockRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 5,
+        availableQty: 5,
+        company: 'HANES',
+        plant: 'P01',
+      } as MatStock);
+
+      await (service as any).approve('TX-001', 'approver', 'HANES', 'P01');
+
+      expect(stockTxRepo.findOne).toHaveBeenCalledWith({
+        where: { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(matLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(matStockRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          warehouseCode: 'WH-01',
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-001',
+          company: 'HANES',
+          plant: 'P01',
+        },
+      });
+      expect(matStockRepo.update).toHaveBeenCalledWith(
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          company: 'HANES',
+          plant: 'P01',
+        },
+        expect.objectContaining({ qty: 7, reservedQty: 2, availableQty: 5 }),
+      );
+      expect(stockTxRepo.update).toHaveBeenCalledWith(
+        { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+        expect.objectContaining({ status: 'DONE', approverId: 'approver' }),
+      );
+    });
   });
 
   describe('reject', () => {
@@ -184,6 +245,58 @@ describe('MatOutRequestService', () => {
       expect(matStockRepo.update).toHaveBeenCalledWith(
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
         expect.objectContaining({ reservedQty: 2, availableQty: 8 }),
+      );
+    });
+
+    it('reject는 요청 트랜잭션의 회사/공장/출고창고 범위에서 예약재고를 해제한다', async () => {
+      stockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-001',
+        status: 'PENDING_APPROVAL',
+        fromWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: -3,
+        company: 'HANES',
+        plant: 'P01',
+      } as StockTransaction);
+      matStockRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        reservedQty: 5,
+        availableQty: 5,
+        company: 'HANES',
+        plant: 'P01',
+      } as MatStock);
+
+      await (service as any).reject('TX-001', 'approver', 'HANES', 'P01');
+
+      expect(stockTxRepo.findOne).toHaveBeenCalledWith({
+        where: { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(matStockRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          warehouseCode: 'WH-01',
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-001',
+          company: 'HANES',
+          plant: 'P01',
+        },
+      });
+      expect(matStockRepo.update).toHaveBeenCalledWith(
+        {
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          company: 'HANES',
+          plant: 'P01',
+        },
+        expect.objectContaining({ reservedQty: 2, availableQty: 8 }),
+      );
+      expect(stockTxRepo.update).toHaveBeenCalledWith(
+        { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+        expect.objectContaining({ status: 'REJECTED', approverId: 'approver' }),
       );
     });
   });

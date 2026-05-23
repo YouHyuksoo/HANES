@@ -32,6 +32,13 @@ export class PurchaseOrderService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: PurchaseOrderQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, status, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -66,10 +73,14 @@ export class PurchaseOrderService {
 
     // 품목 정보 일괄 조회 (N+1 방지)
     const poNos = data.map((po) => po.poNo);
-    const items = await this.purchaseOrderItemRepository.find({ where: { poNo: In(poNos) } });
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+    const items = await this.purchaseOrderItemRepository.find({ where: { poNo: In(poNos), ...tenantWhere } });
 
     const itemCodes = [...new Set(items.map((item) => item.itemCode).filter(Boolean))];
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // PO별 아이템 그룹화
@@ -87,10 +98,10 @@ export class PurchaseOrderService {
         const part = partMap.get(item.itemCode);
         return {
           ...item,
-          itemCode: part?.itemCode,
-          itemName: part?.itemName,
-          spec: part?.spec,
-          unit: part?.unit,
+          itemCode: item.itemCode,
+          itemName: part?.itemName ?? null,
+          spec: part?.spec ?? null,
+          unit: part?.unit ?? null,
         };
       });
 
@@ -103,18 +114,22 @@ export class PurchaseOrderService {
     return { data: result, total, page, limit };
   }
 
-  async findById(poNo: string) {
+  async findById(poNo: string, company?: string, plant?: string) {
     const po = await this.purchaseOrderRepository.findOne({
-      where: { poNo },
+      where: { poNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
 
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const items = await this.purchaseOrderItemRepository.find({
-      where: { poNo },
+      where: { poNo, ...tenantWhere },
     });
 
     const itemCodes = items.map((item) => item.itemCode).filter(Boolean);
-    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+    const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return {
@@ -123,18 +138,18 @@ export class PurchaseOrderService {
         const part = partMap.get(item.itemCode);
         return {
           ...item,
-          itemCode: part?.itemCode,
-          itemName: part?.itemName,
-          spec: part?.spec,
-          unit: part?.unit,
+          itemCode: item.itemCode,
+          itemName: part?.itemName ?? null,
+          spec: part?.spec ?? null,
+          unit: part?.unit ?? null,
         };
       }),
     };
   }
 
-  async create(dto: CreatePurchaseOrderDto) {
+  async create(dto: CreatePurchaseOrderDto, company?: string, plant?: string) {
     const existing = await this.purchaseOrderRepository.findOne({
-      where: { poNo: dto.poNo },
+      where: { poNo: dto.poNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
     if (existing) throw new ConflictException(`이미 존재하는 PO 번호입니다: ${dto.poNo}`);
 
@@ -152,6 +167,8 @@ export class PurchaseOrderService {
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
         remark: dto.remark,
         totalAmount,
+        company: company ?? null,
+        plant: plant ?? null,
       });
       const savedPo = await queryRunner.manager.save(po);
 
@@ -164,13 +181,19 @@ export class PurchaseOrderService {
           orderQty: item.orderQty,
           unitPrice: item.unitPrice,
           remark: item.remark,
+          company: company ?? null,
+          plant: plant ?? null,
         }),
       );
       const savedItems = await queryRunner.manager.save(itemEntities);
 
       // part 정보 조회
       const itemCodes = savedItems.map((item: PurchaseOrderItem) => item.itemCode).filter(Boolean);
-      const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+      const tenantWhere = {
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      };
+      const parts = itemCodes.length > 0 ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
       const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
       return {
@@ -179,24 +202,25 @@ export class PurchaseOrderService {
           const part = partMap.get(item.itemCode);
           return {
             ...item,
-            itemCode: part?.itemCode,
-            itemName: part?.itemName,
-            spec: part?.spec,
-            unit: part?.unit,
+            itemCode: item.itemCode,
+            itemName: part?.itemName ?? null,
+            spec: part?.spec ?? null,
+            unit: part?.unit ?? null,
           };
         }),
       };
     });
   }
 
-  async update(poNo: string, dto: UpdatePurchaseOrderDto) {
-    await this.findById(poNo);
+  async update(poNo: string, dto: UpdatePurchaseOrderDto, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    await this.findById(poNo, company, plant);
     const { items, ...poData } = dto;
 
     await this.tx.run(async (queryRunner) => {
       if (items) {
         // 기존 품목 삭제
-        await queryRunner.manager.delete(PurchaseOrderItem, { poNo });
+        await queryRunner.manager.delete(PurchaseOrderItem, { poNo, ...tenantWhere });
 
         const totalAmount = items.reduce((sum, item) => sum + (item.orderQty * (item.unitPrice ?? 0)), 0);
 
@@ -208,7 +232,7 @@ export class PurchaseOrderService {
         if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
         if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
 
-        await queryRunner.manager.update(PurchaseOrder, poNo, updateData);
+        await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, updateData);
 
         // 새 품목 생성
         const itemEntities = items.map((item, idx) =>
@@ -219,6 +243,8 @@ export class PurchaseOrderService {
             orderQty: item.orderQty,
             unitPrice: item.unitPrice,
             remark: item.remark,
+            company: company ?? null,
+            plant: plant ?? null,
           }),
         );
         await queryRunner.manager.save(itemEntities);
@@ -227,43 +253,46 @@ export class PurchaseOrderService {
         if (poData.orderDate) updateData.orderDate = new Date(poData.orderDate);
         if (poData.dueDate) updateData.dueDate = new Date(poData.dueDate);
 
-        await queryRunner.manager.update(PurchaseOrder, poNo, updateData);
+        await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, updateData);
       }
     });
 
-    return this.findById(poNo);
+    return this.findById(poNo, company, plant);
   }
 
   /** PO 확정 (DRAFT -> CONFIRMED) */
-  async confirm(poNo: string) {
+  async confirm(poNo: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const po = await this.purchaseOrderRepository.findOne({
-      where: { poNo },
+      where: { poNo, ...tenantWhere },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
     if (po.status !== 'DRAFT') {
       throw new BadRequestException(`DRAFT 상태의 PO만 확정할 수 있습니다. 현재 상태: ${po.status}`);
     }
 
-    await this.purchaseOrderRepository.update(poNo, { status: 'CONFIRMED' });
-    return this.findById(poNo);
+    await this.purchaseOrderRepository.update({ poNo, ...tenantWhere }, { status: 'CONFIRMED' });
+    return this.findById(poNo, company, plant);
   }
 
   /** PO 마감 (RECEIVED -> CLOSED) */
-  async close(poNo: string) {
+  async close(poNo: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const po = await this.purchaseOrderRepository.findOne({
-      where: { poNo },
+      where: { poNo, ...tenantWhere },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
     if (!['RECEIVED', 'PARTIAL'].includes(po.status)) {
       throw new BadRequestException(`마감 가능한 상태가 아닙니다. 현재 상태: ${po.status}`);
     }
 
-    await this.purchaseOrderRepository.update(poNo, { status: 'CLOSED' });
-    return this.findById(poNo);
+    await this.purchaseOrderRepository.update({ poNo, ...tenantWhere }, { status: 'CLOSED' });
+    return this.findById(poNo, company, plant);
   }
 
-  async delete(poNo: string) {
-    const po = await this.findById(poNo);
+  async delete(poNo: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const po = await this.findById(poNo, company, plant);
     if (po.status !== 'DRAFT') {
       throw new BadRequestException(
         `구매오더는 DRAFT 상태에서만 삭제할 수 있습니다. 현재 상태: ${po.status}`,
@@ -271,7 +300,7 @@ export class PurchaseOrderService {
     }
 
     const arrivals = await this.matArrivalRepository.find({
-      where: { poNo },
+      where: { poNo, ...tenantWhere },
     });
     if (arrivals.length > 0) {
       throw new BadRequestException(
@@ -279,7 +308,7 @@ export class PurchaseOrderService {
       );
     }
 
-    await this.purchaseOrderRepository.delete(poNo);
+    await this.purchaseOrderRepository.delete({ poNo, ...tenantWhere });
     return { poNo };
   }
 }

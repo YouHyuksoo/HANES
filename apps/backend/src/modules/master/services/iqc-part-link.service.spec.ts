@@ -46,12 +46,12 @@ describe('IqcPartLinkService', () => {
       mockRepo.findOne.mockResolvedValue(link);
 
       // Act
-      const result = await target.findByCompositeKey('ITEM01', 'P01');
+      const result = await target.findByCompositeKey('ITEM01', 'P01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(link);
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { itemCode: 'ITEM01', partnerId: 'P01' },
+        where: { itemCode: 'ITEM01', partnerId: 'P01', company: 'C1', plant: 'P1' },
         relations: ['part', 'partner', 'group', 'group.items', 'group.items.inspItem'],
       });
     });
@@ -78,10 +78,13 @@ describe('IqcPartLinkService', () => {
       mockRepo.save.mockResolvedValue(created);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(created);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM01', partnerId: 'P01', company: 'C1', plant: 'P1' },
+      });
     });
 
     it('should use "*" as default partnerId when not provided', async () => {
@@ -95,11 +98,11 @@ describe('IqcPartLinkService', () => {
       mockRepo.save.mockResolvedValue(created);
 
       // Act
-      await target.create(dto);
+      await target.create(dto, 'C1', 'P1');
 
       // Assert
       expect(mockRepo.findOne).toHaveBeenCalledWith({
-        where: { itemCode: 'ITEM01', partnerId: '*' },
+        where: { itemCode: 'ITEM01', partnerId: '*', company: 'C1', plant: 'P1' },
       });
     });
 
@@ -122,11 +125,11 @@ describe('IqcPartLinkService', () => {
       mockRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('ITEM01', 'P01', { groupCode: 'IG02' } as any);
+      const result = await target.update('ITEM01', 'P01', { groupCode: 'IG02' } as any, 'C1', 'P1');
 
       // Assert
       expect(mockRepo.update).toHaveBeenCalledWith(
-        { itemCode: 'ITEM01', partnerId: 'P01' },
+        { itemCode: 'ITEM01', partnerId: 'P01', company: 'C1', plant: 'P1' },
         expect.objectContaining({ groupCode: 'IG02' }),
       );
     });
@@ -141,10 +144,11 @@ describe('IqcPartLinkService', () => {
       mockRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.delete('ITEM01', 'P01');
+      const result = await target.delete('ITEM01', 'P01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ itemCode: 'ITEM01', partnerId: 'P01', deleted: true });
+      expect(mockRepo.delete).toHaveBeenCalledWith({ itemCode: 'ITEM01', partnerId: 'P01', company: 'C1', plant: 'P1' });
     });
   });
 });

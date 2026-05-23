@@ -18,11 +18,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, DataSource, In } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, And, In } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { CreateShipOrderDto, UpdateShipOrderDto, ShipOrderQueryDto } from '../dto/ship-order.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class ShipOrderService {
@@ -33,7 +34,7 @@ export class ShipOrderService {
     private readonly shipOrderItemRepository: Repository<ShipmentOrderItem>,
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -83,7 +84,10 @@ export class ShipOrderService {
 
     const itemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.partRepository.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName'] })
+      ? await this.partRepository.find({
+          where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
+          select: ['itemCode', 'itemName'],
+        })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p.itemName]));
 
@@ -115,7 +119,7 @@ export class ShipOrderService {
     const itemsWithPart = await Promise.all(
       items.map(async (item) => {
         const part = await this.partRepository.findOne({
-          where: { itemCode: item.itemCode },
+          where: { itemCode: item.itemCode, ...this.tenantWhere(company, plant) },
           select: ['itemCode', 'itemName'],
         });
         return {
@@ -139,11 +143,8 @@ export class ShipOrderService {
     });
     if (existing) throw new ConflictException(`이미 존재하는 출하지시 번호입니다: ${dto.shipOrderNo}`);
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    let savedShipOrderNo!: string;
+    await this.tx.run(async (queryRunner) => {
       const order = this.shipOrderRepository.create({
         shipOrderNo: dto.shipOrderNo,
         customerId: dto.customerId,
@@ -157,6 +158,7 @@ export class ShipOrderService {
       });
 
       const savedOrder = await queryRunner.manager.save(order);
+      savedShipOrderNo = savedOrder.shipOrderNo;
 
       // 품목 생성
       if (dto.items && dto.items.length > 0) {
@@ -174,16 +176,9 @@ export class ShipOrderService {
         );
         await queryRunner.manager.save(items);
       }
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(savedOrder.shipOrderNo, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(savedShipOrderNo, company, plant);
   }
 
   /** 출하지시 수정 */
@@ -198,11 +193,7 @@ export class ShipOrderService {
       );
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       if (dto.items) {
         await queryRunner.manager.delete(ShipmentOrderItem, { shipOrderNo, ...this.tenantWhere(company, plant) });
 
@@ -228,16 +219,9 @@ export class ShipOrderService {
       if (dto.remark !== undefined) updateData.remark = dto.remark;
 
       await queryRunner.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, updateData);
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(dto.shipOrderNo ?? shipOrderNo, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(dto.shipOrderNo ?? shipOrderNo, company, plant);
   }
 
   /** 출하지시 삭제 */

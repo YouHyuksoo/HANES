@@ -108,6 +108,9 @@ describe('ProductLabelService', () => {
     const result = await service.createPrdLabels({ sourceId: 1, source: 'PROD_RESULT' as any, qty: 1 }, 'C1', 'P1');
 
     expect(result).toEqual([{ prdUid: 'PRD-001', itemCode: 'FG-001', itemName: 'Finished Good' }]);
+    expect(partRepo.findOne).toHaveBeenCalledWith({
+      where: { itemCode: 'FG-001', company: 'C1', plant: 'P1' },
+    });
     expect(tx.run).toHaveBeenCalledTimes(1);
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(queryRunner.manager.update).toHaveBeenCalledWith(ProdResult, '1', { prdUid: 'PRD-001' });

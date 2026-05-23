@@ -33,6 +33,14 @@ export class ScrapService {
     private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
   ) {}
+
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: ScrapQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -60,10 +68,11 @@ export class ScrapService {
     // part, lot 정보 조회
     const itemCodes = data.map((t) => t.itemCode).filter(Boolean);
     const matUids = data.map((t) => t.matUid).filter(Boolean) as string[];
+    const tenantWhere = this.tenantWhere(company, plant);
 
     const [parts, lots] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -74,20 +83,21 @@ export class ScrapService {
       const lot = transaction.matUid ? lotMap.get(transaction.matUid) : null;
       return {
         ...transaction,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        matUid: lot?.matUid,
+        itemCode: transaction.itemCode,
+        itemName: part?.itemName ?? null,
+        matUid: transaction.matUid,
       };
     });
 
     return { data: result, total, page, limit };
   }
 
-  async create(dto: CreateScrapDto) {
+  async create(dto: CreateScrapDto, company?: string, plant?: string) {
     const { matUid, warehouseId, qty, reason, workerId } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
 
     // G10: 불출된 자재(FLOOR 창고)는 반납 후에만 폐기 가능
-    const warehouse = await this.warehouseRepository.findOne({ where: { warehouseCode: warehouseId } });
+    const warehouse = await this.warehouseRepository.findOne({ where: { warehouseCode: warehouseId, ...tenantWhere } });
     if (warehouse && warehouse.warehouseType === 'FLOOR') {
       const returnMode = await this.sysConfigService.getValue('RETURN_MODE');
       if (returnMode === 'RETURN') {
@@ -99,7 +109,7 @@ export class ScrapService {
     return this.tx.run(async (queryRunner) => {
       // LOT 조회
       const lot = await queryRunner.manager.findOne(MatLot, {
-        where: { matUid: matUid },
+        where: { matUid: matUid, ...tenantWhere },
       });
 
       if (!lot) {
@@ -108,7 +118,7 @@ export class ScrapService {
 
       // 재고 확인 (MatStock 기준)
       const stock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode: lot.itemCode, warehouseCode: warehouseId, matUid },
+        where: { itemCode: lot.itemCode, warehouseCode: warehouseId, matUid, ...tenantWhere },
       });
 
       if (!stock || stock.qty < qty) {
@@ -122,13 +132,13 @@ export class ScrapService {
 
       const newStockQty = stock.qty - qty;
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
         { qty: newStockQty, availableQty: stock.availableQty - qty },
       );
 
       // 재고 0이면 LOT 상태만 DEPLETED로 변경
       if (newStockQty === 0) {
-        await queryRunner.manager.update(MatLot, lot.matUid, { status: 'DEPLETED' });
+        await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: 'DEPLETED' });
       }
 
       // 폐기 트랜잭션 생성
@@ -145,6 +155,8 @@ export class ScrapService {
         refId: matUid,
         workerId,
         remark: reason,
+        company: lot.company ?? company,
+        plant: lot.plant ?? plant,
       });
 
       const savedTransaction = await queryRunner.manager.save(transaction);

@@ -31,7 +31,6 @@ interface WarehouseItem {
 }
 
 interface PartItem {
-  id: string;
   itemCode: string;
   itemName: string;
 }
@@ -138,7 +137,7 @@ export function usePartOptions(itemType?: string) {
     const raw = data?.data;
     const list = Array.isArray(raw) ? raw : raw?.data ?? [];
     return list.map((p) => ({
-      value: p.id,
+      value: p.itemCode,
       label: `${p.itemCode} - ${p.itemName}`,
     }));
   }, [data]);

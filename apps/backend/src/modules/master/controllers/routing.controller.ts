@@ -30,30 +30,30 @@ export class RoutingController {
 
   @Get(':itemCode/:seq')
   @ApiOperation({ summary: '라우팅 상세 조회' })
-  async findByKey(@Param('itemCode') itemCode: string, @Param('seq', ParseIntPipe) seq: number) {
-    const data = await this.routingService.findByKey(itemCode, seq);
+  async findByKey(@Param('itemCode') itemCode: string, @Param('seq', ParseIntPipe) seq: number, @Company() company: string, @Plant() plant: string) {
+    const data = await this.routingService.findByKey(itemCode, seq, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '라우팅 생성' })
-  async create(@Body() dto: CreateRoutingDto) {
-    const data = await this.routingService.create(dto);
+  async create(@Body() dto: CreateRoutingDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.routingService.create(dto, company, plant);
     return ResponseUtil.success(data, '라우팅이 생성되었습니다.');
   }
 
   @Put(':itemCode/:seq')
   @ApiOperation({ summary: '라우팅 수정' })
-  async update(@Param('itemCode') itemCode: string, @Param('seq', ParseIntPipe) seq: number, @Body() dto: UpdateRoutingDto) {
-    const data = await this.routingService.update(itemCode, seq, dto);
+  async update(@Param('itemCode') itemCode: string, @Param('seq', ParseIntPipe) seq: number, @Body() dto: UpdateRoutingDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.routingService.update(itemCode, seq, dto, company, plant);
     return ResponseUtil.success(data, '라우팅이 수정되었습니다.');
   }
 
   @Delete(':itemCode/:seq')
   @ApiOperation({ summary: '라우팅 삭제' })
-  async delete(@Param('itemCode') itemCode: string, @Param('seq', ParseIntPipe) seq: number) {
-    await this.routingService.delete(itemCode, seq);
+  async delete(@Param('itemCode') itemCode: string, @Param('seq', ParseIntPipe) seq: number, @Company() company: string, @Plant() plant: string) {
+    await this.routingService.delete(itemCode, seq, company, plant);
     return ResponseUtil.success(null, '라우팅이 삭제되었습니다.');
   }
 }

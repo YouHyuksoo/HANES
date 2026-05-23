@@ -43,6 +43,38 @@ describe('PmPlanService', () => {
   });
   afterEach(() => jest.clearAllMocks());
 
+  const mockQueryBuilder = (plans: any[] = []) => {
+    const qb: any = {
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(plans.length),
+      getMany: jest.fn().mockResolvedValue(plans),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    return qb;
+  };
+
+  describe('findAllPlans', () => {
+    it('should enrich plan equipment within tenant', async () => {
+      const plan = { planCode: 'PM-001', equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any;
+      mockPlanRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder([plan]));
+      mockEquipRepo.find.mockResolvedValue([{ equipCode: 'EQ-001', equipName: 'Equip' }] as any);
+
+      await target.findAllPlans({} as any, 'CO', 'P01');
+
+      expect(mockEquipRepo.find).toHaveBeenCalledWith({
+        where: { equipCode: expect.anything(), company: 'CO', plant: 'P01' },
+        select: ['equipCode', 'equipName', 'lineCode', 'equipType'],
+      });
+    });
+  });
+
   describe('findPlanById', () => {
     it('should return plan with equip', async () => {
       mockPlanRepo.findOne.mockResolvedValue({ planCode: 'PM-001', equipCode: 'EQ-001', items: [] } as any);
@@ -60,6 +92,46 @@ describe('PmPlanService', () => {
     it('should throw when equip not found', async () => {
       mockEquipRepo.findOne.mockResolvedValue(null);
       await expect(target.createPlan({ equipCode: 'X', planCode: 'PM-001' } as any)).rejects.toThrow(NotFoundException);
+    });
+    it('should validate equipment and create plan within request tenant', async () => {
+      const saved = { planCode: 'PM-001', equipCode: 'EQ-001' } as any;
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+      mockPlanRepo.create.mockReturnValue(saved);
+      mockPlanRepo.save.mockResolvedValue(saved);
+      mockPlanRepo.findOne.mockResolvedValue({ ...saved, items: [] });
+
+      await target.createPlan({ equipCode: 'EQ-001', planCode: 'PM-001', planName: 'PM' } as any, 'CO', 'P01');
+
+      expect(mockEquipRepo.findOne).toHaveBeenCalledWith({
+        where: { equipCode: 'EQ-001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockPlanRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ planCode: 'PM-001', equipCode: 'EQ-001', company: 'CO', plant: 'P01' }),
+      );
+    });
+  });
+
+  describe('createWorkOrder', () => {
+    it('should validate equipment and create work order within tenant', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+      const qb = mockQueryBuilder([]);
+      qb.getOne = jest.fn().mockResolvedValue(null);
+      mockWoRepo.createQueryBuilder.mockReturnValue(qb);
+      mockWoRepo.create.mockReturnValue({ workOrderNo: 'PM-20260318-001' } as any);
+      mockWoRepo.save.mockResolvedValue({ workOrderNo: 'PM-20260318-001' } as any);
+
+      await target.createWorkOrder(
+        { equipCode: 'EQ-001', scheduledDate: '2026-03-18' } as any,
+        'CO',
+        'P01',
+      );
+
+      expect(mockEquipRepo.findOne).toHaveBeenCalledWith({
+        where: { equipCode: 'EQ-001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockWoRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' }),
+      );
     });
   });
 

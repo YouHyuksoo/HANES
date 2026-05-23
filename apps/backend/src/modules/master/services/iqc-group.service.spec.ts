@@ -50,12 +50,12 @@ describe('IqcGroupService', () => {
       mockGroupRepo.findOne.mockResolvedValue(group);
 
       // Act
-      const result = await target.findByCode('IG01');
+      const result = await target.findByCode('IG01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(group);
       expect(mockGroupRepo.findOne).toHaveBeenCalledWith({
-        where: { groupCode: 'IG01' },
+        where: { groupCode: 'IG01', company: 'C1', plant: 'P1' },
         relations: ['items', 'items.inspItem'],
       });
     });
@@ -91,9 +91,16 @@ describe('IqcGroupService', () => {
       mockGroupItemRepo.save.mockResolvedValue([] as any);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'C1', 'P1');
 
       // Assert
+      expect(mockGroupRepo.findOne).toHaveBeenCalledWith({
+        where: { groupCode: 'IG01', company: 'C1', plant: 'P1' },
+      });
+      expect(mockGroupItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'C1',
+        plant: 'P1',
+      }));
       expect(mockGroupItemRepo.save).toHaveBeenCalled();
     });
 
@@ -160,10 +167,14 @@ describe('IqcGroupService', () => {
       await target.update('IG01', {
         groupName: 'New',
         items: [{ itemId: 2, seq: 1 }],
-      } as any);
+      } as any, 'C1', 'P1');
 
       // Assert
-      expect(mockGroupItemRepo.delete).toHaveBeenCalledWith({ groupCode: 'IG01' });
+      expect(mockGroupItemRepo.delete).toHaveBeenCalledWith({ groupCode: 'IG01', company: 'C1', plant: 'P1' });
+      expect(mockGroupItemRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'C1',
+        plant: 'P1',
+      }));
       expect(mockGroupItemRepo.save).toHaveBeenCalled();
     });
 
@@ -190,7 +201,7 @@ describe('IqcGroupService', () => {
       mockGroupRepo.remove.mockResolvedValue(existing);
 
       // Act
-      const result = await target.delete('IG01');
+      const result = await target.delete('IG01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ groupCode: 'IG01', deleted: true });

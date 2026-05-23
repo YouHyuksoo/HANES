@@ -144,7 +144,7 @@ export class SimulationDataService {
       [...bottleneckDetails.values()].map((d) => d.processCode).filter(Boolean),
     )];
     const processes = processCodes.length > 0
-      ? await this.processRepo.find({ where: { processCode: In(processCodes) } })
+      ? await this.processRepo.find({ where: { processCode: In(processCodes), company, plant } })
       : [];
     const procNameMap = new Map(processes.map((p) => [p.processCode, p.processName]));
 
@@ -185,7 +185,7 @@ export class SimulationDataService {
     // 관련 공정 일괄 조회 (N+1 제거)
     const procCodes = [...new Set(allCapas.map((c) => c.processCode).filter(Boolean))];
     const allProcs = procCodes.length > 0
-      ? await this.processRepo.find({ where: { processCode: In(procCodes) } })
+      ? await this.processRepo.find({ where: { processCode: In(procCodes), company, plant } })
       : [];
     const procMap = new Map(allProcs.map((p) => [p.processCode, p]));
 
@@ -254,7 +254,7 @@ export class SimulationDataService {
       const rows: Array<{ customerId: string; itemCode: string; minDueDate: string }> =
         await this.orderRepo
           .createQueryBuilder('co')
-          .innerJoin(CustomerOrderItem, 'ci', 'co.orderNo = ci.orderNo')
+          .innerJoin(CustomerOrderItem, 'ci', 'co.orderNo = ci.orderNo AND co.company = ci.company AND co.plant = ci.plant')
           .select('co.customerId', 'customerId')
           .addSelect('ci.itemCode', 'itemCode')
           .addSelect('MIN(co.dueDate)', 'minDueDate')

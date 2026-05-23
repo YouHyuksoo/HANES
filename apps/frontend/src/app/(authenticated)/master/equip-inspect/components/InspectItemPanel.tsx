@@ -32,6 +32,8 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
   const inspectTypeLabels = useMemo<Record<string, string>>(() => ({
     DAILY: t("master.equipInspect.typeDaily"),
     PERIODIC: t("master.equipInspect.typePeriodic"),
+    PM: t("master.equipInspect.typePM"),
+    WORKER: t("master.equipInspect.typeWorker"),
   }), [t]);
 
   const cycleLabels = useMemo<Record<string, string>>(() => ({

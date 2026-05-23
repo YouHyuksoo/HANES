@@ -87,5 +87,60 @@ describe('PoStatusService', () => {
 
       expect(result.data[0].receiveRate).toBe(0);
     });
+
+    it('품목 마스터가 누락되어도 PO 현황 품목 원본 itemCode는 유지한다', async () => {
+      const po = { poNo: 'PO-003', status: 'CONFIRMED' } as PurchaseOrder;
+      const poItem = {
+        poNo: 'PO-003',
+        seq: 1,
+        itemCode: 'ITEM-MISSING',
+        orderQty: 200,
+        receivedQty: 0,
+      } as PurchaseOrderItem;
+
+      mockPoRepo.find.mockResolvedValue([po]);
+      mockPoRepo.count.mockResolvedValue(1);
+      mockPoItemRepo.find.mockResolvedValue([poItem]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0].items[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          spec: null,
+          unit: null,
+          receiveRate: 0,
+        }),
+      );
+    });
+
+    it('PO 현황 품목과 품목마스터 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const po = { poNo: 'PO-004', status: 'CONFIRMED', company: 'C1', plant: 'P1' } as PurchaseOrder;
+      const poItem = {
+        poNo: 'PO-004',
+        seq: 1,
+        itemCode: 'ITEM-001',
+        orderQty: 200,
+        receivedQty: 0,
+        company: 'C1',
+        plant: 'P1',
+      } as PurchaseOrderItem;
+
+      mockPoRepo.find.mockResolvedValue([po]);
+      mockPoRepo.count.mockResolvedValue(1);
+      mockPoItemRepo.find.mockResolvedValue([poItem]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockPoItemRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
   });
 });

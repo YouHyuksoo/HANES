@@ -7,10 +7,12 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, MoreThanOrEqual, Between, In, EntityManager } from 'typeorm';
+import { OracleService } from '../../../common/services/oracle.service';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -38,7 +40,15 @@ export class InterfaceService {
     @InjectRepository(JobOrder)
     private readonly jobOrderRepository: Repository<JobOrder>,
     private readonly dataSource: DataSource,
+    private readonly oracleService: OracleService,
   ) {}
+
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
 
   /** 오늘 날짜 기준 다음 SEQ 번호 조회 */
   private async getNextSeq(manager: EntityManager, transDate: Date): Promise<number> {
@@ -181,7 +191,7 @@ export class InterfaceService {
   // Inbound 처리 (ERP → MES)
   // ============================================================================
 
-  async receiveJobOrder(dto: JobOrderInboundDto) {
+  async receiveJobOrder(dto: JobOrderInboundDto, company?: string, plant?: string) {
     const log = await this.createLog({
       direction: 'IN',
       messageType: 'JOB_ORDER',
@@ -192,7 +202,7 @@ export class InterfaceService {
     try {
       // 품목 확인
       const part = await this.partMasterRepository.findOne({
-        where: { itemCode: dto.itemCode },
+        where: { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
       });
 
       if (!part) {
@@ -208,6 +218,8 @@ export class InterfaceService {
         planDate: dto.planDate ? new Date(dto.planDate) : null,
         priority: dto.priority ?? 5,
         erpSyncYn: 'Y',
+        company,
+        plant,
       });
 
       await this.jobOrderRepository.save(jobOrder);
@@ -226,7 +238,7 @@ export class InterfaceService {
     }
   }
 
-  async syncBom(dtos: BomSyncDto[]) {
+  async syncBom(dtos: BomSyncDto[], company?: string, plant?: string) {
     const log = await this.createLog({
       direction: 'IN',
       messageType: 'BOM_SYNC',
@@ -237,7 +249,7 @@ export class InterfaceService {
       // 관련 품목코드 일괄 선조회 (N+1 제거)
       const allItemCodes = [...new Set(dtos.flatMap((d) => [d.parentItemCode, d.childItemCode]))];
       const allParts = allItemCodes.length > 0
-        ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes) } })
+        ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes), ...this.tenantWhere(company, plant) } })
         : [];
       const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
 
@@ -246,6 +258,7 @@ export class InterfaceService {
         parentItemCode: d.parentItemCode,
         childItemCode: d.childItemCode,
         revision: d.revision ?? 'A',
+        ...this.tenantWhere(company, plant),
       }));
       const existingBoms = bomKeys.length > 0
         ? await this.bomMasterRepository.find({ where: bomKeys })
@@ -269,7 +282,7 @@ export class InterfaceService {
 
         if (bomKeySet.has(key)) {
           await this.bomMasterRepository.update(
-            { parentItemCode: parentPart.itemCode, childItemCode: childPart.itemCode, revision: rev },
+            { parentItemCode: parentPart.itemCode, childItemCode: childPart.itemCode, revision: rev, ...this.tenantWhere(company, plant) },
             { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo },
           );
         } else {
@@ -279,6 +292,8 @@ export class InterfaceService {
             qtyPer: dto.qtyPer,
             revision: rev,
             ecoNo: dto.ecoNo,
+            company,
+            plant,
           });
           await this.bomMasterRepository.save(newBom);
           bomKeySet.add(key);
@@ -301,7 +316,7 @@ export class InterfaceService {
     }
   }
 
-  async syncPart(dtos: PartSyncDto[]) {
+  async syncPart(dtos: PartSyncDto[], company?: string, plant?: string) {
     const log = await this.createLog({
       direction: 'IN',
       messageType: 'PART_SYNC',
@@ -312,21 +327,24 @@ export class InterfaceService {
       // 기존 품목 일괄 선조회 (N+1 제거)
       const itemCodes = dtos.map((d) => d.itemCode);
       const existingParts = itemCodes.length > 0
-        ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+        ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
         : [];
       const existingSet = new Set(existingParts.map((p) => p.itemCode));
 
       const results = [];
       for (const dto of dtos) {
         if (existingSet.has(dto.itemCode)) {
-          await this.partMasterRepository.update(dto.itemCode, {
-            itemName: dto.itemName,
-            itemType: dto.itemType,
-            spec: dto.spec,
-            unit: dto.unit ?? 'EA',
-            drawNo: dto.drawNo,
-            customer: dto.customer,
-          });
+          await this.partMasterRepository.update(
+            { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
+            {
+              itemName: dto.itemName,
+              itemType: dto.itemType,
+              spec: dto.spec,
+              unit: dto.unit ?? 'EA',
+              drawNo: dto.drawNo,
+              customer: dto.customer,
+            },
+          );
         } else {
           const newPart = this.partMasterRepository.create({
             itemCode: dto.itemCode,
@@ -336,6 +354,8 @@ export class InterfaceService {
             unit: dto.unit ?? 'EA',
             drawNo: dto.drawNo,
             customer: dto.customer,
+            company,
+            plant,
           });
           await this.partMasterRepository.save(newPart);
           existingSet.add(dto.itemCode);
@@ -362,7 +382,7 @@ export class InterfaceService {
   // Outbound 처리 (MES → ERP)
   // ============================================================================
 
-  async sendProdResult(dto: ProdResultOutboundDto) {
+  async sendProdResult(dto: ProdResultOutboundDto, company?: string, plant?: string) {
     const log = await this.createLog({
       direction: 'OUT',
       messageType: 'PROD_RESULT',
@@ -376,11 +396,14 @@ export class InterfaceService {
 
       // 작업지시 동기화 상태 업데이트
       const jobOrder = await this.jobOrderRepository.findOne({
-        where: { orderNo: dto.orderNo },
+        where: { orderNo: dto.orderNo, ...this.tenantWhere(company, plant) },
       });
 
       if (jobOrder) {
-        await this.jobOrderRepository.update(jobOrder.orderNo, { erpSyncYn: 'Y' });
+        await this.jobOrderRepository.update(
+          { orderNo: jobOrder.orderNo, ...this.tenantWhere(company, plant) },
+          { erpSyncYn: 'Y' },
+        );
       }
 
       await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS');
@@ -515,6 +538,35 @@ export class InterfaceService {
       );
       return { affectedRows: 0 };
     }
+  }
+
+  /**
+   * ERP → MES 품목 마스터 동기화 (스케줄러/수동 공용)
+   * IF_ITEM_MASTER 프로시저 호출 — 변경 건만 MERGE, 미변경 건 SKIP
+   */
+  async scheduledSyncItemMaster(): Promise<{ affectedRows: number; insert: number; update: number }> {
+    this.logger.log('ERP 품목 마스터 동기화 시작 (IF_ITEM_MASTER)');
+
+    const out = await this.oracleService.callProcScalar(
+      'IF_ITEM_MASTER',
+      [
+        { name: 'n_return', type: 'NUMBER' },
+        { name: 'v_return', type: 'STRING', maxSize: 500 },
+        { name: 'n_insert', type: 'NUMBER' },
+        { name: 'n_update', type: 'NUMBER' },
+      ],
+    );
+
+    if (Number(out['n_return']) !== 0) {
+      throw new InternalServerErrorException(`IF_ITEM_MASTER 실패: ${out['v_return']}`);
+    }
+
+    const insert = Number(out['n_insert'] ?? 0);
+    const update = Number(out['n_update'] ?? 0);
+
+    this.logger.log(`ERP 품목 마스터 동기화 완료 — INSERT: ${insert}, UPDATE: ${update}`);
+
+    return { affectedRows: insert + update, insert, update };
   }
 
   /**

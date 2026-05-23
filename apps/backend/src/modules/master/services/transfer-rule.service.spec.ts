@@ -26,6 +26,36 @@ describe('TransferRuleService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  describe('findAll', () => {
+    it('joins warehouse names by tenant-scoped warehouse keys', async () => {
+      const qb = {
+        leftJoin: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getRawAndEntities: jest.fn().mockResolvedValue({ raw: [], entities: [] }),
+      };
+      mockRuleRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findAll({ page: 1, limit: 10 }, 'TESTV', 'WAREHOUSES');
+
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        'WAREHOUSES',
+        'fw',
+        'fw.WAREHOUSE_CODE = rule.fromWarehouseId AND fw.COMPANY = rule.company AND fw.PLANT_CD = rule.plant',
+      );
+      expect(qb.leftJoin).toHaveBeenCalledWith(
+        'WAREHOUSES',
+        'tw',
+        'tw.WAREHOUSE_CODE = rule.toWarehouseId AND tw.COMPANY = rule.company AND tw.PLANT_CD = rule.plant',
+      );
+    });
+  });
+
   describe('create', () => {
     it('persists company and plant from tenant context', async () => {
       const dto = {

@@ -30,13 +30,20 @@ export class LotSplitService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findSplittableLots(query: LotSplitQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
     // 분할 가능한 LOT: MatStock.qty > 1 이고 DEPLETED 상태가 아닌 LOT
     const qb = this.matLotRepository.createQueryBuilder('lot')
-      .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid')
+      .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid AND stock.company = lot.company AND stock.plant = lot.plant')
       .where('stock.qty > 1')
       .andWhere("lot.status != 'DEPLETED'");
 
@@ -52,15 +59,19 @@ export class LotSplitService {
 
     // part 정보 조회 및 중첩 객체 평면화
     const itemCodes = data.map((lot) => lot.itemCode).filter(Boolean);
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     // 재고 정보 조회
     const matUids = data.map((lot) => lot.matUid);
     const stocks = matUids.length > 0
-      ? await this.matStockRepository.find({ where: { matUid: In(matUids) } })
+      ? await this.matStockRepository.find({ where: { matUid: In(matUids), ...tenantWhere } })
       : [];
     const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
@@ -69,23 +80,24 @@ export class LotSplitService {
       const stock = stockMap.get(lot.matUid);
       return {
         ...lot,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
-        warehouseCode: stock?.warehouseCode,
+        itemCode: lot.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        warehouseCode: stock?.warehouseCode ?? null,
       };
     });
 
     return { data: flattenedData, total, page, limit };
   }
 
-  async split(dto: LotSplitDto) {
+  async split(dto: LotSplitDto, company?: string, plant?: string) {
     const { sourceLotId, splitQty, newLotNo, remark } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
 
     return this.tx.run(async (queryRunner) => {
       // 원본 LOT 조회
       const sourceLot = await queryRunner.manager.findOne(MatLot, {
-        where: { matUid: sourceLotId },
+        where: { matUid: sourceLotId, ...tenantWhere },
       });
 
       if (!sourceLot) {
@@ -102,7 +114,7 @@ export class LotSplitService {
 
       // 원본 재고 조회 (수량 체크용)
       const sourceStock = await queryRunner.manager.findOne(MatStock, {
-        where: { matUid: sourceLotId },
+        where: { matUid: sourceLotId, ...tenantWhere },
       });
 
       if (!sourceStock || sourceStock.qty < splitQty) {
@@ -113,7 +125,7 @@ export class LotSplitService {
       }
 
       const issueHistories = await queryRunner.manager.find(MatIssue, {
-        where: { matUid: sourceLotId },
+        where: { matUid: sourceLotId, ...tenantWhere },
       });
       if (issueHistories.some((issue) => issue.status !== 'CANCELED')) {
         throw new BadRequestException(
@@ -123,7 +135,7 @@ export class LotSplitService {
 
       // 품목 정보 조회
       const part = await queryRunner.manager.findOne(PartMaster, {
-        where: { itemCode: sourceLot.itemCode },
+        where: { itemCode: sourceLot.itemCode, ...tenantWhere },
       });
       if (!part) {
         throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.itemCode}`);
@@ -141,7 +153,7 @@ export class LotSplitService {
 
       // 중복 LOT 번호 확인
       const existingLot = await queryRunner.manager.findOne(MatLot, {
-        where: { matUid: generatedLotNo },
+        where: { matUid: generatedLotNo, ...tenantWhere },
       });
       if (existingLot) {
         throw new BadRequestException(`이미 존재하는 LOT 번호입니다: ${generatedLotNo}`);
@@ -150,13 +162,13 @@ export class LotSplitService {
       // 원본 재고 차감 (MatStock만 업데이트)
       const newSourceStockQty = sourceStock.qty - splitQty;
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid },
+        { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid, ...tenantWhere },
         { qty: newSourceStockQty, availableQty: newSourceStockQty - sourceStock.reservedQty },
       );
 
       // 원본 LOT 상태만 업데이트 (재고 0이면 DEPLETED)
       if (newSourceStockQty === 0) {
-        await queryRunner.manager.update(MatLot, sourceLotId, { status: 'DEPLETED' });
+        await queryRunner.manager.update(MatLot, { matUid: sourceLotId, ...tenantWhere }, { status: 'DEPLETED' });
       }
 
       // 새 LOT 생성 (currentQty 없이 — 재고는 MatStock에서만 관리)

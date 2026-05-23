@@ -46,10 +46,13 @@ describe('IqcItemPoolService', () => {
       mockRepo.findOne.mockResolvedValue(item);
 
       // Act
-      const result = await target.findByCode('IQ01');
+      const result = await target.findByCode('IQ01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(item);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { inspItemCode: 'IQ01', company: 'C1', plant: 'P1' },
+      });
     });
 
     it('should throw NotFoundException when not found', async () => {
@@ -72,10 +75,17 @@ describe('IqcItemPoolService', () => {
       mockRepo.save.mockResolvedValue(created);
 
       // Act
-      const result = await target.create(dto);
+      const result = await target.create(dto, 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(created);
+      expect(mockRepo.findOne).toHaveBeenCalledWith({
+        where: { inspItemCode: 'IQ01', company: 'C1', plant: 'P1' },
+      });
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        company: 'C1',
+        plant: 'P1',
+      }));
     });
 
     it('should throw ConflictException when item code exists', async () => {
@@ -97,7 +107,7 @@ describe('IqcItemPoolService', () => {
       mockRepo.save.mockResolvedValue({ ...existing, inspItemName: 'New' } as IqcItemPool);
 
       // Act
-      const result = await target.update('IQ01', { inspItemName: 'New' } as any);
+      const result = await target.update('IQ01', { inspItemName: 'New' } as any, 'C1', 'P1');
 
       // Assert
       expect(result.inspItemName).toBe('New');
@@ -113,7 +123,7 @@ describe('IqcItemPoolService', () => {
       mockRepo.remove.mockResolvedValue(existing);
 
       // Act
-      const result = await target.delete('IQ01');
+      const result = await target.delete('IQ01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual({ inspItemCode: 'IQ01', deleted: true });

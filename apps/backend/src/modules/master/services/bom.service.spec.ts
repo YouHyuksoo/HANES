@@ -111,6 +111,19 @@ describe('BomService', () => {
       expect(result.data[0].parentPart).toEqual({ itemCode: 'P01', itemName: 'Parent' });
       expect(result.data[0].childPart).toEqual({ itemCode: 'C01', itemName: 'Child' });
     });
+
+    it('should enrich bom items using part info within tenant only', async () => {
+      const boms = [{ parentItemCode: 'P01', childItemCode: 'C01' }] as BomMaster[];
+      mockBomRepo.findAndCount.mockResolvedValue([boms, 1]);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 } as any, 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+        select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
+      });
+    });
   });
 
   // ─── create ───
@@ -240,6 +253,20 @@ describe('BomService', () => {
 
       // Assert
       expect(result[0].childPart).toEqual({ itemCode: 'C01', itemName: 'Child1' });
+    });
+
+    it('should enrich child parts within tenant only', async () => {
+      mockBomRepo.query.mockResolvedValue([
+        { childItemCode: 'C01', parentItemCode: 'P01' },
+      ]);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      await target.findByParentId('P01', undefined, 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+        select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
+      });
     });
   });
 });

@@ -37,6 +37,13 @@ export class AdjustmentService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: AdjustmentQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -66,8 +73,9 @@ export class AdjustmentService {
 
     // part ?뺣낫 議고쉶 諛?以묒꺽 媛앹껜 ?됰㈃??
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
+    const tenantWhere = this.tenantWhere(company, plant);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -75,9 +83,9 @@ export class AdjustmentService {
       const part = partMap.get(log.itemCode);
       return {
         ...log,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
+        itemCode: log.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
       };
     });
 
@@ -99,20 +107,15 @@ export class AdjustmentService {
    */
   async createPending(dto: CreateAdjustmentDto, company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
 
     return this.tx.run(async (queryRunner) => {
-      const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode } });
+      const part = await queryRunner.manager.findOne(PartMaster, { where: { itemCode, ...tenantWhere } });
       if (!part) throw new NotFoundException(`?덈ぉ??李얠쓣 ???놁뒿?덈떎: ${itemCode}`);
 
       if (matUid) {
-        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid } });
+        const lot = await queryRunner.manager.findOne(MatLot, { where: { matUid, ...tenantWhere } });
         if (!lot) throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
-        if (company && lot.company && lot.company !== company) {
-          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
-        }
-        if (plant && lot.plant && lot.plant !== plant) {
-          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
-        }
       }
 
       // ?ш퀬 議고쉶 (蹂???놁씠 beforeQty留?湲곕줉)
@@ -121,8 +124,7 @@ export class AdjustmentService {
           warehouseCode,
           itemCode,
           ...(matUid && { matUid }),
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
+          ...tenantWhere,
         },
       });
       const beforeQty = stock?.qty ?? 0;
@@ -173,19 +175,22 @@ export class AdjustmentService {
    * @param seq InvAdjLog ?쇰젴踰덊샇 PK
    * @param approvedBy ?뱀씤??ID
    */
-  async approve(adjDate: string, seq: number, approvedBy?: string) {
-    const adjLog = await this.invAdjLogRepository.findOne({ where: { adjDate: new Date(adjDate), seq } });
+  async approve(adjDate: string, seq: number, approvedBy?: string, company?: string, plant?: string) {
+    const adjLog = await this.invAdjLogRepository.findOne({
+      where: { adjDate: new Date(adjDate), seq, ...this.tenantWhere(company, plant) },
+    });
     if (!adjLog) throw new NotFoundException(`蹂댁젙 ?대젰??李얠쓣 ???놁뒿?덈떎: ${adjDate}-${seq}`);
     if (adjLog.adjustStatus !== 'PENDING') {
       throw new BadRequestException(`?대? 泥섎━??蹂댁젙 ?붿껌?낅땲?? ?꾩옱 ?곹깭: ${adjLog.adjustStatus}`);
     }
 
     const { warehouseCode, itemCode, matUid, afterQty, diffQty, reason } = adjLog;
+    const adjTenantWhere = this.tenantWhere(adjLog.company, adjLog.plant);
 
     return this.tx.run(async (queryRunner) => {
       // ?ш퀬 ?낅뜲?댄듃
       let stock = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode, itemCode, ...(matUid && { matUid }) },
+        where: { warehouseCode, itemCode, ...(matUid && { matUid }), ...adjTenantWhere },
       });
 
       if (stock) {
@@ -200,6 +205,7 @@ export class AdjustmentService {
             warehouseCode: stock.warehouseCode,
             itemCode: stock.itemCode,
             matUid: stock.matUid,
+            ...adjTenantWhere,
           },
           { qty: afterQty, availableQty: afterQty - stock.reservedQty },
         );
@@ -223,7 +229,7 @@ export class AdjustmentService {
       // LOT ?곹깭 ?낅뜲?댄듃 (?ш퀬 0?대㈃ DEPLETED ??currentQty??MatStock?먯꽌留?愿由?
       if (matUid) {
         if (afterQty <= 0) {
-          await queryRunner.manager.update(MatLot, matUid, { status: 'DEPLETED' });
+          await queryRunner.manager.update(MatLot, { matUid, ...adjTenantWhere }, { status: 'DEPLETED' });
         }
       }
 
@@ -249,7 +255,7 @@ export class AdjustmentService {
       await queryRunner.manager.save(stockTransaction);
 
       // 蹂댁젙 ?대젰 ?곹깭 ?낅뜲?댄듃
-      await queryRunner.manager.update(InvAdjLog, { adjDate: new Date(adjDate), seq }, {
+      await queryRunner.manager.update(InvAdjLog, { adjDate: new Date(adjDate), seq, ...adjTenantWhere }, {
         adjustStatus: 'APPROVED',
         approvedBy: approvedBy || null,
         approvedAt: new Date(),
@@ -267,14 +273,16 @@ export class AdjustmentService {
    * @param seq InvAdjLog ?쇰젴踰덊샇 PK
    * @param rejectedBy 諛섎젮??ID
    */
-  async reject(adjDate: string, seq: number, rejectedBy?: string) {
-    const adjLog = await this.invAdjLogRepository.findOne({ where: { adjDate: new Date(adjDate), seq } });
+  async reject(adjDate: string, seq: number, rejectedBy?: string, company?: string, plant?: string) {
+    const adjLog = await this.invAdjLogRepository.findOne({
+      where: { adjDate: new Date(adjDate), seq, ...this.tenantWhere(company, plant) },
+    });
     if (!adjLog) throw new NotFoundException(`蹂댁젙 ?대젰??李얠쓣 ???놁뒿?덈떎: ${adjDate}-${seq}`);
     if (adjLog.adjustStatus !== 'PENDING') {
       throw new BadRequestException(`?대? 泥섎━??蹂댁젙 ?붿껌?낅땲?? ?꾩옱 ?곹깭: ${adjLog.adjustStatus}`);
     }
 
-    await this.invAdjLogRepository.update({ adjDate: new Date(adjDate), seq }, {
+    await this.invAdjLogRepository.update({ adjDate: new Date(adjDate), seq, ...this.tenantWhere(adjLog.company, adjLog.plant) }, {
       adjustStatus: 'REJECTED',
       updatedBy: rejectedBy || null,
     });
@@ -288,11 +296,12 @@ export class AdjustmentService {
    */
   private async _executeAdjustment(dto: CreateAdjustmentDto, adjustStatus: 'APPROVED', company?: string, plant?: string) {
     const { warehouseCode, itemCode, matUid, afterQty, reason, createdBy } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
 
     return this.tx.run(async (queryRunner) => {
       // ?덈ぉ ?뺤씤
       const part = await queryRunner.manager.findOne(PartMaster, {
-        where: { itemCode },
+        where: { itemCode, ...tenantWhere },
       });
       if (!part) {
         throw new NotFoundException(`?덈ぉ??李얠쓣 ???놁뒿?덈떎: ${itemCode}`);
@@ -301,15 +310,9 @@ export class AdjustmentService {
       // LOT ?뺤씤 (matUid媛 ?덈뒗 寃쎌슦)
       if (matUid) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { matUid: matUid },
+          where: { matUid, ...tenantWhere },
         });
         if (!lot) {
-          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
-        }
-        if (company && lot.company && lot.company !== company) {
-          throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
-        }
-        if (plant && lot.plant && lot.plant !== plant) {
           throw new NotFoundException(`LOT??李얠쓣 ???놁뒿?덈떎: ${matUid}`);
         }
       }
@@ -320,8 +323,7 @@ export class AdjustmentService {
           warehouseCode,
           itemCode,
           ...(matUid && { matUid }),
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
+          ...tenantWhere,
         },
       });
 
@@ -335,8 +337,7 @@ export class AdjustmentService {
             warehouseCode: stock.warehouseCode,
             itemCode: stock.itemCode,
             matUid: stock.matUid,
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
+            ...tenantWhere,
           },
           { qty: afterQty, availableQty: afterQty - stock.reservedQty },
         );
@@ -360,7 +361,7 @@ export class AdjustmentService {
       // LOT ?곹깭 ?낅뜲?댄듃 (?ш퀬 0?대㈃ DEPLETED ??currentQty??MatStock?먯꽌留?愿由?
       if (matUid) {
         if (afterQty <= 0) {
-          await queryRunner.manager.update(MatLot, matUid, { status: 'DEPLETED' });
+          await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: 'DEPLETED' });
         }
       }
 

@@ -13,7 +13,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, In } from 'typeorm';
+import { Repository, QueryRunner, In } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { CustomerOrder } from '../../../entities/customer-order.entity';
 import { CustomerOrderItem } from '../../../entities/customer-order-item.entity';
@@ -24,6 +24,7 @@ import {
   AutoPlanPreviewItem,
   AutoPlanResult,
 } from '../dto/prod-plan.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 /** 수주 조회 결과 행 */
 interface OrderRow {
@@ -46,7 +47,7 @@ export class AutoPlanService {
     private readonly orderItemRepo: Repository<CustomerOrderItem>,
     @InjectRepository(PartMaster)
     private readonly partRepo: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   /** 미출하 수주 조회 */
@@ -56,7 +57,7 @@ export class AutoPlanService {
     plant: string,
   ): Promise<AutoPlanPreview> {
     const orders = await this.queryOrders(dto, company, plant);
-    const partMap = await this.buildPartNameMap(orders);
+    const partMap = await this.buildPartNameMap(orders, company, plant);
 
     const items: AutoPlanPreviewItem[] = orders.map((o) => {
       const demandQty = Number(o.demandQty);
@@ -108,20 +109,10 @@ export class AutoPlanService {
       throw new BadRequestException('가져올 수주가 없습니다.');
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const created = await this.createPlans(queryRunner, targetItems, dto.month, company, plant);
-      await queryRunner.commitTransaction();
       return { created, deletedDrafts: 0, warnings: preview.warnings };
-    } catch (err: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 미출하 수주 조회 쿼리 */
@@ -134,7 +125,7 @@ export class AutoPlanService {
 
     const qb = this.orderItemRepo
       .createQueryBuilder('ci')
-      .innerJoin(CustomerOrder, 'co', 'co.orderNo = ci.orderNo')
+      .innerJoin(CustomerOrder, 'co', 'co.orderNo = ci.orderNo AND co.company = ci.company AND co.plant = ci.plant')
       .select('ci.itemCode', 'itemCode')
       .addSelect('co.customerId', 'customerId')
       .addSelect('co.customerName', 'customerName')
@@ -169,12 +160,14 @@ export class AutoPlanService {
   }
 
   /** 품목명 맵 구성 */
-  private async buildPartNameMap(orders: OrderRow[]): Promise<Map<string, string>> {
+  private async buildPartNameMap(orders: OrderRow[], company: string, plant: string): Promise<Map<string, string>> {
     const codes = [...new Set(orders.map(o => o.itemCode))];
     if (codes.length === 0) return new Map();
     const parts = await this.partRepo
       .createQueryBuilder('p')
       .where('p.itemCode IN (:...codes)', { codes })
+      .andWhere('p.company = :company', { company })
+      .andWhere('p.plant = :plant', { plant })
       .getMany();
     return new Map(parts.map(p => [p.itemCode, p.itemName]));
   }
@@ -190,7 +183,7 @@ export class AutoPlanService {
     // IN 배치로 품목 선조회 — N+1 방지
     const itemCodes = [...new Set(items.map((i) => i.itemCode))] as const;
     const parts = itemCodes.length > 0
-      ? await this.partRepo.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
 

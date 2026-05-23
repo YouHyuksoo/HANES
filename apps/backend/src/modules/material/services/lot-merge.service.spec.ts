@@ -153,6 +153,86 @@ describe('LotMergeService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
+
+    it('품목 마스터가 누락되어도 병합 결과의 대상 LOT 원본 itemCode는 유지한다', async () => {
+      const lots = [
+        { ...createLot('MAT-001', 'ITEM-MISSING'), originMatUid: 'ROOT-001' } as any,
+        { ...createLot('MAT-002', 'ITEM-MISSING'), originMatUid: 'ROOT-001' } as any,
+      ];
+      const stocks = [
+        { ...createStock('MAT-001', 30), itemCode: 'ITEM-MISSING' },
+        { ...createStock('MAT-002', 20), itemCode: 'ITEM-MISSING' },
+      ] as MatStock[];
+
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce(lots)
+        .mockResolvedValueOnce(stocks)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockStockTxRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.merge({
+        sourceLotIds: ['MAT-001', 'MAT-002'],
+        targetLotId: 'MAT-001',
+      } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          targetLotNo: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+        }),
+      );
+    });
+
+    it('병합 실행은 LOT 회사/공장 범위에서 LOT/재고/출고이력/품목과 상태 갱신을 처리한다', async () => {
+      const lots = [
+        { ...createLot('MAT-001'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+        { ...createLot('MAT-002'), originMatUid: 'ROOT-001', company: 'C1', plant: 'P1' } as any,
+      ];
+      const stocks = [
+        { ...createStock('MAT-001', 30), company: 'C1', plant: 'P1' },
+        { ...createStock('MAT-002', 20), company: 'C1', plant: 'P1' },
+      ] as MatStock[];
+
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce(lots)
+        .mockResolvedValueOnce(stocks)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ itemCode: 'ITEM-001', itemName: 'PART-A', company: 'C1', plant: 'P1' } as PartMaster]);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockStockTxRepo.findOne.mockResolvedValue(null);
+
+      await target.merge({
+        sourceLotIds: ['MAT-001', 'MAT-002'],
+        targetLotId: 'MAT-001',
+      } as any, 'C1', 'P1');
+
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(1, MatLot, {
+        where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(2, MatStock, {
+        where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(3, MatIssue, {
+        where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(4, PartMaster, {
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatLot,
+        { matUid: 'MAT-002', company: 'C1', plant: 'P1' },
+        { status: 'DEPLETED' },
+      );
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+        StockTransaction,
+        expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      );
+    });
   });
 
   // ─── findMergeableLots ───
@@ -176,6 +256,82 @@ describe('LotMergeService', () => {
 
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
+    });
+
+    it('품목 마스터가 누락되어도 병합 가능 LOT의 원본 itemCode는 유지한다', async () => {
+      const mockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([createLot('MAT-MISSING', 'ITEM-MISSING')]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findMergeableLots({ page: 1, limit: 50 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-MISSING',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('병합 가능 LOT 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const mockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([createLot('MAT-001', 'ITEM-001')]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findMergeableLots({ page: 1, limit: 50 }, 'C1', 'P1');
+
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          company: 'C1',
+          plant: 'P1',
+        }),
+        select: ['itemCode', 'itemName', 'unit'],
+      });
+    });
+
+    it('병합 가능 LOT 재고 조인도 LOT 테넌트와 같은 범위로 제한한다', async () => {
+      const mockQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+
+      await target.findMergeableLots({ page: 1, limit: 50 }, 'C1', 'P1');
+
+      expect(mockQb.innerJoin).toHaveBeenCalledWith(
+        MatStock,
+        'stock',
+        'stock.matUid = lot.matUid AND stock.company = lot.company AND stock.plant = lot.plant',
+      );
     });
   });
 });

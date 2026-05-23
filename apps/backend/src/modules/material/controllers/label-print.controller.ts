@@ -39,8 +39,8 @@ export class LabelPrintController {
   @Post('generate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'ZPL 변수 치환 결과 반환' })
-  async generateZpl(@Body() dto: GenerateZplDto) {
-    const data = await this.labelPrintService.generateZpl(dto);
+  async generateZpl(@Body() dto: GenerateZplDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.labelPrintService.generateZpl(dto, company, plant);
     return ResponseUtil.success(data);
   }
 

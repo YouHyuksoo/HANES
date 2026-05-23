@@ -90,7 +90,7 @@ export class ProcessCapaService {
 
     // FK 검증 - ProcessMaster
     const proc = await this.processRepo.findOne({
-      where: { processCode: dto.processCode },
+      where: { processCode: dto.processCode, company, plant },
     });
     if (!proc) {
       throw new BadRequestException(
@@ -100,7 +100,7 @@ export class ProcessCapaService {
 
     // FK 검증 - PartMaster
     const part = await this.partRepo.findOne({
-      where: { itemCode: dto.itemCode },
+      where: { itemCode: dto.itemCode, company, plant },
     });
     if (!part) {
       throw new BadRequestException(

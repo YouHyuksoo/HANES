@@ -12,18 +12,22 @@ import { InternalServerErrorException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { NumRuleService } from './num-rule.service';
 import { MockLoggerService } from '../../common/test/mock-logger.service';
+import { TransactionService } from '../../shared/transaction.service';
 
 describe('NumRuleService', () => {
   let target: NumRuleService;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NumRuleService,
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -48,7 +52,7 @@ describe('NumRuleService', () => {
         release: jest.fn(),
         query: jest.fn(),
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // First call: SELECT FOR UPDATE
       mockQr.query.mockResolvedValueOnce([{
@@ -72,8 +76,12 @@ describe('NumRuleService', () => {
       const mm = String(now.getMonth() + 1).padStart(2, '0');
       const dd = String(now.getDate()).padStart(2, '0');
       expect(result).toBe(`ARR${yyyy}${mm}${dd}-0001`);
-      expect(mockQr.commitTransaction).toHaveBeenCalled();
-      expect(mockQr.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.connect).not.toHaveBeenCalled();
+      expect(mockQr.startTransaction).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
     });
 
     it('should throw InternalServerErrorException when rule not found', async () => {
@@ -86,11 +94,13 @@ describe('NumRuleService', () => {
         release: jest.fn(),
         query: jest.fn().mockResolvedValue([]),
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       // Act & Assert
       await expect(target.nextNumber('NONEXIST')).rejects.toThrow(InternalServerErrorException);
-      expect(mockQr.rollbackTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.rollbackTransaction).not.toHaveBeenCalled();
     });
 
     it('should reset sequence when DAILY reset type and new day', async () => {
@@ -103,7 +113,7 @@ describe('NumRuleService', () => {
         release: jest.fn(),
         query: jest.fn(),
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
@@ -124,6 +134,8 @@ describe('NumRuleService', () => {
 
       // Assert
       expect(result).toBe('T001'); // Reset to 1
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should increment sequence when same day (no reset)', async () => {
@@ -136,7 +148,7 @@ describe('NumRuleService', () => {
         release: jest.fn(),
         query: jest.fn(),
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       mockQr.query.mockResolvedValueOnce([{
         PATTERN: '{SEQ}',
@@ -154,6 +166,8 @@ describe('NumRuleService', () => {
 
       // Assert
       expect(result).toBe('0006');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should handle NONE reset type (never reset)', async () => {
@@ -166,7 +180,7 @@ describe('NumRuleService', () => {
         release: jest.fn(),
         query: jest.fn(),
       };
-      mockDataSource.createQueryRunner.mockReturnValue(mockQr as any);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
 
       const lastYear = new Date();
       lastYear.setFullYear(lastYear.getFullYear() - 1);
@@ -187,6 +201,8 @@ describe('NumRuleService', () => {
 
       // Assert
       expect(result).toBe('01000S'); // 999+1 = 1000, no reset
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 

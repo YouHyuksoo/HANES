@@ -65,6 +65,24 @@ describe('CustomsService', () => {
       expect(result.entryNo).toBe('E001');
       expect(result.customsLots).toEqual([]);
     });
+    it('should return entry relationships within tenant', async () => {
+      const entry = { entryNo: 'E001', company: 'CO', plant: 'P01' } as CustomsEntry;
+      mockEntryRepo.findOne.mockResolvedValue(entry);
+      mockLotRepo.find.mockResolvedValue([{ entryNo: 'E001', matUid: 'M001' } as CustomsLot]);
+      mockUsageRepo.find.mockResolvedValue([]);
+
+      await target.findEntryById('E001', 'CO', 'P01');
+
+      expect(mockEntryRepo.findOne).toHaveBeenCalledWith({
+        where: { entryNo: 'E001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockLotRepo.find).toHaveBeenCalledWith({
+        where: { entryNo: 'E001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockUsageRepo.find).toHaveBeenCalledWith({
+        where: [{ lotEntryNo: 'E001', lotMatUid: 'M001', company: 'CO', plant: 'P01' }],
+      });
+    });
 
     it('should throw NotFoundException when entry not found', async () => {
       // Arrange
@@ -88,6 +106,21 @@ describe('CustomsService', () => {
 
       // Assert
       expect(result).toEqual(dto);
+    });
+    it('should check duplicate and create entry within tenant', async () => {
+      const dto = { entryNo: 'E001', blNo: 'BL001' } as any;
+      mockEntryRepo.findOne.mockResolvedValue(null);
+      mockEntryRepo.create.mockReturnValue({ ...dto, company: 'CO', plant: 'P01' } as CustomsEntry);
+      mockEntryRepo.save.mockResolvedValue({ ...dto, company: 'CO', plant: 'P01' } as CustomsEntry);
+
+      await target.createEntry(dto, 'CO', 'P01');
+
+      expect(mockEntryRepo.findOne).toHaveBeenCalledWith({
+        where: { entryNo: 'E001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockEntryRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ entryNo: 'E001', company: 'CO', plant: 'P01' }),
+      );
     });
 
     it('should throw ConflictException when entryNo exists', async () => {
@@ -130,6 +163,24 @@ describe('CustomsService', () => {
       // Assert
       expect(result.entryNo).toBe('E001');
     });
+    it('should return lot with entry and reports within tenant', async () => {
+      const lot = { entryNo: 'E001', matUid: 'M001', company: 'CO', plant: 'P01' } as CustomsLot;
+      mockLotRepo.findOne.mockResolvedValue(lot);
+      mockEntryRepo.findOne.mockResolvedValue({ entryNo: 'E001', company: 'CO', plant: 'P01' } as CustomsEntry);
+      mockUsageRepo.find.mockResolvedValue([]);
+
+      await target.findLotByKey('E001', 'M001', 'CO', 'P01');
+
+      expect(mockLotRepo.findOne).toHaveBeenCalledWith({
+        where: { entryNo: 'E001', matUid: 'M001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockEntryRepo.findOne).toHaveBeenCalledWith({
+        where: { entryNo: 'E001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockUsageRepo.find).toHaveBeenCalledWith({
+        where: { lotEntryNo: 'E001', lotMatUid: 'M001', company: 'CO', plant: 'P01' },
+      });
+    });
 
     it('should throw NotFoundException when lot not found', async () => {
       // Arrange
@@ -153,6 +204,21 @@ describe('CustomsService', () => {
 
       // Assert
       expect(result).toEqual(dto);
+    });
+    it('should check duplicate and create lot within tenant', async () => {
+      const dto = { entryNo: 'E001', matUid: 'M001', itemCode: 'ITEM1', qty: 100 } as any;
+      mockLotRepo.findOne.mockResolvedValue(null);
+      mockLotRepo.create.mockReturnValue({ ...dto, company: 'CO', plant: 'P01' } as CustomsLot);
+      mockLotRepo.save.mockResolvedValue({ ...dto, company: 'CO', plant: 'P01' } as CustomsLot);
+
+      await target.createLot(dto, 'CO', 'P01');
+
+      expect(mockLotRepo.findOne).toHaveBeenCalledWith({
+        where: { entryNo: 'E001', matUid: 'M001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockLotRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ entryNo: 'E001', matUid: 'M001', company: 'CO', plant: 'P01' }),
+      );
     });
 
     it('should throw ConflictException when lot exists', async () => {
@@ -180,6 +246,39 @@ describe('CustomsService', () => {
         usageQty: 10,
       } as any)).rejects.toThrow(BadRequestException);
     });
+
+    it('ORDER_NO를 orderNo 엔티티 속성으로 저장한다', async () => {
+      const lot = { entryNo: 'E001', matUid: 'M001', remainQty: 100, usedQty: 0, qty: 100 } as CustomsLot;
+      const manager = createMock<any>();
+      mockLotRepo.findOne.mockResolvedValue(lot);
+      mockEntryRepo.findOne.mockResolvedValue({ entryNo: 'E001' } as CustomsEntry);
+      mockUsageRepo.find.mockResolvedValue([]);
+      mockUsageRepo.count.mockResolvedValue(0);
+      manager.create.mockImplementation((_entity: any, value: any) => value);
+      manager.save.mockImplementation(async (value: any) => value);
+      manager.update.mockResolvedValue({ affected: 1 });
+      mockDataSource.transaction.mockImplementation(async (callback: any) => callback(manager));
+
+      await target.createUsageReport({
+        lotEntryNo: 'E001',
+        lotMatUid: 'M001',
+        orderNo: 'WO-001',
+        usageQty: 10,
+      } as any);
+
+      expect(manager.create).toHaveBeenCalledWith(
+        CustomsUsageReport,
+        expect.objectContaining({
+          orderNo: 'WO-001',
+        }),
+      );
+      expect(manager.create).not.toHaveBeenCalledWith(
+        CustomsUsageReport,
+        expect.objectContaining({
+          jobOrderId: 'WO-001',
+        }),
+      );
+    });
   });
 
   describe('updateUsageReport', () => {
@@ -194,6 +293,21 @@ describe('CustomsService', () => {
 
       // Assert
       expect(mockUsageRepo.update).toHaveBeenCalled();
+    });
+    it('should update usage report within tenant', async () => {
+      const report = { reportNo: 'USG001', company: 'CO', plant: 'P01' } as CustomsUsageReport;
+      mockUsageRepo.findOne.mockResolvedValue(report);
+      mockUsageRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.updateUsageReport('USG001', { status: 'REPORTED' } as any, 'CO', 'P01');
+
+      expect(mockUsageRepo.findOne).toHaveBeenCalledWith({
+        where: { reportNo: 'USG001', company: 'CO', plant: 'P01' },
+      });
+      expect(mockUsageRepo.update).toHaveBeenCalledWith(
+        { reportNo: 'USG001', company: 'CO', plant: 'P01' },
+        expect.objectContaining({ status: 'REPORTED' }),
+      );
     });
 
     it('should throw NotFoundException when report not found', async () => {

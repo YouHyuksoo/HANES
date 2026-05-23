@@ -24,6 +24,13 @@ export class RoutingService {
     private readonly partRepository: Repository<PartMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: RoutingQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, search, useYn } = query;
     const skip = (page - 1) * limit;
@@ -66,7 +73,7 @@ export class RoutingService {
     const itemCodes = [...new Set(items.map(item => item.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
       ? await this.partRepository.find({
-          where: { itemCode: In(itemCodes) },
+          where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
           select: ['itemCode', 'itemName'],
         })
       : [];
@@ -81,14 +88,14 @@ export class RoutingService {
     return { data, total, page, limit };
   }
 
-  async findByKey(itemCode: string, seq: number) {
+  async findByKey(itemCode: string, seq: number, company?: string, plant?: string) {
     const item = await this.routingRepository.findOne({
-      where: { itemCode, seq },
+      where: { itemCode, seq, ...this.tenantWhere(company, plant) },
     });
     if (!item) throw new NotFoundException(`라우팅을 찾을 수 없습니다: ${itemCode}/${seq}`);
 
     const part = await this.partRepository.findOne({
-      where: { itemCode: item.itemCode },
+      where: { itemCode: item.itemCode, ...this.tenantWhere(company, plant) },
       select: ['itemCode', 'itemName'],
     });
 
@@ -98,9 +105,9 @@ export class RoutingService {
     };
   }
 
-  async create(dto: CreateRoutingDto) {
+  async create(dto: CreateRoutingDto, company?: string, plant?: string) {
     const existing = await this.routingRepository.findOne({
-      where: { itemCode: dto.itemCode, seq: dto.seq },
+      where: { itemCode: dto.itemCode, seq: dto.seq, ...this.tenantWhere(company, plant) },
     });
     if (existing) {
       throw new ConflictException(`이미 존재하는 라우팅입니다: ${dto.itemCode} / seq ${dto.seq}`);
@@ -122,22 +129,24 @@ export class RoutingService {
       weldCondition: dto.weldCondition,
       processParams: dto.processParams,
       useYn: dto.useYn ?? 'Y',
+      company,
+      plant,
     });
 
     return this.routingRepository.save(routing);
   }
 
-  async update(itemCode: string, seq: number, dto: UpdateRoutingDto) {
-    await this.findByKey(itemCode, seq);
+  async update(itemCode: string, seq: number, dto: UpdateRoutingDto, company?: string, plant?: string) {
+    await this.findByKey(itemCode, seq, company, plant);
     // PK 필드는 update 대상에서 제외
     const { itemCode: _ic, seq: _seq, ...updateData } = dto;
-    await this.routingRepository.update({ itemCode, seq }, updateData);
-    return this.findByKey(itemCode, seq);
+    await this.routingRepository.update({ itemCode, seq, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findByKey(itemCode, seq, company, plant);
   }
 
-  async delete(itemCode: string, seq: number) {
-    await this.findByKey(itemCode, seq);
-    await this.routingRepository.delete({ itemCode, seq });
+  async delete(itemCode: string, seq: number, company?: string, plant?: string) {
+    await this.findByKey(itemCode, seq, company, plant);
+    await this.routingRepository.delete({ itemCode, seq, ...this.tenantWhere(company, plant) });
     return { itemCode, seq };
   }
 }

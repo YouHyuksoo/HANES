@@ -27,8 +27,8 @@ export class ScrapController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '자재 폐기 등록' })
-  async create(@Body() dto: CreateScrapDto) {
-    const data = await this.scrapService.create(dto);
+  async create(@Body() dto: CreateScrapDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.scrapService.create(dto, company, plant);
     return ResponseUtil.success(data, '자재가 폐기 처리되었습니다.');
   }
 }

@@ -11,6 +11,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('ShipmentService', () => {
   let target: ShipmentService;
@@ -20,6 +21,7 @@ describe('ShipmentService', () => {
   let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
   let mockProductInventoryService: DeepMocked<ProductInventoryService>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -29,9 +31,11 @@ describe('ShipmentService', () => {
     mockFgLabelRepo = createMock<Repository<FgLabel>>();
     mockProductInventoryService = createMock<ProductInventoryService>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -46,6 +50,7 @@ describe('ShipmentService', () => {
         { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
         { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
         { provide: ProductInventoryService, useValue: mockProductInventoryService },
       ],
     })
@@ -106,6 +111,10 @@ describe('ShipmentService', () => {
       mockQueryRunner,
       expect.objectContaining({ prdUid: 'FG-002', qty: 1 }),
     );
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
   it('markAsShipped blocks boxes without OQC pass', async () => {
@@ -125,6 +134,7 @@ describe('ShipmentService', () => {
 
     await expect(target.markAsShipped('SHIP-001')).rejects.toThrow(BadRequestException);
     expect(mockProductInventoryService.issueStockInTx).not.toHaveBeenCalled();
+    expect(mockTx.run).not.toHaveBeenCalled();
   });
 
   it('reverseShipment restores statuses and cancels FG_OUT transactions', async () => {
@@ -165,6 +175,10 @@ describe('ShipmentService', () => {
       2,
       expect.objectContaining({ transactionId: 'PTX-002' }),
     );
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
   it('reverseShipment blocks when ERP sync has already completed', async () => {
@@ -222,6 +236,86 @@ describe('ShipmentService', () => {
 
     await expect(target.delete('SHIP-031')).resolves.toEqual({ id: 'SHIP-031', deleted: true });
     expect(mockShipmentRepo.delete).toHaveBeenCalledWith({ shipNo: 'SHIP-031' });
+  });
+
+  it('loadPallets uses TransactionService', async () => {
+    mockShipmentRepo.findOne
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING' } as ShipmentLog)
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING' } as ShipmentLog);
+    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'P-001', status: 'CLOSED' }] as PalletMaster[]);
+    mockBoxRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    } as any);
+    mockQueryRunner.manager.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ count: '1', boxCount: '1', totalQty: '2' }),
+    } as any);
+
+    await target.loadPallets('SHIP-001', { palletIds: ['P-001'] } as any);
+
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+  });
+
+  it('unloadPallets uses TransactionService', async () => {
+    mockShipmentRepo.findOne
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING' } as ShipmentLog)
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING' } as ShipmentLog);
+    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'P-001', status: 'LOADED', shipmentId: 'SHIP-001' }] as PalletMaster[]);
+    mockQueryRunner.manager.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ count: '0', boxCount: '0', totalQty: '0' }),
+    } as any);
+
+    await target.unloadPallets('SHIP-001', { palletIds: ['P-001'] } as any);
+
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+  });
+
+  it('cancel uses TransactionService', async () => {
+    mockShipmentRepo.findOne
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'PREPARING' } as ShipmentLog)
+      .mockResolvedValueOnce({ shipNo: 'SHIP-001', status: 'CANCELED' } as ShipmentLog);
+
+    await target.cancel('SHIP-001', 'cancel');
+
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+  });
+
+  it('getShipmentSummary joins boxes to pallets by tenant-scoped pallet key', async () => {
+    mockShipmentRepo.findOne.mockResolvedValue({
+      shipNo: 'SHIP-001',
+      status: 'LOADED',
+      company: 'C1',
+      plant: 'P1',
+    } as ShipmentLog);
+    const qb = {
+      innerJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    mockBoxRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+    await target.getShipmentSummary('SHIP-001', 'C1', 'P1');
+
+    expect(qb.innerJoin).toHaveBeenCalledWith(
+      PalletMaster,
+      'pallet',
+      'box.palletNo = pallet.palletNo AND box.company = pallet.company AND box.plant = pallet.plant',
+    );
   });
 
 });

@@ -16,9 +16,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, In } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { RepairOrder } from '../../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../../entities/repair-used-part.entity';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   RepairQueryDto,
   CreateRepairDto,
@@ -32,7 +33,7 @@ export class RepairService {
     private readonly repairOrderRepo: Repository<RepairOrder>,
     @InjectRepository(RepairUsedPart)
     private readonly repairUsedPartRepo: Repository<RepairUsedPart>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   /** 수리 목록 조회 */
@@ -101,11 +102,7 @@ export class RepairService {
 
   /** 수리 등록 */
   async create(dto: CreateRepairDto, company: string, plant: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const repairDate = dto.repairDate
         ? new Date(dto.repairDate)
         : new Date();
@@ -165,14 +162,8 @@ export class RepairService {
         await queryRunner.manager.save(RepairUsedPart, parts);
       }
 
-      await queryRunner.commitTransaction();
       return { repairDate, seq };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 수리 수정 */
@@ -183,11 +174,7 @@ export class RepairService {
     company: string,
     plant: string,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const existing = await queryRunner.manager.findOne(RepairOrder, {
         where: { repairDate: new Date(repairDate), seq, company, plant },
       });
@@ -244,14 +231,8 @@ export class RepairService {
         }
       }
 
-      await queryRunner.commitTransaction();
       return { repairDate, seq };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 수리 삭제 */
@@ -261,11 +242,7 @@ export class RepairService {
     company: string,
     plant: string,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       const existing = await queryRunner.manager.findOne(RepairOrder, {
         where: { repairDate: new Date(repairDate), seq, company, plant },
       });
@@ -292,14 +269,7 @@ export class RepairService {
         company,
         plant,
       });
-
-      await queryRunner.commitTransaction();
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 수리실 현재고 조회 */

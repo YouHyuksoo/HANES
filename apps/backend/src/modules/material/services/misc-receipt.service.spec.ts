@@ -63,6 +63,36 @@ describe('MiscReceiptService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    it('preserves transaction codes when master rows are missing', async () => {
+      stockTxRepo.find.mockResolvedValue([
+        {
+          transNo: 'MISC-001',
+          transType: 'MISC_IN',
+          itemCode: 'ITEM-MISSING',
+          matUid: 'MAT-MISSING',
+          toWarehouseId: 'WH-MISSING',
+        } as StockTransaction,
+      ]);
+      stockTxRepo.count.mockResolvedValue(1);
+      partRepo.find.mockResolvedValue([]);
+      matLotRepo.find.mockResolvedValue([]);
+      warehouseRepo.find.mockResolvedValue([]);
+
+      const result = await service.findAll({ page: 1, limit: 10 } as any);
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          matUid: 'MAT-MISSING',
+          warehouseCode: 'WH-MISSING',
+          itemName: null,
+          warehouseName: null,
+        }),
+      );
+    });
+  });
+
   it('recalculates availableQty from qty and reservedQty when stock already exists', async () => {
     stockTxRepo.findOne.mockResolvedValue(null);
 

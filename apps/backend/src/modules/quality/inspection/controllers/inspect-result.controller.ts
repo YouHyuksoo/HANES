@@ -104,8 +104,8 @@ export class InspectResultController {
   @ApiOperation({ summary: '시리얼 번호별 검사 이력', description: '특정 시리얼의 전체 검사 이력' })
   @ApiParam({ name: 'serialNo', description: '시리얼 번호' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findBySerialNo(@Param('serialNo') serialNo: string) {
-    const data = await this.inspectResultService.findBySerialNo(serialNo);
+  async findBySerialNo(@Param('serialNo') serialNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.inspectResultService.findBySerialNo(serialNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -113,8 +113,8 @@ export class InspectResultController {
   @ApiOperation({ summary: '생산실적별 검사 이력', description: '특정 생산실적의 전체 검사 이력' })
   @ApiParam({ name: 'prodResultNo', description: '생산실적 ID' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findByProdResultNo(@Param('prodResultNo') prodResultNo: string) {
-    const data = await this.inspectResultService.findByProdResultNo(prodResultNo);
+  async findByProdResultNo(@Param('prodResultNo') prodResultNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.inspectResultService.findByProdResultNo(prodResultNo, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -133,8 +133,8 @@ export class InspectResultController {
   @ApiParam({ name: 'id', description: '검사실적 번호 (RESULT_NO)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '검사실적 없음' })
-  async findById(@Param('id') id: string) {
-    const data = await this.inspectResultService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.inspectResultService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -181,8 +181,8 @@ export class InspectResultController {
   @ApiParam({ name: 'barcode', description: '제품 바코드 (시리얼 번호)' })
   @ApiResponse({ status: 200, description: '조회 성공' })
   @ApiResponse({ status: 404, description: '바코드에 해당하는 제품 정보 없음' })
-  async getProductByBarcode(@Param('barcode') barcode: string) {
-    const data = await this.inspectResultService.getProductByBarcode(barcode);
+  async getProductByBarcode(@Param('barcode') barcode: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.inspectResultService.getProductByBarcode(barcode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -191,8 +191,8 @@ export class InspectResultController {
   @ApiParam({ name: 'id', description: '검사실적 번호 (RESULT_NO)' })
   @ApiResponse({ status: 200, description: '수정 성공' })
   @ApiResponse({ status: 404, description: '검사실적 없음' })
-  async update(@Param('id') id: string, @Body() dto: UpdateInspectResultDto) {
-    const data = await this.inspectResultService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateInspectResultDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.inspectResultService.update(id, dto, company, plant);
     return ResponseUtil.success(data, '검사실적이 수정되었습니다.');
   }
 
@@ -202,8 +202,8 @@ export class InspectResultController {
   @ApiParam({ name: 'id', description: '검사실적 번호 (RESULT_NO)' })
   @ApiResponse({ status: 200, description: '삭제 성공' })
   @ApiResponse({ status: 404, description: '검사실적 없음' })
-  async delete(@Param('id') id: string) {
-    await this.inspectResultService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.inspectResultService.delete(id, company, plant);
     return ResponseUtil.success(null, '검사실적이 삭제되었습니다.');
   }
 }

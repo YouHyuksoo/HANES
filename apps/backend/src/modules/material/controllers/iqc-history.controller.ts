@@ -35,8 +35,8 @@ export class IqcHistoryController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'IQC 검사결과 등록 (LOT 상태 업데이트 + 이력 생성)' })
-  async createResult(@Body() dto: CreateIqcResultDto) {
-    const data = await this.iqcHistoryService.createResult(dto);
+  async createResult(@Body() dto: CreateIqcResultDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcHistoryService.createResult(dto, company, plant);
     return ResponseUtil.success(data, 'IQC 검사결과가 등록되었습니다.');
   }
 
@@ -47,8 +47,10 @@ export class IqcHistoryController {
     @Query('inspectDate') inspectDate: string,
     @Query('seq') seq: string,
     @Body() dto: CancelIqcResultDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.iqcHistoryService.cancel(inspectDate, Number(seq), dto);
+    const data = await this.iqcHistoryService.cancel(inspectDate, Number(seq), dto, company, plant);
     return ResponseUtil.success(data, 'IQC 판정이 취소되었습니다.');
   }
 
@@ -73,8 +75,10 @@ export class IqcHistoryController {
     @Param('inspectDate') inspectDate: string,
     @Param('seq') seq: string,
     @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.iqcHistoryService.uploadCert(inspectDate, Number(seq), file.path);
+    const data = await this.iqcHistoryService.uploadCert(inspectDate, Number(seq), file.path, company, plant);
     return ResponseUtil.success(data, '검사성적서가 업로드되었습니다.');
   }
 }

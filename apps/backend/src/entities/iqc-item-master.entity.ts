@@ -1,10 +1,10 @@
 /**
  * @file iqc-item-master.entity.ts
  * @description IQC 검사항목 마스터(IqcItemMaster) 엔티티 - 품목별 검사항목을 정의한다.
- *              itemCode + seq 복합 PK를 사용한다.
+ *              company + plant + itemCode + seq 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. itemCode + seq가 복합 PK (자연키)
+ * 1. company + plant + itemCode + seq가 복합 PK (자연키)
  * 2. ITEM_CODE로 ItemMaster(품목)를 참조
  * 3. SEQ로 검사 순서 관리
  */
@@ -18,6 +18,12 @@ import {
 
 @Entity({ name: 'IQC_ITEM_MASTERS' })
 export class IqcItemMaster {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
@@ -47,12 +53,6 @@ export class IqcItemMaster {
 
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
-
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
-
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

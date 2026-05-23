@@ -41,7 +41,7 @@ export class ProductHoldService {
 
     const itemCodes = [...new Set(data.map((s) => s.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -49,7 +49,7 @@ export class ProductHoldService {
       const part = partMap.get(stock.itemCode);
       return {
         ...stock,
-        itemCode: part?.itemCode ?? null,
+        itemCode: stock.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
       };
@@ -94,13 +94,15 @@ export class ProductHoldService {
 
     const updated = await this.productStockRepository.findOne({ where: scopedKey });
     if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated.itemCode } });
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: updated.itemCode, ...(company && { company }), ...(plant && { plant }) },
+    });
 
     return {
       id: stockId,
       status: 'HOLD',
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
+      itemCode: updated.itemCode,
+      itemName: part?.itemName ?? null,
       qty: updated.qty,
       reason,
     };
@@ -133,13 +135,15 @@ export class ProductHoldService {
 
     const updated = await this.productStockRepository.findOne({ where: scopedKey });
     if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-    const part = await this.partMasterRepository.findOne({ where: { itemCode: updated.itemCode } });
+    const part = await this.partMasterRepository.findOne({
+      where: { itemCode: updated.itemCode, ...(company && { company }), ...(plant && { plant }) },
+    });
 
     return {
       id: stockId,
       status: 'NORMAL',
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
+      itemCode: updated.itemCode,
+      itemName: part?.itemName ?? null,
       qty: updated.qty,
       reason,
     };

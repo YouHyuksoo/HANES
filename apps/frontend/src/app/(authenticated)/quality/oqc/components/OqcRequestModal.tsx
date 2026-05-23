@@ -49,7 +49,7 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
     try {
       const res = await api.get("/master/parts", { params: { limit: "5000", itemType: "FINISHED" } });
       const items = res.data?.data ?? [];
-      setParts(items.map((p: any) => ({ value: p.id, label: `${p.itemCode} - ${p.itemName}` })));
+      setParts(items.map((p: any) => ({ value: p.itemCode, label: `${p.itemCode} - ${p.itemName}` })));
     } catch { setParts([]); }
   }, []);
 

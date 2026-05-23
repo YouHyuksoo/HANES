@@ -20,6 +20,13 @@ export class IqcItemService {
     private readonly iqcItemRepository: Repository<IqcItemMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: IqcItemQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, search, useYn } = query;
 
@@ -57,9 +64,9 @@ export class IqcItemService {
     return { data, total, page, limit };
   }
 
-  async findByCompositeKey(itemCode: string, seq: number) {
+  async findByCompositeKey(itemCode: string, seq: number, company?: string, plant?: string) {
     const item = await this.iqcItemRepository.findOne({
-      where: { itemCode, seq },
+      where: { itemCode, seq, ...this.tenantWhere(company, plant) },
     });
 
     if (!item) {
@@ -79,8 +86,8 @@ export class IqcItemService {
     return saved;
   }
 
-  async update(itemCode: string, seq: number, dto: UpdateIqcItemDto) {
-    const item = await this.findByCompositeKey(itemCode, seq);
+  async update(itemCode: string, seq: number, dto: UpdateIqcItemDto, company?: string, plant?: string) {
+    const item = await this.findByCompositeKey(itemCode, seq, company, plant);
 
     const updated = await this.iqcItemRepository.save({
       ...item,
@@ -92,8 +99,8 @@ export class IqcItemService {
     return updated;
   }
 
-  async delete(itemCode: string, seq: number) {
-    const item = await this.findByCompositeKey(itemCode, seq);
+  async delete(itemCode: string, seq: number, company?: string, plant?: string) {
+    const item = await this.findByCompositeKey(itemCode, seq, company, plant);
 
     await this.iqcItemRepository.remove(item);
 

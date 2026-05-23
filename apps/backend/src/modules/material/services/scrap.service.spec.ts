@@ -73,6 +73,60 @@ describe('ScrapService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    it('품목/LOT 마스터가 누락되어도 폐기 이력의 수불 원본 itemCode와 matUid는 유지한다', async () => {
+      stockTxRepo.find.mockResolvedValue([
+        {
+          transNo: 'TX-SCRAP-001',
+          transType: 'SCRAP',
+          itemCode: 'ITEM-MISSING',
+          matUid: 'MAT-MISSING',
+          qty: 3,
+        } as StockTransaction,
+      ]);
+      stockTxRepo.count.mockResolvedValue(1);
+      partMasterRepo.find.mockResolvedValue([]);
+      matLotRepo.find.mockResolvedValue([]);
+
+      const result = await service.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          transNo: 'TX-SCRAP-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          matUid: 'MAT-MISSING',
+        }),
+      );
+    });
+
+    it('폐기 이력 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      stockTxRepo.find.mockResolvedValue([
+        {
+          transNo: 'TX-SCRAP-001',
+          transType: 'SCRAP',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 3,
+          company: 'C1',
+          plant: 'P1',
+        } as StockTransaction,
+      ]);
+      stockTxRepo.count.mockResolvedValue(1);
+      partMasterRepo.find.mockResolvedValue([]);
+      matLotRepo.find.mockResolvedValue([]);
+
+      await service.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(partMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(matLotRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+  });
+
   describe('create', () => {
     it('LOT가 없으면 폐기를 차단한다', async () => {
       queryRunner.manager.findOne.mockResolvedValueOnce(null);
@@ -131,6 +185,46 @@ describe('ScrapService', () => {
       );
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('폐기 등록도 창고/LOT/재고를 요청 테넌트 범위로 제한한다', async () => {
+      numbering.nextInTx.mockResolvedValue('TX-001');
+      warehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-01', warehouseType: 'RAW', company: 'C1', plant: 'P1' } as Warehouse);
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as MatLot)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01',
+          itemCode: 'ITEM-001',
+          matUid: 'MAT-001',
+          qty: 10,
+          availableQty: 10,
+          company: 'C1',
+          plant: 'P1',
+        } as MatStock);
+      queryRunner.manager.create.mockReturnValue({ transNo: 'TX-001' } as StockTransaction);
+      queryRunner.manager.save.mockResolvedValue({ transNo: 'TX-001' } as StockTransaction);
+
+      await service.create({
+        matUid: 'MAT-001',
+        warehouseId: 'WH-01',
+        qty: 3,
+        reason: '폐기',
+      } as any, 'C1', 'P1');
+
+      expect(warehouseRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-01', company: 'C1', plant: 'P1' },
+      });
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(1, MatLot, {
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(queryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatStock, {
+        where: { itemCode: 'ITEM-001', warehouseCode: 'WH-01', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 7, availableQty: 7 }),
+      );
     });
   });
 });

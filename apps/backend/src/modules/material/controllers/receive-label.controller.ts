@@ -11,6 +11,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ReceiveLabelService } from '../services/receive-label.service';
 import { CreateMatLabelsDto } from '../dto/receive-label.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
+import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
 @ApiTags('자재관리 - 라벨발행')
 @Controller('material/receive-label')
@@ -19,16 +20,16 @@ export class ReceiveLabelController {
 
   @Get('arrivals')
   @ApiOperation({ summary: '라벨 발행 가능 입하건 목록 (IQC PASS)' })
-  async findLabelable() {
-    const data = await this.service.findLabelableArrivals();
+  async findLabelable(@Company() company: string, @Plant() plant: string) {
+    const data = await this.service.findLabelableArrivals(company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post('create')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'matUid 채번 + MatLot 생성 + 라벨 발행' })
-  async createLabels(@Body() dto: CreateMatLabelsDto) {
-    const data = await this.service.createMatLabels(dto);
+  async createLabels(@Body() dto: CreateMatLabelsDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.service.createMatLabels(dto, company, plant);
     return ResponseUtil.success(data, `${data.length}건의 자재시리얼이 생성되었습니다.`);
   }
 }

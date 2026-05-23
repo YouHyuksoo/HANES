@@ -12,6 +12,7 @@ import { MoldMaster } from '../../../entities/mold-master.entity';
 import { MoldUsageLog } from '../../../entities/mold-usage-log.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('MoldService', () => {
   let target: MoldService;
@@ -19,6 +20,7 @@ describe('MoldService', () => {
   let mockUsageRepo: DeepMocked<Repository<MoldUsageLog>>;
   let mockEquipRepo: DeepMocked<Repository<EquipMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockManager: {
     findOne: jest.Mock;
     create: jest.Mock;
@@ -40,6 +42,7 @@ describe('MoldService', () => {
     mockUsageRepo = createMock<Repository<MoldUsageLog>>();
     mockEquipRepo = createMock<Repository<EquipMaster>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
 
     mockManager = {
       findOne: jest.fn(),
@@ -57,6 +60,7 @@ describe('MoldService', () => {
       manager: mockManager,
     };
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner as any);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner as any));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -65,6 +69,7 @@ describe('MoldService', () => {
         { provide: getRepositoryToken(MoldUsageLog), useValue: mockUsageRepo },
         { provide: getRepositoryToken(EquipMaster), useValue: mockEquipRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<MoldService>(MoldService);
@@ -132,16 +137,20 @@ describe('MoldService', () => {
 
       expect(r.shotCount).toBe(50);
       expect(mockManager.save).toHaveBeenCalledTimes(2);
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).not.toHaveBeenCalled();
     });
 
     it('should throw when not ACTIVE', async () => {
       mockManager.findOne.mockResolvedValue({ moldCode: 'M-001', status: 'RETIRED' } as any);
 
       await expect(target.addUsage('M-001', { shotCount: 10 } as any, 'CO', 'P01', 'user')).rejects.toThrow(BadRequestException);
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException for cross-tenant/not-found mold', async () => {
@@ -150,8 +159,10 @@ describe('MoldService', () => {
       await expect(target.addUsage('M-001', { shotCount: 10 } as any, 'CO', 'P01', 'user')).rejects.toThrow(
         NotFoundException,
       );
-      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
+      expect(mockQueryRunner.release).not.toHaveBeenCalled();
     });
 
     it('should set INTERLOCK with tenant scope when guaranteed shots exceeded', async () => {
@@ -214,9 +225,9 @@ describe('MoldService', () => {
 
       const runner1 = makeRunner();
       const runner2 = makeRunner();
-      mockDataSource.createQueryRunner
-        .mockReturnValueOnce(runner1 as any)
-        .mockReturnValueOnce(runner2 as any);
+      mockTx.run
+        .mockImplementationOnce(async (callback) => callback(runner1 as any))
+        .mockImplementationOnce(async (callback) => callback(runner2 as any));
 
       const qb = {
         select: jest.fn().mockReturnThis(),
@@ -242,9 +253,10 @@ describe('MoldService', () => {
         ),
       ]);
 
-      expect(mockDataSource.createQueryRunner).toHaveBeenCalledTimes(2);
-      expect(runner1.commitTransaction).toHaveBeenCalled();
-      expect(runner2.commitTransaction).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(2);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(runner1.commitTransaction).not.toHaveBeenCalled();
+      expect(runner2.commitTransaction).not.toHaveBeenCalled();
       expect(sharedMold.currentShots).toBe(130);
     });
   });

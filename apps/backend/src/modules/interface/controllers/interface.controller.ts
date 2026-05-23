@@ -99,8 +99,8 @@ export class InterfaceController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '작업지시 수신 (ERP → MES)' })
   @ApiResponse({ status: 201, description: '수신 성공' })
-  async receiveJobOrder(@Body() dto: JobOrderInboundDto) {
-    const data = await this.interfaceService.receiveJobOrder(dto);
+  async receiveJobOrder(@Body() dto: JobOrderInboundDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.receiveJobOrder(dto, company, plant);
     return ResponseUtil.success(data, '작업지시가 수신되었습니다.');
   }
 
@@ -108,8 +108,8 @@ export class InterfaceController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'BOM 동기화 (ERP → MES)' })
   @ApiResponse({ status: 200, description: '동기화 성공' })
-  async syncBom(@Body() dtos: BomSyncDto[]) {
-    const data = await this.interfaceService.syncBom(dtos);
+  async syncBom(@Body() dtos: BomSyncDto[], @Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.syncBom(dtos, company, plant);
     return ResponseUtil.success(data, 'BOM 동기화가 완료되었습니다.');
   }
 
@@ -117,9 +117,18 @@ export class InterfaceController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '품목 마스터 동기화 (ERP → MES)' })
   @ApiResponse({ status: 200, description: '동기화 성공' })
-  async syncPart(@Body() dtos: PartSyncDto[]) {
-    const data = await this.interfaceService.syncPart(dtos);
+  async syncPart(@Body() dtos: PartSyncDto[], @Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.syncPart(dtos, company, plant);
     return ResponseUtil.success(data, '품목 동기화가 완료되었습니다.');
+  }
+
+  @Post('inbound/item-master')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'ERP 품목 마스터 동기화 — 변경 건만 MERGE' })
+  @ApiResponse({ status: 200, description: '동기화 성공' })
+  async syncItemMaster() {
+    const data = await this.interfaceService.scheduledSyncItemMaster();
+    return ResponseUtil.success(data, `동기화 완료 (신규: ${data.insert}건, 변경: ${data.update}건)`);
   }
 
   // ===== Outbound (MES → ERP) =====
@@ -128,8 +137,8 @@ export class InterfaceController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '생산실적 전송 (MES → ERP)' })
   @ApiResponse({ status: 200, description: '전송 성공' })
-  async sendProdResult(@Body() dto: ProdResultOutboundDto) {
-    const data = await this.interfaceService.sendProdResult(dto);
+  async sendProdResult(@Body() dto: ProdResultOutboundDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.interfaceService.sendProdResult(dto, company, plant);
     return ResponseUtil.success(data, '생산실적이 전송되었습니다.');
   }
 

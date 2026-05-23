@@ -1,10 +1,10 @@
 /**
  * @file iqc-item-pool.entity.ts
  * @description IQC 검사항목 풀(Pool) 엔티티 - 전역 검사항목 정의 마스터
- *              INSP_ITEM_CODE 자연키 PK 사용.
+ *              COMPANY + PLANT_CD + INSP_ITEM_CODE 복합키 사용.
  *
  * 초보자 가이드:
- * 1. INSP_ITEM_CODE가 자연키 PK (IQC-001 등) - 품목코드(itemCode)와 구분
+ * 1. COMPANY + PLANT_CD + INSP_ITEM_CODE가 자연키 PK (IQC-001 등) - 품목코드(itemCode)와 구분
  * 2. INSP_ITEM_NAME: 검사항목명
  * 3. JUDGE_METHOD: VISUAL(육안) / MEASURE(계측)
  * 4. 계측 항목은 LSL/USL/UNIT으로 규격 범위 정의
@@ -19,6 +19,12 @@ import {
 
 @Entity({ name: 'IQC_ITEM_POOL' })
 export class IqcItemPool {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'INSP_ITEM_CODE', length: 20 })
   inspItemCode: string;
 
@@ -51,12 +57,6 @@ export class IqcItemPool {
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
-
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
-
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
 
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;

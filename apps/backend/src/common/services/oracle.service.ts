@@ -141,6 +141,61 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Oracle 프로시저 호출 - 스칼라 OUT 파라미터 반환 (커서 없음)
+   * 패키지 없이 standalone procedure, N_RETURN/V_RETURN 패턴에 사용
+   *
+   * @param procName 프로시저명
+   * @param outDefs OUT 파라미터 정의 배열
+   * @param inParams IN 파라미터 (선택)
+   */
+  async callProcScalar(
+    procName: string,
+    outDefs: Array<{ name: string; type: 'NUMBER' | 'STRING' | 'DATE'; maxSize?: number }>,
+    inParams?: Record<string, any>,
+  ): Promise<Record<string, any>> {
+    validateIdentifier(procName, '프로시저명');
+
+    let conn: oracledb.Connection | undefined;
+    try {
+      conn = await this.pool.getConnection();
+
+      const bindVars: Record<string, oracledb.BindParameter> = {};
+      const paramNames: string[] = [];
+
+      if (inParams) {
+        for (const [key, value] of Object.entries(inParams)) {
+          bindVars[key] = { dir: oracledb.BIND_IN, val: value };
+          paramNames.push(`:${key}`);
+        }
+      }
+
+      for (const def of outDefs) {
+        const oraType =
+          def.type === 'NUMBER' ? oracledb.NUMBER :
+          def.type === 'DATE'   ? oracledb.DATE   : oracledb.STRING;
+        bindVars[def.name] = {
+          dir: oracledb.BIND_OUT,
+          type: oraType,
+          ...(def.maxSize ? { maxSize: def.maxSize } : {}),
+        };
+        paramNames.push(`:${def.name}`);
+      }
+
+      const sql = `BEGIN ${procName}(${paramNames.join(', ')}); END;`;
+      const result = await conn.execute(sql, bindVars);
+      return result.outBinds as Record<string, any>;
+    } catch (err) {
+      this.logger.error(
+        `프로시저 호출 실패: ${procName}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new InternalServerErrorException(`Oracle 프로시저 호출 실패: ${procName}`);
+    } finally {
+      if (conn) await conn.close();
+    }
+  }
+
+  /**
    * Oracle 패키지 프로시저 호출 - 다중 SYS_REFCURSOR 반환
    *
    * @param packageName 패키지명

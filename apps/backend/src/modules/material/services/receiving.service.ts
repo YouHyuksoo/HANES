@@ -59,6 +59,13 @@ export class ReceivingService {
     private readonly sysConfigService: SysConfigService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
   async findReceivable(company?: string, plant?: string) {
     // IQC 합격된 LOT 조회 (initQty > 0 조건으로 유효 LOT 필터)
@@ -85,6 +92,8 @@ export class ReceivingService {
       .where('tx.matUid IN (:...matUids)', { matUids })
       .andWhere('tx.transType = :transType', { transType: 'RECEIVE' })
       .andWhere('tx.status = :status', { status: 'DONE' })
+      .andWhere(company ? 'tx.company = :company' : '1=1', { company })
+      .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
       .groupBy('tx.matUid')
       .getRawMany();
 
@@ -93,26 +102,28 @@ export class ReceivingService {
       if (tx.matUid) receivedMap.set(tx.matUid, parseInt(tx.sumQty) || 0);
     }
 
-    // MAT_ARRIVALS에서 입하 창고 정보 가져오기 (itemCode 기준)
-    const lotItemCodes = [...new Set(validLots.map((l) => l.itemCode))].filter(Boolean);
-    const arrivalRecords = lotItemCodes.length > 0
+    // MAT_ARRIVALS에서 LOT이 생성된 입하 건의 창고 정보 가져오기
+    const arrivalKeys = validLots
+      .filter((lot) => lot.arrivalNo && lot.arrivalSeq != null && lot.itemCode)
+      .map((lot) => ({
+        arrivalNo: lot.arrivalNo!,
+        seq: lot.arrivalSeq!,
+        itemCode: lot.itemCode,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      }));
+    const arrivalRecords = arrivalKeys.length > 0
       ? await this.matArrivalRepository.find({
-          where: {
-            itemCode: In(lotItemCodes),
-            status: 'DONE',
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          },
-          select: ['itemCode', 'warehouseCode'],
+          where: arrivalKeys,
+          select: ['arrivalNo', 'seq', 'itemCode', 'warehouseCode'],
           order: { arrivalDate: 'DESC' },
         })
       : [];
 
-    // itemCode → warehouseCode 맵 (최신 입하 기준)
-    const arrivalWhByItemCode = new Map<string, string>();
+    const arrivalWhByLotKey = new Map<string, string>();
     for (const arr of arrivalRecords) {
-      if (arr.itemCode && !arrivalWhByItemCode.has(arr.itemCode)) {
-        arrivalWhByItemCode.set(arr.itemCode, arr.warehouseCode);
+      if (arr.arrivalNo && arr.seq != null && arr.itemCode && arr.warehouseCode) {
+        arrivalWhByLotKey.set(`${arr.arrivalNo}::${arr.seq}::${arr.itemCode}`, arr.warehouseCode);
       }
     }
 
@@ -122,7 +133,7 @@ export class ReceivingService {
     });
 
     // 창고 정보 조회 (warehouseCode 기준)
-    const warehouseCodes = [...new Set(arrivalWhByItemCode.values())].filter(Boolean);
+    const warehouseCodes = [...new Set(arrivalWhByLotKey.values())].filter(Boolean);
     const warehouseIds = [] as string[]; // 호환용
     const warehouses = warehouseCodes.length > 0
       ? await this.warehouseRepository.find({
@@ -134,7 +145,9 @@ export class ReceivingService {
     // part 정보 조회
     const itemCodes = validLots.map((lot) => lot.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({
+          where: { itemCode: In(itemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -162,7 +175,9 @@ export class ReceivingService {
       .map((lot) => {
         const receivedQty = receivedMap.get(lot.matUid) || 0;
         const remainingQty = lot.initQty - receivedQty;
-        const arrivalWhCode = arrivalWhByItemCode.get(lot.itemCode);
+        const arrivalWhCode = lot.arrivalNo && lot.arrivalSeq != null
+          ? arrivalWhByLotKey.get(`${lot.arrivalNo}::${lot.arrivalSeq}::${lot.itemCode}`)
+          : null;
         const arrivalWarehouse = arrivalWhCode ? warehouseMap.get(arrivalWhCode) : null;
         const part = partMap.get(lot.itemCode);
 
@@ -188,22 +203,23 @@ export class ReceivingService {
    */
   private async checkPoTolerance(lot: MatLot, receiveQty: number): Promise<void> {
     if (!lot.poNo) return; // PO 번호가 없으면 체크 불필요
+    const tenantWhere = this.tenantWhere(lot.company, lot.plant);
 
     // PO 조회 (PO 번호로)
     const po = await this.purchaseOrderRepository.findOne({
-      where: { poNo: lot.poNo },
+      where: { poNo: lot.poNo, ...tenantWhere },
     });
     if (!po) return; // PO 정보 없으면 체크 불필요
 
     // PO 품목 조회
     const poItem = await this.purchaseOrderItemRepository.findOne({
-      where: { poNo: po.poNo, itemCode: lot.itemCode },
+      where: { poNo: po.poNo, itemCode: lot.itemCode, ...tenantWhere },
     });
     if (!poItem) return; // PO 품목 정보 없으면 체크 불필요
 
     // 품목의 오차율 조회
     const part = await this.partMasterRepository.findOne({
-      where: { itemCode: lot.itemCode },
+      where: { itemCode: lot.itemCode, ...tenantWhere },
       select: ['itemCode', 'toleranceRate'],
     });
     const toleranceRate = part?.toleranceRate ?? 5.0; // 기본값 5%
@@ -217,9 +233,12 @@ export class ReceivingService {
       .andWhere('tx.itemCode = :itemCode', { itemCode: lot.itemCode })
       .andWhere(
         `tx.matUid IN (
-          SELECT mat_uid FROM mat_lots WHERE po_no = :poNo
+          SELECT mat_uid FROM mat_lots
+          WHERE po_no = :poNo
+          ${lot.company ? 'AND company = :company' : ''}
+          ${lot.plant ? 'AND plant = :plant' : ''}
         )`,
-        { poNo: lot.poNo }
+        { poNo: lot.poNo, company: lot.company, plant: lot.plant }
       )
       .getRawOne();
 
@@ -320,14 +339,15 @@ export class ReceivingService {
 
         // 1-1. 제조일자 수정 시 LOT 업데이트 + 유효기한 재계산
         if (item.manufactureDate) {
-          const part = await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } });
+          const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
+          const part = await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...lotTenantWhere } });
           const mfgDate = new Date(item.manufactureDate);
           let expDate: Date | null = null;
           if (part?.expiryDate && part.expiryDate > 0) {
             expDate = new Date(mfgDate);
             expDate.setDate(expDate.getDate() + part.expiryDate);
           }
-          await queryRunner.manager.update(MatLot, lot.matUid, {
+          await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...lotTenantWhere }, {
             manufactureDate: mfgDate,
             expireDate: expDate,
           });
@@ -429,11 +449,15 @@ export class ReceivingService {
     const itemCodes = data.map((item) => item.itemCode).filter(Boolean);
     const matUids = data.map((item) => item.matUid).filter(Boolean);
     const warehouseCodes = data.map((item) => item.warehouseCode).filter(Boolean);
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
 
     const [parts, lots, warehouses] = await Promise.all([
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([] as MatLot[]),
-      warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes) } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([] as MatLot[]),
+      warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));

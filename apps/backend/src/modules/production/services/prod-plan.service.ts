@@ -16,13 +16,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   CreateProdPlanDto,
   BulkCreateProdPlanDto,
@@ -47,7 +48,7 @@ export class ProdPlanService {
     @InjectRepository(BomMaster)
     private readonly bomMasterRepo: Repository<BomMaster>,
     private readonly numbering: NumberingService,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private async resolveRoutingCodeByItem(itemCode: string, company?: string | null, plant?: string | null): Promise<string | null> {
@@ -96,7 +97,9 @@ export class ProdPlanService {
 
   /** 개별 등록 (planNo 자동생성) */
   async create(dto: CreateProdPlanDto, company?: string, plant?: string) {
-    const part = await this.partRepo.findOne({ where: { itemCode: dto.itemCode } });
+    const part = await this.partRepo.findOne({
+      where: { itemCode: dto.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
 
     const planNo = await this.generatePlanNo(dto.planMonth);
@@ -122,17 +125,16 @@ export class ProdPlanService {
 
   /** 엑셀 일괄 등록 (트랜잭션) */
   async bulkCreate(dto: BulkCreateProdPlanDto, company?: string, plant?: string) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const results: ProdPlan[] = [];
 
       // IN 배치 선조회로 품목 검증 (N+1 제거)
       const allItemCodes = [...new Set(dto.items.map((i) => i.itemCode))];
       const allParts = allItemCodes.length > 0
-        ? await queryRunner.manager.find(PartMaster, { where: { itemCode: In(allItemCodes) }, select: ['itemCode'] })
+        ? await queryRunner.manager.find(PartMaster, {
+            where: { itemCode: In(allItemCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+            select: ['itemCode'],
+          })
         : [];
       const validItemCodes = new Set(allParts.map((p) => p.itemCode));
       for (const code of allItemCodes) {
@@ -163,14 +165,8 @@ export class ProdPlanService {
         results.push(saved);
       }
 
-      await queryRunner.commitTransaction();
       return { count: results.length, items: results };
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** 수정 (DRAFT 상태만) */
@@ -340,11 +336,7 @@ export class ProdPlanService {
       throw new BadRequestException(`발행수량(${dto.issueQty})이 잔여수량(${remainQty})을 초과합니다.`);
     }
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const orderNo = await this.numbering.nextJobOrderNo(queryRunner);
 
       const routingCode = await this.resolveRoutingCodeByItem(plan.itemCode, company, plant);
@@ -380,20 +372,13 @@ export class ProdPlanService {
         .andWhere(plant ? 'plant = :plant' : '1=1', { plant })
         .execute();
 
-      await queryRunner.commitTransaction();
-
       return {
         orderNo: saved.orderNo,
         planNo,
         issueQty: dto.issueQty,
         remainQty: remainQty - dto.issueQty,
       };
-    } catch (err: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   /** BOM 기반 반제품 자식 작업지시 자동생성 */
@@ -418,6 +403,8 @@ export class ProdPlanService {
       .createQueryBuilder('p')
       .where('p.itemCode IN (:...ids)', { ids: bomItems.map(b => b.childItemCode) })
       .andWhere('p.itemType = :type', { type: 'SEMI_PRODUCT' })
+      .andWhere(company ? 'p.company = :company' : '1=1', { company })
+      .andWhere(plant ? 'p.plant = :plant' : '1=1', { plant })
       .getMany();
 
     const wipPartIds = new Set(wipParts.map(p => p.itemCode));

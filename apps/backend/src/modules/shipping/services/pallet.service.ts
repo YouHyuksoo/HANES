@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, DataSource, In } from 'typeorm';
+import { Repository, IsNull, ILike, In } from 'typeorm';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
@@ -36,6 +36,7 @@ import {
   AssignPalletToShipmentDto,
   PalletStatus,
 } from '../dto/pallet.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class PalletService {
@@ -50,7 +51,7 @@ export class PalletService {
     private readonly shipmentRepository: Repository<ShipmentLog>,
     @InjectRepository(PartMaster)
     private readonly partRepository: Repository<PartMaster>,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -255,11 +256,7 @@ export class PalletService {
     }
 
     // 트랜잭션으로 박스 할당 및 팔레트 집계 업데이트
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 박스 업데이트
       await queryRunner.manager.update(
         BoxMaster,
@@ -285,16 +282,9 @@ export class PalletService {
           totalQty: parseInt(palletSummary?.totalQty) || 0,
         }
       );
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(id, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   /**
@@ -324,11 +314,7 @@ export class PalletService {
     }
 
     // 트랜잭션으로 박스 제거 및 팔레트 집계 업데이트
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 박스 업데이트
       await queryRunner.manager.update(
         BoxMaster,
@@ -354,16 +340,9 @@ export class PalletService {
           totalQty: parseInt(palletSummary?.totalQty) || 0,
         }
       );
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(id, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   // ===== 상태 관리 =====
@@ -452,11 +431,7 @@ export class PalletService {
     }
 
     // 트랜잭션으로 팔레트 할당 및 출하 집계 업데이트
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
@@ -487,16 +462,9 @@ export class PalletService {
           totalQty: parseInt(shipmentSummary?.totalQty) || 0,
         }
       );
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(id, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   /**
@@ -525,11 +493,7 @@ export class PalletService {
     const shipmentId = pallet.shipmentId;
 
     // 트랜잭션으로 팔레트 제거 및 출하 집계 업데이트
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    await this.tx.run(async (queryRunner) => {
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
@@ -560,16 +524,9 @@ export class PalletService {
           totalQty: parseInt(shipmentSummary?.totalQty) || 0,
         }
       );
+    });
 
-      await queryRunner.commitTransaction();
-
-      return this.findById(id, company, plant);
-    } catch (err) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    return this.findById(id, company, plant);
   }
 
   // ===== 조회 유틸리티 =====

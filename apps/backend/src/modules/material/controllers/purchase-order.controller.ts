@@ -24,46 +24,51 @@ export class PurchaseOrderController {
 
   @Get(':id')
   @ApiOperation({ summary: 'PO 상세 조회' })
-  async findById(@Param('id') id: string) {
-    const data = await this.purchaseOrderService.findById(id);
+  async findById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.purchaseOrderService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'PO 생성' })
-  async create(@Body() dto: CreatePurchaseOrderDto) {
-    const data = await this.purchaseOrderService.create(dto);
+  async create(@Body() dto: CreatePurchaseOrderDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.purchaseOrderService.create(dto, company, plant);
     return ResponseUtil.success(data, 'PO가 생성되었습니다.');
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'PO 수정' })
-  async update(@Param('id') id: string, @Body() dto: UpdatePurchaseOrderDto) {
-    const data = await this.purchaseOrderService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePurchaseOrderDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.purchaseOrderService.update(id, dto, company, plant);
     return ResponseUtil.success(data, 'PO가 수정되었습니다.');
   }
 
   @Patch(':id/confirm')
   @ApiOperation({ summary: 'PO 확정 (DRAFT → CONFIRMED)' })
   @ApiParam({ name: 'id', description: 'PO ID' })
-  async confirm(@Param('id') id: string) {
-    const data = await this.purchaseOrderService.confirm(id);
+  async confirm(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.purchaseOrderService.confirm(id, company, plant);
     return ResponseUtil.success(data, 'PO가 확정되었습니다.');
   }
 
   @Patch(':id/close')
   @ApiOperation({ summary: 'PO 마감 (RECEIVED/PARTIAL → CLOSED)' })
   @ApiParam({ name: 'id', description: 'PO ID' })
-  async close(@Param('id') id: string) {
-    const data = await this.purchaseOrderService.close(id);
+  async close(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.purchaseOrderService.close(id, company, plant);
     return ResponseUtil.success(data, 'PO가 마감되었습니다.');
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'PO 삭제' })
-  async delete(@Param('id') id: string) {
-    await this.purchaseOrderService.delete(id);
+  async delete(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
+    await this.purchaseOrderService.delete(id, company, plant);
     return ResponseUtil.success(null, 'PO가 삭제되었습니다.');
   }
 }

@@ -49,7 +49,7 @@ export default function AdjustmentPage() {
 
   const [form, setForm] = useState({ warehouseCode: "", itemCode: "", afterQty: "", reason: "" });
   const [partSearch, setPartSearch] = useState("");
-  const [partResults, setPartResults] = useState<{ id: string; itemCode: string; itemName: string }[]>([]);
+  const [partResults, setPartResults] = useState<{ itemCode: string; itemName: string }[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -74,7 +74,7 @@ export default function AdjustmentPage() {
     try {
       const res = await api.get("/master/parts", { params: { search: keyword, limit: 20 } });
       setPartResults((res.data?.data ?? []).map((p: any) => ({
-        id: p.id, itemCode: p.itemCode, itemName: p.itemName,
+        itemCode: p.itemCode, itemName: p.itemName,
       })));
     } catch { setPartResults([]); }
   }, []);
@@ -90,7 +90,7 @@ export default function AdjustmentPage() {
   }), [data]);
 
   const selectedPart = useMemo(() =>
-    partResults.find(p => p.id === form.itemCode), [partResults, form.itemCode]);
+    partResults.find(p => p.itemCode === form.itemCode), [partResults, form.itemCode]);
 
   const handleRegister = useCallback(async () => {
     if (!form.warehouseCode || !form.itemCode || !form.afterQty || !form.reason) return;
@@ -226,9 +226,9 @@ export default function AdjustmentPage() {
             {partResults.length > 0 && !form.itemCode && (
               <div className="mt-1 border border-border rounded-lg max-h-40 overflow-y-auto bg-surface">
                 {partResults.map(p => (
-                  <button key={p.id} type="button"
+                  <button key={p.itemCode} type="button"
                     className="w-full text-left px-3 py-2 text-sm hover:bg-surface-alt dark:hover:bg-surface-alt transition-colors border-b border-border last:border-b-0"
-                    onClick={() => { setForm(prev => ({ ...prev, itemCode: p.id })); setPartSearch(`${p.itemCode} - ${p.itemName}`); }}>
+                    onClick={() => { setForm(prev => ({ ...prev, itemCode: p.itemCode })); setPartSearch(`${p.itemCode} - ${p.itemName}`); }}>
                     <span className="font-mono text-primary">{p.itemCode}</span> — {p.itemName}
                   </button>
                 ))}

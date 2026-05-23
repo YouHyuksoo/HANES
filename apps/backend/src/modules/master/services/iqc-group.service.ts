@@ -24,6 +24,13 @@ export class IqcGroupService {
     private readonly groupItemRepo: Repository<IqcGroupItem>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: IqcGroupQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectMethod, useYn } = query;
 
@@ -62,9 +69,9 @@ export class IqcGroupService {
     return { data, total, page, limit };
   }
 
-  async findByCode(groupCode: string) {
+  async findByCode(groupCode: string, company?: string, plant?: string) {
     const group = await this.groupRepo.findOne({
-      where: { groupCode },
+      where: { groupCode, ...this.tenantWhere(company, plant) },
       relations: ['items', 'items.inspItem'],
     });
 
@@ -77,7 +84,7 @@ export class IqcGroupService {
 
   async create(dto: CreateIqcGroupDto, company?: string, plant?: string) {
     const exists = await this.groupRepo.findOne({
-      where: { groupCode: dto.groupCode },
+      where: { groupCode: dto.groupCode, ...this.tenantWhere(company, plant) },
     });
     if (exists) {
       throw new ConflictException(`그룹코드 ${dto.groupCode}가 이미 존재합니다.`);
@@ -108,11 +115,11 @@ export class IqcGroupService {
       await this.groupItemRepo.save(items);
     }
 
-    return this.findByCode(saved.groupCode);
+    return this.findByCode(saved.groupCode, company, plant);
   }
 
-  async update(groupCode: string, dto: UpdateIqcGroupDto) {
-    const group = await this.findByCode(groupCode);
+  async update(groupCode: string, dto: UpdateIqcGroupDto, company?: string, plant?: string) {
+    const group = await this.findByCode(groupCode, company, plant);
 
     if (dto.groupName !== undefined) group.groupName = dto.groupName;
     if (dto.inspectMethod !== undefined) group.inspectMethod = dto.inspectMethod;
@@ -126,7 +133,7 @@ export class IqcGroupService {
     await this.groupRepo.save(group);
 
     if (dto.items !== undefined) {
-      await this.groupItemRepo.delete({ groupCode: group.groupCode });
+      await this.groupItemRepo.delete({ groupCode: group.groupCode, ...this.tenantWhere(company, plant) });
 
       if (dto.items.length) {
         const items = dto.items.map(i =>
@@ -134,17 +141,19 @@ export class IqcGroupService {
             groupCode: group.groupCode,
             inspItemCode: String(i.itemId),
             seq: i.seq,
+            company,
+            plant,
           }),
         );
         await this.groupItemRepo.save(items);
       }
     }
 
-    return this.findByCode(groupCode);
+    return this.findByCode(groupCode, company, plant);
   }
 
-  async delete(groupCode: string) {
-    const group = await this.findByCode(groupCode);
+  async delete(groupCode: string, company?: string, plant?: string) {
+    const group = await this.findByCode(groupCode, company, plant);
     await this.groupRepo.remove(group);
     return { groupCode, deleted: true };
   }

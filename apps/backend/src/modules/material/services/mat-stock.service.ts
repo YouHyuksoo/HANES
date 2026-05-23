@@ -36,6 +36,13 @@ export class MatStockService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, warehouseCode, locationCode, search, lowStockOnly } = query;
     const skip = (page - 1) * limit;
@@ -64,10 +71,14 @@ export class MatStockService {
     
     const warehouseCodes = [...new Set(data.map((s) => s.warehouseCode).filter(Boolean))];
 
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const [parts, lots, warehouses] = await Promise.all([
-      this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }),
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
-      warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes) } }) : Promise.resolve([]),
+      this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
+      warehouseCodes.length > 0 ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } }) : Promise.resolve([]),
     ]);
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -98,12 +109,12 @@ export class MatStockService {
       return {
         ...stock,
         warehouseName: warehouseMap.get(stock.warehouseCode) || stock.warehouseCode,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
-        safetyStock: part?.safetyStock,
+        itemCode: stock.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        safetyStock: part?.safetyStock ?? null,
         expiryDays: part?.expiryDate || 0,
-        matUid: lot?.matUid,
+        matUid: stock.matUid,
         manufactureDate: lot?.manufactureDate || null,
         expireDate: lot?.expireDate || null,
         elapsedDays,
@@ -121,7 +132,7 @@ export class MatStockService {
       result = result.filter(
         (stock) =>
           stock.itemCode.toLowerCase().includes(searchLower) ||
-          stock.itemName.toLowerCase().includes(searchLower),
+          (stock.itemName ?? '').toLowerCase().includes(searchLower),
       );
     }
 
@@ -139,9 +150,13 @@ export class MatStockService {
 
     const matUids = stocks.map((s) => s.matUid).filter(Boolean) as string[];
     const itemCodes = stocks.map((s) => s.itemCode).filter(Boolean);
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const [lots, parts] = await Promise.all([
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
-      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : Promise.resolve([]),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
+      itemCodes.length > 0 ? this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
     ]);
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -151,8 +166,8 @@ export class MatStockService {
       const part = partMap.get(stock.itemCode);
       return {
         ...stock,
-        itemCode: part?.itemCode ?? null, itemName: part?.itemName ?? null,
-        unit: part?.unit ?? null, matUid: lot?.matUid ?? null,
+        itemCode: stock.itemCode, itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null, matUid: stock.matUid,
         iqcStatus: lot?.iqcStatus ?? null, lotStatus: lot?.status ?? null,
       };
     }).filter((s) => s.iqcStatus === 'PASS' && s.qty > 0 && s.lotStatus !== 'HOLD');
@@ -160,35 +175,43 @@ export class MatStockService {
     if (search) {
       const s = search.toLowerCase();
       result = result.filter((r) =>
-        r.itemCode.toLowerCase().includes(s) || r.itemName.toLowerCase().includes(s) ||
+        r.itemCode.toLowerCase().includes(s) || (r.itemName ?? '').toLowerCase().includes(s) ||
         r.matUid?.toLowerCase().includes(s));
     }
     return { data: result, total: result.length, page, limit };
   }
 
-  async findByPartAndWarehouse(itemCode: string, warehouseCode: string, matUid?: string) {
+  async findByPartAndWarehouse(itemCode: string, warehouseCode: string, matUid?: string, company?: string, plant?: string) {
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const stock = await this.matStockRepository.findOne({
-      where: { itemCode, warehouseCode, ...(matUid && { matUid }) },
+      where: { itemCode, warehouseCode, ...(matUid && { matUid }), ...tenantWhere },
     });
 
     if (!stock) return null;
 
     const [part, lot] = await Promise.all([
-      this.partMasterRepository.findOne({ where: { itemCode: stock.itemCode } }),
-      stock.matUid ? this.matLotRepository.findOne({ where: { matUid: stock.matUid } }) : null,
+      this.partMasterRepository.findOne({ where: { itemCode: stock.itemCode, ...tenantWhere } }),
+      stock.matUid ? this.matLotRepository.findOne({ where: { matUid: stock.matUid, ...tenantWhere } }) : null,
     ]);
 
     return {
       ...stock,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
-      unit: part?.unit,
-      matUid: lot?.matUid,
+      itemCode: stock.itemCode,
+      itemName: part?.itemName ?? null,
+      unit: part?.unit ?? null,
+      matUid: stock.matUid,
     };
   }
 
-  async getStockSummary(itemCode: string) {
-    const stocks = await this.matStockRepository.find({ where: { itemCode } });
+  async getStockSummary(itemCode: string, company?: string, plant?: string) {
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+    const stocks = await this.matStockRepository.find({ where: { itemCode, ...tenantWhere } });
 
     const total = stocks.reduce((sum, s) => sum + s.qty, 0);
     const available = stocks.reduce((sum, s) => sum + s.availableQty, 0);
@@ -196,17 +219,17 @@ export class MatStockService {
     // part, lot 정보 조회
     const matUids = stocks.map((stock) => stock.matUid).filter(Boolean) as string[];
     const [part, lots] = await Promise.all([
-      this.partMasterRepository.findOne({ where: { itemCode: itemCode } }),
-      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids) } }) : Promise.resolve([]),
+      this.partMasterRepository.findOne({ where: { itemCode: itemCode, ...tenantWhere } }),
+      matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
     ]);
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
 
     const flattenedStocks = stocks.map((stock) => ({
       ...stock,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
-      unit: part?.unit,
-      matUid: stock.matUid ? lotMap.get(stock.matUid)?.matUid : null,
+      itemCode: stock.itemCode,
+      itemName: part?.itemName ?? null,
+      unit: part?.unit ?? null,
+      matUid: stock.matUid,
     }));
 
     return { itemCode, totalQty: total, availableQty: available, byWarehouse: flattenedStocks };
@@ -295,13 +318,14 @@ export class MatStockService {
     });
   }
 
-  async transferStock(dto: StockTransferDto) {
+  async transferStock(dto: StockTransferDto, company?: string, plant?: string) {
     const { itemCode, fromWarehouseCode, toWarehouseCode, qty, matUid } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
 
     return this.tx.run(async (queryRunner) => {
       // 출고 창고 재고 확인
       const fromStock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode: fromWarehouseCode, ...(matUid && { matUid }) },
+        where: { itemCode, warehouseCode: fromWarehouseCode, ...(matUid && { matUid }), ...tenantWhere },
       });
 
       if (!fromStock || fromStock.qty < qty) {
@@ -319,22 +343,22 @@ export class MatStockService {
       }
 
       await queryRunner.manager.update(MatStock,
-        { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, matUid: fromStock.matUid },
+        { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, matUid: fromStock.matUid, ...tenantWhere },
         { qty: fromStock.qty - qty, availableQty: fromStock.availableQty - qty },
       );
 
       // 입고 창고 재고 확인 또는 생성
       let toStock = await queryRunner.manager.findOne(MatStock, {
-        where: { itemCode, warehouseCode: toWarehouseCode, ...(matUid && { matUid }) },
+        where: { itemCode, warehouseCode: toWarehouseCode, ...(matUid && { matUid }), ...tenantWhere },
       });
 
       if (toStock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid },
+          { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid, ...tenantWhere },
           { qty: toStock.qty + qty, availableQty: toStock.availableQty + qty },
         );
         toStock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid },
+          where: { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid, ...tenantWhere },
         });
       } else {
         const newStock = queryRunner.manager.create(MatStock, {

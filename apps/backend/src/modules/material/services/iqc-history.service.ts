@@ -36,6 +36,13 @@ export class IqcHistoryService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: IqcHistoryQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, inspectType, result, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
@@ -54,8 +61,8 @@ export class IqcHistoryService {
     if (search) {
       const parts = await this.partMasterRepository.find({
         where: [
-          { itemCode: Like(`%${search}%`) },
-          { itemName: Like(`%${search}%`) },
+          { itemCode: Like(`%${search}%`), ...(company && { company }), ...(plant && { plant }) },
+          { itemName: Like(`%${search}%`), ...(company && { company }), ...(plant && { plant }) },
         ],
       });
       const searchItemCodes = parts.map((p) => p.itemCode);
@@ -99,7 +106,9 @@ export class IqcHistoryService {
 
     const itemCodes = data.map((log) => log.itemCode).filter(Boolean);
     const partsResult = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } })
+      ? await this.partMasterRepository.find({
+        where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) },
+      })
       : [];
     const partMap = new Map(partsResult.map((p) => [p.itemCode, p]));
 
@@ -107,24 +116,26 @@ export class IqcHistoryService {
       const part = partMap.get(log.itemCode);
       return {
         ...log,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
-        unit: part?.unit,
+        itemCode: log.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
       };
     });
 
     return { data: flattenedData, total, page, limit };
   }
 
-  async createResult(dto: CreateIqcResultDto) {
+  async createResult(dto: CreateIqcResultDto, company?: string, plant?: string) {
     const lot = await this.matLotRepository.findOne({
-      where: { matUid: dto.matUid },
+      where: { matUid: dto.matUid, ...this.tenantWhere(company, plant) },
     });
     if (!lot) {
       throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
     }
 
-    await this.matLotRepository.update(dto.matUid, {
+    const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
+
+    await this.matLotRepository.update({ matUid: dto.matUid, ...lotTenantWhere }, {
       iqcStatus: dto.result,
     });
 
@@ -163,14 +174,14 @@ export class IqcHistoryService {
     }
 
     const part = await this.partMasterRepository.findOne({
-      where: { itemCode: lot.itemCode },
+      where: { itemCode: lot.itemCode, ...lotTenantWhere },
     });
 
     return {
       ...saved,
       matUid: lot.matUid,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
+      itemCode: lot.itemCode,
+      itemName: part?.itemName ?? null,
     };
   }
 
@@ -181,12 +192,12 @@ export class IqcHistoryService {
     plant?: string | null,
   ) {
     const defectWarehouse = await this.warehouseRepository.findOne({
-      where: { warehouseType: 'DEFECT', useYn: 'Y' },
+      where: { warehouseType: 'DEFECT', useYn: 'Y', ...this.tenantWhere(company, plant) },
     });
     if (!defectWarehouse) return;
 
     const stock = await this.matStockRepository.findOne({
-      where: { matUid, itemCode },
+      where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
     });
     if (!stock || stock.qty <= 0) return;
 
@@ -195,17 +206,17 @@ export class IqcHistoryService {
 
       await queryRunner.manager.update(
         MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode, matUid },
+        { warehouseCode: stock.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
         { qty: 0 },
       );
 
       const existing = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid },
+        where: { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
       });
       if (existing) {
         await queryRunner.manager.update(
           MatStock,
-          { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid },
+          { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
           { qty: existing.qty + stock.qty },
         );
       } else {
@@ -244,7 +255,7 @@ export class IqcHistoryService {
     plant?: string | null,
   ) {
     const stock = await this.matStockRepository.findOne({
-      where: { matUid, itemCode },
+      where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
     });
     if (!stock || stock.qty < sampleQty) return;
 
@@ -253,7 +264,7 @@ export class IqcHistoryService {
 
       await queryRunner.manager.update(
         MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode, matUid },
+        { warehouseCode: stock.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
         { qty: stock.qty - sampleQty },
       );
 
@@ -272,18 +283,21 @@ export class IqcHistoryService {
     });
   }
 
-  async uploadCert(inspectDate: string, seq: number, filePath: string) {
+  async uploadCert(inspectDate: string, seq: number, filePath: string, company?: string, plant?: string) {
     const log = await this.iqcLogRepository.findOne({
-      where: { inspectDate: new Date(inspectDate), seq },
+      where: { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(company, plant) },
     });
     if (!log) throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
-    await this.iqcLogRepository.update({ inspectDate: new Date(inspectDate), seq }, { certFilePath: filePath });
+    await this.iqcLogRepository.update(
+      { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(log.company, log.plant) },
+      { certFilePath: filePath },
+    );
     return { ...log, certFilePath: filePath };
   }
 
-  async cancel(inspectDate: string, seq: number, dto: CancelIqcResultDto) {
+  async cancel(inspectDate: string, seq: number, dto: CancelIqcResultDto, company?: string, plant?: string) {
     const log = await this.iqcLogRepository.findOne({
-      where: { inspectDate: new Date(inspectDate), seq },
+      where: { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(company, plant) },
     });
     if (!log) {
       throw new NotFoundException(`IQC 이력을 찾을 수 없습니다: ${inspectDate}/${seq}`);
@@ -294,7 +308,7 @@ export class IqcHistoryService {
 
     if (log.matUid) {
       const receiving = await this.matReceivingRepository.findOne({
-        where: { matUid: log.matUid, status: 'DONE' },
+        where: { matUid: log.matUid, status: 'DONE', ...this.tenantWhere(log.company, log.plant) },
       });
       if (receiving) {
         throw new BadRequestException(
@@ -303,7 +317,7 @@ export class IqcHistoryService {
       }
     } else if (log.itemCode) {
       const receiving = await this.matReceivingRepository.findOne({
-        where: { itemCode: log.itemCode, status: 'DONE' },
+        where: { itemCode: log.itemCode, status: 'DONE', ...this.tenantWhere(log.company, log.plant) },
       });
       if (receiving) {
         throw new BadRequestException(
@@ -320,6 +334,7 @@ export class IqcHistoryService {
           refType: 'IQC_DESTRUCT',
           cancelRefId: IsNull(),
           status: 'DONE',
+          ...this.tenantWhere(log.company, log.plant),
         },
         order: { createdAt: 'DESC' },
       });
@@ -337,19 +352,27 @@ export class IqcHistoryService {
 
       await queryRunner.manager.update(
         IqcLog,
-        { inspectDate: new Date(inspectDate), seq },
+        { inspectDate: new Date(inspectDate), seq, ...this.tenantWhere(log.company, log.plant) },
         { status: 'CANCELED', remark: dto.reason },
       );
 
       if (log.matUid) {
-        await queryRunner.manager.update(MatLot, log.matUid, { iqcStatus: 'PENDING' });
+        await queryRunner.manager.update(
+          MatLot,
+          { matUid: log.matUid, ...this.tenantWhere(log.company, log.plant) },
+          { iqcStatus: 'PENDING' },
+        );
       } else if (log.itemCode) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { itemCode: log.itemCode, iqcStatus: log.result },
+          where: { itemCode: log.itemCode, iqcStatus: log.result, ...this.tenantWhere(log.company, log.plant) },
           order: { createdAt: 'DESC' },
         });
         if (lot) {
-          await queryRunner.manager.update(MatLot, lot.matUid, { iqcStatus: 'PENDING' });
+          await queryRunner.manager.update(
+            MatLot,
+            { matUid: lot.matUid, ...this.tenantWhere(log.company, log.plant) },
+            { iqcStatus: 'PENDING' },
+          );
         }
       }
     });
@@ -371,6 +394,7 @@ export class IqcHistoryService {
         refType: 'IQC_FAIL',
         cancelRefId: IsNull(),
         status: 'DONE',
+        ...this.tenantWhere(company, plant),
       },
       order: { createdAt: 'DESC' },
     });
@@ -380,7 +404,7 @@ export class IqcHistoryService {
     }
 
     const defectStock = await queryRunner.manager.findOne(MatStock, {
-      where: { warehouseCode: failMove.toWarehouseId, itemCode, matUid },
+      where: { warehouseCode: failMove.toWarehouseId, itemCode, matUid, ...this.tenantWhere(company, plant) },
     });
     if (!defectStock || defectStock.qty < failMove.qty) {
       throw new BadRequestException(
@@ -389,19 +413,19 @@ export class IqcHistoryService {
     }
 
     const sourceStock = await queryRunner.manager.findOne(MatStock, {
-      where: { warehouseCode: failMove.fromWarehouseId, itemCode, matUid },
+      where: { warehouseCode: failMove.fromWarehouseId, itemCode, matUid, ...this.tenantWhere(company, plant) },
     });
 
     await queryRunner.manager.update(
       MatStock,
-      { warehouseCode: failMove.toWarehouseId, itemCode, matUid },
+      { warehouseCode: failMove.toWarehouseId, itemCode, matUid, ...this.tenantWhere(company, plant) },
       { qty: defectStock.qty - failMove.qty },
     );
 
     if (sourceStock) {
       await queryRunner.manager.update(
         MatStock,
-        { warehouseCode: failMove.fromWarehouseId, itemCode, matUid },
+        { warehouseCode: failMove.fromWarehouseId, itemCode, matUid, ...this.tenantWhere(company, plant) },
         { qty: sourceStock.qty + failMove.qty },
       );
     } else {

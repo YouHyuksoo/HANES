@@ -35,12 +35,19 @@ export class LotMergeService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findMergeableLots(query: LotMergeQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 50, search, itemCode } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.matLotRepository.createQueryBuilder('lot')
-      .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid')
+      .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid AND stock.company = lot.company AND stock.plant = lot.plant')
       .where('stock.qty > 0')
       .andWhere("lot.status != 'DEPLETED'")
       .andWhere("lot.status != 'HOLD'");
@@ -67,26 +74,36 @@ export class LotMergeService {
     ]);
 
     const itemCodes = lots.map(l => l.itemCode).filter(Boolean);
+    const tenantWhere = {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName', 'unit'] })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere }, select: ['itemCode', 'itemName', 'unit'] })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
     const data = lots.map(lot => {
       const part = partMap.get(lot.itemCode);
-      return { ...lot, itemCode: part?.itemCode, itemName: part?.itemName, unit: part?.unit };
+      return {
+        ...lot,
+        itemCode: lot.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+      };
     });
 
     return { data, total, page, limit };
   }
 
-  async merge(dto: LotMergeDto) {
+  async merge(dto: LotMergeDto, company?: string, plant?: string) {
     const { sourceLotIds, targetLotId, remark } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
 
     return this.tx.run(async (queryRunner) => {
       // 모든 LOT 조회
       const lots = await queryRunner.manager.find(MatLot, {
-        where: { matUid: In(sourceLotIds) },
+        where: { matUid: In(sourceLotIds), ...tenantWhere },
       });
 
       if (lots.length < 2) {
@@ -108,7 +125,7 @@ export class LotMergeService {
       // 모든 LOT의 재고 조회 (MatStock 기준)
       const lotMatUids = lots.map(l => l.matUid);
       const stocks = await queryRunner.manager.find(MatStock, {
-        where: { matUid: In(lotMatUids) },
+        where: { matUid: In(lotMatUids), ...tenantWhere },
       });
       const stockMap = new Map(stocks.map(s => [s.matUid, s]));
 
@@ -127,7 +144,7 @@ export class LotMergeService {
       }
 
       const issueHistories = await queryRunner.manager.find(MatIssue, {
-        where: { matUid: In(lotMatUids) },
+        where: { matUid: In(lotMatUids), ...tenantWhere },
       });
       const activeIssueLotNos = [...new Set(
         issueHistories
@@ -158,14 +175,14 @@ export class LotMergeService {
 
       // 품목 정보 (배치 선조회 — 병합 대상은 동일 품목이므로 1건)
       const partsForMerge = await queryRunner.manager.find(PartMaster, {
-        where: { itemCode: In([...itemCodes]) },
+        where: { itemCode: In([...itemCodes]), ...tenantWhere },
       });
       const partMapForMerge = new Map(partsForMerge.map(p => [p.itemCode, p] as const));
       const part = partMapForMerge.get(target.itemCode);
 
       // 원본 LOT들 소진 처리 (상태만 변경, currentQty 업데이트 없음)
       for (const src of sources) {
-        await queryRunner.manager.update(MatLot, src.matUid, {
+        await queryRunner.manager.update(MatLot, { matUid: src.matUid, ...tenantWhere }, {
           status: 'DEPLETED',
         });
       }
@@ -176,7 +193,7 @@ export class LotMergeService {
 
       if (targetStock) {
         await queryRunner.manager.update(MatStock,
-          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, matUid: targetStock.matUid },
+          { warehouseCode: targetStock.warehouseCode, itemCode: targetStock.itemCode, matUid: targetStock.matUid, ...tenantWhere },
           { qty: newTargetQty, availableQty: targetStock.availableQty + totalMergeQty },
         );
       }
@@ -185,7 +202,7 @@ export class LotMergeService {
         const srcStock = stockMap.get(src.matUid);
         if (srcStock) {
           await queryRunner.manager.update(MatStock,
-            { warehouseCode: srcStock.warehouseCode, itemCode: srcStock.itemCode, matUid: srcStock.matUid },
+            { warehouseCode: srcStock.warehouseCode, itemCode: srcStock.itemCode, matUid: srcStock.matUid, ...tenantWhere },
             { qty: 0, availableQty: 0 },
           );
         }
@@ -205,6 +222,8 @@ export class LotMergeService {
         refId: target.matUid,
         remark: remark || `LOT 병합: [${sourceNos}] → ${target.matUid}`,
         status: 'DONE',
+        company: target.company,
+        plant: target.plant,
       });
 
       return {
@@ -212,8 +231,8 @@ export class LotMergeService {
         mergedLotNos: sources.map(s => s.matUid),
         totalMergedQty: totalMergeQty,
         newTotalQty: newTargetQty,
-        itemCode: part?.itemCode,
-        itemName: part?.itemName,
+        itemCode: target.itemCode,
+        itemName: part?.itemName ?? null,
       };
     });
   }

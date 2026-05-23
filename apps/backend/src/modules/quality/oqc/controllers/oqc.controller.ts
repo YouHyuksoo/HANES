@@ -68,8 +68,8 @@ export class OqcController {
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: 200, description: 'OK' })
   @ApiResponse({ status: 404, description: 'Not found' })
-  async findById(@Param('id') id: string) {
-    const data = await this.oqcService.findById(id);
+  async findById(@Param('id') id: string, @Company() company?: string, @Plant() plant?: string) {
+    const data = await this.oqcService.findById(id, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -97,9 +97,11 @@ export class OqcController {
     @Param('id') id: string,
     @Body() dto: ExecuteOqcInspectionDto,
     @Req() req: Request,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
     const userId = (req as any).user?.userId;
-    const data = await this.oqcService.executeInspection(id, dto, userId);
+    const data = await this.oqcService.executeInspection(id, dto, userId, company, plant);
     return ResponseUtil.success(data, `Result: ${dto.result}`);
   }
 
@@ -111,9 +113,11 @@ export class OqcController {
     @Param('id') id: string,
     @Body() dto: UpdateOqcResultDto,
     @Req() req: Request,
+    @Company() company?: string,
+    @Plant() plant?: string,
   ) {
     const userId = (req as any).user?.userId;
-    const data = await this.oqcService.updateResult(id, dto, userId);
+    const data = await this.oqcService.updateResult(id, dto, userId, company, plant);
     return ResponseUtil.success(data, 'OQC result updated');
   }
 }

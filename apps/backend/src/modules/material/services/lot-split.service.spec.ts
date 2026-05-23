@@ -61,6 +61,93 @@ describe('LotSplitService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  describe('findSplittableLots', () => {
+    it('품목 마스터가 누락되어도 분할 가능 LOT의 원본 itemCode는 유지한다', async () => {
+      const queryBuilder = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'MAT-MISSING', itemCode: 'ITEM-MISSING', status: 'NORMAL' } as MatLot,
+        ]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      mockPartRepo.find.mockResolvedValue([]);
+      mockMatStockRepo.find.mockResolvedValue([]);
+
+      const result = await target.findSplittableLots({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-MISSING',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        warehouseCode: null,
+      }),
+    );
+  });
+
+    it('분할 가능 LOT 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const queryBuilder = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot,
+        ]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      mockPartRepo.find.mockResolvedValue([]);
+      mockMatStockRepo.find.mockResolvedValue([]);
+
+      await target.findSplittableLots({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          company: 'C1',
+          plant: 'P1',
+        }),
+      });
+      expect(mockMatStockRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          company: 'C1',
+          plant: 'P1',
+        }),
+      });
+    });
+
+    it('분할 가능 LOT 재고 조인도 LOT 테넌트와 같은 범위로 제한한다', async () => {
+      const queryBuilder = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+
+      await target.findSplittableLots({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(queryBuilder.innerJoin).toHaveBeenCalledWith(
+        MatStock,
+        'stock',
+        'stock.matUid = lot.matUid AND stock.company = lot.company AND stock.plant = lot.plant',
+      );
+    });
+  });
+
   it('blocks split when reserved quantity exists', async () => {
     (mockQueryRunner as any).manager = {
       findOne: jest
@@ -147,5 +234,66 @@ describe('LotSplitService', () => {
     expect(result.newLotNo).toBe('MAT-001-S001');
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+  });
+
+  it('split은 원본 LOT 회사/공장 범위에서 재고/출고이력/품목/LOT 상태를 처리한다', async () => {
+    const sourceLot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      status: 'NORMAL',
+      company: 'C1',
+      plant: 'P1',
+    } as MatLot;
+    const sourceStock = {
+      warehouseCode: 'WH-01',
+      itemCode: 'ITEM-001',
+      matUid: 'MAT-001',
+      qty: 3,
+      availableQty: 3,
+      reservedQty: 0,
+      company: 'C1',
+      plant: 'P1',
+    } as MatStock;
+    const part = { itemCode: 'ITEM-001', itemName: 'PART-A', isSplittable: 'Y', company: 'C1', plant: 'P1' } as PartMaster;
+
+    mockQueryRunner.manager.findOne
+      .mockResolvedValueOnce(sourceLot)
+      .mockResolvedValueOnce(sourceStock)
+      .mockResolvedValueOnce(part)
+      .mockResolvedValueOnce(null);
+    mockQueryRunner.manager.find.mockResolvedValue([]);
+    mockQueryRunner.manager.create
+      .mockReturnValueOnce({ matUid: 'MAT-001-S001', itemCode: 'ITEM-001' } as MatLot)
+      .mockReturnValueOnce({ matUid: 'MAT-001-S001' } as MatStock);
+    mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+    mockQueryRunner.manager.save.mockResolvedValue({} as any);
+    mockStockTxRepo.findOne.mockResolvedValue(null);
+
+    await target.split({
+      sourceLotId: 'MAT-001',
+      splitQty: 3,
+      newLotNo: 'MAT-001-S001',
+    } as any, 'C1', 'P1');
+
+    expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, MatLot, {
+      where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+    });
+    expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatStock, {
+      where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+    });
+    expect(mockQueryRunner.manager.find).toHaveBeenCalledWith(MatIssue, {
+      where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+    });
+    expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(3, PartMaster, {
+      where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+    });
+    expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(4, MatLot, {
+      where: { matUid: 'MAT-001-S001', company: 'C1', plant: 'P1' },
+    });
+    expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+      MatLot,
+      { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      { status: 'DEPLETED' },
+    );
   });
 });

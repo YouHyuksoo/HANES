@@ -118,7 +118,7 @@ export class BomService {
     const allCodes = [...new Set([...parentCodes, ...childCodes])];
 
     const parts = await this.partRepository.find({
-      where: { itemCode: In(allCodes) },
+      where: { itemCode: In(allCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
     });
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -132,17 +132,17 @@ export class BomService {
     return { data, total, page, limit };
   }
 
-  async findById(id: string) {
+  async findById(id: string, company?: string, plant?: string) {
     // id is composite key encoded as "parentItemCode::childItemCode::revision"
     const [parentItemCode, childItemCode, revision] = id.split('::');
     const bom = await this.bomRepository.findOne({
-      where: { parentItemCode, childItemCode, revision: revision || 'A' },
+      where: { parentItemCode, childItemCode, revision: revision || 'A', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
     if (!bom) throw new NotFoundException(`BOM을 찾을 수 없습니다: ${id}`);
 
     const parts = await this.partRepository.find({
-      where: { itemCode: In([parentItemCode, childItemCode]) },
+      where: { itemCode: In([parentItemCode, childItemCode]), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
     });
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -154,7 +154,7 @@ export class BomService {
     };
   }
 
-  async findByParentId(parentItemCode: string, effectiveDate?: string) {
+  async findByParentId(parentItemCode: string, effectiveDate?: string, company?: string, plant?: string) {
     const params: any[] = [parentItemCode];
     let dateFilter = '';
     if (effectiveDate) {
@@ -189,7 +189,7 @@ export class BomService {
 
     const childCodes = rows.map((r) => r.childItemCode);
     const parts = await this.partRepository.find({
-      where: { itemCode: In(childCodes) },
+      where: { itemCode: In(childCodes), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       select: ['itemCode', 'itemName', 'itemNo', 'itemType', 'spec', 'unit'],
     });
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
@@ -206,7 +206,7 @@ export class BomService {
    * CONNECT BY PRIOR: 자식으로 재귀 탐색
    * LEVEL: 계층 깊이
    */
-  async findHierarchy(parentItemCode: string, depth: number = 3, effectiveDate?: string) {
+  async findHierarchy(parentItemCode: string, depth: number = 3, effectiveDate?: string, company?: string, plant?: string) {
     const safeDepth = Math.min(Math.max(Math.floor(Number(depth) || 3), 1), 10);
     const params: string[] = [];
 
@@ -219,6 +219,16 @@ export class BomService {
 
     const parentIdx = params.length + 1;
     params.push(parentItemCode);
+
+    let tenantFilter = '';
+    if (company) {
+      params.push(company);
+      tenantFilter += ` AND b.COMPANY = :${params.length}`;
+    }
+    if (plant) {
+      params.push(plant);
+      tenantFilter += ` AND b.PLANT = :${params.length}`;
+    }
 
     let dateFilterConnect = '';
     if (effectiveDate) {
@@ -250,11 +260,13 @@ export class BomService {
       JOIN ITEM_MASTERS p ON b.CHILD_ITEM_CODE = p.ITEM_CODE
       WHERE b.USE_YN = 'Y'
         ${dateFilter}
+        ${tenantFilter}
       START WITH b.PARENT_ITEM_CODE = :${parentIdx}
       CONNECT BY PRIOR b.CHILD_ITEM_CODE = b.PARENT_ITEM_CODE
         AND LEVEL <= ${safeDepth}
         AND b.USE_YN = 'Y'
         ${dateFilterConnect}
+        ${tenantFilter}
       ORDER SIBLINGS BY b.SEQ ASC
     `;
 
@@ -344,8 +356,8 @@ export class BomService {
     return this.bomRepository.save(bom);
   }
 
-  async update(id: string, dto: UpdateBomDto) {
-    const bom = await this.findById(id);
+  async update(id: string, dto: UpdateBomDto, company?: string, plant?: string) {
+    const bom = await this.findById(id, company, plant);
 
     const updateData: any = {};
     if (dto.qtyPer !== undefined) updateData.qtyPer = dto.qtyPer;
@@ -360,15 +372,27 @@ export class BomService {
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
     await this.bomRepository.update(
-      { parentItemCode: bom.parentItemCode, childItemCode: bom.childItemCode, revision: bom.revision },
+      {
+        parentItemCode: bom.parentItemCode,
+        childItemCode: bom.childItemCode,
+        revision: bom.revision,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
       updateData,
     );
-    return this.findById(id);
+    return this.findById(id, company, plant);
   }
 
-  async delete(id: string) {
-    const bom = await this.findById(id);
-    await this.bomRepository.delete({ parentItemCode: bom.parentItemCode, childItemCode: bom.childItemCode, revision: bom.revision });
+  async delete(id: string, company?: string, plant?: string) {
+    const bom = await this.findById(id, company, plant);
+    await this.bomRepository.delete({
+      parentItemCode: bom.parentItemCode,
+      childItemCode: bom.childItemCode,
+      revision: bom.revision,
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    });
     return { id };
   }
 
@@ -408,7 +432,10 @@ export class BomService {
       if (c) allItemCodes.add(c);
     }
     const parts = allItemCodes.size > 0
-      ? await this.partRepository.find({ where: { itemCode: In([...allItemCodes]) }, select: ['itemCode'] })
+      ? await this.partRepository.find({
+          where: { itemCode: In([...allItemCodes]), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+          select: ['itemCode'],
+        })
       : [];
     const validCodes = new Set(parts.map((p) => p.itemCode));
 
@@ -417,7 +444,13 @@ export class BomService {
       .map((r) => ({ p: String(r['상위품목코드'] ?? '').trim(), c: String(r['하위품목코드'] ?? '').trim(), v: String(r['리비전'] ?? 'A').trim() || 'A' }))
       .filter((pk) => pk.p && pk.c);
     const existBoms = await this.bomRepository.find({
-      where: pkList.map((pk) => ({ parentItemCode: pk.p, childItemCode: pk.c, revision: pk.v })),
+      where: pkList.map((pk) => ({
+        parentItemCode: pk.p,
+        childItemCode: pk.c,
+        revision: pk.v,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      })),
       select: ['parentItemCode', 'childItemCode', 'revision'],
     });
     const existPkSet = new Set(existBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${b.revision}`));

@@ -99,6 +99,46 @@ describe('ReceiveLabelService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].itemName).toBe('커넥터A');
     });
+
+    it('라벨 발행 가능 입하건 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const mockQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          {
+            arrivalNo: 'ARR-001',
+            seq: 1,
+            itemCode: 'ITEM-001',
+            qty: 100,
+            iqcStatus: 'PASS',
+            poNo: 'PO-001',
+            company: 'C1',
+            plant: 'P1',
+          } as MatArrival,
+        ]),
+      };
+      mockArrivalRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+      mockPartRepo.find.mockResolvedValue([]);
+      mockPrintLogRepo.createQueryBuilder.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([{ uidList: JSON.stringify(['MAT-001']), status: 'SUCCESS' } as LabelPrintLog]),
+      } as any);
+      mockMatLotRepo.find.mockResolvedValue([]);
+
+      await target.findLabelableArrivals('C1', 'P1');
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith('a.company = :company', { company: 'C1' });
+      expect(mockQb.andWhere).toHaveBeenCalledWith('a.plant = :plant', { plant: 'P1' });
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
   });
 
   // ─── createMatLabels ───
@@ -141,6 +181,28 @@ describe('ReceiveLabelService', () => {
       expect(mockNumbering.nextMatUid).toHaveBeenCalledTimes(2);
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('라벨 생성도 입하건/품목 보강 조회를 요청 테넌트 범위로 제한한다', async () => {
+      const arrival = {
+        arrivalNo: 'ARR-001', seq: 1, iqcStatus: 'PASS',
+        itemCode: 'ITEM-001', poNo: 'PO-001', vendorName: 'V-A',
+        company: 'C1', plant: 'P1', supUid: null,
+      } as MatArrival;
+      mockArrivalRepo.findOne.mockResolvedValue(arrival);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', company: 'C1', plant: 'P1' } as PartMaster);
+      mockNumbering.nextMatUid.mockResolvedValue('MAT-20260318-001');
+      mockQueryRunner.manager.create.mockReturnValue({} as any);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+
+      await target.createMatLabels({ arrivalId: 'ARR-001', arrivalSeq: 1, qty: 1 } as any, 'C1', 'P1');
+
+      expect(mockArrivalRepo.findOne).toHaveBeenCalledWith({
+        where: { arrivalNo: 'ARR-001', seq: 1, company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
     });
   });
 });

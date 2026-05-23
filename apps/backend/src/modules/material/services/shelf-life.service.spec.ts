@@ -130,5 +130,48 @@ describe('ShelfLifeService', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0].expiryStatus).toBe('EXPIRED');
     });
+
+    it('품목 마스터가 누락되어도 유수명 LOT 원본 itemCode는 유지한다', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 60);
+
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-MISSING',
+          itemCode: 'ITEM-MISSING',
+          expireDate: futureDate,
+        } as MatLot,
+      ]);
+      mockMatLotRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-MISSING',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('유수명 LOT 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 60);
+
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', itemCode: 'ITEM-001', expireDate: futureDate, company: 'C1', plant: 'P1' } as MatLot,
+      ]);
+      mockMatLotRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
   });
 });

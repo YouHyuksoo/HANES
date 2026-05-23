@@ -16,6 +16,13 @@ export class PartnerService {
     private readonly partnerRepository: Repository<PartnerMaster>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: PartnerQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, partnerType, search, useYn } = query;
     const skip = (page - 1) * limit;
@@ -57,25 +64,25 @@ export class PartnerService {
     return { data, total, page, limit };
   }
 
-  async findById(partnerCode: string) {
+  async findById(partnerCode: string, company?: string, plant?: string) {
     const partner = await this.partnerRepository.findOne({
-      where: { partnerCode },
+      where: { partnerCode, ...this.tenantWhere(company, plant) },
     });
     if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${partnerCode}`);
     return partner;
   }
 
-  async findByCode(partnerCode: string) {
+  async findByCode(partnerCode: string, company?: string, plant?: string) {
     const partner = await this.partnerRepository.findOne({
-      where: { partnerCode },
+      where: { partnerCode, ...this.tenantWhere(company, plant) },
     });
     if (!partner) throw new NotFoundException(`거래처를 찾을 수 없습니다: ${partnerCode}`);
     return partner;
   }
 
-  async create(dto: CreatePartnerDto) {
+  async create(dto: CreatePartnerDto, company?: string, plant?: string) {
     const existing = await this.partnerRepository.findOne({
-      where: { partnerCode: dto.partnerCode },
+      where: { partnerCode: dto.partnerCode, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) throw new ConflictException(`이미 존재하는 거래처 코드입니다: ${dto.partnerCode}`);
@@ -93,39 +100,45 @@ export class PartnerService {
       contactPerson: dto.contactPerson,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
+      company,
+      plant,
     });
 
     return this.partnerRepository.save(partner);
   }
 
-  async update(partnerCode: string, dto: UpdatePartnerDto) {
-    await this.findById(partnerCode);
-    await this.partnerRepository.update({ partnerCode }, dto);
-    return this.findById(partnerCode);
+  async update(partnerCode: string, dto: UpdatePartnerDto, company?: string, plant?: string) {
+    await this.findById(partnerCode, company, plant);
+    await this.partnerRepository.update({ partnerCode, ...this.tenantWhere(company, plant) }, dto);
+    return this.findById(partnerCode, company, plant);
   }
 
-  async delete(partnerCode: string) {
-    await this.findById(partnerCode);
-    await this.partnerRepository.delete({ partnerCode });
+  async delete(partnerCode: string, company?: string, plant?: string) {
+    await this.findById(partnerCode, company, plant);
+    await this.partnerRepository.delete({ partnerCode, ...this.tenantWhere(company, plant) });
     return { partnerCode };
   }
 
-  async findByType(partnerType: string) {
+  async findByType(partnerType: string, company?: string, plant?: string) {
     return this.partnerRepository.find({
-      where: { partnerType, useYn: 'Y' },
+      where: { partnerType, useYn: 'Y', ...this.tenantWhere(company, plant) },
       order: { partnerCode: 'asc' },
     });
   }
 
-  async getStatistics() {
+  async getStatistics(company?: string, plant?: string) {
     // 4번 count → 1번 집계 쿼리로 통합
-    const stats = await this.partnerRepository
+    const qb = this.partnerRepository
       .createQueryBuilder('p')
       .select('COUNT(*)', 'totalCount')
       .addSelect("SUM(CASE WHEN p.partnerType = 'SUPPLIER' THEN 1 ELSE 0 END)", 'supplierCount')
       .addSelect("SUM(CASE WHEN p.partnerType = 'CUSTOMER' THEN 1 ELSE 0 END)", 'customerCount')
-      .addSelect("SUM(CASE WHEN p.useYn = 'Y' THEN 1 ELSE 0 END)", 'activeCount')
-      .getRawOne();
+      .addSelect("SUM(CASE WHEN p.useYn = 'Y' THEN 1 ELSE 0 END)", 'activeCount');
+
+    if (company) qb.andWhere('p.company = :company', { company });
+    if (plant) qb.andWhere('p.plant = :plant', { plant });
+
+    const stats = await qb.getRawOne();
 
     return {
       totalCount: Number(stats.totalCount) || 0,

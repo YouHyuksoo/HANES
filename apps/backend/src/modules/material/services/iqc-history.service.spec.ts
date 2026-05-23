@@ -77,6 +77,107 @@ describe('IqcHistoryService cancel policy', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  describe('findAll', () => {
+    it('품목 마스터가 누락되어도 IQC 이력 원본 itemCode는 유지한다', async () => {
+      mockIqcLogRepo.find.mockResolvedValue([
+        {
+          inspectDate: new Date('2026-04-08'),
+          seq: 1,
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          result: 'PASS',
+          status: 'DONE',
+        } as IqcLog,
+      ]);
+      mockIqcLogRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+        }),
+      );
+    });
+
+    it('IQC 이력 품목 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      mockIqcLogRepo.find.mockResolvedValue([
+        {
+          inspectDate: new Date('2026-04-08'),
+          itemCode: 'ITEM-001',
+          result: 'PASS',
+          company: 'C1',
+          plant: 'P1',
+        } as IqcLog,
+      ]);
+      mockIqcLogRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
+  });
+
+  describe('createResult', () => {
+    it('IQC 결과 등록은 LOT 회사/공장 범위에서 LOT와 품목을 조회/갱신한다', async () => {
+      const lot = {
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        arrivalNo: 'ARR-001',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot;
+      mockMatLotRepo.findOne.mockResolvedValue(lot);
+      mockIqcLogRepo.create.mockReturnValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as PartMaster);
+
+      await target.createResult({ matUid: 'MAT-001', result: 'PASS' } as any, 'HANES', 'P01');
+
+      expect(mockMatLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(mockMatLotRepo.update).toHaveBeenCalledWith(
+        { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+        { iqcStatus: 'PASS' },
+      );
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
+      });
+    });
+
+    it('품목 마스터가 누락되어도 IQC 결과 응답의 LOT 원본 itemCode는 유지한다', async () => {
+      const lot = {
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-MISSING',
+        arrivalNo: 'ARR-001',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot;
+      mockMatLotRepo.findOne.mockResolvedValue(lot);
+      mockIqcLogRepo.create.mockReturnValue({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-MISSING' } as IqcLog);
+      mockPartMasterRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.createResult({ matUid: 'MAT-001', result: 'PASS' } as any);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+        }),
+      );
+    });
+  });
+
   it('blocks cancel when receiving already exists', async () => {
     mockIqcLogRepo.findOne.mockResolvedValue({
       inspectDate: new Date('2026-04-08'),
@@ -156,6 +257,20 @@ describe('IqcHistoryService cancel policy', () => {
         cancelRefId: 'TX-FAIL-001',
       }),
     );
+    expect(manager.findOne).toHaveBeenCalledWith(StockTransaction, {
+      where: expect.objectContaining({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' }),
+      order: { createdAt: 'DESC' },
+    });
+    expect(manager.update).toHaveBeenCalledWith(
+      IqcLog,
+      { inspectDate: new Date('2026-04-08'), seq: 1, company: 'HANES', plant: 'P01' },
+      { status: 'CANCELED', remark: 'retest' },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      MatLot,
+      { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      { iqcStatus: 'PENDING' },
+    );
   });
 
   it('moves failed IQC stock through TransactionService', async () => {
@@ -188,6 +303,17 @@ describe('IqcHistoryService cancel policy', () => {
 
     await target.createResult({ matUid: 'MAT-001', result: 'FAIL' } as any);
 
+    expect(mockWarehouseRepo.findOne).toHaveBeenCalledWith({
+      where: { warehouseType: 'DEFECT', useYn: 'Y', company: 'HANES', plant: 'P01' },
+    });
+    expect(mockMatStockRepo.findOne).toHaveBeenCalledWith({
+      where: { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
+    });
+    expect(manager.update).toHaveBeenCalledWith(
+      MatStock,
+      { warehouseCode: 'WH-NORMAL', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+      { qty: 0 },
+    );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(StockTransaction, expect.objectContaining({

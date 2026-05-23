@@ -1,10 +1,10 @@
 /**
  * @file iqc-part-link.entity.ts
  * @description IQC 품목-거래처-검사그룹 연결 엔티티
- *              itemCode + partnerId 복합 PK를 사용한다.
+ *              company + plant + itemCode + partnerId 복합 PK를 사용한다.
  *
  * 초보자 가이드:
- * 1. itemCode + partnerId가 복합 PK (자연키)
+ * 1. company + plant + itemCode + partnerId가 복합 PK (자연키)
  * 2. 품목(ITEM_CODE) + 거래처(PARTNER_ID) → 검사그룹(GROUP_ID) 매핑
  * 3. 같은 품목이라도 거래처에 따라 다른 검사그룹 적용 가능
  * 4. PARTNER_ID가 '*'이면 "기본 검사그룹" (거래처 무관)
@@ -26,6 +26,12 @@ import { IqcGroup } from './iqc-group.entity';
 @Entity({ name: 'IQC_PART_LINKS' })
 @Index(['groupCode'])
 export class IqcPartLink {
+  @PrimaryColumn({ type: 'varchar2', name: 'COMPANY', length: 50 })
+  company: string;
+
+  @PrimaryColumn({ type: 'varchar2', name: 'PLANT_CD', length: 50 })
+  plant: string;
+
   @PrimaryColumn({ name: 'ITEM_CODE', length: 50 })
   itemCode: string;
 
@@ -41,12 +47,6 @@ export class IqcPartLink {
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 
-  @Column({ type: 'varchar2', name: 'COMPANY', length: 50, nullable: true })
-  company: string | null;
-
-  @Column({ type: 'varchar2', name: 'PLANT_CD', length: 50, nullable: true })
-  plant: string | null;
-
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
@@ -60,14 +60,26 @@ export class IqcPartLink {
   updatedAt: Date;
 
   @ManyToOne(() => PartMaster, { eager: false })
-  @JoinColumn({ name: 'ITEM_CODE' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'ITEM_CODE', referencedColumnName: 'itemCode' },
+  ])
   part: PartMaster;
 
   @ManyToOne(() => PartnerMaster, { eager: false, nullable: true })
-  @JoinColumn({ name: 'PARTNER_ID' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'PARTNER_ID', referencedColumnName: 'partnerCode' },
+  ])
   partner: PartnerMaster;
 
   @ManyToOne(() => IqcGroup, { eager: false })
-  @JoinColumn({ name: 'GROUP_ID', referencedColumnName: 'groupCode' })
+  @JoinColumn([
+    { name: 'COMPANY', referencedColumnName: 'company' },
+    { name: 'PLANT_CD', referencedColumnName: 'plant' },
+    { name: 'GROUP_ID', referencedColumnName: 'groupCode' },
+  ])
   group: IqcGroup;
 }

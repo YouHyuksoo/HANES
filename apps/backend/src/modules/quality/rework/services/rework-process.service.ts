@@ -35,12 +35,19 @@ export class ReworkProcessService {
     private readonly resultRepo: Repository<ReworkResult>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /**
    * 공정 목록 조회 (재작업 지시 ID 기준, seq 순)
    */
-  async findProcesses(reworkOrderId: string) {
+  async findProcesses(reworkOrderId: string, company?: string, plant?: string) {
     return this.processRepo.find({
-      where: { reworkOrderId },
+      where: { reworkOrderId, ...this.tenantWhere(company, plant) },
       order: { seq: 'ASC' },
     });
   }
@@ -48,9 +55,14 @@ export class ReworkProcessService {
   /**
    * 공정 단건 조회 (복합키: reworkOrderId + processCode)
    */
-  private async findProcess(reworkOrderId: string, processCode: string): Promise<ReworkProcess> {
+  private async findProcess(
+    reworkOrderId: string,
+    processCode: string,
+    company?: string,
+    plant?: string,
+  ): Promise<ReworkProcess> {
     const proc = await this.processRepo.findOne({
-      where: { reworkOrderId, processCode },
+      where: { reworkOrderId, processCode, ...this.tenantWhere(company, plant) },
     });
     if (!proc) throw new NotFoundException('재작업 공정을 찾을 수 없습니다.');
     return proc;
@@ -60,8 +72,14 @@ export class ReworkProcessService {
    * 공정 작업시작 (WAITING -> IN_PROGRESS)
    * 첫 공정 시작 시 재작업 지시도 IN_PROGRESS로 전환
    */
-  async startProcess(reworkOrderId: string, processCode: string, userId: string) {
-    const proc = await this.findProcess(reworkOrderId, processCode);
+  async startProcess(
+    reworkOrderId: string,
+    processCode: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const proc = await this.findProcess(reworkOrderId, processCode, company, plant);
     if (proc.status !== 'WAITING') {
       throw new BadRequestException('대기 상태에서만 시작할 수 있습니다.');
     }
@@ -71,7 +89,9 @@ export class ReworkProcessService {
     proc.updatedBy = userId;
     await this.processRepo.save(proc);
 
-    const order = await this.reworkRepo.findOne({ where: { reworkNo: proc.reworkOrderId } });
+    const order = await this.reworkRepo.findOne({
+      where: { reworkNo: proc.reworkOrderId, ...this.tenantWhere(company, plant) },
+    });
     if (order && order.status === 'APPROVED') {
       order.status = 'IN_PROGRESS';
       order.startAt = new Date();
@@ -86,8 +106,15 @@ export class ReworkProcessService {
    * 공정 작업완료 (IN_PROGRESS -> COMPLETED)
    * 모든 공정 완료 시 재작업 지시를 INSPECT_PENDING으로 자동 전환
    */
-  async completeProcess(reworkOrderId: string, processCode: string, resultQty: number, userId: string) {
-    const proc = await this.findProcess(reworkOrderId, processCode);
+  async completeProcess(
+    reworkOrderId: string,
+    processCode: string,
+    resultQty: number,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const proc = await this.findProcess(reworkOrderId, processCode, company, plant);
     if (proc.status !== 'IN_PROGRESS') {
       throw new BadRequestException('진행중 상태에서만 완료할 수 있습니다.');
     }
@@ -98,15 +125,21 @@ export class ReworkProcessService {
     proc.updatedBy = userId;
     await this.processRepo.save(proc);
 
-    await this.checkAllProcessesComplete(proc.reworkOrderId, userId);
+    await this.checkAllProcessesComplete(proc.reworkOrderId, userId, company, plant);
     return proc;
   }
 
   /**
    * 공정 건너뛰기 (WAITING -> SKIPPED)
    */
-  async skipProcess(reworkOrderId: string, processCode: string, userId: string) {
-    const proc = await this.findProcess(reworkOrderId, processCode);
+  async skipProcess(
+    reworkOrderId: string,
+    processCode: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const proc = await this.findProcess(reworkOrderId, processCode, company, plant);
     if (proc.status !== 'WAITING') {
       throw new BadRequestException('대기 상태에서만 건너뛸 수 있습니다.');
     }
@@ -115,16 +148,16 @@ export class ReworkProcessService {
     proc.updatedBy = userId;
     await this.processRepo.save(proc);
 
-    await this.checkAllProcessesComplete(proc.reworkOrderId, userId);
+    await this.checkAllProcessesComplete(proc.reworkOrderId, userId, company, plant);
     return proc;
   }
 
   /**
    * 공정별 실적 조회 (복합키: reworkOrderId + processCode)
    */
-  async findResults(reworkOrderId: string, processCode: string) {
+  async findResults(reworkOrderId: string, processCode: string, company?: string, plant?: string) {
     return this.resultRepo.find({
-      where: { reworkOrderId, processCode },
+      where: { reworkOrderId, processCode, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
   }
@@ -138,11 +171,11 @@ export class ReworkProcessService {
     plant: string,
     userId: string,
   ) {
-    const proc = await this.findProcess(dto.reworkOrderId, dto.processCode);
+    const proc = await this.findProcess(dto.reworkOrderId, dto.processCode, company, plant);
 
     // seq 자동채번: 해당 공정의 실적 건수 + 1
     const existingCount = await this.resultRepo.count({
-      where: { reworkOrderId: dto.reworkOrderId, processCode: dto.processCode },
+      where: { reworkOrderId: dto.reworkOrderId, processCode: dto.processCode, ...this.tenantWhere(company, plant) },
     });
 
     const result = this.resultRepo.create({
@@ -164,7 +197,7 @@ export class ReworkProcessService {
     const saved = await this.resultRepo.save(result);
 
     const results = await this.resultRepo.find({
-      where: { reworkOrderId: dto.reworkOrderId, processCode: dto.processCode },
+      where: { reworkOrderId: dto.reworkOrderId, processCode: dto.processCode, ...this.tenantWhere(company, plant) },
     });
     proc.resultQty = results.reduce((sum, r) => sum + r.resultQty, 0);
     proc.updatedBy = userId;
@@ -179,14 +212,23 @@ export class ReworkProcessService {
   /**
    * 모든 공정 완료/건너뛰기 확인 -> 재작업 지시 자동 전환
    */
-  private async checkAllProcessesComplete(reworkOrderId: string, userId: string) {
-    const processes = await this.processRepo.find({ where: { reworkOrderId } });
+  private async checkAllProcessesComplete(
+    reworkOrderId: string,
+    userId: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const processes = await this.processRepo.find({
+      where: { reworkOrderId, ...this.tenantWhere(company, plant) },
+    });
     if (processes.length === 0) return;
 
     const allDone = processes.every((p) => ['COMPLETED', 'SKIPPED'].includes(p.status));
     if (!allDone) return;
 
-    const order = await this.reworkRepo.findOne({ where: { reworkNo: reworkOrderId } });
+    const order = await this.reworkRepo.findOne({
+      where: { reworkNo: reworkOrderId, ...this.tenantWhere(company, plant) },
+    });
     if (!order || order.status !== 'IN_PROGRESS') return;
 
     const totalResultQty = processes

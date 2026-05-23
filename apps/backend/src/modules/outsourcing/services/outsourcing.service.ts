@@ -45,6 +45,13 @@ export class OutsourcingService {
     private readonly numbering: NumberingService,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   // ============================================================================
   // 외주처 마스터
   // ============================================================================
@@ -90,9 +97,9 @@ export class OutsourcingService {
     return { data, total, page, limit };
   }
 
-  async findVendorById(vendorCode: string) {
+  async findVendorById(vendorCode: string, company?: string, plant?: string) {
     const vendor = await this.vendorMasterRepository.findOne({
-      where: { vendorCode },
+      where: { vendorCode, ...this.tenantWhere(company, plant) },
     });
 
     if (!vendor) {
@@ -100,7 +107,7 @@ export class OutsourcingService {
     }
 
     const subconOrders = await this.subconOrderRepository.find({
-      where: { vendorId: vendorCode },
+      where: { vendorId: vendorCode, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
       take: 10,
     });
@@ -108,30 +115,33 @@ export class OutsourcingService {
     return { ...vendor, subconOrders };
   }
 
-  async createVendor(dto: CreateVendorDto) {
+  async createVendor(dto: CreateVendorDto, company?: string, plant?: string) {
     const existing = await this.vendorMasterRepository.findOne({
-      where: { vendorCode: dto.vendorCode },
+      where: { vendorCode: dto.vendorCode, ...this.tenantWhere(company, plant) },
     });
 
     if (existing) {
       throw new ConflictException(`이미 존재하는 외주처 코드입니다: ${dto.vendorCode}`);
     }
 
-    const vendor = this.vendorMasterRepository.create(dto);
+    const vendor = this.vendorMasterRepository.create({
+      ...dto,
+      ...this.tenantWhere(company, plant),
+    });
     return this.vendorMasterRepository.save(vendor);
   }
 
-  async updateVendor(vendorCode: string, dto: UpdateVendorDto) {
-    await this.findVendorById(vendorCode);
+  async updateVendor(vendorCode: string, dto: UpdateVendorDto, company?: string, plant?: string) {
+    await this.findVendorById(vendorCode, company, plant);
 
-    await this.vendorMasterRepository.update({ vendorCode }, dto);
-    return this.findVendorById(vendorCode);
+    await this.vendorMasterRepository.update({ vendorCode, ...this.tenantWhere(company, plant) }, dto);
+    return this.findVendorById(vendorCode, company, plant);
   }
 
-  async deleteVendor(vendorCode: string) {
-    await this.findVendorById(vendorCode);
+  async deleteVendor(vendorCode: string, company?: string, plant?: string) {
+    await this.findVendorById(vendorCode, company, plant);
 
-    await this.vendorMasterRepository.delete({ vendorCode });
+    await this.vendorMasterRepository.delete({ vendorCode, ...this.tenantWhere(company, plant) });
     return { vendorCode };
   }
 
@@ -145,7 +155,11 @@ export class OutsourcingService {
 
     const queryBuilder = this.subconOrderRepository
       .createQueryBuilder('so')
-      .leftJoinAndSelect(VendorMaster, 'vm', 'vm.VENDOR_CODE = so.VENDOR_ID')
+      .leftJoinAndSelect(
+        VendorMaster,
+        'vm',
+        'vm.VENDOR_CODE = so.VENDOR_ID AND vm.COMPANY = so.COMPANY AND vm.PLANT_CD = so.PLANT_CD',
+      )
 
     if (company) {
       queryBuilder.andWhere('so.company = :company', { company });
@@ -164,7 +178,7 @@ export class OutsourcingService {
     if (search) {
       const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(so.orderNo LIKE :search OR so.partCode LIKE :search OR so.partName LIKE :searchRaw)',
+        '(so.orderNo LIKE :search OR so.itemCode LIKE :search OR so.itemName LIKE :searchRaw)',
         { search: `%${upper}%`, searchRaw: `%${search}%` },
       );
     }
@@ -192,7 +206,7 @@ export class OutsourcingService {
     const [vendors, deliveryCounts, receiveCounts] = await Promise.all([
       vendorIds.length > 0
         ? this.vendorMasterRepository.find({
-            where: { vendorCode: In(vendorIds) },
+            where: { vendorCode: In(vendorIds), ...this.tenantWhere(company, plant) },
             select: ['vendorCode', 'vendorName'],
           })
         : Promise.resolve([]),
@@ -202,6 +216,8 @@ export class OutsourcingService {
             .select('d.orderNo', 'orderNo')
             .addSelect('COUNT(*)', 'cnt')
             .where('d.orderNo IN (:...orderNos)', { orderNos })
+            .andWhere(company ? 'd.company = :company' : '1=1', company ? { company } : {})
+            .andWhere(plant ? 'd.plant = :plant' : '1=1', plant ? { plant } : {})
             .groupBy('d.orderNo')
             .getRawMany<{ orderNo: string; cnt: string }>()
         : Promise.resolve([]),
@@ -211,6 +227,8 @@ export class OutsourcingService {
             .select('r.orderNo', 'orderNo')
             .addSelect('COUNT(*)', 'cnt')
             .where('r.orderNo IN (:...orderNos)', { orderNos })
+            .andWhere(company ? 'r.company = :company' : '1=1', company ? { company } : {})
+            .andWhere(plant ? 'r.plant = :plant' : '1=1', plant ? { plant } : {})
             .groupBy('r.orderNo')
             .getRawMany<{ orderNo: string; cnt: string }>()
         : Promise.resolve([]),
@@ -232,9 +250,9 @@ export class OutsourcingService {
     return { data, total, page, limit };
   }
 
-  async findOrderById(orderNo: string) {
+  async findOrderById(orderNo: string, company?: string, plant?: string) {
     const order = await this.subconOrderRepository.findOne({
-      where: { orderNo },
+      where: { orderNo, ...this.tenantWhere(company, plant) },
     });
 
     if (!order) {
@@ -242,47 +260,48 @@ export class OutsourcingService {
     }
 
     const vendor = await this.vendorMasterRepository.findOne({
-      where: { vendorCode: order.vendorId },
+      where: { vendorCode: order.vendorId, ...this.tenantWhere(company, plant) },
     });
 
     const deliveries = await this.subconDeliveryRepository.find({
-      where: { orderNo },
+      where: { orderNo, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
 
     const receives = await this.subconReceiveRepository.find({
-      where: { orderNo },
+      where: { orderNo, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
 
     return { ...order, vendor, deliveries, receives };
   }
 
-  async createOrder(dto: CreateSubconOrderDto) {
+  async createOrder(dto: CreateSubconOrderDto, company?: string, plant?: string) {
     // 통합 채번 서비스로 발주번호 생성
     const orderNo = await this.numbering.nextSubconNo();
 
     const order = this.subconOrderRepository.create({
       orderNo,
       vendorId: dto.vendorId,
-      partCode: dto.itemCode,
-      partName: dto.itemName,
+      itemCode: dto.itemCode,
+      itemName: dto.itemName,
       orderQty: dto.orderQty,
       unitPrice: dto.unitPrice,
       orderDate: dto.orderDate ? new Date(dto.orderDate) : new Date(),
       dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
       remark: dto.remark,
+      ...this.tenantWhere(company, plant),
     });
 
     return this.subconOrderRepository.save(order);
   }
 
-  async updateOrder(orderNo: string, dto: UpdateSubconOrderDto) {
-    await this.findOrderById(orderNo);
+  async updateOrder(orderNo: string, dto: UpdateSubconOrderDto, company?: string, plant?: string) {
+    await this.findOrderById(orderNo, company, plant);
 
     const updateData: Partial<SubconOrder> = {};
-    if (dto.itemCode !== undefined) updateData.partCode = dto.itemCode;
-    if (dto.itemName !== undefined) updateData.partName = dto.itemName;
+    if (dto.itemCode !== undefined) updateData.itemCode = dto.itemCode;
+    if (dto.itemName !== undefined) updateData.itemName = dto.itemName;
     if (dto.orderQty !== undefined) updateData.orderQty = dto.orderQty;
     if (dto.unitPrice !== undefined) updateData.unitPrice = dto.unitPrice;
     if (dto.orderDate !== undefined) updateData.orderDate = new Date(dto.orderDate);
@@ -290,27 +309,30 @@ export class OutsourcingService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
-    await this.subconOrderRepository.update({ orderNo }, updateData);
-    return this.findOrderById(orderNo);
+    await this.subconOrderRepository.update({ orderNo, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findOrderById(orderNo, company, plant);
   }
 
-  async cancelOrder(orderNo: string) {
-    const order = await this.findOrderById(orderNo);
+  async cancelOrder(orderNo: string, company?: string, plant?: string) {
+    const order = await this.findOrderById(orderNo, company, plant);
 
     if (order.status !== 'ORDERED') {
       throw new BadRequestException('발주 상태에서만 취소할 수 있습니다.');
     }
 
-    await this.subconOrderRepository.update({ orderNo }, { status: 'CANCELED' });
-    return this.findOrderById(orderNo);
+    await this.subconOrderRepository.update(
+      { orderNo, ...this.tenantWhere(company, plant) },
+      { status: 'CANCELED' },
+    );
+    return this.findOrderById(orderNo, company, plant);
   }
 
   // ============================================================================
   // 외주 출고
   // ============================================================================
 
-  async createDelivery(dto: CreateSubconDeliveryDto) {
-    const order = await this.findOrderById(dto.orderId);
+  async createDelivery(dto: CreateSubconDeliveryDto, company?: string, plant?: string) {
+    const order = await this.findOrderById(dto.orderId, company, plant);
 
     // 출고 가능 수량 확인
     const remainQty = order.orderQty - order.deliveredQty;
@@ -335,6 +357,7 @@ export class OutsourcingService {
         qty: dto.qty,
         workerId: dto.workerId,
         remark: dto.remark,
+        ...this.tenantWhere(company, plant),
       });
 
       await manager.save(delivery);
@@ -343,7 +366,7 @@ export class OutsourcingService {
       const newDeliveredQty = order.deliveredQty + dto.qty;
       await manager.update(
         SubconOrder,
-        { orderNo: dto.orderId },
+        { orderNo: dto.orderId, ...this.tenantWhere(company, plant) },
         {
           deliveredQty: newDeliveredQty,
           status: newDeliveredQty >= order.orderQty ? 'DELIVERED' : 'ORDERED',
@@ -354,9 +377,9 @@ export class OutsourcingService {
     });
   }
 
-  async findDeliveriesByOrderId(orderNo: string) {
+  async findDeliveriesByOrderId(orderNo: string, company?: string, plant?: string) {
     return this.subconDeliveryRepository.find({
-      where: { orderNo },
+      where: { orderNo, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
   }
@@ -365,8 +388,8 @@ export class OutsourcingService {
   // 외주 입고
   // ============================================================================
 
-  async createReceive(dto: CreateSubconReceiveDto) {
-    const order = await this.findOrderById(dto.orderId);
+  async createReceive(dto: CreateSubconReceiveDto, company?: string, plant?: string) {
+    const order = await this.findOrderById(dto.orderId, company, plant);
 
     // 입고번호 생성
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -391,6 +414,7 @@ export class OutsourcingService {
         inspectResult: dto.inspectResult,
         workerId: dto.workerId,
         remark: dto.remark,
+        ...this.tenantWhere(company, plant),
       });
 
       await manager.save(receive);
@@ -408,7 +432,7 @@ export class OutsourcingService {
 
       await manager.update(
         SubconOrder,
-        { orderNo: dto.orderId },
+        { orderNo: dto.orderId, ...this.tenantWhere(company, plant) },
         {
           receivedQty: newReceivedQty,
           defectQty: newDefectQty,
@@ -420,9 +444,9 @@ export class OutsourcingService {
     });
   }
 
-  async findReceivesByOrderId(orderNo: string) {
+  async findReceivesByOrderId(orderNo: string, company?: string, plant?: string) {
     return this.subconReceiveRepository.find({
-      where: { orderNo },
+      where: { orderNo, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
   }
@@ -431,20 +455,22 @@ export class OutsourcingService {
   // 통계 및 대시보드
   // ============================================================================
 
-  async getSummary() {
+  async getSummary(company?: string, plant?: string) {
     const [totalOrders, activeOrders, pendingReceive, totalVendors] = await Promise.all([
-      this.subconOrderRepository.count({ where: {} }),
+      this.subconOrderRepository.count({ where: this.tenantWhere(company, plant) }),
       this.subconOrderRepository.count({
         where: {
           status: In(['ORDERED', 'DELIVERED', 'PARTIAL_RECV']),
+          ...this.tenantWhere(company, plant),
         },
       }),
       this.subconOrderRepository.count({
         where: {
           status: In(['DELIVERED', 'PARTIAL_RECV']),
+          ...this.tenantWhere(company, plant),
         },
       }),
-      this.vendorMasterRepository.count({ where: { useYn: 'Y' } }),
+      this.vendorMasterRepository.count({ where: { useYn: 'Y', ...this.tenantWhere(company, plant) } }),
     ]);
 
     return {
@@ -455,10 +481,11 @@ export class OutsourcingService {
     };
   }
 
-  async getVendorStock() {
+  async getVendorStock(company?: string, plant?: string) {
     const orders = await this.subconOrderRepository.find({
       where: {
         status: In(['DELIVERED', 'PARTIAL_RECV']),
+        ...this.tenantWhere(company, plant),
       },
     });
 
@@ -485,7 +512,7 @@ export class OutsourcingService {
     const vendorIdList = Object.keys(stockByVendor);
     const vendorList = vendorIdList.length > 0
       ? await this.vendorMasterRepository.find({
-          where: { vendorCode: In(vendorIdList) },
+          where: { vendorCode: In(vendorIdList), ...this.tenantWhere(company, plant) },
           select: ['vendorCode', 'vendorName'],
         })
       : [];

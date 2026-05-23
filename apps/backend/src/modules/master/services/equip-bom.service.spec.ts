@@ -64,6 +64,16 @@ describe('EquipBomService', () => {
       // Act & Assert
       await expect(target.findItemById('BI99')).rejects.toThrow(NotFoundException);
     });
+
+    it('should find item within tenant only', async () => {
+      mockBomItemRepo.findOne.mockResolvedValue({ bomItemCode: 'BI01', company: 'C1', plant: 'P1' } as EquipBomItem);
+
+      await target.findItemById('BI01', 'C1', 'P1');
+
+      expect(mockBomItemRepo.findOne).toHaveBeenCalledWith({
+        where: { bomItemCode: 'BI01', company: 'C1', plant: 'P1' },
+      });
+    });
   });
 
   describe('createItem', () => {
@@ -132,6 +142,17 @@ describe('EquipBomService', () => {
 
       // Act & Assert
       await expect(target.findRelByCompositeKey('EQ01', 'BI99')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should find relation within tenant only', async () => {
+      mockBomRelRepo.findOne.mockResolvedValue({ equipCode: 'EQ01', bomItemCode: 'BI01' } as EquipBomRel);
+
+      await target.findRelByCompositeKey('EQ01', 'BI01', 'C1', 'P1');
+
+      expect(mockBomRelRepo.findOne).toHaveBeenCalledWith({
+        where: { equipCode: 'EQ01', bomItemCode: 'BI01', company: 'C1', plant: 'P1' },
+        relations: ['equipment', 'bomItem'],
+      });
     });
   });
 
@@ -208,12 +229,17 @@ describe('EquipBomService', () => {
       mockBomRelRepo.find.mockResolvedValue(rels);
 
       // Act
-      const result = await target.getEquipBomList('EQ01');
+      const result = await target.getEquipBomList('EQ01', 'C1', 'P1');
 
       // Assert
       expect(result).toHaveLength(1);
       expect(result[0].bomItem.bomItemCode).toBe('BI01');
       expect(result[0].bomItem.bomItemName).toBe('Bolt');
+      expect(mockBomRelRepo.find).toHaveBeenCalledWith({
+        where: { equipCode: 'EQ01', useYn: 'Y', company: 'C1', plant: 'P1' },
+        relations: ['bomItem'],
+        order: { createdAt: 'DESC' },
+      });
     });
 
     it('should return empty array when no rels found', async () => {
@@ -236,12 +262,12 @@ describe('EquipBomService', () => {
       mockBomRelRepo.find.mockResolvedValue(rels);
 
       // Act
-      const result = await target.findRelsByEquipId('EQ01');
+      const result = await target.findRelsByEquipId('EQ01', 'C1', 'P1');
 
       // Assert
       expect(result).toEqual(rels);
       expect(mockBomRelRepo.find).toHaveBeenCalledWith({
-        where: { equipCode: 'EQ01', useYn: 'Y' },
+        where: { equipCode: 'EQ01', useYn: 'Y', company: 'C1', plant: 'P1' },
         relations: ['bomItem'],
         order: { createdAt: 'DESC' },
       });

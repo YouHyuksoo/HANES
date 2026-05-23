@@ -25,8 +25,8 @@ export class ReceiptCancelController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '입고 취소 (역분개)' })
-  async cancel(@Body() dto: CreateReceiptCancelDto) {
-    const data = await this.receiptCancelService.cancel(dto);
+  async cancel(@Body() dto: CreateReceiptCancelDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.receiptCancelService.cancel(dto, company, plant);
     return ResponseUtil.success(data, '입고가 취소되었습니다.');
   }
 }

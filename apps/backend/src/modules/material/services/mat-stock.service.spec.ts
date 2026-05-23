@@ -105,6 +105,49 @@ describe('MatStockService', () => {
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
     });
+
+    it('품목/LOT 마스터가 누락되어도 재고 원본 itemCode와 matUid는 유지한다', async () => {
+      const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-MISSING' });
+      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockMatStockRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+          matUid: 'MAT-MISSING',
+          manufactureDate: null,
+          expireDate: null,
+        }),
+      );
+    });
+
+    it('재고 목록 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const stock = createStock({ company: 'C1', plant: 'P1' });
+      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockMatStockRepo.count.mockResolvedValue(1);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockWarehouseRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+    });
   });
 
   // ─── findAvailable ───
@@ -122,6 +165,44 @@ describe('MatStockService', () => {
       const result = await target.findAvailable({ page: 1, limit: 10 });
 
       expect(result.data).toHaveLength(1);
+    });
+
+    it('품목 마스터가 누락되어도 출고 가능 재고의 원본 itemCode와 matUid는 유지한다', async () => {
+      const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-001' });
+      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-MISSING' } as MatLot,
+      ]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+          matUid: 'MAT-001',
+        }),
+      );
+    });
+
+    it('출고 가능 재고 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const stock = createStock({ company: 'C1', plant: 'P1' });
+      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
+      ]);
+      mockPartMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAvailable({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockPartMasterRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
     });
   });
 
@@ -145,6 +226,43 @@ describe('MatStockService', () => {
 
       expect(result).toBeNull();
     });
+
+    it('품목/LOT 마스터가 누락되어도 단건 재고 원본 itemCode와 matUid는 유지한다', async () => {
+      const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-MISSING' });
+      mockMatStockRepo.findOne.mockResolvedValue(stock);
+      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockMatLotRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.findByPartAndWarehouse('ITEM-MISSING', 'WH-01', 'MAT-MISSING');
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+          matUid: 'MAT-MISSING',
+        }),
+      );
+    });
+
+    it('단건 재고의 품목/LOT 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const stock = createStock({ company: 'C1', plant: 'P1' });
+      mockMatStockRepo.findOne.mockResolvedValue(stock);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
+
+      await target.findByPartAndWarehouse('ITEM-001', 'WH-01', 'MAT-001', 'C1', 'P1');
+
+      expect(mockMatStockRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', warehouseCode: 'WH-01', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockMatLotRepo.findOne).toHaveBeenCalledWith({
+        where: { matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+    });
   });
 
   // ─── getStockSummary ───
@@ -160,6 +278,44 @@ describe('MatStockService', () => {
       expect(result.itemCode).toBe('ITEM-001');
       expect(result.totalQty).toBe(100);
       expect(result.availableQty).toBe(90);
+    });
+
+    it('품목/LOT 마스터가 누락되어도 재고 요약의 원본 itemCode와 matUid는 유지한다', async () => {
+      const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-MISSING' });
+      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockPartMasterRepo.findOne.mockResolvedValue(null);
+      mockMatLotRepo.find.mockResolvedValue([]);
+
+      const result = await target.getStockSummary('ITEM-MISSING');
+
+      expect(result.itemCode).toBe('ITEM-MISSING');
+      expect(result.byWarehouse[0]).toEqual(
+        expect.objectContaining({
+          itemCode: 'ITEM-MISSING',
+          itemName: null,
+          unit: null,
+          matUid: 'MAT-MISSING',
+        }),
+      );
+    });
+
+    it('재고 요약의 재고/품목/LOT 조회도 요청 테넌트 범위로 제한한다', async () => {
+      const stock = createStock({ company: 'C1', plant: 'P1' });
+      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as PartMaster);
+      mockMatLotRepo.find.mockResolvedValue([{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot]);
+
+      await target.getStockSummary('ITEM-001', 'C1', 'P1');
+
+      expect(mockMatStockRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockPartMasterRepo.findOne).toHaveBeenCalledWith({
+        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+        where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
+      });
     });
   });
 
@@ -254,6 +410,54 @@ describe('MatStockService', () => {
 
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('재고 이동은 요청 테넌트 범위에서 출고/입고 재고를 조회하고 갱신한다', async () => {
+      const fromStock = createStock({
+        warehouseCode: 'WH-FROM',
+        qty: 100,
+        availableQty: 100,
+        company: 'C1',
+        plant: 'P1',
+      });
+      const toStock = createStock({
+        warehouseCode: 'WH-TO',
+        qty: 50,
+        availableQty: 50,
+        company: 'C1',
+        plant: 'P1',
+      });
+
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(fromStock)
+        .mockResolvedValueOnce(toStock)
+        .mockResolvedValueOnce({ ...toStock, qty: 70 });
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.transferStock({
+        itemCode: 'ITEM-001',
+        fromWarehouseCode: 'WH-FROM',
+        toWarehouseCode: 'WH-TO',
+        qty: 20,
+        matUid: 'MAT-001',
+      } as any, 'C1', 'P1');
+
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, MatStock, {
+        where: { itemCode: 'ITEM-001', warehouseCode: 'WH-FROM', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatStock, {
+        where: { itemCode: 'ITEM-001', warehouseCode: 'WH-TO', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        { warehouseCode: 'WH-FROM', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 80, availableQty: 80 }),
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        { warehouseCode: 'WH-TO', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 70, availableQty: 70 }),
+      );
     });
 
     it('출고 창고 재고 부족이면 BadRequestException', async () => {

@@ -13,6 +13,7 @@ import { BoxMaster } from '../../../entities/box-master.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('PalletService', () => {
   let target: PalletService;
@@ -21,6 +22,8 @@ describe('PalletService', () => {
   let mockShipmentRepo: DeepMocked<Repository<ShipmentLog>>;
   let mockPartRepo: DeepMocked<Repository<PartMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
+  let mockQr: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
     mockPalletRepo = createMock<Repository<PalletMaster>>();
@@ -28,8 +31,10 @@ describe('PalletService', () => {
     mockShipmentRepo = createMock<Repository<ShipmentLog>>();
     mockPartRepo = createMock<Repository<PartMaster>>();
     mockDataSource = createMock<DataSource>();
-    const mockQr = createMock<QueryRunner>();
+    mockTx = createMock<TransactionService>();
+    mockQr = createMock<QueryRunner>();
     mockDataSource.createQueryRunner.mockReturnValue(mockQr);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQr));
     mockQr.connect.mockResolvedValue(undefined);
     mockQr.startTransaction.mockResolvedValue(undefined);
     mockQr.commitTransaction.mockResolvedValue(undefined);
@@ -44,6 +49,7 @@ describe('PalletService', () => {
         { provide: getRepositoryToken(ShipmentLog), useValue: mockShipmentRepo },
         { provide: getRepositoryToken(PartMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<PalletService>(PalletService);
@@ -133,6 +139,79 @@ describe('PalletService', () => {
       mockPalletRepo.count.mockResolvedValue(0);
       const r = await target.findAll({} as any);
       expect(r.data).toEqual([]);
+    });
+  });
+
+  describe('transactional workflows', () => {
+    const mockSummaryQb = (row: Record<string, string>) => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue(row),
+      };
+      (mockQr.manager.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+    };
+
+    it('addBox uses TransactionService', async () => {
+      mockPalletRepo.findOne
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN' } as any)
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN' } as any);
+      mockBoxRepo.find.mockResolvedValue([{ boxNo: 'BOX-001', status: 'CLOSED', oqcStatus: 'PASS' }] as any);
+      mockSummaryQb({ count: '1', totalQty: '2' });
+
+      await target.addBox('P-001', { boxIds: ['BOX-001'] } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('removeBox uses TransactionService', async () => {
+      mockPalletRepo.findOne
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN' } as any)
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN' } as any);
+      mockBoxRepo.find.mockResolvedValue([{ boxNo: 'BOX-001', status: 'CLOSED', palletNo: 'P-001' }] as any);
+      mockSummaryQb({ count: '0', totalQty: '0' });
+
+      await target.removeBox('P-001', { boxIds: ['BOX-001'] } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('assignToShipment uses TransactionService', async () => {
+      mockPalletRepo.findOne
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null } as any)
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'LOADED', shipmentId: 'SHIP-001' } as any);
+      mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING' } as any);
+      mockSummaryQb({ count: '1', boxCount: '1', totalQty: '2' });
+
+      await target.assignToShipment('P-001', { shipmentId: 'SHIP-001' } as any);
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
+    });
+
+    it('removeFromShipment uses TransactionService', async () => {
+      mockPalletRepo.findOne
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'LOADED', shipmentId: 'SHIP-001' } as any)
+        .mockResolvedValueOnce({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null } as any);
+      mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING' } as any);
+      mockSummaryQb({ count: '0', boxCount: '0', totalQty: '0' });
+
+      await target.removeFromShipment('P-001');
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(mockQr.commitTransaction).not.toHaveBeenCalled();
+      expect(mockQr.release).not.toHaveBeenCalled();
     });
   });
 });

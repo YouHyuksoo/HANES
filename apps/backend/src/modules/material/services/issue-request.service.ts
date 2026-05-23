@@ -40,23 +40,30 @@ export class IssueRequestService {
     private readonly tx: TransactionService,
   ) {}
 
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   /** 통합 채번 서비스를 통한 요청번호 생성 */
   private async generateRequestNo(qr?: import('typeorm').QueryRunner): Promise<string> {
     return this.numbering.next('MAT_REQ', qr);
   }
 
   /** 품목 목록에 itemCode/itemName 평탄화 */
-  private async flattenItems(items: MatIssueRequestItem[]) {
+  private async flattenItems(items: MatIssueRequestItem[], company?: string | null, plant?: string | null) {
     const itemCodes = items.map((i) => i.itemCode).filter(Boolean);
     const parts = itemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes) } }) : [];
+      ? await this.partMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return items.map((item) => {
       const part = partMap.get(item.itemCode);
       return {
         ...item,
-        itemCode: part?.itemCode ?? null,
+        itemCode: item.itemCode,
         itemName: part?.itemName ?? null,
         unit: item.unit ?? part?.unit ?? null,
       };
@@ -64,23 +71,25 @@ export class IssueRequestService {
   }
 
   /** 요청 헤더 조회 + 존재 검증 */
-  private async getRequestOrFail(requestNo: string) {
-    const request = await this.requestRepository.findOne({ where: { requestNo } });
+  private async getRequestOrFail(requestNo: string, company?: string, plant?: string) {
+    const request = await this.requestRepository.findOne({ where: { requestNo, ...this.tenantWhere(company, plant) } });
     if (!request) throw new NotFoundException(`출고요청을 찾을 수 없습니다: ${requestNo}`);
     return request;
   }
 
   /** 출고요청 생성 (헤더 + 품목 일괄 저장) */
-  async create(dto: CreateIssueRequestDto) {
+  async create(dto: CreateIssueRequestDto, company?: string, plant?: string) {
     return this.tx.run(async (queryRunner) => {
       const requestNo = await this.generateRequestNo(queryRunner);
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
-        jobOrderId: dto.orderNo ?? null,
+        orderNo: dto.orderNo ?? null,
         issueType: dto.issueType ?? null,
         status: 'REQUESTED',
         requester: 'SYSTEM',
         remark: dto.remark ?? null,
+        company,
+        plant,
       });
       const saved = await queryRunner.manager.save(request);
 
@@ -93,10 +102,12 @@ export class IssueRequestService {
           issuedQty: 0,
           unit: item.unit,
           remark: item.remark ?? null,
+          company,
+          plant,
         }),
       );
       await queryRunner.manager.save(items);
-      return this.findByRequestNo(saved.requestNo);
+      return this.findByRequestNo(saved.requestNo, company, plant);
     });
   }
 
@@ -114,14 +125,15 @@ export class IssueRequestService {
 
     // IN 배치 선조회로 N+1 제거 (요청별 아이템 개별 조회 → 일괄 조회)
     const requestNos = data.map((r) => r.requestNo);
+    const tenantWhere = this.tenantWhere(company, plant);
     const allItems = requestNos.length > 0
-      ? await this.requestItemRepository.find({ where: { requestId: In(requestNos) } })
+      ? await this.requestItemRepository.find({ where: { requestId: In(requestNos), ...tenantWhere } })
       : [];
 
     // 품목 정보 일괄 조회
     const allItemCodes = [...new Set(allItems.map((i) => i.itemCode).filter(Boolean))];
     const allParts = allItemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(allItemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
 
@@ -139,7 +151,7 @@ export class IssueRequestService {
         const part = partMap.get(item.itemCode);
         return {
           ...item,
-          itemCode: part?.itemCode ?? null,
+          itemCode: item.itemCode,
           itemName: part?.itemName ?? null,
           unit: item.unit ?? part?.unit ?? null,
         };
@@ -163,31 +175,38 @@ export class IssueRequestService {
   }
 
   /** 출고요청 상세 조회 (헤더 + 품목) */
-  async findByRequestNo(requestNo: string) {
-    const request = await this.getRequestOrFail(requestNo);
-    const items = await this.requestItemRepository.find({ where: { requestId: requestNo } });
-    const flatItems = await this.flattenItems(items);
+  async findByRequestNo(requestNo: string, company?: string, plant?: string) {
+    const request = await this.getRequestOrFail(requestNo, company, plant);
+    const requestTenantWhere = this.tenantWhere(request.company, request.plant);
+    const items = await this.requestItemRepository.find({ where: { requestId: requestNo, ...requestTenantWhere } });
+    const flatItems = await this.flattenItems(items, request.company, request.plant);
     return { ...request, items: flatItems };
   }
 
   /** 출고요청 승인 (REQUESTED -> APPROVED) */
-  async approve(requestNo: string) {
-    const request = await this.getRequestOrFail(requestNo);
+  async approve(requestNo: string, company?: string, plant?: string) {
+    const request = await this.getRequestOrFail(requestNo, company, plant);
     if (request.status !== 'REQUESTED') {
       throw new BadRequestException(`승인할 수 없는 상태입니다: ${request.status}`);
     }
-    await this.requestRepository.update({ requestNo }, { status: 'APPROVED', approvedAt: new Date() });
-    return this.findByRequestNo(requestNo);
+    const effectiveCompany = request.company ?? company;
+    const effectivePlant = request.plant ?? plant;
+    const requestTenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
+    await this.requestRepository.update({ requestNo, ...requestTenantWhere }, { status: 'APPROVED', approvedAt: new Date() });
+    return this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined);
   }
 
   /** 출고요청 반려 (REQUESTED -> REJECTED) */
-  async reject(requestNo: string, dto: RejectIssueRequestDto) {
-    const request = await this.getRequestOrFail(requestNo);
+  async reject(requestNo: string, dto: RejectIssueRequestDto, company?: string, plant?: string) {
+    const request = await this.getRequestOrFail(requestNo, company, plant);
     if (request.status !== 'REQUESTED') {
       throw new BadRequestException(`반려할 수 없는 상태입니다: ${request.status}`);
     }
-    await this.requestRepository.update({ requestNo }, { status: 'REJECTED', rejectReason: dto.reason });
-    return this.findByRequestNo(requestNo);
+    const effectiveCompany = request.company ?? company;
+    const effectivePlant = request.plant ?? plant;
+    const requestTenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
+    await this.requestRepository.update({ requestNo, ...requestTenantWhere }, { status: 'REJECTED', rejectReason: dto.reason });
+    return this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined);
   }
 
   /**
@@ -196,28 +215,31 @@ export class IssueRequestService {
    * - MatIssueService.create()로 실제 출고 수행
    * - 모든 품목 완전 출고 시 COMPLETED 처리
    */
-  async issueFromRequest(requestNo: string, dto: RequestIssueDto) {
-    const request = await this.getRequestOrFail(requestNo);
+  async issueFromRequest(requestNo: string, dto: RequestIssueDto, company?: string, plant?: string) {
+    const request = await this.getRequestOrFail(requestNo, company, plant);
     if (request.status !== 'APPROVED') {
       throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED만 가능): ${request.status}`);
     }
+    const effectiveCompany = request.company ?? company;
+    const effectivePlant = request.plant ?? plant;
+    const requestTenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
 
     return this.tx.run(async (queryRunner) => {
       const issueResult = await this.matIssueService.createInTx(queryRunner, {
-        orderNo: request.jobOrderId ?? undefined,
+        orderNo: request.orderNo ?? undefined,
         warehouseCode: dto.warehouseCode,
         issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
         items: dto.items.map((i) => ({ matUid: i.matUid, issueQty: i.issueQty })),
         workerId: dto.workerId,
         remark: dto.remark ?? `출고요청 ${request.requestNo} 기반 출고`,
-      });
+      }, effectiveCompany ?? undefined, effectivePlant ?? undefined);
 
       // 각 요청 품목의 issuedQty 갱신
       for (const dtoItem of dto.items) {
         // requestItemId는 seq 번호
         const reqItemSeq = Number(dtoItem.requestItemId);
         const reqItem = await this.requestItemRepository.findOne({
-          where: { requestId: requestNo, seq: reqItemSeq },
+          where: { requestId: requestNo, seq: reqItemSeq, ...requestTenantWhere },
         });
         if (!reqItem) {
           throw new BadRequestException(`출고요청 항목을 찾을 수 없습니다: ${dtoItem.requestItemId}`);
@@ -229,14 +251,14 @@ export class IssueRequestService {
           );
         }
         if (reqItem) {
-          await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq }, {
+          await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq, ...requestTenantWhere }, {
             issuedQty: reqItem.issuedQty + dtoItem.issueQty,
           });
         }
       }
 
       // 모든 품목 완전 출고 여부 확인
-      const allItems = await this.requestItemRepository.find({ where: { requestId: requestNo } });
+      const allItems = await this.requestItemRepository.find({ where: { requestId: requestNo, ...requestTenantWhere } });
       const allCompleted = allItems.every((item) => {
         const addedQty = dto.items
           .filter((d) => Number(d.requestItemId) === item.seq)
@@ -245,10 +267,10 @@ export class IssueRequestService {
       });
 
       if (allCompleted) {
-        await queryRunner.manager.update(MatIssueRequest, { requestNo }, { status: 'COMPLETED' });
+        await queryRunner.manager.update(MatIssueRequest, { requestNo, ...requestTenantWhere }, { status: 'COMPLETED' });
       }
 
-      return { request: await this.findByRequestNo(requestNo), issueResult };
+      return { request: await this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined), issueResult };
     });
   }
 }

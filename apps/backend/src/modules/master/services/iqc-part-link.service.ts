@@ -21,6 +21,13 @@ export class IqcPartLinkService {
     private readonly linkRepo: Repository<IqcPartLink>,
   ) {}
 
+  private tenantWhere(company?: string, plant?: string) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
   async findAll(query: IqcPartLinkQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, partnerId, useYn } = query;
 
@@ -63,9 +70,9 @@ export class IqcPartLinkService {
     return { data, total, page, limit };
   }
 
-  async findByCompositeKey(itemCode: string, partnerId: string) {
+  async findByCompositeKey(itemCode: string, partnerId: string, company?: string, plant?: string) {
     const link = await this.linkRepo.findOne({
-      where: { itemCode, partnerId },
+      where: { itemCode, partnerId, ...this.tenantWhere(company, plant) },
       relations: ['part', 'partner', 'group', 'group.items', 'group.items.inspItem'],
     });
 
@@ -80,7 +87,7 @@ export class IqcPartLinkService {
     const resolvedPartnerId = dto.partnerId || '*';
 
     const exists = await this.linkRepo.findOne({
-      where: { itemCode: dto.itemCode, partnerId: resolvedPartnerId },
+      where: { itemCode: dto.itemCode, partnerId: resolvedPartnerId, ...this.tenantWhere(company, plant) },
     });
     if (exists) {
       throw new ConflictException('이미 동일한 품목-거래처 연결이 존재합니다.');
@@ -97,12 +104,12 @@ export class IqcPartLinkService {
     });
 
     await this.linkRepo.save(entity);
-    return this.findByCompositeKey(entity.itemCode, entity.partnerId);
+    return this.findByCompositeKey(entity.itemCode, entity.partnerId, company, plant);
   }
 
-  async update(itemCode: string, partnerId: string, dto: UpdateIqcPartLinkDto) {
+  async update(itemCode: string, partnerId: string, dto: UpdateIqcPartLinkDto, company?: string, plant?: string) {
     // 존재 여부 확인
-    await this.findByCompositeKey(itemCode, partnerId);
+    await this.findByCompositeKey(itemCode, partnerId, company, plant);
 
     // 관계 로딩 없이 직접 UPDATE (partner=null 시 PK 손상 방지)
     const updateData: Record<string, unknown> = {};
@@ -110,13 +117,13 @@ export class IqcPartLinkService {
     if (dto.remark !== undefined) updateData.remark = dto.remark || null;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    await this.linkRepo.update({ itemCode, partnerId }, updateData);
-    return this.findByCompositeKey(itemCode, partnerId);
+    await this.linkRepo.update({ itemCode, partnerId, ...this.tenantWhere(company, plant) }, updateData);
+    return this.findByCompositeKey(itemCode, partnerId, company, plant);
   }
 
-  async delete(itemCode: string, partnerId: string) {
-    await this.findByCompositeKey(itemCode, partnerId);
-    await this.linkRepo.delete({ itemCode, partnerId });
+  async delete(itemCode: string, partnerId: string, company?: string, plant?: string) {
+    await this.findByCompositeKey(itemCode, partnerId, company, plant);
+    await this.linkRepo.delete({ itemCode, partnerId, ...this.tenantWhere(company, plant) });
     return { itemCode, partnerId, deleted: true };
   }
 }

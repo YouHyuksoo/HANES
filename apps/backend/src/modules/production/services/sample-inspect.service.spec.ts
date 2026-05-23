@@ -5,6 +5,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 import { JobOrder } from '../../../entities/job-order.entity';
+import { PartMaster } from '../../../entities/part-master.entity';
 import { SampleInspectResult } from '../../../entities/sample-inspect-result.entity';
 import { SampleInspectService } from './sample-inspect.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -119,5 +120,31 @@ describe('SampleInspectService', () => {
     expect(qb.select).not.toHaveBeenCalledWith(expect.arrayContaining([
       'jo.orderNo AS "orderNo"',
     ]));
+  });
+
+  it('joins history rows by tenant-scoped keys', async () => {
+    const qb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    sampleInspectRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+    await service.findHistory({}, 'C1', 'P1');
+
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      JobOrder,
+      'jo',
+      'jo.orderNo = si.orderNo AND jo.company = si.company AND jo.plant = si.plant',
+    );
+    expect(qb.leftJoin).toHaveBeenCalledWith(
+      PartMaster,
+      'p',
+      'p.itemCode = jo.itemCode AND p.company = jo.company AND p.plant = jo.plant',
+    );
   });
 });

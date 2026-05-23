@@ -39,6 +39,15 @@ describe('WarehouseService', () => {
       mockWhRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001' } as any);
       expect((await target.findOne('WH-001')).warehouseCode).toBe('WH-001');
     });
+    it('should scope lookup by company and plant', async () => {
+      mockWhRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', company: 'C1', plant: 'P1' } as any);
+
+      await target.findOne('WH-001', 'C1', 'P1');
+
+      expect(mockWhRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' },
+      });
+    });
     it('should throw NotFoundException', async () => {
       mockWhRepo.findOne.mockResolvedValue(null);
       await expect(target.findOne('X')).rejects.toThrow(NotFoundException);
@@ -73,9 +82,64 @@ describe('WarehouseService', () => {
         plant: 'WAREHOUSES',
       }));
     });
+    it('should default warehouse plantCode from tenant plant when dto plantCode is omitted', async () => {
+      mockWhRepo.findOne.mockResolvedValue(null);
+      const saved = { warehouseCode: 'WH-001', company: 'C1', plant: 'P1', plantCode: 'P1' } as any;
+      mockWhRepo.create.mockReturnValue(saved);
+      mockWhRepo.save.mockResolvedValue(saved);
+
+      await target.create(
+        { warehouseCode: 'WH-001', warehouseName: 'Test', warehouseType: 'RM' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockWhRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        plantCode: 'P1',
+        plant: 'P1',
+      }));
+    });
+    it('should check duplicate warehouse code within tenant only', async () => {
+      mockWhRepo.findOne.mockResolvedValue(null);
+      const saved = { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' } as any;
+      mockWhRepo.create.mockReturnValue(saved);
+      mockWhRepo.save.mockResolvedValue(saved);
+
+      await target.create(
+        { warehouseCode: 'WH-001', warehouseName: 'Test', warehouseType: 'RM' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockWhRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' },
+      });
+    });
     it('should throw ConflictException', async () => {
       mockWhRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001' } as any);
       await expect(target.create({ warehouseCode: 'WH-001' } as any)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('update', () => {
+    it('should update warehouse within tenant only', async () => {
+      mockWhRepo.findOne
+        .mockResolvedValueOnce({ warehouseCode: 'WH-001', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({ warehouseCode: 'WH-001', warehouseName: 'Changed', company: 'C1', plant: 'P1' } as any);
+      mockWhRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('WH-001', { warehouseName: 'Changed' } as any, 'C1', 'P1');
+
+      expect(mockWhRepo.findOne).toHaveBeenNthCalledWith(1, {
+        where: { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockWhRepo.update).toHaveBeenCalledWith(
+        { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ warehouseName: 'Changed' }),
+      );
+      expect(mockWhRepo.findOne).toHaveBeenNthCalledWith(2, {
+        where: { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' },
+      });
     });
   });
 
@@ -91,6 +155,21 @@ describe('WarehouseService', () => {
       mockWhRepo.delete.mockResolvedValue({ affected: 1 } as any);
       const r = await target.remove('WH-001');
       expect(r.deleted).toBe(true);
+    });
+    it('should check stock and delete warehouse within tenant only', async () => {
+      mockWhRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', company: 'C1', plant: 'P1' } as any);
+      mockStockRepo.count.mockResolvedValue(0);
+      mockWhRepo.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await target.remove('WH-001', 'C1', 'P1');
+
+      expect(mockWhRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockStockRepo.count).toHaveBeenCalledWith({
+        where: { warehouseCode: 'WH-001', company: 'C1', plant: 'P1' },
+      });
+      expect(mockWhRepo.delete).toHaveBeenCalledWith({ warehouseCode: 'WH-001', company: 'C1', plant: 'P1' });
     });
   });
 
@@ -116,6 +195,59 @@ describe('WarehouseService', () => {
       mockWhRepo.save.mockResolvedValue(newWh);
       const r = await target.getOrCreateFloorWarehouse('L1', 'P01');
       expect(r.warehouseCode).toBe('FLOOR_L1_P01');
+    });
+    it('should find and create floor warehouse within tenant only', async () => {
+      mockWhRepo.findOne.mockResolvedValue(null);
+      const newWh = { warehouseCode: 'FLOOR_L1_P01', company: 'C1', plant: 'P1' } as any;
+      mockWhRepo.create.mockReturnValue(newWh);
+      mockWhRepo.save.mockResolvedValue(newWh);
+
+      await target.getOrCreateFloorWarehouse('L1', 'P01', 'C1', 'P1');
+
+      expect(mockWhRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseCode: 'FLOOR_L1_P01', company: 'C1', plant: 'P1' },
+      });
+      expect(mockWhRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        warehouseCode: 'FLOOR_L1_P01',
+        plantCode: 'P1',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
+  });
+
+  describe('initDefaultWarehouses', () => {
+    it('should initialize default warehouses within tenant only', async () => {
+      mockWhRepo.find.mockResolvedValue([{ warehouseCode: 'RM_MAIN' } as Warehouse]);
+      mockWhRepo.create.mockImplementation((payload) => payload as Warehouse);
+      mockWhRepo.save.mockResolvedValue([] as any);
+
+      await target.initDefaultWarehouses('C1', 'P1');
+
+      expect(mockWhRepo.find).toHaveBeenCalledWith({
+        where: expect.arrayContaining([
+          { warehouseCode: 'RM_MAIN', company: 'C1', plant: 'P1' },
+        ]),
+        select: ['warehouseCode'],
+      });
+      expect(mockWhRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        warehouseCode: 'RM_SUB',
+        plantCode: 'P1',
+        company: 'C1',
+        plant: 'P1',
+      }));
+    });
+  });
+
+  describe('getDefaultWarehouse', () => {
+    it('should lookup default warehouse within tenant only', async () => {
+      mockWhRepo.findOne.mockResolvedValue({ warehouseCode: 'RM_MAIN' } as any);
+
+      await target.getDefaultWarehouse('RM', 'C1', 'P1');
+
+      expect(mockWhRepo.findOne).toHaveBeenCalledWith({
+        where: { warehouseType: 'RM', isDefault: 'Y', useYn: 'Y', company: 'C1', plant: 'P1' },
+      });
     });
   });
 });

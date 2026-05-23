@@ -49,22 +49,30 @@ export class MatIssueService {
     });
   }
 
-  private async flattenIssue(issue: MatIssue) {
+  private tenantWhere(company?: string | null, plant?: string | null) {
+    return {
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    };
+  }
+
+  private async flattenIssue(issue: MatIssue, company?: string, plant?: string) {
     if (!issue) return null;
+    const tenantWhere = this.tenantWhere(company ?? issue.company, plant ?? issue.plant);
 
     const lot = issue.matUid
-      ? await this.matLotRepository.findOne({ where: { matUid: issue.matUid } })
+      ? await this.matLotRepository.findOne({ where: { matUid: issue.matUid, ...tenantWhere } })
       : null;
     const part = lot?.itemCode
-      ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode } })
+      ? await this.partMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...tenantWhere } })
       : null;
     const jobOrder = issue.orderNo
-      ? await this.jobOrderRepository.findOne({ where: { orderNo: issue.orderNo } })
+      ? await this.jobOrderRepository.findOne({ where: { orderNo: issue.orderNo, ...tenantWhere } })
       : null;
 
     return {
       ...issue,
-      matUid: lot?.matUid ?? null,
+      matUid: issue.matUid,
       itemCode: part?.itemCode ?? null,
       itemName: part?.itemName ?? null,
       unit: part?.unit ?? null,
@@ -105,13 +113,14 @@ export class MatIssueService {
 
     const matUids = [...new Set(data.map((i) => i.matUid).filter(Boolean))];
     const orderNos = [...new Set(data.map((i) => i.orderNo).filter(Boolean))];
+    const tenantWhere = this.tenantWhere(company, plant);
 
     const [lots, jobOrders] = await Promise.all([
       matUids.length > 0
-        ? this.matLotRepository.find({ where: { matUid: In(matUids) } })
+        ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } })
         : Promise.resolve([]),
       orderNos.length > 0
-        ? this.jobOrderRepository.find({ where: { orderNo: In(orderNos) } })
+        ? this.jobOrderRepository.find({ where: { orderNo: In(orderNos), ...tenantWhere } })
         : Promise.resolve([]),
     ]);
 
@@ -120,7 +129,7 @@ export class MatIssueService {
 
     const lotItemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
     const parts = lotItemCodes.length > 0
-      ? await this.partMasterRepository.find({ where: { itemCode: In(lotItemCodes) } })
+      ? await this.partMasterRepository.find({ where: { itemCode: In(lotItemCodes), ...tenantWhere } })
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
@@ -130,7 +139,7 @@ export class MatIssueService {
       const jobOrder = issue.orderNo ? jobOrderMap.get(issue.orderNo) : null;
       return {
         ...issue,
-        matUid: lot?.matUid ?? null,
+        matUid: issue.matUid,
         itemCode: part?.itemCode ?? null,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
@@ -141,26 +150,28 @@ export class MatIssueService {
     return { data: flattenedData, total, page, limit };
   }
 
-  async findById(issueNo: string, seq: number) {
-    const issue = await this.matIssueRepository.findOne({ where: { issueNo, seq } });
+  async findById(issueNo: string, seq: number, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const issue = await this.matIssueRepository.findOne({ where: { issueNo, seq, ...tenantWhere } });
 
     if (!issue) throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${issueNo}-${seq}`);
-    return this.flattenIssue(issue);
+    return this.flattenIssue(issue, company, plant);
   }
 
-  async create(dto: CreateMatIssueDto) {
-    return this.tx.run((queryRunner) => this.createInTx(queryRunner, dto));
+  async create(dto: CreateMatIssueDto, company?: string, plant?: string) {
+    return this.tx.run((queryRunner) => this.createInTx(queryRunner, dto, company, plant));
   }
 
-  async createInTx(queryRunner: import('typeorm').QueryRunner, dto: CreateMatIssueDto) {
+  async createInTx(queryRunner: import('typeorm').QueryRunner, dto: CreateMatIssueDto, company?: string, plant?: string) {
     const { orderNo, prodResultNo, warehouseCode, issueType, items, remark, workerId } = dto;
     const results = [];
     const issueNo = await this.numbering.nextInTx(queryRunner, 'MAT_ISSUE');
     let seqCounter = 1;
+    const tenantWhere = this.tenantWhere(company, plant);
 
     for (const item of items) {
       const lot = await queryRunner.manager.findOne(MatLot, {
-        where: { matUid: item.matUid },
+        where: { matUid: item.matUid, ...tenantWhere },
       });
 
       if (!lot) {
@@ -177,8 +188,8 @@ export class MatIssueService {
 
       const stockRows = await queryRunner.manager.find(MatStock, {
         where: warehouseCode
-          ? { matUid: lot.matUid, warehouseCode }
-          : { matUid: lot.matUid },
+          ? { matUid: lot.matUid, warehouseCode, ...tenantWhere }
+          : { matUid: lot.matUid, ...tenantWhere },
       });
       const stockQty = stockRows.reduce((sum, stock) => sum + (stock.availableQty ?? stock.qty ?? 0), 0);
 
@@ -231,7 +242,7 @@ export class MatIssueService {
 
         await queryRunner.manager.update(
           MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
           {
             qty: Math.max(0, stock.qty - issueQty),
             availableQty: Math.max(0, stock.availableQty - issueQty),
@@ -242,23 +253,24 @@ export class MatIssueService {
       }
 
       const remainingStocks = await queryRunner.manager.find(MatStock, {
-        where: { matUid: lot.matUid },
+        where: { matUid: lot.matUid, ...tenantWhere },
       });
       const totalRemainingQty = remainingStocks.reduce((sum, stock) => sum + (stock.qty ?? 0), 0);
 
       if (totalRemainingQty <= 0) {
-        await queryRunner.manager.update(MatLot, lot.matUid, { status: 'DEPLETED' });
+        await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: 'DEPLETED' });
       }
 
-      results.push(await this.flattenIssue(savedIssue));
+      results.push(await this.flattenIssue(savedIssue, company, plant));
     }
 
     return results;
   }
 
-  async scanIssue(dto: ScanIssueDto) {
+  async scanIssue(dto: ScanIssueDto, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
     const lot = await this.matLotRepository.findOne({
-      where: { matUid: dto.matUid },
+      where: { matUid: dto.matUid, ...tenantWhere },
     });
     if (!lot) {
       throw new BadRequestException(`LOT를 찾을 수 없습니다: ${dto.matUid}`);
@@ -276,8 +288,8 @@ export class MatIssueService {
 
     const stocks = await this.matStockRepository.find({
       where: dto.warehouseCode
-        ? { matUid: dto.matUid, warehouseCode: dto.warehouseCode }
-        : { matUid: dto.matUid },
+        ? { matUid: dto.matUid, warehouseCode: dto.warehouseCode, ...tenantWhere }
+        : { matUid: dto.matUid, ...tenantWhere },
     });
     const stockQty = stocks.reduce((sum, stock) => sum + (stock.availableQty ?? stock.qty ?? 0), 0);
 
@@ -291,24 +303,25 @@ export class MatIssueService {
       items: [{ matUid: lot.matUid, issueQty: stockQty }],
       workerId: dto.workerId,
       remark: dto.remark ?? `바코드 스캔 출고: ${dto.matUid}`,
-    });
+    }, company, plant);
 
     const part = await this.partMasterRepository.findOne({
-      where: { itemCode: lot.itemCode },
+      where: { itemCode: lot.itemCode, ...tenantWhere },
     });
 
     return {
       ...result[0],
       matUid: lot.matUid,
       issuedQty: stockQty,
-      itemCode: part?.itemCode,
-      itemName: part?.itemName,
-      unit: part?.unit,
+      itemCode: lot.itemCode,
+      itemName: part?.itemName ?? null,
+      unit: part?.unit ?? null,
     };
   }
 
-  async cancel(issueNo: string, seq: number, reason?: string) {
-    const rawIssue = await this.matIssueRepository.findOne({ where: { issueNo, seq } });
+  async cancel(issueNo: string, seq: number, reason?: string, company?: string, plant?: string) {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const rawIssue = await this.matIssueRepository.findOne({ where: { issueNo, seq, ...tenantWhere } });
     if (!rawIssue) {
       throw new NotFoundException(`출고 이력을 찾을 수 없습니다: ${issueNo}-${seq}`);
     }
@@ -317,14 +330,14 @@ export class MatIssueService {
       throw new BadRequestException('이미 취소된 출고입니다.');
     }
 
-    await this.ensureNoDownstreamProgress(rawIssue);
+    await this.ensureNoDownstreamProgress(rawIssue, company, plant);
 
     return this.tx.run(async (queryRunner) => {
-      await queryRunner.manager.update(MatIssue, { issueNo, seq }, { status: 'CANCELED', remark: reason });
+      await queryRunner.manager.update(MatIssue, { issueNo, seq, ...tenantWhere }, { status: 'CANCELED', remark: reason });
 
       const refId = `${issueNo}-${seq}`;
       const originalTxs = await queryRunner.manager.find(StockTransaction, {
-        where: { refType: 'MAT_ISSUE', refId, status: 'DONE' },
+        where: { refType: 'MAT_ISSUE', refId, status: 'DONE', ...tenantWhere },
       });
 
       for (const originalTx of originalTxs) {
@@ -346,7 +359,15 @@ export class MatIssueService {
           plant: originalTx.plant,
         });
         await queryRunner.manager.save(cancelTx);
-        await queryRunner.manager.update(StockTransaction, { transNo: originalTx.transNo }, { status: 'CANCELED' });
+        await queryRunner.manager.update(
+          StockTransaction,
+          {
+            transNo: originalTx.transNo,
+            ...(originalTx.company ? { company: originalTx.company } : {}),
+            ...(originalTx.plant ? { plant: originalTx.plant } : {}),
+          },
+          { status: 'CANCELED' },
+        );
 
         const stock = originalTx.matUid && originalTx.fromWarehouseId
           ? await queryRunner.manager.findOne(MatStock, {
@@ -354,6 +375,7 @@ export class MatIssueService {
                 warehouseCode: originalTx.fromWarehouseId,
                 itemCode: originalTx.itemCode,
                 matUid: originalTx.matUid,
+                ...tenantWhere,
               },
             })
           : null;
@@ -361,7 +383,7 @@ export class MatIssueService {
         if (stock) {
           await queryRunner.manager.update(
             MatStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid },
+            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
             {
               qty: stock.qty + restoreQty,
               availableQty: stock.availableQty + restoreQty,
@@ -385,26 +407,27 @@ export class MatIssueService {
       }
 
       if (rawIssue.matUid) {
-        await queryRunner.manager.update(MatLot, rawIssue.matUid, { status: 'NORMAL' });
+        await queryRunner.manager.update(MatLot, { matUid: rawIssue.matUid, ...tenantWhere }, { status: 'NORMAL' });
       }
 
       return { issueNo, seq, status: 'CANCELED' };
     });
   }
 
-  private async ensureNoDownstreamProgress(issue: MatIssue) {
+  private async ensureNoDownstreamProgress(issue: MatIssue, company?: string, plant?: string) {
     const prodResultRepo = this.dataSource.getRepository(ProdResult);
     const fgLabelRepo = this.dataSource.getRepository(FgLabel);
+    const tenantWhere = this.tenantWhere(company ?? issue.company, plant ?? issue.plant);
 
     let prodResult: ProdResult | null = null;
 
     if (issue.prodResultNo) {
       prodResult = await prodResultRepo.findOne({
-        where: { resultNo: issue.prodResultNo },
+        where: { resultNo: issue.prodResultNo, ...tenantWhere },
       });
     } else if (issue.orderNo && ['PROD', 'PRODUCTION', 'PROD_AUTO'].includes(issue.issueType)) {
       prodResult = await prodResultRepo.findOne({
-        where: { orderNo: issue.orderNo, status: In(['RUNNING', 'DONE']) },
+        where: { orderNo: issue.orderNo, status: In(['RUNNING', 'DONE']), ...tenantWhere },
         order: { createdAt: 'DESC' },
       });
     }

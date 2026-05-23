@@ -19,3 +19,33 @@ export const INSPECT_METHOD_COLORS: Record<string, string> = {
   SAMPLE: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
   SKIP: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
 };
+
+// 검사항목 풀 (전역 마스터)
+export interface IqcPoolItem {
+  inspItemCode: string;
+  inspItemName: string;
+  judgeMethod: 'VISUAL' | 'MEASURE';
+  unit: string | null;
+  useYn: string;
+}
+
+// 품목별 IQC 검사항목 행
+export interface IqcSpecRow {
+  seq: number;
+  inspItemCode: string;
+  inspItemName?: string;
+  judgeMethod?: 'VISUAL' | 'MEASURE';
+  unit?: string | null;
+  lsl: number | null;
+  usl: number | null;
+  useYn: string;
+}
+
+// 품목별 IQC 기준 전체
+export interface IqcPartSpec {
+  itemCode: string;
+  sampleQty: number;
+  isDest: string;
+  useYn: string;
+  items: IqcSpecRow[];
+}

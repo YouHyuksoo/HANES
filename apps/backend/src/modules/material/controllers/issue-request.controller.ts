@@ -43,8 +43,8 @@ export class IssueRequestController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '출고요청 생성' })
-  async create(@Body() dto: CreateIssueRequestDto) {
-    const data = await this.issueRequestService.create(dto);
+  async create(@Body() dto: CreateIssueRequestDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.issueRequestService.create(dto, company, plant);
     return ResponseUtil.success(data, '출고요청이 생성되었습니다.');
   }
 
@@ -63,16 +63,16 @@ export class IssueRequestController {
   @Get(':requestNo')
   @ApiOperation({ summary: '출고요청 상세 조회' })
   @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
-  async findByRequestNo(@Param('requestNo') requestNo: string) {
-    const data = await this.issueRequestService.findByRequestNo(requestNo);
+  async findByRequestNo(@Param('requestNo') requestNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.issueRequestService.findByRequestNo(requestNo, company, plant);
     return ResponseUtil.success(data);
   }
 
   @Patch(':requestNo/approve')
   @ApiOperation({ summary: '출고요청 승인' })
   @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
-  async approve(@Param('requestNo') requestNo: string) {
-    const data = await this.issueRequestService.approve(requestNo);
+  async approve(@Param('requestNo') requestNo: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.issueRequestService.approve(requestNo, company, plant);
     return ResponseUtil.success(data, '출고요청이 승인되었습니다.');
   }
 
@@ -82,8 +82,10 @@ export class IssueRequestController {
   async reject(
     @Param('requestNo') requestNo: string,
     @Body() dto: RejectIssueRequestDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.issueRequestService.reject(requestNo, dto);
+    const data = await this.issueRequestService.reject(requestNo, dto, company, plant);
     return ResponseUtil.success(data, '출고요청이 반려되었습니다.');
   }
 
@@ -94,8 +96,10 @@ export class IssueRequestController {
   async issueFromRequest(
     @Param('requestNo') requestNo: string,
     @Body() dto: RequestIssueDto,
+    @Company() company: string,
+    @Plant() plant: string,
   ) {
-    const data = await this.issueRequestService.issueFromRequest(requestNo, dto);
+    const data = await this.issueRequestService.issueFromRequest(requestNo, dto, company, plant);
     return ResponseUtil.success(data, '출고가 완료되었습니다.');
   }
 }

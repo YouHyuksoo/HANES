@@ -21,6 +21,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
 
 describe('AutoIssueService', () => {
@@ -34,6 +35,7 @@ describe('AutoIssueService', () => {
   let mockSysConfigService: DeepMocked<SysConfigService>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -46,9 +48,11 @@ describe('AutoIssueService', () => {
     mockSysConfigService = createMock<SysConfigService>();
     mockNumbering = createMock<NumberingService>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -67,6 +71,7 @@ describe('AutoIssueService', () => {
         { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -93,6 +98,7 @@ describe('AutoIssueService', () => {
       // Assert
       expect(result.skipped).toBe(true);
       expect(result.issued).toHaveLength(0);
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
 
     it('should skip when config timing is null', async () => {
@@ -104,6 +110,7 @@ describe('AutoIssueService', () => {
 
       // Assert
       expect(result.skipped).toBe(true);
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 
@@ -122,6 +129,8 @@ describe('AutoIssueService', () => {
 
       // Assert
       expect(result.skipped).toBe(true);
+      expect(mockTx.run).not.toHaveBeenCalled();
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 
@@ -135,13 +144,8 @@ describe('AutoIssueService', () => {
         .mockResolvedValueOnce('ON_CREATE')  // timing
         .mockResolvedValueOnce('WARN');      // stock check policy
 
-      // We don't pass externalQR, so it creates its own
       const ownQR = createMock<QueryRunner>();
-      mockDataSource.createQueryRunner.mockReturnValue(ownQR);
-      ownQR.connect.mockResolvedValue(undefined);
-      ownQR.startTransaction.mockResolvedValue(undefined);
-      ownQR.commitTransaction.mockResolvedValue(undefined);
-      ownQR.release.mockResolvedValue(undefined);
+      mockTx.run.mockImplementationOnce(async (callback) => callback(ownQR));
 
       ownQR.manager.findOne.mockResolvedValue({ orderNo: 'JO-001', itemCode: 'PART-001' });
       ownQR.manager.query.mockResolvedValue([]); // no BOM
@@ -151,8 +155,12 @@ describe('AutoIssueService', () => {
 
       // Assert
       expect(result.skipped).toBe(true);
-      expect(ownQR.commitTransaction).toHaveBeenCalled();
-      expect(ownQR.release).toHaveBeenCalled();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(ownQR.connect).not.toHaveBeenCalled();
+      expect(ownQR.startTransaction).not.toHaveBeenCalled();
+      expect(ownQR.commitTransaction).not.toHaveBeenCalled();
+      expect(ownQR.release).not.toHaveBeenCalled();
     });
   });
 
@@ -169,6 +177,8 @@ describe('AutoIssueService', () => {
       await expect(
         target.execute('ON_CREATE', '1', 'JO-INVALID', 50, mockQueryRunner),
       ).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).not.toHaveBeenCalled();
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
   });
 
@@ -224,6 +234,8 @@ describe('AutoIssueService', () => {
       expect(result.issued).toHaveLength(1);
       expect(result.issued[0].itemCode).toBe('RM-001');
       expect(result.issued[0].issueQty).toBe(100); // 2 * 50
+      expect(mockTx.run).not.toHaveBeenCalled();
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException on stock shortage with BLOCK policy', async () => {
@@ -253,6 +265,71 @@ describe('AutoIssueService', () => {
       await expect(
         target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner),
       ).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).not.toHaveBeenCalled();
+      expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('should constrain BOM, LOT, stock and depletion updates to the job order tenant', async () => {
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')
+        .mockResolvedValueOnce('BLOCK');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+      });
+
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
+      ]);
+
+      const mockLotQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { matUid: 'LOT-001', itemCode: 'RM-001', company: 'C1', plant: 'P1' },
+        ]),
+      };
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockLotQb as any);
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 10, availableQty: 10, company: 'C1', plant: 'P1', createdAt: new Date() }])
+        .mockResolvedValueOnce([{ warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', qty: 10, availableQty: 10, company: 'C1', plant: 'P1', createdAt: new Date() }])
+        .mockResolvedValueOnce([{ matUid: 'LOT-001', qty: 0, company: 'C1', plant: 'P1' }]);
+      mockNumbering.nextInTx
+        .mockResolvedValueOnce('ISS-001')
+        .mockResolvedValueOnce('TX-001');
+      mockQueryRunner.manager.create.mockImplementation((_: any, data: any) => data);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.execute('ON_CREATE', '1', 'JO-001', 10, mockQueryRunner);
+
+      expect(mockQueryRunner.manager.query).toHaveBeenCalledWith(
+        expect.stringContaining('b.COMPANY = :4'),
+        ['FG-001', expect.any(String), expect.any(String), 'C1', 'P1'],
+      );
+      expect(mockLotQb.andWhere).toHaveBeenCalledWith('l.company = :company', { company: 'C1' });
+      expect(mockLotQb.andWhere).toHaveBeenCalledWith('l.plant = :plant', { plant: 'P1' });
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(1, MatStock, {
+        where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
+      });
+      expect(mockQueryRunner.manager.find).toHaveBeenNthCalledWith(2, MatStock, {
+        where: expect.objectContaining({ itemCode: 'RM-001', matUid: 'LOT-001', company: 'C1', plant: 'P1' }),
+        order: { createdAt: 'ASC' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        { warehouseCode: 'WH-RM', itemCode: 'RM-001', matUid: 'LOT-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 0, availableQty: 0 }),
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatLot,
+        { matUid: 'LOT-001', company: 'C1', plant: 'P1' },
+        { status: 'DEPLETED' },
+      );
     });
   });
 });

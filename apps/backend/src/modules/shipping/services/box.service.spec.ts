@@ -12,6 +12,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import { MockLoggerService } from '../../../common/test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('BoxService', () => {
   let target: BoxService;
@@ -23,6 +24,7 @@ describe('BoxService', () => {
   let mockOqcRequestRepo: DeepMocked<Repository<OqcRequest>>;
   let mockOqcRequestBoxRepo: DeepMocked<Repository<OqcRequestBox>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -34,9 +36,11 @@ describe('BoxService', () => {
     mockOqcRequestRepo = createMock<Repository<OqcRequest>>();
     mockOqcRequestBoxRepo = createMock<Repository<OqcRequestBox>>();
     mockDataSource = createMock<DataSource>();
+    mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
+    mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -54,6 +58,7 @@ describe('BoxService', () => {
         { provide: getRepositoryToken(OqcRequest), useValue: mockOqcRequestRepo },
         { provide: getRepositoryToken(OqcRequestBox), useValue: mockOqcRequestBoxRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: TransactionService, useValue: mockTx },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -68,6 +73,38 @@ describe('BoxService', () => {
     mockBoxRepo.findOne.mockResolvedValue(null);
 
     await expect(target.findById('BOX-001')).rejects.toThrow(NotFoundException);
+  });
+
+  it('findByBoxNo enriches part within tenant only', async () => {
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001',
+      itemCode: 'ITEM-001',
+      company: 'C1',
+      plant: 'P1',
+    } as BoxMaster);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as PartMaster);
+
+    await target.findByBoxNo('BOX-001', 'C1', 'P1');
+
+    expect(mockBoxRepo.findOne).toHaveBeenCalledWith({
+      where: { boxNo: 'BOX-001', company: 'C1', plant: 'P1' },
+    });
+    expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+      where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+    });
+  });
+
+  it('create validates part within tenant only', async () => {
+    mockBoxRepo.findOne.mockResolvedValue(null);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
+    mockBoxRepo.create.mockReturnValue({ boxNo: 'BOX-001', itemCode: 'ITEM-001' } as BoxMaster);
+    mockBoxRepo.save.mockResolvedValue({ boxNo: 'BOX-001', itemCode: 'ITEM-001' } as BoxMaster);
+
+    await target.create({ boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 0 } as any, 'C1', 'P1');
+
+    expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+      where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+    });
   });
 
   it('addSerial rejects labels that did not pass inspection', async () => {
@@ -86,6 +123,47 @@ describe('BoxService', () => {
     await expect(
       target.addSerial('BOX-001', { serials: ['FG-001'] } as any),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('addSerial validates lots, part and fg labels within tenant only', async () => {
+    mockBoxRepo.findOne
+      .mockResolvedValueOnce({
+        boxNo: 'BOX-001',
+        itemCode: 'ITEM-001',
+        status: 'OPEN',
+        serialList: null,
+        company: 'C1',
+        plant: 'P1',
+      } as BoxMaster)
+      .mockResolvedValueOnce({
+        boxNo: 'BOX-001',
+        itemCode: 'ITEM-001',
+        status: 'OPEN',
+        serialList: JSON.stringify(['FG-001']),
+        company: 'C1',
+        plant: 'P1',
+      } as BoxMaster);
+    mockLotRepo.find.mockResolvedValue([{ matUid: 'FG-001', itemCode: 'ITEM-001' } as MatLot]);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', packUnit: '10' } as PartMaster);
+    mockFgLabelRepo.find.mockResolvedValue([
+      { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'ISSUED' } as FgLabel,
+    ]);
+
+    await target.addSerial('BOX-001', { serials: ['FG-001'] } as any, 'C1', 'P1');
+
+    expect(mockLotRepo.find).toHaveBeenCalledWith({
+      where: { matUid: expect.anything(), company: 'C1', plant: 'P1' },
+    });
+    expect(mockPartRepo.findOne).toHaveBeenCalledWith({
+      where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+    });
+    expect(mockFgLabelRepo.find).toHaveBeenCalledWith({
+      where: { fgBarcode: expect.anything(), company: 'C1', plant: 'P1' },
+    });
+    expect(mockBoxRepo.update).toHaveBeenCalledWith(
+      { boxNo: 'BOX-001', company: 'C1', plant: 'P1' },
+      expect.objectContaining({ qty: 1 }),
+    );
   });
 
   it('update blocks direct status changes', async () => {
@@ -173,6 +251,10 @@ describe('BoxService', () => {
       OqcRequestBox,
       expect.objectContaining({ boxNo: 'BOX-001', qty: 2 }),
     );
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
   it('reopenBox clears pending OQC state and deletes auto-created request', async () => {
@@ -207,6 +289,10 @@ describe('BoxService', () => {
     expect(manager.delete).toHaveBeenCalledTimes(2);
     expect(manager.delete.mock.calls[0][0]).toBe(OqcRequestBox);
     expect(manager.delete.mock.calls[1][0]).toBe(OqcRequest);
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
   it('reopenBox blocks boxes whose OQC has already been completed', async () => {
@@ -223,5 +309,50 @@ describe('BoxService', () => {
     await expect(target.reopenBox('BOX-002')).rejects.toThrow(
       'OQC 단계부터 먼저 정리해 주세요.',
     );
+    expect(mockTx.run).not.toHaveBeenCalled();
+  });
+
+  it('assignToPallet uses TransactionService', async () => {
+    mockBoxRepo.findOne
+      .mockResolvedValueOnce({ boxNo: 'BOX-001', status: 'CLOSED', palletNo: null } as BoxMaster)
+      .mockResolvedValueOnce({ boxNo: 'BOX-001', status: 'CLOSED', palletNo: 'P-001' } as BoxMaster);
+    mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN' } as PalletMaster);
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ count: '1', totalQty: '2' }),
+    };
+    (mockQueryRunner.manager.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+    await target.assignToPallet('BOX-001', { palletId: 'P-001' } as any);
+
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
+  });
+
+  it('removeFromPallet uses TransactionService', async () => {
+    mockBoxRepo.findOne
+      .mockResolvedValueOnce({ boxNo: 'BOX-001', status: 'CLOSED', palletNo: 'P-001' } as BoxMaster)
+      .mockResolvedValueOnce({ boxNo: 'BOX-001', status: 'CLOSED', palletNo: null } as BoxMaster);
+    mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN' } as PalletMaster);
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ count: '0', totalQty: '0' }),
+    };
+    (mockQueryRunner.manager.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+
+    await target.removeFromPallet('BOX-001');
+
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
+    expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 });

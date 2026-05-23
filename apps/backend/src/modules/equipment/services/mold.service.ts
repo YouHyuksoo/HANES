@@ -15,6 +15,7 @@ import {
   CreateMoldUsageDto,
   MoldQueryDto,
 } from '../dto/mold.dto';
+import { TransactionService } from '../../../shared/transaction.service';
 
 @Injectable()
 export class MoldService {
@@ -28,6 +29,7 @@ export class MoldService {
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepo: Repository<EquipMaster>,
     private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private async getNextUsageSeq(usageDate: Date, qr?: import('typeorm').QueryRunner): Promise<number> {
@@ -141,11 +143,7 @@ export class MoldService {
     plant: string,
     userId: string,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
+    return this.tx.run(async (queryRunner) => {
       const mold = await queryRunner.manager.findOne(MoldMaster, {
         where: { moldCode, company, plant },
       });
@@ -189,15 +187,9 @@ export class MoldService {
         }
       }
 
-      await queryRunner.commitTransaction();
       this.logger.log(`Mold usage logged: ${mold.moldCode}, shots=${dto.shotCount}, total=${mold.currentShots}`);
       return saved;
-    } catch (err: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw err;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   async getUsageLogs(moldCode: string, company?: string, plant?: string) {

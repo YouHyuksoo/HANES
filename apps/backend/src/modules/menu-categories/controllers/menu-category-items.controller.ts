@@ -32,7 +32,7 @@ export class MenuCategoryItemsController {
     const user = req.user ?? {};
     return {
       company: user.company ?? 'HANES',
-      plantCd: user.plantCd ?? '-',
+      plantCd: user.plantCd ?? user.plant ?? '-',
       userId: user.userId ?? user.userName ?? 'system',
     };
   }
